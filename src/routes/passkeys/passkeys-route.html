@@ -1,0 +1,67 @@
+<!-- The page title is owned by the shell-hosted <page-header> (data.titleKey). -->
+<main class="[ passkeys ] [ stack ]">
+  <p t="passkeys.lead" class="passkeys-lead"></p>
+
+  <output if.bind="listState === 'loading'" class="passkeys-status" aria-busy="true" t="passkeys.loading"></output>
+
+  <section if.bind="listState === 'error'" class="[ passkeys-error ] [ stack ]" role="alert" data-testid="passkeys-list-error">
+    <p t="passkeys.listFailed"></p>
+    <button type="button" busy-on-click.bind="() => load()" class="[ button ] [ pressable ]" data-variant="outlined" t="passkeys.retry"></button>
+  </section>
+
+  <template if.bind="listState === 'ready'">
+    <ul class="passkeys-card" role="list" data-testid="passkeys-list">
+      <li repeat.for="passkey of passkeys" class="passkeys-item">
+        <svg-icon name="lock" class="passkeys-icon"></svg-icon>
+        <span class="passkeys-name" data-testid="passkeys-name">
+          <template if.bind="passkey.name">${passkey.name}</template>
+          <template else>${'passkeys.unnamed' | t}</template>
+        </span>
+        <button
+          type="button"
+          click.trigger="askRemoval(passkey)"
+          disabled.bind="!canRemove"
+          aria-describedby="passkeys-last-note"
+          class="[ button passkeys-remove ] [ pressable ]"
+          data-variant="outlined"
+          data-testid="passkeys-remove"
+          t="passkeys.remove"
+        ></button>
+      </li>
+    </ul>
+    <p id="passkeys-last-note" if.bind="!canRemove" t="passkeys.lastPasskey" class="passkeys-note" data-testid="passkeys-last-note"></p>
+
+    <button type="button" click.trigger="addOnThisDevice()" class="[ button ] [ pressable ]" data-testid="passkeys-add">
+      <svg-icon name="plus"></svg-icon>
+      <span t="passkeys.add"></span>
+    </button>
+    <p t="passkeys.addNote" class="passkeys-note"></p>
+  </template>
+
+  <a href="/settings" class="passkeys-back" t="passkeys.backToSettings"></a>
+</main>
+
+<!-- Removal confirmation. The note about the device's passkey manager is part
+     of the confirmation, so the fan reads it before confirming. -->
+<bottom-sheet open.bind="confirmOpen" sheet-closed.trigger="cancelRemoval()" aria-label.bind="'passkeys.confirm.title' | t">
+  <div class="[ passkeys-confirm ] [ stack ]" data-testid="passkeys-confirm">
+    <h2 t="passkeys.confirm.title" class="passkeys-confirm-title"></h2>
+    <p class="passkeys-confirm-name">
+      <template if.bind="pendingRemoval.name">${pendingRemoval.name}</template>
+      <template else>${'passkeys.unnamed' | t}</template>
+    </p>
+    <p t="passkeys.confirm.managerNote" class="passkeys-note"></p>
+    <p if.bind="removalFailed" role="alert" t="passkeys.confirm.failed" class="passkeys-confirm-error" data-testid="passkeys-removal-error"></p>
+    <button
+      type="button"
+      busy-on-click.bind="() => confirmRemoval()"
+      class="[ button ] [ pressable ]"
+      data-variant="danger"
+      data-testid="passkeys-confirm-remove"
+    >
+      <span if.bind="removalFailed" t="passkeys.retry"></span>
+      <span else t="passkeys.confirm.remove"></span>
+    </button>
+    <button type="button" click.trigger="cancelRemoval()" class="[ button ] [ pressable ]" data-variant="outlined" t="passkeys.confirm.cancel"></button>
+  </div>
+</bottom-sheet>

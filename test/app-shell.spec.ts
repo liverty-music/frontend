@@ -9,6 +9,7 @@ import { BottomNavBar } from '../src/components/bottom-nav-bar/bottom-nav-bar'
 import { PageHeader } from '../src/components/page-header/page-header'
 import { SvgIcon } from '../src/components/svg-icon/svg-icon'
 import { IAnalyticsService } from '../src/lib/analytics/analytics-service'
+import { IAddPasskeyPromptService } from '../src/services/add-passkey-prompt-service'
 import { IAuthService } from '../src/services/auth-service'
 import { IErrorBoundaryService } from '../src/services/error-boundary-service'
 import { INotificationManager } from '../src/services/notification-manager'
@@ -54,6 +55,15 @@ vi.mock('../src/routes/legal/licenses-route', stub('LicensesRoute'))
 vi.mock('../src/routes/tickets/tickets-route', stub('TicketsRoute'))
 vi.mock('../src/routes/order/order-route', stub('OrderRoute'))
 vi.mock('../src/routes/not-found/not-found-route', stub('NotFoundRoute'))
+vi.mock(
+	'../src/routes/passkey-recovery/passkey-recovery-route',
+	stub('PasskeyRecoveryRoute'),
+)
+vi.mock(
+	'../src/routes/passkeys-callback/passkeys-callback-route',
+	stub('PasskeysCallbackRoute'),
+)
+vi.mock('../src/routes/passkeys/passkeys-route', stub('PasskeysRoute'))
 
 const PAGE_HEADER = 'page-header'
 const BOTTOM_NAV = 'bottom-nav-bar'
@@ -120,6 +130,7 @@ describe('app-shell', () => {
 				// A signed-in, onboarded fan also mounts the notification prompt;
 				// its push dependencies are stubbed (permission granted, so it
 				// stays hidden).
+				Registration.instance(IAddPasskeyPromptService, { open: false }),
 				Registration.instance(IPushService, {}),
 				Registration.instance(IAnalyticsService, { capture: vi.fn() }),
 				Registration.instance(INotificationManager, { permission: 'granted' }),
@@ -199,7 +210,7 @@ describe('app-shell', () => {
 
 	describe('chrome', () => {
 		// @spec components/infrastructure/fan/web/global/bottom-nav-bar "Navigation hidden on Landing Page and auth callback only"
-		it.each(['welcome', 'auth/callback'])(
+		it.each(['welcome', 'auth/callback', 'auth/passkeys-callback'])(
 			'hides the header and nav bar on %s (data.chrome: false)',
 			async (path) => {
 				await go('discovery')
@@ -208,6 +219,12 @@ describe('app-shell', () => {
 				expect(host().querySelector(PAGE_HEADER)).toBeNull()
 			},
 		)
+
+		it('opens the passkey recovery screen for a guest', async () => {
+			await go('passkey-recovery')
+			expect(displayedRoute()).toBe('passkey-recovery-route')
+			expect(headerTitle()).toBe('passkeyRecovery.title')
+		})
 
 		it('shows the nav bar again when leaving a chrome-less route', async () => {
 			await go('welcome')

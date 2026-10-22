@@ -328,6 +328,20 @@
 			max-inline-size: 28rem;
 		}
 
+		/* "Can't sign in" text link directly below [Log In]: a native link with
+		   a 44px tap target. */
+		.welcome-help-link {
+			display: inline-flex;
+			align-items: center;
+			align-self: center;
+
+			min-block-size: 44px;
+
+			font-size: var(--step--1);
+			color: var(--color-text-secondary);
+			text-decoration: underline;
+		}
+
 		.welcome-lang {
 			display: flex;
 			gap: var(--space-xs);

@@ -25,7 +25,8 @@
 		"cta": {
 			"getStarted": "Pick your artists",
 			"login": "Log In",
-			"loginHint": "Already have an account? Log in"
+			"loginHint": "Already have an account? Log in",
+			"cantSignIn": "Can't sign in?"
 		},
 		"guestFriendly": "No account needed · 30 seconds to try",
 		"preview": {
@@ -338,12 +339,14 @@
 		},
 		"guestHero": {
 			"heading": "Sign in for the full experience",
-			"body": "Use your favorites and notifications on any device"
+			"body": "Use your favorites and notifications on any device",
+			"cantSignIn": "Can't sign in?"
 		},
 		"version": "Version",
 		"copyVersionSuccess": "Version copied",
 		"leftHanded": "Left-handed mode",
-		"leftHandedDesc": "Open the action menu toward your left hand"
+		"leftHandedDesc": "Open the action menu toward your left hand",
+		"passkeys": "Passkeys"
 	},
 	"onboarding": {
 		"consent": {
@@ -1053,5 +1056,52 @@
 			"declined": "The card could not be used.",
 			"failed": "The card could not be checked. Try again."
 		}
+	},
+	"passkeyRecovery": {
+		"title": "Can't sign in",
+		"lead": "We'll email your account's address a link that creates a new passkey.",
+		"noteValidity": "The link works for 1 hour.",
+		"noteDevice": "Open it on the device that will hold the new passkey.",
+		"emailLabel": "Email address",
+		"emailInvalid": "Enter an email address",
+		"send": "Send link",
+		"retry": "Try again",
+		"sent": "If an account uses this address, we've sent it an email with a link.",
+		"resend": "Send the link again",
+		"resendIn": "Send again in {{seconds}}s",
+		"tooMany": "Too many requests. Try again later.",
+		"failed": "We couldn't send the request. Try again."
+	},
+	"passkeys": {
+		"title": "Passkeys",
+		"lead": "These passkeys sign in to your account. Remove any you no longer use or don't recognize.",
+		"loading": "Loading…",
+		"listFailed": "We couldn't load your passkeys.",
+		"retry": "Try again",
+		"unnamed": "Passkey",
+		"remove": "Remove",
+		"lastPasskey": "The last passkey can't be removed. Add another passkey first.",
+		"add": "Add a passkey on this device",
+		"addNote": "You'll create it on the sign-in screen and come back here.",
+		"backToSettings": "Back to Settings",
+		"confirm": {
+			"title": "Remove this passkey?",
+			"managerNote": "The passkey is also kept by your device's passkey manager (such as iCloud Keychain or Google Password Manager). Delete it there too.",
+			"remove": "Remove",
+			"cancel": "Cancel",
+			"failed": "We couldn't remove the passkey."
+		},
+		"callback": {
+			"verifying": "Checking…",
+			"failed": "We couldn't open passkey management.",
+			"otherAccount": "You confirmed with a different account from the one signed in to this app. Try again with that account."
+		}
+	},
+	"addPasskeyPrompt": {
+		"title": "Create a passkey on this device?",
+		"body": "With a passkey on this device, you can sign in here on its own next time.",
+		"create": "Create a passkey on this device",
+		"alreadyHasOne": "This device already has one",
+		"later": "Later"
 	}
 }
