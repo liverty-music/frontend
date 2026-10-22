@@ -8,6 +8,7 @@ import {
 import { type IDisposable, ILogger, resolve } from 'aurelia'
 import { IAddPasskeyPromptService } from './services/add-passkey-prompt-service'
 import { IAuthService } from './services/auth-service'
+import { IBottomSheetTracker } from './services/bottom-sheet-tracker'
 import { ICoachMarkService } from './services/coach-mark-service'
 import { IErrorBoundaryService } from './services/error-boundary-service'
 import { IFabMenuService } from './services/fab-menu-service'
@@ -261,6 +262,8 @@ export class AppShell {
 	// Global FAB action launcher registry. The shell owns the single launcher
 	// instance and gates its visibility on `showNav && actions.length`.
 	public readonly fabMenu = resolve(IFabMenuService)
+	// Open bottom sheets, app-wide: the FAB steps aside while any is open.
+	public readonly sheets = resolve(IBottomSheetTracker)
 	private readonly errorBoundary = resolve(IErrorBoundaryService)
 	// The router's record of the displayed route, updated on navigation-end.
 	private readonly currentRoute = resolve(ICurrentRoute)

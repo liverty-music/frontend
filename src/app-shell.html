@@ -38,9 +38,10 @@
 <snack-bar></snack-bar>
 <error-banner></error-banner>
 
-<!-- Global FAB action launcher (top layer). Shown only with the bottom nav and
-     only when the current route has contributed at least one action. -->
-<fab-menu if.bind="showNav && fabMenu.actions.length"></fab-menu>
+<!-- Global FAB action launcher (top layer). Shown only with the bottom nav,
+     only when the current route has contributed at least one action, and not
+     while any bottom sheet is open (it would cover the sheet). -->
+<fab-menu if.bind="showNav && fabMenu.actions.length && !sheets.anyOpen"></fab-menu>
 
 <!-- Onboarding coach mark: single instance driven by CoachMarkService -->
 <coach-mark

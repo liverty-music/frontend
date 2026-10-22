@@ -1,6 +1,7 @@
 import { DI, INode, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { BottomSheet } from '../../src/components/bottom-sheet/bottom-sheet'
+import { IBottomSheetTracker } from '../../src/services/bottom-sheet-tracker'
 
 function makePopover() {
 	return {
@@ -17,6 +18,7 @@ describe('BottomSheet', () => {
 	let popover: ReturnType<typeof makePopover>
 	let scrollArea: HTMLDivElement
 	let sheetBody: HTMLElement
+	let container: ReturnType<typeof DI.createContainer>
 
 	beforeEach(() => {
 		host = document.createElement('div')
@@ -29,7 +31,7 @@ describe('BottomSheet', () => {
 		sheetBody = document.createElement('section')
 		sheetBody.className = 'sheet-body'
 
-		const container = DI.createContainer()
+		container = DI.createContainer()
 		container.register(Registration.instance(INode, host))
 		sut = container.get(BottomSheet)
 
@@ -60,6 +62,31 @@ describe('BottomSheet', () => {
 	function swipeStart(): void {
 		scrollArea.dispatchEvent(new Event('pointerdown'))
 	}
+
+	describe('open-sheet tracking', () => {
+		it('reports itself open while shown and closed after a dismiss or teardown', () => {
+			const tracker = container.get(IBottomSheetTracker)
+			openAndSettle()
+			expect(tracker.anyOpen).toBe(true)
+
+			// Swipe-dismiss completes once the body has left the viewport.
+			sut.updateVisibility(0)
+			expect(tracker.anyOpen).toBe(false)
+
+			sut.openChanged(true)
+			expect(tracker.anyOpen).toBe(true)
+			sut.detaching()
+			expect(tracker.anyOpen).toBe(false)
+		})
+
+		it('does not count a sheet whose popover could not be shown', () => {
+			popover.showPopover.mockImplementation(() => {
+				throw new Error('not connected')
+			})
+			sut.openChanged(true)
+			expect(container.get(IBottomSheetTracker).anyOpen).toBe(false)
+		})
+	})
 
 	describe('openChanged()', () => {
 		it('calls showPopover on the host when opening', () => {
