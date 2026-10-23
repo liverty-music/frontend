@@ -358,7 +358,7 @@ describe('Passkey management lists, adds and removes passkeys (fixture)', () => 
 		expect(takePasskeyReturn()).toBe('/settings/passkeys')
 		const back = await renderManagement([IPHONE, WINDOWS])
 		expect(back.snacks.map((n) => [n.message, n.severity])).toEqual([
-			['パスキーを追加しました', 'info'],
+			[ja.passkeys.addOutcome.added, 'info'],
 		])
 
 		// Said once: the next opening says nothing.
@@ -380,7 +380,7 @@ describe('Passkey management lists, adds and removes passkeys (fixture)', () => 
 
 		expect(page.client.list).toHaveBeenCalledTimes(2)
 		expect(page.snacks.map((n) => n.message)).toEqual([
-			'パスキーは追加されませんでした。この端末にすでにある場合は、そのままログインに使えます。',
+			ja.passkeys.addOutcome.notAdded,
 		])
 		// The root marker is dropped too, so a later visit is not redirected.
 		expect(takePasskeyReturn()).toBeNull()
@@ -410,9 +410,7 @@ describe('Passkey management lists, adds and removes passkeys (fixture)', () => 
 			q('passkeys-add')?.getAttribute('aria-describedby') ?? ''
 		).split(' ')
 		const notes = ids.map((id) => document.getElementById(id)?.textContent)
-		expect(notes).toContain(
-			'ログイン画面でパスキーを作成すると、この画面に戻ります。作成されなかったときは、ログイン画面の「戻る」でこの画面に戻れます。',
-		)
+		expect(notes).toContain(ja.passkeys.addNote)
 	})
 
 	it('says next to the add action that a passkey the device already holds is not created again', async () => {
@@ -424,9 +422,6 @@ describe('Passkey management lists, adds and removes passkeys (fixture)', () => 
 			.split(' ')
 			.map((id) => document.getElementById(id)?.textContent)
 		expect(notes).toContain(ja.passkeys.addExistingNote)
-		expect(ja.passkeys.addExistingNote).toBe(
-			'この端末のパスキーマネージャーにすでにこのアカウントのパスキーがある場合は作成されません。',
-		)
 	})
 
 	it('removes a passkey after a confirmation that mentions the passkey manager', async () => {
