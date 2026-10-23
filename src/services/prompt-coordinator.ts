@@ -1,6 +1,6 @@
 import { DI, observable } from 'aurelia'
 
-export type PromptType = 'notification' | 'pwa-install' | 'add-passkey'
+export type PromptType = 'notification' | 'pwa-install'
 
 export const IPromptCoordinator = DI.createInterface<IPromptCoordinator>(
 	'IPromptCoordinator',

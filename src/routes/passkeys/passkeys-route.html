@@ -44,11 +44,18 @@
     </ul>
     <p id="passkeys-last-note" if.bind="!canRemove" t="passkeys.lastPasskey" class="passkeys-note" data-testid="passkeys-last-note"></p>
 
-    <button type="button" click.trigger="addOnThisDevice()" class="[ button ] [ pressable ]" data-testid="passkeys-add">
+    <button
+      type="button"
+      click.trigger="addOnThisDevice()"
+      aria-describedby="passkeys-add-note passkeys-add-existing-note"
+      class="[ button ] [ pressable ]"
+      data-testid="passkeys-add"
+    >
       <svg-icon name="plus"></svg-icon>
       <span t="passkeys.add"></span>
     </button>
-    <p t="passkeys.addNote" class="passkeys-note"></p>
+    <p id="passkeys-add-note" t="passkeys.addNote" class="passkeys-note"></p>
+    <p id="passkeys-add-existing-note" t="passkeys.addExistingNote" class="passkeys-note" data-testid="passkeys-add-existing-note"></p>
   </template>
 
   <a href="/settings" class="passkeys-back" t="passkeys.backToSettings"></a>

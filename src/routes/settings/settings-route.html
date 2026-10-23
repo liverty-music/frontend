@@ -425,6 +425,14 @@
         </button>
       </li>
 
+    </ul>
+  </section>
+
+  <!-- Sign Out stands in a group of its own below ACCOUNT, separated by the
+       scroll stack's gap (--space-m, at least 24px), so a tap meant for an
+       account row (Passkeys) never signs the fan out. -->
+  <section if.bind="auth.isAuthenticated" aria-label.bind="'settings.signOut' | t" data-testid="settings-sign-out-group">
+    <ul class="settings-card" role="list">
       <li class="settings-list-item">
         <button busy-on-click.bind="() => signOut()" class="settings-row settings-sign-out">
           <span t="settings.signOut" class="settings-sign-out-text"></span>

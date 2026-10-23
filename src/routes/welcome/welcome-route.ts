@@ -26,7 +26,6 @@ import {
 import type { Artist } from '../../entities/artist'
 import type { Concert, DateGroup } from '../../entities/concert'
 import type { Hype } from '../../entities/follow'
-import { IAddPasskeyPromptService } from '../../services/add-passkey-prompt-service'
 import { IAuthService } from '../../services/auth-service'
 import { IConcertStore } from '../../services/concert-store'
 import { IFollowStore } from '../../services/follow-store'
@@ -63,7 +62,6 @@ export class WelcomeRoute implements IRouteViewModel {
 	private readonly storage = resolve(ILocalStorage)
 	private readonly followStore = resolve(IFollowStore)
 	private readonly router = resolve(IRouter)
-	private readonly addPasskey = resolve(IAddPasskeyPromptService)
 	private readonly logger = resolve(ILogger).scopeTo('WelcomeRoute')
 	private readonly ea = resolve(IEventAggregator)
 	private readonly i18n = resolve(I18N)
@@ -407,9 +405,9 @@ export class WelcomeRoute implements IRouteViewModel {
 
 		if (this.authService.isAuthenticated) {
 			// The root of the app is where the hosted login lands after creating
-			// a passkey; the marker left before leaving sends the fan back to the
-			// screen they were on (design D4) and records this device (D10).
-			const passkeyReturn = this.addPasskey.takeReturnAfterCreate()
+			// a passkey; the marker left before leaving sends the fan back to
+			// passkey management (design D4).
+			const passkeyReturn = takePasskeyReturn()
 			if (passkeyReturn) {
 				this.logger.info('Returning after creating a passkey')
 				return passkeyReturn

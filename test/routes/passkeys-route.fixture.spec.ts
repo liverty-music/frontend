@@ -7,19 +7,18 @@ import { UserManager } from 'oidc-client-ts'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { IDocumentLocation } from '../../src/adapter/browser/document-location'
 import { IPasskeyRpcClient } from '../../src/adapter/rpc/client/passkey-client'
+import { takePasskeyReturn } from '../../src/adapter/storage/passkey-return-storage'
 import {
 	IPasskeyClient,
 	type Passkey,
 	PasskeyRequestError,
 } from '../../src/adapter/zitadel/passkey-client'
 import { IAppConfig } from '../../src/config/app-config'
-import { StorageKeys } from '../../src/constants/storage-keys'
 import { BusyOnClickCustomAttribute } from '../../src/custom-attributes/busy-on-click'
 import type { PasskeyRecord } from '../../src/entities/passkey'
 import ja from '../../src/locales/ja/translation.json'
 import { PasskeysRoute } from '../../src/routes/passkeys/passkeys-route'
 import { PasskeysCallbackRoute } from '../../src/routes/passkeys-callback/passkeys-callback-route'
-import { IAddPasskeyPromptService } from '../../src/services/add-passkey-prompt-service'
 import { IAuthService } from '../../src/services/auth-service'
 import {
 	IPasskeyAuthService,
@@ -324,17 +323,26 @@ describe('Passkey management lists, adds and removes passkeys (fixture)', () => 
 		expect(first.location.assign).toHaveBeenCalledWith(
 			'https://auth.test.local/ui/v2/login/passkey/set?loginName=fan%40example.com&organization=test-org-id',
 		)
-		// The root route reads the marker on the way back (design D4) and
-		// records the device for the add-passkey prompt (D10).
-		expect(
-			first.container.get(IAddPasskeyPromptService).takeReturnAfterCreate(),
-		).toBe('/settings/passkeys')
-		expect(localStorage.getItem(StorageKeys.passkeyDeviceRecord)).toBe('1')
-		localStorage.removeItem(StorageKeys.passkeyDeviceRecord)
+		// The root route reads the marker on the way back (design D4).
+		expect(takePasskeyReturn()).toBe('/settings/passkeys')
 
 		// Back in passkey management, the new passkey is listed.
 		const back = await renderManagement([IPHONE, WINDOWS])
 		expect(back.names()).toHaveLength(first.names().length + 1)
+	})
+
+	it('says next to the add action that a passkey the device already holds is not created again', async () => {
+		// @spec components/infrastructure/fan/web/route/settings "Device that already holds a passkey"
+		const { q } = await renderManagement([IPHONE])
+		const add = q('passkeys-add')
+		const noteId = add?.getAttribute('aria-describedby') ?? ''
+		const notes = noteId
+			.split(' ')
+			.map((id) => document.getElementById(id)?.textContent)
+		expect(notes).toContain(ja.passkeys.addExistingNote)
+		expect(ja.passkeys.addExistingNote).toBe(
+			'この端末のパスキーマネージャーにすでにこのアカウントのパスキーがある場合は作成されません。そのままログインに使えます。',
+		)
 	})
 
 	it('removes a passkey after a confirmation that mentions the passkey manager', async () => {

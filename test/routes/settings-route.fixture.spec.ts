@@ -206,3 +206,44 @@ describe('SettingsRoute Passkeys row (fixture)', () => {
 		)
 	})
 })
+
+describe('SettingsRoute Sign Out group (fixture)', () => {
+	it('puts Sign Out in its own group below ACCOUNT, at least 24px from the Passkeys row', async () => {
+		// @spec components/infrastructure/fan/web/route/settings "Sign out apart from account rows"
+		const { host } = await render(
+			makeUserStore({ id: 'user-1', fullName: '', phoneNumber: '' }),
+		)
+		const passkeys = host.querySelector('[data-testid="settings-passkeys"]')
+		const signOut = host.querySelector('.settings-sign-out')
+		const accountSection = passkeys?.closest('section')
+		const signOutSection = signOut?.closest('section')
+
+		// Passkeys is the last row of ACCOUNT; Sign Out is not in that card.
+		expect(passkeys?.closest('li')?.nextElementSibling).toBeNull()
+		expect(signOutSection).not.toBe(accountSection)
+		expect(accountSection?.contains(signOut ?? null)).toBe(false)
+		// The Sign Out group follows ACCOUNT directly in the scroll stack.
+		expect(accountSection?.nextElementSibling).toBe(signOutSection)
+		expect(signOutSection?.parentElement?.classList.contains('stack')).toBe(
+			true,
+		)
+
+		// The stack's gap is --space-m, whose smallest value is 1.5rem (24px),
+		// and Settings does not narrow it.
+		const { default: compositions } = await import(
+			'../../src/styles/compositions.css?raw'
+		)
+		const { default: tokens } = await import('../../src/styles/tokens.css?raw')
+		const { default: settingsCss } = await import(
+			'../../src/routes/settings/settings-route.css?raw'
+		)
+		expect(compositions).toContain('gap: var(--stack-gap, var(--space-m))')
+		expect(tokens).toMatch(/--space-m:\s*clamp\(1\.5rem,/)
+		const scrollRule = settingsCss.slice(
+			settingsCss.indexOf('.settings-scroll {'),
+		)
+		expect(scrollRule.slice(0, scrollRule.indexOf('}'))).not.toContain(
+			'--stack-gap',
+		)
+	})
+})

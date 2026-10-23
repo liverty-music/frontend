@@ -2,14 +2,16 @@ import { I18N } from '@aurelia/i18n'
 import type { NavigationInstruction } from '@aurelia/router'
 import { ConnectError } from '@connectrpc/connect'
 import { ILogger, resolve } from 'aurelia'
+import { IDocumentLocation } from '../../adapter/browser/document-location'
 import { IPasskeyRpcClient } from '../../adapter/rpc/client/passkey-client'
+import { savePasskeyReturn } from '../../adapter/storage/passkey-return-storage'
 import {
 	IPasskeyClient,
 	type Passkey,
 	PasskeyRequestError,
 } from '../../adapter/zitadel/passkey-client'
+import { IAppConfig } from '../../config/app-config'
 import type { PasskeyRecord } from '../../entities/passkey'
-import { IAddPasskeyPromptService } from '../../services/add-passkey-prompt-service'
 import { IAuthService } from '../../services/auth-service'
 import {
 	IPasskeyAuthService,
@@ -51,7 +53,8 @@ export class PasskeysRoute {
 	private readonly passkeyAuth = resolve(IPasskeyAuthService)
 	private readonly client = resolve(IPasskeyClient)
 	private readonly records = resolve(IPasskeyRpcClient)
-	private readonly addPasskey = resolve(IAddPasskeyPromptService)
+	private readonly location = resolve(IDocumentLocation)
+	private readonly config = resolve(IAppConfig)
 	private readonly i18n = resolve(I18N)
 	private readonly logger = resolve(ILogger).scopeTo('PasskeysRoute')
 
@@ -195,7 +198,13 @@ export class PasskeysRoute {
 	 * root, which reopens this screen from the stored marker.
 	 */
 	public addOnThisDevice(): void {
-		this.addPasskey.createOnThisDevice(PASSKEY_MANAGEMENT_PATH)
+		savePasskeyReturn(PASSKEY_MANAGEMENT_PATH)
+		const base = this.config.zitadelIssuer.replace(/\/+$/, '')
+		const params = new URLSearchParams({
+			loginName: this.auth.user?.profile.email ?? '',
+			organization: this.config.zitadelOrgId ?? '',
+		})
+		this.location.assign(`${base}/ui/v2/login/passkey/set?${params}`)
 	}
 
 	private async reauthenticate(): Promise<void> {

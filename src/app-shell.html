@@ -4,7 +4,6 @@
 <import from="../shared/ui/snack-bar/snack-bar"></import>
 <import from="./components/coach-mark/coach-mark"></import>
 <import from="./components/fab-menu/fab-menu"></import>
-<import from="./components/add-passkey-prompt/add-passkey-prompt"></import>
 
 <!-- Single shell-hosted page header, positioned in the shell grid's `header`
      area (the CE sets its own `grid-area: header`). Its title is the displayed
@@ -29,12 +28,8 @@
      post-signup surface (celebration overlay / PostSignupDialog) occupies the
      bottom of the screen to avoid overlap (D7). Single instance guaranteed by
      app-shell — safe to use static ids inside. -->
-<pwa-install-banner if.bind="showNav && auth.isAuthenticated && onboarding.isCompleted && !isPostSignupSurfaceOpen && !addPasskeyPrompt.open"></pwa-install-banner>
+<pwa-install-banner if.bind="showNav && auth.isAuthenticated && onboarding.isCompleted && !isPostSignupSurfaceOpen"></pwa-install-banner>
 <notification-prompt if.bind="auth.isAuthenticated && onboarding.isCompleted && showNav"></notification-prompt>
-<!-- Add-passkey prompt after a Log In on a device without a passkey record
-     (design D10). While it is open no other prompt opens: it takes the prompt
-     coordinator's slot, and the install banner waits for it. -->
-<add-passkey-prompt if.bind="auth.isAuthenticated"></add-passkey-prompt>
 <snack-bar></snack-bar>
 <error-banner></error-banner>
 
