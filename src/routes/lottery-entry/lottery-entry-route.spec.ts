@@ -115,6 +115,8 @@ vi.mock('aurelia', async (importOriginal) => {
 		resolve: vi.fn((token: unknown) => {
 			const map: Record<string, unknown> = {
 				ILogger: mockLogger,
+				// Key actions add a step for the error report.
+				IErrorBoundaryService: { addBreadcrumb: () => {} },
 				IConcertRpcClient: mockConcert,
 				ITicketSaleRpcClient: mockSale,
 				ILotteryEntryRpcClient: mockEntry,

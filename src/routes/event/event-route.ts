@@ -18,6 +18,7 @@ import {
 	type TicketSale,
 } from '../../entities/ticket-sale'
 import { IAuthService } from '../../services/auth-service'
+import { IErrorBoundaryService } from '../../services/error-boundary-service'
 import { IFollowStore } from '../../services/follow-store'
 import { IPurchasedTicketStore } from '../../services/purchased-ticket-store'
 import { IUserStore } from '../../services/user-store'
@@ -54,6 +55,7 @@ export type EventPageState = 'loading' | 'ready' | 'not-found' | 'error'
  */
 export class EventRoute implements IRouteViewModel {
 	private readonly logger = resolve(ILogger).scopeTo('EventRoute')
+	private readonly errorBoundary = resolve(IErrorBoundaryService)
 	private readonly i18n = resolve(I18N)
 	private readonly ea = resolve(IEventAggregator)
 	private readonly concertClient = resolve(IConcertRpcClient)
@@ -462,6 +464,7 @@ export class EventRoute implements IRouteViewModel {
 	 */
 	public async signUp(): Promise<void> {
 		if (!this.event) return
+		this.errorBoundary.addBreadcrumb('action', 'start_sign_up')
 		await this.authService.signUp({
 			origin: 'event-page',
 			returnTo: `/events/${this.event.id}`,

@@ -10,10 +10,12 @@ import { SvgIcon } from '../../../src/components/svg-icon/svg-icon'
 import type { Artist } from '../../../src/entities/artist'
 import { IAnalyticsService } from '../../../src/lib/analytics/analytics-service'
 import { IAuthService } from '../../../src/services/auth-service'
+import { IErrorBoundaryService } from '../../../src/services/error-boundary-service'
 import { IFollowStore } from '../../../src/services/follow-store'
 import { ITicketJourneyStore } from '../../../src/services/ticket-journey-store'
 import { DateValueConverter } from '../../../src/value-converters/date'
 import { createMockAuth } from '../../helpers/mock-auth'
+import { createMockErrorBoundary } from '../../helpers/mock-error-boundary'
 import { createMockHistory } from '../../helpers/mock-history'
 
 /**
@@ -79,6 +81,8 @@ async function render(ev: LiveEvent, isAllNearby: boolean, o: Options = {}) {
 			public onSignupRequested = onSignupRequested
 		},
 		[
+			// Key actions add a step for the error report.
+			Registration.instance(IErrorBoundaryService, createMockErrorBoundary()),
 			I18nConfiguration.customize((opts) => {
 				opts.initOptions = {
 					lng: 'en',

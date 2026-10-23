@@ -12,8 +12,18 @@ vi.mock('@connectrpc/connect-web', () => ({
 
 vi.mock('@connectrpc/connect', () => ({
 	// Real Connect Code numeric values, enough for isCancellation +
-	// classifyRpcOutcome (Canceled / DeadlineExceeded).
-	Code: { Canceled: 1, DeadlineExceeded: 4, Unavailable: 14 },
+	// classifyRpcOutcome (Canceled / DeadlineExceeded), with the reverse
+	// mapping of a numeric TypeScript enum for the failed-request step label.
+	Code: {
+		Canceled: 1,
+		DeadlineExceeded: 4,
+		Internal: 13,
+		Unavailable: 14,
+		1: 'Canceled',
+		4: 'DeadlineExceeded',
+		13: 'Internal',
+		14: 'Unavailable',
+	},
 	ConnectError: class ConnectError extends Error {
 		code: number
 		constructor(message: string, code: number) {
@@ -34,6 +44,10 @@ vi.mock('@opentelemetry/api', () => ({
 						setStatus: vi.fn(),
 						recordException: vi.fn(),
 						end: vi.fn(),
+						spanContext: () => ({
+							traceId: '0af7651916cd43dd8448eb211c80319c',
+							spanId: 'b7ad6b7169203331',
+						}),
 					}
 					return fn(mockSpan)
 				},
@@ -67,6 +81,10 @@ vi.mock('../../src/services/validate-interceptor', () => ({
 const { createTransport } = await import('../../src/services/grpc-transport')
 const { setRpcTelemetrySink } = await import(
 	'../../src/lib/analytics/rpc-telemetry'
+)
+const { rpcSpanOf } = await import('../../src/services/grpc-transport')
+const { setRpcFailureStepSink } = await import(
+	'../../src/services/rpc-failure-trace'
 )
 
 describe('grpc-transport', () => {
@@ -174,6 +192,59 @@ describe('grpc-transport', () => {
 				expect.any(Number),
 				'canceled',
 			)
+		})
+	})
+
+	describe('failed RPC trace for the error report', () => {
+		afterEach(() => setRpcFailureStepSink(null))
+
+		// The otelInterceptor is index 0 (otel, logging, validate, auth,
+		// authRetry, retry).
+		const buildOtelInterceptor = () => {
+			createTransport(
+				createMockAuth() as any,
+				{
+					scopeTo: vi.fn().mockReturnThis(),
+					debug: vi.fn(),
+					error: vi.fn(),
+				} as any,
+				createMockAppConfig(),
+			)
+			return mockCreateConnectTransport.mock.calls.at(-1)?.[0].interceptors[0]
+		}
+		const req = {
+			service: { typeName: 'liverty_music.rpc.artist.v1.ArtistService' },
+			method: { name: 'Follow' },
+		}
+
+		it('keeps the span of a failing call and adds one failed-request step', async () => {
+			const steps = vi.fn()
+			setRpcFailureStepSink(steps)
+			const err = new ConnectError('boom', Code.Internal)
+			const otel = buildOtelInterceptor()
+
+			await expect(otel(vi.fn().mockRejectedValue(err))(req)).rejects.toBe(err)
+
+			expect(rpcSpanOf(err)).toEqual({
+				traceId: '0af7651916cd43dd8448eb211c80319c',
+				spanId: 'b7ad6b7169203331',
+			})
+			expect(steps).toHaveBeenCalledOnce()
+			expect(steps).toHaveBeenCalledWith(
+				'liverty_music.rpc.artist.v1.ArtistService/Follow Internal',
+			)
+		})
+
+		it('adds nothing for a cancelled call', async () => {
+			const steps = vi.fn()
+			setRpcFailureStepSink(steps)
+			const err = new ConnectError('canceled', Code.Canceled)
+			const otel = buildOtelInterceptor()
+
+			await expect(otel(vi.fn().mockRejectedValue(err))(req)).rejects.toBe(err)
+
+			expect(rpcSpanOf(err)).toBeUndefined()
+			expect(steps).not.toHaveBeenCalled()
 		})
 	})
 

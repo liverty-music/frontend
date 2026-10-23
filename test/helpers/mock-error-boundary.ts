@@ -12,7 +12,6 @@ export function createMockErrorBoundary(): Partial<IErrorBoundaryService> {
 		captureError: vi.fn(),
 		dismiss: vi.fn(),
 		addBreadcrumb: vi.fn(),
-		generateReport: vi.fn().mockReturnValue(''),
-		buildGitHubIssueUrl: vi.fn().mockReturnValue(''),
+		buildReportMailto: vi.fn().mockReturnValue(''),
 	}
 }

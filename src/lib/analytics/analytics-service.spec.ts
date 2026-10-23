@@ -14,6 +14,8 @@ const posthogStub = {
 	opt_out_capturing: vi.fn(),
 	set_config: vi.fn(),
 	register: vi.fn(),
+	captureException: vi.fn(),
+	addExceptionStep: vi.fn(),
 }
 
 vi.mock('posthog-js', () => ({
@@ -153,6 +155,8 @@ describe('AnalyticsService', () => {
 		posthogStub.opt_out_capturing.mockReset()
 		posthogStub.set_config.mockReset()
 		posthogStub.register.mockReset()
+		posthogStub.captureException.mockReset()
+		posthogStub.addExceptionStep.mockReset()
 		mockConfig.current = {
 			posthogProjectKey: 'phc_test_key',
 			posthogApiHost: 'https://eu.i.posthog.com',
@@ -759,6 +763,180 @@ describe('AnalyticsService', () => {
 			const [, props] = posthogStub.capture.mock.calls[0]
 			expect(props).not.toHaveProperty('age')
 			expect(props).toMatchObject({ age_bucket: '25_34' })
+		})
+	})
+
+	describe('error reports', () => {
+		const ANALYTICS_SPEC = 'components/infrastructure/fan/web/global/analytics'
+
+		type BeforeSend = (e: unknown) => {
+			properties: Record<string, unknown>
+		} | null
+
+		async function beforeSend(): Promise<BeforeSend> {
+			const sut = new AnalyticsService()
+			await sut._waitForInitForTests()
+			const [, config] = posthogStub.init.mock.calls[0]
+			return (config as { before_send: BeforeSend }).before_send
+		}
+
+		it('turns exception autocapture off so every report carries the Error ID', async () => {
+			const sut = new AnalyticsService()
+			await sut._waitForInitForTests()
+
+			const [, config] = posthogStub.init.mock.calls[0]
+			expect(config).toMatchObject({ capture_exceptions: false })
+		})
+
+		it(`@spec ${ANALYTICS_SPEC} "Error report on a filtered dashboard"`, async () => {
+			const send = await beforeSend()
+			const origin = window.location.origin
+
+			const sent = send({
+				event: '$exception',
+				properties: {
+					$current_url: `${origin}/dashboard?artists=a1,a2&journey=tour&from=welcome&utm_source=x#top`,
+					$initial_current_url: `${origin}/dashboard?artists=a1`,
+				},
+			})
+
+			expect(sent?.properties.$current_url).toBe(
+				`${origin}/dashboard?artists=a1,a2&journey=tour&from=welcome`,
+			)
+			// Only the current address keeps the filter.
+			expect(sent?.properties.$initial_current_url).toBe(`${origin}/dashboard`)
+		})
+
+		it(`@spec ${ANALYTICS_SPEC} "Error report on a referral link"`, async () => {
+			const send = await beforeSend()
+			const origin = window.location.origin
+
+			const sent = send({
+				event: '$exception',
+				properties: {
+					$current_url: `${origin}/events/e-1?ref=member-a`,
+					$initial_current_url: `${origin}/events/e-1?ref=member-a`,
+					$exception_list: [{ type: 'Error', value: 'at ?ref=member-a' }],
+					has_ref: true,
+				},
+			})
+
+			expect(sent?.properties.$current_url).toBe(`${origin}/events/e-1`)
+			expect(JSON.stringify(sent)).not.toContain(`${origin}/events/e-1?ref`)
+			expect(sent?.properties.has_ref).toBe(true)
+		})
+
+		it(`@spec ${ANALYTICS_SPEC} "Other events keep the dashboard filter out"`, async () => {
+			const send = await beforeSend()
+			const origin = window.location.origin
+
+			const sent = send({
+				event: 'concert_detail_viewed',
+				properties: { $current_url: `${origin}/dashboard?artists=a1` },
+			})
+
+			expect(sent?.properties.$current_url).toBe(`${origin}/dashboard`)
+		})
+
+		it('redacts tokens in the exception values', async () => {
+			const send = await beforeSend()
+
+			const sent = send({
+				event: '$exception',
+				properties: {
+					$exception_list: [
+						{ type: 'Error', value: 'Authorization: Bearer abc.def' },
+					],
+				},
+			})
+
+			expect(sent?.properties.$exception_list).toEqual([
+				{ type: 'Error', value: 'Authorization: Bearer [REDACTED]' },
+			])
+		})
+
+		it('returns true when the SDK accepts the report', async () => {
+			const sut = new AnalyticsService()
+			await sut._waitForInitForTests()
+			posthogStub.captureException.mockReturnValue({ uuid: 'u-1' })
+			const err = new Error('boom')
+
+			expect(sut.captureException(err, { error_id: 'ERR-1' })).toBe(true)
+			expect(posthogStub.captureException).toHaveBeenCalledWith(err, {
+				error_id: 'ERR-1',
+			})
+		})
+
+		it('returns false when the SDK drops the report', async () => {
+			const sut = new AnalyticsService()
+			await sut._waitForInitForTests()
+			posthogStub.captureException.mockReturnValue(undefined)
+
+			expect(sut.captureException(new Error('boom'), {})).toBe(false)
+		})
+
+		it('returns false and sends nothing when analytics is off', async () => {
+			mockConsent.analytics = false
+			const sut = new AnalyticsService()
+			await sut._waitForInitForTests()
+
+			expect(sut.captureException(new Error('boom'), {})).toBe(false)
+			expect(posthogStub.captureException).not.toHaveBeenCalled()
+		})
+
+		it('returns false in nil-config mode', () => {
+			mockConfig.current = { posthogProjectKey: undefined }
+			const sut = new AnalyticsService()
+
+			expect(sut.captureException(new Error('boom'), {})).toBe(false)
+		})
+
+		it('returns false when the SDK throws', async () => {
+			const sut = new AnalyticsService()
+			await sut._waitForInitForTests()
+			posthogStub.captureException.mockImplementation(() => {
+				throw new Error('sdk')
+			})
+
+			expect(sut.captureException(new Error('boom'), {})).toBe(false)
+		})
+
+		it('queues a report before init, starts init at once, and calls back when accepted', async () => {
+			const idle = globalThis.requestIdleCallback as ReturnType<typeof vi.fn>
+			const sut = new AnalyticsService()
+			posthogStub.captureException.mockReturnValue({ uuid: 'u-1' })
+			const onAccepted = vi.fn()
+
+			sut.addExceptionStep('dashboard', { type: 'navigation' })
+			expect(sut.captureException(new Error('early'), {}, onAccepted)).toBe(
+				false,
+			)
+			// Init does not wait for the idle slot the constructor scheduled.
+			expect(idle).toHaveBeenCalledTimes(1)
+			await vi.waitFor(() => expect(posthogStub.init).toHaveBeenCalledTimes(1))
+			await sut._waitForInitForTests()
+
+			expect(posthogStub.init).toHaveBeenCalledTimes(1)
+			expect(posthogStub.addExceptionStep).toHaveBeenCalledWith('dashboard', {
+				type: 'navigation',
+			})
+			// The step is queued first, so it is attached to the report.
+			expect(
+				posthogStub.addExceptionStep.mock.invocationCallOrder[0],
+			).toBeLessThan(posthogStub.captureException.mock.invocationCallOrder[0])
+			expect(onAccepted).toHaveBeenCalledOnce()
+		})
+
+		it('forwards exception steps after init', async () => {
+			const sut = new AnalyticsService()
+			await sut._waitForInitForTests()
+
+			sut.addExceptionStep('ArtistService/Follow Internal', { type: 'rpc' })
+
+			expect(posthogStub.addExceptionStep).toHaveBeenCalledWith(
+				'ArtistService/Follow Internal',
+				{ type: 'rpc' },
+			)
 		})
 	})
 })

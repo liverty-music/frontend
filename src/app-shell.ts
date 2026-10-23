@@ -315,7 +315,7 @@ export class AppShell {
 				this.logger.error('Navigation error', { event })
 				this.errorBoundary.captureError(
 					event.error ?? 'Navigation failed',
-					'router:navigation-error',
+					'router_navigation_error',
 				)
 			}),
 		)

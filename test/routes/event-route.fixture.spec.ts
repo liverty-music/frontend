@@ -22,10 +22,12 @@ import type { TicketSale } from '../../src/entities/ticket-sale'
 import ja from '../../src/locales/ja/translation.json'
 import { EventRoute } from '../../src/routes/event/event-route'
 import { IAuthService } from '../../src/services/auth-service'
+import { IErrorBoundaryService } from '../../src/services/error-boundary-service'
 import { IFollowStore } from '../../src/services/follow-store'
 import { IPurchasedTicketStore } from '../../src/services/purchased-ticket-store'
 import { IUserStore } from '../../src/services/user-store'
 import { createMockAuth } from '../helpers/mock-auth'
+import { createMockErrorBoundary } from '../helpers/mock-error-boundary'
 
 const EVENT_ID = '019a0000-0000-7000-8000-0000000000e1'
 const ARTIST_ID = '019a0000-0000-7000-8000-0000000000b1'
@@ -81,6 +83,8 @@ describe('EventRoute (fixture)', () => {
 				public route!: EventRoute
 			},
 			[
+				// Key actions add a step for the error report.
+				Registration.instance(IErrorBoundaryService, createMockErrorBoundary()),
 				I18nConfiguration.customize((o) => {
 					o.initOptions = { lng: 'en', resources: { en: { translation: {} } } }
 				}),
@@ -163,6 +167,8 @@ async function renderSales(sales: TicketSale[], authenticated: boolean) {
 			public route!: EventRoute
 		},
 		[
+			// Key actions add a step for the error report.
+			Registration.instance(IErrorBoundaryService, createMockErrorBoundary()),
 			I18nConfiguration.customize((o) => {
 				o.initOptions = { lng: 'ja', resources: { ja: { translation: ja } } }
 			}),

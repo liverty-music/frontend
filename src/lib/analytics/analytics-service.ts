@@ -16,6 +16,7 @@ import {
 import { SignedOut } from '../../services/events/signed-out'
 import { ConsentChanged } from '../consent/consent-changed'
 import { IConsentService } from '../consent/consent-service'
+import { filterAnalyticsEvent } from './error-report-filter'
 import {
 	NOTIFICATION_FLUSH_MESSAGE,
 	writeIdentitySnapshot,
@@ -24,7 +25,6 @@ import {
 	type SanitizedProps,
 	sanitizeEventProps,
 } from './sensitive-property-filter'
-import { stripOwnUrlQuery } from './strip-own-url-query'
 
 /**
  * Public surface for the typed PostHog wrapper. Every consumer (route VMs,
@@ -86,6 +86,31 @@ export interface IAnalyticsService {
 	 * by design so callers (route guards, UI gates) need not await init.
 	 */
 	getFeatureFlag(key: string, defaultValue: unknown): unknown
+
+	/**
+	 * Sends an error report (`$exception`) for `error`, passed as it was
+	 * thrown or rejected so the SDK keeps its cause chain and non-`Error`
+	 * values. Returns `true` only when the SDK accepted the event into its
+	 * send queue; `false` in nil-config mode, when opted out, when the SDK
+	 * dropped it (rate limit, extension error) or threw. Never throws.
+	 *
+	 * Before init with analytics on, the report is queued, init starts at
+	 * once, and `onAccepted` is called if the SDK accepts it at flush.
+	 */
+	captureException(
+		error: unknown,
+		props: Readonly<Record<string, unknown>>,
+		onAccepted?: () => void,
+	): boolean
+
+	/**
+	 * Adds a step the SDK attaches to the next error report. Queued before
+	 * init; no-op in nil-config mode.
+	 */
+	addExceptionStep(
+		label: string,
+		props: Readonly<Record<string, unknown>>,
+	): void
 }
 
 export const IAnalyticsService = DI.createInterface<IAnalyticsService>(
@@ -102,6 +127,15 @@ export const IAnalyticsService = DI.createInterface<IAnalyticsService>(
 type QueuedCapture = {
 	[K in EventName]: { name: K; props: EventProps<K> }
 }[EventName]
+
+/** A queued error report or exception step, replayed in order with events. */
+type QueuedException = {
+	exception: unknown
+	props: Readonly<Record<string, unknown>>
+	onAccepted?: () => void
+}
+type QueuedStep = { step: string; props: Readonly<Record<string, unknown>> }
+type QueuedEntry = QueuedCapture | QueuedException | QueuedStep
 
 /**
  * Upper bound on the pre-init queue. The deferred-init window is bounded by
@@ -133,7 +167,8 @@ export class AnalyticsService implements IAnalyticsService {
 	 */
 	private posthog: PostHog | null = null
 	private initStarted = false
-	private readonly queue: QueuedCapture[] = []
+	private initPromise: Promise<void> | null = null
+	private readonly queue: QueuedEntry[] = []
 	private queueOverflowed = false
 	// True while the pre-init queue drains in idle slices; new captures queue
 	// behind it so events keep their order.
@@ -203,6 +238,43 @@ export class AnalyticsService implements IAnalyticsService {
 			return
 		}
 		this.dispatch(name, props)
+	}
+
+	public captureException(
+		error: unknown,
+		props: Readonly<Record<string, unknown>>,
+		onAccepted?: () => void,
+	): boolean {
+		try {
+			if (!this.isEnabled() || !this.analyticsEnabled()) return false
+			if (this.posthog === null || this.flushing) {
+				this.enqueue({ exception: error, props, onAccepted })
+				// An error early in a visit should not wait for the idle slot:
+				// the banner switches to the sent copy once this is accepted.
+				if (this.posthog === null) void this.init()
+				return false
+			}
+			return this.dispatchException(error, props)
+		} catch (err) {
+			this.logger.warn('Error report failed', { error: err })
+			return false
+		}
+	}
+
+	public addExceptionStep(
+		label: string,
+		props: Readonly<Record<string, unknown>>,
+	): void {
+		try {
+			if (!this.isEnabled()) return
+			if (this.posthog === null || this.flushing) {
+				this.enqueue({ step: label, props })
+				return
+			}
+			this.posthog.addExceptionStep(label, props)
+		} catch (err) {
+			this.logger.warn('Exception step failed', { error: err })
+		}
 	}
 
 	public identify(
@@ -290,6 +362,11 @@ export class AnalyticsService implements IAnalyticsService {
 		return Boolean(this.config.posthogProjectKey)
 	}
 
+	/** The analytics posture, counting a transition that arrived before init. */
+	private analyticsEnabled(): boolean {
+		return this.pendingAnalyticsEnabled ?? this.consent.analytics
+	}
+
 	/**
 	 * Schedules the actual SDK import + init for the next idle slot. Using
 	 * `requestIdleCallback` keeps PostHog's dynamic import off the critical
@@ -330,8 +407,15 @@ export class AnalyticsService implements IAnalyticsService {
 	 * Failure here is non-fatal — the catch path logs and leaves `posthog ===
 	 * null`, so subsequent captures fall back to the nil-config branch. We do
 	 * NOT retry: a failed init usually means an ad-blocker is in play.
+	 *
+	 * Idempotent: the idle slot and a first error report may both start it.
 	 */
-	private async init(): Promise<void> {
+	private init(): Promise<void> {
+		this.initPromise ??= this.loadAndInit()
+		return this.initPromise
+	}
+
+	private async loadAndInit(): Promise<void> {
 		try {
 			const module = await import('posthog-js')
 			const posthog = module.default
@@ -374,11 +458,17 @@ export class AnalyticsService implements IAnalyticsService {
 				// `sessionReplay` consent value is still tracked so the toggle
 				// reflects the user's intent for when replay ships.
 				disable_session_recording: true,
+				// Error reports go only through `captureException`, which carries
+				// the banner's Error ID. A project-side "exception autocapture"
+				// toggle must not add a second, ID-less capture path.
+				capture_exceptions: false,
 				// No address on the app's own origin leaves the device with its
 				// query or fragment: a referral code (`?ref=`) or a later link
 				// value stays on the platform (OpenSpec `referral-attribution`,
-				// design D11).
-				before_send: (event) => stripOwnUrlQuery(event, window.location.origin),
+				// design D11). An error report keeps the dashboard filter keys
+				// and has tokens redacted (OpenSpec `global/analytics`).
+				before_send: (event) =>
+					filterAnalyticsEvent(event, window.location.origin),
 				loaded: () => {
 					this.logger.debug('PostHog SDK loaded')
 				},
@@ -416,7 +506,7 @@ export class AnalyticsService implements IAnalyticsService {
 		}
 	}
 
-	private enqueue(entry: QueuedCapture): void {
+	private enqueue(entry: QueuedEntry): void {
 		if (this.queue.length >= PRE_INIT_QUEUE_LIMIT) {
 			if (!this.queueOverflowed) {
 				this.queueOverflowed = true
@@ -450,7 +540,7 @@ export class AnalyticsService implements IAnalyticsService {
 		const idle = win.requestIdleCallback
 		if (typeof idle !== 'function') {
 			for (const entry of this.queue.splice(0, this.queue.length)) {
-				this.dispatch(entry.name, entry.props)
+				this.replay(entry)
 			}
 			return
 		}
@@ -459,7 +549,7 @@ export class AnalyticsService implements IAnalyticsService {
 			do {
 				const entry = this.queue.shift()
 				if (entry === undefined) break
-				this.dispatch(entry.name, entry.props)
+				this.replay(entry)
 			} while (this.queue.length > 0 && deadline.timeRemaining() > 1)
 			if (this.queue.length > 0) {
 				idle(slice, { timeout: INIT_IDLE_TIMEOUT_MS })
@@ -468,6 +558,37 @@ export class AnalyticsService implements IAnalyticsService {
 			}
 		}
 		idle(slice, { timeout: INIT_IDLE_TIMEOUT_MS })
+	}
+
+	/** Forwards one queued entry to the SDK. */
+	private replay(entry: QueuedEntry): void {
+		if ('exception' in entry) {
+			if (this.dispatchException(entry.exception, entry.props)) {
+				entry.onAccepted?.()
+			}
+		} else if ('step' in entry) {
+			this.posthog?.addExceptionStep(entry.step, entry.props)
+		} else {
+			this.dispatch(entry.name, entry.props)
+		}
+	}
+
+	/**
+	 * The single place that touches `posthog.captureException`. The SDK
+	 * returns `undefined` when capture is opted out, rate-limited or the error
+	 * was dropped, so only a returned result counts as accepted.
+	 */
+	private dispatchException(
+		error: unknown,
+		props: Readonly<Record<string, unknown>>,
+	): boolean {
+		if (this.posthog === null) return false
+		try {
+			return this.posthog.captureException(error, { ...props }) !== undefined
+		} catch (err) {
+			this.logger.warn('Error report failed', { error: err })
+			return false
+		}
 	}
 
 	/**
@@ -709,7 +830,7 @@ export class AnalyticsService implements IAnalyticsService {
 		}
 		// Finish an idle-sliced replay of the pre-init queue synchronously.
 		for (const entry of this.queue.splice(0, this.queue.length)) {
-			this.dispatch(entry.name, entry.props)
+			this.replay(entry)
 		}
 		this.flushing = false
 	}

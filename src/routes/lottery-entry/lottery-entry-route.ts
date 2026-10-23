@@ -14,6 +14,7 @@ import { isVerified } from '../../entities/identity-verification'
 import type { LotteryEntry } from '../../entities/lottery-entry'
 import { isWindowOpen, type TicketSale } from '../../entities/ticket-sale'
 import { toDomesticDisplay, toE164 } from '../../lib/to-e164'
+import { IErrorBoundaryService } from '../../services/error-boundary-service'
 import { IIdentityVerificationService } from '../../services/identity-verification-service'
 import { IStripeService } from '../../services/stripe-service'
 import { IUserStore } from '../../services/user-store'
@@ -69,6 +70,7 @@ export interface LotteryEntryMessage {
  */
 export class LotteryEntryRoute implements IRouteViewModel {
 	private readonly logger = resolve(ILogger).scopeTo('LotteryEntryRoute')
+	private readonly errorBoundary = resolve(IErrorBoundaryService)
 	private readonly concertClient = resolve(IConcertRpcClient)
 	private readonly saleClient = resolve(ITicketSaleRpcClient)
 	private readonly entryClient = resolve(ILotteryEntryRpcClient)
@@ -399,6 +401,7 @@ export class LotteryEntryRoute implements IRouteViewModel {
 			this.message = { key: 'lotteryEntry.error.payment' }
 			return
 		}
+		this.errorBoundary.addBreadcrumb('action', 'submit_lottery_entry')
 		this.message = null
 		this.cardError = ''
 		this.step = 'submitting'

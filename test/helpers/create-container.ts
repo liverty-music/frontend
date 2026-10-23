@@ -1,7 +1,9 @@
 import { I18N } from '@aurelia/i18n'
 import { DI, type IContainer, ILogger, Registration } from 'aurelia'
 import { IAppConfig } from '../../src/config/app-config'
+import { IErrorBoundaryService } from '../../src/services/error-boundary-service'
 import { createMockAppConfig } from './mock-app-config'
+import { createMockErrorBoundary } from './mock-error-boundary'
 import { createMockI18n } from './mock-i18n'
 import { createMockLogger } from './mock-logger'
 
@@ -32,6 +34,15 @@ export function createTestContainer(
 	// Register any additional dependencies
 	for (const registration of registrations) {
 		container.register(registration)
+	}
+
+	// Key actions add a step for the error report. Without a registration the
+	// real ErrorBoundaryService would pull the analytics graph into every
+	// component test; a test that wants it registers it.
+	if (!container.has(IErrorBoundaryService, false)) {
+		container.register(
+			Registration.instance(IErrorBoundaryService, createMockErrorBoundary()),
+		)
 	}
 
 	return container

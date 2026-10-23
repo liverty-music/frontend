@@ -373,7 +373,7 @@ describe('app-shell', () => {
 		await go('my-artists')
 		expect(captureError).toHaveBeenCalledWith(
 			expect.anything(),
-			'router:navigation-error',
+			'router_navigation_error',
 		)
 	})
 

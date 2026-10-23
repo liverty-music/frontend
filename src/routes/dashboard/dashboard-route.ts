@@ -47,6 +47,7 @@ import {
 } from '../../lib/plain-date'
 import { IAuthService } from '../../services/auth-service'
 import { IConcertStore } from '../../services/concert-store'
+import { IErrorBoundaryService } from '../../services/error-boundary-service'
 import {
 	type FabAction,
 	helpAction,
@@ -187,6 +188,7 @@ export class DashboardRoute {
 	private allNearbyAbort: AbortController | null = null
 
 	private readonly logger = resolve(ILogger).scopeTo('DashboardRoute')
+	private readonly errorBoundary = resolve(IErrorBoundaryService)
 	public readonly i18n = resolve(I18N)
 	private readonly authService = resolve(IAuthService)
 	private readonly concertService = resolve(IConcertStore)
@@ -1124,6 +1126,7 @@ export class DashboardRoute {
 	}
 
 	public onSignupRequested(): void {
+		this.errorBoundary.addBreadcrumb('action', 'start_sign_up')
 		this.authService.signUp({ uiLocales: currentLanguage(this.i18n) })
 	}
 

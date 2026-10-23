@@ -6,6 +6,7 @@ import { HYPE_TIERS } from '../../adapter/view/hype-display'
 import type { PageHelp } from '../../components/page-help/page-help'
 import type { FollowedArtist, Hype } from '../../entities/follow'
 import { IAuthService } from '../../services/auth-service'
+import { IErrorBoundaryService } from '../../services/error-boundary-service'
 import {
 	type FabAction,
 	helpAction,
@@ -42,6 +43,7 @@ export class MyArtistsRoute {
 	public readonly hypeLevels: Hype[] = ['watch', 'home', 'nearby', 'away']
 
 	private readonly logger = resolve(ILogger).scopeTo('MyArtistsRoute')
+	private readonly errorBoundary = resolve(IErrorBoundaryService)
 	public readonly i18n = resolve(I18N)
 	private readonly authService = resolve(IAuthService)
 
@@ -385,6 +387,7 @@ export class MyArtistsRoute {
 	}
 
 	public onSignupRequested(): void {
+		this.errorBoundary.addBreadcrumb('action', 'start_sign_up')
 		this.authService.signUp({ uiLocales: currentLanguage(this.i18n) })
 	}
 

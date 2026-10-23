@@ -14,6 +14,7 @@ import {
 } from '../../lib/analytics/analytics-service'
 import type { EventSource } from '../../services/analytics-events'
 import { IAuthService } from '../../services/auth-service'
+import { IErrorBoundaryService } from '../../services/error-boundary-service'
 import { IFollowStore } from '../../services/follow-store'
 import { ITicketJourneyStore } from '../../services/ticket-journey-store'
 import {
@@ -67,6 +68,7 @@ export class EventDetailSheet {
 	public readonly journeyConfig = JOURNEY_STATUS_CONFIG_MAP
 
 	private readonly logger = resolve(ILogger).scopeTo('EventDetailSheet')
+	private readonly errorBoundary = resolve(IErrorBoundaryService)
 	private readonly journeyStore = resolve(ITicketJourneyStore)
 	private readonly authService = resolve(IAuthService)
 	private readonly followStore = resolve(IFollowStore)
@@ -202,6 +204,7 @@ export class EventDetailSheet {
 			window.addEventListener('popstate', this.onPopstate)
 		}
 
+		this.errorBoundary.addBreadcrumb('action', 'open_event_detail')
 		// Fire after the sheet state flips — listeners observe consistent state.
 		this.analytics.capture(Events.ConcertDetailViewed, {
 			event_id: event.id,
