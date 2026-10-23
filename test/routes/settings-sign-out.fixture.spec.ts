@@ -14,6 +14,7 @@ import type { IdentityVerification } from '../../src/entities/identity-verificat
 import { IConsentService } from '../../src/lib/consent/consent-service'
 import ja from '../../src/locales/ja/translation.json'
 import { SettingsRoute } from '../../src/routes/settings/settings-route'
+import settingsCss from '../../src/routes/settings/settings-route.css?raw'
 import { IAudioEngine } from '../../src/services/audio-engine'
 import { IAuthService } from '../../src/services/auth-service'
 import { IConcertStore } from '../../src/services/concert-store'
@@ -56,6 +57,9 @@ const activeIdentityVerification: IdentityVerification = {
  */
 describe('Sign-out from the settings screen (fixture)', () => {
 	it('clears every per-account store, so nothing of the account stays on the device', async () => {
+		// @spec components/infrastructure/fan/web/route/settings "Sign out action"
+		// The session end and the return to the Landing Page are AuthService's
+		// (test/auth-service.spec.ts, "signOut ends the session ...").
 		const userRpc = {
 			get: vi.fn(async () => ({
 				id: 'user-a',
@@ -142,6 +146,20 @@ describe('Sign-out from the settings screen (fixture)', () => {
 
 		const signOut =
 			fixture.appHost.querySelector<HTMLButtonElement>('.settings-sign-out')
+		// At the bottom of the settings list, in the error (red) colour.
+		const scroll = fixture.appHost.querySelector(
+			'[data-testid="settings-scroll"]',
+		)
+		expect(scroll?.lastElementChild?.contains(signOut)).toBe(true)
+		expect(signOut?.querySelector('.settings-sign-out-text')).not.toBeNull()
+		expect(settingsCss).toContain('--_signout-color: var(--color-error)')
+		const textRule = settingsCss.slice(
+			settingsCss.indexOf('.settings-sign-out-text {'),
+		)
+		expect(textRule.slice(0, textRule.indexOf('}'))).toContain(
+			'color: var(--_signout-color)',
+		)
+
 		signOut?.click()
 		await new Promise((r) => setTimeout(r, 0))
 		await tasksSettled()
@@ -158,6 +176,67 @@ describe('Sign-out from the settings screen (fixture)', () => {
 		auth.isAuthenticated = true
 		await concertStore.listFollowed()
 		expect(concertRpc.listFollowed).toHaveBeenCalledTimes(2)
+
+		await fixture.stop(true)
+	})
+})
+
+describe('Sign Out for a guest (fixture)', () => {
+	it('is not rendered for an unauthenticated user', async () => {
+		// @spec components/infrastructure/fan/web/route/settings "Sign out hidden for guests"
+		const fixture = await createFixture
+			.html('<settings-route></settings-route>')
+			.deps(
+				I18nConfiguration.customize((options) => {
+					options.initOptions = {
+						lng: 'ja',
+						resources: { ja: { translation: ja } },
+						fallbackLng: 'ja',
+					}
+				}),
+				Registration.instance(IAuthService, {
+					isAuthenticated: false,
+					user: null,
+					signOut: vi.fn(),
+				}),
+				Registration.instance(IUserRpcClient, { get: vi.fn() }),
+				Registration.instance(IConcertRpcClient, {
+					listFollowed: vi.fn(async () => []),
+					listByArtists: vi.fn(async () => []),
+				}),
+				Registration.instance(IIdentityVerificationRpcClient, {
+					get: vi.fn(async () => undefined),
+				}),
+				Registration.instance(ITicketJourneyRpcClient, {
+					list: vi.fn(async () => new Map()),
+				}),
+				Registration.instance(IPushService, {
+					resolvePushState: vi.fn(async () => 'needs-permission'),
+				}),
+				Registration.instance(IRouter, { load: vi.fn() }),
+				Registration.instance(IAudioEngine, { muted: false, volume: 0.5 }),
+				Registration.instance(IAppConfig, { vapidPublicKey: '' }),
+				Registration.instance(IConsentService, {
+					analytics: true,
+					sessionReplay: true,
+				}),
+				Registration.instance(IFabMenuService, { isLeftHanded: false }),
+				UserHomeSelectorStub,
+				BottomSheetStub,
+				BusyOnClickCustomAttribute,
+				SettingsRoute,
+			)
+			.build().started
+
+		// The guest sees the sign-in hero, and no Sign Out control anywhere.
+		expect(
+			fixture.appHost.querySelector('[data-testid="settings-sign-in"]'),
+		).not.toBeNull()
+		expect(fixture.appHost.querySelector('.settings-sign-out')).toBeNull()
+		expect(
+			fixture.appHost.querySelector('[data-testid="settings-sign-out-group"]'),
+		).toBeNull()
+		expect(fixture.appHost.textContent).not.toContain(ja.settings.signOut)
 
 		await fixture.stop(true)
 	})

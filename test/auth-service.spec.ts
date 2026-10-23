@@ -230,9 +230,21 @@ describe('AuthService', () => {
 		})
 	})
 
-	it('signOut calls signoutRedirect', async () => {
-		await sut.signOut()
+	it('signOut ends the session and returns to the Landing Page', async () => {
+		// @spec components/infrastructure/fan/web/route/settings "Sign out action"
+		const { s, publish } = await buildSutWithPublish()
+		await s.signOut()
+		// The stores clear on SignedOut, and the provider ends the session.
+		expect(publish).toHaveBeenCalledTimes(1)
+		expect(publish.mock.calls[0][0].constructor.name).toBe('SignedOut')
 		expect(userManagerMock.signoutRedirect).toHaveBeenCalled()
+		// The provider sends the browser back to the app root, which the route
+		// table redirects to the Landing Page (test/app-shell.spec.ts,
+		// "reflects the redirect target").
+		const settings = vi.mocked(UserManager).mock.lastCall?.[0]
+		expect(settings?.post_logout_redirect_uri).toBe(
+			`${window.location.origin}/`,
+		)
 	})
 
 	it('handleCallback calls signinCallback, updates state, and returns the user', async () => {
