@@ -1082,7 +1082,7 @@
 		"remove": "Remove",
 		"lastPasskey": "The last passkey can't be removed. Add another passkey first.",
 		"add": "Add a passkey on this device",
-		"addNote": "You'll create it on the sign-in screen and come back here.",
+		"addNote": "Once the passkey is added on “Passkey setup”, you come back here automatically. If the screen doesn't change, tap “Back” to return here and see whether it was added.",
 		"backToSettings": "Back to Settings",
 		"confirm": {
 			"title": "Remove this passkey?",
@@ -1097,10 +1097,10 @@
 			"otherAccount": "You confirmed with a different account from the one signed in to this app. Try again with that account."
 		},
 		"addedOn": "Added {{date}}",
-		"addExistingNote": "No passkey is created when this device's passkey manager already holds one for this account.",
+		"addExistingNote": "If this device's passkey manager already has a passkey for this account, no new one is created.",
 		"addOutcome": {
-			"added": "Passkey added",
-			"notAdded": "No passkey was added. If this device's passkey manager already holds a passkey for this account, no new one is created. This device can sign in with it as it is."
+			"added": "Passkey added.",
+			"notAdded": "No passkey was added. If this device already has a passkey, you can sign in with it as it is."
 		}
 	}
 }
