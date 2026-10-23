@@ -3,45 +3,36 @@
 <bottom-sheet open.to-view="errorBoundary.currentError" dismissable.bind="false" t="[aria-label]errorBanner.label">
   <section class="error-content">
     <h2 class="error-title" t="errorBanner.title"></h2>
-    <!-- Fixed copy: the captured error's message stays in the console log and,
-         when the report was not sent, in the report email (spec
-         global/error-banner). The message says whether the team got it. -->
-    <p if.bind="errorBoundary.currentError.reported" class="error-message" t="errorBanner.messageSent"></p>
-    <p else class="error-message" t="errorBanner.messageNotSent"></p>
-
-    <p class="error-id-box">
-      <span class="error-id-label" t="errorBanner.errorIdLabel"></span>
-      <span class="error-id">${errorBoundary.currentError?.id}</span>
-    </p>
+    <!-- Fixed copy: neither the captured error's message nor its Error ID is
+         shown; both stay in the report email, and the message in the console
+         log (spec global/error-banner). -->
+    <p class="error-message" t="errorBanner.message"></p>
 
     <footer class="error-actions">
       <button
+        click.trigger="emailReport()"
+        class="[ button ] [ pressable ]"
+        t="errorBanner.emailReport"
+      ></button>
+      <p
+        if.bind="emailTapped"
+        class="error-email-fallback"
+        role="status"
+        t="errorBanner.emailFallback"
+        t-params.bind="{ address: emailAddress }"
+      ></p>
+      <button
         click.trigger="reload()"
         class="[ button ] [ pressable ]"
+        data-variant="outlined"
         t="errorBanner.reload"
       ></button>
-      <div class="error-secondary-actions">
-        <button
-          click.trigger="dismiss()"
-          class="[ button ] [ pressable ]"
-          data-variant="outlined"
-          t="errorBanner.dismiss"
-        ></button>
-        <button
-          if.bind="!errorBoundary.currentError.reported"
-          click.trigger="emailReport()"
-          class="[ button ] [ pressable ]"
-          data-variant="outlined"
-          t="errorBanner.emailReport"
-        ></button>
-      </div>
-      <a
-        if.bind="errorBoundary.currentError.reported"
-        href.bind="reportMailto"
-        click.trigger:prevent="emailReport()"
-        class="error-email-link"
-        t="errorBanner.emailReport"
-      ></a>
+      <button
+        click.trigger="dismiss()"
+        class="[ button ] [ pressable ]"
+        data-variant="outlined"
+        t="errorBanner.dismiss"
+      ></button>
     </footer>
   </section>
 </bottom-sheet>

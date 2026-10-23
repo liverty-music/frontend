@@ -265,11 +265,10 @@
 	"errorBanner": {
 		"reportCooldown": "Please wait a moment before opening the email again.",
 		"label": "Error details",
-		"title": "Something went wrong",
-		"messageSent": "Our team has received the details. Try reloading the page. If you like, email us what you were doing. One line is enough.",
-		"messageNotSent": "Our team hasn't received the details. Try reloading the page. Please email us what you were doing. One line is enough.",
-		"errorIdLabel": "Inquiry number",
+		"title": "⚡️Something went wrong mid-show⚡️",
+		"message": "But don't worry!\nOur engineering team will look into it right away.\nTo help keep it from happening again, a quick email about what happened would help us a lot 🙇‍♀️",
 		"emailReport": "Tell us what happened by email",
+		"emailFallback": "If your mail app doesn't open, write to {{address}}.",
 		"dismiss": "Close",
 		"reload": "Reload page"
 	},

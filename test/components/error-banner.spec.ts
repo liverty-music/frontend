@@ -180,10 +180,8 @@ const BottomSheetStub = CustomElement.define(
 
 describe('ErrorBanner page', () => {
 	const UNHANDLED = "Cannot read properties of undefined (reading 'id')"
-	const SENT_JA =
-		'起きたことはチームに届いています。ページを読み込み直してみてください。よければ、何をしていたかメールで教えてください。ひとことだけで大丈夫です。'
-	const NOT_SENT_JA =
-		'起きたことはチームに届いていません。ページを読み込み直してみてください。何をしていたかメールで教えてください。ひとことだけで大丈夫です。'
+	const MESSAGE_JA =
+		'ですが、ご安心ください！\nエンジニアチームがすぐに原因調査を行います。\n再発防止のため、メールで簡単に状況を教えてもらえると非常に助かります🙇‍♀️'
 
 	/**
 	 * Renders the banner with the real catalog and opens it for an unhandled
@@ -222,10 +220,6 @@ describe('ErrorBanner page', () => {
 		)
 	}
 
-	function emailLink(host: Element): HTMLAnchorElement | null {
-		return host.querySelector('a.error-email-link')
-	}
-
 	beforeEach(() => {
 		window.history.replaceState(null, '', '/')
 	})
@@ -238,46 +232,36 @@ describe('ErrorBanner page', () => {
 		const { fixture, host, boundary } = await open('ja', false)
 
 		expect(host.querySelector('.error-title')?.textContent).toBe(
-			'うまく動きませんでした',
+			'⚡️ライブ中にアクシデント発生⚡️',
 		)
-		expect(host.querySelector('.error-message')?.textContent).toBe(NOT_SENT_JA)
-		expect(host.querySelector('.error-id-label')?.textContent).toBe(
-			'お問い合わせ番号',
-		)
-		expect(host.querySelector('.error-id')?.textContent).toBe(
-			boundary.currentError?.id,
-		)
+		expect(host.querySelector('.error-message')?.textContent).toBe(MESSAGE_JA)
+		expect(host.textContent).not.toContain(boundary.currentError?.id ?? '-')
 		expect(labels(host)).toEqual([
+			'メールで状況を伝える',
 			'ページを読み込み直す',
 			'閉じる',
-			'メールで状況を伝える',
 		])
+		// The email is the primary action; the others are outlined.
+		const [email, reload, close] = host.querySelectorAll('button')
+		expect(email.dataset.variant).toBeUndefined()
+		expect(reload.dataset.variant).toBe('outlined')
+		expect(close.dataset.variant).toBe('outlined')
 		expect(host.innerHTML).not.toContain('github')
 		await fixture.stop(true)
 	})
 
-	it(`@spec ${BANNER_SPEC} "Email report is a link when the report was sent"`, async () => {
-		const { fixture, host, boundary } = await open('ja', true)
+	it(`@spec ${BANNER_SPEC} "Address shown for a device without a mail app"`, async () => {
+		const { fixture, host } = await open('ja', true)
+		// jsdom does not navigate for `mailto:`; the page cannot tell either.
+		const fallback = () => host.querySelector('.error-email-fallback')
 
-		const link = emailLink(host)
-		expect(link?.textContent).toBe('メールで状況を伝える')
-		expect(link?.getAttribute('href')).toBe(
-			boundary.buildReportMailto(boundary.currentError!),
+		expect(fallback()).toBeNull()
+		host.querySelectorAll('button')[0].click()
+		await tasksSettled()
+
+		expect(fallback()?.textContent).toBe(
+			'メールが開かない場合は、pannpers@pannpers.dev までご連絡ください。',
 		)
-		expect(labels(host)).toEqual(['ページを読み込み直す', '閉じる'])
-		await fixture.stop(true)
-	})
-
-	it(`@spec ${BANNER_SPEC} "Email report is a button when the report was not sent"`, async () => {
-		const { fixture, host } = await open('ja', false)
-
-		expect(emailLink(host)).toBeNull()
-		const secondary = host.querySelector('.error-secondary-actions')
-		expect(
-			[...(secondary?.querySelectorAll('button') ?? [])].map((b) =>
-				b.textContent?.trim(),
-			),
-		).toEqual(['閉じる', 'メールで状況を伝える'])
 		await fixture.stop(true)
 	})
 
@@ -285,16 +269,20 @@ describe('ErrorBanner page', () => {
 		const { fixture, host, boundary } = await open('ja', true)
 		const errorId = boundary.currentError?.id ?? ''
 
-		expect(host.querySelector('.error-title')?.textContent).toBe(
-			'うまく動きませんでした',
-		)
-		expect(host.querySelector('.error-message')?.textContent).toBe(SENT_JA)
 		expect(errorId).toMatch(/^ERR-/)
-		expect(host.querySelector('.error-id-label')?.textContent).toBe(
-			'お問い合わせ番号',
+		expect(host.querySelector('.error-title')?.textContent).toBe(
+			'⚡️ライブ中にアクシデント発生⚡️',
 		)
-		expect(host.querySelector('.error-id')?.textContent).toBe(errorId)
+		expect(host.querySelector('.error-message')?.textContent).toBe(MESSAGE_JA)
 		expect(host.textContent).not.toContain('Cannot read properties')
+		expect(host.textContent).not.toContain(errorId)
+		await fixture.stop(true)
+	})
+
+	it('shows the same message when the report was not sent', async () => {
+		const { fixture, host } = await open('ja', false)
+
+		expect(host.querySelector('.error-message')?.textContent).toBe(MESSAGE_JA)
 		await fixture.stop(true)
 	})
 
@@ -302,45 +290,21 @@ describe('ErrorBanner page', () => {
 		const { fixture, host } = await open('en', false)
 
 		expect(host.querySelector('.error-title')?.textContent).toBe(
-			'Something went wrong',
+			'⚡️Something went wrong mid-show⚡️',
 		)
 		expect(host.querySelector('.error-message')?.textContent).toBe(
-			"Our team hasn't received the details. Try reloading the page. Please email us what you were doing. One line is enough.",
-		)
-		expect(host.querySelector('.error-id-label')?.textContent).toBe(
-			'Inquiry number',
+			"But don't worry!\nOur engineering team will look into it right away.\nTo help keep it from happening again, a quick email about what happened would help us a lot 🙇‍♀️",
 		)
 		expect(labels(host)).toEqual([
+			'Tell us what happened by email',
 			'Reload page',
 			'Close',
-			'Tell us what happened by email',
 		])
 		const sheet = host.querySelector('bottom-sheet')
 		if (!sheet) throw new Error('bottom-sheet did not render')
 		expect(
 			CustomElement.for<{ ariaLabel: string }>(sheet).viewModel.ariaLabel,
 		).toBe('Error details')
-		await fixture.stop(true)
-	})
-
-	it(`@spec ${BANNER_SPEC} "Not-sent copy when analytics is off"`, async () => {
-		// With analytics off, AnalyticsService.captureException returns false.
-		const { fixture, host } = await open('ja', false)
-
-		expect(host.querySelector('.error-message')?.textContent).toBe(NOT_SENT_JA)
-		await fixture.stop(true)
-	})
-
-	it('switches to the sent copy when a queued report is accepted', async () => {
-		const { fixture, host, boundary } = await open('ja', false)
-
-		// Report accepted after the banner opened.
-		const current = boundary.currentError
-		if (current) current.reported = true
-		await tasksSettled()
-
-		expect(host.querySelector('.error-message')?.textContent).toBe(SENT_JA)
-		expect(emailLink(host)).not.toBeNull()
 		await fixture.stop(true)
 	})
 })
