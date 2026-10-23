@@ -4,7 +4,6 @@ import { IEventAggregator, ILogger, resolve } from 'aurelia'
 import { ILocalStorage } from '../../adapter/storage/local-storage'
 import { codeToHome } from '../../constants/iso3166'
 import { StorageKeys } from '../../constants/storage-keys'
-import { IAddPasskeyPromptService } from '../../services/add-passkey-prompt-service'
 import {
 	IAuthService,
 	resolveAuthFlow,
@@ -41,7 +40,6 @@ export class AuthCallbackRoute {
 	private readonly i18n = resolve(I18N)
 	private readonly ea = resolve(IEventAggregator)
 	private readonly storage = resolve(ILocalStorage)
-	private readonly addPasskey = resolve(IAddPasskeyPromptService)
 	private readonly logger = resolve(ILogger).scopeTo('AuthCallbackRoute')
 
 	public async canLoad(
@@ -152,16 +150,6 @@ export class AuthCallbackRoute {
 			const fromEventPage = resolveAuthOrigin(user) === 'event-page'
 			if (isSignUpFlow && created && !fromEventPage) {
 				this.storage.setItem(StorageKeys.postSignupShown, 'pending')
-			}
-
-			// The add-passkey prompt (design D10). A sign-up created the passkey
-			// on this device, so the device is recorded; a Log In (including a
-			// "sign up" that found an existing account) may have used another
-			// device's passkey, so the prompt is offered.
-			if (isSignUpFlow && created) {
-				this.addPasskey.markDevice()
-			} else {
-				this.addPasskey.offerAfterLogIn()
 			}
 
 			// After an involuntary re-auth, return to where the user was;

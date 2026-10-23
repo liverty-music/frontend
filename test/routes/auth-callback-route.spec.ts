@@ -15,7 +15,6 @@ import { StorageKeys } from '../../src/constants/storage-keys'
 import en from '../../src/locales/en/translation.json'
 import ja from '../../src/locales/ja/translation.json'
 import { AuthCallbackRoute } from '../../src/routes/auth-callback/auth-callback-route'
-import { IAddPasskeyPromptService } from '../../src/services/add-passkey-prompt-service'
 import { IAuthService } from '../../src/services/auth-service'
 import { GuestMigrationRequested } from '../../src/services/events/guest-migration-requested'
 import { IOnboardingService } from '../../src/services/onboarding-service'
@@ -208,37 +207,6 @@ describe('AuthCallbackRoute', () => {
 			expect(mockUserService.ensureLoaded).not.toHaveBeenCalled()
 			expect(result).toBe('/dashboard')
 			expect(storage.getItem('postSignup.shown')).toBe('pending')
-		})
-
-		describe('add-passkey prompt', () => {
-			it('offers the prompt after a Log In on a device without the record', async () => {
-				// @spec components/infrastructure/fan/web/global/add-passkey-prompt "Log In with another device's passkey"
-				mockAuth.handleCallback = vi
-					.fn()
-					.mockResolvedValue(authUser('fan@example.com'))
-				await sut.canLoad({}, {} as RouteNode)
-				expect(container.get(IAddPasskeyPromptService).open).toBe(true)
-			})
-
-			it('records the device on sign-up, so a later Log In there shows no prompt', async () => {
-				// @spec components/infrastructure/fan/web/global/add-passkey-prompt "Device that already has the record"
-				mockAuth.handleCallback = vi
-					.fn()
-					.mockResolvedValue(authUser('new@example.com', 'signup'))
-				mockUserService.ensureLoaded = vi
-					.fn()
-					.mockResolvedValue({ user: mockUserService.current, created: true })
-				await sut.canLoad({}, {} as RouteNode)
-				const prompt = container.get(IAddPasskeyPromptService)
-				expect(prompt.open).toBe(false)
-				expect(storage.getItem(StorageKeys.passkeyDeviceRecord)).toBe('1')
-
-				mockAuth.handleCallback = vi
-					.fn()
-					.mockResolvedValue(authUser('new@example.com'))
-				await sut.canLoad({}, {} as RouteNode)
-				expect(prompt.open).toBe(false)
-			})
 		})
 
 		describe('sign-up started on an Event page', () => {

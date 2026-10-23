@@ -6,7 +6,6 @@ import {
 	route,
 } from '@aurelia/router'
 import { type IDisposable, ILogger, resolve } from 'aurelia'
-import { IAddPasskeyPromptService } from './services/add-passkey-prompt-service'
 import { IAuthService } from './services/auth-service'
 import { IBottomSheetTracker } from './services/bottom-sheet-tracker'
 import { ICoachMarkService } from './services/coach-mark-service'
@@ -257,7 +256,6 @@ export class AppShell {
 	private readonly routerEvents = resolve(IRouterEvents)
 	public readonly auth = resolve(IAuthService)
 	public readonly onboarding = resolve(IOnboardingService)
-	public readonly addPasskeyPrompt = resolve(IAddPasskeyPromptService)
 	public readonly coachMark = resolve(ICoachMarkService)
 	// Global FAB action launcher registry. The shell owns the single launcher
 	// instance and gates its visibility on `showNav && actions.length`.

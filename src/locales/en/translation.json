@@ -1096,12 +1096,7 @@
 			"failed": "We couldn't open passkey management.",
 			"otherAccount": "You confirmed with a different account from the one signed in to this app. Try again with that account."
 		},
-		"addedOn": "Added {{date}}"
-	},
-	"addPasskeyPrompt": {
-		"title": "Create a passkey on this device?",
-		"body": "With a passkey on this device, you can sign in here on its own next time.",
-		"create": "Create a passkey on this device",
-		"later": "Later, in Settings"
+		"addedOn": "Added {{date}}",
+		"addExistingNote": "If this device's passkey manager already holds a passkey for this account, no new one is created. This device can sign in with it as it is."
 	}
 }

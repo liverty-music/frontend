@@ -9,7 +9,6 @@ import { BottomNavBar } from '../src/components/bottom-nav-bar/bottom-nav-bar'
 import { PageHeader } from '../src/components/page-header/page-header'
 import { SvgIcon } from '../src/components/svg-icon/svg-icon'
 import { IAnalyticsService } from '../src/lib/analytics/analytics-service'
-import { IAddPasskeyPromptService } from '../src/services/add-passkey-prompt-service'
 import { IAuthService } from '../src/services/auth-service'
 import { IBottomSheetTracker } from '../src/services/bottom-sheet-tracker'
 import { IErrorBoundaryService } from '../src/services/error-boundary-service'
@@ -132,7 +131,6 @@ describe('app-shell', () => {
 				// A signed-in, onboarded fan also mounts the notification prompt;
 				// its push dependencies are stubbed (permission granted, so it
 				// stays hidden).
-				Registration.instance(IAddPasskeyPromptService, { open: false }),
 				Registration.instance(IPushService, {}),
 				Registration.instance(IAnalyticsService, { capture: vi.fn() }),
 				Registration.instance(INotificationManager, { permission: 'granted' }),
@@ -397,7 +395,7 @@ describe('app-shell', () => {
 			await tasksSettled()
 			expect(fab()).not.toBeNull()
 
-			// The add-passkey prompt (or any other sheet) opens.
+			// A bottom sheet opens.
 			const sheets = fixture.container.get(IBottomSheetTracker)
 			const prompt = {}
 			sheets.opened(prompt)

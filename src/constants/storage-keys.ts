@@ -22,12 +22,6 @@ export const StorageKeys = {
 	// The language last applied on this device, in every auth state; the
 	// i18next detector reads it on boot (see FanI18nConfiguration).
 	language: 'language',
-	// Set ('1') once a passkey was created on this device (sign-up or add); the
-	// add-passkey prompt never shows where it is set. Device-scoped, so a
-	// sign-out keeps it.
-	passkeyDeviceRecord: 'passkeys.deviceRecord',
-	// When the fan last chose "Later, in Settings" on the add-passkey prompt (epoch ms).
-	passkeyPromptLater: 'passkeys.promptLater',
 } as const
 
 /**
