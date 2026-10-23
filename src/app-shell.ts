@@ -78,6 +78,15 @@ const routeTable = [
 		data: { auth: false, titleKey: 'passkeyRecovery.title' },
 	},
 	{
+		// The link of a verification email opens here, on any device and
+		// without sign-in; the fan confirms the address with one tap
+		// (OpenSpec change `fan-email-verification-in-app`, design D4).
+		path: 'verify-email',
+		component: import('./routes/verify-email/verify-email-route'),
+		title: 'Verify Email',
+		data: { auth: false, titleKey: 'verifyEmail.title' },
+	},
+	{
 		// `concerts/:id` is a deep-link into the same dashboard (it opens the
 		// concert's detail sheet), so it is a second path of this route: the
 		// navigation model then highlights Home for it with no special case.

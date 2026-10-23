@@ -1085,6 +1085,18 @@
 		"tooMany": "Too many requests. Try again later.",
 		"failed": "We couldn't send the request. Try again."
 	},
+	"verifyEmail": {
+		"title": "Verify email address",
+		"lead": "Tap the button below to finish verifying the email address you registered with Liverty Music.",
+		"confirm": "Verify email address",
+		"retry": "Try again",
+		"failed": "We couldn't verify it. Check your connection and try again.",
+		"verified": "Your email address is verified.",
+		"openApp": "Open the app",
+		"invalid": "This link has expired or has already been used.",
+		"invalidNext": "Send a new verification email from Settings in the app, then open its link.",
+		"tooMany": "Too many attempts. Please try again later."
+	},
 	"passkeys": {
 		"title": "Passkeys",
 		"lead": "These passkeys sign in to your account. Remove any you no longer use or don't recognize.",

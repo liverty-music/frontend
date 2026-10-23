@@ -94,4 +94,18 @@ export class UserRpcClient {
 	public async requestPasskeyRecovery(email: string): Promise<void> {
 		await this.userClient.requestPasskeyRecovery({ email: { value: email } })
 	}
+
+	/**
+	 * Confirms a User's email address with the User id and code from the link
+	 * in their verification email (`UserService.VerifyEmail`, no sign-in
+	 * needed). Rejects with InvalidArgument for an unknown User or a wrong,
+	 * expired or used code, ResourceExhausted after too many attempts, and
+	 * Unavailable or a transport failure when the server cannot verify now.
+	 */
+	public async verifyEmail(userId: string, code: string): Promise<void> {
+		await this.userClient.verifyEmail({
+			userId: { value: userId },
+			code: { value: code },
+		})
+	}
 }

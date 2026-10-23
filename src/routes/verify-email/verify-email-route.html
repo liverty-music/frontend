@@ -1,0 +1,33 @@
+<!-- The page title is owned by the shell-hosted <page-header> (data.titleKey). -->
+<main class="[ verify-email ] [ stack ]" data-testid="verify-email">
+  <template if.bind="canConfirm">
+    <p t="verifyEmail.lead" class="verify-email-lead"></p>
+    <p if.bind="state === 'failed'" role="alert" t="verifyEmail.failed" class="verify-email-error" data-testid="verify-email-failed"></p>
+    <button
+      type="button"
+      click.trigger="confirm()"
+      aria-busy.bind="state === 'verifying'"
+      disabled.bind="state === 'verifying'"
+      class="[ button ] [ pressable ]"
+      data-testid="verify-email-confirm"
+    >
+      <span if.bind="state === 'failed'" t="verifyEmail.retry"></span>
+      <span else t="verifyEmail.confirm"></span>
+    </button>
+  </template>
+
+  <section if.bind="state === 'verified'" class="[ verify-email-result ] [ stack ]" aria-live="polite" data-testid="verify-email-verified">
+    <svg-icon name="check" class="verify-email-icon"></svg-icon>
+    <p t="verifyEmail.verified" class="verify-email-message"></p>
+    <a load="/" class="[ button ] [ pressable ]" t="verifyEmail.openApp" data-testid="verify-email-open-app"></a>
+  </section>
+
+  <section if.bind="state === 'invalid'" class="[ verify-email-result ] [ stack ]" aria-live="polite" data-testid="verify-email-invalid">
+    <p t="verifyEmail.invalid" class="verify-email-message"></p>
+    <p t="verifyEmail.invalidNext" class="verify-email-hint"></p>
+  </section>
+
+  <section if.bind="state === 'tooMany'" class="[ verify-email-result ] [ stack ]" aria-live="polite" data-testid="verify-email-too-many">
+    <p t="verifyEmail.tooMany" class="verify-email-message"></p>
+  </section>
+</main>
