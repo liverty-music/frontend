@@ -4,7 +4,12 @@ import { ConnectError } from '@connectrpc/connect'
 import { ILogger, resolve } from 'aurelia'
 import { IDocumentLocation } from '../../adapter/browser/document-location'
 import { IPasskeyRpcClient } from '../../adapter/rpc/client/passkey-client'
-import { savePasskeyReturn } from '../../adapter/storage/passkey-return-storage'
+import {
+	savePasskeyIdsBeforeAdd,
+	savePasskeyReturn,
+	takePasskeyIdsBeforeAdd,
+	takePasskeyReturn,
+} from '../../adapter/storage/passkey-return-storage'
 import {
 	IPasskeyClient,
 	type Passkey,
@@ -35,6 +40,9 @@ export interface ListedPasskey extends Passkey {
 /** Passkey dates are the day in Japan, where the product runs. */
 const DATE_TIME_ZONE = 'Asia/Tokyo'
 
+/** What became of the last attempt to add a passkey on this device. */
+export type PasskeyAddOutcome = 'added' | 'notAdded'
+
 /** Where the passkey list stands. */
 export type PasskeyListState = 'loading' | 'ready' | 'error'
 
@@ -64,6 +72,11 @@ export class PasskeysRoute {
 	public pendingRemoval: ListedPasskey | null = null
 	public removalFailed = false
 	public removing = false
+	/**
+	 * Said once after coming back from an add attempt in the hosted login,
+	 * which reports neither outcome itself (design D4).
+	 */
+	public addOutcome: PasskeyAddOutcome | null = null
 
 	/**
 	 * The last passkey cannot be removed from the app: the identity provider
@@ -90,8 +103,22 @@ export class PasskeysRoute {
 		void this.load()
 	}
 
+	public attached(): void {
+		// A browser back from the hosted login may restore this page from the
+		// bfcache: no route hook runs then, so re-list on `pageshow`.
+		window.addEventListener('pageshow', this.onPageShow)
+	}
+
+	public detaching(): void {
+		window.removeEventListener('pageshow', this.onPageShow)
+	}
+
 	public unloading(): void {
 		this.passkeyAuth.discard()
+	}
+
+	private readonly onPageShow = (event: PageTransitionEvent): void => {
+		if (event.persisted) void this.load()
 	}
 
 	/** Read the passkey list; also the retry of a failed read. */
@@ -104,6 +131,7 @@ export class PasskeysRoute {
 			])
 			this.passkeys = this.join(passkeys, records)
 			this.listState = 'ready'
+			this.compareWithBeforeAdd()
 		} catch (err) {
 			if (!(err instanceof PasskeyRequestError)) throw err
 			this.logger.warn('Failed to list passkeys', { failure: err.failure })
@@ -113,6 +141,23 @@ export class PasskeysRoute {
 			}
 			this.listState = 'error'
 		}
+	}
+
+	/**
+	 * After an add attempt, compare the list with the ids saved before leaving
+	 * and say once whether a passkey was added. A refused creation (the
+	 * device's passkey manager already holds one) leaves the list unchanged.
+	 */
+	private compareWithBeforeAdd(): void {
+		const before = takePasskeyIdsBeforeAdd()
+		if (!before) return
+		// A browser back skips the root route; drop its marker so it cannot
+		// redirect a later visit.
+		takePasskeyReturn()
+		const known = new Set(before)
+		this.addOutcome = this.passkeys.some((p) => !known.has(p.id))
+			? 'added'
+			: 'notAdded'
 	}
 
 	/**
@@ -198,6 +243,8 @@ export class PasskeysRoute {
 	 * root, which reopens this screen from the stored marker.
 	 */
 	public addOnThisDevice(): void {
+		this.addOutcome = null
+		savePasskeyIdsBeforeAdd(this.passkeys.map((p) => p.id))
 		savePasskeyReturn(PASSKEY_MANAGEMENT_PATH)
 		const base = this.config.zitadelIssuer.replace(/\/+$/, '')
 		const params = new URLSearchParams({

@@ -49,3 +49,42 @@ export function takePasskeyReturn(): string | null {
 		return null
 	}
 }
+
+const IDS_KEY = 'passkeys.idsBeforeAdd'
+
+/**
+ * Remember the passkey ids listed right before leaving to add a passkey. The
+ * hosted login reports no outcome back (and shows nothing when the browser
+ * refuses the creation), so passkey management compares the list against
+ * these ids once the fan is back (design D4).
+ */
+export function savePasskeyIdsBeforeAdd(ids: readonly string[]): void {
+	try {
+		sessionStorage.setItem(
+			IDS_KEY,
+			JSON.stringify({ ids, exp: Date.now() + PASSKEY_RETURN_TTL_MS }),
+		)
+	} catch {
+		// Storage unavailable: the fan just sees the list, without a message.
+	}
+}
+
+/**
+ * Read and clear the ids saved before an add attempt. Returns null when none
+ * are stored, they are malformed or they have expired.
+ */
+export function takePasskeyIdsBeforeAdd(): string[] | null {
+	try {
+		const raw = sessionStorage.getItem(IDS_KEY)
+		if (!raw) return null
+		sessionStorage.removeItem(IDS_KEY)
+		const { ids, exp } = JSON.parse(raw) as { ids?: unknown; exp?: unknown }
+		if (!Array.isArray(ids) || !ids.every((id) => typeof id === 'string')) {
+			return null
+		}
+		if (typeof exp !== 'number' || Date.now() > exp) return null
+		return ids
+	} catch {
+		return null
+	}
+}

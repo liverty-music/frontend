@@ -4,7 +4,7 @@ import { createFixture } from '@aurelia/testing'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { CustomElement, Registration } from 'aurelia'
 import { UserManager } from 'oidc-client-ts'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { IDocumentLocation } from '../../src/adapter/browser/document-location'
 import { IPasskeyRpcClient } from '../../src/adapter/rpc/client/passkey-client'
 import { takePasskeyReturn } from '../../src/adapter/storage/passkey-return-storage'
@@ -162,6 +162,9 @@ const BottomSheetStub = CustomElement.define(
 	class {},
 )
 
+/** Rendered fixtures, stopped after each test so no listener outlives it. */
+const mounted: { stop: (dispose?: boolean) => unknown }[] = []
+
 async function renderManagement(
 	passkeys: Passkey[],
 	listRecords: () => Promise<PasskeyRecord[]> = async () => [],
@@ -201,6 +204,7 @@ async function renderManagement(
 			PasskeysRoute,
 		)
 		.build().started
+	mounted.push(fixture)
 	const host = fixture.appHost
 	const vm = CustomElement.for<PasskeysRoute>(
 		host.querySelector('passkeys-route') as HTMLElement,
@@ -249,6 +253,11 @@ async function renderManagement(
 }
 
 describe('Passkey management lists, adds and removes passkeys (fixture)', () => {
+	afterEach(async () => {
+		for (const f of mounted.splice(0)) await f.stop(true)
+		sessionStorage.clear()
+	})
+
 	it('lists both passkeys with their names, each offering removal', async () => {
 		// @spec components/infrastructure/fan/web/route/settings "Two passkeys"
 		const { names, removeButtons } = await renderManagement([IPHONE, WINDOWS])
@@ -331,6 +340,65 @@ describe('Passkey management lists, adds and removes passkeys (fixture)', () => 
 		expect(back.names()).toHaveLength(first.names().length + 1)
 	})
 
+	it('says the passkey was added when the list comes back with one more', async () => {
+		// @spec components/infrastructure/fan/web/route/settings "Passkey added"
+		const first = await renderManagement([IPHONE])
+		expect(first.q('passkeys-add-outcome')).toBeNull()
+		first.q<HTMLButtonElement>('passkeys-add')?.click()
+
+		// Back through the app root: the root route takes the marker, passkey
+		// management opens again (after its own sign-in) and lists one more.
+		expect(takePasskeyReturn()).toBe('/settings/passkeys')
+		const back = await renderManagement([IPHONE, WINDOWS])
+		expect(back.q('passkeys-add-outcome')?.textContent?.trim()).toBe(
+			ja.passkeys.addOutcome.added,
+		)
+
+		// Said once: the next opening says nothing.
+		const again = await renderManagement([IPHONE, WINDOWS])
+		expect(again.q('passkeys-add-outcome')).toBeNull()
+	})
+
+	it('says no passkey was added when the fan comes back by going back and the list is unchanged', async () => {
+		// @spec components/infrastructure/fan/web/route/settings "Passkey not added"
+		const page = await renderManagement([IPHONE])
+		page.q<HTMLButtonElement>('passkeys-add')?.click()
+
+		// The browser refused the creation in the hosted login; the fan goes
+		// back and the page is restored from the bfcache (no route hook runs).
+		window.dispatchEvent(
+			new PageTransitionEvent('pageshow', { persisted: true }),
+		)
+		await page.settle()
+
+		expect(page.client.list).toHaveBeenCalledTimes(2)
+		expect(page.q('passkeys-add-outcome')?.textContent?.trim()).toBe(
+			ja.passkeys.addOutcome.notAdded,
+		)
+		expect(ja.passkeys.addOutcome.notAdded).toContain(
+			'すでにこのアカウントのパスキーがある場合は作成されません',
+		)
+		// The root marker is dropped too, so a later visit is not redirected.
+		expect(takePasskeyReturn()).toBeNull()
+
+		// A pageshow that is not a bfcache restore does not re-list.
+		window.dispatchEvent(
+			new PageTransitionEvent('pageshow', { persisted: false }),
+		)
+		await page.settle()
+		expect(page.client.list).toHaveBeenCalledTimes(2)
+	})
+
+	it('says no passkey was added after a reload with the same list', async () => {
+		// @spec components/infrastructure/fan/web/route/settings "Passkey not added"
+		const first = await renderManagement([IPHONE, WINDOWS])
+		first.q<HTMLButtonElement>('passkeys-add')?.click()
+		const reloaded = await renderManagement([IPHONE, WINDOWS])
+		expect(reloaded.q('passkeys-add-outcome')?.textContent?.trim()).toBe(
+			ja.passkeys.addOutcome.notAdded,
+		)
+	})
+
 	it('says next to the add action that a passkey the device already holds is not created again', async () => {
 		// @spec components/infrastructure/fan/web/route/settings "Device that already holds a passkey"
 		const { q } = await renderManagement([IPHONE])
@@ -341,7 +409,7 @@ describe('Passkey management lists, adds and removes passkeys (fixture)', () => 
 			.map((id) => document.getElementById(id)?.textContent)
 		expect(notes).toContain(ja.passkeys.addExistingNote)
 		expect(ja.passkeys.addExistingNote).toBe(
-			'この端末のパスキーマネージャーにすでにこのアカウントのパスキーがある場合は作成されません。そのままログインに使えます。',
+			'この端末のパスキーマネージャーにすでにこのアカウントのパスキーがある場合は作成されません。',
 		)
 	})
 
