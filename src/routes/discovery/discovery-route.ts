@@ -130,6 +130,10 @@ export class DiscoveryRoute {
 	protected onShowDashboardCoachMarkChanged(show: boolean): void {
 		if (show && !this.dashboardCoachMarkShown) {
 			this.dashboardCoachMarkShown = true
+			this.analytics.capture(Events.OnboardingCoachmarkShown, {
+				followed_count: this.followedCount,
+				artists_with_concerts_count: this.artistsWithConcertsCount,
+			})
 			this.coachMark.activate(
 				'[data-nav="home"]',
 				this.i18n.tr('discovery.coachMark.viewTimetable'),

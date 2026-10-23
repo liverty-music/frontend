@@ -15,6 +15,8 @@ const fakeOnboarding = {
 	},
 }
 
+const fakeAnalytics = { capture: vi.fn() }
+
 vi.mock('aurelia', async (importOriginal) => {
 	const actual = await importOriginal<typeof import('aurelia')>()
 	return {
@@ -23,12 +25,14 @@ vi.mock('aurelia', async (importOriginal) => {
 			const name = String(token)
 			if (name.includes('Logger') || name.includes('ILogger')) return fakeLogger
 			if (name.includes('Onboarding')) return fakeOnboarding
+			if (name.includes('Analytics')) return fakeAnalytics
 			return {}
 		}),
 	}
 })
 
 import { StorageKeys } from '../constants/storage-keys'
+import { Events } from '../lib/analytics/analytics-service'
 import { PwaInstallService } from './pwa-install-service'
 
 function makeBeforeInstallPromptEvent() {
@@ -159,7 +163,7 @@ describe('PwaInstallService', () => {
 		it('does nothing if no deferredPrompt', async () => {
 			const sut = new PwaInstallService()
 
-			await expect(sut.install()).resolves.toBeUndefined()
+			await expect(sut.install()).resolves.toBeNull()
 		})
 	})
 
@@ -174,6 +178,28 @@ describe('PwaInstallService', () => {
 
 			expect(sut.canShowFab).toBe(false)
 			expect(localStorage.getItem(StorageKeys.pwaInstalled)).toBe('true')
+		})
+
+		it('reports the install once, whatever started it', () => {
+			// @spec components/infrastructure/fan/web/global/pwa-install-banner "Install from the banner"
+			new PwaInstallService()
+
+			window.dispatchEvent(new Event('appinstalled'))
+			window.dispatchEvent(new Event('appinstalled'))
+
+			expect(fakeAnalytics.capture.mock.calls).toEqual([
+				[Events.PwaInstalled, { via: 'appinstalled' }],
+			])
+		})
+
+		it('reports a confirmed install (iOS)', () => {
+			const sut = new PwaInstallService()
+
+			sut.confirmInstalled()
+
+			expect(fakeAnalytics.capture).toHaveBeenCalledWith(Events.PwaInstalled, {
+				via: 'confirmed',
+			})
 		})
 	})
 

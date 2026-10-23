@@ -7,6 +7,7 @@ import {
 	type FollowedArtist,
 	type Hype,
 } from '../entities/follow'
+import { Events } from '../lib/analytics/analytics-service'
 import { GuestMigrationRequested } from './events/guest-migration-requested'
 import { SignedOut } from './events/signed-out'
 
@@ -82,6 +83,8 @@ const mockHaptic = {
 	pulse: vi.fn(),
 }
 
+const mockAnalytics = { capture: vi.fn() }
+
 vi.mock('aurelia', async (importOriginal) => {
 	const actual = await importOriginal<typeof import('aurelia')>()
 	return {
@@ -91,6 +94,7 @@ vi.mock('aurelia', async (importOriginal) => {
 				ILogger: mockLogger,
 				// Key actions add a step for the error report.
 				IErrorBoundaryService: { addBreadcrumb: () => {} },
+				IAnalyticsService: mockAnalytics,
 				IAuthService: mockAuth,
 				IFollowRpcClient: mockRpcClient,
 				IConcertStore: mockConcertStore,
@@ -317,6 +321,28 @@ describe('FollowStore', () => {
 			mockAuth.isAuthenticated = false
 		})
 
+		it('reports a guest follow with the artist and the new count', async () => {
+			// @spec components/infrastructure/fan/web/route/discovery "Guest follows a fifth artist"
+			guestSeed = ['g1', 'g2', 'g3', 'g4'].map((id) => makeFollow(id))
+			sut = new FollowStore()
+
+			await sut.follow(makeArtist('g5', 'Fifth'))
+
+			expect(mockAnalytics.capture).toHaveBeenCalledOnce()
+			expect(mockAnalytics.capture).toHaveBeenCalledWith(
+				Events.ArtistFollowGuest,
+				{ artist_id: 'g5', followed_count: 5 },
+			)
+		})
+
+		it('does not report a signed-in follow (the server reports it)', async () => {
+			mockAuth.isAuthenticated = true
+
+			await sut.follow(makeArtist('s1', 'Signed in'))
+
+			expect(mockAnalytics.capture).not.toHaveBeenCalled()
+		})
+
 		it('persists a guest follow with NO RPC and exposes it via guestFollows', async () => {
 			await sut.follow(makeArtist('g1', 'Guest One'))
 
@@ -364,6 +390,42 @@ describe('FollowStore', () => {
 			// Migration moves the guest queue to the backend, so the queue must be
 			// populated; auth state does not gate the migration RPC calls.
 			mockAuth.isAuthenticated = false
+		})
+
+		it('reports how many follows the finished merge carried over', async () => {
+			guestSeed = ['a1', 'a2', 'a3', 'a4', 'a5'].map((id) => makeFollow(id))
+			sut = new FollowStore()
+
+			await sut.migrateGuestFollows('user-1')
+			// A later callback finds the receipt: not reported again.
+			await sut.migrateGuestFollows('user-1')
+
+			expect(mockAnalytics.capture.mock.calls).toEqual([
+				[Events.GuestFollowsMerged, { merged_count: 5 }],
+			])
+		})
+
+		it('reports a merge with no guest follows as zero', async () => {
+			sut = new FollowStore()
+
+			await sut.migrateGuestFollows('user-1')
+
+			expect(mockAnalytics.capture).toHaveBeenCalledWith(
+				Events.GuestFollowsMerged,
+				{ merged_count: 0 },
+			)
+		})
+
+		it('does not report a merge that left failed items', async () => {
+			guestSeed = [makeFollow('a1'), makeFollow('a2')]
+			mockRpcClient.follow.mockImplementation(async (id: string) => {
+				if (id === 'a2') throw new Error('unavailable')
+			})
+			sut = new FollowStore()
+
+			await sut.migrateGuestFollows('user-1')
+
+			expect(mockAnalytics.capture).not.toHaveBeenCalled()
 		})
 
 		it('follows each guest artist, drains the batch, and writes the receipt', async () => {

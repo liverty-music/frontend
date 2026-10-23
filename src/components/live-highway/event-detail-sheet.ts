@@ -171,6 +171,25 @@ export class EventDetailSheet {
 		return eventCalendarUrl(this.event)
 	}
 
+	/** The fan opened the concert's source link (the link itself navigates). */
+	public onSourceOpened(): void {
+		if (!this.event) return
+		this.analytics.capture(Events.ConcertSourceClicked, {
+			event_id: this.event.id,
+			artist_id: this.event.artistId,
+		})
+	}
+
+	/** The fan opened the add-to-calendar link (the link itself navigates). */
+	public onCalendarOpened(): void {
+		if (!this.event) return
+		this.analytics.capture(Events.ConcertCalendarAdded, {
+			event_id: this.event.id,
+			artist_id: this.event.artistId,
+			surface: 'detail_sheet',
+		})
+	}
+
 	public open(
 		event: LiveEvent,
 		source: EventSource = 'page',

@@ -14,6 +14,7 @@ import { IAppConfig } from '../../src/config/app-config'
 import type { Checkout } from '../../src/entities/checkout'
 import type { IdentityVerification } from '../../src/entities/identity-verification'
 import type { TicketSale } from '../../src/entities/ticket-sale'
+import { IAnalyticsService } from '../../src/lib/analytics/analytics-service'
 import en from '../../src/locales/en/translation.json'
 import ja from '../../src/locales/ja/translation.json'
 import { CheckoutRoute } from '../../src/routes/checkout/checkout-route'
@@ -27,6 +28,7 @@ import {
 	StripeService,
 } from '../../src/services/stripe-service'
 import { IUserStore } from '../../src/services/user-store'
+import { createMockAnalytics } from '../helpers/mock-analytics'
 import { createMockErrorBoundary } from '../helpers/mock-error-boundary'
 
 const EVENT_ID = 'event-1'
@@ -108,6 +110,7 @@ async function render(
 		[
 			// Key actions add a step for the error report.
 			Registration.instance(IErrorBoundaryService, createMockErrorBoundary()),
+			Registration.instance(IAnalyticsService, createMockAnalytics()),
 			I18nConfiguration.customize((options) => {
 				options.initOptions = {
 					lng,

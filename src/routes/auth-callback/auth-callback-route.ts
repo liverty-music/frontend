@@ -4,6 +4,7 @@ import { IEventAggregator, ILogger, resolve } from 'aurelia'
 import { ILocalStorage } from '../../adapter/storage/local-storage'
 import { codeToHome } from '../../constants/iso3166'
 import { StorageKeys } from '../../constants/storage-keys'
+import { IAnalyticsService } from '../../lib/analytics/analytics-service'
 import {
 	IAuthService,
 	resolveAuthFlow,
@@ -41,6 +42,7 @@ export class AuthCallbackRoute {
 	private readonly ea = resolve(IEventAggregator)
 	private readonly storage = resolve(ILocalStorage)
 	private readonly logger = resolve(ILogger).scopeTo('AuthCallbackRoute')
+	private readonly analytics = resolve(IAnalyticsService)
 
 	public async canLoad(
 		_params: Params,
@@ -70,6 +72,10 @@ export class AuthCallbackRoute {
 			// before we read it.
 			const userId = provisioned?.id ?? this.userStore.current?.id
 			if (userId) {
+				// The app stays loaded after the callback, so UserHydrationTask
+				// (which identifies at start) does not run again: identify here so
+				// the merge's report and later events belong to the account.
+				this.analytics.identify(userId)
 				this.ea.publish(new GuestMigrationRequested(userId))
 			} else {
 				this.logger.warn(

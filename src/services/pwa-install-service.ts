@@ -3,6 +3,7 @@ import {
 	persistOnboardingCompletedSessionCount,
 	StorageKeys,
 } from '../constants/storage-keys'
+import { Events, IAnalyticsService } from '../lib/analytics/analytics-service'
 import { IOnboardingService } from './onboarding-service'
 
 export const IPwaInstallService = DI.createInterface<IPwaInstallService>(
@@ -15,6 +16,7 @@ export interface IPwaInstallService extends PwaInstallService {}
 export class PwaInstallService {
 	private readonly logger = resolve(ILogger).scopeTo('PwaInstallService')
 	private readonly onboarding = resolve(IOnboardingService)
+	private readonly analytics = resolve(IAnalyticsService)
 
 	private deferredPrompt: BeforeInstallPromptEvent | null = null
 	private installed = false
@@ -77,14 +79,17 @@ export class PwaInstallService {
 	private listenForAppInstalled(): void {
 		window.addEventListener('appinstalled', () => {
 			this.logger.info('App installed')
-			this.markInstalled()
+			this.markInstalled('appinstalled')
 		})
 	}
 
 	// Single source of truth for recording an install: persists the flag and
 	// clears every visibility signal. Shared by the `appinstalled` event and the
 	// explicit iOS `confirmInstalled()` path so the two can never diverge.
-	private markInstalled(): void {
+	private markInstalled(via: 'appinstalled' | 'confirmed'): void {
+		if (!this.installed) {
+			this.analytics.capture(Events.PwaInstalled, { via })
+		}
 		this.installed = true
 		localStorage.setItem(StorageKeys.pwaInstalled, 'true')
 		this.deferredPrompt = null
@@ -118,7 +123,7 @@ export class PwaInstallService {
 	// event is unreliable. Records the install so the banner is permanently
 	// removed; a subsequent standalone launch re-confirms via `detectInstalled`.
 	public confirmInstalled(): void {
-		this.markInstalled()
+		this.markInstalled('confirmed')
 	}
 
 	@watch((vm: PwaInstallService) => vm.onboarding.isCompleted)
@@ -134,8 +139,9 @@ export class PwaInstallService {
 		this.onboardingCompletedChanged(this.onboarding.isCompleted)
 	}
 
-	public async install(): Promise<void> {
-		if (!this.deferredPrompt) return
+	/** Opens the device's install request; returns the fan's answer. */
+	public async install(): Promise<'accepted' | 'dismissed' | null> {
+		if (!this.deferredPrompt) return null
 
 		this.deferredPrompt.prompt()
 		const { outcome } = await this.deferredPrompt.userChoice
@@ -150,6 +156,7 @@ export class PwaInstallService {
 			// Re-assert banner visibility so it stays visible in guide mode.
 			this.updateBannerVisibility()
 		}
+		return outcome
 	}
 }
 

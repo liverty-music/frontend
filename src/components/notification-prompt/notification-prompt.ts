@@ -59,7 +59,7 @@ export class NotificationPrompt {
 		})
 		// The busy/disabled state while this runs is handled by `busy-on-click`.
 		try {
-			await this.pushService.create()
+			await this.pushService.create('notification_prompt')
 			if (this.notificationManager.permission === 'granted') {
 				this.isVisible = false
 				localStorage.setItem(StorageKeys.uiNotificationPromptDismissed, 'true')

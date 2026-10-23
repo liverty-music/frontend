@@ -17,6 +17,11 @@ import {
 	showsResale,
 	type TicketSale,
 } from '../../entities/ticket-sale'
+import {
+	Events,
+	IAnalyticsService,
+} from '../../lib/analytics/analytics-service'
+import type { ConcertSharedProps } from '../../services/analytics-events'
 import { IAuthService } from '../../services/auth-service'
 import { IErrorBoundaryService } from '../../services/error-boundary-service'
 import { IFollowStore } from '../../services/follow-store'
@@ -64,6 +69,7 @@ export class EventRoute implements IRouteViewModel {
 	private readonly followStore = resolve(IFollowStore)
 	private readonly purchasedTickets = resolve(IPurchasedTicketStore)
 	private readonly userStore = resolve(IUserStore)
+	private readonly analytics = resolve(IAnalyticsService)
 
 	public state: EventPageState = 'loading'
 	public event: EventPageEvent | null = null
@@ -421,23 +427,40 @@ export class EventRoute implements IRouteViewModel {
 	/** Share with the Web Share API, or copy the link where it is missing. */
 	public async share(): Promise<void> {
 		if (!this.event) return
+		const eventId = this.event.id
+		const report = (
+			method: ConcertSharedProps['method'],
+			outcome: ConcertSharedProps['outcome'],
+		): void => {
+			this.analytics.capture(Events.ConcertShared, {
+				event_id: eventId,
+				method,
+				outcome,
+			})
+		}
 		const url = this.shareUrl
 		if (typeof navigator.share === 'function') {
 			try {
 				await navigator.share({ title: this.event.title, url })
+				report('share_sheet', 'completed')
 			} catch (err) {
 				// A dismissed share sheet is not an error.
-				if ((err as Error).name !== 'AbortError') {
+				if ((err as Error).name === 'AbortError') {
+					report('share_sheet', 'cancelled')
+				} else {
 					this.logger.warn('Share failed', { error: err })
+					report('share_sheet', 'failed')
 				}
 			}
 			return
 		}
 		try {
 			await navigator.clipboard.writeText(url)
+			report('copy_link', 'completed')
 			this.ea.publish(new Snack(this.i18n.tr('eventPage.share.copied')))
 		} catch (err) {
 			this.logger.warn('Copy link failed', { error: err })
+			report('copy_link', 'failed')
 			this.ea.publish(
 				new Snack(this.i18n.tr('eventPage.share.failed'), 'error'),
 			)
@@ -447,6 +470,10 @@ export class EventRoute implements IRouteViewModel {
 	/** Download the event as an .ics calendar file. */
 	public addToCalendar(): void {
 		if (!this.event) return
+		this.analytics.capture(Events.ConcertCalendarAdded, {
+			event_id: this.event.id,
+			surface: 'event_page',
+		})
 		const blob = new Blob([buildIcs(this.event, this.shareUrl)], {
 			type: 'text/calendar;charset=utf-8',
 		})
@@ -469,6 +496,7 @@ export class EventRoute implements IRouteViewModel {
 			origin: 'event-page',
 			returnTo: `/events/${this.event.id}`,
 			uiLocales: currentLanguage(this.i18n),
+			source: 'event_page',
 		})
 	}
 }

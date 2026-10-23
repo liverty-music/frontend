@@ -26,7 +26,10 @@ describe('AuthStatus', () => {
 		await sut.signIn()
 
 		// Assert
-		expect(mockAuth.signIn).toHaveBeenCalledWith({ uiLocales: 'ja' })
+		expect(mockAuth.signIn).toHaveBeenCalledWith({
+			uiLocales: 'ja',
+			source: 'auth_status',
+		})
 	})
 
 	it('should call auth.signUp when signUp is invoked', async () => {
@@ -34,7 +37,10 @@ describe('AuthStatus', () => {
 		await sut.signUp()
 
 		// Assert
-		expect(mockAuth.signUp).toHaveBeenCalledWith({ uiLocales: 'ja' })
+		expect(mockAuth.signUp).toHaveBeenCalledWith({
+			uiLocales: 'ja',
+			source: 'auth_status',
+		})
 	})
 
 	// @spec components/infrastructure/fan/web/global/i18n "Sign up in English"
@@ -43,7 +49,10 @@ describe('AuthStatus', () => {
 
 		await sut.signUp()
 
-		expect(mockAuth.signUp).toHaveBeenCalledWith({ uiLocales: 'en' })
+		expect(mockAuth.signUp).toHaveBeenCalledWith({
+			uiLocales: 'en',
+			source: 'auth_status',
+		})
 	})
 
 	it('should call auth.signOut when signOut is invoked', async () => {

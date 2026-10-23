@@ -10,6 +10,7 @@ import {
 	type RpcCall,
 	seedSignedIn,
 } from '../support/fan-auth'
+import { enableAnalytics, named, recordPostHog } from '../support/posthog'
 import { expect, type Page, test } from '../support/test'
 
 // The first page load compiles the app on the dev server; allow for it.
@@ -476,6 +477,39 @@ test.describe('data merge on authentication', () => {
 			(c) => c.method === 'UserService/Create',
 		)
 		expect(createIndex).toBeGreaterThan(getIndex)
+	})
+
+	test(`@spec ${STORY} "Guest with five follows signs up"`, async ({
+		page,
+	}) => {
+		const artists = ['1', '2', '3', '4', '5'].map((n) => ({
+			id: fakeId(`merge-five-${n}`),
+			name: `Artist ${n}`,
+			mbid: '',
+		}))
+		await seedOnce(
+			page,
+			artists.map((artist) => ({ artist })),
+			{ onboardingComplete: 'true', 'guest.home': 'JP-13', language: 'ja' },
+		)
+		await mockFanRpc(page, {
+			'UserService/Get': () => connectError('not_found', 404),
+			'UserService/Create': USER,
+		})
+		await enableAnalytics(page)
+		const events = await recordPostHog(page)
+
+		await signUpFromMyArtists(page)
+
+		await expect
+			.poll(() => named(events, 'guest.follows.merged'), { timeout: 20_000 })
+			.toHaveLength(1)
+		const [merged] = named(events, 'guest.follows.merged')
+		expect(merged.properties).toMatchObject({
+			merged_count: 5,
+			// Sent for the new account.
+			distinct_id: USER_ID,
+		})
 	})
 
 	test(`@spec ${STORY} "Identity already has an account"`, async ({ page }) => {

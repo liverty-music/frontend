@@ -1,7 +1,9 @@
 import { I18N } from '@aurelia/i18n'
 import { DI, type IContainer, ILogger, Registration } from 'aurelia'
 import { IAppConfig } from '../../src/config/app-config'
+import { IAnalyticsService } from '../../src/lib/analytics/analytics-service'
 import { IErrorBoundaryService } from '../../src/services/error-boundary-service'
+import { createMockAnalytics } from './mock-analytics'
 import { createMockAppConfig } from './mock-app-config'
 import { createMockErrorBoundary } from './mock-error-boundary'
 import { createMockI18n } from './mock-i18n'
@@ -42,6 +44,14 @@ export function createTestContainer(
 	if (!container.has(IErrorBoundaryService, false)) {
 		container.register(
 			Registration.instance(IErrorBoundaryService, createMockErrorBoundary()),
+		)
+	}
+
+	// Key actions send a usage event; without a registration the real
+	// AnalyticsService would start loading the PostHog SDK.
+	if (!container.has(IAnalyticsService, false)) {
+		container.register(
+			Registration.instance(IAnalyticsService, createMockAnalytics()),
 		)
 	}
 

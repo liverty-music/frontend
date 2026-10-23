@@ -3,7 +3,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { IHistory } from '../../../src/adapter/browser/history'
 import type { LiveEvent } from '../../../src/components/live-highway/live-event'
 import type { JourneyStatus } from '../../../src/entities/concert'
-import { IAnalyticsService } from '../../../src/lib/analytics/analytics-service'
+import {
+	Events,
+	IAnalyticsService,
+} from '../../../src/lib/analytics/analytics-service'
 import { IAuthService } from '../../../src/services/auth-service'
 import { ITicketJourneyStore } from '../../../src/services/ticket-journey-store'
 import { createTestContainer } from '../../helpers/create-container'
@@ -135,6 +138,30 @@ describe('EventDetailSheet', () => {
 		it('should return "#" when no event', () => {
 			sut.event = null
 			expect(sut.calendarUrl).toBe('#')
+		})
+	})
+
+	describe('source and calendar links', () => {
+		it('reports the source link with the event and the artist', () => {
+			// @spec components/infrastructure/fan/web/global/event-detail-sheet "Source link"
+			sut.event = makeEvent()
+
+			sut.onSourceOpened()
+
+			expect(mockAnalytics.capture.mock.calls).toEqual([
+				[Events.ConcertSourceClicked, { event_id: 'c1', artist_id: 'a1' }],
+			])
+		})
+
+		it('reports the calendar link with the event and the artist', () => {
+			sut.event = makeEvent()
+
+			sut.onCalendarOpened()
+
+			expect(mockAnalytics.capture).toHaveBeenCalledWith(
+				Events.ConcertCalendarAdded,
+				{ event_id: 'c1', artist_id: 'a1', surface: 'detail_sheet' },
+			)
 		})
 	})
 

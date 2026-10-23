@@ -226,6 +226,7 @@
           target="_blank"
           rel="noopener noreferrer"
           class="[ button ] [ pressable ]"
+          click.trigger="onSourceOpened()"
         >
           <svg-icon name="link"></svg-icon>
           <span t="eventDetail.viewOfficialInfo"></span>
@@ -236,6 +237,7 @@
           rel="noopener noreferrer"
           class="[ button ] [ pressable ]"
           data-variant="outlined"
+          click.trigger="onCalendarOpened()"
         >
           <svg-icon name="calendar"></svg-icon>
           <span t="eventDetail.addToCalendar"></span>

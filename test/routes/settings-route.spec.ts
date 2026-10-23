@@ -540,7 +540,10 @@ describe('SettingsRoute', () => {
 		it('signIn() asks the hosted login for the language the page shows', async () => {
 			const guestSut = buildGuestSut()
 			await guestSut.signIn()
-			expect(mockAuth.signIn).toHaveBeenCalledWith({ uiLocales: 'ja' })
+			expect(mockAuth.signIn).toHaveBeenCalledWith({
+				uiLocales: 'ja',
+				source: 'settings',
+			})
 		})
 
 		// @spec components/infrastructure/fan/web/global/i18n "Sign up in English"
@@ -550,7 +553,10 @@ describe('SettingsRoute', () => {
 			const { i18n } = guestSut as unknown as { i18n: I18N }
 			await i18n.setLocale('en')
 			await guestSut.signUp()
-			expect(mockAuth.signUp).toHaveBeenCalledWith({ uiLocales: 'en' })
+			expect(mockAuth.signUp).toHaveBeenCalledWith({
+				uiLocales: 'en',
+				source: 'settings',
+			})
 		})
 
 		it('language change does not call the backend RPC for a guest', async () => {

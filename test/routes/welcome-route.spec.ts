@@ -3,7 +3,12 @@ import { IRouter } from '@aurelia/router'
 import { DI, IEventAggregator, INode, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { savePasskeyReturn } from '../../src/adapter/storage/passkey-return-storage'
+import {
+	Events,
+	IAnalyticsService,
+} from '../../src/lib/analytics/analytics-service'
 import { createTestContainer } from '../helpers/create-container'
+import { createMockAnalytics } from '../helpers/mock-analytics'
 import type { createMockI18n } from '../helpers/mock-i18n'
 import { createMockRouter } from '../helpers/mock-router'
 
@@ -76,6 +81,7 @@ describe('WelcomeRoute', () => {
 	let mockFollowStore: { clearGuest: ReturnType<typeof vi.fn> }
 	let mockI18n: ReturnType<typeof createMockI18n>
 	let mockRouter: ReturnType<typeof createMockRouter>
+	let mockAnalytics: ReturnType<typeof createMockAnalytics>
 	let host: HTMLElement
 
 	beforeEach(() => {
@@ -101,6 +107,7 @@ describe('WelcomeRoute', () => {
 		}
 		mockFollowStore = { clearGuest: vi.fn() }
 		mockRouter = createMockRouter()
+		mockAnalytics = createMockAnalytics()
 		host = document.createElement('div')
 
 		const container = createTestContainer(
@@ -115,6 +122,7 @@ describe('WelcomeRoute', () => {
 				subscribe: vi.fn(() => ({ dispose: vi.fn() })),
 			}),
 			Registration.instance(INode, host),
+			Registration.instance(IAnalyticsService, mockAnalytics),
 		)
 		container.register(WelcomeRoute)
 		sut = container.get(WelcomeRoute)
@@ -179,6 +187,17 @@ describe('WelcomeRoute', () => {
 			expect(mockFollowStore.clearGuest).not.toHaveBeenCalled()
 			expect(mockRouter.load).toHaveBeenCalledWith('discovery')
 		})
+
+		it('reports that onboarding started', async () => {
+			// @spec components/infrastructure/fan/web/route/welcome "Get Started"
+			await sut.handleGetStarted()
+
+			expect(mockAnalytics.capture).toHaveBeenCalledOnce()
+			expect(mockAnalytics.capture).toHaveBeenCalledWith(
+				Events.OnboardingStarted,
+				{},
+			)
+		})
 	})
 
 	describe('handleLogin', () => {
@@ -194,7 +213,10 @@ describe('WelcomeRoute', () => {
 
 			await sut.handleLogin()
 
-			expect(mockAuth.signIn).toHaveBeenCalledWith({ uiLocales: 'ja' })
+			expect(mockAuth.signIn).toHaveBeenCalledWith({
+				uiLocales: 'ja',
+				source: 'welcome',
+			})
 		})
 
 		it('clears guest data before initiating sign-in to prevent stale guest.home from leaking into the auth-callback signup heuristic', async () => {

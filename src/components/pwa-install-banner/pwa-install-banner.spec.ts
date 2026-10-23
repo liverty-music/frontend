@@ -40,10 +40,16 @@ vi.mock('aurelia', async (importOriginal) => {
 
 import { IRouterEvents } from '@aurelia/router'
 import { INode } from 'aurelia'
+import {
+	Events,
+	IAnalyticsService,
+} from '../../lib/analytics/analytics-service'
 import { PwaInstallBanner } from './pwa-install-banner'
 
 byKey.set(INode, fakeElement)
 byKey.set(IRouterEvents, fakeRouterEvents)
+const fakeAnalytics = { capture: vi.fn() }
+byKey.set(IAnalyticsService, fakeAnalytics)
 
 /** A stand-in for one of the element's running CSS animations. */
 function fakeAnimation(animationName: string) {
@@ -187,6 +193,53 @@ describe('PwaInstallBanner', () => {
 
 			expect(fakePwaInstall.install).not.toHaveBeenCalled()
 			expect(sut.isGuideSheetOpen).toBe(true)
+		})
+	})
+
+	describe('usage events', () => {
+		it('reports the banner shown and the accepted answer', async () => {
+			// @spec components/infrastructure/fan/web/global/pwa-install-banner "Install from the banner"
+			// The installed event is PwaInstallService's (pwa-install-service.spec.ts).
+			fakeCanShowFab = true
+			fakeShouldShowInstallBanner = true
+			fakePwaInstall.install.mockResolvedValueOnce('accepted')
+			const sut = new PwaInstallBanner()
+			sut.binding()
+
+			sut.attached()
+			await sut.onCta()
+
+			expect(fakeAnalytics.capture.mock.calls).toEqual([
+				[Events.PwaInstallBannerShown, { install_mode: 'native' }],
+				[Events.PwaInstallAnswered, { answer: 'accepted' }],
+			])
+		})
+
+		it('reports the banner shown when it appears while mounted', () => {
+			const sut = new PwaInstallBanner()
+			sut.binding()
+			sut.attached()
+			expect(fakeAnalytics.capture).not.toHaveBeenCalled()
+
+			sut.isVisibleChanged(true)
+
+			expect(fakeAnalytics.capture).toHaveBeenCalledWith(
+				Events.PwaInstallBannerShown,
+				{ install_mode: 'guide' },
+			)
+		})
+
+		it('reports the guide opened where the device offers no request', () => {
+			fakeIsIos = true
+			const sut = new PwaInstallBanner()
+			sut.binding()
+
+			sut.onCta()
+
+			expect(fakeAnalytics.capture).toHaveBeenCalledWith(
+				Events.PwaInstallAnswered,
+				{ answer: 'guide_opened' },
+			)
 		})
 	})
 

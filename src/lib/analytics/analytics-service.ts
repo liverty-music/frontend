@@ -6,13 +6,15 @@ import {
 	ILogger,
 	resolve,
 } from 'aurelia'
-import type { PostHog, PostHogConfig } from 'posthog-js'
+import type { CaptureOptions, PostHog, PostHogConfig } from 'posthog-js'
 import { IAppConfig } from '../../config/app-config'
 import {
+	type AuthStartSource,
 	type EventName,
 	type EventProps,
 	Events,
 } from '../../services/analytics-events'
+import { AuthStarted } from '../../services/events/auth-started'
 import { SignedOut } from '../../services/events/signed-out'
 import { ConsentChanged } from '../consent/consent-changed'
 import { IConsentService } from '../consent/consent-service'
@@ -25,6 +27,7 @@ import {
 	type SanitizedProps,
 	sanitizeEventProps,
 } from './sensitive-property-filter'
+import { sessionRecordingOptions } from './session-recording'
 
 /**
  * Public surface for the typed PostHog wrapper. Every consumer (route VMs,
@@ -153,6 +156,20 @@ const PRE_INIT_QUEUE_LIMIT = 100
  */
 const INIT_IDLE_TIMEOUT_MS = 2_000
 
+/**
+ * `standalone` when the app runs installed (home-screen icon), `browser` in a
+ * browser tab. iOS Safari reports an installed app through
+ * `navigator.standalone` rather than the media query.
+ */
+function displayMode(): 'standalone' | 'browser' {
+	const iosStandalone =
+		(navigator as { standalone?: boolean }).standalone === true
+	return iosStandalone ||
+		window.matchMedia('(display-mode: standalone)').matches
+		? 'standalone'
+		: 'browser'
+}
+
 export class AnalyticsService implements IAnalyticsService {
 	private readonly logger = resolve(ILogger).scopeTo('AnalyticsService')
 	private readonly config = resolve(IAppConfig)
@@ -203,13 +220,12 @@ export class AnalyticsService implements IAnalyticsService {
 	private pendingAnalyticsEnabled: boolean | null = null
 
 	// NOTE: there is intentionally no pending-buffer for the sessionReplay
-	// preference. Recording is hard-disabled in current scope (design
-	// Decision 12), so a pre-init sessionReplay toggle has no SDK effect to
-	// defer — only the persisted preference matters and ConsentService owns
-	// that.
+	// preference: `init()` reads it from ConsentService, which already holds
+	// the latest value.
 
 	private readonly consentSubscription: IDisposable
 	private readonly signedOutSubscription: IDisposable
+	private readonly authStartedSubscription: IDisposable
 
 	public constructor() {
 		// Subscribe BEFORE scheduling init so an opt-out emitted in the same
@@ -225,6 +241,12 @@ export class AnalyticsService implements IAnalyticsService {
 		this.signedOutSubscription = this.ea.subscribe(SignedOut, () =>
 			this.reset(),
 		)
+		// AuthService (in `shared/`) cannot reach this service, so it publishes
+		// each start of sign-up or sign-in just before the redirect.
+		this.authStartedSubscription = this.ea.subscribe(
+			AuthStarted,
+			(event: AuthStarted) => this.handleAuthStarted(event),
+		)
 		this.scheduleInit()
 	}
 
@@ -238,6 +260,26 @@ export class AnalyticsService implements IAnalyticsService {
 			return
 		}
 		this.dispatch(name, props)
+	}
+
+	/**
+	 * Reports a start of sign-up or sign-in. The page leaves for hosted login
+	 * right after, so the event is sent at once (`fetch` with keepalive
+	 * outlives the navigation) rather than left in the SDK's batch queue.
+	 * Before init it is queued like any event and is lost if the page leaves
+	 * first.
+	 */
+	private handleAuthStarted(event: AuthStarted): void {
+		if (event.source === undefined) return
+		const props = {
+			kind: event.kind,
+			source: event.source as AuthStartSource,
+		}
+		if (this.isEnabled() && this.posthog !== null && !this.flushing) {
+			this.dispatch(Events.AuthStarted, props, { send_instantly: true })
+			return
+		}
+		this.capture(Events.AuthStarted, props)
 	}
 
 	public captureException(
@@ -340,6 +382,9 @@ export class AnalyticsService implements IAnalyticsService {
 			return
 		}
 		this.posthog.reset()
+		// reset() clears the SDK's consent state; a fan who opted out stays
+		// opted out after signing out.
+		if (!this.consent.analytics) this.posthog.opt_out_capturing()
 		// Point the service-worker snapshot at the new anonymous id.
 		this.syncIdentitySnapshot()
 	}
@@ -431,14 +476,13 @@ export class AnalyticsService implements IAnalyticsService {
 					? this.pendingAnalyticsEnabled
 					: this.consent.analytics
 			this.pendingAnalyticsEnabled = null
-
-			// The session-replay opt-out preference is read + persisted by
-			// ConsentService, but the actual recording stays hard-disabled in
-			// current scope (see `applySessionReplayToSdk` / design Decision
-			// 12), so there is nothing to apply from it here.
+			const origin = window.location.origin
 
 			const initConfig: Partial<PostHogConfig> = {
 				api_host: apiHost,
+				// Links the SDK shows (toolbar) go to the PostHog app, not to the
+				// reverse proxy `api_host` may point at.
+				ui_host: 'https://eu.posthog.com',
 				// Default-on posture: persist the anonymous id so anonymous
 				// funnels survive reloads and merge into the identified profile.
 				// The opt-out branch below downgrades this to memory-only.
@@ -448,16 +492,22 @@ export class AnalyticsService implements IAnalyticsService {
 				// `analytics-events.ts`. Implicit captures would create rogue
 				// events outside the catalogue.
 				autocapture: false,
-				// AnalyticsService orchestrates page views and identification
-				// itself rather than via SDK helpers.
-				capture_pageview: false,
-				// Session recording is hard-disabled in current scope per design
-				// Decision 12 — replay-dependent PII masking (tasks 8.1–8.3) and
-				// sampling (8.5) are not yet implemented, so recording must never
-				// start regardless of the user's sessionReplay preference. The
-				// `sessionReplay` consent value is still tracked so the toggle
-				// reflects the user's intent for when replay ships.
-				disable_session_recording: true,
+				// One page view per screen: the SDK sends one at load and one
+				// each time the router changes the path. A change of the query
+				// string alone is not a page view ('history_change' compares the
+				// path only). Leaving the app sends a page leave.
+				capture_pageview: 'history_change',
+				capture_pageleave: true,
+				// Recording needs both Analytics and Session replay on; the
+				// toggles are reapplied in `applySessionReplayToSdk`.
+				disable_session_recording: !(
+					analyticsEnabled && this.consent.sessionReplay
+				),
+				session_recording: sessionRecordingOptions(origin),
+				// Console output is not masked text: the app's logs name artists,
+				// ids and errors. The project's console-log setting must not add
+				// it to recordings.
+				enable_recording_console_log: false,
 				// Error reports go only through `captureException`, which carries
 				// the banner's Error ID. A project-side "exception autocapture"
 				// toggle must not add a second, ID-less capture path.
@@ -467,22 +517,22 @@ export class AnalyticsService implements IAnalyticsService {
 				// value stays on the platform (OpenSpec `referral-attribution`,
 				// design D11). An error report keeps the dashboard filter keys
 				// and has tokens redacted (OpenSpec `global/analytics`).
-				before_send: (event) =>
-					filterAnalyticsEvent(event, window.location.origin),
+				before_send: (event) => filterAnalyticsEvent(event, origin),
 				loaded: () => {
 					this.logger.debug('PostHog SDK loaded')
 				},
 			}
 			posthog.init(this.config.posthogProjectKey, initConfig)
 			this.posthog = posthog
+			// Every event states whether the app runs installed or in a tab.
+			posthog.register({ display_mode: displayMode() })
 
 			if (analyticsEnabled) {
 				// Default state: ensure capture is opted in (the SDK persists
 				// the opt flag, so a returning user who opted out then back in
 				// needs an explicit opt_in_capturing).
 				posthog.opt_in_capturing()
-				// Reassert the recording posture (no-op enable yet — see below).
-				this.applySessionReplayToSdk()
+				this.applySessionReplayToSdk(this.consent.sessionReplay)
 			} else {
 				// Opted out: suppress all capture and revert to memory-only.
 				this.applyAnalyticsOptOutToSdk()
@@ -597,7 +647,11 @@ export class AnalyticsService implements IAnalyticsService {
 	 * birth date / age stripped, age-derived values bucketized) and injects
 	 * the active OTel `trace_id` so paired FE/BE events can be correlated.
 	 */
-	private dispatch<E extends EventName>(name: E, props: EventProps<E>): void {
+	private dispatch<E extends EventName>(
+		name: E,
+		props: EventProps<E>,
+		options?: CaptureOptions,
+	): void {
 		if (this.posthog === null) return
 		const sanitized: SanitizedProps = sanitizeEventProps(
 			name,
@@ -612,7 +666,7 @@ export class AnalyticsService implements IAnalyticsService {
 				enriched.trace_id = ctx.traceId
 			}
 		}
-		this.posthog.capture(name, enriched)
+		this.posthog.capture(name, enriched, options)
 	}
 
 	/**
@@ -622,11 +676,8 @@ export class AnalyticsService implements IAnalyticsService {
 	 *     merge (NO reset); analytics OFF → opt_out_capturing + reset +
 	 *     memory-only.
 	 *
-	 * The `sessionReplay` preference is read + persisted by ConsentService,
-	 * but the actual recording is hard-disabled in current scope (design
-	 * Decision 12), so toggling it does NOT start/stop recording here — see
-	 * `applySessionReplayToSdk`. Event capture and identity are unaffected by
-	 * the sessionReplay toggle either way.
+	 * `sessionReplay` starts or stops the session recording (with analytics
+	 * on); event capture and identity are unaffected by it.
 	 *
 	 * Tolerates pre-init firing: the latest analytics value is buffered and
 	 * applied inside `init()` once the SDK loads.
@@ -635,8 +686,6 @@ export class AnalyticsService implements IAnalyticsService {
 		const analyticsEnabled = event.state.analytics
 		if (this.posthog === null) {
 			this.pendingAnalyticsEnabled = analyticsEnabled
-			// sessionReplay preference is intentionally not buffered for an SDK
-			// effect: recording stays off in current scope regardless.
 			return
 		}
 		if (analyticsEnabled) {
@@ -657,10 +706,7 @@ export class AnalyticsService implements IAnalyticsService {
 		// Reflect the new opt-out posture into the service-worker snapshot so
 		// notificationclick / notificationclose honour it immediately.
 		this.syncIdentitySnapshot()
-		// Reassert the recording posture. This is a no-op enable in current
-		// scope (recording stays disabled per Decision 12) but keeps the
-		// single wiring point explicit for when replay ships.
-		this.applySessionReplayToSdk()
+		this.applySessionReplayToSdk(event.state.sessionReplay, analyticsEnabled)
 	}
 
 	/**
@@ -671,33 +717,30 @@ export class AnalyticsService implements IAnalyticsService {
 	 */
 	private applyAnalyticsOptOutToSdk(): void {
 		if (this.posthog === null) return
+		// reset() clears the SDK's consent state too, so it runs BEFORE the
+		// opt-out: in the other order the opt-out is undone at once and
+		// capture resumes.
+		this.posthog.reset()
 		this.posthog.opt_out_capturing()
 		this.posthog.set_config({ persistence: 'memory', ip: false })
-		this.posthog.reset()
 		this.pendingIdentify = null
 	}
 
 	/**
 	 * SINGLE WIRING POINT for PostHog session recording — never touches
-	 * capture or identity.
-	 *
-	 * Session replay is HARD-DISABLED in current scope per design Decision
-	 * 12: the replay-dependent PII masking (tasks 8.1–8.3) and sampling (8.5)
-	 * are not yet implemented, so enabling recording would re-introduce a
-	 * PII-leak + free-tier-cost risk. Recording therefore stays off
-	 * regardless of the user's `sessionReplay` opt-out preference — the
-	 * preference is still tracked + persisted so the settings toggle reflects
-	 * the user's intent for WHEN replay ships.
-	 *
-	 * To deliberately enable replay once masking + sampling land, gate the
-	 * recording state on `this.consent.sessionReplay` here (e.g.
-	 * `disable_session_recording: !(this.consent.analytics &&
-	 * this.consent.sessionReplay)`) plus the masking/sampling init config.
-	 * This is the ONLY place that should flip recording on.
+	 * capture or identity. Recording runs only while both Analytics and
+	 * Session replay are on (OpenSpec `global/analytics`, "Session recordings
+	 * hide what the fan types and reads"); what is masked and which screens
+	 * are never recorded is fixed at init by {@link sessionRecordingOptions}.
 	 */
-	private applySessionReplayToSdk(): void {
+	private applySessionReplayToSdk(
+		sessionReplay: boolean,
+		analyticsEnabled = true,
+	): void {
 		if (this.posthog === null) return
-		this.posthog.set_config({ disable_session_recording: true })
+		this.posthog.set_config({
+			disable_session_recording: !(analyticsEnabled && sessionReplay),
+		})
 	}
 
 	/**
@@ -817,6 +860,7 @@ export class AnalyticsService implements IAnalyticsService {
 	public dispose(): void {
 		this.consentSubscription.dispose()
 		this.signedOutSubscription.dispose()
+		this.authStartedSubscription.dispose()
 	}
 
 	/**

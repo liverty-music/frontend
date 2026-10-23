@@ -108,6 +108,8 @@ const mockUserStore: { current: unknown; currentLanguage: string } = {
 	currentLanguage: 'ja',
 }
 
+const mockAnalytics = { capture: vi.fn() }
+
 vi.mock('aurelia', async (importOriginal) => {
 	const actual = await importOriginal<typeof import('aurelia')>()
 	return {
@@ -117,6 +119,7 @@ vi.mock('aurelia', async (importOriginal) => {
 				ILogger: mockLogger,
 				// Key actions add a step for the error report.
 				IErrorBoundaryService: { addBreadcrumb: () => {} },
+				IAnalyticsService: mockAnalytics,
 				IConcertRpcClient: mockConcert,
 				ITicketSaleRpcClient: mockSale,
 				ILotteryEntryRpcClient: mockEntry,
@@ -130,6 +133,7 @@ vi.mock('aurelia', async (importOriginal) => {
 	}
 })
 
+import { Events } from '../../lib/analytics/analytics-service'
 import { LotteryEntryRoute } from './lottery-entry-route'
 
 // Flush pending microtasks (the mount handshake uses queueMicrotask).
@@ -243,6 +247,35 @@ describe('LotteryEntryRoute', () => {
 	})
 
 	describe('Start → Authorize → Confirm', () => {
+		it('reports the entry started and submitted with the count', async () => {
+			// @spec components/infrastructure/fan/web/route/lottery-entry "Entry submitted"
+			const sut = await toPayment()
+
+			await sut.confirmEntry()
+
+			const choice = {
+				event_id: EVENT_ID,
+				ticket_type_id: TYPE_ID,
+				ticket_count: 2,
+			}
+			expect(mockAnalytics.capture.mock.calls).toEqual([
+				[Events.TicketLotteryEntryStarted, choice],
+				[Events.TicketLotteryEntrySubmitted, choice],
+			])
+			expect(sut.step).toBe('done')
+		})
+
+		it('reports no submission when Confirm fails', async () => {
+			mockEntry.confirm.mockRejectedValue(new Error('unavailable'))
+			const sut = await toPayment()
+
+			await sut.confirmEntry()
+
+			expect(mockAnalytics.capture.mock.calls.map(([name]) => name)).toEqual([
+				Events.TicketLotteryEntryStarted,
+			])
+		})
+
 		it('starts a Draft for the TicketType and the count', async () => {
 			const sut = await toPersonalDetails()
 

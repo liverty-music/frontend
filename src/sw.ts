@@ -11,6 +11,8 @@ import {
 	flushInteractionStash,
 	NOTIFICATION_FLUSH_MESSAGE,
 	NOTIFICATION_SYNC_TAG,
+	type NotificationMetadata,
+	notificationInteraction,
 	type PushPayload,
 	reportNotificationInteraction,
 	resolvePushMetadata,
@@ -128,7 +130,7 @@ self.addEventListener('push', (event) => {
 	// Compat shim (removed once both sides are deployed): resolve url /
 	// notification_id from the nested `data`, falling back to the legacy
 	// top-level fields.
-	const { url, notificationId } = resolvePushMetadata(payload)
+	const { url, notificationId, type, milestone } = resolvePushMetadata(payload)
 
 	const options: NotificationOptions = {
 		body: payload.body,
@@ -136,8 +138,8 @@ self.addEventListener('push', (event) => {
 		badge: '/favicon-96x96.png',
 		tag: payload.tag || 'default',
 		// Map the passthrough metadata straight into options.data so
-		// notificationclick/close read event.notification.data.{url,notification_id}.
-		data: { url, notification_id: notificationId },
+		// notificationclick/close read it back (readMetadata).
+		data: { url, notification_id: notificationId, type, milestone },
 	}
 
 	event.waitUntil(
@@ -148,26 +150,39 @@ self.addEventListener('push', (event) => {
 	)
 })
 
-self.addEventListener('notificationclick', (event) => {
-	event.notification.close()
-	const data = (event.notification.data ?? {}) as {
+/** The metadata the push handler stored in `options.data`. */
+function readMetadata(
+	notification: Notification,
+): Partial<NotificationMetadata> {
+	const data = (notification.data ?? {}) as {
 		url?: string
 		notification_id?: string
+		type?: string
+		milestone?: string
 	}
+	return {
+		url: data.url,
+		notificationId: data.notification_id,
+		type: data.type,
+		milestone: data.milestone,
+	}
+}
+
+self.addEventListener('notificationclick', (event) => {
+	event.notification.close()
+	const data = readMetadata(event.notification)
 	const url: string = data.url || '/'
-	const notificationId: string = data.notification_id ?? ''
 
 	event.waitUntil(
 		(async () => {
 			// Report the open at interaction time (orthogonal to navigation). Kept
 			// first so the capture is issued even if focus/openWindow throws.
 			await reportNotificationInteraction(
-				{
-					event: Events.NotificationOpened,
-					notificationId,
-					uuid: crypto.randomUUID(),
-					timestamp: new Date().toISOString(),
-				},
+				notificationInteraction(
+					Events.NotificationOpened,
+					data,
+					self.location.origin,
+				),
 				self.registration,
 			)
 
@@ -219,15 +234,13 @@ self.addEventListener('notificationclick', (event) => {
 )
 
 self.addEventListener('notificationclose', (event) => {
-	const data = (event.notification.data ?? {}) as { notification_id?: string }
 	event.waitUntil(
 		reportNotificationInteraction(
-			{
-				event: Events.NotificationDismissed,
-				notificationId: data.notification_id ?? '',
-				uuid: crypto.randomUUID(),
-				timestamp: new Date().toISOString(),
-			},
+			notificationInteraction(
+				Events.NotificationDismissed,
+				readMetadata(event.notification),
+				self.location.origin,
+			),
 			self.registration,
 		),
 	)
