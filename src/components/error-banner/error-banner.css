@@ -43,16 +43,39 @@
 			background: var(--_bg-subtle);
 		}
 
+		.error-id-label,
 		.error-id {
 			font-family: var(--font-body);
 			font-size: var(--step--1);
 			color: var(--color-text-muted);
 		}
 
+		.error-id {
+			color: var(--color-text-primary);
+		}
+
 		footer {
 			display: grid;
-			grid-template-columns: 1fr 1fr;
 			gap: var(--space-3xs);
+		}
+
+		.error-secondary-actions {
+			display: flex;
+			gap: var(--space-3xs);
+
+			> * {
+				flex: 1;
+			}
+		}
+
+		.error-email-link {
+			justify-self: center;
+
+			padding-block: var(--space-3xs);
+
+			font-size: var(--step--1);
+			color: var(--color-text-primary);
+			text-decoration: underline;
 		}
 	}
 }

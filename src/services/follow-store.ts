@@ -20,6 +20,7 @@ import {
 } from '../entities/follow'
 import { IAuthService } from './auth-service'
 import { IConcertStore } from './concert-store'
+import { IErrorBoundaryService } from './error-boundary-service'
 import { GuestMigrationRequested } from './events/guest-migration-requested'
 import { SignedOut } from './events/signed-out'
 import { IHapticService } from './haptic-service'
@@ -65,6 +66,7 @@ export interface IFollowStore extends FollowStore {}
  */
 export class FollowStore {
 	private readonly logger = resolve(ILogger).scopeTo('FollowStore')
+	private readonly errorBoundary = resolve(IErrorBoundaryService)
 	private readonly authService = resolve(IAuthService)
 	private readonly rpcClient = resolve(IFollowRpcClient)
 	private readonly concertStore = resolve(IConcertStore)
@@ -142,6 +144,7 @@ export class FollowStore {
 	 */
 	public async follow(artist: Artist): Promise<void> {
 		if (this.followedIds.has(artist.id)) return
+		this.errorBoundary.addBreadcrumb('action', 'follow_artist')
 		this.logger.info('Following artist', { artist: artist.name })
 
 		// Optimistic update
@@ -185,6 +188,7 @@ export class FollowStore {
 	 * Authenticated users call the backend RPC.
 	 */
 	public async unfollow(artistId: string): Promise<void> {
+		this.errorBoundary.addBreadcrumb('action', 'unfollow_artist')
 		if (!this.authService.isAuthenticated) {
 			this.unfollowGuest(artistId)
 			this.followedArtists = this.followedArtists.filter(

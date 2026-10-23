@@ -1,5 +1,6 @@
 import { fileURLToPath } from 'node:url'
 import aurelia from '@aurelia/vite-plugin'
+import posthog from '@posthog/rollup-plugin'
 import { defineConfig, loadEnv } from 'vite'
 import { nodePolyfills } from 'vite-plugin-node-polyfills'
 import { VitePWA } from 'vite-plugin-pwa'
@@ -29,6 +30,28 @@ const plainDateEngine =
 const plainDateEnginePath = fileURLToPath(
 	new URL(`./src/lib/plain-date/${plainDateEngine}.ts`, import.meta.url),
 )
+
+// Source maps for PostHog Error Tracking, uploaded only by the image build,
+// which mounts the key (OpenSpec `capture-client-errors`, design D7). Local
+// and PR builds have no key and are unchanged. The maps are emitted hidden and
+// deleted after upload, so the served image contains none; the commit SHA
+// names the release, which keeps the bundle env-agnostic. A failed upload
+// fails the build.
+const posthogSourcemapApiKey = process.env.POSTHOG_SOURCEMAP_API_KEY
+const posthogSourcemaps = posthogSourcemapApiKey
+	? [
+			posthog({
+				personalApiKey: posthogSourcemapApiKey,
+				host: 'https://eu.posthog.com',
+				projectId: '190464',
+				sourcemaps: {
+					releaseName: 'liverty-music-frontend',
+					releaseVersion: process.env.GIT_SHA,
+					deleteAfterUpload: true,
+				},
+			}),
+		]
+	: []
 
 /** The Aurelia packages the apps load, kept to one copy (see `optimizeDeps`). */
 const aureliaRuntimePackages = [
@@ -162,6 +185,11 @@ export default defineConfig({
 			srcDir: 'src',
 			filename: 'sw.ts',
 			injectManifest: {
+				// The SW build follows `build.sourcemap` by default, which the
+				// PostHog plugin sets to `hidden`; its map is outside the plugin's
+				// delete-after-upload and the SW sends no error reports, so it would
+				// only ship a stray `sw.js.map`.
+				sourcemap: false,
 				// Scope the precache manifest to the consumer entry. The admin and
 				// organizer entries ship NO service worker and must never enter the
 				// consumer SW precache (design "Risks" — PWA over-precaching). All
@@ -187,5 +215,6 @@ export default defineConfig({
 				enabled: false,
 			},
 		}),
+		...posthogSourcemaps,
 	],
 })

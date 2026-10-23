@@ -263,15 +263,27 @@
 		"searchFailed": "Search couldn't complete — your connection may be unstable. Wait a moment and try again."
 	},
 	"errorBanner": {
-		"copied": "Error details copied",
-		"reportCooldown": "Please wait before reporting another issue",
+		"reportCooldown": "Please wait a moment before opening the email again.",
 		"label": "Error details",
 		"title": "Something went wrong",
-		"message": "An unexpected error occurred. Reload the page.",
-		"copy": "Copy details",
-		"report": "Report to GitHub",
-		"dismiss": "Dismiss",
+		"messageSent": "Our team has received the details. Try reloading the page. If you like, email us what you were doing. One line is enough.",
+		"messageNotSent": "Our team hasn't received the details. Try reloading the page. Please email us what you were doing. One line is enough.",
+		"errorIdLabel": "Inquiry number",
+		"emailReport": "Tell us what happened by email",
+		"dismiss": "Close",
 		"reload": "Reload page"
+	},
+	"errorReportEmail": {
+		"subject": "The app didn't work (inquiry number: {{errorId}})",
+		"hint": "In a word or two, what were you doing at the time?",
+		"example": "Example: I tried to open a concert's details",
+		"keepBelow": "Please send everything below this line as it is.",
+		"errorId": "Inquiry number: {{value}}",
+		"time": "Time: {{value}}",
+		"screen": "Screen: {{value}}",
+		"investigation": "Details for investigation",
+		"errorMessage": "Error: {{value}}",
+		"traceId": "Trace ID: {{value}}"
 	},
 	"auth": {
 		"loginRequired": "Login required",
@@ -332,7 +344,7 @@
 		"analytics": {
 			"sectionTitle": "Privacy & Analytics",
 			"toggleLabel": "Analytics",
-			"toggleDescription": "On by default. We use anonymous usage data — sent to PostHog Cloud EU — to find where people get stuck and improve the app. No personally identifying or sensitive information is collected. Turn this off to stop all analytics.",
+			"toggleDescription": "On by default. We use anonymous usage data — sent to PostHog Cloud EU — to find where people get stuck and improve the app. No personally identifying or sensitive information is collected. When something goes wrong in the app, we also send what failed and the steps just before it. Turn this off to stop all analytics and error reports.",
 			"sessionReplayLabel": "Session replay",
 			"sessionReplayDescription": "On by default. Records anonymised screen interactions so we can see where the interface confuses people. Turning this off stops recording only — your other analytics and account stay unaffected.",
 			"privacyPolicyLink": "Read our Privacy Policy"
@@ -635,7 +647,7 @@
 		},
 		"privacy": {
 			"title": "Privacy Policy",
-			"lastUpdated": "October 16, 2026",
+			"lastUpdated": "October 23, 2026",
 			"intro": "pannpers.dev (\"we\" or \"us\") establishes this Privacy Policy (the \"Policy\") regarding the handling of users' personal information in the application \"Liverty Music\" (the \"Service\"), as set out below. We comply with Japan's Act on the Protection of Personal Information (the \"APPI\") and other applicable laws.",
 			"sections": [
 				{
@@ -657,6 +669,7 @@
 						"- Language preference",
 						"- Push notification subscription information and device token",
 						"- Usage analytics data (interaction events; we use cookies and localStorage)",
+						"- Error reports (what failed, on which screen, and the steps just before it)",
 						"- Purchase information (orders, tickets, the full name and phone number given for identity verification, and payment reference numbers)",
 						"- Purchase route (the referral code in the referral link you came from)"
 					]
@@ -668,6 +681,7 @@
 						"- Providing the Service and authenticating users",
 						"- Improving the Service through usage analysis",
 						"- Measuring advertising effectiveness",
+						"- Detecting and fixing defects",
 						"- Delivering push notifications",
 						"- Identifying the account and providing related features (including the generation and management of the wallet address)",
 						"- Issuing tickets, checking the buyer's identity at entry, and handling refunds, using the purchase information",
@@ -678,7 +692,7 @@
 					"heading": "4. Provision to Third Parties and Outsourcing",
 					"body": [
 						"In providing the Service, we entrust the handling of personal information to, or integrate with, the following external services:",
-						"- PostHog (product analytics), operated by Klant Solutions B.V. in the Netherlands",
+						"- PostHog (product analytics and error reports), operated by Klant Solutions B.V. in the Netherlands",
 						"- Resend (email delivery)",
 						"- Google (push notification delivery via Firebase Cloud Messaging / Web Push)",
 						"- Google (concert information search via Gemini / Vertex AI)",
@@ -691,14 +705,14 @@
 					"body": [
 						"To provide the Service's features and to analyze usage, the Service transmits information directly from your device to the following external services:",
 						"- Recipient: Last.fm / Information transmitted: IP address, etc. / Purpose: retrieval of artist information",
-						"- Recipient: PostHog / Information transmitted: usage data recorded in cookies, localStorage, etc. / Purpose: improving the Service and measuring advertising effectiveness"
+						"- Recipient: PostHog / Information transmitted: usage data recorded in cookies, localStorage, etc., and error reports / Purpose: improving the Service, measuring advertising effectiveness, and detecting and fixing defects"
 					]
 				},
 				{
 					"heading": "6. Cross-Border Transfer of Personal Data",
 					"body": [
-						"The Service transfers usage analytics data to PostHog Cloud EU, operated by Klant Solutions B.V. in the Netherlands. PostHog handles this data as our processor — on our behalf and under our instructions (an entrustment of handling, not provision to an independent third party). Because the processor is located in a foreign country (the Netherlands), this cross-border transfer is subject to Article 28 of the APPI and relies on Japan's designation of the EU, which includes the Netherlands, as providing an equivalent standard of personal-data protection.",
-						"For this transfer, the categories of data transferred are interaction / usage events captured via cookies and localStorage, and the purpose of the transfer is product analytics: improving the Service and measuring its effectiveness.",
+						"The Service transfers usage analytics data and error reports to PostHog Cloud EU, operated by Klant Solutions B.V. in the Netherlands. PostHog handles this data as our processor — on our behalf and under our instructions (an entrustment of handling, not provision to an independent third party). Because the processor is located in a foreign country (the Netherlands), this cross-border transfer is subject to Article 28 of the APPI and relies on Japan's designation of the EU, which includes the Netherlands, as providing an equivalent standard of personal-data protection.",
+						"For this transfer, the categories of data transferred are interaction / usage events captured via cookies and localStorage, and error reports (what failed, on which screen, and the steps just before it); the purposes of the transfer are product analytics: improving the Service and measuring its effectiveness, and detecting and fixing defects.",
 						"In addition, some of the external services above handle personal information on servers located in the United States or the United Kingdom.",
 						"We ensure the appropriate handling of personal data by confirming, through contracts and other means, that these transfer recipients have established systems conforming to the standards required by Japan's APPI."
 					]
@@ -706,7 +720,7 @@
 				{
 					"heading": "7. Withdrawing Consent",
 					"body": [
-						"Cooperation with usage analysis and advertising-effectiveness measurement is optional. You may withdraw your consent at any time by turning off the \"Help improve the experience\" and \"Help measure advertising effectiveness\" toggles in the Settings screen."
+						"Cooperation with usage analysis and advertising-effectiveness measurement is optional. You may withdraw your consent at any time by turning off the \"Help improve the experience\" and \"Help measure advertising effectiveness\" toggles in the Settings screen. Turning off \"Help improve the experience\" also stops error reports."
 					]
 				},
 				{

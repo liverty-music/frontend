@@ -14,9 +14,11 @@ import type { TicketSale } from '../../src/entities/ticket-sale'
 import en from '../../src/locales/en/translation.json'
 import ja from '../../src/locales/ja/translation.json'
 import { LotteryEntryRoute } from '../../src/routes/lottery-entry/lottery-entry-route'
+import { IErrorBoundaryService } from '../../src/services/error-boundary-service'
 import { IIdentityVerificationService } from '../../src/services/identity-verification-service'
 import { IStripeService } from '../../src/services/stripe-service'
 import { IUserStore } from '../../src/services/user-store'
+import { createMockErrorBoundary } from '../helpers/mock-error-boundary'
 
 const EVENT_ID = 'event-1'
 const TYPE_ID = 'type-1'
@@ -62,6 +64,8 @@ async function render(lng: 'ja' | 'en', user?: Record<string, string>) {
 		'<lottery-entry-route></lottery-entry-route>',
 		class App {},
 		[
+			// Key actions add a step for the error report.
+			Registration.instance(IErrorBoundaryService, createMockErrorBoundary()),
 			I18nConfiguration.customize((options) => {
 				options.initOptions = {
 					lng,

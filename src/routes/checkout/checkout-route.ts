@@ -25,6 +25,7 @@ import {
 	type VerificationRequirement,
 } from '../../entities/ticket-sale'
 import { toDomesticDisplay, toE164 } from '../../lib/to-e164'
+import { IErrorBoundaryService } from '../../services/error-boundary-service'
 import { IIdentityVerificationService } from '../../services/identity-verification-service'
 import { INotificationManager } from '../../services/notification-manager'
 import { IPushService } from '../../services/push-service'
@@ -91,6 +92,7 @@ export interface CheckoutMessage {
  */
 export class CheckoutRoute implements IRouteViewModel {
 	private readonly logger = resolve(ILogger).scopeTo('CheckoutRoute')
+	private readonly errorBoundary = resolve(IErrorBoundaryService)
 	private readonly concertClient = resolve(IConcertRpcClient)
 	private readonly saleClient = resolve(ITicketSaleRpcClient)
 	private readonly checkoutClient = resolve(ICheckoutRpcClient)
@@ -408,6 +410,7 @@ export class CheckoutRoute implements IRouteViewModel {
 	/** Hold the chosen count for 15 minutes and continue to the 本人確認 step. */
 	public async hold(): Promise<void> {
 		if (this.busy || !this.sale) return
+		this.errorBoundary.addBreadcrumb('action', 'start_checkout')
 		this.busy = true
 		this.message = null
 		try {

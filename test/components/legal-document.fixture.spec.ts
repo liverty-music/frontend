@@ -66,14 +66,16 @@ const PRIVACY_COLLECTED = {
 			'言語設定',
 			'プッシュ通知の購読情報',
 			'利用状況の分析データ',
+			'エラー情報（発生した不具合の内容、画面、その直前の操作）',
 			'購入に関する情報（注文、チケット、本人確認のための氏名・電話番号、決済の参照番号）',
 			'購入の経路（紹介リンクに含まれる紹介コード）',
 		],
 		purposes: [
+			'不具合の検出と修正',
 			'購入に関する情報を用いたチケットの発行、入場時の購入者の本人確認および返金の対応',
 			'どの紹介リンクから購入されたかの計測、および紹介コードごとの購入数の公演の主催者への報告',
 		],
-		lastUpdated: '2026年10月16日',
+		lastUpdated: '2026年10月23日',
 	},
 	en: {
 		categories: [
@@ -83,14 +85,16 @@ const PRIVACY_COLLECTED = {
 			'Language preference',
 			'Push notification subscription information',
 			'Usage analytics data',
+			'Error reports (what failed, on which screen, and the steps just before it)',
 			'Purchase information (orders, tickets, the full name and phone number given for identity verification, and payment reference numbers)',
 			'Purchase route (the referral code in the referral link you came from)',
 		],
 		purposes: [
+			'Detecting and fixing defects',
 			"Issuing tickets, checking the buyer's identity at entry, and handling refunds, using the purchase information",
 			'Measuring which referral links led to purchases, and reporting the number of purchases per referral code to the organizer of the event',
 		],
-		lastUpdated: 'October 16, 2026',
+		lastUpdated: 'October 23, 2026',
 	},
 } as const
 
@@ -121,44 +125,52 @@ describe('Privacy Policy states the collected data and purposes', () => {
 const PRIVACY_DISCLOSURES = {
 	ja: {
 		recipients: [
-			'PostHog（プロダクト分析）',
+			'PostHog（プロダクト分析およびエラー情報の収集）',
 			'Resend（メール配信）',
 			'Google（Firebase Cloud Messaging / Web Push によるプッシュ通知配信）',
 			'Google（Gemini / Vertex AI によるライブ情報の検索）',
 			'Last.fm（アーティスト情報の取得',
 		],
-		crossBorder: 'PostHog Cloud EU に移転します',
+		crossBorder:
+			'利用状況の分析データおよびエラー情報を、オランダの Klant Solutions B.V. が運営する PostHog Cloud EU に移転します',
 		posthog: [
 			'Klant Solutions B.V.',
 			'オランダ',
 			'Cookie および localStorage を通じて取得される操作・利用イベント',
 			'本サービスの改善および効果測定を目的とするプロダクト分析',
+			'およびエラー情報（発生した不具合の内容、画面、その直前の操作）',
+			'ならびに不具合の検出と修正',
 		],
 		rights: [
 			'「使い心地の改善に協力する」',
 			'いつでも同意を撤回できます',
+			'「使い心地の改善に協力する」をオフにすると、エラー情報の送信も停止します。',
 			'開示、訂正、追加、削除、利用停止等を請求することができます',
 			'pannpers@pannpers.dev',
 		],
 	},
 	en: {
 		recipients: [
-			'PostHog (product analytics)',
+			'PostHog (product analytics and error reports)',
 			'Resend (email delivery)',
 			'Google (push notification delivery via Firebase Cloud Messaging / Web Push)',
 			'Google (concert information search via Gemini / Vertex AI)',
 			'Last.fm (retrieval of artist information',
 		],
-		crossBorder: 'transfers usage analytics data to PostHog Cloud EU',
+		crossBorder:
+			'transfers usage analytics data and error reports to PostHog Cloud EU',
 		posthog: [
 			'Klant Solutions B.V.',
 			'the Netherlands',
 			'interaction / usage events captured via cookies and localStorage',
 			'product analytics: improving the Service and measuring its effectiveness',
+			'and error reports (what failed, on which screen, and the steps just before it)',
+			'and detecting and fixing defects',
 		],
 		rights: [
 			'"Help improve the experience"',
 			'withdraw your consent at any time',
+			'Turning off "Help improve the experience" also stops error reports.',
 			'disclose, correct, add to, delete, or suspend the use of your personal information',
 			'pannpers@pannpers.dev',
 		],

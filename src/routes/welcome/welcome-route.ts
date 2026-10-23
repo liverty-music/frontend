@@ -28,6 +28,7 @@ import type { Concert, DateGroup } from '../../entities/concert'
 import type { Hype } from '../../entities/follow'
 import { IAuthService } from '../../services/auth-service'
 import { IConcertStore } from '../../services/concert-store'
+import { IErrorBoundaryService } from '../../services/error-boundary-service'
 import { IFollowStore } from '../../services/follow-store'
 import { IUserStore } from '../../services/user-store'
 import {
@@ -63,6 +64,7 @@ export class WelcomeRoute implements IRouteViewModel {
 	private readonly followStore = resolve(IFollowStore)
 	private readonly router = resolve(IRouter)
 	private readonly logger = resolve(ILogger).scopeTo('WelcomeRoute')
+	private readonly errorBoundary = resolve(IErrorBoundaryService)
 	private readonly ea = resolve(IEventAggregator)
 	private readonly i18n = resolve(I18N)
 	private readonly concertService = resolve(IConcertStore)
@@ -480,6 +482,7 @@ export class WelcomeRoute implements IRouteViewModel {
 		// solely in the i18next detector's `language` key, which persists across
 		// the reset (the cancelled-login behavior).
 		this.resetGuestState()
+		this.errorBoundary.addBreadcrumb('action', 'start_sign_in')
 		try {
 			await this.authService.signIn({
 				uiLocales: currentLanguage(this.i18n),

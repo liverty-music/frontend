@@ -13,10 +13,13 @@ import {
 	createAuthRetryInterceptor,
 	createRetryInterceptor,
 } from './connect-error-router'
+import { recordRpcFailureStep, rememberRpcSpan } from './rpc-failure-trace'
 import {
 	createValidateInterceptor,
 	loadSharedValidator,
 } from './validate-interceptor'
+
+export { rpcSpanOf } from './rpc-failure-trace'
 
 const tracer = trace.getTracer('connect-rpc')
 
@@ -104,7 +107,8 @@ export const createTransport = (
 	/**
 	 * Interceptor that creates OTEL spans for Connect-RPC calls.
 	 * Records rpc.system, rpc.service, rpc.method as span attributes.
-	 * On failure, captures ConnectError code and records the exception.
+	 * On failure, captures ConnectError code and records the exception, and
+	 * keeps the span's IDs and a failed-request step for the error report.
 	 */
 	const otelInterceptor: Interceptor = (next) => async (req) => {
 		const serviceName = req.service.typeName
@@ -140,6 +144,10 @@ export const createTransport = (
 				span.recordException(
 					err instanceof Error ? err : new Error(String(err)),
 				)
+				const { traceId, spanId } = span.spanContext()
+				rememberRpcSpan(err, { traceId, spanId })
+				const code = err instanceof ConnectError ? Code[err.code] : 'Unknown'
+				recordRpcFailureStep(`${spanName} ${code}`)
 				throw err
 			} finally {
 				span.end()

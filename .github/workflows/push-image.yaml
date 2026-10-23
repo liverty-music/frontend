@@ -205,6 +205,12 @@ jobs:
       # after `npm run build` as a defense-in-depth gate against
       # template-stripping regressions (the class of bug that produced
       # the v1.0.0 blank-screen Sev-1).
+      #
+      # The build uploads the fan bundle's source maps to PostHog Error
+      # Tracking for this commit and deletes them from the image (OpenSpec
+      # `capture-client-errors`, design D7). The key is a BuildKit secret so it
+      # never reaches the image history; GIT_SHA names the release. A failed
+      # upload fails the build.
       - name: Build and Push Docker Image
         if: github.event_name == 'push' && steps.decide.outputs.mode == 'build'
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
@@ -212,6 +218,8 @@ jobs:
           context: .
           push: true
           tags: ${{ env.IMAGE_TAGS }}
+          build-args: GIT_SHA=${{ github.sha }}
+          secrets: posthog_sourcemap_key=${{ secrets.POSTHOG_SOURCEMAP_API_KEY }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

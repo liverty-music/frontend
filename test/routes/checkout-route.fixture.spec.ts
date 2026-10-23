@@ -17,6 +17,7 @@ import type { TicketSale } from '../../src/entities/ticket-sale'
 import en from '../../src/locales/en/translation.json'
 import ja from '../../src/locales/ja/translation.json'
 import { CheckoutRoute } from '../../src/routes/checkout/checkout-route'
+import { IErrorBoundaryService } from '../../src/services/error-boundary-service'
 import { IIdentityVerificationService } from '../../src/services/identity-verification-service'
 import { INotificationManager } from '../../src/services/notification-manager'
 import { IPushService } from '../../src/services/push-service'
@@ -26,6 +27,7 @@ import {
 	StripeService,
 } from '../../src/services/stripe-service'
 import { IUserStore } from '../../src/services/user-store'
+import { createMockErrorBoundary } from '../helpers/mock-error-boundary'
 
 const EVENT_ID = 'event-1'
 
@@ -104,6 +106,8 @@ async function render(
 		'<checkout-route></checkout-route>',
 		class App {},
 		[
+			// Key actions add a step for the error report.
+			Registration.instance(IErrorBoundaryService, createMockErrorBoundary()),
 			I18nConfiguration.customize((options) => {
 				options.initOptions = {
 					lng,

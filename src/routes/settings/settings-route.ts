@@ -21,6 +21,7 @@ import {
 import { toDomesticDisplay, toE164 } from '../../lib/to-e164'
 import { IAudioEngine } from '../../services/audio-engine'
 import { IAuthService } from '../../services/auth-service'
+import { IErrorBoundaryService } from '../../services/error-boundary-service'
 import { IFabMenuService } from '../../services/fab-menu-service'
 import { IIdentityVerificationService } from '../../services/identity-verification-service'
 import { PASSKEY_MANAGEMENT_PATH } from '../../services/passkey-auth-service'
@@ -38,6 +39,7 @@ export class SettingsRoute {
 	private readonly storage = resolve(ILocalStorage)
 	private readonly pushService = resolve(IPushService)
 	private readonly logger = resolve(ILogger).scopeTo('SettingsRoute')
+	private readonly errorBoundary = resolve(IErrorBoundaryService)
 	private readonly ea = resolve(IEventAggregator)
 	private readonly i18n = resolve(I18N)
 	private readonly router = resolve(IRouter)
@@ -368,6 +370,7 @@ export class SettingsRoute {
 	}
 
 	private writeConsent(purpose: ConsentPurpose, enabled: boolean): void {
+		this.errorBoundary.addBreadcrumb('action', 'change_consent')
 		if (enabled) {
 			this.consent.grant(purpose)
 		} else {
@@ -596,11 +599,13 @@ export class SettingsRoute {
 
 	/** Guest auth entry — start the OIDC sign-in flow from Settings. */
 	public async signIn(): Promise<void> {
+		this.errorBoundary.addBreadcrumb('action', 'start_sign_in')
 		await this.auth.signIn({ uiLocales: currentLanguage(this.i18n) })
 	}
 
 	/** Guest auth entry — start the OIDC sign-up flow from Settings. */
 	public async signUp(): Promise<void> {
+		this.errorBoundary.addBreadcrumb('action', 'start_sign_up')
 		await this.auth.signUp({ uiLocales: currentLanguage(this.i18n) })
 	}
 
