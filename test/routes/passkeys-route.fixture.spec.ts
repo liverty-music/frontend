@@ -2,9 +2,10 @@ import { I18nConfiguration } from '@aurelia/i18n'
 import { tasksSettled } from '@aurelia/runtime'
 import { createFixture } from '@aurelia/testing'
 import { Code, ConnectError } from '@connectrpc/connect'
-import { CustomElement, Registration } from 'aurelia'
+import { CustomElement, IEventAggregator, Registration } from 'aurelia'
 import { UserManager } from 'oidc-client-ts'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { Snack } from '../../shared/ui/snack-bar/snack'
 import { IDocumentLocation } from '../../src/adapter/browser/document-location'
 import { IPasskeyRpcClient } from '../../src/adapter/rpc/client/passkey-client'
 import { takePasskeyReturn } from '../../src/adapter/storage/passkey-return-storage'
@@ -205,6 +206,11 @@ async function renderManagement(
 		)
 		.build().started
 	mounted.push(fixture)
+	// Snacks the screen publishes (shown by the shell's <snack-bar>).
+	const snacks: Snack[] = []
+	fixture.container
+		.get(IEventAggregator)
+		.subscribe(Snack, (snack: Snack) => snacks.push(snack))
 	const host = fixture.appHost
 	const vm = CustomElement.for<PasskeysRoute>(
 		host.querySelector('passkeys-route') as HTMLElement,
@@ -236,6 +242,7 @@ async function renderManagement(
 		)
 
 	return {
+		snacks,
 		added,
 		records,
 		vm,
@@ -343,20 +350,20 @@ describe('Passkey management lists, adds and removes passkeys (fixture)', () => 
 	it('says the passkey was added when the list comes back with one more', async () => {
 		// @spec components/infrastructure/fan/web/route/settings "Passkey added"
 		const first = await renderManagement([IPHONE])
-		expect(first.q('passkeys-add-outcome')).toBeNull()
+		expect(first.snacks).toEqual([])
 		first.q<HTMLButtonElement>('passkeys-add')?.click()
 
 		// Back through the app root: the root route takes the marker, passkey
 		// management opens again (after its own sign-in) and lists one more.
 		expect(takePasskeyReturn()).toBe('/settings/passkeys')
 		const back = await renderManagement([IPHONE, WINDOWS])
-		expect(back.q('passkeys-add-outcome')?.textContent?.trim()).toBe(
-			ja.passkeys.addOutcome.added,
-		)
+		expect(back.snacks.map((n) => [n.message, n.severity])).toEqual([
+			['パスキーを追加しました', 'info'],
+		])
 
 		// Said once: the next opening says nothing.
 		const again = await renderManagement([IPHONE, WINDOWS])
-		expect(again.q('passkeys-add-outcome')).toBeNull()
+		expect(again.snacks).toEqual([])
 	})
 
 	it('says no passkey was added when the fan comes back by going back and the list is unchanged', async () => {
@@ -372,12 +379,9 @@ describe('Passkey management lists, adds and removes passkeys (fixture)', () => 
 		await page.settle()
 
 		expect(page.client.list).toHaveBeenCalledTimes(2)
-		expect(page.q('passkeys-add-outcome')?.textContent?.trim()).toBe(
-			ja.passkeys.addOutcome.notAdded,
-		)
-		expect(ja.passkeys.addOutcome.notAdded).toContain(
-			'すでにこのアカウントのパスキーがある場合は作成されません',
-		)
+		expect(page.snacks.map((n) => n.message)).toEqual([
+			'パスキーは追加されませんでした。この端末にすでにある場合は、そのままログインに使えます。',
+		])
 		// The root marker is dropped too, so a later visit is not redirected.
 		expect(takePasskeyReturn()).toBeNull()
 
@@ -387,6 +391,7 @@ describe('Passkey management lists, adds and removes passkeys (fixture)', () => 
 		)
 		await page.settle()
 		expect(page.client.list).toHaveBeenCalledTimes(2)
+		expect(page.snacks).toHaveLength(1)
 	})
 
 	it('says no passkey was added after a reload with the same list', async () => {
@@ -394,8 +399,19 @@ describe('Passkey management lists, adds and removes passkeys (fixture)', () => 
 		const first = await renderManagement([IPHONE, WINDOWS])
 		first.q<HTMLButtonElement>('passkeys-add')?.click()
 		const reloaded = await renderManagement([IPHONE, WINDOWS])
-		expect(reloaded.q('passkeys-add-outcome')?.textContent?.trim()).toBe(
+		expect(reloaded.snacks.map((n) => n.message)).toEqual([
 			ja.passkeys.addOutcome.notAdded,
+		])
+	})
+
+	it("says before leaving that the hosted login's back action returns here", async () => {
+		const { q } = await renderManagement([IPHONE])
+		const ids = (
+			q('passkeys-add')?.getAttribute('aria-describedby') ?? ''
+		).split(' ')
+		const notes = ids.map((id) => document.getElementById(id)?.textContent)
+		expect(notes).toContain(
+			'ログイン画面でパスキーを作成すると、この画面に戻ります。作成されなかったときは、ログイン画面の「戻る」でこの画面に戻れます。',
 		)
 	})
 

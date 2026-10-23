@@ -9,13 +9,6 @@
     <button type="button" busy-on-click.bind="() => load()" class="[ button ] [ pressable ]" data-variant="outlined" t="passkeys.retry"></button>
   </section>
 
-  <!-- Outcome of the last add attempt, said once on coming back from the
-       hosted login (design D4). -->
-  <output if.bind="addOutcome" class="passkeys-add-outcome" aria-live="polite" data-outcome.bind="addOutcome" data-testid="passkeys-add-outcome">
-    <template if.bind="addOutcome === 'added'">${'passkeys.addOutcome.added' | t}</template>
-    <template else>${'passkeys.addOutcome.notAdded' | t}</template>
-  </output>
-
   <template if.bind="listState === 'ready'">
     <ul class="passkeys-card" role="list" data-testid="passkeys-list">
       <li repeat.for="passkey of passkeys" class="passkeys-item" data-testid="passkeys-item">

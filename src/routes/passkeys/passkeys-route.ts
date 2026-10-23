@@ -1,7 +1,8 @@
 import { I18N } from '@aurelia/i18n'
 import type { NavigationInstruction } from '@aurelia/router'
 import { ConnectError } from '@connectrpc/connect'
-import { ILogger, resolve } from 'aurelia'
+import { IEventAggregator, ILogger, resolve } from 'aurelia'
+import { Snack } from '../../../shared/ui/snack-bar/snack'
 import { IDocumentLocation } from '../../adapter/browser/document-location'
 import { IPasskeyRpcClient } from '../../adapter/rpc/client/passkey-client'
 import {
@@ -40,9 +41,6 @@ export interface ListedPasskey extends Passkey {
 /** Passkey dates are the day in Japan, where the product runs. */
 const DATE_TIME_ZONE = 'Asia/Tokyo'
 
-/** What became of the last attempt to add a passkey on this device. */
-export type PasskeyAddOutcome = 'added' | 'notAdded'
-
 /** Where the passkey list stands. */
 export type PasskeyListState = 'loading' | 'ready' | 'error'
 
@@ -64,6 +62,7 @@ export class PasskeysRoute {
 	private readonly location = resolve(IDocumentLocation)
 	private readonly config = resolve(IAppConfig)
 	private readonly i18n = resolve(I18N)
+	private readonly ea = resolve(IEventAggregator)
 	private readonly logger = resolve(ILogger).scopeTo('PasskeysRoute')
 
 	public passkeys: ListedPasskey[] = []
@@ -72,11 +71,6 @@ export class PasskeysRoute {
 	public pendingRemoval: ListedPasskey | null = null
 	public removalFailed = false
 	public removing = false
-	/**
-	 * Said once after coming back from an add attempt in the hosted login,
-	 * which reports neither outcome itself (design D4).
-	 */
-	public addOutcome: PasskeyAddOutcome | null = null
 
 	/**
 	 * The last passkey cannot be removed from the app: the identity provider
@@ -145,7 +139,7 @@ export class PasskeysRoute {
 
 	/**
 	 * After an add attempt, compare the list with the ids saved before leaving
-	 * and say once whether a passkey was added. A refused creation (the
+	 * and say once, in a snack, whether a passkey was added. A refused creation (the
 	 * device's passkey manager already holds one) leaves the list unchanged.
 	 */
 	private compareWithBeforeAdd(): void {
@@ -155,9 +149,16 @@ export class PasskeysRoute {
 		// redirect a later visit.
 		takePasskeyReturn()
 		const known = new Set(before)
-		this.addOutcome = this.passkeys.some((p) => !known.has(p.id))
-			? 'added'
-			: 'notAdded'
+		const added = this.passkeys.some((p) => !known.has(p.id))
+		// A snack, so the outcome is not missed above the list.
+		this.ea.publish(
+			new Snack(
+				this.i18n.tr(
+					added ? 'passkeys.addOutcome.added' : 'passkeys.addOutcome.notAdded',
+				),
+				'info',
+			),
+		)
 	}
 
 	/**
@@ -243,7 +244,6 @@ export class PasskeysRoute {
 	 * root, which reopens this screen from the stored marker.
 	 */
 	public addOnThisDevice(): void {
-		this.addOutcome = null
 		savePasskeyIdsBeforeAdd(this.passkeys.map((p) => p.id))
 		savePasskeyReturn(PASSKEY_MANAGEMENT_PATH)
 		const base = this.config.zitadelIssuer.replace(/\/+$/, '')
