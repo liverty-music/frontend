@@ -209,6 +209,6 @@ New vs returning users are distinguished by the `isSignUp` flag in the OIDC stat
 - RPC goes through a client in `src/adapter/rpc/client/` built with `createTransport`; auth is at the transport, not the call site.
 - Services export an `IName` token via `DI.createInterface()`, register `.singleton()`, and re-export the interface (cf. `concert-store.ts`).
 - `@observable` mutations update optimistically and roll back on RPC failure (cf. `follow-store.ts follow()`).
-- ConnectError is routed via `IConnectErrorRouter`, not swallowed in a component.
+- A ConnectError is never swallowed. An expected code becomes a state, mapped in the RPC client (cf. `wallet-public-key-client.ts` `get()`: NotFound → `null`) or in the route that shows it (cf. `checkout-route.ts` `explainAuthorizeCardFailure`); any other code is logged and shown as a retryable error, or rethrown.
 
 </agent-rules>
