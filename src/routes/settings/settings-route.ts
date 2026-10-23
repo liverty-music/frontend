@@ -131,17 +131,9 @@ export class SettingsRoute {
 			: 'settings.notSet'
 	}
 
+	/** The identity provider's current verification state of the address. */
 	public get emailVerified(): boolean {
-		// Read directly from OIDC profile claims. The `as Record<string,
-		// unknown>` cast and the `email_verified` claim-name knowledge belong
-		// behind AuthService (tracked under the follow-up `expose
-		// claim-derived state on AuthService` refactor); keeping the inline
-		// read here for now to scope this change to the user-entity SSoT
-		// refactor.
-		return (
-			(this.auth.user?.profile as Record<string, unknown>)?.email_verified ===
-			true
-		)
+		return this.auth.emailVerified
 	}
 
 	// ── 本人確認 (identity verification, identity-ekyc-jpki) ───────────────────
@@ -296,6 +288,22 @@ export class SettingsRoute {
 		// their state arrives.
 		void this.resolveNotificationToggleState()
 		void this.loadIdentityVerification()
+		// The badge reads the current state on opening, and again whenever the
+		// fan returns to the tab (e.g. after verifying on their phone).
+		void this.auth.refreshEmailVerified()
+	}
+
+	public attached(): void {
+		document.addEventListener('visibilitychange', this.onVisibilityChange)
+	}
+
+	public detaching(): void {
+		document.removeEventListener('visibilitychange', this.onVisibilityChange)
+	}
+
+	private readonly onVisibilityChange = (): void => {
+		if (document.visibilityState !== 'visible') return
+		void this.auth.refreshEmailVerified()
 	}
 
 	/**

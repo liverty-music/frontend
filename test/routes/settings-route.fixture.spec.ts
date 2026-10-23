@@ -66,6 +66,8 @@ async function render(store: ReturnType<typeof makeUserStore>) {
 			Registration.instance(IAuthService, {
 				isAuthenticated: true,
 				user: { profile: { email: 'fan@example.com', email_verified: true } },
+				emailVerified: true,
+				refreshEmailVerified: vi.fn(async () => {}),
 			}),
 			Registration.instance(IUserStore, store),
 			Registration.instance(IPushService, {

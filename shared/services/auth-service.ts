@@ -384,16 +384,60 @@ export class AuthService {
 
 	public user: User | null = null
 
+	/**
+	 * Whether the signed-in user's email address is verified at the identity
+	 * provider. It starts from the ID token's `email_verified` claim, which is
+	 * fixed at sign-in, and {@link refreshEmailVerified} brings it up to date.
+	 */
+	public emailVerified = false
+
 	public get isAuthenticated(): boolean {
 		return !!this.user && !this.user.expired
 	}
 
 	private updateState(user: User | null): void {
+		const claim = user?.profile.email_verified === true
+		// A token refresh may keep the sign-in ID token, whose claim can be older
+		// than a value read from userinfo; for the same identity keep the newer
+		// "verified".
+		const sameIdentity =
+			!!user && !!this.user && user.profile.sub === this.user.profile.sub
+		this.emailVerified = sameIdentity ? this.emailVerified || claim : claim
 		this.user = user
 		this.logger.info('Auth state updated', {
 			isAuthenticated: this.isAuthenticated,
 			user: user?.profile.preferred_username,
 		})
+	}
+
+	/**
+	 * Reads the identity provider's current `email_verified` from the OIDC
+	 * userinfo endpoint with the current access token, so a verification made
+	 * since sign-in, on this device or another, shows (OpenSpec change
+	 * `fan-email-verification-in-app`, design D5). It is read-only: unlike
+	 * `signinSilent()` it rotates no refresh token, so it cannot race
+	 * {@link ensureFreshToken}. A failed read keeps the last known value.
+	 */
+	public async refreshEmailVerified(): Promise<void> {
+		const token = this.user?.access_token
+		if (!token) return
+		try {
+			const endpoint =
+				await this.userManager.metadataService.getUserInfoEndpoint()
+			const resp = await fetch(endpoint, {
+				headers: { Authorization: `Bearer ${token}` },
+			})
+			if (!resp.ok) {
+				this.logger.warn('Userinfo read failed', { status: resp.status })
+				return
+			}
+			const claims = (await resp.json()) as { email_verified?: unknown }
+			if (typeof claims.email_verified === 'boolean') {
+				this.emailVerified = claims.email_verified
+			}
+		} catch (err) {
+			this.logger.warn('Userinfo read failed', err)
+		}
 	}
 
 	public async signIn(options?: SignInOptions): Promise<void> {

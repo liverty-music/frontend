@@ -16,7 +16,10 @@ const mockLogger = {
 	scopeTo: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn() }),
 }
 
-const mockAuth = { isAuthenticated: true }
+const mockAuth = {
+	isAuthenticated: true,
+	refreshEmailVerified: vi.fn(async () => {}),
+}
 
 // Mutable `current` so the getters can be exercised across states.
 const mockIdentityVerifications = {

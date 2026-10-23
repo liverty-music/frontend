@@ -61,6 +61,10 @@ vi.mock(
 	stub('PasskeyRecoveryRoute'),
 )
 vi.mock(
+	'../src/routes/verify-email/verify-email-route',
+	stub('VerifyEmailRoute'),
+)
+vi.mock(
 	'../src/routes/passkeys-callback/passkeys-callback-route',
 	stub('PasskeysCallbackRoute'),
 )
@@ -224,6 +228,12 @@ describe('app-shell', () => {
 			await go('passkey-recovery')
 			expect(displayedRoute()).toBe('passkey-recovery-route')
 			expect(headerTitle()).toBe('passkeyRecovery.title')
+		})
+
+		it('opens the email verification screen for a guest', async () => {
+			await go('verify-email')
+			expect(displayedRoute()).toBe('verify-email-route')
+			expect(headerTitle()).toBe('verifyEmail.title')
 		})
 
 		it('shows the nav bar again when leaving a chrome-less route', async () => {

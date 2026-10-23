@@ -46,6 +46,8 @@ describe('SettingsRoute', () => {
 	let mockAuth: {
 		isAuthenticated: boolean
 		user: { profile: Record<string, unknown> } | null
+		emailVerified: boolean
+		refreshEmailVerified: ReturnType<typeof vi.fn>
 		signOut: ReturnType<typeof vi.fn>
 		signIn: ReturnType<typeof vi.fn>
 		signUp: ReturnType<typeof vi.fn>
@@ -98,6 +100,8 @@ describe('SettingsRoute', () => {
 		mockAuth = {
 			isAuthenticated: true,
 			user: { profile: { email_verified: true } },
+			emailVerified: true,
+			refreshEmailVerified: vi.fn().mockResolvedValue(undefined),
 			signOut: vi.fn().mockResolvedValue(undefined),
 			signIn: vi.fn().mockResolvedValue(undefined),
 			signUp: vi.fn().mockResolvedValue(undefined),
@@ -169,15 +173,33 @@ describe('SettingsRoute', () => {
 	})
 
 	describe('loading', () => {
-		it('sets emailVerified from user profile', async () => {
+		it('reads the current verification state on opening', async () => {
 			await sut.loading()
+			expect(mockAuth.refreshEmailVerified).toHaveBeenCalledOnce()
 			expect(sut.emailVerified).toBe(true)
 		})
 
-		it('sets emailVerified false when profile has no claim', async () => {
-			mockAuth.user = { profile: {} }
-			await sut.loading()
+		it('shows the auth service verification state', () => {
+			mockAuth.emailVerified = false
 			expect(sut.emailVerified).toBe(false)
+		})
+
+		it('reads the state again when the fan returns to the tab, until detached', () => {
+			// @spec components/infrastructure/fan/web/route/settings "Verified on another device"
+			sut.attached()
+			const visibility = vi.spyOn(document, 'visibilityState', 'get')
+
+			visibility.mockReturnValue('hidden')
+			document.dispatchEvent(new Event('visibilitychange'))
+			expect(mockAuth.refreshEmailVerified).not.toHaveBeenCalled()
+
+			visibility.mockReturnValue('visible')
+			document.dispatchEvent(new Event('visibilitychange'))
+			expect(mockAuth.refreshEmailVerified).toHaveBeenCalledOnce()
+
+			sut.detaching()
+			document.dispatchEvent(new Event('visibilitychange'))
+			expect(mockAuth.refreshEmailVerified).toHaveBeenCalledOnce()
 		})
 
 		it('derives currentHome from userService.current.home (no loading() copy)', async () => {

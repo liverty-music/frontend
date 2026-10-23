@@ -35,6 +35,7 @@ interface MockUserManager {
 	getUser: ReturnType<typeof vi.fn>
 	removeUser: ReturnType<typeof vi.fn>
 	events: MockUserManagerEvents
+	metadataService: { getUserInfoEndpoint: ReturnType<typeof vi.fn> }
 }
 
 describe('AuthService', () => {
@@ -54,6 +55,11 @@ describe('AuthService', () => {
 			events: {
 				addUserLoaded: vi.fn(),
 				addUserUnloaded: vi.fn(),
+			},
+			metadataService: {
+				getUserInfoEndpoint: vi
+					.fn()
+					.mockResolvedValue('https://auth.example.test/oidc/v1/userinfo'),
 			},
 		}
 		// Vitest 4 invokes a mocked class's `mockImplementation` via `new`, so it
@@ -100,6 +106,92 @@ describe('AuthService', () => {
 		// Simulate expired user loaded
 		userLoadedCallback({ expired: true, profile: { preferred_username: 'u' } })
 		expect(sut.isAuthenticated).toBe(false)
+	})
+
+	describe('emailVerified', () => {
+		const signedIn = (emailVerified: boolean, sub = 'fan-1') => {
+			const userLoadedCallback =
+				userManagerMock.events.addUserLoaded.mock.calls[0][0]
+			userLoadedCallback({
+				expired: false,
+				access_token: 'access-token',
+				profile: { sub, email_verified: emailVerified },
+			})
+		}
+
+		afterEach(() => {
+			vi.unstubAllGlobals()
+		})
+
+		it('starts from the ID token claim', () => {
+			signedIn(false)
+			expect(sut.emailVerified).toBe(false)
+			signedIn(true, 'fan-2')
+			expect(sut.emailVerified).toBe(true)
+		})
+
+		it('reads the current state from userinfo with the access token', async () => {
+			// @spec components/infrastructure/fan/web/route/settings "Verified on another device"
+			signedIn(false)
+			const fetchMock = vi
+				.fn()
+				.mockResolvedValue(
+					new Response(JSON.stringify({ sub: 'fan-1', email_verified: true })),
+				)
+			vi.stubGlobal('fetch', fetchMock)
+
+			await sut.refreshEmailVerified()
+
+			expect(fetchMock).toHaveBeenCalledWith(
+				'https://auth.example.test/oidc/v1/userinfo',
+				{ headers: { Authorization: 'Bearer access-token' } },
+			)
+			expect(sut.emailVerified).toBe(true)
+			expect(userManagerMock.signinSilent).not.toHaveBeenCalled()
+		})
+
+		it('keeps the userinfo state when a refresh keeps the older ID token', async () => {
+			signedIn(false)
+			vi.stubGlobal(
+				'fetch',
+				vi
+					.fn()
+					.mockResolvedValue(
+						new Response(JSON.stringify({ email_verified: true })),
+					),
+			)
+			await sut.refreshEmailVerified()
+
+			signedIn(false)
+
+			expect(sut.emailVerified).toBe(true)
+		})
+
+		it.each([
+			['the request fails', () => Promise.reject(new TypeError('offline'))],
+			[
+				'userinfo answers an error',
+				() => Promise.resolve(new Response('', { status: 401 })),
+			],
+		])('keeps the last known state when %s', async (_, answer) => {
+			// @spec components/infrastructure/fan/web/route/settings "State cannot be read"
+			signedIn(true)
+			vi.stubGlobal('fetch', vi.fn(answer))
+
+			await sut.refreshEmailVerified()
+
+			expect(sut.emailVerified).toBe(true)
+		})
+
+		it('reads nothing without a signed-in user', async () => {
+			const fetchMock = vi.fn()
+			vi.stubGlobal('fetch', fetchMock)
+
+			await sut.refreshEmailVerified()
+
+			expect(fetchMock).not.toHaveBeenCalled()
+			expect(sut.emailVerified).toBe(false)
+		})
 	})
 
 	it('should set isAuthenticated to false when user is unloaded', () => {
