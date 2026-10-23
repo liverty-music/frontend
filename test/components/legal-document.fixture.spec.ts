@@ -216,6 +216,36 @@ describe('Privacy Policy discloses recipients, transfers and rights', () => {
 	}
 })
 
+// What the Privacy Policy says about session recordings, per language.
+const RECORDING_DISCLOSURES = {
+	ja: [
+		'画面操作の記録（セッションリプレイ）も上記の利用状況の分析データとともに PostHog に移転します',
+		'画面上のすべての文字と入力内容を伏せ字にし',
+		'購入手続き、抽選申込、本人確認および設定の各画面は記録しません',
+		'記録の目的は本サービスの改善です',
+		'設定画面の「セッションリプレイ」をオフにすると、記録は停止します',
+	],
+	en: [
+		'recordings of your screens (session replay) are also transferred to PostHog',
+		'all text on screen and every input value are masked',
+		'the checkout, lottery entry, identity verification and Settings screens are never recorded',
+		'Recordings are used to improve the Service',
+		'Turning off Session replay in Settings stops recording',
+	],
+} as const
+
+describe('Privacy Policy discloses session recordings', () => {
+	for (const lng of ['ja', 'en'] as const) {
+		it(`states masked recordings, unrecorded screens and how to stop in ${lng}`, async () => {
+			// @spec components/infrastructure/fan/web/global/legal-document "Recording disclosed"
+			const text = await privacyText(lng)
+			for (const part of RECORDING_DISCLOSURES[lng]) {
+				expect(text).toContain(part)
+			}
+		})
+	}
+})
+
 describe('OSS licenses page renders in ja and en', () => {
 	for (const lng of ['ja', 'en'] as const) {
 		it(`renders the generated package list in ${lng}`, async () => {
