@@ -37,6 +37,13 @@ export interface SnackHandle {
 	dismiss(): void
 }
 
+/** Material 3 short snackbar duration (Compose `SnackbarDuration.Short`). */
+export const SNACK_SHORT_MS = 4000
+/** Material 3 long snackbar duration (Compose `SnackbarDuration.Long`). */
+export const SNACK_LONG_MS = 10000
+/** Longest message, in characters, that still gets the short duration. */
+export const SNACK_SHORT_MAX_CHARS = 30
+
 /** Typed event for triggering snack-bar notifications via IEventAggregator. */
 export class Snack {
 	public handle: SnackHandle | null = null
@@ -47,8 +54,24 @@ export class Snack {
 		public readonly options?: SnackOptions,
 	) {}
 
+	/**
+	 * How long the snack stays, following the Material 3 snackbar durations
+	 * (Compose `SnackbarDuration.Short` 4 s / `Long` 10 s): with an action,
+	 * long; without one, short for a message a reader takes in within 4 s
+	 * (about 30 characters at 8 Japanese characters a second) and long
+	 * beyond. A snack's own `duration` (e.g. `Infinity`) is kept.
+	 *
+	 * The length is the message as published. An app that publishes catalog
+	 * keys translates them where it shows them, so it gives its snacks an
+	 * explicit duration (the organizer console does).
+	 */
 	public get durationMs(): number {
-		return this.options?.duration ?? 2500
+		const own = this.options?.duration
+		if (own !== undefined) return own
+		if (this.options?.action) return SNACK_LONG_MS
+		return [...this.message].length <= SNACK_SHORT_MAX_CHARS
+			? SNACK_SHORT_MS
+			: SNACK_LONG_MS
 	}
 
 	public get action(): SnackAction | undefined {

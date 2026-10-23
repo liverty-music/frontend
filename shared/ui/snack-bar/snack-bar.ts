@@ -17,8 +17,9 @@ interface SnackItem {
 /**
  * Shows `Snack` events published on the IEventAggregator at the bottom of the
  * window. Shared by the fan app and the organizer console. Each snack carries
- * its own duration (`SnackOptions.duration`, 2500 ms by default, `Infinity`
- * to stay until dismissed).
+ * its own duration (`SnackOptions.duration`, `Infinity` to stay until
+ * dismissed); without one it follows the Material 3 durations
+ * (`Snack.durationMs`).
  *
  * The message and the action label show as given. An app that publishes
  * catalog keys instead projects `message` and `action` slots, which receive
