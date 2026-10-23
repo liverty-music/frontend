@@ -148,15 +148,71 @@ describe('SnackBar', () => {
 	})
 
 	describe('duration', () => {
-		// @spec components/infrastructure/fan/web/global/snack-bar "Auto-dismiss after duration"
-		it('dismisses after 2500 ms by default', () => {
-			sut.attaching()
-			subscribeHandler?.(new Snack('saved'))
-
-			vi.advanceTimersByTime(2499)
-			expect(sut.snacks[0].dismissed).toBe(false)
+		/** Advance to just before `ms` and to `ms`, reporting dismissed state. */
+		function dismissedAround(ms: number): [boolean, boolean] {
+			vi.advanceTimersByTime(ms - 1)
+			const before = sut.snacks[0].dismissed
 			vi.advanceTimersByTime(1)
-			expect(sut.snacks[0].dismissed).toBe(true)
+			return [before, sut.snacks[0].dismissed]
+		}
+
+		// @spec components/infrastructure/fan/web/global/snack-bar "Auto-dismiss after duration"
+		// @spec components/infrastructure/fan/web/global/snack-bar "Short message"
+		it('dismisses a short message without an action after 4 s', () => {
+			sut.attaching()
+			const message = 'パスキーを追加しました。'
+			expect([...message]).toHaveLength(12)
+			subscribeHandler?.(new Snack(message))
+			expect(dismissedAround(4000)).toEqual([false, true])
+		})
+
+		it('keeps the short duration up to 30 characters', () => {
+			sut.attaching()
+			subscribeHandler?.(new Snack('あ'.repeat(30)))
+			expect(dismissedAround(4000)).toEqual([false, true])
+		})
+
+		// @spec components/infrastructure/fan/web/global/snack-bar "Long message"
+		it('dismisses a message longer than 30 characters after 10 s', () => {
+			sut.attaching()
+			const message = 'あ'.repeat(50)
+			subscribeHandler?.(new Snack(message))
+			expect(dismissedAround(10000)).toEqual([false, true])
+		})
+
+		it('counts characters as shown, not UTF-16 units', () => {
+			// 30 emoji are 60 UTF-16 units but 30 characters.
+			sut.attaching()
+			subscribeHandler?.(new Snack('🎫'.repeat(30)))
+			expect(dismissedAround(4000)).toEqual([false, true])
+		})
+
+		it('keeps a snack with an action for 10 s', () => {
+			sut.attaching()
+			subscribeHandler?.(
+				new Snack('Undo?', 'info', {
+					action: { label: 'Undo', callback: vi.fn() },
+				}),
+			)
+			expect(dismissedAround(10000)).toEqual([false, true])
+		})
+
+		// @spec components/infrastructure/fan/web/global/snack-bar "Snack with its own duration"
+		it("keeps a snack's own duration", () => {
+			sut.attaching()
+			subscribeHandler?.(
+				new Snack('long '.repeat(20), 'info', { duration: 2000 }),
+			)
+			subscribeHandler?.(
+				new Snack('Update available', 'info', {
+					duration: Number.POSITIVE_INFINITY,
+					action: { label: 'Reload', callback: vi.fn() },
+				}),
+			)
+			vi.advanceTimersByTime(2000)
+			expect(sut.snacks.map((s) => s.dismissed)).toEqual([true, false])
+			vi.advanceTimersByTime(60000)
+			expect(sut.snacks[1].dismissed).toBe(false)
 		})
 
 		it('uses the duration of each snack', () => {

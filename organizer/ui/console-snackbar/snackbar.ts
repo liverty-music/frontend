@@ -1,9 +1,14 @@
 import { DI, IEventAggregator, resolve } from 'aurelia'
-import { Snack } from '../../../shared/ui/snack-bar/snack'
+import {
+	SNACK_LONG_MS,
+	SNACK_SHORT_MS,
+	Snack,
+} from '../../../shared/ui/snack-bar/snack'
 
-/** M3 snackbar durations (Compose `SnackbarHost`). */
-export const SNACK_SHORT_MS = 4000
-export const SNACK_LONG_MS = 10_000
+// M3 snackbar durations, shared with the fan app's snack-bar. The console
+// passes them explicitly: its messages are catalog keys, so their length is
+// not the length the member reads.
+export { SNACK_LONG_MS, SNACK_SHORT_MS }
 
 /** Values of a catalog message. */
 export type MessageParams = Record<string, unknown>

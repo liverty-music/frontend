@@ -147,11 +147,13 @@ describe('SnackBar', () => {
 		expect(sut.snacks[2].id).toBe(2)
 	})
 
-	it('should use default duration if not specified', () => {
+	it('should use the Material 3 short duration if none is specified', () => {
 		publishSnack(new Snack('Test message'))
 		insertMockElement(0)
 
-		vi.advanceTimersByTime(2500)
+		vi.advanceTimersByTime(3999)
+		expect(sut.snacks[0].dismissed).toBe(false)
+		vi.advanceTimersByTime(1)
 		expect(sut.snacks[0].dismissed).toBe(true)
 	})
 
@@ -159,7 +161,7 @@ describe('SnackBar', () => {
 		publishSnack(new Snack('Test message'))
 		insertMockElement(0)
 
-		vi.advanceTimersByTime(2500)
+		vi.advanceTimersByTime(4000)
 		sut.onToggle(createToggleEvent('closed'), sut.snacks[0])
 
 		expect(sut.snacks).toHaveLength(0)
