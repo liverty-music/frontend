@@ -12,10 +12,25 @@ RUN npm ci
 # Copy source code
 COPY . .
 
+# The commit SHA names the PostHog release the source maps are uploaded for.
+# It is not env-specific, so the bundle stays env-agnostic.
+ARG GIT_SHA=""
+
 # Build the application. No env-specific build-args: the resulting bundle
 # is env-agnostic and fetches /config.json at runtime from a per-env K8s
 # ConfigMap. See OpenSpec change `adopt-runtime-config-for-frontend`.
-RUN npm run build
+#
+# When the PostHog key is mounted, the build uploads hidden source maps and
+# deletes them (OpenSpec `capture-client-errors`, design D7). The key is a
+# BuildKit secret, never a build-arg, so it stays out of the image history;
+# without it the build is unchanged.
+RUN --mount=type=secret,id=posthog_sourcemap_key,required=false \
+	if [ -s /run/secrets/posthog_sourcemap_key ]; then \
+		POSTHOG_SOURCEMAP_API_KEY="$(cat /run/secrets/posthog_sourcemap_key)" \
+		GIT_SHA="$GIT_SHA" npm run build; \
+	else \
+		npm run build; \
+	fi
 
 # Defense-in-depth: assert every route chunk still contains its compiled
 # template marker. Catches the class of bug that produced the v1.0.0
