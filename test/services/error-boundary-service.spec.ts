@@ -57,6 +57,12 @@ describe('AppError', () => {
 	})
 })
 
+/** The decoded body of a report email link. */
+function emailBody(link: string): string {
+	const body = link.split('&body=')[1] ?? ''
+	return decodeURIComponent(body)
+}
+
 describe('ErrorBoundaryService', () => {
 	let sut: ErrorBoundaryService
 	let analytics: {
@@ -234,6 +240,9 @@ describe('ErrorBoundaryService', () => {
 			sut.captureError(new Error('boom'), 'unhandled_error')
 
 			expect(sut.currentError?.reported).toBe(false)
+			expect(emailBody(sut.buildReportMailto(sut.currentError!))).toContain(
+				'調査用の情報',
+			)
 		})
 
 		it(`@spec ${BANNER_SPEC} "Error with a cause"`, () => {
@@ -296,19 +305,27 @@ describe('ErrorBoundaryService', () => {
 			expect(() => sut.captureError(new Error('boom'))).not.toThrow()
 
 			expect(sut.currentError).not.toBeNull()
-			expect(sut.currentError?.reported).toBe(false)
+			expect(emailBody(sut.buildReportMailto(sut.currentError!))).toContain(
+				'調査用の情報',
+			)
 		})
 
 		it(`@spec ${BANNER_SPEC} "Report accepted after the banner opened"`, () => {
 			analytics.captureException.mockReturnValue(false)
 
 			sut.captureError(new Error('early'))
-			expect(sut.currentError?.reported).toBe(false)
+			const current = sut.currentError!
+			expect(emailBody(sut.buildReportMailto(current))).toContain(
+				'調査用の情報',
+			)
 
 			// AnalyticsService calls back once the queued report is accepted.
 			const onAccepted = analytics.captureException.mock.calls[0][2]
 			onAccepted()
-			expect(sut.currentError?.reported).toBe(true)
+			expect(current.reported).toBe(true)
+			expect(emailBody(sut.buildReportMailto(current))).not.toContain(
+				'調査用の情報',
+			)
 		})
 	})
 

@@ -2,7 +2,6 @@
 	@scope (error-banner) {
 		:scope {
 			--_border-light: oklch(100% 0 0deg / 10%);
-			--_bg-subtle: oklch(100% 0 0deg / 5%);
 		}
 
 		.error-content {
@@ -26,32 +25,12 @@
 		}
 
 		.error-message {
-			margin-block-end: var(--space-2xs);
+			margin-block-end: var(--space-xs);
 			font-size: var(--step--1);
 			color: var(--color-text-secondary);
-		}
 
-		.error-id-box {
-			display: flex;
-			gap: var(--space-2xs);
-			align-items: center;
-
-			margin-block-end: var(--space-xs);
-			padding: var(--space-3xs) var(--space-2xs);
-			border-radius: var(--radius-button);
-
-			background: var(--_bg-subtle);
-		}
-
-		.error-id-label,
-		.error-id {
-			font-family: var(--font-body);
-			font-size: var(--step--1);
-			color: var(--color-text-muted);
-		}
-
-		.error-id {
-			color: var(--color-text-primary);
+			/* The message is three lines in the catalog. */
+			white-space: pre-line;
 		}
 
 		footer {
@@ -59,23 +38,11 @@
 			gap: var(--space-3xs);
 		}
 
-		.error-secondary-actions {
-			display: flex;
-			gap: var(--space-3xs);
-
-			> * {
-				flex: 1;
-			}
-		}
-
-		.error-email-link {
-			justify-self: center;
-
-			padding-block: var(--space-3xs);
-
+		.error-email-fallback {
 			font-size: var(--step--1);
-			color: var(--color-text-primary);
-			text-decoration: underline;
+			color: var(--color-text-secondary);
+			text-align: center;
+			overflow-wrap: anywhere;
 		}
 	}
 }
