@@ -21,6 +21,12 @@ const posthogStub = {
 vi.mock('posthog-js', () => ({
 	default: posthogStub,
 }))
+// The bundled session recorder registers itself on `window` when imported.
+const recorderImported = vi.fn()
+vi.mock('posthog-js/dist/posthog-recorder', () => {
+	recorderImported()
+	return {}
+})
 
 // ── OpenTelemetry mock ─────────────────────────────────────────────────────
 
@@ -908,7 +914,19 @@ describe('AnalyticsService', () => {
 				new ConsentChanged({ analytics: true, sessionReplay: true }),
 			)
 
-			expect(lastRecordingSetting()).toBe(false)
+			// The recorder is loaded from the app's bundle first, so the SDK
+			// never fetches its own copy.
+			expect(lastRecordingSetting()).toBeUndefined()
+			await vi.waitFor(() => expect(lastRecordingSetting()).toBe(false))
+			expect(recorderImported).toHaveBeenCalled()
+		})
+
+		it('loads the recorder from the bundle before the SDK starts recording', async () => {
+			const sut = new AnalyticsService()
+			await sut._waitForInitForTests()
+
+			expect(recorderImported).toHaveBeenCalled()
+			expect(initConfig()).toMatchObject({ disable_session_recording: false })
 		})
 	})
 

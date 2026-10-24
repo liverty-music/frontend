@@ -232,6 +232,10 @@ export class AnalyticsService implements IAnalyticsService {
 	// The recording posture last given to the SDK, so a navigation that does
 	// not change it does not reconfigure the SDK.
 	private recordingDisabled: boolean | null = null
+	// The bundled session recorder (`loadRecorder`): its import, and whether
+	// it has settled.
+	private recorderLoad: Promise<void> | null = null
+	private recorderLoaded = false
 
 	public constructor() {
 		// Subscribe BEFORE scheduling init so an opt-out emitted in the same
@@ -478,7 +482,13 @@ export class AnalyticsService implements IAnalyticsService {
 
 	private async loadAndInit(): Promise<void> {
 		try {
+			// A fan whose recording is on gets the recorder alongside the SDK.
+			const recorder =
+				this.consent.analytics && this.consent.sessionReplay
+					? this.loadRecorder()
+					: null
 			const module = await import('posthog-js')
+			await recorder
 			const posthog = module.default
 			const apiHost =
 				this.config.posthogApiHost && this.config.posthogApiHost.length > 0
@@ -514,12 +524,12 @@ export class AnalyticsService implements IAnalyticsService {
 				// path only). Leaving the app sends a page leave.
 				capture_pageview: 'history_change',
 				capture_pageleave: true,
-				// Recording needs both Analytics and Session replay on, and a
-				// screen that is recorded; `applySessionReplayToSdk` reapplies it.
-				disable_session_recording: this.recordingOff(
-					this.consent.sessionReplay,
-					analyticsEnabled,
-				),
+				// Recording needs both Analytics and Session replay on, a screen
+				// that is recorded and the bundled recorder;
+				// `applySessionReplayToSdk` reapplies it.
+				disable_session_recording:
+					this.recordingOff(this.consent.sessionReplay, analyticsEnabled) ||
+					!this.recorderLoaded,
 				session_recording: sessionRecordingOptions(origin),
 				// Console output is not masked text: the app's logs name artists,
 				// ids and errors. The project's console-log setting must not add
@@ -759,8 +769,39 @@ export class AnalyticsService implements IAnalyticsService {
 		if (this.posthog === null) return
 		const off = this.recordingOff(sessionReplay, analyticsEnabled)
 		if (off === this.recordingDisabled) return
+		if (!off && !this.recorderLoaded) {
+			// Starting before the bundled recorder is in place would make the
+			// SDK fetch its own copy; apply the then-current state once loaded.
+			void this.loadRecorder().then(() =>
+				this.applySessionReplayToSdk(
+					this.consent.sessionReplay,
+					this.consent.analytics,
+				),
+			)
+			return
+		}
 		this.posthog.set_config({ disable_session_recording: off })
 		this.recordingDisabled = off
+	}
+
+	/**
+	 * Loads the session recorder from the app's own bundle. Without it the
+	 * SDK fetches `posthog-recorder.js`, a file name that EasyPrivacy blocks
+	 * on any host, so a fan with a blocker is never recorded; the SDK skips
+	 * that fetch when the recorder is already registered. Only a fan whose
+	 * recording is on downloads it. On failure the SDK falls back to its own
+	 * fetch.
+	 */
+	private loadRecorder(): Promise<void> {
+		this.recorderLoad ??= import('posthog-js/dist/posthog-recorder')
+			.then(() => undefined)
+			.catch((err: unknown) => {
+				this.logger.warn('Bundled session recorder failed to load', err)
+			})
+			.finally(() => {
+				this.recorderLoaded = true
+			})
+		return this.recorderLoad
 	}
 
 	/** True when nothing may be recorded now. */
