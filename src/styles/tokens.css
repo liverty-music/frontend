@@ -36,7 +36,7 @@
 		--journey-hue-tracking: 255deg; /* process — neutral blue */
 		--journey-hue-applied: 255deg; /* process — neutral blue */
 		--journey-hue-unpaid: 75deg; /* action required — amber */
-		--journey-hue-paid: 150deg; /* success — green */
+		--journey-hue-paid: 160deg; /* success — the hue of --color-success */
 		--journey-hue-lost: 25deg; /* failure — red */
 
 		/* Border colors */

@@ -290,7 +290,7 @@
 		}
 
 		.journey-node[data-journey-status="paid"] {
-			--_node-fill: oklch(58% 0.15 var(--journey-hue-paid));
+			--_node-fill: oklch(52% 0.15 var(--journey-hue-paid));
 			--_node-on: oklch(98% 0.02 var(--journey-hue-paid));
 			--_node-faint: oklch(62% 0.09 var(--journey-hue-paid) / 45%);
 		}

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import sheetCss from '../../src/components/live-highway/event-detail-sheet.css?raw'
 import successMarkCss from '../../src/components/success-mark/success-mark.css?raw'
 import discoveryCss from '../../src/routes/discovery/discovery-route.css?raw'
 import passkeyRecoveryCss from '../../src/routes/passkey-recovery/passkey-recovery-route.css?raw'
@@ -8,8 +9,8 @@ import verifyCallbackCss from '../../src/routes/verify-callback/verify-callback-
 import tokensCss from '../../src/styles/tokens.css?raw'
 import {
 	contrast,
-	oklabDistance,
 	type Oklch,
+	oklabDistance,
 	parseOklch,
 } from '../helpers/oklch'
 
@@ -33,6 +34,14 @@ function colorOf(css: string, selector: string): string {
 	const m = block.match(/(?:^|[\s;{])color:\s*([^;]+);/)
 	if (!m) throw new Error(`${selector} declares no color`)
 	return m[1].replace(/\s+/g, ' ').trim()
+}
+
+function journeyHue(status: string): number {
+	const m = tokensCss.match(
+		new RegExp(`--journey-hue-${status}\\s*:\\s*([\\d.]+)deg`),
+	)
+	if (!m) throw new Error(`--journey-hue-${status} is not a literal hue`)
+	return Number(m[1])
 }
 
 const success = token('--color-success')
@@ -81,6 +90,25 @@ describe('status marks use the token of their meaning', () => {
 		for (const color of done) {
 			expect(color).toBe('var(--color-success)')
 		}
+		// A paid ticket's journey node and filter chip take the success hue; each
+		// sets its own lightness and chroma, as every journey status does.
+		expect(journeyHue('paid')).toBe(success.h)
+	})
+
+	it('a paid journey node keeps its label at 4.5:1', () => {
+		const block = sheetCss.slice(
+			sheetCss.indexOf('.journey-node[data-journey-status="paid"]'),
+		)
+		const literal = (prop: string) => {
+			const m = block.match(
+				new RegExp(`${prop}:\\s*oklch\\(([\\d.]+%)\\s+([\\d.]+)\\s+var`),
+			)
+			if (!m) throw new Error(`no ${prop} in the paid journey node`)
+			return parseOklch(`oklch(${m[1]} ${m[2]} ${journeyHue('paid')}deg)`)
+		}
+		expect(
+			contrast(literal('--_node-on'), literal('--_node-fill')),
+		).toBeGreaterThanOrEqual(4.5)
 	})
 
 	it('@spec components/infrastructure/fan/web/global/design-tokens "Selected is not shown as done"', () => {
