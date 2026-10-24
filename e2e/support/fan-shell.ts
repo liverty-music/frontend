@@ -25,7 +25,6 @@ export async function seedSignedInFan(
 		({ sub, email, handed, language, installBanner }) => {
 			localStorage.setItem('onboardingComplete', 'true')
 			localStorage.setItem('onboarding.celebrationShown', '1')
-			localStorage.setItem('ui.notificationPromptDismissed', 'true')
 			if (installBanner) localStorage.removeItem('pwa.installed')
 			else localStorage.setItem('pwa.installed', 'true')
 			localStorage.setItem('guest.home', 'JP-13')

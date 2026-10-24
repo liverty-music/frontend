@@ -362,8 +362,8 @@ test.describe('Still-onboarding reload recovery', () => {
 
 		await expect(page.locator('au-viewport')).toBeVisible({ timeout: 10_000 })
 
-		// No blocking coach-mark overlay on the dashboard (the discovery → dashboard
-		// coach mark only renders on the discovery route).
+		// No coach-mark overlay on the dashboard (the only coach mark is the
+		// Welcome demo's own).
 		await expect(page.locator('.coach-mark-overlay')).not.toBeVisible()
 
 		// My Artists tab is visible and enabled (soft gate — nav never dimmed)

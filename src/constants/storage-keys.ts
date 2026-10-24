@@ -1,7 +1,7 @@
 export const StorageKeys = {
-	uiNotificationPromptDismissed: 'ui.notificationPromptDismissed',
-	uiSessionCount: 'ui.sessionCount',
-	uiOnboardingCompletedSessionCount: 'ui.onboardingCompletedSessionCount',
+	// Hype-change push offers left unanswered or declined on this browser; the
+	// offer stops at 3 (see PushOfferService).
+	pushOfferDeclines: 'push.offerDeclines',
 	pwaInstalled: 'pwa.installed',
 	postSignupShown: 'postSignup.shown',
 	// Celebration shown-once flag (guest light tier on first dashboard arrival).
@@ -62,29 +62,3 @@ export function guestMergedReceiptKey(userId: string): string {
 // since the signed-out user's id is already cleared from in-memory + cached
 // state by then) so a fresh post-sign-out guest session can migrate again.
 export const GUEST_MERGED_RECEIPT_PREFIX = 'guestMerged:'
-
-/**
- * Increment the per-session UI counter.
- * Call once at app startup (before any prompt components attach).
- */
-export function trackSessionForPrompts(): void {
-	const count =
-		Number(localStorage.getItem(StorageKeys.uiSessionCount) || '0') + 1
-	localStorage.setItem(StorageKeys.uiSessionCount, String(count))
-}
-
-/**
- * Persist the session index at which onboarding completed, the first time it happens.
- * Call once when onboarding transitions to COMPLETED — does NOT increment the session counter.
- */
-export function persistOnboardingCompletedSessionCount(): void {
-	if (
-		localStorage.getItem(StorageKeys.uiOnboardingCompletedSessionCount) !== null
-	)
-		return
-	const count = Number(localStorage.getItem(StorageKeys.uiSessionCount) || '0')
-	localStorage.setItem(
-		StorageKeys.uiOnboardingCompletedSessionCount,
-		String(count),
-	)
-}

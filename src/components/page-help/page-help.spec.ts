@@ -61,6 +61,7 @@ describe('PageHelp', () => {
 		// BUG DETECTION: This test will FAIL against current code.
 		// The spec defines auto-open only for discovery and my-artists.
 		// Dashboard should show the ? icon only (manual open).
+		// @spec components/infrastructure/fan/web/global/page-help "Dashboard help never auto-opens"
 		it('does NOT auto-open on dashboard page', () => {
 			sut.page = 'dashboard'
 
@@ -79,6 +80,7 @@ describe('PageHelp', () => {
 			expect(sut.isOpen).toBe(false)
 		})
 
+		// @spec components/infrastructure/fan/web/global/page-help "No auto-open after onboarding"
 		it('does NOT auto-open when not onboarding', () => {
 			fakeOnboarding.isOnboarding = false
 			sut.page = 'discovery'

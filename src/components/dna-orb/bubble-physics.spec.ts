@@ -116,6 +116,7 @@ async function mkPhysics(): Promise<BubblePhysics> {
 }
 
 describe('BubblePhysics.reconcile', () => {
+	// @spec components/infrastructure/fan/web/route/discovery "Reconcile to a target list"
 	it('adds new target artists and fades out stale ones', async () => {
 		const physics = await mkPhysics()
 		physics.addBubbles(params(['a', 'b', 'c']))
@@ -140,6 +141,7 @@ describe('BubblePhysics.reconcile', () => {
 		expect(liveIds(physics)).toEqual(['a', 'b'])
 	})
 
+	// @spec components/infrastructure/fan/web/route/discovery "Stale bodies removed on artist set replacement"
 	it('preserves render parity across a background refresh to a disjoint field', async () => {
 		const physics = await mkPhysics()
 		// Cache paint: 41 real bodies.
@@ -187,6 +189,7 @@ describe('BubblePhysics.reconcile', () => {
 		expect(liveIds(physics)).toEqual(['a', 'b'])
 	})
 
+	// @spec components/infrastructure/fan/web/route/discovery "Fading-out bodies do not block replacements"
 	it('does not let fading-out bodies block replacements up to the cap', async () => {
 		const physics = await mkPhysics()
 		physics.addBubbles(params(ids('old', MAX_BUBBLES)))
@@ -220,6 +223,7 @@ describe('BubblePhysics.reconcile', () => {
 })
 
 describe('BubblePhysics.addBubbles capacity', () => {
+	// @spec components/infrastructure/fan/web/route/discovery "Physics never silently drops a target member"
 	it('caps live bodies at MAX and reports the dropped count instead of silently truncating', async () => {
 		const physics = await mkPhysics()
 

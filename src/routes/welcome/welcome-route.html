@@ -1,5 +1,19 @@
 <import from="../../components/coach-mark/coach-mark"></import>
 
+<!-- Analytics notice, directly under each Get Started button: always shown,
+     no acknowledgement, never in the way of the button. Names no provider;
+     the details page does. -->
+<template as-custom-element="analytics-notice">
+  <p class="welcome-analytics-notice">
+    <span class="welcome-analytics-notice-text" t="welcome.analyticsNotice.text"></span>
+    <span class="welcome-analytics-notice-links">
+      <span t="welcome.analyticsNotice.lead"></span><a href="/settings?section=analytics" data-testid="welcome-analytics-opt-out" t="welcome.analyticsNotice.optOut"></a>
+      <span aria-hidden="true"> ・ </span>
+      <a href="/consent" data-testid="welcome-analytics-details" t="welcome.analyticsNotice.details"></a>
+    </span>
+  </p>
+</template>
+
 <!-- Ambient background: fixed, full-page, screen-blended particle glow behind
      all content. Decorative only (pointer-events: none, aria-hidden), disabled
      under reduced motion. Managed by the ambient-glow custom attribute. -->
@@ -59,6 +73,7 @@
         data-testid="welcome-get-started"
         t="welcome.cta.getStarted"
       ></button>
+      <analytics-notice></analytics-notice>
       <button
         busy-on-click.bind="() => handleLogin()"
         class="[ button ] [ pressable ]"
@@ -133,6 +148,7 @@
           data-testid="welcome-get-started"
           t="welcome.cta.getStarted"
         ></button>
+        <analytics-notice></analytics-notice>
         <button
           busy-on-click.bind="() => handleLogin()"
           class="[ button ] [ pressable ]"

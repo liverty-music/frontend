@@ -11,6 +11,7 @@ import {
 describe('storage names', () => {
 	it('names the localStorage keys the specs name', () => {
 		expect(StorageKeys.postSignupShown).toBe('postSignup.shown')
+		expect(StorageKeys.pushOfferDeclines).toBe('push.offerDeclines')
 		expect(StorageKeys.soundMuted).toBe('sound.muted')
 		expect(StorageKeys.soundVolume).toBe('sound.volume')
 		expect(StorageKeys.beamsEnabled).toBe('beams.enabled')

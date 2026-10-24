@@ -8,7 +8,6 @@ import {
 import { type IDisposable, ILogger, resolve } from 'aurelia'
 import { IAuthService } from './services/auth-service'
 import { IBottomSheetTracker } from './services/bottom-sheet-tracker'
-import { ICoachMarkService } from './services/coach-mark-service'
 import { IErrorBoundaryService } from './services/error-boundary-service'
 import { IFabMenuService } from './services/fab-menu-service'
 import { IOnboardingService } from './services/onboarding-service'
@@ -265,7 +264,6 @@ export class AppShell {
 	private readonly routerEvents = resolve(IRouterEvents)
 	public readonly auth = resolve(IAuthService)
 	public readonly onboarding = resolve(IOnboardingService)
-	public readonly coachMark = resolve(ICoachMarkService)
 	// Global FAB action launcher registry. The shell owns the single launcher
 	// instance and gates its visibility on `showNav && actions.length`.
 	public readonly fabMenu = resolve(IFabMenuService)

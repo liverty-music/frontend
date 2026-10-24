@@ -46,6 +46,13 @@ const NOISE_PEAK = 0.7
 const LANDING_FREQ = 280
 const LANDING_CUTOFF_FROM = 2200
 const LANDING_CUTOFF_TO = 700
+/**
+ * Post-signup celebration: a rising major arpeggio (C5 E5 G5 C6), each note a
+ * short bright bell, the last one held a little longer.
+ */
+const CELEBRATION_NOTES = [523.25, 659.25, 783.99, 1046.5]
+/** Gap (seconds) between the arpeggio's notes. */
+const CELEBRATION_STEP_SEC = 0.085
 /** Default fallback glide duration when a voice does not override it. */
 const GLIDE_SEC = 0.05
 /** Default low-pass resonance. */
@@ -95,6 +102,8 @@ export interface IAudioEngine {
 	resume(): void
 	playTap(hue: number): void
 	playLanding(hue: number): void
+	/** One short celebratory phrase (the post-signup celebration). */
+	playCelebration(): void
 	setMuted(muted: boolean): void
 	/** Apply volume to the live output. Does NOT persist — call `persistVolume`. */
 	setVolume(volume: number): void
@@ -211,6 +220,22 @@ export class AudioEngine implements IAudioEngine {
 			glideMs: 0.06,
 			cutoffFrom: LANDING_CUTOFF_FROM,
 			cutoffTo: LANDING_CUTOFF_TO,
+		})
+	}
+
+	public playCelebration(): void {
+		if (this._muted || !this.ctx || !this.master) return
+		CELEBRATION_NOTES.forEach((freq, i) => {
+			const last = i === CELEBRATION_NOTES.length - 1
+			this.spawnVoice(freq, {
+				type: 'triangle',
+				attack: 0.004,
+				decay: last ? 0.5 : 0.16,
+				peak: 0.5,
+				delay: i * CELEBRATION_STEP_SEC,
+				cutoffFrom: 7000,
+				cutoffTo: 2500,
+			})
 		})
 	}
 

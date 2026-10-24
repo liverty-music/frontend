@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { LiveEvent } from '../../components/live-highway/live-event'
 
 // ── Dependency mocks ──────────────────────────────────────────────────────────
@@ -42,7 +42,7 @@ vi.mock('../../util/prefers-reduced-motion', () => ({
 	prefersReducedMotion: vi.fn(() => false),
 }))
 
-import { runTasks } from 'aurelia'
+import { resolve, runTasks } from 'aurelia'
 import { prefersReducedMotion } from '../../util/prefers-reduced-motion'
 import { WelcomeRoute } from './welcome-route'
 
@@ -86,6 +86,7 @@ describe('WelcomeRoute — guided demo state machine', () => {
 		}
 	})
 
+	// @spec components/infrastructure/fan/web/global/coach-mark "Coach mark appears after 5 seconds"
 	it('activates the coach-mark a delay after the timetable appears', async () => {
 		vi.useFakeTimers()
 		try {
@@ -93,13 +94,16 @@ describe('WelcomeRoute — guided demo state machine', () => {
 			await vi.advanceTimersByTimeAsync(380) // exit → timetable
 			// Not shown immediately — a self-directed visitor gets time to tap first.
 			expect(sut.coachActive).toBe(false)
-			await vi.advanceTimersByTimeAsync(5000) // coach delay
+			await vi.advanceTimersByTimeAsync(4999)
+			expect(sut.coachActive).toBe(false)
+			await vi.advanceTimersByTimeAsync(1) // 5 s of interactive timetable
 			expect(sut.coachActive).toBe(true)
 		} finally {
 			vi.useRealTimers()
 		}
 	})
 
+	// @spec components/infrastructure/fan/web/global/coach-mark "A card tap before 5 seconds cancels the coach mark"
 	it('a card tap before the coach delay cancels the coach-mark', async () => {
 		vi.useFakeTimers()
 		try {
@@ -142,6 +146,49 @@ describe('WelcomeRoute — guided demo state machine', () => {
 		sut.coachActive = true
 		sut.onCoachDismiss()
 		expect(sut.coachActive).toBe(false)
+	})
+
+	// @spec components/infrastructure/fan/web/global/coach-mark "Welcome coach mark deactivates on tap or leaving"
+	describe('coach mark goes from active to inactive, leaving onboarding alone', () => {
+		const resolved = () =>
+			vi
+				.mocked(resolve)
+				.mock.calls.map(
+					([token]) => (token as { friendlyName?: string }).friendlyName,
+				)
+
+		async function activeCoach(): Promise<void> {
+			sut.onNotificationTap()
+			await vi.advanceTimersByTimeAsync(380 + 5000)
+			expect(sut.coachActive).toBe(true)
+		}
+
+		beforeEach(() => {
+			vi.useFakeTimers()
+			localStorage.setItem('onboardingComplete', 'false')
+		})
+
+		afterEach(() => {
+			vi.useRealTimers()
+			localStorage.removeItem('onboardingComplete')
+		})
+
+		it.each([
+			['the highlighted card is tapped', () => sut.onCoachTap()],
+			['the visitor taps outside it', () => sut.onCoachDismiss()],
+			['the visitor leaves Welcome', () => sut.detaching()],
+		])('when %s', async (_, act) => {
+			await activeCoach()
+			act()
+			expect(sut.coachActive).toBe(false)
+			// It never comes back on this visit.
+			await vi.advanceTimersByTimeAsync(10_000)
+			expect(sut.coachActive).toBe(false)
+			// Welcome never reaches for onboarding state, and the stored flag is untouched.
+			expect(resolved()).toContain('IUserStore')
+			expect(resolved()).not.toContain('IOnboardingService')
+			expect(localStorage.getItem('onboardingComplete')).toBe('false')
+		})
 	})
 })
 

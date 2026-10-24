@@ -177,6 +177,9 @@ test.describe('Toast notification: multiple rapid toasts (5.1)', () => {
 		})
 	})
 
+	// The snack-bar host is taken out of the shell grid's flow (app-shell.css:
+	// fixed, zero height, overflow hidden); its toasts still show in the top layer.
+	// @spec components/infrastructure/fan/web/global/app-shell "Overlay elements remain functional"
 	test('3 rapid toasts appear as popover-open, then auto-dismiss without zombies', async ({
 		page,
 	}) => {
@@ -432,7 +435,6 @@ async function bootSignedIn(
 		({ sub, email, banner }) => {
 			localStorage.setItem('onboardingComplete', 'true')
 			localStorage.setItem('onboarding.celebrationShown', '1')
-			localStorage.setItem('ui.notificationPromptDismissed', 'true')
 			if (banner === 'none') localStorage.setItem('pwa.installed', 'true')
 			localStorage.setItem(
 				'oidc.user:https://auth.dev.liverty-music.app:371355407710421859',

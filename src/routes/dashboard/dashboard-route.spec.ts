@@ -149,6 +149,22 @@ function makeCachedGroups(dateKey = '2026-04-01'): DateGroup[] {
 	]
 }
 
+/** A loaded timetable of `count` distinct concerts, one per date group. */
+function makeTimetable(count: number): DateGroup[] {
+	return Array.from({ length: count }, (_, i) => makeGroup(`artist-${i}`))
+}
+
+/**
+ * Make the next loads return a timetable of `count` concerts: listFollowed
+ * yields a non-empty proto list, which toDateGroups turns into the groups.
+ */
+function primeTimetable(count: number): void {
+	mockConcertService.listFollowed.mockResolvedValue(
+		count > 0 ? [{}] : ([] as never),
+	)
+	mockConcertService.toDateGroups.mockReturnValue(makeTimetable(count) as never)
+}
+
 /** Call the protected URL-sync watcher handler directly in unit tests. */
 function syncFilterUrl(route: DashboardRoute): void {
 	;(route as unknown as { syncFilterUrl(): void }).syncFilterUrl()
@@ -211,6 +227,9 @@ describe('DashboardRoute', () => {
 		mockFollowStore.followedArtists = []
 		mockFollowStore.followedCount = 0
 		mockStorage.getItem.mockReturnValue(null)
+		mockConcertService.listFollowed.mockResolvedValue([])
+		mockConcertService.toDateGroups.mockReturnValue([])
+		mockConcertService.peekDateGroups.mockReturnValue(null)
 		sut = new DashboardRoute()
 	})
 
@@ -937,9 +956,12 @@ describe('DashboardRoute', () => {
 	})
 
 	describe('maybeCelebrate (via observed data arrival / onHomeSelected)', () => {
-		it('shows the guest light celebration (no confetti) on first dashboard arrival', async () => {
+		// @spec components/infrastructure/fan/web/global/celebration-overlay "Guest light celebration on first dashboard"
+		it('shows the guest light celebration (no confetti) with the follow and concert counts', async () => {
 			mockAuth.isAuthenticated = false
 			mockOnboarding.isOnboarding = true
+			mockFollowStore.followedCount = 5
+			primeTimetable(12)
 			sut = new DashboardRoute()
 			sut.needsRegion = false
 
@@ -947,6 +969,12 @@ describe('DashboardRoute', () => {
 
 			expect(sut.showCelebration).toBe(true)
 			expect(sut.celebrationConfetti).toBe(false)
+			expect(sut.celebrationMessage).toBe('dashboard.celebration.complete')
+			expect(mockI18n.tr).toHaveBeenCalledWith('dashboard.celebration.found', {
+				artists: 5,
+				concerts: 12,
+			})
+			expect(sut.celebrationHint).toBe('dashboard.celebration.tapToView')
 			// The one-shot flag is NOT burned while merely deciding to show the
 			// overlay — it is set only when the overlay actually opens (Fix 2).
 			expect(mockStorage.setItem).not.toHaveBeenCalledWith(
@@ -958,6 +986,8 @@ describe('DashboardRoute', () => {
 		it('persists the one-shot flag for a guest only once the overlay opens', async () => {
 			mockAuth.isAuthenticated = false
 			mockOnboarding.isOnboarding = true
+			mockFollowStore.followedCount = 1
+			primeTimetable(1)
 			sut = new DashboardRoute()
 			sut.needsRegion = false
 
@@ -1004,9 +1034,12 @@ describe('DashboardRoute', () => {
 			)
 		})
 
+		// @spec components/infrastructure/fan/web/global/celebration-overlay "No light celebration for a completed guest revisiting the dashboard"
 		it('does not show the light celebration for a completed guest (not onboarding)', async () => {
 			mockAuth.isAuthenticated = false
 			mockOnboarding.isOnboarding = false
+			mockFollowStore.followedCount = 5
+			primeTimetable(12)
 			sut = new DashboardRoute()
 			sut.needsRegion = false
 
@@ -1015,9 +1048,12 @@ describe('DashboardRoute', () => {
 			expect(sut.showCelebration).toBe(false)
 		})
 
+		// @spec components/infrastructure/fan/web/global/celebration-overlay "Celebration does not replay"
 		it('does not replay the guest light celebration once shown', async () => {
 			mockAuth.isAuthenticated = false
 			mockOnboarding.isOnboarding = true
+			mockFollowStore.followedCount = 5
+			primeTimetable(12)
 			mockStorage.getItem.mockImplementation((k: string) =>
 				k === 'onboarding.celebrationShown' ? '1' : null,
 			)
@@ -1029,9 +1065,12 @@ describe('DashboardRoute', () => {
 			expect(sut.showCelebration).toBe(false)
 		})
 
+		// @spec components/infrastructure/fan/web/global/celebration-overlay "Celebration gated on timetable readiness"
 		it('defers the celebration while a region is still needed', async () => {
 			mockAuth.isAuthenticated = false
 			mockOnboarding.isOnboarding = true
+			mockFollowStore.followedCount = 5
+			primeTimetable(12)
 			sut = new DashboardRoute()
 			sut.needsRegion = true
 
@@ -1042,9 +1081,12 @@ describe('DashboardRoute', () => {
 			expect(sut.showCelebration).toBe(false)
 		})
 
+		// @spec components/infrastructure/fan/web/global/celebration-overlay "Celebration gated on timetable readiness"
 		it('celebrates after the region is selected', async () => {
 			mockAuth.isAuthenticated = false
 			mockOnboarding.isOnboarding = true
+			mockFollowStore.followedCount = 5
+			primeTimetable(12)
 			sut = new DashboardRoute()
 			sut.needsRegion = true
 			sut.attached()
@@ -1057,6 +1099,9 @@ describe('DashboardRoute', () => {
 			expect(sut.celebrationConfetti).toBe(false)
 		})
 
+		// @spec components/infrastructure/fan/web/global/celebration-overlay "Post-signup full celebration then dialog"
+		// @spec components/infrastructure/fan/web/global/celebration-overlay "Existing celebration behavior is preserved"
+		// @spec components/infrastructure/fan/web/global/post-signup-dialog "Dialog opens after celebration dismissal"
 		it('shows the post-signup full celebration (confetti) then the dialog', async () => {
 			mockAuth.isAuthenticated = true
 			mockStorage.getItem.mockImplementation((k: string) =>
@@ -1069,12 +1114,124 @@ describe('DashboardRoute', () => {
 
 			expect(sut.showCelebration).toBe(true)
 			expect(sut.celebrationConfetti).toBe(true)
+			expect(sut.celebrationMessage).toBe('dashboard.celebration.welcome')
+			expect(sut.celebrationSubMessage).toBe('dashboard.celebration.chasing')
 			expect(mockStorage.removeItem).toHaveBeenCalledWith('postSignup.shown')
 			expect(sut.showPostSignupDialog).toBe(false)
 
 			sut.onCelebrationDismissed()
 
 			expect(sut.showCelebration).toBe(false)
+			expect(sut.showPostSignupDialog).toBe(true)
+		})
+
+		// @spec components/infrastructure/fan/web/global/celebration-overlay "Follows but no concert yet"
+		it('does not show the light celebration when the timetable holds no concert', async () => {
+			mockAuth.isAuthenticated = false
+			mockOnboarding.isOnboarding = true
+			mockFollowStore.followedCount = 3
+			primeTimetable(0)
+			sut = new DashboardRoute()
+			sut.needsRegion = false
+
+			await sut.loadData()
+
+			expect(sut.showCelebration).toBe(false)
+			// The empty state guides instead: the load settled with no groups.
+			expect(sut.hasSettled).toBe(true)
+			expect(sut.dateGroups).toEqual([])
+		})
+
+		// @spec components/infrastructure/fan/web/global/celebration-overlay "No follows"
+		it('does not show the light celebration for a guest with no follow', async () => {
+			mockAuth.isAuthenticated = false
+			mockOnboarding.isOnboarding = true
+			mockFollowStore.followedCount = 0
+			primeTimetable(4)
+			sut = new DashboardRoute()
+			sut.needsRegion = false
+
+			await sut.loadData()
+
+			expect(sut.showCelebration).toBe(false)
+		})
+
+		it('counts a concert listed in several lanes once', async () => {
+			mockAuth.isAuthenticated = false
+			mockOnboarding.isOnboarding = true
+			mockFollowStore.followedCount = 1
+			const concert = { artistId: 'a', id: 'c-1' } as never
+			mockConcertService.listFollowed.mockResolvedValue([{}] as never)
+			mockConcertService.toDateGroups.mockReturnValue([
+				{ ...makeGroup('a'), home: [concert], nearby: [concert] },
+			] as never)
+			sut = new DashboardRoute()
+			sut.needsRegion = false
+
+			await sut.loadData()
+
+			expect(mockI18n.tr).toHaveBeenCalledWith('dashboard.celebration.found', {
+				artists: 1,
+				concerts: 1,
+			})
+		})
+
+		// @spec components/infrastructure/fan/web/route/dashboard "Home area chosen on arrival, timetable served from session data"
+		// @spec stories/complete-onboarding "Completion latches after choosing the home area on arrival"
+		it('decides the celebration and the latch once when the home area is chosen and the timetable comes from the session cache', async () => {
+			mockAuth.isAuthenticated = false
+			mockOnboarding.isOnboarding = true
+			mockFollowStore.followedCount = 5
+			primeTimetable(12)
+			sut = new DashboardRoute()
+			const celebrate = vi.spyOn(
+				sut as unknown as { maybeCelebrate(): void },
+				'maybeCelebrate',
+			)
+			const latch = vi.spyOn(
+				sut as unknown as { maybeFinishOnboarding(): void },
+				'maybeFinishOnboarding',
+			)
+			// First arrival: no home area yet, the sheet is open over a blurred
+			// timetable. The load still settles (timetableLoaded flips true).
+			sut.needsRegion = true
+			await sut.loadData()
+			sut.attached()
+			expect(sut.timetableLoaded).toBe(true)
+			expect(celebrate).not.toHaveBeenCalled()
+
+			// The timetable is now in the session cache, so the load after the
+			// choice takes the fast path.
+			mockConcertService.peekDateGroups.mockReturnValue(
+				makeTimetable(12) as never,
+			)
+			await sut.onHomeSelected('JP-13')
+
+			expect(celebrate).toHaveBeenCalledTimes(1)
+			expect(latch).toHaveBeenCalledTimes(1)
+			expect(sut.showCelebration).toBe(true)
+			expect(mockOnboarding.finish).toHaveBeenCalledTimes(1)
+		})
+
+		// @spec components/infrastructure/fan/web/global/post-signup-dialog "Region selection still precedes both"
+		it('resolves the home area before the post-signup celebration and sheet', async () => {
+			mockAuth.isAuthenticated = true
+			mockStorage.getItem.mockImplementation((k: string) =>
+				k === 'postSignup.shown' ? 'pending' : null,
+			)
+			sut = new DashboardRoute()
+			sut.needsRegion = true
+			await sut.loadData()
+			sut.attached()
+
+			expect(sut.showCelebration).toBe(false)
+			expect(sut.showPostSignupDialog).toBe(false)
+
+			await sut.onHomeSelected('JP-13')
+			expect(sut.showCelebration).toBe(true)
+			expect(sut.showPostSignupDialog).toBe(false)
+
+			sut.onCelebrationDismissed()
 			expect(sut.showPostSignupDialog).toBe(true)
 		})
 
@@ -1088,6 +1245,7 @@ describe('DashboardRoute', () => {
 			expect(sut.showCelebration).toBe(false)
 		})
 
+		// @spec components/infrastructure/fan/web/route/dashboard "Celebration fires only once the timetable is real"
 		it('does not celebrate over a still-loading timetable (data not yet arrived)', () => {
 			mockAuth.isAuthenticated = true
 			mockStorage.getItem.mockImplementation((k: string) =>
@@ -1107,6 +1265,7 @@ describe('DashboardRoute', () => {
 	})
 
 	describe('completion latch (finish via observed data arrival / onHomeSelected)', () => {
+		// @spec stories/complete-onboarding "Completion latches on first meaningful dashboard arrival"
 		it('latches finish() on a meaningful first arrival (region set, data loaded, followedCount >= 1)', async () => {
 			mockAuth.isAuthenticated = false
 			mockOnboarding.isOnboarding = true
@@ -1119,6 +1278,7 @@ describe('DashboardRoute', () => {
 			expect(mockOnboarding.finish).toHaveBeenCalledTimes(1)
 		})
 
+		// @spec stories/complete-onboarding "Latch is independent of whether the celebration is shown"
 		it('still latches when the celebration is suppressed (celebrationShown === "1")', async () => {
 			mockAuth.isAuthenticated = false
 			mockOnboarding.isOnboarding = true
@@ -1137,6 +1297,22 @@ describe('DashboardRoute', () => {
 			expect(mockOnboarding.finish).toHaveBeenCalledTimes(1)
 		})
 
+		// @spec stories/complete-onboarding "No latch for a zero-follow dashboard arrival"
+		// @spec stories/complete-onboarding "Latch is independent of whether the celebration is shown"
+		it('still latches when the timetable holds no concert to celebrate', async () => {
+			mockAuth.isAuthenticated = false
+			mockOnboarding.isOnboarding = true
+			mockFollowStore.followedCount = 2
+			primeTimetable(0)
+			sut = new DashboardRoute()
+			sut.needsRegion = false
+
+			await sut.loadData()
+
+			expect(sut.showCelebration).toBe(false)
+			expect(mockOnboarding.finish).toHaveBeenCalledTimes(1)
+		})
+
 		it('does NOT latch on a zero-follow arrival', async () => {
 			mockAuth.isAuthenticated = false
 			mockOnboarding.isOnboarding = true
@@ -1149,6 +1325,7 @@ describe('DashboardRoute', () => {
 			expect(mockOnboarding.finish).not.toHaveBeenCalled()
 		})
 
+		// @spec components/infrastructure/fan/web/route/dashboard "Completion latch waits for engagement data"
 		it('does NOT latch while the load is still in flight (data not yet arrived)', () => {
 			mockAuth.isAuthenticated = false
 			mockOnboarding.isOnboarding = true
@@ -1167,6 +1344,7 @@ describe('DashboardRoute', () => {
 			mockAuth.isAuthenticated = false
 			mockOnboarding.isOnboarding = true
 			mockFollowStore.followedCount = 2
+			primeTimetable(3)
 			sut = new DashboardRoute()
 			sut.needsRegion = true
 

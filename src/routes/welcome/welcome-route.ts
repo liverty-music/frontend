@@ -134,6 +134,7 @@ export class WelcomeRoute implements IRouteViewModel {
 		this.abortController = null
 		this.clearAutoAdvance()
 		this.clearCoachTimer()
+		this.coachActive = false
 		if (this.exitTimer) {
 			clearTimeout(this.exitTimer)
 			this.exitTimer = null

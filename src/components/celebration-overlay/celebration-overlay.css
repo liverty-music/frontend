@@ -1,18 +1,15 @@
 @layer block {
 	@scope (celebration-overlay) {
 		:scope {
-			/* Light full-viewport scrim — the timetable stays visible at the
-			   edges. Darkening that guarantees text contrast is localized to the
-			   text-lens (::before), not painted across the whole screen. */
-			--_scrim: oklch(0% 0 0deg / 18%);
-			--_lens-core: oklch(0% 0 0deg / 72%);
-			--_lens-mid: oklch(0% 0 0deg / 40%);
-			--_halo: oklch(72% 0.26 294deg / 26%);
+			/* Dark, blurred scrim: no text behind it can be read, while the
+			   timetable's card colors stay faintly visible through it. */
+			--_scrim: oklch(0% 0 0deg / 74%);
+			--_scrim-blur: 6px;
 			--_glow-a: oklch(70.9% 0.159 294deg / 60%);
 			--_glow-b: oklch(58.5% 0.204 277deg / 30%);
 			--_text-contrast: oklch(0% 0 0deg / 85%);
-			--_text-outline: oklch(0% 0 0deg / 95%);
 			--_confetti-radius: 2px;
+			--_confetti-round: 50%;
 			--_c1: oklch(70% 0.2 30deg);
 			--_c2: oklch(75% 0.15 160deg);
 			--_c3: oklch(70% 0.2 277deg);
@@ -33,14 +30,13 @@
 			row-gap: var(--space-s);
 			place-items: center;
 
-			/* Pack the heading and sub text to the centre as a single group.
-			   Without this the auto rows stretch to fill the viewport, pushing
-			   the sub text far below the heading. */
+			/* Pack the lines to the centre as a single group. Without this the
+			   auto rows stretch to fill the viewport, pushing the sub text far
+			   below the heading. */
 			align-content: center;
 
-			/* Light scrim only — the completed timetable reads through it as the
-			   payoff. No full-viewport blur: contrast comes from the text-lens. */
 			background: var(--_scrim);
+			backdrop-filter: blur(var(--_scrim-blur));
 
 			transition: opacity 400ms ease;
 
@@ -51,32 +47,6 @@
 			&[data-state="exiting"] {
 				opacity: 0;
 			}
-		}
-
-		/* Text-lens — a feathered radial darkening sized to the heading +
-		   sub-text group, layered with the brand-purple glow halo. Sits above
-		   the scrim and below the (relatively-positioned) text, so the screen
-		   edges keep the timetable's colors while the text stays legible over
-		   even the brightest stage cards. */
-		.celebration-overlay::before {
-			pointer-events: none;
-			content: "";
-
-			position: absolute;
-			inset: 0;
-
-			background:
-				radial-gradient(
-					ellipse 78% 24% at 50% 47%,
-					var(--_lens-core) 0%,
-					var(--_lens-mid) 52%,
-					transparent 80%
-				),
-				radial-gradient(
-					ellipse 64% 32% at 50% 47%,
-					var(--_halo) 0%,
-					transparent 72%
-				);
 		}
 
 		.celebration-text {
@@ -92,9 +62,6 @@
 			line-height: var(--leading-snug);
 			color: var(--color-white);
 			text-align: center;
-
-			/* Dark contrast layer first (legibility floor over bright cards),
-			   then the brand glow. */
 			text-shadow:
 				0 2px 8px var(--_text-contrast),
 				0 0 24px var(--_glow-a),
@@ -106,10 +73,12 @@
 			text-wrap: balance;
 			word-break: auto-phrase;
 
-			animation: text-enter 600ms var(--md-easing-emphasized-decelerate) both;
+			animation: headline-enter 700ms var(--md-easing-emphasized-decelerate)
+				both;
 		}
 
-		.celebration-sub-text {
+		.celebration-sub-text,
+		.celebration-hint {
 			isolation: isolate;
 			position: relative;
 
@@ -120,28 +89,48 @@
 			font-size: var(--step-0);
 			font-weight: normal;
 			line-height: var(--leading-relaxed);
-			color: oklch(from var(--color-white) l c h / 85%);
+			color: oklch(from var(--color-white) l c h / 90%);
 			text-align: center;
+			text-shadow: 0 1px 5px var(--_text-contrast);
+			text-wrap: balance;
+			word-break: auto-phrase;
 
-			/* Thin dark outline = hard legibility floor for the smaller sub-text
-			   on the brightest cards, where the text-lens alone is marginal. */
-			text-shadow:
-				0 0 2px var(--_text-outline),
-				0 0 2px var(--_text-outline),
-				0 1px 5px var(--_text-contrast);
-
-			animation: text-enter 600ms var(--md-easing-emphasized-decelerate) 200ms
+			animation: line-enter 500ms var(--md-easing-emphasized-decelerate) 250ms
 				both;
 		}
 
-		@keyframes text-enter {
+		.celebration-hint {
+			font-size: var(--step--1);
+			color: oklch(from var(--color-white) l c h / 70%);
+			animation-delay: 450ms;
+		}
+
+		/* Scales up past full size, then settles back to it. */
+		@keyframes headline-enter {
+			0% {
+				transform: scale(0.8);
+				opacity: 0;
+			}
+
+			60% {
+				transform: scale(1.1);
+				opacity: 1;
+			}
+
+			100% {
+				transform: scale(1);
+				opacity: 1;
+			}
+		}
+
+		@keyframes line-enter {
 			from {
-				transform: scale(0.8) translateY(12px);
+				transform: translateY(8px);
 				opacity: 0;
 			}
 
 			to {
-				transform: scale(1) translateY(0);
+				transform: translateY(0);
 				opacity: 1;
 			}
 		}
@@ -153,218 +142,62 @@
 			overflow: hidden;
 		}
 
+		/* One piece of the centre burst. Its size, distance, spin, speed and
+		   color come from custom properties set per piece. */
 		.confetti {
 			position: absolute;
-			inset-block-start: -10px;
+			inset-block-start: 50%;
+			inset-inline-start: 50%;
 
-			inline-size: 8px;
-			block-size: 8px;
+			inline-size: var(--_size);
+			block-size: var(--_size);
 			border-radius: var(--_confetti-radius);
 
 			opacity: 0;
+			background: var(--_color);
 
-			animation: confetti-fall 2.5s ease-in forwards;
+			animation: confetti-burst var(--_duration) cubic-bezier(0.15, 0.7, 0.3, 1)
+				var(--_delay) forwards;
+
+			&[data-shape="circle"] {
+				border-radius: var(--_confetti-round);
+			}
+
+			&[data-shape="strip"] {
+				inline-size: calc(var(--_size) / 2.5);
+				block-size: calc(var(--_size) * 1.6);
+			}
 		}
 
-		.confetti:nth-child(1) {
-			inset-inline-start: 5%;
-			background: var(--_c1);
-			animation-delay: 0ms;
-		}
-
-		.confetti:nth-child(2) {
-			inset-inline-start: 12%;
-			background: var(--_c2);
-			animation-delay: 80ms;
-		}
-
-		.confetti:nth-child(3) {
-			inset-inline-start: 20%;
-			background: var(--_c3);
-			animation-delay: 150ms;
-		}
-
-		.confetti:nth-child(4) {
-			inset-inline-start: 28%;
-			background: var(--_c4);
-			animation-delay: 50ms;
-		}
-
-		.confetti:nth-child(5) {
-			inset-inline-start: 35%;
-			background: var(--_c5);
-			animation-delay: 200ms;
-		}
-
-		.confetti:nth-child(6) {
-			inset-inline-start: 42%;
-			background: var(--_c6);
-			animation-delay: 120ms;
-		}
-
-		.confetti:nth-child(7) {
-			inset-inline-start: 50%;
-			background: var(--_c7);
-			animation-delay: 30ms;
-		}
-
-		.confetti:nth-child(8) {
-			inset-inline-start: 57%;
-			background: var(--_c8);
-			animation-delay: 180ms;
-		}
-
-		.confetti:nth-child(9) {
-			inset-inline-start: 65%;
-			background: var(--_c9);
-			animation-delay: 100ms;
-		}
-
-		.confetti:nth-child(10) {
-			inset-inline-start: 72%;
-			background: var(--_c10);
-			animation-delay: 250ms;
-		}
-
-		.confetti:nth-child(11) {
-			inset-inline-start: 80%;
-			background: var(--_c7);
-			animation-delay: 60ms;
-		}
-
-		.confetti:nth-child(12) {
-			inset-inline-start: 88%;
-			background: var(--_c2);
-			animation-delay: 140ms;
-		}
-
-		.confetti:nth-child(13) {
-			inset-inline-start: 95%;
-			background: var(--_c1);
-			animation-delay: 220ms;
-		}
-
-		.confetti:nth-child(14) {
-			inset-inline-start: 8%;
-			background: var(--_c6);
-			animation-delay: 300ms;
-		}
-
-		.confetti:nth-child(15) {
-			inset-inline-start: 16%;
-			background: var(--_c9);
-			animation-delay: 260ms;
-		}
-
-		.confetti:nth-child(16) {
-			inset-inline-start: 24%;
-			background: var(--_c4);
-			animation-delay: 340ms;
-		}
-
-		.confetti:nth-child(17) {
-			inset-inline-start: 32%;
-			background: var(--_c3);
-			animation-delay: 190ms;
-		}
-
-		.confetti:nth-child(18) {
-			inset-inline-start: 40%;
-			background: var(--_c10);
-			animation-delay: 380ms;
-		}
-
-		.confetti:nth-child(19) {
-			inset-inline-start: 48%;
-			background: var(--_c5);
-			animation-delay: 310ms;
-		}
-
-		.confetti:nth-child(20) {
-			inset-inline-start: 55%;
-			background: var(--_c8);
-			animation-delay: 160ms;
-		}
-
-		.confetti:nth-child(21) {
-			inset-inline-start: 63%;
-			background: var(--_c9);
-			animation-delay: 400ms;
-		}
-
-		.confetti:nth-child(22) {
-			inset-inline-start: 70%;
-			background: var(--_c7);
-			animation-delay: 270ms;
-		}
-
-		.confetti:nth-child(23) {
-			inset-inline-start: 78%;
-			background: var(--_c1);
-			animation-delay: 350ms;
-		}
-
-		.confetti:nth-child(24) {
-			inset-inline-start: 85%;
-			background: var(--_c8);
-			animation-delay: 420ms;
-		}
-
-		.confetti:nth-child(25) {
-			inset-inline-start: 92%;
-			background: var(--_c9);
-			animation-delay: 290ms;
-		}
-
-		.confetti:nth-child(26) {
-			inset-inline-start: 3%;
-			background: var(--_c4);
-			animation-delay: 450ms;
-		}
-
-		.confetti:nth-child(27) {
-			inset-inline-start: 38%;
-			background: var(--_c5);
-			animation-delay: 360ms;
-		}
-
-		.confetti:nth-child(28) {
-			inset-inline-start: 53%;
-			background: var(--_c6);
-			animation-delay: 480ms;
-		}
-
-		.confetti:nth-child(29) {
-			inset-inline-start: 68%;
-			background: var(--_c9);
-			animation-delay: 330ms;
-		}
-
-		.confetti:nth-child(30) {
-			inset-inline-start: 83%;
-			background: var(--_c3);
-			animation-delay: 500ms;
-		}
-
-		@keyframes confetti-fall {
+		@keyframes confetti-burst {
 			0% {
-				transform: translateY(0) rotate(0deg);
+				transform: translate(-50%, -50%) rotate(0deg) scale(0.4);
+				opacity: 1;
+			}
+
+			75% {
 				opacity: 1;
 			}
 
 			100% {
-				transform: translateY(100vh) rotate(720deg);
+				transform: translate(calc(-50% + var(--_dx)), calc(-50% + var(--_dy)))
+					rotate(var(--_spin)) scale(1);
 				opacity: 0;
 			}
 		}
 
 		@media (prefers-reduced-motion: reduce) {
-			.confetti {
+			.confetti-container {
 				display: none;
 			}
 
+			.celebration-overlay {
+				transition: none;
+			}
+
 			.celebration-text,
-			.celebration-sub-text {
+			.celebration-sub-text,
+			.celebration-hint {
 				animation: none;
 			}
 		}

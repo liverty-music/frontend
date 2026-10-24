@@ -14,6 +14,7 @@ import {
 } from '../../services/fab-menu-service'
 import { IFollowStore } from '../../services/follow-store'
 import { IOnboardingService } from '../../services/onboarding-service'
+import { IPushOfferService } from '../../services/push-offer-service'
 import { currentLanguage } from '../../util/change-locale'
 
 export interface MyArtist extends FollowedArtist {
@@ -51,6 +52,7 @@ export class MyArtistsRoute {
 	private readonly onboarding = resolve(IOnboardingService)
 	private readonly ea = resolve(IEventAggregator)
 	private readonly fabMenu = resolve(IFabMenuService)
+	private readonly pushOffer = resolve(IPushOfferService)
 	private abortController: AbortController | null = null
 
 	/** Help sheet ref; its trigger lives in the FAB launcher. */
@@ -361,6 +363,7 @@ export class MyArtistsRoute {
 			.setHype(artistId, hype)
 			.then(() => {
 				this.logger.info('Hype level updated', { artistId, hype })
+				this.offerPush(artist, hype)
 			})
 			.catch((firstErr) => {
 				this.logger.warn('Hype level update failed, retrying', {
@@ -374,6 +377,7 @@ export class MyArtistsRoute {
 							artistId,
 							hype,
 						})
+						this.offerPush(artist, hype)
 					})
 					.catch((retryErr) => {
 						this.logger.error('Failed to update hype level after retry', {
@@ -384,6 +388,20 @@ export class MyArtistsRoute {
 						this.ea.publish(new Snack(this.i18n.tr('myArtists.failedHype')))
 					})
 			})
+	}
+
+	/**
+	 * A saved hype change shows the fan wants to hear about this artist: offer
+	 * push notifications, within the offer's eligibility and limits.
+	 */
+	private offerPush(artist: MyArtist, hype: Hype): void {
+		if (!this.pushOffer.shouldOffer()) return
+		this.pushOffer.offer(
+			this.i18n.tr('pushOffer.hypeChanged', {
+				name: artist.artist.name,
+				hype: HYPE_TIERS[hype].label,
+			}),
+		)
 	}
 
 	public onSignupRequested(): void {

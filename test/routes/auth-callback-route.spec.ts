@@ -141,6 +141,7 @@ describe('AuthCallbackRoute', () => {
 	})
 
 	describe('canLoad', () => {
+		// @spec stories/complete-onboarding "Completion latches on sign-in or sign-up"
 		it('redirects to dashboard for returning user (ensureLoaded resolves the existing User, Create not called)', async () => {
 			mockAuth.handleCallback = vi
 				.fn()
@@ -183,6 +184,7 @@ describe('AuthCallbackRoute', () => {
 
 		it('explicitly calls Create with home when guest selected one — sign-up flow + created=true sets postSignupShown flag', async () => {
 			// @spec components/infrastructure/fan/web/global/post-signup-dialog "Sign-up from the landing page"
+			// @spec stories/complete-onboarding "Completion latches on sign-in or sign-up"
 			mockAuth.handleCallback = vi
 				.fn()
 				.mockResolvedValue(authUser('new@example.com', 'signup'))
@@ -206,6 +208,7 @@ describe('AuthCallbackRoute', () => {
 				expect.objectContaining({ countryCode: 'JP', level1: 'JP-13' }),
 			)
 			expect(mockUserService.ensureLoaded).not.toHaveBeenCalled()
+			expect(mockOnboarding.finish).toHaveBeenCalled()
 			expect(result).toBe('/dashboard')
 			expect(storage.getItem('postSignup.shown')).toBe('pending')
 		})

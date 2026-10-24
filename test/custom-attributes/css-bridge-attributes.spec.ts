@@ -1,7 +1,6 @@
 import { DI, INode, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { DotColorCustomAttribute } from '../../src/custom-attributes/dot-color'
-import { SpotlightRadiusCustomAttribute } from '../../src/custom-attributes/spotlight-radius'
 import { TileColorCustomAttribute } from '../../src/custom-attributes/tile-color'
 
 function createAttribute<T>(Ctor: new (...args: any[]) => T) {
@@ -84,37 +83,5 @@ describe('DotColorCustomAttribute', () => {
 		sut.bound()
 		sut.detaching()
 		expect(el.style.getPropertyValue('--_dot-color')).toBe('')
-	})
-})
-
-describe('SpotlightRadiusCustomAttribute', () => {
-	let sut: SpotlightRadiusCustomAttribute
-	let el: HTMLElement
-
-	beforeEach(() => {
-		const result = createAttribute(SpotlightRadiusCustomAttribute)
-		sut = result.sut
-		el = result.el
-	})
-
-	afterEach(() => {
-		el.remove()
-	})
-
-	it('sets --spotlight-radius with default value on bound', () => {
-		sut.bound()
-		expect(el.style.getPropertyValue('--spotlight-radius')).toBe('12px')
-	})
-
-	it('updates --spotlight-radius on valueChanged', () => {
-		sut.value = '24px'
-		sut.valueChanged()
-		expect(el.style.getPropertyValue('--spotlight-radius')).toBe('24px')
-	})
-
-	it('removes --spotlight-radius on detaching', () => {
-		sut.bound()
-		sut.detaching()
-		expect(el.style.getPropertyValue('--spotlight-radius')).toBe('')
 	})
 })

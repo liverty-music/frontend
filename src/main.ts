@@ -48,12 +48,10 @@ import {
 	loadAppConfig,
 	validateEnvironmentMatchesHost,
 } from './config/app-config'
-import { trackSessionForPrompts } from './constants/storage-keys'
 import { AmbientGlowCustomAttribute } from './custom-attributes/ambient-glow'
 import { BeamVarsCustomAttribute } from './custom-attributes/beam-vars'
 import { BusyOnClickCustomAttribute } from './custom-attributes/busy-on-click'
 import { DotColorCustomAttribute } from './custom-attributes/dot-color'
-import { SpotlightRadiusCustomAttribute } from './custom-attributes/spotlight-radius'
 import { TileColorCustomAttribute } from './custom-attributes/tile-color'
 import { AuthHook } from './hooks/auth-hook'
 import {
@@ -72,7 +70,6 @@ import { IArtistBubbleStore } from './services/artist-bubble-store'
 import { IArtistStore } from './services/artist-store'
 import { IAudioEngine } from './services/audio-engine'
 import { IAuthService } from './services/auth-service'
-import { ICoachMarkService } from './services/coach-mark-service'
 import { IConcertStore } from './services/concert-store'
 import { DiscoveryPrefetchTask } from './services/discovery-prefetch-task'
 import { IErrorBoundaryService } from './services/error-boundary-service'
@@ -160,9 +157,6 @@ async function bootstrap(): Promise<void> {
 	// Initialize OpenTelemetry with the runtime-resolved API base URL.
 	initOtel(config.apiBaseUrl)
 
-	// Track session count for notification prompt deferral logic
-	trackSessionForPrompts()
-
 	const au = new Aurelia()
 
 	// AppConfig must be registered first so any later DI resolution
@@ -209,7 +203,6 @@ async function bootstrap(): Promise<void> {
 	au.register(IArtistBubbleStore)
 	au.register(IConcertStore)
 	au.register(IOnboardingService)
-	au.register(ICoachMarkService)
 	// UserStore is the single owner of the User entity: it owns the guest
 	// home/language slice directly (hydrated from the guest-storage adapter) AND
 	// the authenticated User entity (cache→Get→Create chain + write-through
@@ -282,7 +275,6 @@ async function bootstrap(): Promise<void> {
 	au.register(BusyOnClickCustomAttribute)
 	au.register(BeamVarsCustomAttribute)
 	au.register(DotColorCustomAttribute)
-	au.register(SpotlightRadiusCustomAttribute)
 	au.register(TileColorCustomAttribute)
 	au.register(DateValueConverter)
 	au.app(AppShell)

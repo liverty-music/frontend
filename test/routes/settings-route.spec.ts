@@ -179,6 +179,32 @@ describe('SettingsRoute', () => {
 			expect(sut.emailVerified).toBe(true)
 		})
 
+		// @spec components/infrastructure/fan/web/route/welcome "Turning analytics off from the notice"
+		// @spec stories/complete-onboarding "Opt-out remains reachable later"
+		it('opens at the analytics opt-out when asked from the Welcome notice', () => {
+			const scrollIntoView = vi.fn()
+			sut.analyticsSection = { scrollIntoView } as unknown as HTMLElement
+
+			sut.loading(undefined, {
+				queryParams: new URLSearchParams('section=analytics'),
+			} as never)
+			sut.attached()
+
+			expect(scrollIntoView).toHaveBeenCalledWith({ block: 'start' })
+			sut.detaching()
+		})
+
+		it('opens at the top otherwise', () => {
+			const scrollIntoView = vi.fn()
+			sut.analyticsSection = { scrollIntoView } as unknown as HTMLElement
+
+			sut.loading(undefined, { queryParams: new URLSearchParams() } as never)
+			sut.attached()
+
+			expect(scrollIntoView).not.toHaveBeenCalled()
+			sut.detaching()
+		})
+
 		it('shows the auth service verification state', () => {
 			mockAuth.emailVerified = false
 			expect(sut.emailVerified).toBe(false)

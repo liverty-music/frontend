@@ -232,7 +232,6 @@ function seedAuthenticatedState() {
 	return () => {
 		localStorage.setItem('onboardingComplete', 'true')
 		localStorage.setItem('onboarding.celebrationShown', '1')
-		localStorage.setItem('ui.notificationPromptDismissed', 'true')
 
 		// Fake OIDC user stored by oidc-client-ts WebStorageStateStore
 		// Key format: {prefix}user:{authority}:{client_id} (default prefix: "oidc.")

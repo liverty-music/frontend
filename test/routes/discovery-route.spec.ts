@@ -21,7 +21,6 @@ const mockIFollowStore = DI.createInterface('IFollowStore')
 const mockIConcertStore = DI.createInterface('IConcertStore')
 const mockIRouter = DI.createInterface('IRouter')
 const mockIOnboardingService = DI.createInterface('IOnboardingService')
-const mockICoachMarkService = DI.createInterface('ICoachMarkService')
 
 // The real module (other code imports its IRouterEvents) with IRouter
 // swapped; the getter defers the read past this hoisted factory.
@@ -46,15 +45,6 @@ vi.mock('../../src/services/concert-store', () => ({
 
 vi.mock('../../src/services/onboarding-service', () => ({
 	IOnboardingService: mockIOnboardingService,
-}))
-
-vi.mock('../../src/services/coach-mark-service', () => ({
-	ICoachMarkService: mockICoachMarkService,
-}))
-
-vi.mock('../../src/constants/onboarding', () => ({
-	DASHBOARD_FOLLOW_TARGET: 5,
-	DASHBOARD_CONCERT_TARGET: 3,
 }))
 
 vi.mock('../../src/routes/discovery/discovery-route.css?raw', () => ({
@@ -104,11 +94,6 @@ describe('DiscoveryRoute', () => {
 		isCompleted: boolean
 		finish: ReturnType<typeof vi.fn>
 	}
-	let mockCoachMark: {
-		active: boolean
-		activate: ReturnType<typeof vi.fn>
-		deactivate: ReturnType<typeof vi.fn>
-	}
 	let mockAnalytics: {
 		capture: ReturnType<typeof vi.fn>
 		identify: ReturnType<typeof vi.fn>
@@ -128,11 +113,6 @@ describe('DiscoveryRoute', () => {
 			isOnboarding: false,
 			isCompleted: true,
 			finish: vi.fn(),
-		}
-		mockCoachMark = {
-			active: false,
-			activate: vi.fn(),
-			deactivate: vi.fn(),
 		}
 		mockAnalytics = {
 			capture: vi.fn(),
@@ -154,7 +134,6 @@ describe('DiscoveryRoute', () => {
 			Registration.instance(IEventAggregator, mockEa),
 			Registration.instance(mockIRouter, mockRouter),
 			Registration.instance(mockIOnboardingService, mockOnboarding),
-			Registration.instance(mockICoachMarkService, mockCoachMark),
 			Registration.instance(IAnalyticsService, mockAnalytics),
 		)
 		container.register(DiscoveryRoute)
@@ -288,21 +267,28 @@ describe('DiscoveryRoute', () => {
 		})
 
 		// @spec components/infrastructure/fan/web/route/discovery "Concert check at page load uses List RPC"
+		// @spec components/infrastructure/fan/web/route/discovery "Pre-seeded follows on page reload"
 		it('should call listByArtist (not searchNewConcerts) for pre-seeded guest follows during onboarding', async () => {
 			mockOnboarding.isOnboarding = true
 			// The follow service facade now owns the persisted guest queue; the
 			// route reads it via `guestFollows` (no IGuestService).
-			;(mockFollowClient as { guestFollows: unknown[] }).guestFollows = [
-				{ artist: makeArtist('g1', 'Guest Artist'), hype: 'nearby' },
+			const restored = [
+				makeArtist('g1', 'Guest Artist'),
+				makeArtist('g2', 'Second Guest'),
 			]
+			;(mockFollowClient as { guestFollows: unknown[] }).guestFollows =
+				restored.map((artist) => ({ artist, hype: 'nearby' }))
 
 			await sut.loading()
 
+			expect(mockFollowClient.hydrate).toHaveBeenCalledWith(restored)
 			expect(mockConcert.listByArtist).toHaveBeenCalledWith('g1')
+			expect(mockConcert.listByArtist).toHaveBeenCalledWith('g2')
 		})
 	})
 
 	describe('onSearchQueryChanged (debounced search)', () => {
+		// @spec components/infrastructure/fan/web/route/discovery "Search is debounced"
 		it('should debounce search by 300ms', async () => {
 			;(mockArtistClient.search as ReturnType<typeof vi.fn>).mockResolvedValue([
 				makeArtist('a1', 'Result'),
@@ -326,6 +312,7 @@ describe('DiscoveryRoute', () => {
 			expect(sut.search.isSearchMode).toBe(false)
 		})
 
+		// @spec components/infrastructure/fan/web/route/discovery "Stale search response is discarded"
 		it('should discard stale responses by checking current query', async () => {
 			;(mockArtistClient.search as ReturnType<typeof vi.fn>).mockResolvedValue([
 				makeArtist('a2', 'Fresh'),
@@ -348,10 +335,43 @@ describe('DiscoveryRoute', () => {
 	})
 
 	describe('clearSearch', () => {
-		it('should reset searchQuery', () => {
+		// @spec components/infrastructure/fan/web/route/discovery "Clear search restores bubble view"
+		it('empties the query and resumes the bubble canvas', () => {
 			sut.search.searchQuery = 'something'
+			sut.search.onQueryChanged('something')
+			expect(sut.dnaOrbCanvas.pause).toHaveBeenCalled()
+
 			sut.clearSearch()
+			sut.search.onQueryChanged(sut.search.searchQuery)
+
 			expect(sut.search.searchQuery).toBe('')
+			expect(sut.search.isSearchMode).toBe(false)
+			expect(sut.dnaOrbCanvas.resume).toHaveBeenCalled()
+		})
+	})
+
+	describe('search mode', () => {
+		// @spec components/infrastructure/fan/web/route/discovery "Entering search mode"
+		// @spec components/infrastructure/fan/web/route/discovery "Search mode pauses the simulation"
+		// @spec components/infrastructure/fan/web/route/discovery "Exiting search mode"
+		// @spec components/infrastructure/fan/web/route/discovery "Search mode hides the row"
+		it('hides the bubbles and the progress row while searching, and restores them when the query is cleared', () => {
+			mockOnboarding.isOnboarding = true
+			expect(sut.showProgressRow).toBe(true)
+
+			sut.search.searchQuery = 'vau'
+			sut.search.onQueryChanged('vau')
+
+			expect(sut.search.isSearchMode).toBe(true)
+			expect(sut.dnaOrbCanvas.pause).toHaveBeenCalled()
+			expect(sut.showProgressRow).toBe(false)
+
+			sut.search.searchQuery = ''
+			sut.search.onQueryChanged('')
+
+			expect(sut.search.isSearchMode).toBe(false)
+			expect(sut.dnaOrbCanvas.resume).toHaveBeenCalled()
+			expect(sut.showProgressRow).toBe(true)
 		})
 	})
 
@@ -369,6 +389,7 @@ describe('DiscoveryRoute', () => {
 		})
 
 		// @spec components/infrastructure/fan/web/route/discovery "Genre deselection reverts to regional results"
+		// @spec components/infrastructure/fan/web/route/discovery "Genre tag toggle activates and deactivates"
 		it('should deactivate when selecting same tag', async () => {
 			;(mockArtistClient.listTop as ReturnType<typeof vi.fn>).mockResolvedValue(
 				[],
@@ -382,49 +403,11 @@ describe('DiscoveryRoute', () => {
 		})
 	})
 
-	describe('dashboard coach mark', () => {
-		it('reports the coach mark with the follow and concert counts', () => {
-			// @spec components/infrastructure/fan/web/route/discovery "Coach mark appears"
-			mockOnboarding.isOnboarding = true
-			Object.assign(mockFollowClient, { followedCount: 3 })
-			Object.assign(mockConcert, { artistsWithConcertsCount: 2 })
-			const route = sut as unknown as {
-				onShowDashboardCoachMarkChanged(show: boolean): void
-			}
-
-			route.onShowDashboardCoachMarkChanged(true)
-			// The coach mark appears once per visit.
-			route.onShowDashboardCoachMarkChanged(true)
-
-			expect(mockCoachMark.activate).toHaveBeenCalledOnce()
-			expect(
-				mockAnalytics.capture.mock.calls.filter(
-					([name]) => name === Events.OnboardingCoachmarkShown,
-				),
-			).toEqual([
-				[
-					Events.OnboardingCoachmarkShown,
-					{ followed_count: 3, artists_with_concerts_count: 2 },
-				],
-			])
-		})
-	})
-
-	describe('onCoachMarkTap', () => {
-		it('should only dismiss the coach mark without mutating onboarding or navigating', () => {
-			mockOnboarding.isOnboarding = true
-
-			sut.onCoachMarkTap()
-
-			expect(mockCoachMark.deactivate).toHaveBeenCalledTimes(1)
-			expect(mockOnboarding.finish).not.toHaveBeenCalled()
-			expect(mockRouter.load).not.toHaveBeenCalled()
-		})
-	})
-
 	describe('onFollowFromSearch', () => {
 		// @spec components/infrastructure/fan/web/route/discovery "Concert check after follow uses List RPC"
+		// @spec components/infrastructure/fan/web/route/discovery "Onboarding user searches for an artist"
 		it('should follow artist and call listByArtist (not searchNewConcerts)', async () => {
+			mockOnboarding.isOnboarding = true
 			vi.spyOn(globalThis, 'requestAnimationFrame').mockImplementation((cb) => {
 				cb(0)
 				return 0
@@ -452,20 +435,30 @@ describe('DiscoveryRoute', () => {
 			expect(mockFollowClient.follow).toHaveBeenCalledTimes(1)
 		})
 
-		it('should stay in search mode on follow failure', async () => {
+		// @spec components/infrastructure/fan/web/route/discovery "Follow failure rolls back and stays in search mode"
+		it('should stay in search mode on follow failure and say the follow failed', async () => {
 			;(mockFollowClient.follow as ReturnType<typeof vi.fn>).mockRejectedValue(
 				new Error('network error'),
 			)
 			sut.search.isSearchMode = true
 			sut.search.searchQuery = 'test'
+			sut.search.searchResults = [makeArtist('a1', 'Fail')]
 
 			await sut.onFollowFromSearch(makeArtist('a1', 'Fail'))
 
 			expect(sut.search.isSearchMode).toBe(true)
 			expect(sut.search.searchQuery).toBe('test')
+			expect(sut.search.searchResults).toHaveLength(1)
 			expect(sut.dnaOrbCanvas.spawnAndAbsorbAfterSearch).not.toHaveBeenCalled()
+			expect(mockEa.published).toHaveLength(1)
+			expect(mockEa.published[0].severity).toBe('error')
+			expect(mockEa.published[0].message).toBe(
+				'discovery.followFailed name=Fail',
+			)
 		})
 
+		// @spec components/infrastructure/fan/web/route/discovery "Follow from search triggers absorption"
+		// @spec components/infrastructure/fan/web/route/discovery "Search input is cleared after follow"
 		it('should exit search mode and trigger the absorb flourish on success', async () => {
 			sut.search.isSearchMode = true
 			sut.search.searchQuery = 'query'
@@ -487,6 +480,7 @@ describe('DiscoveryRoute', () => {
 
 	describe('onArtistSelected', () => {
 		// @spec components/infrastructure/fan/web/route/discovery "Concert check after follow uses List RPC"
+		// @spec components/infrastructure/fan/web/route/discovery "Guest user follows artist via bubble tap"
 		it('should follow artist and call listByArtist (not searchNewConcerts) via event detail', async () => {
 			const artist = makeArtist('a1', 'Artist One')
 			const event = new CustomEvent('artist-selected', {
@@ -502,6 +496,7 @@ describe('DiscoveryRoute', () => {
 		})
 
 		// @spec components/infrastructure/fan/web/route/discovery "Already-followed artists"
+		// @spec components/infrastructure/fan/web/route/discovery "Following an already-followed artist"
 		it('should skip if artist already followed', async () => {
 			const artist = makeArtist('a1', 'Artist')
 			const event = new CustomEvent('artist-selected', {
@@ -528,7 +523,9 @@ describe('DiscoveryRoute', () => {
 			expect(mockConcert.listByArtist).not.toHaveBeenCalled()
 		})
 
-		it('should re-add the bubble to the field on follow failure', async () => {
+		// @spec components/infrastructure/fan/web/route/discovery "Signed-in follow fails"
+		// @spec components/infrastructure/fan/web/route/discovery "Follow RPC called on bubble tap"
+		it('should re-add the bubble to the field and say the follow failed', async () => {
 			;(mockFollowClient.follow as ReturnType<typeof vi.fn>).mockRejectedValue(
 				new Error('fail'),
 			)
@@ -548,6 +545,78 @@ describe('DiscoveryRoute', () => {
 				x: 100,
 				y: 200,
 			})
+			expect(mockEa.published).toHaveLength(1)
+			expect(mockEa.published[0].severity).toBe('error')
+			expect(mockEa.published[0].message).toBe(
+				'discovery.followFailed name=Respawn',
+			)
+		})
+
+		// @spec components/infrastructure/fan/web/route/discovery "Follow RPC called on bubble tap"
+		it('shows the follow at once, before the server answers', async () => {
+			;(mockArtistClient.listTop as ReturnType<typeof vi.fn>).mockResolvedValue(
+				[makeArtist('a1', 'Pending')],
+			)
+			await sut.refreshField()
+			let answer: () => void = () => {}
+			;(mockFollowClient.follow as ReturnType<typeof vi.fn>).mockReturnValue(
+				new Promise<void>((r) => {
+					answer = r
+				}),
+			)
+
+			const selected = sut.onArtistSelected(
+				new CustomEvent('artist-selected', {
+					detail: {
+						artist: makeArtist('a1', 'Pending'),
+						position: { x: 1, y: 1 },
+					},
+				}),
+			)
+
+			expect(sut.bubbleStore.field.some((a) => a.id === 'a1')).toBe(false)
+			answer()
+			await selected
+		})
+
+		// @spec components/infrastructure/fan/web/route/discovery "Snack notification on concert found"
+		// @spec components/infrastructure/fan/web/route/discovery "Live event notification on artist follow"
+		it('announces the upcoming live events the lookup finds', async () => {
+			;(mockConcert.listByArtist as ReturnType<typeof vi.fn>).mockResolvedValue(
+				[{ id: 'c1' }],
+			)
+
+			await sut.onArtistSelected(
+				new CustomEvent('artist-selected', {
+					detail: {
+						artist: makeArtist('a1', 'Vaundy'),
+						position: { x: 0, y: 0 },
+					},
+				}),
+			)
+			await vi.runAllTimersAsync()
+
+			expect(mockConcert.addArtistWithConcerts).toHaveBeenCalledWith('a1')
+			expect(mockEa.published).toHaveLength(1)
+			expect(mockEa.published[0].message).toBe(
+				'discovery.hasUpcomingEvents name=Vaundy',
+			)
+		})
+
+		// @spec components/infrastructure/fan/web/route/discovery "No notification for artists without events"
+		it('shows no snack when the lookup finds no live event', async () => {
+			await sut.onArtistSelected(
+				new CustomEvent('artist-selected', {
+					detail: {
+						artist: makeArtist('a1', 'Quiet'),
+						position: { x: 0, y: 0 },
+					},
+				}),
+			)
+			await vi.runAllTimersAsync()
+
+			expect(mockConcert.addArtistWithConcerts).not.toHaveBeenCalled()
+			expect(mockEa.published).toHaveLength(0)
 		})
 	})
 
@@ -597,6 +666,8 @@ describe('DiscoveryRoute', () => {
 			expect(mockEa.publish).not.toHaveBeenCalledWith(expect.any(Snack))
 		})
 
+		// @spec components/infrastructure/fan/web/route/discovery "Similar artist bubble spawning"
+		// @spec components/infrastructure/fan/web/route/discovery "Successful tap and refill (Steps 3-4)"
 		it('should fetch similar artists and add them at the tap position', async () => {
 			const similar = [makeArtist('s1', 'Similar 1')]
 			;(
@@ -622,6 +693,7 @@ describe('DiscoveryRoute', () => {
 			})
 		})
 
+		// @spec components/infrastructure/fan/web/route/discovery "Similar artists fully deduplicated"
 		it('should fall back to top artists when similar returns empty', async () => {
 			;(
 				mockArtistClient.listSimilar as ReturnType<typeof vi.fn>
@@ -676,6 +748,8 @@ describe('DiscoveryRoute', () => {
 			)
 		})
 
+		// @spec components/infrastructure/fan/web/route/discovery "No similar artists found"
+		// @spec components/infrastructure/fan/web/route/discovery "Top artist pool also exhausted"
 		it('should show info toast when no new bubbles are available', async () => {
 			;(
 				mockArtistClient.listSimilar as ReturnType<typeof vi.fn>
@@ -695,9 +769,17 @@ describe('DiscoveryRoute', () => {
 
 			expect(mockEa.published.length).toBe(1)
 			expect(mockEa.published[0].severity).toBe('info')
+			expect(mockEa.published[0].message).toBe(
+				'discovery.similarArtistsUnavailable name=Exhausted',
+			)
 		})
 
-		it('should show warning toast on fetch failure', async () => {
+		// @spec components/infrastructure/fan/web/route/discovery "ListSimilar RPC failure"
+		it('should show warning toast on fetch failure and evict nothing', async () => {
+			;(mockArtistClient.listTop as ReturnType<typeof vi.fn>).mockResolvedValue(
+				[makeArtist('kept', 'Kept')],
+			)
+			await sut.refreshField()
 			;(
 				mockArtistClient.listSimilar as ReturnType<typeof vi.fn>
 			).mockRejectedValue(new Error('network'))
@@ -713,6 +795,7 @@ describe('DiscoveryRoute', () => {
 
 			expect(mockEa.published.length).toBe(1)
 			expect(mockEa.published[0].severity).toBe('warning')
+			expect(sut.bubbleStore.field.map((a) => a.id)).toEqual(['kept'])
 		})
 	})
 
@@ -737,6 +820,7 @@ describe('DiscoveryRoute', () => {
 	})
 
 	describe('visibility change', () => {
+		// @spec components/infrastructure/fan/web/route/discovery "Hidden document pauses the simulation"
 		it('should pause canvas when document becomes hidden', () => {
 			sut.attached()
 
@@ -756,6 +840,7 @@ describe('DiscoveryRoute', () => {
 			sut.detaching()
 		})
 
+		// @spec components/infrastructure/fan/web/route/discovery "Hidden document pauses the simulation"
 		it('should resume canvas when document becomes visible and not in search mode', () => {
 			sut.attached()
 			sut.search.isSearchMode = false
@@ -804,36 +889,177 @@ describe('DiscoveryRoute', () => {
 		})
 	})
 
-	describe('showDashboardCoachMark', () => {
-		it('should hide when not onboarding', () => {
+	describe('onboarding progress row', () => {
+		beforeEach(() => {
+			mockOnboarding.isOnboarding = true
+			// The store counts each artist whose lookup found a concert.
+			;(
+				mockConcert.addArtistWithConcerts as ReturnType<typeof vi.fn>
+			).mockImplementation(() => {
+				;(
+					mockConcert as { artistsWithConcertsCount: number }
+				).artistsWithConcertsCount += 1
+			})
+		})
+
+		async function follow(id: string, concerts: number): Promise<void> {
+			;(
+				mockConcert.listByArtist as ReturnType<typeof vi.fn>
+			).mockResolvedValueOnce(
+				Array.from({ length: concerts }, (_, i) => ({ id: `${id}-c${i}` })),
+			)
+			await sut.onArtistSelected(
+				new CustomEvent('artist-selected', {
+					detail: { artist: makeArtist(id, id), position: { x: 0, y: 0 } },
+				}),
+			)
+			await vi.runAllTimersAsync()
+		}
+
+		const percent = () => Math.round(sut.readiness * 100)
+
+		// @spec components/infrastructure/fan/web/route/discovery "Follow without a found concert"
+		it('shows 20 percent after a follow whose lookup finds no concert', async () => {
+			await follow('a1', 0)
+			expect(percent()).toBe(20)
+		})
+
+		// @spec components/infrastructure/fan/web/route/discovery "Follow with a found concert"
+		it('shows 20 percent after the follow and 33 percent once the lookup returns', async () => {
+			let answer: (v: unknown[]) => void = () => {}
+			;(
+				mockConcert.listByArtist as ReturnType<typeof vi.fn>
+			).mockReturnValueOnce(
+				new Promise((r) => {
+					answer = r
+				}),
+			)
+			await sut.onArtistSelected(
+				new CustomEvent('artist-selected', {
+					detail: { artist: makeArtist('a1', 'A'), position: { x: 0, y: 0 } },
+				}),
+			)
+			expect(percent()).toBe(20)
+
+			answer([{ id: 'c1' }, { id: 'c2' }])
+			await vi.runAllTimersAsync()
+
+			expect(percent()).toBe(33)
+		})
+
+		// @spec components/infrastructure/fan/web/route/discovery "Every follow advances the row"
+		it('moves from 67 to 87 percent when a follow without a concert follows two with', async () => {
+			await follow('a1', 1)
+			await follow('a2', 3)
+			expect(percent()).toBe(67)
+
+			await follow('a3', 0)
+
+			expect(percent()).toBe(87)
+		})
+
+		// @spec components/infrastructure/fan/web/route/discovery "Ready by follows alone"
+		it('is ready after 5 follows whose lookups find no concert', async () => {
+			for (const id of ['a1', 'a2', 'a3', 'a4']) await follow(id, 0)
+			expect(sut.readiness).toBeLessThan(1)
+
+			await follow('a5', 0)
+
+			expect(sut.readiness).toBe(1)
+		})
+
+		// @spec components/infrastructure/fan/web/route/discovery "Ready by found concerts"
+		// @spec components/infrastructure/fan/web/route/discovery "Ready timetable is offered without a spotlight"
+		it('is ready after 3 follows whose lookups each find a concert, with no spotlight', async () => {
+			for (const id of ['a1', 'a2', 'a3']) await follow(id, 2)
+
+			expect(sut.readiness).toBe(1)
+			expect(sut.showProgressRow).toBe(true)
+			// No coach mark is published or driven from Discovery.
+			expect(
+				(sut as unknown as Record<string, unknown>).coachMark,
+			).toBeUndefined()
+		})
+
+		// @spec components/infrastructure/fan/web/route/discovery "Already ready when Discovery opens"
+		// @spec components/infrastructure/fan/web/route/discovery "Initial page load with existing guest data"
+		it('reflects the follows a guest restores on entry, ready at 5', async () => {
+			const restored = ['g1', 'g2', 'g3'].map((id) => makeArtist(id, id))
+			;(mockFollowClient as { guestFollows: unknown[] }).guestFollows =
+				restored.map((artist) => ({ artist, hype: 'nearby' }))
+			;(
+				mockFollowClient.hydrate as ReturnType<typeof vi.fn>
+			).mockImplementation((artists: Artist[]) => {
+				for (const a of artists) simulateFollow(mockFollowClient, a)
+			})
+
+			sut.loading()
+			await vi.runAllTimersAsync()
+
+			expect(sut.followedCount).toBe(3)
+			expect(percent()).toBe(60)
+
+			// Five stored follows reach ready without a further follow.
+			const ready = ['h1', 'h2', 'h3', 'h4', 'h5'].map((id) =>
+				makeArtist(id, id),
+			)
+			mockFollowClient.followedArtists = []
+			;(mockFollowClient.followedIds as Set<string>).clear()
+			;(mockFollowClient as { guestFollows: unknown[] }).guestFollows =
+				ready.map((artist) => ({ artist, hype: 'nearby' }))
+			sut.loading()
+			await vi.runAllTimersAsync()
+
+			expect(sut.readiness).toBe(1)
+			expect(mockFollowClient.follow).not.toHaveBeenCalled()
+		})
+
+		// @spec components/infrastructure/fan/web/route/discovery "Timetable becomes ready"
+		it('reports the ready timetable once per visit, with the two counts', async () => {
+			const route = sut as unknown as {
+				onTimetableReadyChanged(ready: boolean): void
+			}
+			for (const id of ['a1', 'a2', 'a3']) await follow(id, 1)
+
+			route.onTimetableReadyChanged(sut.isOnboarding && sut.readiness >= 1)
+			route.onTimetableReadyChanged(true)
+
+			expect(
+				mockAnalytics.capture.mock.calls.filter(
+					([name]) => name === Events.OnboardingTimetableReady,
+				),
+			).toEqual([
+				[
+					Events.OnboardingTimetableReady,
+					{ followed_count: 3, artists_with_concerts_count: 3 },
+				],
+			])
+		})
+
+		it('reports nothing before the timetable is ready', async () => {
+			const route = sut as unknown as {
+				onTimetableReadyChanged(ready: boolean): void
+			}
+			await follow('a1', 0)
+
+			route.onTimetableReadyChanged(sut.isOnboarding && sut.readiness >= 1)
+
+			expect(
+				mockAnalytics.capture.mock.calls.filter(
+					([name]) => name === Events.OnboardingTimetableReady,
+				),
+			).toEqual([])
+		})
+
+		// @spec components/infrastructure/fan/web/route/discovery "Onboarding complete"
+		it('is not shown once onboarding is complete', () => {
 			mockOnboarding.isOnboarding = false
-			expect(sut.showDashboardCoachMark).toBe(false)
+			expect(sut.showProgressRow).toBe(false)
 		})
 
-		it('should hide when onboarding but artistsWithConcertsCount < TUTORIAL_FOLLOW_TARGET', () => {
-			mockOnboarding.isOnboarding = true
-			;(
-				mockConcert as { artistsWithConcertsCount: number }
-			).artistsWithConcertsCount = 2
-			expect(sut.showDashboardCoachMark).toBe(false)
-		})
-
-		it('TC-GATE-01: should be false when artistsWithConcertsCount is 0 despite follows', () => {
-			mockOnboarding.isOnboarding = true
-			;(
-				mockConcert as { artistsWithConcertsCount: number }
-			).artistsWithConcertsCount = 0
-
-			expect(sut.showDashboardCoachMark).toBe(false)
-		})
-
-		it('TC-GATE-02: should be true when artistsWithConcertsCount >= 3', () => {
-			mockOnboarding.isOnboarding = true
-			;(
-				mockConcert as { artistsWithConcertsCount: number }
-			).artistsWithConcertsCount = 3
-
-			expect(sut.showDashboardCoachMark).toBe(true)
+		// @spec components/infrastructure/fan/web/route/discovery "Onboarding guidance overlay"
+		it('is shown under the genre chips while onboarding', () => {
+			expect(sut.showProgressRow).toBe(true)
 		})
 	})
 
@@ -880,65 +1106,6 @@ describe('DiscoveryRoute', () => {
 		})
 	})
 
-	describe('coach mark trigger (live counts)', () => {
-		it('activates the coach mark via CoachMarkService when the live follow threshold is met', () => {
-			mockOnboarding.isOnboarding = true
-			;(mockFollowClient as { followedCount: number }).followedCount = 5
-
-			// Drive the @watch by re-evaluating the trigger.
-			;(
-				sut as unknown as {
-					onShowDashboardCoachMarkChanged(show: boolean): void
-				}
-			).onShowDashboardCoachMarkChanged(sut.showDashboardCoachMark)
-
-			expect(sut.showDashboardCoachMark).toBe(true)
-			expect(mockCoachMark.activate).toHaveBeenCalledTimes(1)
-			// onTap is navigation-only and never advances a step.
-			const onTap = mockCoachMark.activate.mock.calls[0][2] as () => void
-			onTap()
-			expect(mockOnboarding.finish).not.toHaveBeenCalled()
-			expect(mockRouter.load).not.toHaveBeenCalled()
-		})
-
-		it('shows the coach mark at most once per session', () => {
-			mockOnboarding.isOnboarding = true
-			;(mockFollowClient as { followedCount: number }).followedCount = 5
-
-			;(
-				sut as unknown as {
-					onShowDashboardCoachMarkChanged(show: boolean): void
-				}
-			).onShowDashboardCoachMarkChanged(true)
-			;(
-				sut as unknown as {
-					onShowDashboardCoachMarkChanged(show: boolean): void
-				}
-			).onShowDashboardCoachMarkChanged(true)
-
-			expect(mockCoachMark.activate).toHaveBeenCalledTimes(1)
-		})
-
-		it('does not activate the coach mark when not onboarding', () => {
-			mockOnboarding.isOnboarding = false
-			;(mockFollowClient as { followedCount: number }).followedCount = 5
-
-			;(
-				sut as unknown as {
-					onShowDashboardCoachMarkChanged(show: boolean): void
-				}
-			).onShowDashboardCoachMarkChanged(sut.showDashboardCoachMark)
-
-			expect(sut.showDashboardCoachMark).toBe(false)
-			expect(mockCoachMark.activate).not.toHaveBeenCalled()
-		})
-
-		it('deactivates the coach mark on detaching', () => {
-			sut.detaching()
-			expect(mockCoachMark.deactivate).toHaveBeenCalled()
-		})
-	})
-
 	describe('loading() — single-cache re-entry paint', () => {
 		it('shows ghost bubbles on a cold visit (empty field owner)', () => {
 			sut.loading()
@@ -950,6 +1117,7 @@ describe('DiscoveryRoute', () => {
 		})
 
 		// @spec components/infrastructure/fan/web/route/discovery "Re-entry paints cached artists instantly"
+		// @spec components/infrastructure/fan/web/route/discovery "Tab reactivation"
 		it('re-uses the persisted field on re-entry (no ghosts) and re-applies invariants', async () => {
 			// Warm the field owner (the singleton IS the cache).
 			;(mockArtistClient.listTop as ReturnType<typeof vi.fn>).mockResolvedValue(

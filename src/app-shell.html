@@ -1,8 +1,6 @@
 <import from="./components/error-banner/error-banner"></import>
 <import from="./components/pwa-install-banner/pwa-install-banner"></import>
-<import from="./components/notification-prompt/notification-prompt"></import>
 <import from="../shared/ui/snack-bar/snack-bar"></import>
-<import from="./components/coach-mark/coach-mark"></import>
 <import from="./components/fab-menu/fab-menu"></import>
 
 <!-- Single shell-hosted page header, positioned in the shell grid's `header`
@@ -24,12 +22,11 @@
      DOM position is irrelevant. Placed outside viewport to avoid grid interference. -->
 <!-- Auth-gated (D5): guests already see signup-prompt-banner, so gating on
      isAuthenticated keeps the two banners mutually exclusive. Shown once
-     onboarding is completed, as the notification prompt. Suppressed while a
-     post-signup surface (celebration overlay / PostSignupDialog) occupies the
-     bottom of the screen to avoid overlap (D7). Single instance guaranteed by
-     app-shell — safe to use static ids inside. -->
+     onboarding is completed. Suppressed while a post-signup surface
+     (celebration overlay / PostSignupDialog) occupies the bottom of the screen
+     to avoid overlap (D7). Single instance guaranteed by app-shell — safe to
+     use static ids inside. -->
 <pwa-install-banner if.bind="showNav && auth.isAuthenticated && onboarding.isCompleted && !isPostSignupSurfaceOpen"></pwa-install-banner>
-<notification-prompt if.bind="auth.isAuthenticated && onboarding.isCompleted && showNav"></notification-prompt>
 <snack-bar></snack-bar>
 <error-banner></error-banner>
 
@@ -37,13 +34,3 @@
      only when the current route has contributed at least one action, and not
      while any bottom sheet is open (it would cover the sheet). -->
 <fab-menu if.bind="showNav && fabMenu.actions.length && !sheets.anyOpen"></fab-menu>
-
-<!-- Onboarding coach mark: single instance driven by CoachMarkService -->
-<coach-mark
-  target-selector.bind="coachMark.target"
-  message.bind="coachMark.message"
-  spotlight-radius.bind="coachMark.radius"
-  active.bind="coachMark.active"
-  on-tap.bind="() => coachMark.onTap?.()"
-  on-dismiss.bind="() => coachMark.deactivate()"
-></coach-mark>

@@ -31,7 +31,6 @@ async function seedSignedIn(page: Page): Promise<void> {
 	await page.context().addInitScript(
 		({ sub, email }) => {
 			localStorage.setItem('onboarding.celebrationShown', '1')
-			localStorage.setItem('ui.notificationPromptDismissed', 'true')
 			localStorage.setItem('pwa.installed', 'true')
 			localStorage.setItem(
 				'oidc.user:https://auth.dev.liverty-music.app:371355407710421859',

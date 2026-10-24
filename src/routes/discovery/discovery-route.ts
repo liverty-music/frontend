@@ -5,10 +5,7 @@ import { preloadPhysics } from '../../components/dna-orb/bubble-physics'
 import type { DnaOrbCanvas } from '../../components/dna-orb/dna-orb-canvas'
 import type { RevealMark } from '../../components/dna-orb/reveal-marks'
 import type { PageHelp } from '../../components/page-help/page-help'
-import {
-	DASHBOARD_CONCERT_TARGET,
-	DASHBOARD_FOLLOW_TARGET,
-} from '../../constants/onboarding'
+import { timetableReadiness } from '../../constants/onboarding'
 import type { Artist } from '../../entities/artist'
 import {
 	Events,
@@ -16,7 +13,6 @@ import {
 } from '../../lib/analytics/analytics-service'
 import { IArtistBubbleStore } from '../../services/artist-bubble-store'
 import { IArtistStore } from '../../services/artist-store'
-import { ICoachMarkService } from '../../services/coach-mark-service'
 import { IConcertStore } from '../../services/concert-store'
 import { helpAction, IFabMenuService } from '../../services/fab-menu-service'
 import { IFollowStore } from '../../services/follow-store'
@@ -31,7 +27,6 @@ export class DiscoveryRoute {
 	public readonly bubbleStore = resolve(IArtistBubbleStore)
 	private readonly followStore = resolve(IFollowStore)
 	private readonly onboarding = resolve(IOnboardingService)
-	private readonly coachMark = resolve(ICoachMarkService)
 	private readonly ea = resolve(IEventAggregator)
 	private readonly concertService = resolve(IConcertStore)
 	private readonly analytics = resolve(IAnalyticsService)
@@ -48,7 +43,8 @@ export class DiscoveryRoute {
 	private fabDisposer: (() => void) | null = null
 
 	private abortController = new AbortController()
-	private dashboardCoachMarkShown = false
+	/** Whether this visit already reported the timetable as ready. */
+	private readyReported = false
 	// Cold-load reveal timing of this visit; null on a re-entry, once sent, and
 	// after leaving the route.
 	private revealTiming: RevealTiming | null = null
@@ -97,12 +93,28 @@ export class DiscoveryRoute {
 		return this.concertService.artistsWithConcertsCount
 	}
 
-	public get showDashboardCoachMark(): boolean {
-		return (
-			this.isOnboarding &&
-			(this.followedCount >= DASHBOARD_FOLLOW_TARGET ||
-				this.artistsWithConcertsCount >= DASHBOARD_CONCERT_TARGET)
-		)
+	/** How close the onboarding timetable is to ready, from 0 to 1. */
+	public get readiness(): number {
+		return timetableReadiness(this.followedCount, this.artistsWithConcertsCount)
+	}
+
+	/**
+	 * Report once per visit the moment the onboarding progress row becomes the
+	 * link to the Dashboard, with the counts that made it ready.
+	 */
+	@watch((vm: DiscoveryRoute) => vm.isOnboarding && vm.readiness >= 1)
+	protected onTimetableReadyChanged(ready: boolean): void {
+		if (!ready || this.readyReported) return
+		this.readyReported = true
+		this.analytics.capture(Events.OnboardingTimetableReady, {
+			followed_count: this.followedCount,
+			artists_with_concerts_count: this.artistsWithConcertsCount,
+		})
+	}
+
+	/** The onboarding progress row shows while onboarding, outside search mode. */
+	public get showProgressRow(): boolean {
+		return this.isOnboarding && !this.search.isSearchMode
 	}
 
 	public get srStatusText(): string {
@@ -124,23 +136,6 @@ export class DiscoveryRoute {
 			this.i18n.tr('discovery.srFollowed', { count: this.followedCount }),
 		)
 		return parts.join('. ')
-	}
-
-	@watch((vm: DiscoveryRoute) => vm.showDashboardCoachMark)
-	protected onShowDashboardCoachMarkChanged(show: boolean): void {
-		if (show && !this.dashboardCoachMarkShown) {
-			this.dashboardCoachMarkShown = true
-			this.analytics.capture(Events.OnboardingCoachmarkShown, {
-				followed_count: this.followedCount,
-				artists_with_concerts_count: this.artistsWithConcertsCount,
-			})
-			this.coachMark.activate(
-				'[data-nav="home"]',
-				this.i18n.tr('discovery.coachMark.viewTimetable'),
-				() => this.onCoachMarkTap(),
-				'50%',
-			)
-		}
 	}
 
 	public loading(): void {
@@ -232,7 +227,6 @@ export class DiscoveryRoute {
 		this.fabDisposer?.()
 		this.fabDisposer = null
 		this.search.dispose()
-		this.coachMark.deactivate()
 	}
 
 	/**
@@ -315,6 +309,7 @@ export class DiscoveryRoute {
 		} catch {
 			// Rollback: re-add at the tap position (reconcile pops it back in).
 			this.bubbleStore.addAt([artist], position)
+			this.publishFollowFailed(artist)
 			return
 		}
 		if (this.abortController.signal.aborted) return
@@ -388,6 +383,9 @@ export class DiscoveryRoute {
 		try {
 			await this.followStore.follow(artist)
 		} catch {
+			// The store rolled the follow back; stay in search mode so the fan
+			// can try again from the same results.
+			this.publishFollowFailed(artist)
 			return
 		}
 		if (this.abortController.signal.aborted) return
@@ -405,20 +403,20 @@ export class DiscoveryRoute {
 		void this.searchConcertsForArtist(artistId, artist.name)
 	}
 
-	public onCoachMarkTap(): void {
-		// Navigation is delegated to the target nav link's native click by the
-		// coach-mark component; this callback only dismisses the spotlight. It
-		// never advances any onboarding step (there is no step machine).
-		this.logger.info('Onboarding: dashboard coach mark tapped', {
-			followedCount: this.followedCount,
-		})
-		this.coachMark.deactivate()
+	private publishFollowFailed(artist: Artist): void {
+		this.ea.publish(
+			new Snack(
+				this.i18n.tr('discovery.followFailed', { name: artist.name }),
+				'error',
+			),
+		)
 	}
 
 	/**
-	 * Search for concerts for an artist. Updates artistsWithConcerts and shows
-	 * a snack notification if concerts are found. Errors are logged but do not
-	 * propagate — the follow operation remains successful regardless.
+	 * Look up the catalog's concerts for an artist. Updates artistsWithConcerts
+	 * (which moves the onboarding progress row) and shows a snack notification
+	 * if concerts are found. Errors are logged but do not propagate — the
+	 * follow operation remains successful regardless.
 	 */
 	private async searchConcertsForArtist(
 		artistId: string,

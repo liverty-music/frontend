@@ -31,6 +31,9 @@ vi.mock('../../src/services/auth-service', () => ({
 const { MyArtistsRoute } = await import(
 	'../../src/routes/my-artists/my-artists-route'
 )
+const { IPushOfferService } = await import(
+	'../../src/services/push-offer-service'
+)
 
 function makeFollowedArtist(id: string, name: string, hype = 'nearby') {
 	return {
@@ -50,6 +53,10 @@ describe('MyArtistsRoute', () => {
 	let mockRouter: { load: ReturnType<typeof vi.fn> }
 	let mockAuth: { isAuthenticated: boolean; signUp: ReturnType<typeof vi.fn> }
 	let publishedSnacks: Snack[]
+	let pushOffer: {
+		shouldOffer: ReturnType<typeof vi.fn>
+		offer: ReturnType<typeof vi.fn>
+	}
 
 	beforeEach(() => {
 		mockFollowService = {
@@ -72,11 +79,14 @@ describe('MyArtistsRoute', () => {
 			finish: vi.fn(),
 		}
 
+		pushOffer = { shouldOffer: vi.fn(() => true), offer: vi.fn() }
+
 		const container = createTestContainer(
 			Registration.instance(mockIFollowStore, mockFollowService),
 			Registration.instance(mockIRouter, mockRouter),
 			Registration.instance(mockIOnboardingService, mockOnboarding),
 			Registration.instance(mockIAuthService, mockAuth),
+			Registration.instance(IPushOfferService, pushOffer),
 		)
 		container.register(MyArtistsRoute)
 		sut = container.get(MyArtistsRoute)
@@ -235,12 +245,14 @@ describe('MyArtistsRoute', () => {
 			expect(sut.editing).toBe(false)
 		})
 
+		// @spec components/infrastructure/fan/web/route/my-artists "Edit mode is not persisted across navigation"
 		it('edit mode is not persisted across navigation: loading() resets to false', async () => {
 			sut.editing = true
 			await sut.loading()
 			expect(sut.editing).toBe(false)
 		})
 
+		// @spec components/infrastructure/fan/web/route/my-artists "Edit mode exits when the last artist is removed"
 		it('auto-exits edit mode when the last artist is removed', () => {
 			sut.editing = true
 			// Remove all artists one by one
@@ -379,6 +391,7 @@ describe('MyArtistsRoute', () => {
 					Registration.instance(mockIOnboardingService, onboardingOnboarding),
 					Registration.instance(mockIAuthService, mockAuth),
 					Registration.instance(IEventAggregator, { publish: vi.fn() }),
+					Registration.instance(IPushOfferService, pushOffer),
 				)
 				container.register(MyArtistsRoute)
 				onboardingSut = container.get(MyArtistsRoute)
@@ -431,10 +444,14 @@ describe('MyArtistsRoute', () => {
 				await sut.loadArtists()
 			})
 
-			it('should accept hype change and persist via the follow service (guest routing is internal)', () => {
+			// @spec components/infrastructure/fan/web/route/my-artists "Guest changes hype"
+			it('should accept hype change and persist via the follow service (guest routing is internal)', async () => {
 				const artist = sut.artists[0]
 
 				sut.onHypeInput(artist, 'away')
+				await Promise.resolve()
+
+				expect(pushOffer.offer).not.toHaveBeenCalled()
 
 				expect(artist.hype).toBe('away')
 				// The follow service facade now resolves guest vs authed internally:
@@ -467,7 +484,8 @@ describe('MyArtistsRoute', () => {
 				expect(mockFollowService.setHype).toHaveBeenCalledWith('id-1', 'away')
 			})
 
-			it('should revert hype on RPC failure after retry', async () => {
+			// @spec components/infrastructure/fan/web/route/my-artists "Save fails"
+			it('should revert hype on RPC failure after retry, with no push offer', async () => {
 				mockFollowService.setHype.mockRejectedValue(new Error('fail'))
 				const artist = sut.artists[0]
 				const originalHype = artist.hype
@@ -476,8 +494,51 @@ describe('MyArtistsRoute', () => {
 
 				await vi.waitFor(() => {
 					expect(mockFollowService.setHype).toHaveBeenCalledTimes(2)
+					expect(publishedSnacks.map((s) => s.message)).toContain(
+						'myArtists.failedHype',
+					)
 				})
 				expect(artist.hype).toBe(originalHype)
+				expect(pushOffer.offer).not.toHaveBeenCalled()
+			})
+
+			// @spec components/infrastructure/fan/web/route/my-artists "Signed-in fan changes hype and is offered push"
+			// @spec components/infrastructure/fan/web/global/notification-prompt "Offer after a hype change"
+			it('offers push once the hype change is saved', async () => {
+				const artist = sut.artists[0]
+
+				sut.onHypeInput(artist, 'away')
+
+				await vi.waitFor(() => expect(pushOffer.offer).toHaveBeenCalledTimes(1))
+				expect(pushOffer.offer).toHaveBeenCalledWith(
+					'pushOffer.hypeChanged name=RADWIMPS hype=Away',
+				)
+			})
+
+			it('offers push when the save succeeds on the retry', async () => {
+				mockFollowService.setHype.mockRejectedValueOnce(new Error('fail'))
+
+				sut.onHypeInput(sut.artists[0], 'home')
+
+				await vi.waitFor(() => expect(pushOffer.offer).toHaveBeenCalledTimes(1))
+			})
+
+			// @spec components/infrastructure/fan/web/route/my-artists "Second hype change in the same session"
+			it('applies a hype change without an offer when the offer may not be shown', async () => {
+				pushOffer.shouldOffer.mockReturnValue(false)
+				const artist = sut.artists[1]
+
+				sut.onHypeInput(artist, 'home')
+
+				await vi.waitFor(() =>
+					expect(mockFollowService.setHype).toHaveBeenCalledWith(
+						'id-2',
+						'home',
+					),
+				)
+				await Promise.resolve()
+				expect(artist.hype).toBe('home')
+				expect(pushOffer.offer).not.toHaveBeenCalled()
 			})
 
 			it('should no-op when hype has not changed', () => {
@@ -487,6 +548,167 @@ describe('MyArtistsRoute', () => {
 
 				expect(mockFollowService.setHype).not.toHaveBeenCalled()
 			})
+		})
+	})
+
+	describe('push offer after a hype change (with the offer service)', () => {
+		// @spec components/infrastructure/fan/web/route/my-artists "Pressing the action asks the browser"
+		it('asks the browser for permission at once when the fan presses 「オンにする」', async () => {
+			;(globalThis as Record<string, unknown>).Notification = class {}
+			;(globalThis as Record<string, unknown>).PushManager = class {}
+			Object.defineProperty(navigator, 'serviceWorker', {
+				configurable: true,
+				value: {},
+			})
+			const { INotificationManager } = await import(
+				'../../src/services/notification-manager'
+			)
+			const { IPushService } = await import('../../src/services/push-service')
+			const { ILocalStorage } = await import(
+				'../../src/adapter/storage/local-storage'
+			)
+			const { IAnalyticsService } = await import(
+				'../../src/lib/analytics/analytics-service'
+			)
+			const { createMockLocalStorage } = await import(
+				'../helpers/mock-local-storage'
+			)
+			const push = { create: vi.fn(async () => null) }
+			const container = createTestContainer(
+				Registration.instance(mockIFollowStore, mockFollowService),
+				Registration.instance(mockIRouter, mockRouter),
+				Registration.instance(mockIOnboardingService, {
+					isOnboarding: false,
+					isCompleted: true,
+					finish: vi.fn(),
+				}),
+				Registration.instance(mockIAuthService, mockAuth),
+				Registration.instance(INotificationManager, { permission: 'default' }),
+				Registration.instance(IPushService, push),
+				Registration.instance(ILocalStorage, createMockLocalStorage()),
+				Registration.instance(IAnalyticsService, { capture: vi.fn() }),
+			)
+			container.register(MyArtistsRoute)
+			const route = container.get(MyArtistsRoute)
+			const snacks: Snack[] = []
+			container
+				.get(IEventAggregator)
+				.subscribe(Snack, (snack: Snack) => snacks.push(snack))
+			mockAuth.isAuthenticated = true
+			await route.loadArtists()
+
+			route.onHypeInput(route.artists[0], 'away')
+			await vi.waitFor(() => expect(snacks).toHaveLength(1))
+			snacks[0].action?.callback()
+
+			expect(push.create).toHaveBeenCalledTimes(1)
+			delete (globalThis as Record<string, unknown>).Notification
+			delete (globalThis as Record<string, unknown>).PushManager
+			delete (navigator as unknown as Record<string, unknown>).serviceWorker
+		})
+	})
+
+	describe('Edit in the action launcher', () => {
+		let fab: { register: ReturnType<typeof vi.fn> }
+		let route: InstanceType<typeof MyArtistsRoute>
+
+		/** The ids of the actions the route last contributed to the launcher. */
+		const actions = () =>
+			((fab.register.mock.lastCall?.[1] ?? []) as { id: string }[]).map(
+				(a) => a.id,
+			)
+
+		beforeEach(async () => {
+			const { IFabMenuService } = await import(
+				'../../src/services/fab-menu-service'
+			)
+			fab = { register: vi.fn(() => vi.fn()) }
+			const container = createTestContainer(
+				Registration.instance(mockIFollowStore, mockFollowService),
+				Registration.instance(mockIRouter, mockRouter),
+				Registration.instance(mockIOnboardingService, {
+					isOnboarding: false,
+					isCompleted: true,
+					finish: vi.fn(),
+				}),
+				Registration.instance(mockIAuthService, mockAuth),
+				Registration.instance(IPushOfferService, pushOffer),
+				Registration.instance(IFabMenuService, fab),
+			)
+			container.register(MyArtistsRoute)
+			route = container.get(MyArtistsRoute)
+		})
+
+		// @spec components/infrastructure/fan/web/route/my-artists "Edit hidden when there is nothing to edit"
+		it('offers only Help while loading or with no followed artist', async () => {
+			route.attached()
+			expect(actions()).toEqual(['help'])
+
+			mockFollowService.listFollowed.mockResolvedValue([])
+			await route.loadArtists()
+			route.attached()
+			expect(actions()).toEqual(['help'])
+		})
+
+		// @spec components/infrastructure/fan/web/route/my-artists "Edit offered in the action launcher"
+		// @spec components/infrastructure/fan/web/route/my-artists "Entering edit mode reveals remove controls"
+		it('offers Edit next to Help; Edit enters edit mode and the launcher steps aside', async () => {
+			await route.loadArtists()
+			route.attached()
+			expect(actions()).toEqual(['edit', 'help'])
+
+			const edit = (
+				(fab.register.mock.lastCall?.[1] ?? []) as {
+					id: string
+					invoke(): void
+				}[]
+			).find((a) => a.id === 'edit')
+			edit?.invoke()
+			;(
+				route as unknown as { onFabContextChanged(): void }
+			).onFabContextChanged()
+
+			expect(route.editing).toBe(true)
+			expect(actions()).toEqual([])
+		})
+
+		// @spec components/infrastructure/fan/web/route/my-artists "Leaving edit mode hides remove controls"
+		it('Done leaves edit mode and brings the launcher back', async () => {
+			await route.loadArtists()
+			route.editing = true
+
+			route.toggleEditing()
+			;(
+				route as unknown as { onFabContextChanged(): void }
+			).onFabContextChanged()
+
+			expect(route.editing).toBe(false)
+			expect(actions()).toEqual(['edit', 'help'])
+		})
+	})
+
+	describe('edit mode markup', () => {
+		// @spec components/infrastructure/fan/web/route/my-artists "Remove control is available on all pointer types"
+		// @spec components/infrastructure/fan/web/route/my-artists "Default (non-editing) list shows no persistent per-row unfollow control"
+		it('shows a one-tap remove button only while editing, in place of the hype dots', async () => {
+			const { default: html } = await import(
+				'../../src/routes/my-artists/my-artists-route.html?raw'
+			)
+			const remove = html.match(
+				/<td if\.bind="editing" class="artist-remove-col">[\s\S]*?<\/td>/,
+			)?.[0]
+			// The remove cell exists only in edit mode; the dots only outside it.
+			expect(remove).toBeDefined()
+			expect(html).toMatch(
+				/<template if\.bind="!editing">\s*<td repeat\.for="level of hypeLevels"/,
+			)
+			// A plain button activated by click (tap or mouse), with no timed or
+			// path-based gesture anywhere on the list.
+			expect(remove).toMatch(
+				/<button[\s\S]*type="button"[\s\S]*click\.trigger="unfollowArtist\(artist\)"/,
+			)
+			expect(html).not.toMatch(/long-?press|swipe|pointerdown|touchstart/i)
+			expect(html.match(/unfollowArtist\(/g)).toHaveLength(1)
 		})
 	})
 })

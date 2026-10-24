@@ -1,6 +1,7 @@
 <template>
   <import from="./discovery-route.css"></import>
   <import from="../../components/dna-orb/dna-orb-canvas"></import>
+  <import from="../../components/onboarding-progress/onboarding-progress"></import>
 
   <!-- The page title ("Discovery") is owned by the shell-hosted <page-header>,
        driven from the route's data.titleKey. -->
@@ -54,6 +55,14 @@
         </button>
       </fieldset>
     </div>
+
+    <!-- Onboarding progress row: outside the bubble field so it never covers a
+         bubble or the orb (hidden during search and after onboarding) -->
+    <onboarding-progress
+      if.bind="showProgressRow"
+      class="progress-row"
+      value.bind="readiness"
+    ></onboarding-progress>
 
     <!-- Bubble UI (hidden during search) -->
     <div class="bubble-area">

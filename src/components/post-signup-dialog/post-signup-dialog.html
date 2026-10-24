@@ -1,69 +1,95 @@
 <import from="./post-signup-dialog.css"></import>
 
-<bottom-sheet open.bind="isOpen" t="[aria-label]postSignup.ariaLabel" sheet-closed.trigger="onDefer()">
-  <section class="post-signup-content">
-    <h2 class="post-signup-title" t="postSignup.title"></h2>
-    <p class="post-signup-subtitle" t="postSignup.subtitle"></p>
+<bottom-sheet open.bind="isOpen" t="[aria-label]postSignup.ariaLabel" sheet-closed.trigger="close()">
+  <section class="post-signup-step" data-step.bind="step">
 
-    <!-- Notification opt-in row -->
-    <div class="post-signup-row" if.bind="notificationManager.permission === 'default'">
-      <span class="post-signup-row-icon">🔔</span>
-      <div class="post-signup-row-body">
-        <p class="post-signup-row-label" t="postSignup.notificationLabel"></p>
+    <!-- Step 1: notifications -->
+    <template if.bind="step === 'notify'">
+      <h2 class="post-signup-title" t="postSignup.notify.title"></h2>
+      <p if.bind="followedCount > 0" class="post-signup-body" t="postSignup.notify.body" t-params.bind="{ count: followedCount }"></p>
+      <p else class="post-signup-body" t="postSignup.notify.bodyNoFollows"></p>
+      <p if.bind="notifyProblem" class="post-signup-problem" role="status" t.bind="notifyProblem === 'blocked' ? 'postSignup.notify.blocked' : 'postSignup.notify.failed'"></p>
+      <div class="post-signup-actions">
         <button
+          if.bind="!notifyProblem"
           type="button"
-          class="[ button post-signup-action ] [ pressable ]"
+          class="[ button ] [ pressable ]"
           busy-on-click.bind="() => onEnableNotifications()"
-          disabled.bind="notificationDone"
-        >
-          <span if.bind="notificationDone" t="postSignup.notificationEnabled"></span>
-          <span else t="postSignup.notificationEnable"></span>
-        </button>
-        <p if.bind="notificationError" class="post-signup-error" t="postSignup.notificationError"></p>
-      </div>
-    </div>
-
-    <!-- Notification denied state -->
-    <div class="post-signup-row" if.bind="notificationManager.permission === 'denied'">
-      <span class="post-signup-row-icon">🔕</span>
-      <div class="post-signup-row-body">
-        <p class="post-signup-row-label" t="postSignup.notificationDenied"></p>
-      </div>
-    </div>
-
-    <!-- PWA install row (shown whenever the browser supports PWA install) -->
-    <div class="post-signup-row" if.bind="canInstallPwa">
-      <span class="post-signup-row-icon">📱</span>
-      <div class="post-signup-row-body">
-        <p class="post-signup-row-label" t="postSignup.pwaLabel"></p>
-        <!-- Native one-tap install when the deferred prompt is available -->
-        <button
-          if.bind="canInstallNatively"
-          type="button"
-          class="[ button post-signup-action ] [ pressable ]"
-          busy-on-click.bind="() => onInstallPwa()"
-          t="postSignup.pwaInstall"
+          t="postSignup.notify.enable"
         ></button>
-        <!-- Fallback: native disclosure of manual install steps (no JS state) -->
-        <details if.bind="!canInstallNatively" class="post-signup-install-guide">
-          <summary class="[ button ] [ pressable ]" t="postSignup.pwaInstallGuide"></summary>
-          <ol class="post-signup-install-steps">
-            <li t="postSignup.pwaGuideStep1"></li>
-            <li t="postSignup.pwaGuideStep2"></li>
-            <li t="postSignup.pwaGuideStep3"></li>
-          </ol>
-        </details>
+        <button
+          else
+          type="button"
+          class="[ button ] [ pressable ]"
+          click.trigger="next()"
+          t="postSignup.next"
+        ></button>
+        <button
+          if.bind="!notifyProblem"
+          type="button"
+          class="[ button ] [ pressable ]"
+          data-variant="outlined"
+          click.trigger="next()"
+          t="postSignup.defer"
+        ></button>
       </div>
-    </div>
+    </template>
 
-    <footer class="post-signup-footer">
-      <button
-        type="button"
-        class="[ button ] [ pressable ]"
-        data-variant="outlined"
-        click.trigger="onDefer()"
-        t.bind="isAllDone ? 'postSignup.close' : 'postSignup.defer'"
-      ></button>
-    </footer>
+    <!-- Step 2: add to the home screen -->
+    <template if.bind="step === 'install'">
+      <img class="post-signup-app-icon" src="/icons/icon-192x192.png" alt="" width="64" height="64">
+      <h2 class="post-signup-title" t="postSignup.install.title"></h2>
+      <p class="post-signup-body" t="postSignup.install.body"></p>
+      <ol if.bind="installGuideShown" class="post-signup-steps">
+        <li t="postSignup.install.step1"></li>
+        <li t="postSignup.install.step2"></li>
+        <li t="postSignup.install.step3"></li>
+      </ol>
+      <div class="post-signup-actions">
+        <button
+          if.bind="!installGuideShown"
+          type="button"
+          class="[ button ] [ pressable ]"
+          busy-on-click.bind="() => onInstall()"
+          t="postSignup.install.add"
+        ></button>
+        <button
+          else
+          type="button"
+          class="[ button ] [ pressable ]"
+          click.trigger="close()"
+          t="postSignup.close"
+        ></button>
+        <button
+          if.bind="!installGuideShown"
+          type="button"
+          class="[ button ] [ pressable ]"
+          data-variant="outlined"
+          click.trigger="next()"
+          t="postSignup.defer"
+        ></button>
+      </div>
+    </template>
+
+    <!-- iOS / iPadOS: add to the home screen to receive notifications -->
+    <template if.bind="step === 'iosGuide'">
+      <h2 class="post-signup-title" t="postSignup.notify.title"></h2>
+      <p class="post-signup-body" t="postSignup.ios.body"></p>
+      <ol class="post-signup-steps">
+        <li t="postSignup.ios.step1"></li>
+        <li t="postSignup.ios.step2"></li>
+        <li t="postSignup.ios.step3"></li>
+      </ol>
+      <div class="post-signup-actions">
+        <button
+          type="button"
+          class="[ button ] [ pressable ]"
+          data-variant="outlined"
+          click.trigger="next()"
+          t="postSignup.defer"
+        ></button>
+      </div>
+    </template>
+
   </section>
 </bottom-sheet>

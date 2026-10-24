@@ -7,6 +7,12 @@ vi.mock('aurelia', async (importOriginal) => {
 		resolve: vi.fn((token: unknown) => {
 			if (token === actual.ILogger) return fakeLogger
 			if (token === actual.INode) return fakeHost
+			if ((token as { friendlyName?: string }).friendlyName === 'IAudioEngine')
+				return fakeAudio
+			if (
+				(token as { friendlyName?: string }).friendlyName === 'IHapticService'
+			)
+				return fakeHaptic
 			return {}
 		}),
 		bindable: actual.bindable,
@@ -22,6 +28,9 @@ const fakeLogger = {
 	error: vi.fn(),
 	scopeTo: vi.fn(() => fakeLogger),
 }
+
+const fakeAudio = { unlock: vi.fn(), playCelebration: vi.fn() }
+const fakeHaptic = { pulse: vi.fn() }
 
 let fakeHost: {
 	addEventListener: ReturnType<typeof vi.fn>

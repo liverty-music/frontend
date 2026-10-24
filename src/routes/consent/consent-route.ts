@@ -13,28 +13,21 @@ import { ILogger, resolve } from 'aurelia'
  *
  * Acknowledging NEVER changes the default-on opt-out state and NEVER gates
  * onboarding progression: the route is a standalone public page
- * (`data: { auth: false }`) reached by an explicit link, not a step in the
- * onboarding flow. The dismiss action simply records that the notice was
- * seen (so it is not re-surfaced) and navigates to the dashboard.
+ * (`data: { auth: false }`) reached by an explicit link (the 「詳しく」 link of
+ * the Welcome analytics notice), not a step in the onboarding flow. The
+ * acknowledge action navigates to the dashboard.
  */
-const NOTICE_SEEN_KEY = 'analytics.noticeSeen'
 
 export class ConsentRoute implements IRouteViewModel {
 	private readonly router = resolve(IRouter)
 	private readonly logger = resolve(ILogger).scopeTo('ConsentRoute')
 
 	/**
-	 * Acknowledge the notice. Records the seen flag (best-effort) and exits
-	 * to the dashboard. Deliberately does NOT touch ConsentService — the
-	 * default-on opt-out posture is unchanged by acknowledging the notice.
+	 * Acknowledge the notice and exit to the dashboard. Deliberately does NOT
+	 * touch ConsentService — the default-on opt-out posture is unchanged by
+	 * acknowledging the notice.
 	 */
 	public async acknowledge(): Promise<void> {
-		try {
-			localStorage.setItem(NOTICE_SEEN_KEY, '1')
-		} catch {
-			// Private-mode / sandboxed storage failure is non-fatal: the
-			// notice is informational and may simply re-surface next visit.
-		}
 		this.logger.info('Analytics transparency notice acknowledged')
 		await this.router.load('/dashboard')
 	}

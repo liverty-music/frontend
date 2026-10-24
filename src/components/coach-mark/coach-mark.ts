@@ -4,15 +4,18 @@ const MAX_RETRY_MS = 5000
 const INITIAL_RETRY_MS = 100
 
 /**
- * Single, transient coach mark. Renders once at the app-shell level and is
- * driven by `CoachMarkService` via its bindables.
+ * Single, transient coach mark. The screen that uses it renders it within its
+ * own template and drives it through its bindables; today that is only the
+ * Welcome demo (`welcome-route`), which points it at the first concert card of
+ * its timetable.
  *
- * Tapping the highlighted target delegates to its native click (navigation).
- * Tapping the dimmed area outside the target light-dismisses the coach mark via
- * `onDismiss`. Light-dismiss is handled by a document-level `pointerdown`
- * listener (capture) rather than a full-viewport backdrop, so it works above any
- * other overlay without a `z-index` and without blocking the page: the host and
- * the dim layer stay `pointer-events: none`; only the target-interceptor opts in.
+ * Tapping the highlighted target delegates to its native click (the target's
+ * own action) and closes the coach mark. Tapping the dimmed area outside the
+ * target light-dismisses the coach mark via `onDismiss`. Light-dismiss is
+ * handled by a document-level `pointerdown` listener (capture) rather than a
+ * full-viewport backdrop, so it works above any other overlay without a
+ * `z-index` and without blocking the page: the host and the dim layer stay
+ * `pointer-events: none`; only the target-interceptor opts in.
  */
 export class CoachMark {
 	@bindable public targetSelector = ''
@@ -60,7 +63,7 @@ export class CoachMark {
 	 * retry timer for elements that mount slightly after activation) and anchor
 	 * the spotlight to it.
 	 */
-	private findAndHighlight(elapsed = 0): void {
+	private findAndHighlight(elapsed = 0, attempt = 0): void {
 		this.cancelRetry()
 		this.clearAnchor()
 		if (!this.targetSelector) return
@@ -79,13 +82,14 @@ export class CoachMark {
 			return
 		}
 
-		// Exponential backoff: 100, 200, 400, 800, 1600...
+		// Exponential backoff: 100, 200, 400, 800, 1600, then the rest of the
+		// window, so the last look happens exactly at MAX_RETRY_MS.
 		const delay = Math.min(
-			INITIAL_RETRY_MS * 2 ** Math.floor(elapsed / INITIAL_RETRY_MS),
+			INITIAL_RETRY_MS * 2 ** attempt,
 			MAX_RETRY_MS - elapsed,
 		)
 		this.retryTimer = setTimeout(() => {
-			this.findAndHighlight(elapsed + delay)
+			this.findAndHighlight(elapsed + delay, attempt + 1)
 		}, delay)
 	}
 
@@ -131,6 +135,7 @@ export class CoachMark {
 		e.stopPropagation()
 		this.currentTarget?.click()
 		this.onTap?.()
+		this.deactivate()
 	}
 
 	private clearAnchor(): void {
