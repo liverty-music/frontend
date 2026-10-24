@@ -4,7 +4,7 @@ import {
 	type StoryObj,
 } from '@aurelia/storybook'
 import { expect, within } from 'storybook/test'
-import { expect as vitestExpect } from 'vitest'
+import { expectScreenshot } from '../../../.storybook/screenshot'
 import { type EventDateTab, EventDateTabs } from './event-date-tabs'
 
 const meta = {
@@ -75,9 +75,7 @@ export const FourDates = {
 		}
 		const frame = canvasElement.querySelector('.frame-360') as HTMLElement
 		await expect(frame.scrollWidth).toBeLessThanOrEqual(360)
-		await vitestExpect
-			.element(frame)
-			.toMatchScreenshot('event-date-tabs-four-360')
+		await expectScreenshot(frame, 'event-date-tabs-four-360')
 	},
 } satisfies Story
 

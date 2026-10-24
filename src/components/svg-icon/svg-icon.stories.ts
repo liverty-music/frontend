@@ -1,8 +1,6 @@
 import type { Meta, StoryObj } from '@aurelia/storybook'
 import { expect } from 'storybook/test'
-// `expect.element(...).toMatchScreenshot()` is a @vitest/browser matcher, only
-// present on Vitest's own `expect` (not the one re-exported by `storybook/test`).
-import { expect as vitestExpect } from 'vitest'
+import { expectScreenshot } from '../../../.storybook/screenshot'
 import { SvgIcon } from './svg-icon'
 
 // A representative slice of the icon set the switch template supports.
@@ -51,9 +49,7 @@ export const Default = {
 		await expect(canvasElement.querySelector('svg')).toBeTruthy()
 		// Component-level visual regression against a committed baseline
 		// (design D4 / OQ2: 2% pixel tolerance absorbs sub-pixel AA jitter).
-		await vitestExpect
-			.element(canvasElement)
-			.toMatchScreenshot('svg-icon-default')
+		await expectScreenshot(canvasElement, 'svg-icon-default')
 	},
 } satisfies Story
 

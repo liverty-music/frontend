@@ -5,15 +5,13 @@ import {
 } from '@aurelia/storybook'
 import { bindable, customElement, IEventAggregator, resolve } from 'aurelia'
 import { expect, userEvent, waitFor, within } from 'storybook/test'
-// `expect.element(...).toMatchScreenshot()` is a @vitest/browser matcher, only
-// present on Vitest's own `expect` (not the one re-exported by `storybook/test`).
-import { expect as vitestExpect } from 'vitest'
 import {
 	composite,
 	contrast,
 	resolveColor,
 	WCAG_AA,
 } from '../../../.storybook/contrast'
+import { expectScreenshot } from '../../../.storybook/screenshot'
 import { Snack, type SnackSeverity } from './snack'
 import { SnackBar } from './snack-bar'
 
@@ -241,8 +239,6 @@ export const UpdateAction = {
 		await Promise.all(
 			snack.getAnimations({ subtree: true }).map((a) => a.finished),
 		)
-		await vitestExpect
-			.element(snack)
-			.toMatchScreenshot('snack-bar-update-action')
+		await expectScreenshot(snack, 'snack-bar-update-action')
 	},
 } satisfies Story

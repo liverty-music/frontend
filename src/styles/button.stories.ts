@@ -4,10 +4,8 @@ import {
 	type StoryObj,
 } from '@aurelia/storybook'
 import { expect } from 'storybook/test'
-// `expect.element(...).toMatchScreenshot()` is a @vitest/browser matcher, only
-// present on Vitest's own `expect` (not the one re-exported by `storybook/test`).
-import { expect as vitestExpect } from 'vitest'
 import { composite, contrast, WCAG_AA } from '../../.storybook/contrast'
+import { expectScreenshot } from '../../.storybook/screenshot'
 
 /**
  * Foundations story for the shared text button (`src/styles/button.css`), a
@@ -125,8 +123,6 @@ export const Catalog = {
 		}
 
 		// @spec components/infrastructure/fan/web/global/ui-primitives "Catalog matches the specification"
-		await vitestExpect
-			.element(canvasElement)
-			.toMatchScreenshot('button-catalog')
+		await expectScreenshot(canvasElement, 'button-catalog')
 	},
 } satisfies Story

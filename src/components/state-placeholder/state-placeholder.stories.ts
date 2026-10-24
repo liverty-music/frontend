@@ -4,7 +4,7 @@ import {
 	type StoryObj,
 } from '@aurelia/storybook'
 import { expect, within } from 'storybook/test'
-import { expect as vitestExpect } from 'vitest'
+import { expectScreenshot } from '../../../.storybook/screenshot'
 import { CircularProgress } from '../../../shared/ui/circular-progress/circular-progress'
 import { StatePlaceholder } from './state-placeholder'
 
@@ -59,9 +59,7 @@ export const Empty = {
 			icon?.compareDocumentPosition(copy) & Node.DOCUMENT_POSITION_FOLLOWING,
 		).toBeTruthy()
 		// Component-level visual regression against a committed baseline (D4/OQ2).
-		await vitestExpect
-			.element(canvasElement)
-			.toMatchScreenshot('state-placeholder-empty')
+		await expectScreenshot(canvasElement, 'state-placeholder-empty')
 	},
 } satisfies Story
 
@@ -132,6 +130,6 @@ export const Loading = {
 		// so a pixel baseline would be non-deterministic/flaky. Layout + a11y are
 		// asserted instead; axe (via the shared annotations) covers contrast.
 		const bars = canvasElement.querySelectorAll('.skeleton.skeleton-row')
-		vitestExpect(bars.length).toBe(3)
+		await expect(bars.length).toBe(3)
 	},
 } satisfies Story
