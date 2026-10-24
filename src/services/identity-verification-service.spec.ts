@@ -160,6 +160,42 @@ describe('IdentityVerificationService', () => {
 			expect(sut.current).toBeUndefined()
 			expect(sut.loaded).toBe(false)
 		})
+
+		it('forgets the previous account callback result', () => {
+			sut.settle('notCompleted')
+			sut.settle(null)
+
+			signedOutHandler?.()
+
+			expect(sut.failure).toBeNull()
+			expect(sut.takeVerifiedNotice()).toBe(false)
+		})
+	})
+
+	describe('settle (the callback hands its result to Settings)', () => {
+		it('keeps a failure reason and announces nothing', () => {
+			sut.settle('unavailable')
+
+			expect(sut.failure).toBe('unavailable')
+			expect(sut.takeVerifiedNotice()).toBe(false)
+		})
+
+		it('announces a success exactly once and clears an earlier reason', () => {
+			sut.settle('notCompleted')
+			sut.settle(null)
+
+			expect(sut.failure).toBeNull()
+			expect(sut.takeVerifiedNotice()).toBe(true)
+			expect(sut.takeVerifiedNotice()).toBe(false)
+		})
+
+		it('@spec components/infrastructure/fan/web/route/settings "Retry clears the reason"', async () => {
+			sut.settle('notCompleted')
+
+			await sut.start('jpki')
+
+			expect(sut.failure).toBeNull()
+		})
 	})
 
 	describe('start (Stamp redirect — leg 1)', () => {

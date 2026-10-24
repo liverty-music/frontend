@@ -1,8 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-	BLOCKING_ALLOWLIST,
-	checkRouteLoading,
-} from './verify-route-loading.lib'
+import { checkRouteLoading } from './verify-route-loading.lib'
 
 function file(path: string, source: string) {
 	return [{ path, source }]
@@ -88,19 +85,21 @@ describe('checkRouteLoading', () => {
 	})
 
 	it('lets an allowlisted route block, so exceptions are argued once and visible', () => {
-		const result = checkRouteLoading(
-			file(
-				'src/routes/verify-callback/verify-callback-route.ts',
-				`export class VerifyCallbackRoute {
-					public async loading(): Promise<void> {
-						const outcome = await this.identity.completeFromCallback()
-					}
-				}`,
-			),
+		const blocking = file(
+			'src/routes/gate/gate-route.ts',
+			`export class GateRoute {
+				public async loading(): Promise<void> {
+					const outcome = await this.gate.check()
+				}
+			}`,
 		)
 
-		expect(result.kind).toBe('ok')
-		expect(BLOCKING_ALLOWLIST['verify-callback-route.ts']).toBeTruthy()
+		expect(checkRouteLoading(blocking).kind).toBe('failed')
+		expect(
+			checkRouteLoading(blocking, {
+				'gate-route.ts': 'Must not show a step the fan is not eligible for.',
+			}).kind,
+		).toBe('ok')
 	})
 
 	it('ignores a route with no loading hook at all', () => {

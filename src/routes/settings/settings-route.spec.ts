@@ -1,6 +1,11 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Snack } from '../../../shared/ui/snack-bar/snack'
 import type { IdentityVerification } from '../../entities/identity-verification'
-import type { VerifyOutcome } from '../../services/identity-verification-service'
+import ja from '../../locales/ja/translation.json'
+import type {
+	VerificationFailure,
+	VerifyOutcome,
+} from '../../services/identity-verification-service'
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
 //
@@ -26,7 +31,14 @@ const mockIdentityVerifications = {
 	current: undefined as IdentityVerification | undefined,
 	start: vi.fn(async (): Promise<VerifyOutcome> => ({ kind: 'redirecting' })),
 	get: vi.fn(async (): Promise<IdentityVerification | undefined> => undefined),
+	// The callback's hand-off (design "The verification result is shown on
+	// Settings"): the reason kept in the row, and a success to announce once.
+	failure: null as VerificationFailure | null,
+	takeVerifiedNotice: vi.fn(() => false),
 }
+
+const mockEa = { publish: vi.fn() }
+const mockI18n = { tr: vi.fn((key: string) => key) }
 
 const mockPush = { resolvePushState: vi.fn(async () => 'disabled') }
 
@@ -41,6 +53,8 @@ vi.mock('aurelia', async (importOriginal) => {
 				IAuthService: mockAuth,
 				IPushService: mockPush,
 				ILogger: mockLogger,
+				IEventAggregator: mockEa,
+				I18N: mockI18n,
 			}
 			return map[tokenAny.friendlyName ?? ''] ?? {}
 		}),
@@ -64,6 +78,8 @@ describe('SettingsRoute — identity verification', () => {
 	beforeEach(() => {
 		vi.clearAllMocks()
 		mockIdentityVerifications.current = undefined
+		mockIdentityVerifications.failure = null
+		mockIdentityVerifications.takeVerifiedNotice.mockReturnValue(false)
 		mockAuth.isAuthenticated = true
 		mockIdentityVerifications.start.mockResolvedValue({ kind: 'redirecting' })
 		sut = new SettingsRoute()
@@ -152,6 +168,92 @@ describe('SettingsRoute — identity verification', () => {
 			expect(sut.dedupeStrengthKey).toBe(
 				'settings.identityVerification.dedupeStrong',
 			)
+		})
+	})
+
+	describe('the result of returning from the PocketSign app', () => {
+		const SPEC = 'components/infrastructure/fan/web/route/settings'
+		const published = () => mockEa.publish.mock.calls.map(([e]) => e as Snack)
+
+		afterEach(() => {
+			sut.detaching()
+			vi.useRealTimers()
+		})
+
+		it(`@spec ${SPEC} "Verification succeeds"`, () => {
+			mockIdentityVerifications.current = activeIdentityVerification
+			mockIdentityVerifications.takeVerifiedNotice.mockReturnValueOnce(true)
+
+			sut.attached()
+
+			expect(published().map((snack) => snack.message)).toEqual([
+				'verifyCallback.success.heading',
+			])
+			expect(ja.verifyCallback.success.heading).toBe('本人確認が完了しました')
+			expect(sut.isVerified).toBe(true)
+			expect(sut.canStartIdentityVerification).toBe(false)
+			expect(sut.identityFailureKey).toBeNull()
+		})
+
+		it(`@spec ${SPEC} "Card read not finished"`, () => {
+			vi.useFakeTimers()
+			mockIdentityVerifications.failure = 'notCompleted'
+
+			sut.attached()
+			vi.advanceTimersByTime(10_000)
+
+			expect(sut.identityFailureKey).toBe('verifyCallback.error.notCompleted')
+			expect(ja.verifyCallback.error.notCompleted).toBe(
+				'カードの読み取りが終わっていないか、期限が切れました。もう一度お試しください。',
+			)
+			expect(sut.canStartIdentityVerification).toBe(true)
+			expect(published()).toEqual([])
+		})
+
+		it(`@spec ${SPEC} "Card already used by another account"`, () => {
+			mockIdentityVerifications.failure = 'alreadyVerified'
+
+			expect(sut.identityFailureKey).toBe(
+				'verifyCallback.error.alreadyVerified',
+			)
+			expect(sut.identityFailureNeedsSupport).toBe(true)
+			expect(sut.supportEmail).toBe('pannpers@pannpers.dev')
+			expect(sut.canStartIdentityVerification).toBe(false)
+		})
+
+		it(`@spec ${SPEC} "Verification unavailable"`, () => {
+			mockIdentityVerifications.failure = 'unavailable'
+
+			expect(sut.identityFailureKey).toBe('verifyCallback.error.unavailable')
+			expect(ja.verifyCallback.error.unavailable).toBe(
+				'本人確認は現在ご利用いただけません。時間をおいてお試しください。',
+			)
+			expect(sut.identityFailureNeedsSupport).toBe(false)
+			expect(sut.canStartIdentityVerification).toBe(true)
+		})
+
+		it(`@spec ${SPEC} "Callback opened again after success"`, () => {
+			// Reopening finds no session on the device, but the fan is verified.
+			mockIdentityVerifications.failure = 'sessionMismatch'
+			mockIdentityVerifications.current = activeIdentityVerification
+
+			sut.attached()
+
+			expect(sut.isVerified).toBe(true)
+			expect(sut.identityFailureKey).toBeNull()
+			expect(published()).toEqual([])
+		})
+
+		it(`@spec ${SPEC} "No verification on this device"`, () => {
+			mockIdentityVerifications.failure = 'sessionMismatch'
+
+			expect(sut.identityFailureKey).toBe(
+				'verifyCallback.error.sessionMismatch',
+			)
+			expect(ja.verifyCallback.error.sessionMismatch).toBe(
+				'本人確認の手続きが見つかりませんでした。設定画面からもう一度お試しください。',
+			)
+			expect(sut.canStartIdentityVerification).toBe(true)
 		})
 	})
 })

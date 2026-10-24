@@ -34,8 +34,8 @@ export type VerifyOutcome =
 	| { readonly kind: 'notAuthenticated' }
 
 /**
- * Terminal result of a `create()` call, for the callback route
- * to display success/failure UI before navigating back to Settings.
+ * Terminal result of a `create()` call, which the callback route hands to
+ * Settings (`settle`).
  */
 export type CompleteOutcome =
 	// The session finalized successfully; the fan now has an Active
@@ -50,6 +50,19 @@ export type CompleteOutcome =
 	// The backend rejected the finalization (session not yet complete, expired,
 	// signature mismatch, revoked certificate, or duplicate person id).
 	| { readonly kind: 'verificationFailed'; readonly error: unknown }
+
+/**
+ * Why the last return from the PocketSign app did not verify the fan. Settings
+ * keeps it in the identity verification row until the fan starts again; each
+ * names a `verifyCallback.error.*` key.
+ */
+export type VerificationFailure =
+	| 'sessionMismatch'
+	| 'notCompleted'
+	| 'permissionDenied'
+	| 'unavailable'
+	| 'alreadyVerified'
+	| 'generic'
 
 /**
  * Fan-facing 本人確認 (identity verification) service (identity-ekyc-jpki,
@@ -90,6 +103,15 @@ export class IdentityVerificationService {
 	/** True once `get` has resolved at least once. */
 	public loaded = false
 
+	/**
+	 * The callback's outcome, handed to Settings in app state rather than the
+	 * URL, so a shared or reloaded address never replays a result. `failure`
+	 * stays until the fan starts verification again; a success is announced
+	 * once (`takeVerifiedNotice`).
+	 */
+	@observable public failure: VerificationFailure | null = null
+	private verifiedNotice = false
+
 	constructor() {
 		// Sign-out and account switch: forget the previous account's
 		// IdentityVerification (design D15 of unify-ticket-sales).
@@ -100,6 +122,21 @@ export class IdentityVerificationService {
 	public clear(): void {
 		this.current = undefined
 		this.loaded = false
+		this.failure = null
+		this.verifiedNotice = false
+	}
+
+	/** Record the callback's outcome for Settings: `null` when verified. */
+	public settle(failure: VerificationFailure | null): void {
+		this.failure = failure
+		this.verifiedNotice = failure === null
+	}
+
+	/** Whether a success waits to be announced; true once per success. */
+	public takeVerifiedNotice(): boolean {
+		const notice = this.verifiedNotice
+		this.verifiedNotice = false
+		return notice
 	}
 
 	/**
@@ -149,6 +186,8 @@ export class IdentityVerificationService {
 			return { kind: 'notAuthenticated' }
 		}
 
+		// Starting again retires the previous attempt's reason.
+		this.failure = null
 		this.logger.info('Starting Stamp verify session', { method })
 		const { sessionId, redirectUrl } = await this.rpcClient.start(
 			method,

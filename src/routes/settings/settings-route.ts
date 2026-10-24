@@ -21,7 +21,10 @@ import {
 import { toDomesticDisplay, toE164 } from '../../lib/to-e164'
 import { IAudioEngine } from '../../services/audio-engine'
 import { IAuthService } from '../../services/auth-service'
-import { IErrorBoundaryService } from '../../services/error-boundary-service'
+import {
+	IErrorBoundaryService,
+	REPORT_EMAIL_ADDRESS,
+} from '../../services/error-boundary-service'
 import { IFabMenuService } from '../../services/fab-menu-service'
 import { IIdentityVerificationService } from '../../services/identity-verification-service'
 import { PASSKEY_MANAGEMENT_PATH } from '../../services/passkey-auth-service'
@@ -166,6 +169,32 @@ export class SettingsRoute {
 		return iv ? dedupeStrengthLabelKey(iv.dedupeStrength) : null
 	}
 
+	/**
+	 * Why the last return from the PocketSign app did not verify the fan, as an
+	 * i18n key, kept until the fan starts again. None once the fan is verified:
+	 * reopening the callback after a success finds no session but is no failure.
+	 */
+	public get identityFailureKey(): string | null {
+		const failure = this.identityVerifications.failure
+		if (this.isVerified || !failure) return null
+		return `verifyCallback.error.${failure}`
+	}
+
+	/** A card already used by another account cannot be retried here. */
+	public get identityFailureNeedsSupport(): boolean {
+		return (
+			this.identityFailureKey !== null &&
+			this.identityVerifications.failure === 'alreadyVerified'
+		)
+	}
+
+	/** Whether 本人確認する is offered. */
+	public get canStartIdentityVerification(): boolean {
+		return !this.isVerified && !this.identityFailureNeedsSupport
+	}
+
+	public readonly supportEmail = REPORT_EMAIL_ADDRESS
+
 	// ── Name and phone number on the tickets (UserService.Update) ─────────────
 
 	/** The signed-in fan's saved User; watched to seed the form once it loads. */
@@ -301,6 +330,7 @@ export class SettingsRoute {
 
 	public attached(): void {
 		document.addEventListener('visibilitychange', this.onVisibilityChange)
+		this.announceIdentityVerified()
 		if (this.openAtAnalytics) {
 			this.analyticsSection?.scrollIntoView({ block: 'start' })
 		}
@@ -313,6 +343,16 @@ export class SettingsRoute {
 	private readonly onVisibilityChange = (): void => {
 		if (document.visibilityState !== 'visible') return
 		void this.auth.refreshEmailVerified()
+	}
+
+	/** The success snackbar, once, when the fan arrives from a verified callback. */
+	private announceIdentityVerified(): void {
+		if (!this.identityVerifications.takeVerifiedNotice()) return
+		this.ea.publish(
+			new Snack(this.i18n.tr('verifyCallback.success.heading'), 'info', {
+				icon: 'shield-check',
+			}),
+		)
 	}
 
 	/**

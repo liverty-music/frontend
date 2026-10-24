@@ -9,7 +9,6 @@ const mockLogger = {
 }
 
 const mockRouter = { load: vi.fn(async () => {}) }
-const mockI18n = { tr: vi.fn((key: string) => key) }
 
 // create takes NO session id argument: the service reads it from
 // its own persisted storage (callbackWithSessionId=false → no query param).
@@ -17,9 +16,11 @@ const mockCreate = vi.fn(
 	async (_signal?: AbortSignal): Promise<CompleteOutcome> =>
 		({ kind: 'sessionMismatch' }) as CompleteOutcome,
 )
+const mockSettle = vi.fn()
 
 const mockIdentityVerificationService = {
 	create: mockCreate,
+	settle: mockSettle,
 }
 
 vi.mock('aurelia', async (importOriginal) => {
@@ -31,7 +32,6 @@ vi.mock('aurelia', async (importOriginal) => {
 			const map: Record<string, unknown> = {
 				IIdentityVerificationService: mockIdentityVerificationService,
 				IRouter: mockRouter,
-				I18N: mockI18n,
 				ILogger: mockLogger,
 			}
 			return map[tokenAny.friendlyName ?? ''] ?? {}
@@ -41,7 +41,31 @@ vi.mock('aurelia', async (importOriginal) => {
 
 // ── Tests ──────────────────────────────────────────────────────────────────
 
-import { VerifyCallbackRoute } from './verify-callback-route'
+import { failureOf, VerifyCallbackRoute } from './verify-callback-route'
+
+const verified: CompleteOutcome = {
+	kind: 'verified',
+	identityVerification: {
+		id: 'iv-1',
+		userId: 'user-1',
+		method: 'jpki',
+		providerUserId: 'p-1',
+		dedupeStrength: 'strong',
+		status: 'active',
+		verifyTime: undefined,
+	},
+}
+
+const failed = (code: Code): CompleteOutcome => ({
+	kind: 'verificationFailed',
+	error: new ConnectError('rejected', code),
+})
+
+/** Run loading() and wait for the fire-and-forget finalization to settle. */
+async function runCallback(sut: VerifyCallbackRoute): Promise<void> {
+	sut.loading()
+	await vi.waitFor(() => expect(mockRouter.load).toHaveBeenCalled())
+}
 
 describe('VerifyCallbackRoute', () => {
 	let sut: VerifyCallbackRoute
@@ -52,130 +76,100 @@ describe('VerifyCallbackRoute', () => {
 	})
 
 	describe('loading()', () => {
-		it('finalizes via create() with NO argument (session id comes from persisted storage)', async () => {
-			const verifiedOutcome: CompleteOutcome = {
-				kind: 'verified',
-				identityVerification: {
-					id: 'iv-1',
-					userId: 'user-1',
-					method: 'jpki',
-					providerUserId: 'provider-1',
-					dedupeStrength: 'strong',
-					status: 'active',
-				},
-			}
-			mockCreate.mockResolvedValueOnce(verifiedOutcome)
+		it('does not hold the view on Create, so the progress indicator renders', () => {
+			let answer: (o: CompleteOutcome) => void = () => {}
+			mockCreate.mockReturnValueOnce(
+				new Promise((resolve) => {
+					answer = resolve
+				}),
+			)
 
-			await sut.loading()
+			expect(sut.loading()).toBeUndefined()
+			expect(mockCreate).toHaveBeenCalledOnce()
+			expect(mockRouter.load).not.toHaveBeenCalled()
+			answer(verified)
+		})
 
-			expect(mockCreate).toHaveBeenCalledTimes(1)
-			expect(mockCreate).toHaveBeenCalledWith()
-			expect(sut.outcome).toBe(verifiedOutcome)
-			expect(sut.isSuccess).toBe(true)
-			expect(sut.isPending).toBe(false)
+		it('finalizes via create() with only an abort signal (the session id comes from persisted storage)', async () => {
+			mockCreate.mockResolvedValueOnce(verified)
+
+			await runCallback(sut)
+
+			expect(mockCreate).toHaveBeenCalledWith(expect.any(AbortSignal))
+		})
+
+		it('hands a success to Settings and opens it in place of the callback', async () => {
+			mockCreate.mockResolvedValueOnce(verified)
+
+			await runCallback(sut)
+
+			expect(mockSettle).toHaveBeenCalledWith(null)
 			expect(mockRouter.load).toHaveBeenCalledWith('/settings', {
 				historyStrategy: 'replace',
 			})
 		})
 
-		it('sets isSuccess=false and the sessionMismatch key when no session was in progress', async () => {
-			const mismatch: CompleteOutcome = { kind: 'sessionMismatch' }
-			mockCreate.mockResolvedValueOnce(mismatch)
+		it('hands the failure reason to Settings before opening it', async () => {
+			mockCreate.mockResolvedValueOnce(failed(Code.FailedPrecondition))
 
-			await sut.loading()
+			await runCallback(sut)
 
-			expect(sut.isSuccess).toBe(false)
-			expect(sut.errorKey).toBe('verifyCallback.error.sessionMismatch')
-			expect(mockRouter.load).toHaveBeenCalledWith('/settings', {
-				historyStrategy: 'replace',
-			})
+			expect(mockSettle).toHaveBeenCalledWith('notCompleted')
+			expect(mockSettle.mock.invocationCallOrder[0]).toBeLessThan(
+				mockRouter.load.mock.invocationCallOrder[0],
+			)
 		})
 
-		it('maps UNAVAILABLE ConnectError to the correct i18n key', async () => {
-			const unavailable = new ConnectError('unavailable', Code.Unavailable)
-			mockCreate.mockResolvedValueOnce({
-				kind: 'verificationFailed',
-				error: unavailable,
-			})
+		it('hands the generic reason to Settings when create() throws', async () => {
+			mockCreate.mockRejectedValueOnce(new Error('not signed in'))
 
-			await sut.loading()
+			await runCallback(sut)
 
-			expect(sut.isSuccess).toBe(false)
-			expect(sut.errorKey).toBe('verifyCallback.error.unavailable')
+			expect(mockSettle).toHaveBeenCalledWith('generic')
 		})
 
-		it('maps FAILED_PRECONDITION to the session-not-completed key', async () => {
-			mockCreate.mockResolvedValueOnce({
-				kind: 'verificationFailed',
-				error: new ConnectError('not completed', Code.FailedPrecondition),
-			})
+		it('leaves the outcome alone when the fan left the callback first', async () => {
+			let answer: (o: CompleteOutcome) => void = () => {}
+			mockCreate.mockReturnValueOnce(
+				new Promise((resolve) => {
+					answer = resolve
+				}),
+			)
 
-			await sut.loading()
+			sut.loading()
+			sut.unloading()
+			answer(verified)
+			await Promise.resolve()
+			await Promise.resolve()
 
-			expect(sut.errorKey).toBe('verifyCallback.error.notCompleted')
-		})
-
-		it('maps ALREADY_EXISTS to the already-verified key', async () => {
-			mockCreate.mockResolvedValueOnce({
-				kind: 'verificationFailed',
-				error: new ConnectError('exists', Code.AlreadyExists),
-			})
-
-			await sut.loading()
-
-			expect(sut.errorKey).toBe('verifyCallback.error.alreadyVerified')
-		})
-
-		it('maps PERMISSION_DENIED to the permissionDenied key (anti-replay / nonce-mismatch signal)', async () => {
-			mockCreate.mockResolvedValueOnce({
-				kind: 'verificationFailed',
-				error: new ConnectError('nonce mismatch', Code.PermissionDenied),
-			})
-
-			await sut.loading()
-
-			expect(sut.isSuccess).toBe(false)
-			expect(sut.errorKey).toBe('verifyCallback.error.permissionDenied')
-		})
-
-		it('maps an unknown error to the generic key', async () => {
-			mockCreate.mockResolvedValueOnce({
-				kind: 'verificationFailed',
-				error: new Error('something unexpected'),
-			})
-
-			await sut.loading()
-
-			expect(sut.errorKey).toBe('verifyCallback.error.generic')
-		})
-
-		it('maps a ConnectError with an UNMAPPED code to the generic key', async () => {
-			// A ConnectError whose code is not in the switch (e.g. Internal) must
-			// fall through to the generic key — distinct from the non-ConnectError case.
-			mockCreate.mockResolvedValueOnce({
-				kind: 'verificationFailed',
-				error: new ConnectError('boom', Code.Internal),
-			})
-
-			await sut.loading()
-
-			expect(sut.errorKey).toBe('verifyCallback.error.generic')
+			expect(mockSettle).not.toHaveBeenCalled()
+			expect(mockRouter.load).not.toHaveBeenCalled()
 		})
 	})
+})
 
-	describe('errorKey', () => {
-		it('returns null while loading (outcome undefined)', () => {
-			expect(sut.errorKey).toBeNull()
-		})
+describe('failureOf', () => {
+	it('is null when the fan is verified', () => {
+		expect(failureOf(verified)).toBeNull()
+	})
 
-		it('returns null when isSuccess (verified outcome)', async () => {
-			mockCreate.mockResolvedValueOnce({
-				kind: 'verified',
-				identityVerification: undefined,
-			})
-			await sut.loading()
+	it('names a missing session on this device', () => {
+		expect(failureOf({ kind: 'sessionMismatch' })).toBe('sessionMismatch')
+	})
 
-			expect(sut.errorKey).toBeNull()
-		})
+	it.each([
+		[Code.Unavailable, 'unavailable'],
+		[Code.FailedPrecondition, 'notCompleted'],
+		[Code.AlreadyExists, 'alreadyVerified'],
+		[Code.PermissionDenied, 'permissionDenied'],
+		[Code.Internal, 'generic'],
+	])('maps Create %s to %s', (code, reason) => {
+		expect(failureOf(failed(code))).toBe(reason)
+	})
+
+	it('maps an error that is not a ConnectError to generic', () => {
+		expect(
+			failureOf({ kind: 'verificationFailed', error: new Error('boom') }),
+		).toBe('generic')
 	})
 })

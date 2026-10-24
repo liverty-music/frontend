@@ -1,8 +1,10 @@
-import { I18N } from '@aurelia/i18n'
 import { IRouter } from '@aurelia/router'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { ILogger, resolve } from 'aurelia'
-import type { CompleteOutcome } from '../../services/identity-verification-service'
+import type {
+	CompleteOutcome,
+	VerificationFailure,
+} from '../../services/identity-verification-service'
 import { IIdentityVerificationService } from '../../services/identity-verification-service'
 
 /**
@@ -13,123 +15,90 @@ import { IIdentityVerificationService } from '../../services/identity-verificati
  * abandoned/fails). The callback URL carries NO query parameters — the backend
  * creates the session with callbackWithSessionId=false (per the official
  * PocketSign reference flow), so the session id is read from the service's own
- * persisted storage, not the URL. This route:
- *   1. Calls `identityVerifications.create()` in the `loading()` hook,
- *      which reads the persisted session id and finalizes the Stamp session.
- *   2. Shows a brief success or failure message.
- *   3. Navigates back to `/settings` automatically (historyStrategy: 'replace'
- *      so the callback URL is not in the back-stack).
+ * persisted storage, not the URL. This route shows only a progress indicator
+ * while `identityVerifications.create()` finalizes the Stamp session, hands the
+ * outcome to Settings in app state, and opens `/settings` in place of itself
+ * (historyStrategy: 'replace'). Settings shows the result: a reload here finds
+ * the session id already cleared, so the result is not shown on this screen
+ * (design "The verification result is shown on Settings").
  *
  * Route path: `verify/callback` (absolute: `/verify/callback`).
  * Registered in `app-shell.ts` WITHOUT `data: { auth: false }` — the fan is
  * authenticated when they return from the PocketSign app.
- *
- * Error taxonomy (ConnectError codes from IdentityVerificationService.Create):
- * - UNAVAILABLE: backend PocketSign service not yet configured (Section 0 stub).
- * - FAILED_PRECONDITION: session not yet completed, expired, or signature mismatch.
- * - ALREADY_EXISTS: the person already verified another account.
- * - PERMISSION_DENIED: session/nonce mismatch (backend anti-replay check).
  */
 export class VerifyCallbackRoute {
 	private readonly identityVerifications = resolve(IIdentityVerificationService)
 	private readonly router = resolve(IRouter)
 	private readonly logger = resolve(ILogger).scopeTo('VerifyCallbackRoute')
 
-	// Unused at runtime but needed so the template can reference `i18n` for
-	// the `t="..."` binding. Aurelia's template compiler reads from the resolve
-	// result, not from a `resolve()` call site.
-	// biome-ignore lint/correctness/noUnusedPrivateClassMembers: held for DI side-effect
-	private readonly _i18n = resolve(I18N)
+	private abort: AbortController | null = null
 
 	/**
-	 * Whether the IdentityVerificationService.Create RPC is in flight. Drives
-	 * the progress indicator in the template. Named `isPending` (not `loading`) to avoid clashing with the
-	 * Aurelia router lifecycle hook of the same name.
+	 * Fire-and-forget, so the progress indicator renders while Create runs; the
+	 * router would otherwise hold the view until the network answers.
 	 */
-	public isPending = true
-
-	/**
-	 * The UI state to render. `undefined` while the RPC is in flight; set to the
-	 * outcome once `create` resolves.
-	 */
-	public outcome: CompleteOutcome | undefined = undefined
-
-	/** Human-readable error i18n key for the template. `null` on success. */
-	public get errorKey(): string | null {
-		if (!this.outcome) return null
-		if (this.outcome.kind === 'sessionMismatch') {
-			return 'verifyCallback.error.sessionMismatch'
-		}
-		if (this.outcome.kind === 'verificationFailed') {
-			return this.connectErrorKey(this.outcome.error)
-		}
-		return null
+	public loading(): void {
+		this.abort = new AbortController()
+		void this.finish(this.abort.signal)
 	}
 
-	/** Whether verification succeeded. */
-	public get isSuccess(): boolean {
-		return this.outcome !== undefined && this.outcome.kind === 'verified'
+	public unloading(): void {
+		this.abort?.abort()
+		this.abort = null
 	}
 
-	/**
-	 * Aurelia router lifecycle hook — runs before the component activates.
-	 * Finalizes the Stamp session using the session id the service persisted in
-	 * leg 1 (the callback URL carries no `session_id` — callbackWithSessionId is
-	 * false, per the official flow).
-	 *
-	 * The router awaits this hook before mounting the view, so `isPending` is
-	 * `false` when the template first renders. The template therefore does not
-	 * need to handle a mid-render loading → done transition; the view is
-	 * mounted only after the outcome is known. `isPending` is kept for forward
-	 * compatibility if the hook is ever made non-blocking.
-	 */
-	public async loading(): Promise<void> {
-		this.isPending = true
-		this.outcome = undefined
-
-		this.logger.info('Verify callback: finalizing Stamp session')
-		const outcome = await this.identityVerifications.create()
-		this.outcome = outcome
-		this.isPending = false
-
-		if (outcome.kind === 'verified') {
-			this.logger.info('Verify callback: identity verified')
-		} else {
-			this.logger.warn('Verify callback: finalization failed', { outcome })
+	private async finish(signal: AbortSignal): Promise<void> {
+		let failure: VerificationFailure | null
+		try {
+			const outcome = await this.identityVerifications.create(signal)
+			if (signal.aborted) return
+			failure = failureOf(outcome)
+			if (failure === null) {
+				this.logger.info('Verify callback: identity verified')
+			} else {
+				this.logger.warn('Verify callback: finalization failed', { outcome })
+			}
+		} catch (err) {
+			// `create` throws only when no one is signed in, which the auth hook
+			// rules out here; the fan still gets a reason to retry from.
+			this.logger.error('Verify callback: could not finalize', { error: err })
+			failure = 'generic'
 		}
-
-		await this.navigateToSettings()
-	}
-
-	/** Navigate to Settings, replacing the callback URL in the history stack. */
-	private async navigateToSettings(): Promise<void> {
+		this.identityVerifications.settle(failure)
 		await this.router.load('/settings', { historyStrategy: 'replace' })
 	}
+}
 
-	/**
-	 * Map a ConnectError (or any unknown error) from
-	 * IdentityVerificationService.Create to an i18n key. Falls back to the generic key for unrecognized errors so the UI always
-	 * shows something actionable rather than a bare error object.
-	 */
-	private connectErrorKey(err: unknown): string {
-		if (err instanceof ConnectError) {
-			switch (err.code) {
+/**
+ * The reason Settings shows for a callback outcome, or `null` when the fan is
+ * verified. Create's ConnectError codes:
+ * - UNAVAILABLE: verification is not available right now.
+ * - FAILED_PRECONDITION: session not yet completed, expired, or signature mismatch.
+ * - ALREADY_EXISTS: the card already verified another account.
+ * - PERMISSION_DENIED: session/nonce mismatch (backend anti-replay check).
+ * Any other error is the generic, retryable reason.
+ */
+export function failureOf(
+	outcome: CompleteOutcome,
+): VerificationFailure | null {
+	switch (outcome.kind) {
+		case 'verified':
+			return null
+		case 'sessionMismatch':
+			return 'sessionMismatch'
+		case 'verificationFailed':
+			if (!(outcome.error instanceof ConnectError)) return 'generic'
+			switch (outcome.error.code) {
 				case Code.Unavailable:
-					// Backend PocketSign integration not yet configured (Section 0).
-					return 'verifyCallback.error.unavailable'
+					return 'unavailable'
 				case Code.FailedPrecondition:
-					// Session not completed, expired, or verification result invalid.
-					return 'verifyCallback.error.notCompleted'
+					return 'notCompleted'
 				case Code.AlreadyExists:
-					// This person already verified another account.
-					return 'verifyCallback.error.alreadyVerified'
+					return 'alreadyVerified'
 				case Code.PermissionDenied:
-					// Anti-redirect nonce mismatch validated by the backend.
-					return 'verifyCallback.error.permissionDenied'
+					return 'permissionDenied'
 				default:
-					return 'verifyCallback.error.generic'
+					return 'generic'
 			}
-		}
-		return 'verifyCallback.error.generic'
 	}
 }

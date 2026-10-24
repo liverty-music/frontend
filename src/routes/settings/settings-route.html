@@ -401,16 +401,31 @@
                 <span if.bind="!isVerified" t="settings.identityVerification.unverified"></span>
               </output>
               <!-- "本人確認する" button: redirects to PocketSign Stamp.
-                   Hidden once the fan is verified. -->
+                   Hidden once the fan is verified, and when the card already
+                   verified another account (only support can help then). -->
               <button
-                if.bind="!isVerified"
+                if.bind="canStartIdentityVerification"
                 busy-on-click.bind="() => startIdentityVerification()"
+                aria-describedby.bind="identityFailureKey ? 'identity-verification-failure' : null"
                 class="[ button settings-row-action ] [ pressable ]"
                 data-variant="outlined"
               >
                 <span t="settings.identityVerification.verifyCta"></span>
               </button>
             </div>
+            <!-- Why the last return from the PocketSign app did not verify the
+                 fan, kept next to the button until the fan starts again. -->
+            <p
+              if.bind="identityFailureKey"
+              id="identity-verification-failure"
+              class="settings-identity-verification-failure"
+              data-testid="identity-verification-failure"
+            >
+              <span t.bind="identityFailureKey"></span>
+              <span if.bind="identityFailureNeedsSupport">
+                <span t="verifyCallback.error.contact"></span><a href="mailto:${supportEmail}">${supportEmail}</a>
+              </span>
+            </p>
             <!-- Method + dedupe strength, verified-only. -->
             <span if.bind="isVerified && verificationMethodKey" class="settings-identity-verification-detail">
               <span t="settings.identityVerification.methodPrefix"></span>
