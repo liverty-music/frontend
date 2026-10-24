@@ -748,6 +748,25 @@ describe('AnalyticsService', () => {
 				blockSelector: string
 			}
 			expect(blockSelector.split(', ')).toContain('input[type="hidden"]')
+			// Text carried in attributes is masked too; layout attributes and
+			// addresses on other origins are kept.
+			const { maskAttributeFn } = initConfig().session_recording as {
+				maskAttributeFn: (name: string, value: string) => string
+			}
+			expect(maskAttributeFn('aria-label', 'Unfollow Artist A')).toBe(
+				'*****************',
+			)
+			for (const name of ['title', 'alt', 'placeholder']) {
+				expect(maskAttributeFn(name, 'Artist A')).toBe('********')
+			}
+			expect(maskAttributeFn('class', '[ card ] flow')).toBe('[ card ] flow')
+			const origin = window.location.origin
+			expect(maskAttributeFn('href', `${origin}/welcome?ref=member-a`)).toBe(
+				`${origin}/welcome`,
+			)
+			expect(maskAttributeFn('src', 'https://img.example.test/a.png?w=1')).toBe(
+				'https://img.example.test/a.png?w=1',
+			)
 		})
 
 		it(`@spec ${SPEC} "Screen that is never recorded"`, async () => {
