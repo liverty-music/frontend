@@ -235,7 +235,10 @@ describe('OrganizerCommercialTerms', () => {
 			expect(vm.business).toEqual(stored)
 			expect(vm.hasBusinessDetails).toBe(true)
 			expect(vm.businessSaved).toBe(true)
-			expect(inputValue(fixture, 'legalName')).toBe('Liverty Records K.K.')
+			// The binding writes the input after the save settles.
+			await vi.waitFor(() =>
+				expect(inputValue(fixture, 'legalName')).toBe('Liverty Records K.K.'),
+			)
 			// An unsaved edit in the other form survives.
 			expect(vm.feeRateText).toBe('12.50')
 		})
@@ -352,7 +355,10 @@ describe('OrganizerCommercialTerms', () => {
 			expect(client.setPlatformFeeRate).toHaveBeenCalledWith('o1', 500)
 			expect(vm.feeRateText).toBe('5.00')
 			expect(vm.feeRateSaved).toBe(true)
-			expect(inputValue(fixture, 'platformFeeRate')).toBe('5.00')
+			// The binding writes the input after the save settles.
+			await vi.waitFor(() =>
+				expect(inputValue(fixture, 'platformFeeRate')).toBe('5.00'),
+			)
 			// An unsaved edit in the other form survives.
 			expect(vm.business.legalName).toBe('unsaved edit')
 		})
