@@ -15,6 +15,7 @@ const ICON_NAMES = [
 	'check',
 	'warning',
 	'info',
+	'mail',
 	'x-circle',
 	'bell',
 	'calendar',
