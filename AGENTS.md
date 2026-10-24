@@ -210,5 +210,6 @@ New vs returning users are distinguished by the `isSignUp` flag in the OIDC stat
 - Services export an `IName` token via `DI.createInterface()`, register `.singleton()`, and re-export the interface (cf. `concert-store.ts`).
 - `@observable` mutations update optimistically and roll back on RPC failure (cf. `follow-store.ts follow()`).
 - A ConnectError is never swallowed. An expected code becomes a state, mapped in the RPC client (cf. `wallet-public-key-client.ts` `get()`: NotFound → `null`) or in the route that shows it (cf. `checkout-route.ts` `explainAuthorizeCardFailure`); any other code is logged and shown as a retryable error, or rethrown.
+- A screen reads every value it shows from the server by the resource's id (cf. `src/routes/order/order-route.ts` `loading` → `IOrderRpcClient`). The URL, history state and storage carry only ids and the user's own input (search terms, filters, `ref`); a display value such as a name, price or state is never handed from another screen. When no RPC returns the value, the read is missing from the change — raise it, do not work around it.
 
 </agent-rules>
