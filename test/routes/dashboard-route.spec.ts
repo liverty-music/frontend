@@ -72,12 +72,32 @@ function makeOnboarding(isOnboarding = false) {
 	}
 }
 
+/** The store's rendered timetable and scroll place, keyed by their inputs. */
+function keyedTimetable() {
+	const rendered = new Map<
+		string,
+		{ groups: unknown[]; anchor: { dateKey: string; offset: number } | null }
+	>()
+	return {
+		peekDateGroups: vi.fn((key: string) => rendered.get(key)?.groups ?? null),
+		setDateGroups: vi.fn((key: string, groups: unknown[]) => {
+			rendered.set(key, { groups, anchor: rendered.get(key)?.anchor ?? null })
+		}),
+		timetableAnchor: vi.fn((key: string) => rendered.get(key)?.anchor ?? null),
+		saveTimetableAnchor: vi.fn(
+			(key: string, anchor: { dateKey: string; offset: number } | null) => {
+				const entry = rendered.get(key)
+				if (entry) entry.anchor = anchor
+			},
+		),
+	}
+}
+
 function makeConcertService() {
 	return {
 		listFollowed: vi.fn().mockResolvedValue([]),
 		revalidateFollower: vi.fn().mockResolvedValue([]),
-		peekDateGroups: vi.fn().mockReturnValue(null),
-		setDateGroups: vi.fn(),
+		...keyedTimetable(),
 		toDateGroups: vi.fn().mockReturnValue([]),
 		listByArtist: vi.fn().mockResolvedValue([]),
 	}
@@ -87,6 +107,7 @@ function makeFollowService() {
 	return {
 		getFollowedArtistMap: vi.fn().mockResolvedValue(new Map()),
 		listFollowed: vi.fn().mockResolvedValue([]),
+		followedIds: new Set<string>(),
 		followedCount: 0,
 	}
 }
@@ -120,6 +141,7 @@ function makeUserStore() {
 	return {
 		current: undefined as { home: unknown } | undefined,
 		guestHome: null as string | null,
+		currentHome: null as string | null,
 		setGuestHome: vi.fn(),
 	}
 }
@@ -603,7 +625,11 @@ describe('DashboardRoute', () => {
 			// @spec components/infrastructure/fan/web/route/dashboard "Back from the event page"
 			const anchor = { dateKey: '2026-11-20', offset: 120 }
 			sut.highway = { scrollAnchor: anchor } as unknown as typeof sut.highway
-			Object.assign(mockConcert, { timetableScrollAnchor: null })
+			// The timetable the fan scrolled is the one in the session cache.
+			mockConcert.setDateGroups(
+				(sut as unknown as { timetableKey(): string }).timetableKey(),
+				[],
+			)
 
 			sut.onEventSelected(selected(true))
 			sut.unloading()

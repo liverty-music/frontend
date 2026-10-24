@@ -133,7 +133,7 @@ describe('Sign-out from the settings screen (fixture)', () => {
 		const journeys = container.get(ITicketJourneyStore)
 		await userStore.ensureLoaded('ja')
 		await concertStore.listFollowed()
-		concertStore.setDateGroups([])
+		concertStore.setDateGroups('JP-13|2026-04-01|artist-1', [])
 		concertStore.addArtistWithConcerts('artist-1')
 		await identityVerifications.get()
 		await journeys.load()
@@ -166,7 +166,7 @@ describe('Sign-out from the settings screen (fixture)', () => {
 
 		expect(auth.signOut).toHaveBeenCalledTimes(1)
 		expect(userStore.current).toBeUndefined()
-		expect(concertStore.peekDateGroups()).toBeNull()
+		expect(concertStore.peekDateGroups('JP-13|2026-04-01|artist-1')).toBeNull()
 		expect(concertStore.artistsWithConcertsCount).toBe(0)
 		expect(identityVerifications.current).toBeUndefined()
 		expect(journeys.journeyMap.size).toBe(0)
