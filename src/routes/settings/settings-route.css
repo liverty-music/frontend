@@ -126,9 +126,26 @@
 
 		.settings-row-label,
 		.settings-toggle-col,
-		.settings-expand,
-		.settings-account {
+		.settings-expand {
 			grid-column: 2;
+		}
+
+		/* The account rows are two grid rows: the icon and the label (the
+		   address, 本人確認) share the first, centred on each other; the status
+		   and its action (then any detail) take the rows below, spanning the
+		   action column too. The wrapper only groups them in the markup. */
+		.settings-row:has(> .settings-account, > .settings-identity-verification) {
+			row-gap: var(--space-xs);
+		}
+
+		.settings-account,
+		.settings-identity-verification {
+			display: contents;
+
+			> * {
+				grid-column: 2 / -1;
+				min-inline-size: 0;
+			}
 		}
 
 		.settings-row-end,
@@ -306,22 +323,19 @@
 		}
 
 		/* Email + verification badge stack (col2 of the account row). */
+
+		/* An address longer than the row breaks between words, never inside
+		   one. */
 		.settings-account {
-			display: flex;
-			flex-direction: column;
-			gap: var(--space-3xs);
-			align-items: flex-start;
-
-			min-inline-size: 0;
-
-			/* A long address breaks where the column ends, not past it. */
-			overflow-wrap: anywhere;
+			overflow-wrap: break-word;
 		}
 
-		/* Label + badge (+ detail) stack of the identity verification row,
-		   spaced like the email row's. */
-		.settings-identity-verification {
-			--stack-gap: var(--space-3xs);
+		/* A status and the action it allows: the badge at the start, the action
+		   at the end, wrapping under the badge when the row is too narrow. */
+		.settings-status-line {
+			--cluster-gap: var(--space-xs);
+
+			justify-content: space-between;
 		}
 
 		/* Status badge (<output>): a status icon + text, so verification state is

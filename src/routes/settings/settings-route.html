@@ -344,29 +344,33 @@
           <svg-icon name="mail" class="settings-icon"></svg-icon>
           <div class="settings-account">
             <span id="account-email" class="settings-row-label" aria-describedby="email-verification-status">${auth.user.profile.email}</span>
-            <output
-              id="email-verification-status"
-              class="settings-verification-badge"
-              aria-live="polite"
-              data-verified.bind="emailVerified"
-            >
-              <svg-icon if.bind="emailVerified" name="check" class="settings-verification-icon"></svg-icon>
-              <svg-icon if.bind="!emailVerified" name="alert-triangle" class="settings-verification-icon"></svg-icon>
-              <span if.bind="emailVerified" t="settings.emailVerified"></span>
-              <span if.bind="!emailVerified" t="settings.emailNotVerified"></span>
-            </output>
+            <!-- The status and the action it allows share one line under the
+                 address, so the address keeps the row's full width. -->
+            <div class="[ settings-status-line ] [ cluster ]">
+              <output
+                id="email-verification-status"
+                class="settings-verification-badge"
+                aria-live="polite"
+                data-verified.bind="emailVerified"
+              >
+                <svg-icon if.bind="emailVerified" name="check" class="settings-verification-icon"></svg-icon>
+                <svg-icon if.bind="!emailVerified" name="alert-triangle" class="settings-verification-icon"></svg-icon>
+                <span if.bind="emailVerified" t="settings.emailVerified"></span>
+                <span if.bind="!emailVerified" t="settings.emailNotVerified"></span>
+              </output>
+              <button
+                if.bind="!emailVerified"
+                busy-on-click.bind="() => resendVerification()"
+                disabled.bind="resendSuccess"
+                aria-live="polite"
+                class="[ button settings-row-action ] [ pressable ]"
+                data-variant="outlined"
+              >
+                <span if.bind="resendSuccess" t="settings.resendSent"></span>
+                <span if.bind="!resendSuccess" t="settings.resendVerification"></span>
+              </button>
+            </div>
           </div>
-          <button
-            if.bind="!emailVerified"
-            busy-on-click.bind="() => resendVerification()"
-            disabled.bind="resendSuccess"
-            aria-live="polite"
-            class="[ button settings-row-action ] [ pressable ]"
-            data-variant="outlined"
-          >
-            <span if.bind="resendSuccess" t="settings.resendSent"></span>
-            <span if.bind="!resendSuccess" t="settings.resendVerification"></span>
-          </button>
         </div>
       </li>
 
@@ -381,20 +385,32 @@
       <li class="settings-list-item">
         <div class="settings-row">
           <svg-icon name="shield-check" class="settings-icon"></svg-icon>
-          <div class="[ settings-identity-verification ] [ stack ]">
+          <div class="settings-identity-verification">
             <span id="identity-verification-label" t="settings.identityVerification.label" class="settings-row-label"></span>
-            <output
-              id="identity-verification-status"
-              class="settings-verification-badge"
-              aria-live="polite"
-              aria-describedby="identity-verification-label"
-              data-verified.bind="isVerified"
-            >
-              <svg-icon if.bind="isVerified" name="check" class="settings-verification-icon"></svg-icon>
-              <svg-icon if.bind="!isVerified" name="alert-triangle" class="settings-verification-icon"></svg-icon>
-              <span if.bind="isVerified" t="settings.identityVerification.verified"></span>
-              <span if.bind="!isVerified" t="settings.identityVerification.unverified"></span>
-            </output>
+            <div class="[ settings-status-line ] [ cluster ]">
+              <output
+                id="identity-verification-status"
+                class="settings-verification-badge"
+                aria-live="polite"
+                aria-describedby="identity-verification-label"
+                data-verified.bind="isVerified"
+              >
+                <svg-icon if.bind="isVerified" name="check" class="settings-verification-icon"></svg-icon>
+                <svg-icon if.bind="!isVerified" name="alert-triangle" class="settings-verification-icon"></svg-icon>
+                <span if.bind="isVerified" t="settings.identityVerification.verified"></span>
+                <span if.bind="!isVerified" t="settings.identityVerification.unverified"></span>
+              </output>
+              <!-- "本人確認する" button: redirects to PocketSign Stamp.
+                   Hidden once the fan is verified. -->
+              <button
+                if.bind="!isVerified"
+                busy-on-click.bind="() => startIdentityVerification()"
+                class="[ button settings-row-action ] [ pressable ]"
+                data-variant="outlined"
+              >
+                <span t="settings.identityVerification.verifyCta"></span>
+              </button>
+            </div>
             <!-- Method + dedupe strength, verified-only. -->
             <span if.bind="isVerified && verificationMethodKey" class="settings-identity-verification-detail">
               <span t="settings.identityVerification.methodPrefix"></span>
@@ -402,16 +418,6 @@
               <span t.bind="dedupeStrengthKey" class="settings-identity-verification-dedupe"></span>
             </span>
           </div>
-          <!-- "本人確認する" button: redirects to PocketSign Stamp.
-               Hidden once the fan is verified. -->
-          <button
-            if.bind="!isVerified"
-            busy-on-click.bind="() => startIdentityVerification()"
-            class="[ button settings-row-action ] [ pressable ]"
-            data-variant="outlined"
-          >
-            <span t="settings.identityVerification.verifyCta"></span>
-          </button>
         </div>
       </li>
 
