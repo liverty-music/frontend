@@ -197,6 +197,16 @@ async function captureAuthStatePassword(): Promise<void> {
 			},
 			{ polling: 500, timeout: 60_000 },
 		)
+		// The token is stored before the callback route finishes the sign-in
+		// hand-off (onboarding complete, guest state cleared). Capturing now
+		// would replay as a signed-in user still in onboarding, so wait for the
+		// route to navigate away.
+		await page.waitForURL(
+			(url) =>
+				url.origin === new URL(APP_URL).origin &&
+				!url.pathname.startsWith('/auth/callback'),
+			{ timeout: 60_000 },
+		)
 
 		// Write to a temp path first; promote atomically only after the
 		// smoke test confirms the captured state actually authenticates.
