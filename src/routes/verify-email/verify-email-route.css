@@ -42,10 +42,10 @@
 			background: var(--color-surface-raised);
 		}
 
+		/* Sized by svg-icon's own `size`; the success color matches the
+		   認証済み badge in Settings. */
 		.verify-email-icon {
-			inline-size: var(--space-xl);
-			block-size: var(--space-xl);
-			color: var(--color-brand-primary);
+			color: var(--color-success);
 		}
 	}
 }

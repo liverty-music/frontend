@@ -6,6 +6,7 @@ import { Code, ConnectError } from '@connectrpc/connect'
 import { CustomElement, Registration } from 'aurelia'
 import { describe, expect, it, vi } from 'vitest'
 import { IUserRpcClient } from '../../src/adapter/rpc/client/user-client'
+import { SvgIcon } from '../../src/components/svg-icon/svg-icon'
 import ja from '../../src/locales/ja/translation.json'
 import { VerifyEmailRoute } from '../../src/routes/verify-email/verify-email-route'
 
@@ -27,6 +28,7 @@ async function render(
 				}
 			}),
 			Registration.instance(IUserRpcClient, rpc),
+			SvgIcon,
 			VerifyEmailRoute,
 		)
 		.build().started
@@ -80,6 +82,11 @@ describe('Email verification screen (fixture)', () => {
 			ja.verifyEmail.openApp,
 		)
 		expect(q('verify-email-confirm')).toBeNull()
+		// svg-icon sizes its own <svg>; a size set on the host does not reach it.
+		expect(
+			q('verify-email-verified')?.querySelector<HTMLElement>('svg-icon')
+				?.dataset.size,
+		).toBe('xl')
 	})
 
 	it('disables the action while the confirmation runs', async () => {
