@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMockAppConfig } from '../../helpers/mock-app-config'
 import { createMockAuth } from '../../helpers/mock-auth'
 
-const mockRpc = { search: vi.fn(), listByOrganizer: vi.fn() }
+const mockRpc = { search: vi.fn(), create: vi.fn(), listByOrganizer: vi.fn() }
 
 vi.mock('@connectrpc/connect', async (importOriginal) => {
 	const actual = await importOriginal<typeof import('@connectrpc/connect')>()
@@ -72,5 +72,24 @@ describe('ArtistClient', () => {
 		const [req] = mockRpc.listByOrganizer.mock.calls.at(-1) ?? []
 		expect(req.organizerId?.value).toBe('o1')
 		expect(artists).toHaveLength(1)
+	})
+
+	it('create wraps the name and MBID and returns the artist', async () => {
+		mockRpc.create.mockResolvedValue({ artist: { id: { value: 'a-new' } } })
+		const client = resolveClient()
+
+		const artist = await client.create('E2E Test Artist', 'mbid-1')
+
+		const [req] = mockRpc.create.mock.calls.at(-1) ?? []
+		expect(req.name?.value).toBe('E2E Test Artist')
+		expect(req.mbid?.value).toBe('mbid-1')
+		expect(artist?.id?.value).toBe('a-new')
+	})
+
+	it('propagates create errors', async () => {
+		mockRpc.create.mockRejectedValue(new Error('exists'))
+		const client = resolveClient()
+
+		await expect(client.create('X', 'mbid-1')).rejects.toThrow('exists')
 	})
 })

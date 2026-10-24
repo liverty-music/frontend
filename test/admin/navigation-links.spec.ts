@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import approvalQueueHtml from '../../admin/approval-queue/approval-queue-route.html?raw'
 import approvedConcertsHtml from '../../admin/approved-concerts/approved-concerts-route.html?raw'
+import artistConcertsHtml from '../../admin/artist-concerts/artist-concerts-route.html?raw'
 import authCallbackHtml from '../../admin/auth-callback/auth-callback-route.html?raw'
 import organizersHtml from '../../admin/organizers/organizers-route.html?raw'
 import welcomeHtml from '../../admin/welcome/welcome-route.html?raw'
@@ -25,6 +26,7 @@ describe('admin sibling navigation uses parent-relative paths', () => {
 		['approved-concerts-route', approvedConcertsHtml, '../welcome'],
 		['organizers-route', organizersHtml, '../welcome'],
 		['auth-callback-route', authCallbackHtml, '../welcome'],
+		['artist-concerts-route', artistConcertsHtml, '../organizers'],
 	]
 
 	for (const [name, html, expectedTarget] of cases) {

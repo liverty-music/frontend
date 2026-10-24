@@ -259,8 +259,14 @@
 			--flow-space: var(--space-s);
 		}
 
-		.organizers-associate {
+		.organizers-associate,
+		.organizers-test-artist {
 			--flow-space: var(--space-s);
+		}
+
+		.organizers-roster-link {
+			color: var(--color-brand-primary);
+			text-decoration: underline;
 		}
 
 		.organizers-muted {
