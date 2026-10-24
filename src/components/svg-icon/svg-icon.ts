@@ -1,16 +1,23 @@
 import { bindable, INode, resolve } from 'aurelia'
 
+export type SvgIconSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl'
+
 export class SvgIcon {
 	@bindable public name = ''
-	@bindable public size: 'xs' | 'sm' | 'md' | 'lg' | 'xl' = 'md'
+	// Unset, the icon is as large as the text around it (1em).
+	@bindable public size?: SvgIconSize
 
 	private readonly element = resolve(INode) as HTMLElement
 
 	public bound(): void {
-		this.element.dataset.size = this.size
+		this.sizeChanged(this.size)
 	}
 
-	public sizeChanged(newVal: string): void {
-		this.element.dataset.size = newVal
+	public sizeChanged(newVal: SvgIconSize | undefined): void {
+		if (newVal) {
+			this.element.dataset.size = newVal
+		} else {
+			delete this.element.dataset.size
+		}
 	}
 }

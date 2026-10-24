@@ -31,7 +31,7 @@
         data-testid="event-cover"
       />
       <div else class="event-cover-placeholder" data-testid="event-cover-placeholder" role="presentation">
-        <svg-icon name="music"></svg-icon>
+        <svg-icon name="music" size="md"></svg-icon>
       </div>
     </figure>
 
@@ -79,7 +79,7 @@
     <!-- Date and times -->
     <section class="event-details">
       <div class="event-detail-row">
-        <svg-icon name="calendar" class="event-detail-icon"></svg-icon>
+        <svg-icon name="calendar" size="md" class="event-detail-icon"></svg-icon>
         <div>
           <time datetime.bind="event.dateKey" class="event-detail-primary" data-testid="event-date">${dateLabel}</time>
           <p class="event-times" data-testid="event-times">
@@ -91,7 +91,7 @@
 
       <!-- Venue -->
       <div class="event-detail-row">
-        <svg-icon name="map-pin" class="event-detail-icon"></svg-icon>
+        <svg-icon name="map-pin" size="md" class="event-detail-icon"></svg-icon>
         <div>
           <p class="event-detail-primary" data-testid="event-venue">${event.venueName}</p>
           <p if.bind="prefecture" class="event-detail-secondary" data-testid="event-prefecture">${prefecture}</p>
@@ -113,11 +113,11 @@
     <!-- Share and add-to-calendar -->
     <div class="[ event-actions ] [ cluster ]">
       <button type="button" class="[ button ] [ pressable ]" data-variant="outlined" click.trigger="share()" data-testid="event-share">
-        <svg-icon name="link"></svg-icon>
+        <svg-icon name="link" size="md"></svg-icon>
         <span t="eventPage.share.action"></span>
       </button>
       <button type="button" class="[ button ] [ pressable ]" data-variant="outlined" click.trigger="addToCalendar()" data-testid="event-calendar">
-        <svg-icon name="calendar"></svg-icon>
+        <svg-icon name="calendar" size="md"></svg-icon>
         <span t="eventPage.addToCalendar"></span>
       </button>
     </div>
