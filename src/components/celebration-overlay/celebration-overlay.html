@@ -9,10 +9,16 @@
     click.trigger="onTap()"
     pointerdown.trigger="onTap()"
   >
-    <div class="confetti-container" if.bind="confetti">
-      <div class="confetti" repeat.for="i of 30"></div>
+    <div class="confetti-container" if.bind="pieces.length" aria-hidden="true">
+      <span
+        class="confetti"
+        repeat.for="piece of pieces"
+        data-shape.bind="piece.shape"
+        css="--_dx: ${piece.dx}; --_dy: ${piece.dy}; --_size: ${piece.size}; --_spin: ${piece.spin}; --_duration: ${piece.duration}; --_delay: ${piece.delay}; --_color: ${piece.color}"
+      ></span>
     </div>
     <p class="celebration-text">${message}</p>
     <p class="celebration-sub-text" if.bind="subMessage">${subMessage}</p>
+    <p class="celebration-hint" if.bind="hint">${hint}</p>
   </output>
 </template>

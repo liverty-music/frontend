@@ -58,7 +58,6 @@ async function seedOnce(
 			localStorage.setItem('onboarding.celebrationShown', '1')
 			localStorage.setItem('onboarding.helpSeen:discovery', '1')
 			localStorage.setItem('onboarding.helpSeen:my-artists', '1')
-			localStorage.setItem('ui.notificationPromptDismissed', 'true')
 			localStorage.setItem('guest.followedArtists', JSON.stringify(entries))
 			for (const [k, v] of Object.entries(extra)) localStorage.setItem(k, v)
 		},

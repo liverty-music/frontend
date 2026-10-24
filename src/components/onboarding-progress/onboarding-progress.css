@@ -1,0 +1,72 @@
+@layer block {
+	@scope (onboarding-progress) {
+		:scope {
+			--_track: oklch(100% 0 0deg / 12%);
+			--_fill: var(--color-brand-accent);
+			--_label: oklch(100% 0 0deg / 70%);
+
+			display: block;
+			padding-block: var(--space-3xs);
+			padding-inline: var(--space-s);
+		}
+
+		.onboarding-progress-track {
+			display: flex;
+			gap: var(--space-xs);
+			align-items: center;
+			min-block-size: 2rem;
+		}
+
+		.onboarding-progress-label {
+			flex-shrink: 0;
+			font-size: var(--step--1);
+			color: var(--_label);
+			white-space: nowrap;
+		}
+
+		.onboarding-progress-bar {
+			overflow: hidden;
+			flex: 1;
+
+			block-size: 0.5rem;
+			border: 0;
+			border-radius: var(--radius-full);
+
+			appearance: none;
+			background: var(--_track);
+
+			&::-webkit-progress-bar {
+				background: var(--_track);
+			}
+
+			&::-webkit-progress-value {
+				border-radius: var(--radius-full);
+				background: var(--_fill);
+				transition: inline-size var(--transition-normal);
+			}
+
+			&::-moz-progress-bar {
+				border-radius: var(--radius-full);
+				background: var(--_fill);
+			}
+		}
+
+		.onboarding-progress-ready {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+
+			min-block-size: 2rem;
+			padding-inline: var(--space-s);
+			border-radius: var(--radius-full);
+
+			font-family: var(--font-display);
+			font-size: var(--step--1);
+			font-weight: bold;
+			color: var(--md-color-on-primary);
+			text-decoration: none;
+
+			background: var(--md-color-primary);
+		}
+	}
+}

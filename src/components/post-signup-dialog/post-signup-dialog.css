@@ -1,64 +1,42 @@
 @layer block {
 	@scope (post-signup-dialog) {
-		.post-signup-content {
+		.post-signup-step {
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-xs);
 			padding: var(--space-m) var(--space-s) var(--space-l);
 		}
 
+		.post-signup-app-icon {
+			align-self: center;
+			inline-size: 4rem;
+			block-size: 4rem;
+			border-radius: var(--radius-card);
+		}
+
 		.post-signup-title {
-			margin-block-end: var(--space-2xs);
 			font-size: var(--step-1);
 			font-weight: 700;
+			text-wrap: balance;
+			word-break: auto-phrase;
 		}
 
-		.post-signup-subtitle {
-			margin-block-end: var(--space-m);
+		.post-signup-body {
 			font-size: var(--step-0);
+			line-height: var(--leading-relaxed);
 			color: var(--color-text-secondary);
+			text-wrap: pretty;
+			word-break: auto-phrase;
 		}
 
-		.post-signup-row {
-			display: flex;
-			gap: var(--space-xs);
-			align-items: flex-start;
-
-			padding-block: var(--space-xs);
-			border-block-start: 1px solid var(--color-border-subtle);
-		}
-
-		.post-signup-row-icon {
-			flex-shrink: 0;
-			font-size: var(--step-1);
-		}
-
-		.post-signup-row-body {
-			display: flex;
-			flex: 1;
-			flex-direction: column;
-			gap: var(--space-2xs);
-		}
-
-		.post-signup-row-label {
-			font-size: var(--step-0);
-		}
-
-		/* Row actions sit at the start of the row body, not stretched. */
-		.post-signup-action {
-			align-self: flex-start;
-		}
-
-		.post-signup-error {
+		.post-signup-problem {
 			font-size: var(--step--1);
 			color: var(--color-error);
+			word-break: auto-phrase;
 		}
 
-		/* The disclosure trigger is a shared `button`; drop the default ▸ marker
-		   so it reads as an action, not a list item. */
-		.post-signup-install-guide summary {
-			list-style: none;
-		}
-
-		.post-signup-install-steps {
-			margin-block: var(--space-2xs) 0;
+		.post-signup-steps {
+			margin: 0;
 			padding-inline-start: var(--space-m);
 
 			font-size: var(--step-0);
@@ -66,10 +44,12 @@
 			list-style: decimal;
 		}
 
-		.post-signup-footer {
+		/* One primary action, then 「あとで」, stacked full width. */
+		.post-signup-actions {
 			display: flex;
-			justify-content: center;
-			margin-block-start: var(--space-m);
+			flex-direction: column;
+			gap: var(--space-2xs);
+			margin-block-start: var(--space-xs);
 		}
 	}
 }

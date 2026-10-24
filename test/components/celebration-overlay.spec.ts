@@ -1,6 +1,8 @@
 import { DI, INode, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { ILocalStorage } from '../../src/adapter/storage/local-storage'
 import { CelebrationOverlay } from '../../src/components/celebration-overlay/celebration-overlay'
+import { createMockLocalStorage } from '../helpers/mock-local-storage'
 
 function createTransitionEvent(propertyName: string): Event {
 	const event = new Event('transitionend', { bubbles: true })
@@ -202,6 +204,197 @@ describe('CelebrationOverlay', () => {
 				'transitionend',
 				expect.any(Function),
 			)
+		})
+	})
+
+	describe('post-signup effects', () => {
+		let oscillators: number
+		let vibrate: ReturnType<typeof vi.fn>
+
+		/** A Web Audio stand-in that counts the voices the engine starts. */
+		class FakeAudioContext {
+			public state = 'running'
+			public currentTime = 0
+			public destination = {}
+			private param() {
+				return {
+					value: 0,
+					setValueAtTime: vi.fn(),
+					linearRampToValueAtTime: vi.fn(),
+					exponentialRampToValueAtTime: vi.fn(),
+				}
+			}
+			private node() {
+				return { connect: vi.fn(), disconnect: vi.fn() }
+			}
+			public createGain() {
+				return { ...this.node(), gain: this.param() }
+			}
+			public createBiquadFilter() {
+				return {
+					...this.node(),
+					type: '',
+					Q: this.param(),
+					frequency: this.param(),
+				}
+			}
+			public createOscillator() {
+				oscillators += 1
+				return {
+					...this.node(),
+					type: '',
+					frequency: this.param(),
+					start: vi.fn(),
+					stop: vi.fn(),
+					onended: null,
+				}
+			}
+			public resume() {
+				return Promise.resolve()
+			}
+		}
+
+		function build(opts: { muted?: boolean; activated?: boolean } = {}) {
+			const container = DI.createContainer()
+			container.register(
+				Registration.instance(INode, document.createElement('div')),
+				Registration.instance(
+					ILocalStorage,
+					createMockLocalStorage(opts.muted ? { 'sound.muted': '1' } : {}),
+				),
+			)
+			Object.defineProperty(navigator, 'userActivation', {
+				configurable: true,
+				value: { hasBeenActive: opts.activated ?? true, isActive: false },
+			})
+			const overlay = container.get(CelebrationOverlay)
+			overlay.confetti = true
+			overlay.active = true
+			return overlay
+		}
+
+		beforeEach(() => {
+			oscillators = 0
+			vibrate = vi.fn()
+			Object.defineProperty(navigator, 'vibrate', {
+				configurable: true,
+				value: vibrate,
+			})
+			;(window as unknown as { AudioContext: unknown }).AudioContext =
+				FakeAudioContext
+		})
+
+		afterEach(() => {
+			delete (navigator as unknown as Record<string, unknown>).userActivation
+			delete (navigator as unknown as Record<string, unknown>).vibrate
+		})
+
+		it('bursts confetti, plays the celebration and vibrates once', () => {
+			const overlay = build()
+
+			overlay.attached()
+
+			expect(overlay.pieces).toHaveLength(40)
+			expect(oscillators).toBeGreaterThan(0)
+			expect(vibrate).toHaveBeenCalledTimes(1)
+			overlay.detaching()
+		})
+
+		it('varies the size, spin and speed of the pieces and starts them at the centre', () => {
+			const overlay = build()
+			overlay.attached()
+
+			const values = (key: 'size' | 'spin' | 'duration' | 'dx') =>
+				new Set(overlay.pieces.map((p) => p[key]))
+			expect(values('size').size).toBeGreaterThan(1)
+			expect(values('spin').size).toBeGreaterThan(1)
+			expect(values('duration').size).toBeGreaterThan(1)
+			// Each piece flies its own way from the centre.
+			expect(values('dx').size).toBeGreaterThan(1)
+			expect(new Set(overlay.pieces.map((p) => p.shape))).toEqual(
+				new Set(['square', 'circle', 'strip']),
+			)
+			overlay.detaching()
+		})
+
+		// @spec components/infrastructure/fan/web/global/celebration-overlay "Muted sound"
+		it('plays no sound when muted, while the confetti still bursts', () => {
+			const overlay = build({ muted: true })
+
+			overlay.attached()
+
+			expect(oscillators).toBe(0)
+			expect(overlay.pieces).toHaveLength(40)
+			overlay.detaching()
+		})
+
+		// @spec components/infrastructure/fan/web/global/celebration-overlay "Reduced motion preference"
+		it('shows no confetti and does not vibrate with reduced motion; the sound still plays', () => {
+			window.matchMedia = vi
+				.fn()
+				.mockReturnValue({ matches: true } as MediaQueryList)
+			const overlay = build()
+
+			overlay.attached()
+
+			expect(overlay.visible).toBe(true)
+			expect(overlay.pieces).toHaveLength(0)
+			expect(vibrate).not.toHaveBeenCalled()
+			expect(oscillators).toBeGreaterThan(0)
+
+			// Disappears without a transition.
+			overlay.onTap()
+			expect(overlay.visible).toBe(false)
+			expect(onDismissed).not.toHaveBeenCalled()
+		})
+
+		// @spec components/infrastructure/fan/web/global/celebration-overlay "No sound or vibration before the fan has touched the page"
+		it('keeps the burst but no sound or vibration before the fan has touched the page', () => {
+			const overlay = build({ activated: false })
+
+			overlay.attached()
+
+			expect(overlay.pieces).toHaveLength(40)
+			expect(oscillators).toBe(0)
+			expect(vibrate).not.toHaveBeenCalled()
+			overlay.detaching()
+		})
+
+		it('runs no effect on the light tier', () => {
+			const overlay = build()
+			overlay.confetti = false
+
+			overlay.attached()
+
+			expect(overlay.pieces).toHaveLength(0)
+			expect(oscillators).toBe(0)
+			expect(vibrate).not.toHaveBeenCalled()
+			overlay.detaching()
+		})
+	})
+
+	describe('fade-out without a transitionend', () => {
+		it('finishes the dismissal when the browser skips the transition', () => {
+			sut.active = true
+			sut.attached()
+			sut.onTap()
+			expect(sut.overlayState).toBe('exiting')
+
+			vi.advanceTimersByTime(600)
+
+			expect(sut.overlayState).toBe('hidden')
+			expect(onDismissed).toHaveBeenCalledOnce()
+		})
+
+		it('dismisses once when the transitionend comes first', () => {
+			sut.active = true
+			sut.attached()
+			sut.onTap()
+			hostElement.dispatchEvent(createTransitionEvent('opacity'))
+
+			vi.advanceTimersByTime(600)
+
+			expect(onDismissed).toHaveBeenCalledOnce()
 		})
 	})
 })

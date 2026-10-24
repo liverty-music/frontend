@@ -1,8 +1,5 @@
 import { DI, ILogger, observable, resolve, watch } from 'aurelia'
-import {
-	persistOnboardingCompletedSessionCount,
-	StorageKeys,
-} from '../constants/storage-keys'
+import { StorageKeys } from '../constants/storage-keys'
 import { Events, IAnalyticsService } from '../lib/analytics/analytics-service'
 import { IOnboardingService } from './onboarding-service'
 
@@ -46,6 +43,11 @@ export class PwaInstallService {
 			return true
 		if (window.matchMedia('(display-mode: standalone)').matches) return true
 		return false
+	}
+
+	/** Whether the app runs from, or was recorded as added to, the home screen. */
+	get isInstalled(): boolean {
+		return this.installed
 	}
 
 	get isIos(): boolean {
@@ -129,9 +131,6 @@ export class PwaInstallService {
 	@watch((vm: PwaInstallService) => vm.onboarding.isCompleted)
 	public onboardingCompletedChanged(isCompleted: boolean): void {
 		if (!isCompleted) return
-		// Persist the completion session so the notification prompt
-		// can defer itself to the next session.
-		persistOnboardingCompletedSessionCount()
 		this.evaluateVisibility()
 	}
 

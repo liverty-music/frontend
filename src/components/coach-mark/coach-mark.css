@@ -1,20 +1,11 @@
-/* stylelint-disable cube/block-require-scope -- anchor positioning,
-   view transitions, and @container anchored queries cannot be scoped */
+/* stylelint-disable cube/block-require-scope -- anchor positioning and
+   @container anchored queries cannot be scoped */
 @layer block {
 	/* Coach-mark custom properties (unique values not in design tokens) */
 	:where(.coach-mark-overlay) {
 		--coach-spotlight-outset: -8px;
 		--coach-overlay-shadow: 0 0 0 100vmax
 			color-mix(in oklch, oklch(0% 0 0deg) 70%, transparent);
-		--coach-duration-none: 0s;
-	}
-
-	/* View Transition for smooth spotlight movement */
-
-	/* biome-ignore lint/correctness/noUnknownTypeSelector: View Transition API pseudo-element */
-	::view-transition-group(spotlight) {
-		animation-duration: var(--transition-slow);
-		animation-timing-function: cubic-bezier(0.25, 1, 0.5, 1);
 	}
 
 	/* Fixed full-viewport host for the spotlight + tooltip. The host and the dim
@@ -52,7 +43,6 @@
 		box-shadow: var(--coach-overlay-shadow);
 
 		animation: coach-pulse 1.5s ease-in-out infinite;
-		view-transition-name: spotlight;
 	}
 
 	/* Target click interceptor — overlays only the highlighted target and
@@ -120,11 +110,6 @@
 	@media (prefers-reduced-motion: reduce) {
 		.visual-spotlight {
 			animation: none;
-		}
-
-		/* biome-ignore lint/correctness/noUnknownTypeSelector: View Transition API pseudo-element */
-		::view-transition-group(spotlight) {
-			animation-duration: var(--coach-duration-none);
 		}
 	}
 }

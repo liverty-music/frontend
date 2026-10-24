@@ -1,0 +1,13 @@
+<import from="./onboarding-progress.css"></import>
+
+<a if.bind="ready" href="/dashboard" class="onboarding-progress-ready" t="discovery.progress.ready"></a>
+
+<div else class="onboarding-progress-track">
+  <span id="onboarding-progress-label" class="onboarding-progress-label" t="discovery.progress.label"></span>
+  <progress
+    class="onboarding-progress-bar"
+    max="100"
+    value.bind="percent"
+    aria-labelledby="onboarding-progress-label"
+  ></progress>
+</div>

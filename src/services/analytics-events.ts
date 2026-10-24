@@ -149,8 +149,8 @@ export type ArtistFollowGuestProps = {
 	followed_count: number
 }
 
-/** Discovery's coach mark towards the Dashboard appeared. */
-export type OnboardingCoachmarkShownProps = {
+/** Discovery's onboarding progress row reached ready (the link to the Dashboard). */
+export type OnboardingTimetableReadyProps = {
 	followed_count: number
 	artists_with_concerts_count: number
 }
@@ -210,16 +210,6 @@ export type ConcertSharedProps = {
 	method: 'share_sheet' | 'copy_link'
 	/** `cancelled` only where the device reports it (the share sheet). */
 	outcome: 'completed' | 'cancelled' | 'failed'
-}
-
-/**
- * The user opted in to Web Push notifications. Paired with the backend
- * `notification.subscribed`. The underlying transport is the W3C Push API,
- * but the analytics surface stays scoped under the notification domain to
- * align with the user-facing concept.
- */
-export type NotificationRequestedProps = {
-	source: EventSource
 }
 
 /**
@@ -354,7 +344,7 @@ export const Events = {
 	OnboardingStarted: 'onboarding.started',
 	AuthStarted: 'auth.started',
 	ArtistFollowGuest: 'artist.follow.guest',
-	OnboardingCoachmarkShown: 'onboarding.coachmark.shown',
+	OnboardingTimetableReady: 'onboarding.timetable.ready',
 	GuestFollowsMerged: 'guest.follows.merged',
 	NotificationPermissionResult: 'notification.permission.result',
 	PwaInstallBannerShown: 'pwa.install.banner_shown',
@@ -363,7 +353,6 @@ export const Events = {
 	ConcertSourceClicked: 'concert.source.clicked',
 	ConcertCalendarAdded: 'concert.calendar.added',
 	ConcertShared: 'concert.shared',
-	NotificationRequested: 'notification.requested',
 	NotificationOpened: 'notification.opened',
 	NotificationDismissed: 'notification.dismissed',
 	WebVitals: 'web.vitals',
@@ -391,7 +380,7 @@ export type EventPropsMap = {
 	'onboarding.started': OnboardingStartedProps
 	'auth.started': AuthStartedProps
 	'artist.follow.guest': ArtistFollowGuestProps
-	'onboarding.coachmark.shown': OnboardingCoachmarkShownProps
+	'onboarding.timetable.ready': OnboardingTimetableReadyProps
 	'guest.follows.merged': GuestFollowsMergedProps
 	'notification.permission.result': NotificationPermissionResultProps
 	'pwa.install.banner_shown': PwaInstallBannerShownProps
@@ -400,7 +389,6 @@ export type EventPropsMap = {
 	'concert.source.clicked': ConcertSourceClickedProps
 	'concert.calendar.added': ConcertCalendarAddedProps
 	'concert.shared': ConcertSharedProps
-	'notification.requested': NotificationRequestedProps
 	'notification.opened': NotificationOpenedProps
 	'notification.dismissed': NotificationDismissedProps
 	'web.vitals': WebVitalsProps

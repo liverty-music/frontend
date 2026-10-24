@@ -343,10 +343,12 @@ describe('FollowStore', () => {
 			expect(mockAnalytics.capture).not.toHaveBeenCalled()
 		})
 
+		// @spec components/infrastructure/fan/web/route/discovery "Guest follow default hype level"
 		it('persists a guest follow with NO RPC and exposes it via guestFollows', async () => {
 			await sut.follow(makeArtist('g1', 'Guest One'))
 
 			expect(sut.guestFollows.map((f) => f.artist.id)).toEqual(['g1'])
+			expect(sut.guestFollows[0].hype).toBe('nearby')
 			expect(saveFollows).toHaveBeenCalled()
 			expect(mockRpcClient.follow).not.toHaveBeenCalled()
 		})
@@ -372,6 +374,18 @@ describe('FollowStore', () => {
 			sut.clearGuestFollows()
 
 			expect(sut.guestFollows).toHaveLength(0)
+		})
+
+		// @spec components/infrastructure/fan/web/route/discovery "Unfollow an artist"
+		it('drops a guest unfollow from the count at once', async () => {
+			await sut.follow(makeArtist('g1', 'One'))
+			await sut.follow(makeArtist('g2', 'Two'))
+			expect(sut.followedCount).toBe(2)
+
+			const unfollowed = sut.unfollow('g1')
+
+			expect(sut.followedCount).toBe(1)
+			await unfollowed
 		})
 
 		it('setHype persists a guest hype change with NO RPC', async () => {

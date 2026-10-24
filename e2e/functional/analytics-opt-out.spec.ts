@@ -336,16 +336,14 @@ async function triggerArtistSearch(page: Page, query: string): Promise<void> {
 test.describe
 	.skip('Analytics opt-out model (guest, mocked PostHog)', () => {
 		test.beforeEach(async ({ page }) => {
-			// Start every test from a clean opt-out posture + unseen notice.
-			// Clear any persisted opt-out blob and the notice flag
-			// ONCE, so each test starts from the default-on posture with an unseen
-			// notice. Guarded by a session flag so it runs only on the FIRST page
-			// load of the test — a per-load wipe would erase an opt-out the test
-			// itself just made and is meant to survive a reload.
+			// Start every test from a clean opt-out posture. Clear any persisted
+			// opt-out blob ONCE, so each test starts from the default-on posture.
+			// Guarded by a session flag so it runs only on the FIRST page load of
+			// the test — a per-load wipe would erase an opt-out the test itself
+			// just made and is meant to survive a reload.
 			await page.addInitScript(() => {
 				if (!sessionStorage.getItem('__e2e_consent_reset')) {
 					localStorage.removeItem('consent.state')
-					localStorage.removeItem('analytics.noticeSeen')
 					localStorage.removeItem('onboardingComplete')
 					sessionStorage.setItem('__e2e_consent_reset', '1')
 				}

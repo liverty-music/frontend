@@ -16,6 +16,12 @@
 		}
 	},
 	"welcome": {
+		"analyticsNotice": {
+			"text": "We analyse how the app is used to make it easier to use. Names and email addresses are not used for this.",
+			"lead": "You can ",
+			"optOut": "turn this off anytime",
+			"details": "Details"
+		},
 		"hero": {
 			"title": "Never miss a live show from the bands you love.",
 			"subtitlePain": "Done patrolling official sites, socials, and ticket pages.",
@@ -162,9 +168,11 @@
 			"viewArtists": "Check out your artist list too!"
 		},
 		"celebration": {
-			"complete": "Your personal timetable is ready!",
-			"welcome": "Welcome!",
-			"explore": "Explore your timetable freely"
+			"complete": "Your timetable is ready!",
+			"welcome": "Welcome! You won't miss a live show again",
+			"found": "Found {{concerts}} shows by {{artists}} artists",
+			"tapToView": "Tap to take a look",
+			"chasing": "Liverty Music keeps track of new shows for you!"
 		},
 		"loading": "Loading events…",
 		"empty": {
@@ -180,6 +188,13 @@
 		"error": {
 			"load": "Failed to load live events"
 		}
+	},
+	"pushOffer": {
+		"hypeChanged": "{{name}} is now {{hype}}. Get notified of new concerts?",
+		"action": "Turn on",
+		"allowed": "We'll notify you of new concerts. You can turn this off in Settings anytime.",
+		"blocked": "Notifications are blocked. You can change this in your browser settings.",
+		"failed": "Couldn't turn on notifications. Wait a moment and try again."
 	},
 	"notification": {
 		"title": "Never miss a live event",
@@ -235,8 +250,9 @@
 		"failedHype": "Failed to update Hype"
 	},
 	"discovery": {
-		"coachMark": {
-			"viewTimetable": "Check out your timetable!"
+		"progress": {
+			"label": "Until your timetable is ready",
+			"ready": "Your timetable is ready →"
 		},
 		"popoverGuide": "Tap the artists you care about — your picks become a timetable in the next step",
 		"generateDashboard": "👉 Generate Timetable",
@@ -343,7 +359,7 @@
 		"analytics": {
 			"sectionTitle": "Privacy & Analytics",
 			"toggleLabel": "Analytics",
-			"toggleDescription": "On by default. We use anonymous usage data — sent to PostHog Cloud EU — to find where people get stuck and improve the app. No personally identifying or sensitive information is collected. When something goes wrong in the app, we also send what failed and the steps just before it. Turn this off to stop all analytics and error reports.",
+			"toggleDescription": "On by default. We use usage data — sent to PostHog Cloud EU — to find where people get stuck and improve the app. Your name, email address and sensitive information are not sent. When something goes wrong in the app, we also send what failed and the steps just before it. Turn this off to stop all analytics and error reports.",
 			"sessionReplayLabel": "Session replay",
 			"sessionReplayDescription": "On by default. Records anonymised screen interactions so we can see where the interface confuses people. Turning this off stops recording only — your other analytics and account stay unaffected.",
 			"privacyPolicyLink": "Read our Privacy Policy"
@@ -506,21 +522,30 @@
 		"en": "English"
 	},
 	"postSignup": {
-		"title": "🎉 You're all set — welcome to your timetable",
-		"subtitle": "New lives will show up here as we find them.",
 		"ariaLabel": "Account registration complete",
-		"notificationLabel": "Turn on new live notifications",
-		"notificationEnable": "Enable notifications",
-		"notificationEnabling": "Enabling…",
-		"notificationEnabled": "✓ Notifications enabled",
-		"notificationError": "Failed to enable notifications. Check your browser settings.",
-		"notificationDenied": "Notifications are blocked in your browser settings. You can change this in your browser.",
-		"pwaLabel": "Add to home screen for a better experience",
-		"pwaInstall": "Add to home screen",
-		"pwaInstallGuide": "How to add",
-		"pwaGuideStep1": "Tap the menu (⋮) in your browser",
-		"pwaGuideStep2": "Select \"Add to Home Screen\"",
-		"pwaGuideStep3": "Tap \"Add\" to finish",
+		"notify": {
+			"title": "Hear about new shows first",
+			"body": "We've started looking for shows by the {{count}} artists you follow. We'll notify you when we find them.",
+			"bodyNoFollows": "We'll notify you when we find new shows.",
+			"enable": "Turn on notifications",
+			"blocked": "Notifications are blocked. You can change this later in Settings.",
+			"failed": "Couldn't turn on notifications. You can turn them on later in Settings."
+		},
+		"install": {
+			"title": "Add to Home Screen",
+			"body": "Open it in one tap, like an app.",
+			"add": "Add",
+			"step1": "Open the browser menu (⋮)",
+			"step2": "Choose \"Add to Home Screen\"",
+			"step3": "Tap \"Add\""
+		},
+		"ios": {
+			"body": "On iPhone, add the app to your Home Screen to receive notifications.",
+			"step1": "Tap the Share button",
+			"step2": "Choose \"Add to Home Screen\"",
+			"step3": "Open the app from the new icon"
+		},
+		"next": "Next",
 		"defer": "Later",
 		"close": "Close"
 	},
@@ -549,14 +574,14 @@
 		},
 		"myArtists": {
 			"hypeSectionTitle": "About Hype",
-			"description": "Hype controls how far away you get notified. Tap the slider to change it.",
+			"description": "Hype controls how far away you get notified. Tap a dot on the row to change it.",
 			"watchDesc": "No notifications",
 			"homeDesc": "Notify for home-area concerts",
 			"nearbyDesc": "Notify for nearby concerts too",
 			"awayDesc": "Notify for every concert",
 			"tip": "Set artists you'd travel for to Away to never miss them!",
 			"unfollowSectionTitle": "Unfollowing",
-			"editModeTip": "Tap Edit in the header to reveal per-row remove controls and unfollow artists."
+			"editModeTip": "Tap Edit in the menu at the bottom right to reveal per-row remove controls and unfollow artists."
 		}
 	},
 	"legal": {

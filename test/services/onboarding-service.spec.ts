@@ -21,6 +21,7 @@ describe('OnboardingService', () => {
 	})
 
 	describe('default state', () => {
+		// @spec stories/complete-onboarding "Brand-new user defaults to onboarding"
 		it('defaults a brand-new user to onboarding', () => {
 			const sut = createService()
 			expect(sut.isOnboarding).toBe(true)
@@ -46,6 +47,7 @@ describe('OnboardingService', () => {
 			expect(localStorage.getItem(KEY_COMPLETE)).toBe('true')
 		})
 
+		// @spec stories/complete-onboarding "Completion is one-way"
 		it('is idempotent and never reverts', () => {
 			const sut = createService()
 			sut.finish()

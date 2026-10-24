@@ -37,7 +37,6 @@ async function seedSignedInOnce(page: Page): Promise<void> {
 			if (localStorage.getItem('__e2e_seeded')) return
 			localStorage.setItem('__e2e_seeded', '1')
 			localStorage.setItem('onboarding.celebrationShown', '1')
-			localStorage.setItem('ui.notificationPromptDismissed', 'true')
 			// Keep the install banner from covering the Sign out row.
 			localStorage.setItem('pwa.installed', 'true')
 			localStorage.setItem(

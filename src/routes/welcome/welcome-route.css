@@ -328,6 +328,28 @@
 			max-inline-size: 28rem;
 		}
 
+		/* Analytics notice under Get Started: two quiet lines, the first broken
+		   only between phrases. */
+		.welcome-analytics-notice {
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-3xs);
+
+			margin: 0;
+
+			font-size: var(--step--1);
+			line-height: var(--leading-relaxed);
+			color: var(--color-text-secondary);
+			text-align: center;
+			text-wrap: balance;
+			word-break: auto-phrase;
+
+			& a {
+				color: inherit;
+				text-decoration: underline;
+			}
+		}
+
 		/* "Can't sign in" text link directly below [Log In]: a native link with
 		   a 44px tap target. */
 		.welcome-help-link {

@@ -196,6 +196,7 @@ describe('DnaOrbCanvas', () => {
 	})
 
 	describe('detaching', () => {
+		// @spec components/infrastructure/fan/web/route/discovery "Tab deactivation"
 		it('should remove event listeners and destroy physics', async () => {
 			await sut.attached()
 			const destroySpy = vi.spyOn((sut as any).physics, 'destroy')
@@ -572,6 +573,7 @@ describe('DnaOrbCanvas', () => {
 	})
 
 	describe('onAbsorbComplete (gesture-driven activation)', () => {
+		// @spec components/infrastructure/fan/web/route/discovery "Follow an artist during onboarding"
 		it('advances the orb one stage, celebrates, and plays the tone on each follow', async () => {
 			await sut.attached()
 			const applySpy = vi.spyOn((sut as any).orbRenderer, 'applyLevel')
@@ -592,9 +594,59 @@ describe('DnaOrbCanvas', () => {
 			expect(applySpy).toHaveBeenCalledWith(2)
 			expect(celebrateSpy).toHaveBeenCalledTimes(2)
 		})
+
+		// @spec components/infrastructure/fan/web/route/discovery "Unfollow an artist"
+		it('does not shrink the orb when the follow count drops', async () => {
+			await sut.attached()
+			const applySpy = vi.spyOn((sut as any).orbRenderer, 'applyLevel')
+			;(sut as any).onAbsorbComplete(200)
+			expect(applySpy).toHaveBeenLastCalledWith(1)
+			applySpy.mockClear()
+
+			sut.followedCount = 0
+
+			expect(applySpy).not.toHaveBeenCalled()
+		})
+	})
+
+	describe('spawnAndAbsorbAfterSearch', () => {
+		// @spec components/infrastructure/fan/web/route/discovery "Similar artist spawning after search follow"
+		it('absorbs from the horizontal centre, 17% from the top, and asks for similar artists at once', async () => {
+			await sut.attached()
+			vi.spyOn(globalThis, 'requestAnimationFrame').mockImplementation((cb) => {
+				cb(0)
+				return 0
+			})
+			const absorptionSpy = vi.spyOn(
+				(sut as any).absorptionAnimator,
+				'startAbsorption',
+			)
+
+			sut.spawnAndAbsorbAfterSearch(makeArtist('s1', 'Searched'))
+
+			expect(absorptionSpy).toHaveBeenCalledWith(
+				's1',
+				'Searched',
+				200,
+				expect.closeTo(102),
+				expect.any(Number),
+				expect.any(Number),
+				expect.any(Number),
+				expect.any(Number),
+				expect.any(Function),
+			)
+			// Requested before the absorption completes.
+			const more = dispatchedEvents.find((e) => e.type === 'need-more-bubbles')
+			expect(more?.detail).toEqual({
+				artistId: 's1',
+				artistName: 'Searched',
+				position: { x: 200, y: expect.closeTo(102) },
+			})
+		})
 	})
 
 	describe('attached() enters dormant', () => {
+		// @spec components/infrastructure/fan/web/route/discovery "Initial page load with existing guest data"
 		it('seeds the orb dormant (stage 0) regardless of the total follow count, with no celebration', async () => {
 			// A returning user already following N artists must still enter Discovery
 			// with a dormant orb — the orb activates only via a genuine follow gesture,

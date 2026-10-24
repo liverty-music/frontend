@@ -15,11 +15,9 @@ import { expect, type Page, test } from '../support/test'
  *   so every application route is reachable at any time.
  * - "Still onboarding" = `onboardingComplete` absent/false. "Completed" =
  *   `onboardingComplete === 'true'`.
- * - The discovery → dashboard coach mark has no auto-fade: tapping the target
- *   navigates (delegates to the target's native click), while tapping the dimmed
- *   area outside the target light-dismisses it (tap-outside-to-dismiss). It also
- *   dismisses on route detach. It triggers when, while onboarding,
- *   `followedCount >= 5 || artistsWithConcertsCount >= 3`.
+ * - The only coach mark is the Welcome demo's own: 5 s after the demo timetable
+ *   becomes interactive it highlights the first concert card, and a tap on that
+ *   card through the spotlight does what a direct tap does (opens the sheet).
  * - My Artists hype change is fully decoupled from onboarding: every tap
  *   applies/persists with no dialog, no step advance, no revert.
  */
@@ -42,57 +40,10 @@ function seedCompleted(): void {
 // RPC mocks
 // ---------------------------------------------------------------------------
 
-/** Mock all Connect-RPC requests with empty concert data. */
-async function mockRpcRoutesEmpty(page: Page): Promise<void> {
-	await page.route('**/liverty_music.rpc.**', (route) => {
-		const url = route.request().url()
-
-		if (url.includes('ConcertService/List')) {
-			return route.fulfill({
-				status: 200,
-				contentType: 'application/json',
-				body: JSON.stringify(concertWire({ concerts: [] })),
-			})
-		}
-
-		if (url.includes('FollowService/List')) {
-			return route.fulfill({
-				status: 200,
-				contentType: 'application/json',
-				body: JSON.stringify({
-					artists: [
-						{
-							id: { value: '00000000-0000-4000-8000-a10000000001' },
-							name: { value: 'Artist 1' },
-							hype: 'watch',
-						},
-						{
-							id: { value: '00000000-0000-4000-8000-a10000000002' },
-							name: { value: 'Artist 2' },
-							hype: 'watch',
-						},
-						{
-							id: { value: '00000000-0000-4000-8000-a10000000003' },
-							name: { value: 'Artist 3' },
-							hype: 'watch',
-						},
-					],
-				}),
-			})
-		}
-
-		return route.fulfill({
-			status: 200,
-			contentType: 'application/json',
-			body: JSON.stringify({}),
-		})
-	})
-}
-
 /**
  * Mock Connect-RPC with concert data.
  * - ConcertService/List: returns 1 concert per artist (drives
- *   artistsWithConcertsCount >= 3 → coach mark)
+ *   artistsWithConcertsCount on Discovery)
  * - ListByArtists: returns concerts in the away lane
  * - FollowService/List: returns 3 followed artists
  */
@@ -191,7 +142,7 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 
 		// ConcertService/List — returns 1 concert per artist.
 		// Makes concertService.artistsWithConcertsCount >= 3, which (while
-		// onboarding) triggers the discovery → dashboard coach mark.
+		// onboarding) fills the Discovery progress row to ready.
 		if (url.includes('ConcertService/List')) {
 			return route.fulfill({
 				status: 200,
@@ -426,6 +377,50 @@ test.describe('Onboarding flow (single-flag model)', () => {
 		await expect(cards.first()).toBeVisible({ timeout: 15_000 })
 	})
 
+	// @spec components/infrastructure/fan/web/global/coach-mark "Target tap performs the target's own action"
+	test('Welcome coach mark: tapping the highlighted card opens its detail sheet and closes the coach mark', async ({
+		page,
+	}) => {
+		test.setTimeout(45_000)
+		await page.goto('http://localhost:9000/')
+		await advanceDemoToTimetable(page)
+
+		// 5 s after the timetable is interactive, the spotlight lands on the
+		// first concert card.
+		const firstCard = page
+			.locator('[data-testid="welcome-timetable"] [data-live-card]')
+			.first()
+		await expect(firstCard).toBeVisible({ timeout: 15_000 })
+		const spotlight = page.locator('coach-mark .visual-spotlight')
+		await expect(spotlight).toBeVisible({ timeout: 10_000 })
+		await expect(firstCard).toHaveCSS('anchor-name', '--coach-target')
+		const sheet = page.locator('event-detail-sheet bottom-sheet')
+		await expect(sheet).not.toBeVisible()
+
+		// A real tap at the card's centre lands on the coach mark's interceptor…
+		await firstCard.scrollIntoViewIfNeeded()
+		const box = await firstCard.boundingBox()
+		expect(box).not.toBeNull()
+		if (!box) return
+		const x = box.x + box.width / 2
+		const y = box.y + box.height / 2
+		expect(
+			await page.evaluate(
+				([px, py]) =>
+					document
+						.elementFromPoint(px, py)
+						?.classList.contains('target-interceptor') ?? false,
+				[x, y],
+			),
+		).toBe(true)
+		await page.mouse.click(x, y)
+
+		// …and does what a direct tap on the card does: its detail sheet opens.
+		await expect(sheet).toBeVisible({ timeout: 5000 })
+		// The coach mark has closed.
+		await expect(page.locator('coach-mark .coach-mark-overlay')).toHaveCount(0)
+	})
+
 	test('Dashboard preview is hidden when no concert data; hero CTAs fall back inline', async ({
 		page,
 	}) => {
@@ -480,112 +475,6 @@ test.describe('Onboarding flow (single-flag model)', () => {
 
 		await page.waitForLoadState('networkidle')
 		await expect(page.locator('.snack-item')).toHaveCount(0)
-	})
-
-	test('No coach mark when ConcertService/List returns empty', async ({
-		page,
-	}) => {
-		await page.unrouteAll()
-		await mockRpcRoutesEmpty(page)
-		await mockLastFmApi(page)
-
-		await page.addInitScript(() => {
-			localStorage.setItem('onboardingComplete', 'false')
-			localStorage.setItem(
-				'guest.followedArtists',
-				JSON.stringify([
-					{
-						artist: {
-							id: '00000000-0000-4000-8000-a10000000001',
-							name: 'Artist 1',
-						},
-						home: null,
-					},
-					{
-						artist: {
-							id: '00000000-0000-4000-8000-a10000000002',
-							name: 'Artist 2',
-						},
-						home: null,
-					},
-					{
-						artist: {
-							id: '00000000-0000-4000-8000-a10000000003',
-							name: 'Artist 3',
-						},
-						home: null,
-					},
-				]),
-			)
-		})
-
-		await page.goto('http://localhost:9000/discovery')
-		await page.waitForSelector('.discovery-layout')
-
-		// Wait for all concert searches to complete, then verify no coach mark.
-		// With zero concerts, artistsWithConcertsCount stays 0 and followedCount
-		// (3) is below DASHBOARD_FOLLOW_TARGET (5), so the spotlight never shows.
-		await page.waitForLoadState('networkidle')
-		await expect(page.locator('.visual-spotlight')).not.toBeVisible({
-			timeout: 3000,
-		})
-	})
-
-	test('Coach-mark spotlight appears when 3 artists have concert data', async ({
-		page,
-	}) => {
-		test.setTimeout(60_000)
-		await page.addInitScript(() => {
-			localStorage.setItem('onboardingComplete', 'false')
-			localStorage.setItem(
-				'guest.followedArtists',
-				JSON.stringify([
-					{
-						artist: {
-							id: '00000000-0000-4000-8000-a10000000001',
-							name: 'Artist 1',
-						},
-						home: null,
-					},
-					{
-						artist: {
-							id: '00000000-0000-4000-8000-a10000000002',
-							name: 'Artist 2',
-						},
-						home: null,
-					},
-					{
-						artist: {
-							id: '00000000-0000-4000-8000-a10000000003',
-							name: 'Artist 3',
-						},
-						home: null,
-					},
-				]),
-			)
-		})
-		await page.goto('http://localhost:9000/discovery')
-		await page.waitForSelector('.discovery-layout')
-
-		// Coach mark has NO auto-fade timer — it stays visible until target tap,
-		// tap-outside, or route detach. Concert searches for the 3 seeded follows
-		// complete fast against the mock, pushing artistsWithConcertsCount to
-		// DASHBOARD_CONCERT_TARGET (3) and activating the spotlight.
-		const spotlight = page.locator('.visual-spotlight')
-		await expect(spotlight).toBeVisible({ timeout: 30_000 })
-
-		// Verify box-shadow (dark overlay) is applied
-		const boxShadow = await spotlight.evaluate(
-			(el) => getComputedStyle(el).boxShadow,
-		)
-		expect(boxShadow).not.toBe('none')
-
-		// Tap-outside-to-dismiss: a pointer tap on the dimmed area (top-left,
-		// away from the target which sits in the bottom nav) light-dismisses the
-		// coach mark via the document pointerdown listener, without navigating.
-		await page.mouse.click(5, 5)
-		await expect(spotlight).toHaveCount(0)
-		await expect(page).toHaveURL(/discovery/)
 	})
 
 	test('Reload with pre-seeded follows preserves followed count', async ({
@@ -713,25 +602,6 @@ test.describe('Onboarding flow (single-flag model)', () => {
 
 		await expect(page.locator('au-viewport')).toBeVisible({ timeout: 10_000 })
 		await expect(page.locator('.celebration-overlay')).toHaveCount(0)
-	})
-
-	test('Coach mark tooltip has transparent background (no colored box)', async ({
-		page,
-	}) => {
-		await page.addInitScript(() => {
-			localStorage.setItem('onboardingComplete', 'true')
-			localStorage.setItem('onboarding.celebrationShown', '1')
-			localStorage.setItem('guest.home', 'JP-13')
-		})
-		await page.goto('http://localhost:9000/dashboard')
-
-		const tooltip = page.locator('.coach-mark-tooltip')
-		if ((await tooltip.count()) > 0) {
-			const bg = await tooltip.evaluate(
-				(el) => getComputedStyle(el).backgroundColor,
-			)
-			expect(bg).not.toMatch(/rgb\(255,\s*255,\s*255\)/)
-		}
 	})
 
 	test('Toast popover has no white background gap', async ({ page }) => {
@@ -887,34 +757,24 @@ test.describe('Soft-gate roam (Discovery → Dashboard → My Artists)', () => {
 			)
 		})
 
-		// -- DISCOVERY: reachable directly; non-blocking coach mark appears --------
+		// -- DISCOVERY: reachable directly; the progress row becomes ready -------
 		await page.goto('http://localhost:9000/discovery')
 		await page.waitForSelector('.discovery-layout')
 
-		// Coach mark has no auto-fade — assert it becomes visible once concert
-		// searches push artistsWithConcertsCount to the threshold.
-		await page.waitForFunction(
-			() => {
-				const el = document.querySelector('.visual-spotlight')
-				if (!el) return false
-				const style = getComputedStyle(el)
-				return style.visibility !== 'hidden' && style.display !== 'none'
-			},
-			{ timeout: 30_000 },
-		)
+		// The lookups for the 3 restored follows each find a concert, which
+		// fills the progress row and turns it into the link to the Dashboard.
+		const ready = page.locator('onboarding-progress').getByRole('link')
+		await expect(ready).toBeVisible({ timeout: 30_000 })
+		// No spotlight on the bottom navigation.
+		await expect(page.locator('coach-mark')).toHaveCount(0)
 
 		// Still onboarding while on discovery (no latch here).
 		expect(
 			await page.evaluate(() => localStorage.getItem('onboardingComplete')),
 		).toBe('false')
 
-		// -- DASHBOARD: reachable via the coach-mark tap; meaningful arrival latches -
-		// The coach mark anchors a clickable `.target-interceptor` over its target
-		// ([data-nav="home"]). Tapping it delegates to the target's native click
-		// (onTargetClick → currentTarget.click()), navigating to the dashboard and
-		// dismissing the spotlight. The interceptor paints above the dismiss
-		// backdrop, so a tap on the target navigates rather than dismissing.
-		await page.locator('coach-mark .target-interceptor').click()
+		// -- DASHBOARD: the ready row opens it; meaningful arrival latches --------
+		await ready.click()
 		await expect(page).toHaveURL(/dashboard/, { timeout: 10_000 })
 		await expect(page.locator('au-viewport')).toBeVisible({ timeout: 10_000 })
 
@@ -926,9 +786,6 @@ test.describe('Soft-gate roam (Discovery → Dashboard → My Artists)', () => {
 				{ timeout: 10_000 },
 			)
 			.toBe('true')
-
-		// Coach mark dismissed on leaving discovery.
-		await expect(page.locator('.visual-spotlight')).toHaveCount(0)
 
 		// -- MY ARTISTS: reachable via SPA nav; hype change has no dialog ----------
 		await page.locator('[data-nav="my-artists"]').click()

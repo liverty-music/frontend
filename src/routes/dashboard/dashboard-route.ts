@@ -116,6 +116,7 @@ export class DashboardRoute {
 	public celebrationConfetti = false
 	public celebrationMessage = ''
 	public celebrationSubMessage = ''
+	public celebrationHint = ''
 	private celebrationLeadsToDialog = false
 
 	public homeSelector: UserHomeSelector | undefined
@@ -506,6 +507,10 @@ export class DashboardRoute {
 		if (cachedDateGroups !== null && !this.needsRegion) {
 			this.pendingCachedGroups = cachedDateGroups
 			this.freshGroupsLanded = false
+			// Reset so the reflection below produces a fresh false→true transition.
+			// The needsRegion→onHomeSelected path reaches here on its second load,
+			// after the first (region-less) load already set it true.
+			this.timetableLoaded = false
 			// Already attached (a same-instance reload, e.g. the date filter) — there
 			// is no upcoming activation to reflect on, so do it now.
 			if (this.isAttached) this.reflectCachedGroups()
@@ -868,7 +873,8 @@ export class DashboardRoute {
 			this.storage.removeItem(StorageKeys.postSignupShown)
 			this.celebrationConfetti = true
 			this.celebrationMessage = this.i18n.tr('dashboard.celebration.welcome')
-			this.celebrationSubMessage = this.i18n.tr('dashboard.celebration.explore')
+			this.celebrationSubMessage = this.i18n.tr('dashboard.celebration.chasing')
+			this.celebrationHint = ''
 			this.celebrationLeadsToDialog = true
 			this.showCelebration = true
 			// Suppress the bottom-anchored pwa-install-banner for the whole
@@ -884,11 +890,32 @@ export class DashboardRoute {
 		// for a completed guest revisiting the dashboard.
 		if (!this.onboarding.isOnboarding) return
 		if (this.storage.getItem(StorageKeys.celebrationShown) === '1') return
+		// Celebrate only what the fan can see: with no follow the guest empty
+		// state guides, and with follows but no concert the generic empty state
+		// does. The completion latch keeps its own condition (≥1 follow).
+		const artists = this.followStore.followedCount
+		const concerts = this.countLoadedConcerts()
+		if (artists < 1 || concerts < 1) return
 		this.celebrationConfetti = false
 		this.celebrationMessage = this.i18n.tr('dashboard.celebration.complete')
-		this.celebrationSubMessage = this.i18n.tr('dashboard.celebration.explore')
+		this.celebrationSubMessage = this.i18n.tr('dashboard.celebration.found', {
+			artists,
+			concerts,
+		})
+		this.celebrationHint = this.i18n.tr('dashboard.celebration.tapToView')
 		this.celebrationLeadsToDialog = false
 		this.showCelebration = true
+	}
+
+	/** Distinct concerts across every lane of the loaded date groups. */
+	private countLoadedConcerts(): number {
+		const ids = new Set<string>()
+		for (const group of this.dateGroups) {
+			for (const concert of [...group.home, ...group.nearby, ...group.away]) {
+				ids.add(concert.id)
+			}
+		}
+		return ids.size
 	}
 
 	/**
@@ -900,7 +927,7 @@ export class DashboardRoute {
 	 * celebration overlay rendered: a guest with `celebrationShown === '1'` (so
 	 * the light celebration is suppressed) must still latch. A zero-follow arrival
 	 * (deep-link to the empty-state dashboard) must NOT latch, so the discovery
-	 * coach mark and page-help auto-open still apply until the guest follows an
+	 * progress row and page-help auto-open still apply until the guest follows an
 	 * artist. `finish()` is idempotent and one-way.
 	 */
 	private maybeFinishOnboarding(): void {

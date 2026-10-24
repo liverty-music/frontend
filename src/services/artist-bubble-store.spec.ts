@@ -401,6 +401,8 @@ describe('ArtistBubbleStore', () => {
 	})
 
 	describe('invariants applied once at the field boundary', () => {
+		// @spec components/infrastructure/fan/web/route/discovery "Deduplication on initial load (Step 2)"
+		// @spec components/infrastructure/fan/web/route/discovery "Deduplication on genre reload"
 		it('excludes followed artists when producing the field', async () => {
 			followedArtists = [artist('b')]
 			mockArtistStore.listTop.mockResolvedValue([
@@ -580,6 +582,29 @@ describe('ArtistBubbleStore', () => {
 	})
 
 	describe('loadSimilar', () => {
+		// @spec components/infrastructure/fan/web/route/discovery "Replacement bubbles partially available"
+		it('adds only the unseen top artists when similar is exhausted', async () => {
+			await seed(sut, [artist('tapped'), artist('seen1'), artist('seen2')])
+			mockArtistStore.listSimilar.mockResolvedValue([artist('seen1')])
+			mockArtistStore.listTop.mockResolvedValue([
+				artist('seen1'),
+				artist('seen2'),
+				artist('new1'),
+				artist('new2'),
+			])
+
+			const added = await sut.loadSimilar('tapped', { x: 1, y: 2 })
+
+			expect(added).toBe(true)
+			expect(sut.field.map((a) => a.id)).toEqual([
+				'tapped',
+				'seen1',
+				'seen2',
+				'new1',
+				'new2',
+			])
+		})
+
 		it('falls back to top artists when similar is exhausted', async () => {
 			await seed(sut, [artist('tapped')])
 			mockArtistStore.listSimilar.mockResolvedValue([]) // exhausted

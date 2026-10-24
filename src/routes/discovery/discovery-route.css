@@ -96,6 +96,7 @@
 			grid-template:
 				"search" auto
 				"genre" auto
+				"progress" auto
 				"bubbles" 1fr
 				/ minmax(0, 1fr);
 
@@ -308,6 +309,10 @@
 			&:disabled {
 				opacity: 0.5;
 			}
+		}
+
+		.progress-row {
+			grid-area: progress;
 		}
 
 		.bubble-area {

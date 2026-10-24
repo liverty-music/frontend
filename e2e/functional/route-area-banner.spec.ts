@@ -58,7 +58,6 @@ test(`@spec ${CAPABILITY} "Empty state clears the banner and the FAB"`, async ({
 		localStorage.setItem('onboardingComplete', 'true')
 		localStorage.setItem('onboarding.celebrationShown', '1')
 		localStorage.setItem('onboarding.helpSeen:my-artists', '1')
-		localStorage.setItem('ui.notificationPromptDismissed', 'true')
 		localStorage.setItem('guest.home', 'JP-13')
 		localStorage.setItem('guest.followedArtists', '[]')
 	})

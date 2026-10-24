@@ -176,8 +176,13 @@
 			background: oklch(from var(--color-surface-overlay) calc(l + 0.04) c h);
 		}
 
+		/* Each row spans the shared grid through subgrid, so its cells align
+		   with every other row while the <li> keeps its list-item role
+		   (`display: contents` drops it in some browsers). */
 		.help-hype-row {
-			display: contents;
+			display: grid;
+			grid-column: 1 / -1;
+			grid-template-columns: subgrid;
 		}
 
 		.help-hype-icon {

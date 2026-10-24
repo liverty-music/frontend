@@ -18,6 +18,7 @@ describe('artistHue', () => {
 		expect(hue).toBeLessThanOrEqual(359)
 	})
 
+	// @spec components/infrastructure/fan/web/route/discovery "Per-artist bubble color differentiation"
 	it('returns different hue for different names', () => {
 		expect(artistHue('Radiohead')).not.toBe(artistHue('Coldplay'))
 	})
