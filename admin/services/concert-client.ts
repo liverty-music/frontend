@@ -24,7 +24,7 @@ export interface IConcertClient extends ConcertClient {}
  * Mirrors the shape of the consumer's `ConcertRpcClient` (DI-registered
  * interface, logger-scoped, error propagation) but is built entirely from
  * admin/shared modules — it never imports the consumer `src/`. It covers
- * published-catalog management (list/delete); the pending-review queue is on
+ * published-catalog management (list, one artist's concerts, delete); the pending-review queue is on
  * `ConcertCandidateClient`. The wrapper only owns transport construction, request
  * marshalling, logging, and error surfacing.
  */
@@ -41,23 +41,37 @@ export class ConcertClient {
 	)
 
 	/**
-	 * Returns every published concert for catalog review and management, or
-	 * only the concerts `artistId` performs in when it is given, each resolved
-	 * against the Series and Artists the response carries once.
+	 * Returns every published concert for catalog review and management, each
+	 * resolved against the Series and Artists the response carries once.
 	 */
-	public async list(
-		artistId?: string,
+	public async list(signal?: AbortSignal): Promise<ResolvedConcert[]> {
+		this.logger.info('Listing published concerts')
+		try {
+			const response = await this.client.list({}, { signal })
+			return resolveConcerts(response)
+		} catch (err) {
+			this.logger.warn('list failed', { error: err })
+			throw err
+		}
+	}
+
+	/**
+	 * Returns every published concert one artist performs in, CANCELLED and
+	 * UNLISTED included, oldest first, resolved like {@link list}.
+	 */
+	public async listByArtist(
+		artistId: string,
 		signal?: AbortSignal,
 	): Promise<ResolvedConcert[]> {
-		this.logger.info('Listing published concerts', { artistId })
+		this.logger.info("Listing an artist's concerts", { artistId })
 		try {
-			const response = await this.client.list(
-				artistId ? { artistId: { value: artistId } } : {},
+			const response = await this.client.listByArtist(
+				{ artistId: { value: artistId } },
 				{ signal },
 			)
 			return resolveConcerts(response)
 		} catch (err) {
-			this.logger.warn('list failed', { artistId, error: err })
+			this.logger.warn('listByArtist failed', { artistId, error: err })
 			throw err
 		}
 	}

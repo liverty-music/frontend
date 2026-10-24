@@ -3,7 +3,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMockAppConfig } from '../../helpers/mock-app-config'
 import { createMockAuth } from '../../helpers/mock-auth'
 
-const mockRpc = { search: vi.fn(), create: vi.fn(), listByOrganizer: vi.fn() }
+const mockRpc = {
+	search: vi.fn(),
+	create: vi.fn(),
+	get: vi.fn(),
+	listByOrganizer: vi.fn(),
+}
 
 vi.mock('@connectrpc/connect', async (importOriginal) => {
 	const actual = await importOriginal<typeof import('@connectrpc/connect')>()
@@ -91,5 +96,24 @@ describe('ArtistClient', () => {
 		const client = resolveClient()
 
 		await expect(client.create('X', 'mbid-1')).rejects.toThrow('exists')
+	})
+
+	it('get wraps the artist id and returns the artist', async () => {
+		mockRpc.get.mockResolvedValue({ artist: { id: { value: 'a1' } } })
+		const client = resolveClient()
+
+		const artist = await client.get('a1')
+
+		const [req] = mockRpc.get.mock.calls.at(-1) ?? []
+		expect(req.artistId?.value).toBe('a1')
+		expect(artist?.id?.value).toBe('a1')
+	})
+
+	it('get returns null when no artist has the id', async () => {
+		const { Code, ConnectError } = await import('@connectrpc/connect')
+		mockRpc.get.mockRejectedValue(new ConnectError('no artist', Code.NotFound))
+		const client = resolveClient()
+
+		expect(await client.get('a-missing')).toBeNull()
 	})
 })

@@ -9,6 +9,7 @@ import { Resolution } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/
 import { type Timestamp, timestampDate } from '@bufbuild/protobuf/wkt'
 import { ILogger, resolve } from 'aurelia'
 import { sanitizeUrl } from '../../shared/utils/sanitize-url'
+import { EMPTY, formatDateValue } from '../lib/local-date'
 import { IConcertCandidateClient } from '../services/concert-candidate-client'
 import { toUserMessage } from '../services/error-message'
 
@@ -56,22 +57,8 @@ export interface PendingArtistGroup {
 	series: PendingSeriesGroup[]
 }
 
-const EMPTY = '—'
 const UNKNOWN_ARTIST = 'Unknown artist'
 const UNTITLED_SERIES = 'Untitled series'
-
-function formatDateValue(d?: {
-	year: number
-	month: number
-	day: number
-}): string {
-	if (!d) return EMPTY
-	// google.type.Date is a plain Y/M/D triple (no timezone). Pad to ISO-ish
-	// YYYY-MM-DD so review rows sort/read consistently regardless of locale.
-	const mm = String(d.month).padStart(2, '0')
-	const dd = String(d.day).padStart(2, '0')
-	return `${d.year}-${mm}-${dd}`
-}
 
 function formatTimeOfDay(ts?: Timestamp): string {
 	if (!ts) return EMPTY

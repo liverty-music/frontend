@@ -1,7 +1,7 @@
 import type { Artist } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/artist_pb.js'
 import { ArtistService as AdminArtistService } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/admin/artist/v1/artist_service_pb.js'
 import { ArtistService } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/artist/v1/artist_service_pb.js'
-import { createClient } from '@connectrpc/connect'
+import { Code, ConnectError, createClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
 import { IAppConfig } from '../../shared/config/app-config'
 import { IAuthService } from '../../shared/services/auth-service'
@@ -20,7 +20,8 @@ export interface IArtistClient extends ArtistClient {}
  * Admin-local wrapper for the Artist calls of the organizer screen:
  * `ArtistService.Search`, to pick an artist to associate,
  * `ArtistService.Create`, to register a test artist, and the admin
- * `ArtistService.ListByOrganizer`, for an Organizer's artists.
+ * `ArtistService.ListByOrganizer` and `ArtistService.Get`, for an
+ * Organizer's artists and for one artist opened by id.
  *
  * `ArtistService.Search` is served by the backend's **admin** Connect server
  * (`api.admin`), which mounts the consumer ArtistService behind the admin-role
@@ -54,6 +55,29 @@ export class ArtistClient {
 			return response.artists
 		} catch (err) {
 			this.logger.warn('search failed', { query, error: err })
+			throw err
+		}
+	}
+
+	/**
+	 * Returns one artist by its id, read with the admin `ArtistService.Get`, or
+	 * null when no artist has the id (the server answers NotFound). Other
+	 * failures reject.
+	 */
+	public async get(
+		artistId: string,
+		signal?: AbortSignal,
+	): Promise<Artist | null> {
+		this.logger.info('Getting artist', { artistId })
+		try {
+			const response = await this.adminClient.get(
+				{ artistId: { value: artistId } },
+				{ signal },
+			)
+			return response.artist ?? null
+		} catch (err) {
+			if (ConnectError.from(err).code === Code.NotFound) return null
+			this.logger.warn('get failed', { artistId, error: err })
 			throw err
 		}
 	}

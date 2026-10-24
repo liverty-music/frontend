@@ -1,7 +1,7 @@
 <main class="[ artist-concerts ] [ flow ]">
   <header class="artist-concerts-header">
     <p class="artist-concerts-brand">Liverty Music Admin</p>
-    <h1 class="artist-concerts-title">${title}</h1>
+    <h1 class="artist-concerts-title">${artistName || 'Artist concerts'}</h1>
     <p class="artist-concerts-subtitle">
       Every concert this artist performs in. Refund the fans of a cancelled
       concert, then delete it.
@@ -28,6 +28,10 @@
       Retry
     </button>
   </section>
+
+  <p if.bind="phase === 'not-found'" class="artist-concerts-state" role="alert">
+    No artist has this id.
+  </p>
 
   <p if.bind="isEmpty" class="artist-concerts-state">No concerts.</p>
 

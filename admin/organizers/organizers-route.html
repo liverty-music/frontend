@@ -214,7 +214,7 @@
           >
             <li repeat.for="artist of artists" class="organizers-roster-item">
               <a
-                load.bind="concertsLink(artist)"
+                load="../artists/${artist.id}/concerts"
                 class="organizers-roster-link"
                 data-artist-id.bind="artist.id"
               >

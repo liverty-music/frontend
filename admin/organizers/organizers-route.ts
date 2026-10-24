@@ -257,14 +257,6 @@ export class OrganizersRoute {
 		await this.loadArtists()
 	}
 
-	/**
-	 * The Artist concerts screen of a represented artist. The name rides along
-	 * so the screen can show it even when the artist performs in no concert.
-	 */
-	public concertsLink(artist: ArtistRow): string {
-		return `../artists/${artist.id}/concerts?name=${encodeURIComponent(artist.name)}`
-	}
-
 	public isSelected(row: OrganizerRow): boolean {
 		return this.selected?.id === row.id
 	}
