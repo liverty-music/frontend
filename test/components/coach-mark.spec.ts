@@ -457,9 +457,20 @@ describe('Where a coach mark is rendered', () => {
 		import: 'default',
 		eager: true,
 	}) as Record<string, string>
-	const uncommented = (html: string) => html.replace(/<!--[\s\S]*?-->/g, '')
-	const coachMarksIn = (html: string) =>
-		uncommented(html).match(/<coach-mark[\s>]/g)?.length ?? 0
+	/** `<coach-mark>` elements a template renders (comments are not elements). */
+	const coachMarksIn = (html: string): number => {
+		const doc = new DOMParser().parseFromString(
+			`<template>${html}</template>`,
+			'text/html',
+		)
+		const count = (root: ParentNode): number =>
+			root.querySelectorAll('coach-mark').length +
+			[...root.querySelectorAll('template')].reduce(
+				(n, t) => n + count(t.content),
+				0,
+			)
+		return count(doc)
+	}
 	const WELCOME = '../../src/routes/welcome/welcome-route.html'
 
 	// @spec components/infrastructure/fan/web/global/coach-mark "Only the Welcome demo shows a coach mark"
@@ -481,9 +492,10 @@ describe('Where a coach mark is rendered', () => {
 
 	// @spec components/infrastructure/fan/web/global/coach-mark "Target selector is scoped to component context"
 	it('Welcome points it at the first card of its own demo timetable, never at another surface', () => {
-		const selector = uncommented(templates[WELCOME]).match(
-			/<coach-mark[\s\S]*?\starget-selector="([^"]+)"/,
-		)?.[1]
+		const selector = new DOMParser()
+			.parseFromString(templates[WELCOME], 'text/html')
+			.querySelector('coach-mark')
+			?.getAttribute('target-selector')
 		expect(selector).toBeDefined()
 
 		// Another surface (a help sheet) earlier in the document also has cards.

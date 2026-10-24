@@ -286,21 +286,25 @@ test.describe('App shell scroll lock (guest)', () => {
 			const scroll = highway.querySelector(
 				'[data-testid="concert-scroll"]',
 			) as HTMLElement
-			const lane = scroll.querySelector('.lane-grid') as HTMLElement
-			const columns = (el: Element) =>
-				getComputedStyle(el).gridTemplateColumns.split(' ').length
+			const lanes = scroll.querySelector(
+				'.date-group:not(.date-group-skeleton) .lane-grid',
+			) as HTMLElement
+			// The left and right edge of each column, rounded to the pixel.
+			const edges = (cells: Element[]) =>
+				cells.map((c) => {
+					const r = c.getBoundingClientRect()
+					return [Math.round(r.left), Math.round(r.right)]
+				})
 			return {
 				tag: head.tagName.toLowerCase(),
 				insideScroll: scroll.contains(head),
 				highwayAreas: getComputedStyle(highway).gridTemplateAreas,
-				// A subgrid reports the parent's resolved tracks, three lanes here.
-				headerColumns: columns(head),
+				stageEdges: edges([...head.querySelectorAll('[data-stage]')]),
+				laneEdges: edges([...lanes.querySelectorAll(':scope > .lane')]),
 				headerSpan: [
 					getComputedStyle(head).gridColumnStart,
 					getComputedStyle(head).gridColumnEnd,
 				],
-				scrollColumns: columns(scroll),
-				laneColumns: columns(lane),
 			}
 		})
 		expect(layout.tag).toBe('header')
@@ -309,9 +313,10 @@ test.describe('App shell scroll lock (guest)', () => {
 			'"stage-home stage-near stage-away" "lane-home lane-near lane-away"',
 		)
 		expect(layout.headerSpan).toEqual(['stage-home', 'stage-away'])
-		expect(layout.headerColumns).toBe(3)
-		expect(layout.scrollColumns).toBe(3)
-		expect(layout.laneColumns).toBe(3)
+		// The three stage columns line up with the three lanes of every date
+		// group: one 3-column layout carried from the highway grid down.
+		expect(layout.stageEdges).toHaveLength(3)
+		expect(layout.laneEdges).toEqual(layout.stageEdges)
 
 		const before = await header.boundingBox()
 		await page.evaluate(() => {
