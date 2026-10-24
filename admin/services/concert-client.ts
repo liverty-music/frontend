@@ -41,21 +41,32 @@ export class ConcertClient {
 	)
 
 	/**
-	 * Returns every published concert for catalog review and management, each
-	 * resolved against the Series and Artists the response carries once.
+	 * Returns every published concert for catalog review and management, or
+	 * only the concerts `artistId` performs in when it is given, each resolved
+	 * against the Series and Artists the response carries once.
 	 */
-	public async list(signal?: AbortSignal): Promise<ResolvedConcert[]> {
-		this.logger.info('Listing published concerts')
+	public async list(
+		artistId?: string,
+		signal?: AbortSignal,
+	): Promise<ResolvedConcert[]> {
+		this.logger.info('Listing published concerts', { artistId })
 		try {
-			const response = await this.client.list({}, { signal })
+			const response = await this.client.list(
+				artistId ? { artistId: { value: artistId } } : {},
+				{ signal },
+			)
 			return resolveConcerts(response)
 		} catch (err) {
-			this.logger.warn('list failed', { error: err })
+			this.logger.warn('list failed', { artistId, error: err })
 			throw err
 		}
 	}
 
-	/** Permanently deletes a published concert by its event id (cascades server-side). */
+	/**
+	 * Permanently deletes a concert by its event id with the records that
+	 * depend only on it. Fails with FailedPrecondition while a purchase of the
+	 * event is still live.
+	 */
 	public async delete(eventId: string, signal?: AbortSignal): Promise<void> {
 		this.logger.info('Deleting concert', { eventId })
 		try {

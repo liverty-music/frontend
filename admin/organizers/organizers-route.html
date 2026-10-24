@@ -213,7 +213,13 @@
             class="organizers-roster-list"
           >
             <li repeat.for="artist of artists" class="organizers-roster-item">
-              <span>${artist.name}</span>
+              <a
+                load.bind="concertsLink(artist)"
+                class="organizers-roster-link"
+                data-artist-id.bind="artist.id"
+              >
+                ${artist.name}
+              </a>
               <button
                 if.bind="!isDeactivated(selected.status)"
                 type="button"
@@ -276,6 +282,43 @@
             </li>
           </ul>
         </section>
+
+        <form
+          if.bind="!isDeactivated(selected.status)"
+          class="[ organizers-test-artist ] [ flow ]"
+          novalidate
+          submit.trigger="createTestArtist()"
+        >
+          <h3 class="organizers-subsection-title">Create test artist</h3>
+          <label class="organizers-field">
+            Name
+            <input
+              type="text"
+              class="organizers-input"
+              value.bind="testArtistName"
+              placeholder="E2E Test Artist"
+              maxlength="200"
+              aria-describedby="organizers-test-artist-hint"
+              aria-invalid.bind="testArtistError ? 'true' : null"
+              disabled.bind="creatingTestArtist || unassociatedTestArtist"
+              required
+            />
+          </label>
+          <p id="organizers-test-artist-hint" class="organizers-muted">
+            Use a name no real artist uses.
+          </p>
+          <button
+            type="submit"
+            class="organizers-btn"
+            data-variant="primary"
+            disabled.bind="creatingTestArtist"
+          >
+            ${creatingTestArtist ? 'Creating…' : unassociatedTestArtist ? 'Retry association' : 'Create test artist'}
+          </button>
+          <p if.bind="testArtistError" class="organizers-error" role="alert">
+            ${testArtistError}
+          </p>
+        </form>
       </div>
     </section>
   </div>

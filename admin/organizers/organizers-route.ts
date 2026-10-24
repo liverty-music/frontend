@@ -104,6 +104,8 @@ export function createFormError(
  * email),
  * list organizers, inspect a selected organizer and the artists it represents,
  * associate/disassociate artists (reusing the public consumer artist search),
+ * create a test artist (a name and a generated MBID) and associate it, open a
+ * represented artist's concerts,
  * deactivate an organizer, and permanently delete a deactivated one after a
  * confirmation dialog.
  *
@@ -156,6 +158,17 @@ export class OrganizersRoute {
 	/** Artist id whose associate request is in flight (disables its button). */
 	public associatingId = ''
 	public associateError = ''
+
+	/** Test-artist form: the name the admin chooses, and the call state. */
+	public testArtistName = ''
+	public creatingTestArtist = false
+	public testArtistError = ''
+	/**
+	 * A test artist that was registered but not yet associated. While set,
+	 * submitting retries only the association, so no second artist is
+	 * registered.
+	 */
+	public unassociatedTestArtist: ArtistRow | null = null
 
 	private searchTimer: ReturnType<typeof setTimeout> | null = null
 	/** Aborts an in-flight search when a newer query supersedes it. */
@@ -240,7 +253,16 @@ export class OrganizersRoute {
 		this.deleteError = ''
 		this.associateError = ''
 		this.resetSearch()
+		this.resetTestArtist()
 		await this.loadArtists()
+	}
+
+	/**
+	 * The Artist concerts screen of a represented artist. The name rides along
+	 * so the screen can show it even when the artist performs in no concert.
+	 */
+	public concertsLink(artist: ArtistRow): string {
+		return `../artists/${artist.id}/concerts?name=${encodeURIComponent(artist.name)}`
 	}
 
 	public isSelected(row: OrganizerRow): boolean {
@@ -454,6 +476,73 @@ export class OrganizersRoute {
 		} finally {
 			this.associatingId = ''
 		}
+	}
+
+	// --- Test artist ----------------------------------------------------------
+
+	/**
+	 * Registers an artist under the entered name with a generated v4 MBID, so
+	 * it matches no real artist, and associates it with the selected
+	 * organizer. When a registered artist is still unassociated, retries only
+	 * the association.
+	 */
+	public async createTestArtist(): Promise<void> {
+		const organizer = this.selected
+		if (!organizer || this.creatingTestArtist) return
+		this.testArtistError = ''
+		let artist = this.unassociatedTestArtist
+		if (!artist) {
+			const name = this.testArtistName.trim()
+			if (name.length === 0) {
+				this.testArtistError = 'Enter a name for the test artist.'
+				return
+			}
+			this.creatingTestArtist = true
+			try {
+				const created = await this.artistClient.create(
+					name,
+					crypto.randomUUID(),
+				)
+				if (!created) throw new Error('Create returned no artist')
+				artist = toArtistRow(created)
+				this.unassociatedTestArtist = artist
+			} catch (err) {
+				this.testArtistError = toUserMessage(
+					err,
+					'Failed to create the test artist.',
+				)
+				this.logger.error('Create test artist failed', { name, err })
+				this.creatingTestArtist = false
+				return
+			}
+		}
+		this.creatingTestArtist = true
+		try {
+			await this.client.associateArtist(organizer.id, artist.id)
+			if (!this.artists.some((a) => a.id === artist.id)) {
+				this.artists.push(artist)
+			}
+			this.unassociatedTestArtist = null
+			this.testArtistName = ''
+		} catch (err) {
+			this.testArtistError = toOrganizerMessage(
+				err,
+				`${artist.name} was created but not associated. Retry to associate it.`,
+				ROSTER_OVERRIDES,
+			)
+			this.logger.error('Associate test artist failed', {
+				artistId: artist.id,
+				err,
+			})
+		} finally {
+			this.creatingTestArtist = false
+		}
+	}
+
+	private resetTestArtist(): void {
+		this.testArtistName = ''
+		this.testArtistError = ''
+		this.unassociatedTestArtist = null
 	}
 
 	public get hasSearchResults(): boolean {

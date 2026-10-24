@@ -1,0 +1,160 @@
+@layer block {
+	@scope (artist-concerts-route) {
+		:scope {
+			--_radius: 0.5rem;
+			--_pad-btn: 0.5rem 1rem;
+			--_border: color-mix(
+				in oklch,
+				var(--color-text-secondary) 25%,
+				transparent
+			);
+			--_surface-raised: oklch(24% 0.04 275deg);
+			--_backdrop-bg: oklch(0% 0 0deg / 50%);
+		}
+
+		.artist-concerts {
+			--flow-space: var(--space-m);
+
+			max-inline-size: 60rem;
+			margin-inline: auto;
+			padding: var(--space-l) var(--space-m);
+		}
+
+		.artist-concerts-brand {
+			font-size: var(--step--1);
+			font-weight: 700;
+			color: var(--color-brand-primary);
+			text-transform: uppercase;
+			letter-spacing: 0.08em;
+		}
+
+		.artist-concerts-title {
+			font-size: var(--step-3);
+			color: var(--color-text-primary);
+			overflow-wrap: anywhere;
+		}
+
+		.artist-concerts-subtitle,
+		.artist-concerts-state,
+		.artist-concerts-status,
+		.artist-concerts-orders {
+			color: var(--color-text-secondary);
+		}
+
+		.artist-concerts-back-link {
+			display: inline-block;
+			color: var(--color-brand-primary);
+			text-decoration: underline;
+		}
+
+		.artist-concerts-list {
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-s);
+
+			padding: 0;
+
+			list-style: none;
+		}
+
+		.artist-concerts-row {
+			--flow-space: var(--space-xs);
+
+			padding: var(--space-s);
+			border: 1px solid var(--_border);
+			border-radius: var(--_radius);
+		}
+
+		.artist-concerts-row-head {
+			display: flex;
+			flex-wrap: wrap;
+			gap: var(--space-xs) var(--space-s);
+			align-items: baseline;
+
+			color: var(--color-text-primary);
+		}
+
+		.artist-concerts-date {
+			font-variant-numeric: tabular-nums;
+		}
+
+		.artist-concerts-series {
+			font-weight: 700;
+			overflow-wrap: anywhere;
+		}
+
+		.artist-concerts-state-label {
+			padding-inline: var(--space-xs);
+			border: 1px solid var(--_border);
+			border-radius: var(--_radius);
+
+			font-size: var(--step--1);
+
+			&[data-state="Cancelled"] {
+				border-color: var(--color-error);
+				color: var(--color-error);
+			}
+		}
+
+		.artist-concerts-btn {
+			cursor: pointer;
+
+			padding: var(--_pad-btn);
+			border: 1px solid var(--_border);
+			border-radius: var(--_radius);
+
+			font: inherit;
+			color: var(--color-text-primary);
+
+			background: var(--_surface-raised);
+
+			&:disabled {
+				cursor: not-allowed;
+				opacity: 0.5;
+			}
+
+			&[data-variant="danger"] {
+				border-color: var(--color-error);
+				color: var(--color-error);
+			}
+		}
+
+		.artist-concerts-error {
+			font-size: var(--step--1);
+			color: var(--color-error);
+		}
+
+		.artist-concerts-dialog {
+			max-inline-size: min(28rem, 92vi);
+			margin: auto;
+			padding: var(--space-l);
+			border: 1px solid var(--_border);
+			border-radius: var(--_radius);
+
+			color: var(--color-text-primary);
+
+			background: var(--color-surface-base);
+
+			&::backdrop {
+				background: var(--_backdrop-bg);
+			}
+		}
+
+		.artist-concerts-dialog-body {
+			--flow-space: var(--space-s);
+		}
+
+		.artist-concerts-dialog-title {
+			font-size: var(--step-1);
+		}
+
+		.artist-concerts-dialog-target {
+			color: var(--color-text-secondary);
+			overflow-wrap: anywhere;
+		}
+
+		.artist-concerts-dialog-actions {
+			justify-content: flex-end;
+		}
+	}
+}

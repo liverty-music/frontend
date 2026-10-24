@@ -38,6 +38,11 @@ import { route } from '@aurelia/router'
 			title: 'Organizers',
 		},
 		{
+			path: 'artists/:artistId/concerts',
+			component: import('../artist-concerts/artist-concerts-route'),
+			title: 'Artist Concerts',
+		},
+		{
 			path: 'auth/callback',
 			component: import('../auth-callback/auth-callback-route'),
 			title: 'Signing In',

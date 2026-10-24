@@ -1,0 +1,169 @@
+<main class="[ artist-concerts ] [ flow ]">
+  <header class="artist-concerts-header">
+    <p class="artist-concerts-brand">Liverty Music Admin</p>
+    <h1 class="artist-concerts-title">${title}</h1>
+    <p class="artist-concerts-subtitle">
+      Every concert this artist performs in. Refund the fans of a cancelled
+      concert, then delete it.
+    </p>
+    <a load="../organizers" class="artist-concerts-back-link">← Back to organizers</a>
+  </header>
+
+  <output
+    if.bind="phase === 'loading'"
+    class="artist-concerts-status"
+    role="status"
+    aria-busy="true"
+  >
+    Loading concerts…
+  </output>
+
+  <section
+    if.bind="phase === 'error'"
+    class="[ artist-concerts-state ] [ flow ]"
+    role="alert"
+  >
+    <p class="artist-concerts-error">${loadError}</p>
+    <button type="button" class="artist-concerts-btn" click.trigger="load()">
+      Retry
+    </button>
+  </section>
+
+  <p if.bind="isEmpty" class="artist-concerts-state">No concerts.</p>
+
+  <ul if.bind="phase === 'ready' && rows.length > 0" class="artist-concerts-list">
+    <li
+      repeat.for="row of rows"
+      class="[ artist-concerts-row ] [ flow ]"
+      data-event-id.bind="row.eventId"
+    >
+      <div class="artist-concerts-row-head">
+        <span class="artist-concerts-date">${row.date}</span>
+        <span class="artist-concerts-series">${row.seriesTitle}</span>
+        <span class="artist-concerts-venue">${row.venueName}</span>
+        <span class="artist-concerts-state-label" data-state.bind="row.state">
+          ${row.state}
+        </span>
+      </div>
+      <p if.bind="row.firstParty" class="artist-concerts-orders">
+        <span class="artist-concerts-paid-count">${row.paidOrderIds.length} Paid Orders</span>
+        ·
+        <span class="artist-concerts-paid-total">${formatYen(row.paidTotal)}</span>
+      </p>
+      <p if.bind="row.ordersError" class="artist-concerts-error" role="alert">
+        ${row.ordersError}
+      </p>
+      <div class="[ artist-concerts-actions ] [ cluster ]">
+        <button
+          if.bind="row.state === 'Cancelled' && row.paidOrderIds.length > 0"
+          type="button"
+          class="artist-concerts-btn"
+          data-action="refund-all"
+          aria-haspopup="dialog"
+          disabled.bind="row.busy"
+          click.trigger="requestRefundAll(row)"
+        >
+          Refund all
+        </button>
+        <button
+          type="button"
+          class="artist-concerts-btn"
+          data-variant="danger"
+          data-action="delete"
+          aria-haspopup="dialog"
+          disabled.bind="row.busy"
+          click.trigger="requestDelete(row)"
+        >
+          Delete
+        </button>
+      </div>
+      <output if.bind="row.progress" class="artist-concerts-status" role="status">
+        ${row.progress}
+      </output>
+      <p if.bind="row.actionError" class="artist-concerts-error" role="alert">
+        ${row.actionError}
+      </p>
+    </li>
+  </ul>
+
+  <dialog
+    ref="refundDialog"
+    class="artist-concerts-dialog"
+    aria-labelledby="artist-concerts-refund-title"
+    close.trigger="onRefundDialogClose()"
+  >
+    <div class="[ artist-concerts-dialog-body ] [ flow ]">
+      <h2 id="artist-concerts-refund-title" class="artist-concerts-dialog-title">
+        Refund all paid orders?
+      </h2>
+      <p class="artist-concerts-dialog-target">
+        ${pendingRefund.date} · ${pendingRefund.seriesTitle}
+      </p>
+      <p>
+        ${pendingRefund.paidOrderIds.length} paid orders, ${formatYen(pendingRefund.paidTotal)}
+        in total. Each fan is refunded for 中止 (cancellation).
+      </p>
+      <div class="[ artist-concerts-dialog-actions ] [ cluster ]">
+        <button
+          ref="refundCancelButton"
+          type="button"
+          class="artist-concerts-btn"
+          autofocus
+          click.trigger="cancelRefundAll()"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          class="artist-concerts-btn"
+          data-variant="danger"
+          data-action="confirm-refund"
+          click.trigger="confirmRefundAll()"
+        >
+          Refund all
+        </button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog
+    ref="deleteDialog"
+    class="artist-concerts-dialog"
+    aria-labelledby="artist-concerts-delete-title"
+    close.trigger="onDeleteDialogClose()"
+  >
+    <div class="[ artist-concerts-dialog-body ] [ flow ]">
+      <h2 id="artist-concerts-delete-title" class="artist-concerts-dialog-title">
+        Delete concert?
+      </h2>
+      <p class="artist-concerts-dialog-target">
+        ${pendingDelete.date} · ${pendingDelete.seriesTitle}
+      </p>
+      <p class="artist-concerts-error">
+        This permanently removes the concert and its records. It cannot be
+        undone.
+      </p>
+      <div class="[ artist-concerts-dialog-actions ] [ cluster ]">
+        <button
+          ref="deleteCancelButton"
+          type="button"
+          class="artist-concerts-btn"
+          autofocus
+          click.trigger="cancelDelete()"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          class="artist-concerts-btn"
+          data-variant="danger"
+          data-action="confirm-delete"
+          disabled.bind="deleting"
+          click.trigger="confirmDelete()"
+        >
+          ${deleting ? 'Deleting…' : 'Delete'}
+        </button>
+      </div>
+    </div>
+  </dialog>
+</main>

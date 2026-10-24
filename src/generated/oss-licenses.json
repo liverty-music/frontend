@@ -122,7 +122,7 @@
 		},
 		{
 			"name": "@buf/liverty-music_schema.bufbuild_es",
-			"version": "2.16.0-20261022015907-b88824777f05.1",
+			"version": "2.16.0-20261024004917-22e05e3ef084.1",
 			"license": "UNKNOWN",
 			"publisher": null,
 			"repository": null,
@@ -578,7 +578,7 @@
 		},
 		{
 			"name": "zxing-wasm",
-			"version": "3.1.5",
+			"version": "3.1.6",
 			"license": "MIT",
 			"publisher": "Ze-Zheng Wu",
 			"repository": "https://github.com/Sec-ant/zxing-wasm",

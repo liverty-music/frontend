@@ -17,8 +17,9 @@ export const IArtistClient = DI.createInterface<IArtistClient>(
 export interface IArtistClient extends ArtistClient {}
 
 /**
- * Admin-local wrapper for the Artist reads of the organizer screen:
- * `ArtistService.Search`, to pick an artist to associate, and the admin
+ * Admin-local wrapper for the Artist calls of the organizer screen:
+ * `ArtistService.Search`, to pick an artist to associate,
+ * `ArtistService.Create`, to register a test artist, and the admin
  * `ArtistService.ListByOrganizer`, for an Organizer's artists.
  *
  * `ArtistService.Search` is served by the backend's **admin** Connect server
@@ -53,6 +54,29 @@ export class ArtistClient {
 			return response.artists
 		} catch (err) {
 			this.logger.warn('search failed', { query, error: err })
+			throw err
+		}
+	}
+
+	/**
+	 * Registers an artist under the given name and music-catalog id (MBID) and
+	 * returns it. A test artist passes a generated MBID the catalog does not
+	 * know, so the server keeps the given name.
+	 */
+	public async create(
+		name: string,
+		mbid: string,
+		signal?: AbortSignal,
+	): Promise<Artist | undefined> {
+		this.logger.info('Creating artist', { name, mbid })
+		try {
+			const response = await this.client.create(
+				{ name: { value: name }, mbid: { value: mbid } },
+				{ signal },
+			)
+			return response.artist
+		} catch (err) {
+			this.logger.warn('create failed', { name, mbid, error: err })
 			throw err
 		}
 	}

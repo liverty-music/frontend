@@ -47,6 +47,7 @@ interface MockOrganizerClient {
 
 interface MockSearchClient {
 	search: ReturnType<typeof vi.fn>
+	create: ReturnType<typeof vi.fn>
 }
 
 function makeOrganizer(
@@ -91,6 +92,7 @@ function createMockSearchClient(
 ): MockSearchClient {
 	return {
 		search: vi.fn().mockResolvedValue([]),
+		create: vi.fn().mockResolvedValue(undefined),
 		...overrides,
 	}
 }
@@ -106,6 +108,7 @@ async function build(
 			Registration.instance(IOrganizerClient, client),
 			Registration.instance(IArtistClient, {
 				search: searchClient.search,
+				create: searchClient.create,
 				listByOrganizer: client.listByOrganizer,
 			}),
 		)
@@ -964,5 +967,165 @@ describe('OrganizersRoute status and lifecycle', () => {
 			expect(alert).toContain('Failed to delete the organizer.')
 			expect(alert).not.toContain('try later')
 		})
+	})
+})
+
+describe('OrganizersRoute test artist and artist concerts', () => {
+	const MBID_V4 =
+		/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
+
+	beforeEach(() => {
+		vi.clearAllMocks()
+		vi.useRealTimers()
+	})
+
+	async function buildSelected(
+		client: MockOrganizerClient,
+		searchClient: MockSearchClient,
+	) {
+		const fixture = await build(client, searchClient)
+		const vm = routeOf(fixture)
+		await vm.select(vm.organizers[0])
+		await fixture.tasksSettled
+		return { fixture, vm }
+	}
+
+	it(`@spec ${ROUTE_SPEC} "Test artist created and associated"`, async () => {
+		const client = createMockOrganizerClient({
+			list: vi
+				.fn()
+				.mockResolvedValue([
+					makeOrganizer('o1', 'Live Org', 'live-org', OrganizerStatus.ACTIVE),
+				]),
+		})
+		const searchClient = createMockSearchClient({
+			create: vi
+				.fn()
+				.mockResolvedValue(makeArtist('a-test', 'E2E Test Artist')),
+		})
+		const { fixture, vm } = await buildSelected(client, searchClient)
+		expect(fixture.appHost.textContent).toContain(
+			'Use a name no real artist uses.',
+		)
+
+		vm.testArtistName = ' E2E Test Artist '
+		await vm.createTestArtist()
+		await fixture.tasksSettled
+
+		expect(searchClient.create).toHaveBeenCalledTimes(1)
+		const [name, mbid] = searchClient.create.mock.calls[0]
+		expect(name).toBe('E2E Test Artist')
+		expect(mbid).toMatch(MBID_V4)
+		expect(client.associateArtist).toHaveBeenCalledWith('o1', 'a-test')
+		expect(vm.artists.map((a) => a.name)).toContain('E2E Test Artist')
+		expect(vm.testArtistName).toBe('')
+		expect(
+			fixture.appHost.querySelector('.organizers-roster-list')?.textContent,
+		).toContain('E2E Test Artist')
+	})
+
+	it(`@spec ${ROUTE_SPEC} "Association fails after registration"`, async () => {
+		const client = createMockOrganizerClient({
+			list: vi
+				.fn()
+				.mockResolvedValue([
+					makeOrganizer('o1', 'Live Org', 'live-org', OrganizerStatus.ACTIVE),
+				]),
+			associateArtist: vi
+				.fn()
+				.mockRejectedValueOnce(
+					new ConnectError('unavailable', Code.Unavailable),
+				)
+				.mockResolvedValueOnce(undefined),
+		})
+		const searchClient = createMockSearchClient({
+			create: vi
+				.fn()
+				.mockResolvedValue(makeArtist('a-test', 'E2E Test Artist')),
+		})
+		const { fixture, vm } = await buildSelected(client, searchClient)
+
+		vm.testArtistName = 'E2E Test Artist'
+		await vm.createTestArtist()
+		await fixture.tasksSettled
+
+		expect(vm.testArtistError).toContain('Retry to associate it')
+		expect(fixture.appHost.textContent).toContain('Retry association')
+		expect(vm.artists).toHaveLength(0)
+
+		await vm.createTestArtist()
+
+		expect(searchClient.create).toHaveBeenCalledTimes(1)
+		expect(client.associateArtist).toHaveBeenCalledTimes(2)
+		expect(client.associateArtist).toHaveBeenLastCalledWith('o1', 'a-test')
+		expect(vm.artists.map((a) => a.id)).toEqual(['a-test'])
+		expect(vm.testArtistError).toBe('')
+	})
+
+	it(`@spec ${ROUTE_SPEC} "Empty name"`, async () => {
+		const client = createMockOrganizerClient({
+			list: vi
+				.fn()
+				.mockResolvedValue([
+					makeOrganizer('o1', 'Live Org', 'live-org', OrganizerStatus.ACTIVE),
+				]),
+		})
+		const searchClient = createMockSearchClient()
+		const { fixture, vm } = await buildSelected(client, searchClient)
+
+		vm.testArtistName = '   '
+		await vm.createTestArtist()
+		await fixture.tasksSettled
+
+		expect(searchClient.create).not.toHaveBeenCalled()
+		expect(client.associateArtist).not.toHaveBeenCalled()
+		expect(vm.testArtistError).toBe('Enter a name for the test artist.')
+	})
+
+	it('does not offer a test artist for a deactivated organizer', async () => {
+		const client = createMockOrganizerClient({
+			list: vi
+				.fn()
+				.mockResolvedValue([
+					makeOrganizer(
+						'o1',
+						'Old Org',
+						'old-org',
+						OrganizerStatus.DEACTIVATED,
+					),
+				]),
+		})
+		const { fixture } = await buildSelected(client, createMockSearchClient())
+
+		expect(fixture.appHost.textContent).not.toContain('Create test artist')
+	})
+
+	it(`@spec ${ROUTE_SPEC} "Open an artist's concerts"`, async () => {
+		const client = createMockOrganizerClient({
+			list: vi
+				.fn()
+				.mockResolvedValue([
+					makeOrganizer(
+						'o1',
+						'Old Org',
+						'old-org',
+						OrganizerStatus.DEACTIVATED,
+					),
+				]),
+			listByOrganizer: vi
+				.fn()
+				.mockResolvedValue([makeArtist('a1', 'Artist One')]),
+		})
+		const { fixture } = await buildSelected(client, createMockSearchClient())
+
+		const link = fixture.appHost.querySelector<HTMLAnchorElement>(
+			'.organizers-roster-link',
+		)
+		expect(link?.textContent?.trim()).toBe('Artist One')
+		// Without the router the bound `load` lands on the element; the
+		// router's load attribute reads the same value.
+		expect((link as unknown as { load?: string } | null)?.load).toBe(
+			'../artists/a1/concerts?name=Artist%20One',
+		)
 	})
 })
