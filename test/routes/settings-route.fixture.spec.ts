@@ -52,7 +52,22 @@ function makeUserStore(user: User) {
 	return store
 }
 
-async function render(store: ReturnType<typeof makeUserStore>) {
+/** A stand-in for the AuthService of a signed-in fan. */
+function makeAuth(emailVerified = true) {
+	return {
+		isAuthenticated: true,
+		user: {
+			profile: { email: 'fan@example.com', email_verified: emailVerified },
+		},
+		emailVerified,
+		refreshEmailVerified: vi.fn(async () => {}),
+	}
+}
+
+async function render(
+	store: ReturnType<typeof makeUserStore>,
+	auth: ReturnType<typeof makeAuth> = makeAuth(),
+) {
 	const fixture = await createFixture
 		.html('<settings-route></settings-route>')
 		.deps(
@@ -63,12 +78,7 @@ async function render(store: ReturnType<typeof makeUserStore>) {
 					fallbackLng: 'ja',
 				}
 			}),
-			Registration.instance(IAuthService, {
-				isAuthenticated: true,
-				user: { profile: { email: 'fan@example.com', email_verified: true } },
-				emailVerified: true,
-				refreshEmailVerified: vi.fn(async () => {}),
-			}),
+			Registration.instance(IAuthService, auth),
 			Registration.instance(IUserStore, store),
 			Registration.instance(IPushService, {
 				resolvePushState: vi.fn(async () => 'needs-permission'),
@@ -187,6 +197,53 @@ describe('SettingsRoute name and phone number (fixture)', () => {
 		expect(store.updatePersonalDetails).not.toHaveBeenCalled()
 		expect(phone.getAttribute('aria-invalid')).toBe('true')
 		expect(host.textContent).toContain(ja.settings.personalDetails.phoneInvalid)
+
+		await fixture.stop(true)
+	})
+})
+
+describe('SettingsRoute email verification badge (fixture)', () => {
+	const badge = (host: HTMLElement) =>
+		host.querySelector<HTMLOutputElement>('#email-verification-status')
+	const resend = (host: HTMLElement) =>
+		Array.from(host.querySelectorAll('button')).find((b) =>
+			b.textContent?.includes(ja.settings.resendVerification),
+		)
+
+	it('@spec components/infrastructure/fan/web/route/settings "Verified on another device"', async () => {
+		// Signed in on the laptop before verifying, so Settings opens unverified.
+		const auth = makeAuth(false)
+		const { fixture, host } = await render(
+			makeUserStore({ id: 'user-1' }),
+			auth,
+		)
+		expect(badge(host)?.textContent?.trim()).toBe('未確認')
+
+		// The phone verifies; returning to the tab reads the current state.
+		auth.refreshEmailVerified.mockImplementation(async () => {
+			auth.emailVerified = true
+		})
+		document.dispatchEvent(new Event('visibilitychange'))
+		await tasksSettled()
+
+		expect(auth.refreshEmailVerified).toHaveBeenCalled()
+		expect(badge(host)?.textContent?.trim()).toBe('確認済み')
+		expect(resend(host)).toBeUndefined()
+
+		await fixture.stop(true)
+	})
+
+	it('@spec components/infrastructure/fan/web/route/settings "Not yet verified"', async () => {
+		const { fixture, host } = await render(
+			makeUserStore({ id: 'user-1' }),
+			makeAuth(false),
+		)
+
+		expect(badge(host)?.textContent?.trim()).toBe('未確認')
+		const button = resend(host)
+		expect(button?.textContent?.trim()).toBe('再送信')
+		// The action sits beside the badge on the same status line.
+		expect(button?.parentElement).toBe(badge(host)?.parentElement)
 
 		await fixture.stop(true)
 	})
