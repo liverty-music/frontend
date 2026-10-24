@@ -1,0 +1,66 @@
+/* A ring and a check that draw themselves, then one pulse. The resting state
+   is the finished mark; the animation only plays from the undrawn state, so a
+   browser that does not run it, or reduced motion (durations 0 ms), shows the
+   finished mark. */
+@layer block {
+	@scope (success-mark) {
+		:scope {
+			--_ring: var(--md-duration-long2);
+			--_check: var(--md-duration-medium2);
+			--_pulse: var(--md-duration-medium4);
+
+			/* The check starts while the ring is finishing. */
+			--_check-delay: calc(var(--_ring) * 0.7);
+			--_pulse-delay: calc(var(--_check-delay) + var(--_check));
+
+			display: inline-block;
+			inline-size: var(--success-mark-size, var(--space-xl));
+			block-size: var(--success-mark-size, var(--space-xl));
+			color: var(--color-success);
+		}
+
+		.success-mark {
+			overflow: visible;
+			inline-size: 100%;
+			block-size: 100%;
+			animation: success-mark-pulse var(--_pulse)
+				var(--md-easing-emphasized-decelerate) var(--_pulse-delay) both;
+		}
+
+		/* The global reset (`:where(svg) { fill: currentcolor }`) beats the
+		   `fill="none"` attribute, so the stroke-only shapes say it in CSS. */
+		.success-mark-ring,
+		.success-mark-check {
+			fill: none;
+			stroke: currentcolor;
+			stroke-dasharray: 1;
+			stroke-dashoffset: 0;
+			stroke-linecap: round;
+			stroke-linejoin: round;
+		}
+
+		.success-mark-ring {
+			stroke-width: 3;
+			animation: success-mark-draw var(--_ring)
+				var(--md-easing-emphasized-decelerate) both;
+		}
+
+		.success-mark-check {
+			stroke-width: 4;
+			animation: success-mark-draw var(--_check)
+				var(--md-easing-emphasized-decelerate) var(--_check-delay) both;
+		}
+
+		@keyframes success-mark-draw {
+			from {
+				stroke-dashoffset: 1;
+			}
+		}
+
+		@keyframes success-mark-pulse {
+			50% {
+				transform: scale(1.08);
+			}
+		}
+	}
+}

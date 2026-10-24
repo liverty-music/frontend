@@ -17,7 +17,7 @@
   </template>
 
   <section if.bind="state === 'verified'" class="[ verify-email-result ] [ stack ]" aria-live="polite" data-testid="verify-email-verified">
-    <svg-icon name="check" class="verify-email-icon"></svg-icon>
+    <success-mark></success-mark>
     <p t="verifyEmail.verified" class="verify-email-message"></p>
     <a load="/" class="[ button ] [ pressable ]" t="verifyEmail.openApp" data-testid="verify-email-open-app"></a>
   </section>

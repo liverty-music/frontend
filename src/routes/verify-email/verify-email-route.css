@@ -33,6 +33,7 @@
 			--stack-gap: var(--space-xs);
 
 			align-items: center;
+
 			padding: var(--space-s);
 			border: 1px solid color-mix(in oklch, var(--color-white) 10%, transparent);
 			border-radius: var(--radius-card);
@@ -40,12 +41,6 @@
 			text-align: center;
 
 			background: var(--color-surface-raised);
-		}
-
-		.verify-email-icon {
-			inline-size: var(--space-xl);
-			block-size: var(--space-xl);
-			color: var(--color-brand-primary);
 		}
 	}
 }
