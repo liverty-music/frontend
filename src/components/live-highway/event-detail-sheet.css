@@ -278,7 +278,7 @@
 		   lightness/chroma stay local to this control's solid-fill treatment. */
 		.journey-node[data-journey-status="tracking"],
 		.journey-node[data-journey-status="applied"] {
-			--_node-fill: oklch(56% 0.14 var(--journey-hue-tracking));
+			--_node-fill: oklch(52% 0.14 var(--journey-hue-tracking));
 			--_node-on: oklch(98% 0.02 var(--journey-hue-tracking));
 			--_node-faint: oklch(62% 0.08 var(--journey-hue-tracking) / 45%);
 		}
