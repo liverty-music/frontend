@@ -16,8 +16,6 @@
 			--_brand-60: oklch(58.5% 0.204 277deg / 60%);
 			--_brand-80: oklch(58.5% 0.204 277deg / 80%);
 			--_magenta-60: oklch(62.7% 0.233 304deg / 60%);
-			--_green-30: oklch(80% 0.182 152deg / 30%);
-			--_green-90: oklch(80% 0.182 152deg / 90%);
 			--_star-img:
 				radial-gradient(
 					1px 1px at 10% 15%,
@@ -417,7 +415,7 @@
 		.followed-check {
 			inline-size: 1.25rem;
 			block-size: 1.25rem;
-			color: var(--_green-90);
+			color: color-mix(in oklch, var(--md-color-primary) 90%, transparent);
 		}
 
 		/* State-driven visibility (after base selectors to avoid descending specificity) */

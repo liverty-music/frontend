@@ -1,9 +1,16 @@
 @layer block {
 	@scope (svg-icon) {
-		:scope {
+		/* The host's size is the icon's size. `:where()` keeps it at zero
+		   specificity so a stylesheet that sizes the host (`inline-size` /
+		   `block-size`, or `--icon-size`) wins over the 1em default. */
+		:where(:scope) {
 			display: inline-flex;
+			flex-shrink: 0;
 			align-items: center;
 			justify-content: center;
+
+			inline-size: var(--icon-size, 1em);
+			block-size: var(--icon-size, 1em);
 		}
 
 		.icon-switch {
@@ -11,9 +18,8 @@
 		}
 
 		.svg-icon {
-			flex-shrink: 0;
-			inline-size: var(--_icon-size, 1.25rem);
-			block-size: var(--_icon-size, 1.25rem);
+			inline-size: 100%;
+			block-size: 100%;
 		}
 
 		/* The global reset (`:where(svg) { fill: currentcolor }`) overrides
@@ -26,23 +32,23 @@
 		}
 
 		:scope[data-size="xs"] {
-			--_icon-size: 0.75rem;
+			--icon-size: 0.75rem;
 		}
 
 		:scope[data-size="sm"] {
-			--_icon-size: 1rem;
+			--icon-size: 1rem;
 		}
 
 		:scope[data-size="md"] {
-			--_icon-size: 1.25rem;
+			--icon-size: 1.25rem;
 		}
 
 		:scope[data-size="lg"] {
-			--_icon-size: 1.5rem;
+			--icon-size: 1.5rem;
 		}
 
 		:scope[data-size="xl"] {
-			--_icon-size: 2.5rem;
+			--icon-size: 2.5rem;
 		}
 	}
 }

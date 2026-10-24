@@ -39,7 +39,7 @@
 			block-size: var(--space-xl);
 
 			&[data-variant="success"] {
-				color: var(--color-accent);
+				color: var(--color-success);
 			}
 
 			&[data-variant="error"] {
