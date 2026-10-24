@@ -348,16 +348,31 @@ export class DashboardRoute {
 	 * facets (pure client-side narrowing over the loaded set), a `from` change alters
 	 * what the server returns, so re-fetch. The store cache is keyed by `from`, so a
 	 * previously loaded window returns instantly; a new window fetches once. The
-	 * fast-path first-paint is not keyed by `from`, so drop the last rendered groups
-	 * before reloading to avoid repainting the previous window. The @watch above then
-	 * syncs the new date to the URL (or removes the param when back to today).
+	 * rendered timetable is keyed by `from` too (see timetableKey), so the previous
+	 * window is never repainted. The @watch above then syncs the new date to the
+	 * URL (or removes the param when back to today).
 	 */
 	public onDateFilterChanged(event: CustomEvent<CalendarDate>): void {
 		const from = event.detail
 		if (sameCalendarDate(from, this.fromDate)) return
 		this.fromDate = from
-		this.concertService.clearRenderedGroups()
 		void this.loadData()
+	}
+
+	/**
+	 * The inputs a rendered timetable is built from: the home area (it decides
+	 * the HOME / NEAR / AWAY lanes), the date window and the followed artists.
+	 * The session cache of the rendered timetable is read only under the same
+	 * key, so choosing a home area or following an artist never paints the
+	 * timetable built before it.
+	 */
+	private timetableKey(): string {
+		const follows = [...this.followStore.followedIds].sort().join(',')
+		return [
+			this.userStore.currentHome ?? '',
+			formatDateInput(this.fromDate),
+			follows,
+		].join('|')
 	}
 
 	public toggleBeams(): void {
@@ -501,16 +516,15 @@ export class DashboardRoute {
 		// bound() reflects them instead (see reflectCachedGroups), so the first
 		// render already shows the timetable; that render is bounded by the
 		// highway's date window, whatever the number of cached dates.
-		// lastDateGroups lives in the ConcertStore singleton, which survives
-		// DashboardRoute re-instantiation on every navigation.
-		const cachedDateGroups = this.concertService.peekDateGroups()
+		// The rendered timetable lives in the ConcertStore singleton, which
+		// survives DashboardRoute re-instantiation on every navigation, and is
+		// read only for the inputs it was built from (timetableKey).
+		const cachedDateGroups = this.concertService.peekDateGroups(
+			this.timetableKey(),
+		)
 		if (cachedDateGroups !== null && !this.needsRegion) {
 			this.pendingCachedGroups = cachedDateGroups
 			this.freshGroupsLanded = false
-			// Reset so the reflection below produces a fresh false→true transition.
-			// The needsRegion→onHomeSelected path reaches here on its second load,
-			// after the first (region-less) load already set it true.
-			this.timetableLoaded = false
 			// Already attached (a same-instance reload, e.g. the date filter) — there
 			// is no upcoming activation to reflect on, so do it now.
 			if (this.isAttached) this.reflectCachedGroups()
@@ -518,7 +532,7 @@ export class DashboardRoute {
 			return
 		}
 
-		// Cold load: first visit, or follow set changed, or region not set.
+		// Cold load: first visit, or home area, date window or follows changed.
 		this.pendingCachedGroups = null
 		this.hasSettled = false
 		this.isLoading = true
@@ -648,6 +662,7 @@ export class DashboardRoute {
 		forceConcerts = false,
 	): Promise<DateGroup[]> {
 		this.logger.info('Loading dashboard events')
+		const key = this.timetableKey()
 
 		const [artistMap, groups, journeyMap, purchasedMap] = await Promise.all([
 			this.followStore.getFollowedArtistMap(signal),
@@ -662,7 +677,7 @@ export class DashboardRoute {
 			this.logger.info('No concert groups returned')
 			// Cache the empty result so re-entry shows the empty state immediately
 			// rather than a spinner, then refreshes in the background.
-			this.concertService.setDateGroups([])
+			this.concertService.setDateGroups(key, [])
 			return []
 		}
 
@@ -674,7 +689,7 @@ export class DashboardRoute {
 		)
 		// Persist the rendered output in the singleton so the next DashboardRoute
 		// instance (re-created on every navigation) paints instantly on re-entry.
-		this.concertService.setDateGroups(result)
+		this.concertService.setDateGroups(key, result)
 		return result
 	}
 
@@ -783,7 +798,9 @@ export class DashboardRoute {
 	 * window from the cache and around the remembered date.
 	 */
 	public bound(): void {
-		this.timetableAnchor = this.concertService.timetableScrollAnchor
+		this.timetableAnchor = this.concertService.timetableAnchor(
+			this.timetableKey(),
+		)
 		this.reflectCachedGroups()
 	}
 
@@ -1179,7 +1196,10 @@ export class DashboardRoute {
 	 */
 	public unloading(): void {
 		if (this.highway) {
-			this.concertService.timetableScrollAnchor = this.highway.scrollAnchor
+			this.concertService.saveTimetableAnchor(
+				this.timetableKey(),
+				this.highway.scrollAnchor,
+			)
 		}
 	}
 
