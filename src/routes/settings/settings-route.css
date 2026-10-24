@@ -98,7 +98,9 @@
 
 			transition: background var(--transition-normal);
 
-			&:hover {
+			/* Only a row that is itself the control (a <button> or <a>) reacts
+			   to the pointer; a row holding its own action button does not. */
+			&:is(button, a):hover {
 				background: color-mix(in oklch, var(--_hover-bg) 5%, transparent);
 			}
 
@@ -106,7 +108,7 @@
 			   transform: none suppresses the global <button> baseline scale so a
 			   <button>.settings-row and an <a>.settings-row feel identical. The
 			   background-deepen needs no scale to suppress under reduced motion. */
-			&:active {
+			&:is(button, a):active {
 				transform: none;
 				background: color-mix(in oklch, var(--_hover-bg) 10%, transparent);
 			}
@@ -124,9 +126,26 @@
 
 		.settings-row-label,
 		.settings-toggle-col,
-		.settings-expand,
-		.settings-account {
+		.settings-expand {
 			grid-column: 2;
+		}
+
+		/* The account rows are two grid rows: the icon and the label (the
+		   address, 本人確認) share the first, centred on each other; the status
+		   and its action (then any detail) take the rows below, spanning the
+		   action column too. The wrapper only groups them in the markup. */
+		.settings-row:has(> .settings-account, > .settings-identity-verification) {
+			row-gap: var(--space-xs);
+		}
+
+		.settings-account,
+		.settings-identity-verification {
+			display: contents;
+
+			> * {
+				grid-column: 2 / -1;
+				min-inline-size: 0;
+			}
 		}
 
 		.settings-row-end,
@@ -304,13 +323,19 @@
 		}
 
 		/* Email + verification badge stack (col2 of the account row). */
-		.settings-account {
-			display: flex;
-			flex-direction: column;
-			gap: var(--space-3xs);
-			align-items: flex-start;
 
-			min-inline-size: 0;
+		/* An address longer than the row breaks between words, never inside
+		   one. */
+		.settings-account {
+			overflow-wrap: break-word;
+		}
+
+		/* A status and the action it allows: the badge at the start, the action
+		   at the end, wrapping under the badge when the row is too narrow. */
+		.settings-status-line {
+			--cluster-gap: var(--space-xs);
+
+			justify-content: space-between;
 		}
 
 		/* Status badge (<output>): a status icon + text, so verification state is
@@ -328,8 +353,15 @@
 		}
 
 		/* A text button trailing a row (resend verification, start identity
-		   verification); the `button` block owns its look. */
+		   verification); the `button` block owns its look. Compact, like the
+		   action on a snack bar or a bottom banner, so it sits on the row's
+		   label size instead of taking the label's column. */
 		.settings-row-action {
+			--button-min-size: 2.25rem;
+			--button-padding-block: var(--space-3xs);
+			--button-padding-inline: var(--space-s);
+			--button-font-size: var(--step--1);
+
 			white-space: nowrap;
 		}
 
