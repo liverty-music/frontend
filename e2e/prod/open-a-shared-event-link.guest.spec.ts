@@ -34,7 +34,11 @@ test.describe('open a shared event link (guest)', () => {
 			await request.get(`/events/${EVENTS.public}?ref=e2e`)
 		).text()
 		expect(firstMeta(html, 'og:title')).toContain(title)
-		expect(firstMeta(html, 'og:description')).toContain(venue)
+		// The page shows the venue as listed; the preview names the Venue itself
+		// with its prefecture, so the two differ when the listing does.
+		expect(firstMeta(html, 'og:description')).toContain(
+			concert.venue?.name?.value ?? '',
+		)
 		expect(firstMeta(html, 'og:url')).toBe(
 			new URL(`/events/${EVENTS.public}`, page.url()).toString(),
 		)
