@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@aurelia/storybook'
 import { expect, fn, userEvent, within } from 'storybook/test'
-import { expect as vitestExpect } from 'vitest'
+import { expectScreenshot } from '../../../.storybook/screenshot'
 import { InlineError } from './inline-error'
 
 const meta = {
@@ -33,9 +33,7 @@ export const Default = {
 			canvas.queryByRole('button', { name: '再試行' }),
 		).not.toBeInTheDocument()
 		// Component-level visual regression against a committed baseline (D4/OQ2).
-		await vitestExpect
-			.element(canvasElement)
-			.toMatchScreenshot('inline-error-default')
+		await expectScreenshot(canvasElement, 'inline-error-default')
 	},
 } satisfies Story
 

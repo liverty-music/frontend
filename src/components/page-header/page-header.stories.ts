@@ -4,7 +4,7 @@ import {
 	type StoryObj,
 } from '@aurelia/storybook'
 import { expect, within } from 'storybook/test'
-import { expect as vitestExpect } from 'vitest'
+import { expectScreenshot } from '../../../.storybook/screenshot'
 import { PageHeader } from './page-header'
 
 const meta = {
@@ -33,9 +33,7 @@ export const Default = {
 		const canvas = within(canvasElement)
 		await expect(canvas.getByRole('heading', { level: 1 })).toBeInTheDocument()
 		// Component-level visual regression against a committed baseline (D4/OQ2).
-		await vitestExpect
-			.element(canvasElement)
-			.toMatchScreenshot('page-header-default')
+		await expectScreenshot(canvasElement, 'page-header-default')
 	},
 } satisfies Story
 
@@ -86,8 +84,6 @@ export const WithSettings = {
 		await expect(
 			trailing.compareDocumentPosition(gear) & Node.DOCUMENT_POSITION_FOLLOWING,
 		).toBeTruthy()
-		await vitestExpect
-			.element(canvasElement)
-			.toMatchScreenshot('page-header-with-settings')
+		await expectScreenshot(canvasElement, 'page-header-with-settings')
 	},
 } satisfies Story
