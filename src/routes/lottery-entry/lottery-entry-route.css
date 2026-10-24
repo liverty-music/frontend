@@ -145,7 +145,7 @@
 
 		.lottery-entry-error {
 			font-size: var(--step--1);
-			color: var(--color-danger, oklch(62% 0.2 25deg));
+			color: var(--color-error);
 		}
 
 		.lottery-entry-actions {

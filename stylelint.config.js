@@ -1,3 +1,10 @@
+import { fileURLToPath } from 'node:url'
+import { definedColorTokens } from './stylelint-plugin-cube-css/lib/utils/defined-color-tokens.js'
+
+/** The --color-* tokens an app's token stylesheet defines. */
+const tokens = (path) =>
+	definedColorTokens(fileURLToPath(new URL(path, import.meta.url)))
+
 /** @type {import('stylelint').Config} */
 export default {
 	extends: ['stylelint-config-standard', 'stylelint-config-clean-order'],
@@ -91,6 +98,10 @@ export default {
 		'cube/prefer-vi-over-vw': true,
 		'cube/require-container-name': true,
 		'cube/prefer-color-mix': true,
+		'cube/no-undefined-color-token': [
+			true,
+			{ tokens: tokens('./src/styles/tokens.css') },
+		],
 	},
 	overrides: [
 		{
@@ -100,6 +111,34 @@ export default {
 			files: ['organizer/ui/**/*.css'],
 			rules: {
 				'cube/block-require-scope': null,
+			},
+		},
+		// Each self-contained entry declares its own tokens.
+		{
+			files: ['admin/**/*.css'],
+			rules: {
+				'cube/no-undefined-color-token': [
+					true,
+					{ tokens: tokens('./admin/styles/main.css') },
+				],
+			},
+		},
+		{
+			files: ['reception/**/*.css'],
+			rules: {
+				'cube/no-undefined-color-token': [
+					true,
+					{ tokens: tokens('./reception/styles/main.css') },
+				],
+			},
+		},
+		{
+			files: ['organizer/**/*.css'],
+			rules: {
+				'cube/no-undefined-color-token': [
+					true,
+					{ tokens: tokens('./organizer/styles/tokens.css') },
+				],
 			},
 		},
 	],

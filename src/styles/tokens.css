@@ -27,7 +27,7 @@
 		/* State colors */
 		--color-error: oklch(65% 0.2 25deg);
 		--color-warning: oklch(75% 0.15 75deg);
-		--color-success: oklch(80% 0.18 152deg);
+		--color-success: oklch(72% 0.17 160deg);
 		--color-white: oklch(100% 0 0deg);
 
 		/* Ticket journey status hues — single source of semantic identity,

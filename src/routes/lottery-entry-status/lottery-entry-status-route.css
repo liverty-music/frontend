@@ -141,7 +141,7 @@
 
 		.lottery-entry-status-error {
 			font-size: var(--step--1);
-			color: var(--color-danger, oklch(62% 0.2 25deg));
+			color: var(--color-error);
 		}
 
 		.lottery-entry-status-actions {
@@ -152,12 +152,7 @@
 			--flow-space: var(--space-s);
 
 			padding: var(--space-s);
-			border: 1px solid
-				color-mix(
-					in oklch,
-					var(--color-danger, oklch(62% 0.2 25deg)) 30%,
-					transparent
-				);
+			border: 1px solid color-mix(in oklch, var(--color-error) 30%, transparent);
 			border-radius: var(--radius-card);
 		}
 
