@@ -353,6 +353,14 @@ describe('FollowStore', () => {
 			expect(mockRpcClient.follow).not.toHaveBeenCalled()
 		})
 
+		it('drops the timetable rendered for the old follow set on a guest follow and unfollow', async () => {
+			await sut.follow(makeArtist('g1', 'Guest One'))
+			expect(mockConcertStore.invalidateFollowerCache).toHaveBeenCalledTimes(1)
+
+			await sut.unfollow('g1')
+			expect(mockConcertStore.invalidateFollowerCache).toHaveBeenCalledTimes(2)
+		})
+
 		it('removeGuestFollows drains a batch in a single persist', async () => {
 			guestSeed = [
 				makeFollowedArtist('g1', 'One'),
