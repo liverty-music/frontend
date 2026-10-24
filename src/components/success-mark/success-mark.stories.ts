@@ -35,6 +35,10 @@ export const Default = {
 		const check = host?.querySelector<SVGElement>('.success-mark-check')
 		if (!host || !svg || !ring || !check) throw new Error('no success mark')
 
+		// Stroke only: the global svg fill reset must not fill the ring.
+		await expect(getComputedStyle(ring).fill).toBe('none')
+		await expect(getComputedStyle(check).fill).toBe('none')
+
 		// Decorative: the message beside it says what happened.
 		await expect(svg.getAttribute('aria-hidden')).toBe('true')
 		// Large enough to read as the result of the screen, not an inline icon.

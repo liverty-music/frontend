@@ -27,8 +27,11 @@
 				var(--md-easing-emphasized-decelerate) var(--_pulse-delay) both;
 		}
 
+		/* The global reset (`:where(svg) { fill: currentcolor }`) beats the
+		   `fill="none"` attribute, so the stroke-only shapes say it in CSS. */
 		.success-mark-ring,
 		.success-mark-check {
+			fill: none;
 			stroke: currentcolor;
 			stroke-dasharray: 1;
 			stroke-dashoffset: 0;
