@@ -9,17 +9,27 @@ const mockLogger = {
 	scopeTo: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn() }),
 }
 const mockAuth = { isAuthenticated: false }
+type Anchor = { dateKey: string; offset: number }
+/** The store's rendered timetable, keyed by the inputs it was built from. */
+const rendered = new Map<string, { groups: unknown[]; anchor: Anchor | null }>()
+const keyedPeek = (key: string) => rendered.get(key)?.groups ?? null
 const mockConcertService = {
 	listFollowed: vi.fn(async () => []),
 	revalidateFollower: vi.fn(async () => []),
-	peekDateGroups: vi.fn(() => null),
-	setDateGroups: vi.fn(),
+	peekDateGroups: vi.fn(keyedPeek as (key: string) => unknown[] | null),
+	setDateGroups: vi.fn((key: string, groups: unknown[]) => {
+		rendered.set(key, { groups, anchor: rendered.get(key)?.anchor ?? null })
+	}),
 	toDateGroups: vi.fn(() => []),
-	clearRenderedGroups: vi.fn(),
-	timetableScrollAnchor: null as { dateKey: string; offset: number } | null,
+	timetableAnchor: vi.fn((key: string) => rendered.get(key)?.anchor ?? null),
+	saveTimetableAnchor: vi.fn((key: string, anchor: Anchor | null) => {
+		const entry = rendered.get(key)
+		if (entry) entry.anchor = anchor
+	}),
 }
 const mockFollowStore = {
 	followedArtists: [] as unknown[],
+	followedIds: new Set<string>(),
 	followedCount: 0,
 	getFollowedArtistMap: vi.fn(async () => new Map()),
 }
@@ -41,9 +51,12 @@ const mockOnboarding = {
 	finish: vi.fn(),
 }
 const mockUserStore = {
-	current: { home: 'JP-13' },
+	current: { home: 'JP-13' } as { home: string } | null,
+	currentHome: 'JP-13' as string | null,
 	guestHome: null,
-	setGuestHome: vi.fn(),
+	setGuestHome: vi.fn((code: string) => {
+		mockUserStore.currentHome = code
+	}),
 }
 const mockI18n = { tr: vi.fn((key: string) => key) }
 const mockStorage = {
@@ -165,6 +178,11 @@ function primeTimetable(count: number): void {
 	mockConcertService.toDateGroups.mockReturnValue(makeTimetable(count) as never)
 }
 
+/** The key under which the route reads and writes its rendered timetable. */
+function keyOf(route: DashboardRoute): string {
+	return (route as unknown as { timetableKey(): string }).timetableKey()
+}
+
 /** Call the protected URL-sync watcher handler directly in unit tests. */
 function syncFilterUrl(route: DashboardRoute): void {
 	;(route as unknown as { syncFilterUrl(): void }).syncFilterUrl()
@@ -221,7 +239,9 @@ describe('DashboardRoute', () => {
 	beforeEach(() => {
 		vi.clearAllMocks()
 		mockHighway.scrollAnchor = null
-		mockConcertService.timetableScrollAnchor = null
+		rendered.clear()
+		mockUserStore.currentHome = 'JP-13'
+		mockFollowStore.followedIds = new Set()
 		mockOnboarding.isOnboarding = false
 		mockAuth.isAuthenticated = false
 		mockFollowStore.followedArtists = []
@@ -229,7 +249,7 @@ describe('DashboardRoute', () => {
 		mockStorage.getItem.mockReturnValue(null)
 		mockConcertService.listFollowed.mockResolvedValue([])
 		mockConcertService.toDateGroups.mockReturnValue([])
-		mockConcertService.peekDateGroups.mockReturnValue(null)
+		mockConcertService.peekDateGroups.mockImplementation(keyedPeek)
 		sut = new DashboardRoute()
 	})
 
@@ -445,7 +465,7 @@ describe('DashboardRoute', () => {
 		})
 
 		it('saves the anchor on the way out and hands it to the highway on re-entry', async () => {
-			mockConcertService.peekDateGroups.mockReturnValue(makeCachedGroups())
+			mockConcertService.setDateGroups(keyOf(sut), makeCachedGroups())
 			sut.needsRegion = false
 
 			// The fan scrolls deep, then leaves. `unloading` runs while the view is
@@ -453,7 +473,7 @@ describe('DashboardRoute', () => {
 			sut.highway = mockHighway as never
 			mockHighway.scrollAnchor = ANCHOR
 			sut.unloading()
-			expect(mockConcertService.timetableScrollAnchor).toEqual(ANCHOR)
+			expect(mockConcertService.timetableAnchor(keyOf(sut))).toEqual(ANCHOR)
 
 			// Coming back: a NEW route instance, which is why the anchor has to live
 			// in the store rather than on the route. The highway receives it as its
@@ -468,8 +488,7 @@ describe('DashboardRoute', () => {
 		})
 
 		it('hands no anchor over on a first visit', async () => {
-			mockConcertService.peekDateGroups.mockReturnValue(makeCachedGroups())
-			mockConcertService.timetableScrollAnchor = null
+			mockConcertService.setDateGroups(keyOf(sut), makeCachedGroups())
 			sut.needsRegion = false
 
 			await sut.loadData()
@@ -732,6 +751,9 @@ describe('DashboardRoute', () => {
 
 		// @spec components/infrastructure/fan/web/route/dashboard "Choosing a past date and confirming"
 		it('re-fetches ListFollowed with the new from on a date change', () => {
+			// The timetable of the current window is in the session cache.
+			sut.needsRegion = false
+			mockConcertService.setDateGroups(keyOf(sut), makeCachedGroups())
 			mockConcertService.listFollowed.mockClear()
 			const past = { year: 2020, month: 1, day: 1 }
 
@@ -742,7 +764,8 @@ describe('DashboardRoute', () => {
 			).onDateFilterChanged(new CustomEvent('date-changed', { detail: past }))
 
 			expect(sut.fromDate).toEqual(past)
-			expect(mockConcertService.clearRenderedGroups).toHaveBeenCalledTimes(1)
+			// The timetable rendered for the previous window is not repainted.
+			expect(sut.isLoading).toBe(true)
 			expect(mockConcertService.listFollowed).toHaveBeenCalledWith(
 				past,
 				expect.anything(),
@@ -759,7 +782,6 @@ describe('DashboardRoute', () => {
 				}
 			).onDateFilterChanged(new CustomEvent('date-changed', { detail: same }))
 
-			expect(mockConcertService.clearRenderedGroups).not.toHaveBeenCalled()
 			expect(mockConcertService.listFollowed).not.toHaveBeenCalled()
 		})
 	})
@@ -1178,11 +1200,12 @@ describe('DashboardRoute', () => {
 
 		// @spec components/infrastructure/fan/web/route/dashboard "Home area chosen on arrival, timetable served from session data"
 		// @spec stories/complete-onboarding "Completion latches after choosing the home area on arrival"
-		it('decides the celebration and the latch once when the home area is chosen and the timetable comes from the session cache', async () => {
+		it('decides the celebration and the latch once, on the timetable for the chosen home area', async () => {
 			mockAuth.isAuthenticated = false
 			mockOnboarding.isOnboarding = true
 			mockFollowStore.followedCount = 5
-			primeTimetable(12)
+			mockFollowStore.followedIds = new Set(['a', 'b', 'c', 'd', 'e'])
+			mockUserStore.currentHome = null
 			sut = new DashboardRoute()
 			const celebrate = vi.spyOn(
 				sut as unknown as { maybeCelebrate(): void },
@@ -1192,47 +1215,47 @@ describe('DashboardRoute', () => {
 				sut as unknown as { maybeFinishOnboarding(): void },
 				'maybeFinishOnboarding',
 			)
-			// First arrival: no home area yet, the sheet is open over a blurred
-			// timetable. The load still settles (timetableLoaded flips true).
+			// First arrival: no home area yet, so the timetable built now has no
+			// concert to show; it lands in the session cache under its own key.
+			primeTimetable(0)
 			sut.needsRegion = true
 			await sut.loadData()
 			sut.attached()
-			expect(sut.timetableLoaded).toBe(true)
 			expect(celebrate).not.toHaveBeenCalled()
 
-			// The timetable is now in the session cache, so the load after the
-			// choice takes the fast path.
-			mockConcertService.peekDateGroups.mockReturnValue(
-				makeTimetable(12) as never,
-			)
+			// Choosing Tokyo changes the inputs, so the cached empty timetable is
+			// not painted; the timetable for Tokyo is, and it has 12 concerts. Its
+			// concert list was already fetched in the session (the RPC cache).
+			primeTimetable(12)
 			await sut.onHomeSelected('JP-13')
 
 			expect(celebrate).toHaveBeenCalledTimes(1)
 			expect(latch).toHaveBeenCalledTimes(1)
 			expect(sut.showCelebration).toBe(true)
+			expect(mockI18n.tr).toHaveBeenCalledWith('dashboard.celebration.found', {
+				artists: 5,
+				concerts: 12,
+			})
 			expect(mockOnboarding.finish).toHaveBeenCalledTimes(1)
 		})
 
-		// @spec components/infrastructure/fan/web/global/post-signup-dialog "Region selection still precedes both"
-		it('resolves the home area before the post-signup celebration and sheet', async () => {
-			mockAuth.isAuthenticated = true
-			mockStorage.getItem.mockImplementation((k: string) =>
-				k === 'postSignup.shown' ? 'pending' : null,
-			)
+		it('repaints the cached timetable for unchanged inputs and celebrates on it', async () => {
+			mockAuth.isAuthenticated = false
+			mockOnboarding.isOnboarding = true
+			mockFollowStore.followedCount = 5
+			mockFollowStore.followedIds = new Set(['a'])
+			mockConcertService.setDateGroups(keyOf(sut), makeTimetable(4))
 			sut = new DashboardRoute()
-			sut.needsRegion = true
+			sut.needsRegion = false
+
 			await sut.loadData()
-			sut.attached()
+			sut.bound()
 
-			expect(sut.showCelebration).toBe(false)
-			expect(sut.showPostSignupDialog).toBe(false)
-
-			await sut.onHomeSelected('JP-13')
 			expect(sut.showCelebration).toBe(true)
-			expect(sut.showPostSignupDialog).toBe(false)
-
-			sut.onCelebrationDismissed()
-			expect(sut.showPostSignupDialog).toBe(true)
+			expect(mockI18n.tr).toHaveBeenCalledWith('dashboard.celebration.found', {
+				artists: 5,
+				concerts: 4,
+			})
 		})
 
 		it('does not celebrate for an authenticated returning user', async () => {
@@ -1411,7 +1434,10 @@ describe('DashboardRoute', () => {
 				expect(sut.dateGroups).toEqual(fresh)
 				expect(sut.isLoading).toBe(false)
 				expect(sut.hasSettled).toBe(true)
-				expect(mockConcertService.setDateGroups).toHaveBeenCalledWith(fresh)
+				expect(mockConcertService.setDateGroups).toHaveBeenCalledWith(
+					keyOf(sut),
+					fresh,
+				)
 			} finally {
 				sut.detaching()
 				mockResumeRevalidator.register.mockReset()

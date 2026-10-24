@@ -155,6 +155,8 @@ export class FollowStore {
 
 		if (!this.authService.isAuthenticated) {
 			this.followGuest(artist)
+			// The follow set changed: the timetable rendered for it is stale.
+			this.concertStore.invalidateFollowerCache()
 			// A signed-in follow is reported by the server; a guest's is not.
 			this.analytics.capture(Events.ArtistFollowGuest, {
 				artist_id: artist.id,
@@ -198,6 +200,7 @@ export class FollowStore {
 		this.errorBoundary.addBreadcrumb('action', 'unfollow_artist')
 		if (!this.authService.isAuthenticated) {
 			this.unfollowGuest(artistId)
+			this.concertStore.invalidateFollowerCache()
 			this.followedArtists = this.followedArtists.filter(
 				(a) => a.id !== artistId,
 			)

@@ -579,6 +579,44 @@ test.describe('Onboarding flow (single-flag model)', () => {
 		})
 	})
 
+	// @spec stories/complete-onboarding "Completion latches after choosing the home area on arrival"
+	test('Guest choosing the home area on arrival sees the celebration with the counts and completes onboarding', async ({
+		page,
+	}) => {
+		// Three follows (preview artists, which the ListByArtists mock returns
+		// concerts for) and no home area: the Dashboard asks for one first.
+		await page.addInitScript(() => {
+			localStorage.setItem('onboarding.helpSeen:dashboard', '1')
+			localStorage.setItem(
+				'guest.followedArtists',
+				JSON.stringify(
+					[
+						'019c8655-7a05-71ef-82b4-a4ac2494e29f',
+						'019c8655-7a05-721d-b0a8-4c11724d5c90',
+						'019c8655-7a05-71e9-9af5-e1cd4fbfd367',
+					].map((id, i) => ({
+						artist: { id, name: `Artist ${i + 1}` },
+						home: null,
+					})),
+				),
+			)
+		})
+		await page.goto('http://localhost:9000/dashboard')
+
+		await page.getByRole('button', { name: 'Tokyo' }).first().click()
+
+		// The timetable for Tokyo, not the one built before the choice (which
+		// had no concert), decides the celebration.
+		const overlay = page.locator('.celebration-overlay[data-state="active"]')
+		await expect(overlay).toBeVisible({ timeout: 10_000 })
+		await expect(overlay).toContainText(/Found [1-9]\d* shows by 3 artists/)
+		await expect
+			.poll(() =>
+				page.evaluate(() => localStorage.getItem('onboardingComplete')),
+			)
+			.toBe('true')
+	})
+
 	test('Celebration does not replay after page reload', async ({ page }) => {
 		await page.addInitScript(() => {
 			localStorage.setItem('onboardingComplete', 'true')

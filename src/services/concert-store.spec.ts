@@ -342,35 +342,57 @@ describe('ConcertStore', () => {
 		it('drops every cached list and the dashboard view state', async () => {
 			mockRpcClient.listFollowed.mockResolvedValue(makeGroups(1))
 			await sut.listFollowed()
-			sut.setDateGroups([])
+			sut.setDateGroups('JP-13|2026-04-01|a1', [])
 			sut.addArtistWithConcerts('a1')
 
 			signedOutHandler?.()
 
-			expect(sut.peekDateGroups()).toBeNull()
+			expect(sut.peekDateGroups('JP-13|2026-04-01|a1')).toBeNull()
 			expect(sut.artistsWithConcertsCount).toBe(0)
 			await sut.listFollowed()
 			expect(mockRpcClient.listFollowed).toHaveBeenCalledTimes(2)
 		})
 	})
 
-	describe('peekDateGroups / setDateGroups', () => {
+	describe('rendered timetable', () => {
+		const KEY = 'JP-13|2026-04-01|a1'
+		const groups = [
+			{ dateKey: '2026-04-01', label: '', home: [], nearby: [], away: [] },
+		] as never
+
 		it('returns null before any load is stored', () => {
-			expect(sut.peekDateGroups()).toBeNull()
+			expect(sut.peekDateGroups(KEY)).toBeNull()
 		})
 
-		it('returns stored date groups after setDateGroups', () => {
-			const groups = [
-				{ dateKey: '2026-04-01', label: '', home: [], nearby: [], away: [] },
-			] as never
-			sut.setDateGroups(groups)
-			expect(sut.peekDateGroups()).toBe(groups)
+		it('returns the stored groups for the inputs they were built from', () => {
+			sut.setDateGroups(KEY, groups)
+			expect(sut.peekDateGroups(KEY)).toBe(groups)
 		})
 
-		it('clears date groups on invalidateFollowerCache', () => {
-			sut.setDateGroups([])
+		it('returns nothing for other inputs (another home area, window or follow set)', () => {
+			sut.setDateGroups(KEY, groups)
+			expect(sut.peekDateGroups('JP-27|2026-04-01|a1')).toBeNull()
+			expect(sut.peekDateGroups('|2026-04-01|a1')).toBeNull()
+			expect(sut.peekDateGroups('JP-13|2026-04-01|a1,a2')).toBeNull()
+		})
+
+		it('keeps the scroll place across a refresh of the same timetable only', () => {
+			const anchor = { dateKey: '2026-04-01', offset: 40 }
+			sut.setDateGroups(KEY, groups)
+			sut.saveTimetableAnchor(KEY, anchor)
+
+			sut.setDateGroups(KEY, groups)
+			expect(sut.timetableAnchor(KEY)).toEqual(anchor)
+
+			sut.setDateGroups('JP-27|2026-04-01|a1', groups)
+			expect(sut.timetableAnchor('JP-27|2026-04-01|a1')).toBeNull()
+			expect(sut.timetableAnchor(KEY)).toBeNull()
+		})
+
+		it('clears the timetable on invalidateFollowerCache', () => {
+			sut.setDateGroups(KEY, [])
 			sut.invalidateFollowerCache()
-			expect(sut.peekDateGroups()).toBeNull()
+			expect(sut.peekDateGroups(KEY)).toBeNull()
 		})
 	})
 })

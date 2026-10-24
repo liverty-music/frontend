@@ -63,13 +63,14 @@ export class ConcertStore {
 		(from, signal) => this.rpcClient.listFollowed(from, signal),
 	)
 
-	// The rendered DateGroup[] from the most recent successful dashboard load.
-	// Stored here (not on DashboardRoute) because DashboardRoute is re-instantiated
-	// on every navigation. On re-entry this is painted immediately (no spinner);
-	// a background refresh then replaces it with fresh data.
-	// Cleared on invalidateFollowerCache() so a follow/unfollow always shows
-	// a fresh load rather than stale groups.
-	private lastDateGroups: DateGroup[] | null = null
+	// The timetable the dashboard last rendered, with the scroll place the fan
+	// left it at. Stored here (not on DashboardRoute) because DashboardRoute is
+	// re-instantiated on every navigation: on re-entry it is painted at once (no
+	// spinner) and a background refresh then replaces it. It is valid only for
+	// the dashboard inputs it was built from (home area, date window), named by
+	// `key`; any other key reads nothing. A follow-set change clears it
+	// (invalidateFollowerCache), so neither ever paints a stale timetable.
+	private rendered: RenderedTimetable | null = null
 
 	// Guest / preview proximity list, keyed by the sorted artist-id set plus
 	// country + level-1 area, so a changed follow set produces a new key (no
@@ -155,53 +156,41 @@ export class ConcertStore {
 		return this.followerConcerts.revalidate(from)
 	}
 
-	/**
-	 * Synchronous peek at the last successfully rendered concert groups for this
-	 * user. Survives across `DashboardRoute` re-instantiations because this store
-	 * is a singleton. Non-null after any successful dashboard load.
-	 */
-	public peekDateGroups(): DateGroup[] | null {
-		return this.lastDateGroups
+	/** The last rendered concert groups for these inputs, or null. */
+	public peekDateGroups(key: string): DateGroup[] | null {
+		return this.rendered?.key === key ? this.rendered.groups : null
 	}
 
 	/**
-	 * Persist the latest rendered concert groups so the next DashboardRoute
-	 * instance (re-instantiated on re-entry) can paint immediately.
+	 * Keep the latest rendered groups for the next DashboardRoute instance. The
+	 * scroll place survives only a refresh of the same timetable: against a
+	 * different one it would land somewhere arbitrary.
 	 */
-	public setDateGroups(groups: DateGroup[]): void {
-		this.lastDateGroups = groups
+	public setDateGroups(key: string, groups: DateGroup[]): void {
+		const anchor = this.rendered?.key === key ? this.rendered.anchor : null
+		this.rendered = { key, groups, anchor }
 	}
 
 	/**
-	 * Scroll offset of the rendered timetable, so returning to the dashboard puts
-	 * the fan back where they left instead of at the top. Lives here rather than
-	 * on the route for the same reason the groups do: a new `DashboardRoute` is
-	 * created on every navigation, so route-local state cannot survive the trip.
-	 *
-	 * Cleared alongside the groups — an anchor is meaningless against a different
-	 * list, and restoring one would land somewhere arbitrary.
+	 * Where the fan left this timetable, so returning to the dashboard puts them
+	 * back there instead of at the top.
 	 */
-	public timetableScrollAnchor: TimetableAnchor | null = null
+	public timetableAnchor(key: string): TimetableAnchor | null {
+		return this.rendered?.key === key ? this.rendered.anchor : null
+	}
+
+	public saveTimetableAnchor(
+		key: string,
+		anchor: TimetableAnchor | null,
+	): void {
+		if (this.rendered?.key === key) this.rendered.anchor = anchor
+	}
 
 	public invalidateFollowerCache(): void {
 		// A follow-set change invalidates every date-window variant, so clear all
 		// keys, not just the today-onward one.
 		this.followerConcerts.clear()
-		// Clear the cached output too so the next visit shows a fresh spinner
-		// rather than stale groups with the unfollowed/newly-followed artist.
-		this.lastDateGroups = null
-		this.timetableScrollAnchor = null
-	}
-
-	/**
-	 * Drop the last rendered groups without touching the SWR cache. Used when the
-	 * active date filter changes: the fast-path first-paint (which is not keyed by
-	 * `from`) must not repaint the previous window's groups, but each date window's
-	 * fetched result stays cached in followerConcerts for instant reuse on switch-back.
-	 */
-	public clearRenderedGroups(): void {
-		this.lastDateGroups = null
-		this.timetableScrollAnchor = null
+		this.rendered = null
 	}
 
 	public async listByArtists(
@@ -516,6 +505,13 @@ function proximityKey(
  * own entry. An absent `from` keeps the bare `listFollowed` key (the server's
  * today-onward default).
  */
+/** The rendered timetable, the inputs it was built from, and its scroll place. */
+interface RenderedTimetable {
+	key: string
+	groups: DateGroup[]
+	anchor: TimetableAnchor | null
+}
+
 function followerKey(from?: CalendarDate): string {
 	if (!from) return 'listFollowed'
 	const m = String(from.month).padStart(2, '0')
