@@ -5,8 +5,8 @@ import { stripUrl } from './strip-own-url-query'
  * Route elements of the screens that are never recorded: the checkout, the
  * lottery entry and its status, the identity check and Settings (with its
  * passkeys screen). Blocking a route element replaces the whole screen with
- * an empty box in the recording. The PostHog project's URL blocklist pauses
- * recording on the same addresses (runbook `posthog-project-settings.md`).
+ * an empty box, so nothing of it is recorded even before recording stops on
+ * its address ({@link isUnrecordedPath}).
  */
 export const UNRECORDED_SCREENS = [
 	'checkout-route',
@@ -41,4 +41,22 @@ export function sessionRecordingOptions(
 			name: stripUrl(request.name, origin),
 		}),
 	}
+}
+
+/**
+ * Addresses of the screens in {@link UNRECORDED_SCREENS} (`app-shell.ts`
+ * routes). AnalyticsService stops recording while one of them is shown, so
+ * no recording is made of them at all (OpenSpec `global/analytics`, "Screen
+ * that is never recorded"); the session's recording resumes on the next
+ * screen.
+ */
+const UNRECORDED_PATHS: readonly RegExp[] = [
+	/^\/events\/[^/]+\/checkout\/?$/,
+	/^\/events\/[^/]+\/lottery\//,
+	/^\/verify\//,
+	/^\/settings(\/|$)/,
+]
+
+export function isUnrecordedPath(pathname: string): boolean {
+	return UNRECORDED_PATHS.some((path) => path.test(pathname))
 }

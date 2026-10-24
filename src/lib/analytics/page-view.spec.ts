@@ -59,6 +59,7 @@ vi.mock('aurelia', async (importOriginal) => {
 				case 'IConsentService':
 					return mockConsent
 				case 'IEventAggregator':
+				case 'IRouterEvents':
 					return { subscribe: () => ({ dispose: () => {} }) }
 				default:
 					return {}

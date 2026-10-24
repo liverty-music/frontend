@@ -103,6 +103,20 @@ const mockEa = {
 	},
 }
 
+// The router's navigation-end subscription; `navigate()` moves the page and
+// fires it.
+let navigationEnd: (() => void) | null = null
+const mockRouterEvents = {
+	subscribe: vi.fn((_event: string, handler: () => void) => {
+		navigationEnd = handler
+		return { dispose: () => (navigationEnd = null) }
+	}),
+}
+function navigate(path: string): void {
+	window.history.replaceState(null, '', path)
+	navigationEnd?.()
+}
+
 vi.mock('aurelia', async (importOriginal) => {
 	const actual = await importOriginal<typeof import('aurelia')>()
 	return {
@@ -118,6 +132,8 @@ vi.mock('aurelia', async (importOriginal) => {
 					return mockConsent
 				case 'IEventAggregator':
 					return mockEa
+				case 'IRouterEvents':
+					return mockRouterEvents
 				default:
 					return {}
 			}
@@ -732,7 +748,6 @@ describe('AnalyticsService', () => {
 				blockSelector: string
 			}
 			expect(blockSelector.split(', ')).toContain('input[type="hidden"]')
-			expect(lastRecordingSetting()).toBe(false)
 		})
 
 		it(`@spec ${SPEC} "Screen that is never recorded"`, async () => {
@@ -772,6 +787,52 @@ describe('AnalyticsService', () => {
 					name: `${origin}/welcome?ref=member-a`,
 				}).name,
 			).toBe(`${origin}/welcome`)
+		})
+
+		it('stops recording on a screen that is never recorded and resumes after it', async () => {
+			// @spec components/infrastructure/fan/web/global/analytics "Screen that is never recorded"
+			navigate('/dashboard')
+			const sut = new AnalyticsService()
+			await sut._waitForInitForTests()
+			expect(initConfig()).toMatchObject({ disable_session_recording: false })
+
+			for (const path of [
+				'/events/e-1/checkout',
+				'/events/e-1/lottery/t-1',
+				'/events/e-1/lottery/t-1/entry',
+				'/verify/callback',
+				'/settings',
+				'/settings/passkeys',
+			]) {
+				navigate('/dashboard')
+				navigate(path)
+				expect(lastRecordingSetting()).toBe(true)
+			}
+			navigate('/events/e-1')
+			expect(lastRecordingSetting()).toBe(false)
+			sut.dispose()
+		})
+
+		it('does not start recording when the app opens on a screen never recorded', async () => {
+			navigate('/events/e-1/checkout')
+			const sut = new AnalyticsService()
+			await sut._waitForInitForTests()
+
+			expect(initConfig()).toMatchObject({ disable_session_recording: true })
+			sut.dispose()
+			navigate('/')
+		})
+
+		it('does not reconfigure the SDK when the posture stays the same', async () => {
+			navigate('/dashboard')
+			const sut = new AnalyticsService()
+			await sut._waitForInitForTests()
+			posthogStub.set_config.mockReset()
+
+			navigate('/discovery')
+
+			expect(posthogStub.set_config).not.toHaveBeenCalled()
+			sut.dispose()
 		})
 
 		it(`@spec ${SPEC} "Session replay off"`, async () => {

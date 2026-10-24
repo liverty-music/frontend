@@ -1,3 +1,4 @@
+import { IRouterEvents } from '@aurelia/router'
 import { trace } from '@opentelemetry/api'
 import {
 	DI,
@@ -27,7 +28,7 @@ import {
 	type SanitizedProps,
 	sanitizeEventProps,
 } from './sensitive-property-filter'
-import { sessionRecordingOptions } from './session-recording'
+import { isUnrecordedPath, sessionRecordingOptions } from './session-recording'
 
 /**
  * Public surface for the typed PostHog wrapper. Every consumer (route VMs,
@@ -175,6 +176,7 @@ export class AnalyticsService implements IAnalyticsService {
 	private readonly config = resolve(IAppConfig)
 	private readonly consent = resolve(IConsentService)
 	private readonly ea = resolve(IEventAggregator)
+	private readonly routerEvents = resolve(IRouterEvents)
 
 	/**
 	 * Truthy iff PostHog initialisation has completed. Until this flips,
@@ -226,6 +228,10 @@ export class AnalyticsService implements IAnalyticsService {
 	private readonly consentSubscription: IDisposable
 	private readonly signedOutSubscription: IDisposable
 	private readonly authStartedSubscription: IDisposable
+	private readonly navigationSubscription: IDisposable
+	// The recording posture last given to the SDK, so a navigation that does
+	// not change it does not reconfigure the SDK.
+	private recordingDisabled: boolean | null = null
 
 	public constructor() {
 		// Subscribe BEFORE scheduling init so an opt-out emitted in the same
@@ -246,6 +252,16 @@ export class AnalyticsService implements IAnalyticsService {
 		this.authStartedSubscription = this.ea.subscribe(
 			AuthStarted,
 			(event: AuthStarted) => this.handleAuthStarted(event),
+		)
+		// Recording stops on a screen that is never recorded and resumes on
+		// the next one.
+		this.navigationSubscription = this.routerEvents.subscribe(
+			'au:router:navigation-end',
+			() =>
+				this.applySessionReplayToSdk(
+					this.consent.sessionReplay,
+					this.analyticsEnabled(),
+				),
 		)
 		this.scheduleInit()
 	}
@@ -498,10 +514,11 @@ export class AnalyticsService implements IAnalyticsService {
 				// path only). Leaving the app sends a page leave.
 				capture_pageview: 'history_change',
 				capture_pageleave: true,
-				// Recording needs both Analytics and Session replay on; the
-				// toggles are reapplied in `applySessionReplayToSdk`.
-				disable_session_recording: !(
-					analyticsEnabled && this.consent.sessionReplay
+				// Recording needs both Analytics and Session replay on, and a
+				// screen that is recorded; `applySessionReplayToSdk` reapplies it.
+				disable_session_recording: this.recordingOff(
+					this.consent.sessionReplay,
+					analyticsEnabled,
 				),
 				session_recording: sessionRecordingOptions(origin),
 				// Console output is not masked text: the app's logs name artists,
@@ -524,6 +541,7 @@ export class AnalyticsService implements IAnalyticsService {
 			}
 			posthog.init(this.config.posthogProjectKey, initConfig)
 			this.posthog = posthog
+			this.recordingDisabled = initConfig.disable_session_recording ?? null
 			// Every event states whether the app runs installed or in a tab.
 			posthog.register({ display_mode: displayMode() })
 
@@ -729,18 +747,31 @@ export class AnalyticsService implements IAnalyticsService {
 	/**
 	 * SINGLE WIRING POINT for PostHog session recording — never touches
 	 * capture or identity. Recording runs only while both Analytics and
-	 * Session replay are on (OpenSpec `global/analytics`, "Session recordings
-	 * hide what the fan types and reads"); what is masked and which screens
-	 * are never recorded is fixed at init by {@link sessionRecordingOptions}.
+	 * Session replay are on and the screen shown is recorded (OpenSpec
+	 * `global/analytics`, "Session recordings hide what the fan types and
+	 * reads"); what is masked is fixed at init by {@link sessionRecordingOptions}.
+	 * `set_config` makes the SDK start or stop its recorder.
 	 */
 	private applySessionReplayToSdk(
 		sessionReplay: boolean,
 		analyticsEnabled = true,
 	): void {
 		if (this.posthog === null) return
-		this.posthog.set_config({
-			disable_session_recording: !(analyticsEnabled && sessionReplay),
-		})
+		const off = this.recordingOff(sessionReplay, analyticsEnabled)
+		if (off === this.recordingDisabled) return
+		this.posthog.set_config({ disable_session_recording: off })
+		this.recordingDisabled = off
+	}
+
+	/** True when nothing may be recorded now. */
+	private recordingOff(
+		sessionReplay: boolean,
+		analyticsEnabled: boolean,
+	): boolean {
+		return (
+			!(analyticsEnabled && sessionReplay) ||
+			isUnrecordedPath(window.location.pathname)
+		)
 	}
 
 	/**
@@ -861,6 +892,7 @@ export class AnalyticsService implements IAnalyticsService {
 		this.consentSubscription.dispose()
 		this.signedOutSubscription.dispose()
 		this.authStartedSubscription.dispose()
+		this.navigationSubscription.dispose()
 	}
 
 	/**
