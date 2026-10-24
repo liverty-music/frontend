@@ -16,12 +16,14 @@ import { DI, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ResolvedConcert } from '../../../admin/services/concert-client'
 
-// The route resolves IConcertClient + IOrderClient. Replace the real modules
-// (which would build Connect transports) with fresh interface tokens so the
-// fixture binds to the test doubles.
+// The route resolves IArtistClient, IConcertClient and IOrderClient. Replace
+// the real modules (which would build Connect transports) with fresh interface
+// tokens so the fixture binds to the test doubles.
+const IArtistClient = DI.createInterface('IArtistClient')
 const IConcertClient = DI.createInterface('IConcertClient')
 const IOrderClient = DI.createInterface('IOrderClient')
 
+vi.mock('../../../admin/services/artist-client', () => ({ IArtistClient }))
 vi.mock('../../../admin/services/concert-client', () => ({ IConcertClient }))
 vi.mock('../../../admin/services/order-client', () => ({ IOrderClient }))
 
@@ -74,7 +76,11 @@ const refunded = (id: string, amount = 3000) =>
 	order(id, amount, OrderStatus.REFUNDED)
 
 interface Clients {
-	concert: { list: ReturnType<typeof vi.fn>; delete: ReturnType<typeof vi.fn> }
+	artist: { get: ReturnType<typeof vi.fn> }
+	concert: {
+		listByArtist: ReturnType<typeof vi.fn>
+		delete: ReturnType<typeof vi.fn>
+	}
 	order: {
 		listByEvent: ReturnType<typeof vi.fn>
 		refundCancellation: ReturnType<typeof vi.fn>
@@ -83,34 +89,38 @@ interface Clients {
 
 /**
  * Test doubles. `orders[n]` is what ListByEvent returns once n refunds have
- * succeeded, so every re-read sees the Orders the refunds so far left.
+ * succeeded, so every re-read sees the Orders the refunds so far left. With
+ * `failAt`, the refund call of that number (1-based) fails with Unavailable.
  */
 function clients(
 	concerts: ResolvedConcert[],
 	orders: Order[][] = [[]],
+	{ failAt }: { failAt?: number } = {},
 ): Clients {
+	let calls = 0
 	let succeeded = 0
-	const refundCancellation = vi.fn()
-	const refund = vi.fn(async () => {
-		await refundCancellation()
-		succeeded++
-	})
-	const listByEvent = vi.fn(async () =>
-		structuredClone(orders[Math.min(succeeded, orders.length - 1)] ?? []),
-	)
 	return {
+		artist: {
+			get: vi.fn().mockResolvedValue(
+				create(ArtistSchema, {
+					id: { value: ARTIST_ID },
+					name: { value: 'E2E Test Artist' },
+				}),
+			),
+		},
 		concert: {
-			list: vi.fn().mockResolvedValue(concerts),
+			listByArtist: vi.fn().mockResolvedValue(concerts),
 			delete: vi.fn().mockResolvedValue(undefined),
 		},
 		order: {
-			listByEvent,
-			// The route calls refundCancellation(orderId); `refundCancellation`
-			// below records the outcome per call so tests can make one fail.
-			refundCancellation: Object.assign(
-				vi.fn(async (_orderId: string) => refund()),
-				{ outcome: refundCancellation },
+			listByEvent: vi.fn(async () =>
+				structuredClone(orders[Math.min(succeeded, orders.length - 1)] ?? []),
 			),
+			refundCancellation: vi.fn(async (_orderId: string) => {
+				calls++
+				if (calls === failAt) throw new ConnectError('down', Code.Unavailable)
+				succeeded++
+			}),
 		},
 	}
 }
@@ -122,6 +132,7 @@ async function build(c: Clients) {
 		)
 		.deps(
 			ArtistConcertsRoute,
+			Registration.instance(IArtistClient, c.artist),
 			Registration.instance(IConcertClient, c.concert),
 			Registration.instance(IOrderClient, c.order),
 		)
@@ -132,11 +143,8 @@ async function build(c: Clients) {
 			route: InstanceType<typeof ArtistConcertsRoute>
 		}
 	).route
-	// Open the screen for the Artist as the router would, then load again.
-	vm.loading({ artistId: ARTIST_ID }, {
-		queryParams: new URLSearchParams('name=E2E%20Test%20Artist'),
-	} as never)
-	c.concert.list.mockClear()
+	// Load for the Artist; the loading hook does the same with the route params.
+	vm.artistId = ARTIST_ID
 	await vm.load()
 	await fixture.tasksSettled
 	return { fixture, vm }
@@ -182,15 +190,22 @@ describe('ArtistConcertsRoute', () => {
 			)
 			const { fixture } = await build(c)
 
-			expect(c.concert.list).toHaveBeenCalledWith(ARTIST_ID)
-			expect(c.order.listByEvent).toHaveBeenCalledWith('e1')
+			expect(c.concert.listByArtist).toHaveBeenCalledWith(
+				ARTIST_ID,
+				expect.any(AbortSignal),
+			)
+			expect(c.order.listByEvent).toHaveBeenCalledWith(
+				'e1',
+				expect.any(AbortSignal),
+			)
 			expect(fixture.appHost.querySelector('h1')?.textContent).toContain(
 				'E2E Test Artist',
 			)
+			// The Paid Orders render after their own read; wait for them.
+			await vi.waitFor(() => expect(rowText(fixture)).toContain('8,000 yen'))
 			const text = rowText(fixture)
 			expect(text).toContain('Cancelled')
 			expect(text).toContain('2 Paid Orders')
-			expect(text).toContain('8,000 yen')
 			expect(text).toContain('2026-11-20')
 			expect(text).toContain('Test Tour')
 			expect(text).toContain('Zepp Haneda')
@@ -200,10 +215,67 @@ describe('ArtistConcertsRoute', () => {
 			const { fixture } = await build(clients([]))
 
 			expect(fixture.appHost.textContent).toContain('No concerts.')
-			// The name from the roster link still heads the screen.
+			// The name read with ArtistService.Get heads the screen.
 			expect(fixture.appHost.querySelector('h1')?.textContent).toContain(
 				'E2E Test Artist',
 			)
+		})
+
+		it(`@spec ${SPEC} "Unknown artist"`, async () => {
+			const c = clients([])
+			c.artist.get.mockResolvedValue(null)
+			const { fixture } = await build(c)
+
+			expect(fixture.appHost.textContent).toContain('No artist has this id.')
+			expect(fixture.appHost.querySelector('.artist-concerts-row')).toBeNull()
+			// Retrying cannot make the Artist exist.
+			expect(fixture.appHost.textContent).not.toContain('Retry')
+		})
+
+		it('loads for the route params on every activation', async () => {
+			const c = clients([])
+			const { vm } = await build(c)
+			c.artist.get.mockClear()
+			c.concert.listByArtist.mockClear()
+
+			vm.loading({ artistId: 'artist-2' })
+			await vi.waitFor(() => expect(vm.phase).toBe('ready'))
+
+			expect(c.artist.get).toHaveBeenCalledWith(
+				'artist-2',
+				expect.any(AbortSignal),
+			)
+			expect(c.concert.listByArtist).toHaveBeenCalledWith(
+				'artist-2',
+				expect.any(AbortSignal),
+			)
+		})
+
+		it('aborts the reads of a load a newer load supersedes', async () => {
+			const c = clients([])
+			const { vm } = await build(c)
+
+			const first = vm.load()
+			const [, firstSignal] = c.concert.listByArtist.mock.calls.at(-1) ?? []
+			await vm.load()
+			await first
+
+			expect((firstSignal as AbortSignal).aborted).toBe(true)
+			expect(vm.phase).toBe('ready')
+		})
+
+		it('keeps the artist name when its concerts fail to load', async () => {
+			const c = clients([])
+			c.concert.listByArtist.mockRejectedValue(
+				new ConnectError('down', Code.Unavailable),
+			)
+			const { fixture, vm } = await build(c)
+
+			expect(vm.phase).toBe('error')
+			expect(fixture.appHost.querySelector('h1')?.textContent).toContain(
+				'E2E Test Artist',
+			)
+			expect(fixture.appHost.textContent).toContain('Retry')
 		})
 
 		it('shows a discovered concert without orders', async () => {
@@ -238,9 +310,11 @@ describe('ArtistConcertsRoute', () => {
 			expect(c.order.refundCancellation).toHaveBeenCalledTimes(2)
 			expect(c.order.refundCancellation).toHaveBeenNthCalledWith(1, 'o1')
 			expect(c.order.refundCancellation).toHaveBeenNthCalledWith(2, 'o2')
-			// The Orders are read again after every call (after the two loads).
-			expect(c.order.listByEvent).toHaveBeenCalledTimes(4)
-			expect(rowText(fixture)).toContain('0 Paid Orders')
+			// The Orders are read once on load and again after every call.
+			expect(c.order.listByEvent).toHaveBeenCalledTimes(3)
+			await vi.waitFor(() =>
+				expect(rowText(fixture)).toContain('0 Paid Orders'),
+			)
 			expect(button(fixture, 'refund-all')).toBeNull()
 		})
 
@@ -250,16 +324,9 @@ describe('ArtistConcertsRoute', () => {
 				[
 					[paid('o1'), paid('o2'), paid('o3')],
 					[refunded('o1'), paid('o2'), paid('o3')],
-					[refunded('o1'), paid('o2'), paid('o3')],
 				],
+				{ failAt: 2 },
 			)
-			;(
-				c.order.refundCancellation as unknown as {
-					outcome: ReturnType<typeof vi.fn>
-				}
-			).outcome
-				.mockResolvedValueOnce(undefined)
-				.mockRejectedValueOnce(new ConnectError('down', Code.Unavailable))
 			const { fixture, vm } = await build(c)
 
 			vm.requestRefundAll(vm.rows[0])
@@ -325,10 +392,7 @@ describe('ArtistConcertsRoute', () => {
 			// @spec stories/remove-a-cancelled-concert "Delete before refunds"
 			const c = clients([concert('e1', PublishState.CANCELLED)], [[paid('o1')]])
 			c.concert.delete.mockRejectedValue(
-				new ConnectError(
-					'an event has an order that is not refunded',
-					Code.FailedPrecondition,
-				),
+				new ConnectError('an event has a paid order', Code.FailedPrecondition),
 			)
 			const { fixture, vm } = await build(c)
 
@@ -338,7 +402,7 @@ describe('ArtistConcertsRoute', () => {
 
 			expect(vm.rows).toHaveLength(1)
 			expect(fixture.appHost.textContent).toContain(DELETE_BLOCKED)
-			expect(fixture.appHost.textContent).not.toContain('not refunded (')
+			expect(fixture.appHost.textContent).not.toContain('an event has')
 		})
 
 		it('shows the generic copy for any other delete failure', async () => {

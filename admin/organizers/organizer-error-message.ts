@@ -24,7 +24,7 @@ export const CREATE_OVERRIDES: Partial<Record<Code, string>> = {
  * server can report for a deactivated Organizer, whatever reason it sends.
  */
 export const DELETE_REFUSED =
-	'This organizer cannot be deleted while it has an order that is not refunded, a settlement that is not reversed, or a payout account.'
+	'This organizer cannot be deleted while it has a paid order, a settlement that is not reversed, a purchase in progress, or a payout account.'
 
 const ORGANIZER_DEFAULTS: Partial<Record<Code, string>> = {
 	[Code.NotFound]: 'The organizer or artist no longer exists.',

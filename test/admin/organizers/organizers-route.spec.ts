@@ -925,7 +925,7 @@ describe('OrganizersRoute status and lifecycle', () => {
 					.fn()
 					.mockRejectedValue(
 						new ConnectError(
-							'an event of the organizer has an order that is not refunded',
+							'an event has a paid order',
 							Code.FailedPrecondition,
 						),
 					),
@@ -940,10 +940,10 @@ describe('OrganizersRoute status and lifecycle', () => {
 			expect(vm.selected?.id).toBe('o2')
 			const detail = fixture.appHost.querySelector('.organizers-detail')
 			expect(vm.deleteError).toBe(
-				'This organizer cannot be deleted while it has an order that is not refunded, a settlement that is not reversed, or a payout account.',
+				'This organizer cannot be deleted while it has a paid order, a settlement that is not reversed, a purchase in progress, or a payout account.',
 			)
 			expect(detail?.textContent).toContain(vm.deleteError)
-			expect(detail?.textContent).not.toContain('an event of the organizer')
+			expect(detail?.textContent).not.toContain('an event has')
 		})
 
 		it(`@spec ${ROUTE_SPEC} "Delete fails otherwise"`, async () => {
@@ -1122,10 +1122,10 @@ describe('OrganizersRoute test artist and artist concerts', () => {
 			'.organizers-roster-link',
 		)
 		expect(link?.textContent?.trim()).toBe('Artist One')
-		// Without the router the bound `load` lands on the element; the
-		// router's load attribute reads the same value.
+		// Without the router the interpolated `load` lands on the element; the
+		// router's load attribute reads the same value. It carries the id only.
 		expect((link as unknown as { load?: string } | null)?.load).toBe(
-			'../artists/a1/concerts?name=Artist%20One',
+			'../artists/a1/concerts',
 		)
 	})
 })
