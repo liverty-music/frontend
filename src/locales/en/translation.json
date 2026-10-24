@@ -1094,7 +1094,7 @@
 		"verified": "Your email address is verified.",
 		"openApp": "Open the app",
 		"invalid": "This link has expired or has already been used.",
-		"invalidNext": "Send a new verification email from Settings in the app, then open its link.",
+		"invalidNext": "Tap Resend in Settings to get a new email, then open its link.",
 		"tooMany": "Too many attempts. Please try again later."
 	},
 	"passkeys": {
