@@ -210,7 +210,7 @@
 			&:has(input:checked) {
 				border-color: oklch(65% 0.16 var(--_hue));
 				color: var(--color-white);
-				background: oklch(58% 0.16 var(--_hue));
+				background: oklch(52% 0.16 var(--_hue));
 			}
 		}
 
