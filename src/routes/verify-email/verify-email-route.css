@@ -33,6 +33,7 @@
 			--stack-gap: var(--space-xs);
 
 			align-items: center;
+
 			padding: var(--space-s);
 			border: 1px solid color-mix(in oklch, var(--color-white) 10%, transparent);
 			border-radius: var(--radius-card);
@@ -40,12 +41,6 @@
 			text-align: center;
 
 			background: var(--color-surface-raised);
-		}
-
-		/* Sized by svg-icon's own `size`; the success color matches the
-		   認証済み badge in Settings. */
-		.verify-email-icon {
-			color: var(--color-success);
 		}
 	}
 }

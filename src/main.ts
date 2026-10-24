@@ -38,6 +38,7 @@ import { PageHelp } from './components/page-help/page-help'
 import { PostSignupDialog } from './components/post-signup-dialog/post-signup-dialog'
 import { SignupPromptBanner } from './components/signup-prompt-banner/signup-prompt-banner'
 import { StatePlaceholder } from './components/state-placeholder/state-placeholder'
+import { SuccessMark } from './components/success-mark/success-mark'
 import { SvgIcon } from './components/svg-icon/svg-icon'
 import { Toast } from './components/toast/toast'
 import { UserHomeSelector } from './components/user-home-selector/user-home-selector'
@@ -273,6 +274,7 @@ async function bootstrap(): Promise<void> {
 	au.register(PageHelp)
 	au.register(PostSignupDialog)
 	au.register(StatePlaceholder)
+	au.register(SuccessMark)
 	au.register(SvgIcon)
 	au.register(UserHomeSelector)
 	au.register(AuthHook)
