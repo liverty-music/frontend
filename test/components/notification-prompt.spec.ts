@@ -192,6 +192,16 @@ describe('NotificationPrompt', () => {
 			expect(mockPushService.create).toHaveBeenCalledTimes(1)
 		})
 
+		it('starts the permission request as the notification prompt', async () => {
+			// @spec components/infrastructure/fan/web/global/notification-prompt "Fan denies"
+			sut = create()
+			await sut.enable()
+
+			// The answer itself is reported by NotificationManager
+			// (test/services/notification-manager.spec.ts).
+			expect(mockPushService.create).toHaveBeenCalledWith('notification_prompt')
+		})
+
 		it('still fires notification.requested when pushService.create throws', async () => {
 			sut = create({
 				pushCreate: vi.fn().mockRejectedValue(new Error('denied')),

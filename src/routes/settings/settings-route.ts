@@ -504,7 +504,7 @@ export class SettingsRoute {
 			}
 
 			if (newValue) {
-				const endpoint = await this.pushService.create()
+				const endpoint = await this.pushService.create('settings')
 				if (!endpoint) {
 					// User declined the permission prompt or VAPID key is missing.
 					this.notificationsEnabled = false
@@ -608,13 +608,19 @@ export class SettingsRoute {
 	/** Guest auth entry — start the OIDC sign-in flow from Settings. */
 	public async signIn(): Promise<void> {
 		this.errorBoundary.addBreadcrumb('action', 'start_sign_in')
-		await this.auth.signIn({ uiLocales: currentLanguage(this.i18n) })
+		await this.auth.signIn({
+			uiLocales: currentLanguage(this.i18n),
+			source: 'settings',
+		})
 	}
 
 	/** Guest auth entry — start the OIDC sign-up flow from Settings. */
 	public async signUp(): Promise<void> {
 		this.errorBoundary.addBreadcrumb('action', 'start_sign_up')
-		await this.auth.signUp({ uiLocales: currentLanguage(this.i18n) })
+		await this.auth.signUp({
+			uiLocales: currentLanguage(this.i18n),
+			source: 'settings',
+		})
 	}
 
 	public async signOut(): Promise<void> {

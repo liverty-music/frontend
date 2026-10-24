@@ -26,6 +26,10 @@ import {
 import type { Artist } from '../../entities/artist'
 import type { Concert, DateGroup } from '../../entities/concert'
 import type { Hype } from '../../entities/follow'
+import {
+	Events,
+	IAnalyticsService,
+} from '../../lib/analytics/analytics-service'
 import { IAuthService } from '../../services/auth-service'
 import { IConcertStore } from '../../services/concert-store'
 import { IErrorBoundaryService } from '../../services/error-boundary-service'
@@ -69,6 +73,7 @@ export class WelcomeRoute implements IRouteViewModel {
 	private readonly i18n = resolve(I18N)
 	private readonly concertService = resolve(IConcertStore)
 	private readonly host = resolve(INode) as HTMLElement
+	private readonly analytics = resolve(IAnalyticsService)
 
 	public readonly supportedLanguages = SUPPORTED_LANGUAGES
 
@@ -444,6 +449,7 @@ export class WelcomeRoute implements IRouteViewModel {
 
 	async handleGetStarted(): Promise<void> {
 		this.logger.info('Get Started tapped, entering onboarding')
+		this.analytics.capture(Events.OnboardingStarted, {})
 		// Just navigate to discovery — onboarding is a single flag that already
 		// defaults to true for a not-yet-completed user, and guest data is
 		// preserved. There is no step cursor to set.
@@ -486,6 +492,7 @@ export class WelcomeRoute implements IRouteViewModel {
 		try {
 			await this.authService.signIn({
 				uiLocales: currentLanguage(this.i18n),
+				source: 'welcome',
 			})
 		} catch (err) {
 			this.logger.error('Failed to start sign-in flow', { error: err })

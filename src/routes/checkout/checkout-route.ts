@@ -5,7 +5,7 @@ import type {
 	StripeElements,
 	StripePaymentElement,
 } from '@stripe/stripe-js'
-import { ILogger, resolve } from 'aurelia'
+import { ILogger, observable, resolve } from 'aurelia'
 import { ICheckoutRpcClient } from '../../adapter/rpc/client/checkout-client'
 import { IConcertRpcClient } from '../../adapter/rpc/client/concert-client'
 import { ITicketSaleRpcClient } from '../../adapter/rpc/client/ticket-sale-client'
@@ -24,7 +24,15 @@ import {
 	type TicketSale,
 	type VerificationRequirement,
 } from '../../entities/ticket-sale'
+import {
+	Events,
+	IAnalyticsService,
+} from '../../lib/analytics/analytics-service'
 import { toDomesticDisplay, toE164 } from '../../lib/to-e164'
+import {
+	priceBucket,
+	type ReportedCheckoutStep,
+} from '../../services/analytics-events'
 import { IErrorBoundaryService } from '../../services/error-boundary-service'
 import { IIdentityVerificationService } from '../../services/identity-verification-service'
 import { INotificationManager } from '../../services/notification-manager'
@@ -103,8 +111,9 @@ export class CheckoutRoute implements IRouteViewModel {
 	private readonly pwaInstall = resolve(IPwaInstallService)
 	private readonly identityVerifications = resolve(IIdentityVerificationService)
 	private readonly router = resolve(IRouter)
+	private readonly analytics = resolve(IAnalyticsService)
 
-	public step: CheckoutStep = 'loading'
+	@observable public step: CheckoutStep = 'loading'
 	public event: EventPageEvent | null = null
 	/** The Organizer's 特商法 business details, for the final confirmation. */
 	public businessDetails: BusinessDetails | null = null
@@ -411,6 +420,12 @@ export class CheckoutRoute implements IRouteViewModel {
 	public async hold(): Promise<void> {
 		if (this.busy || !this.sale) return
 		this.errorBoundary.addBreadcrumb('action', 'start_checkout')
+		this.analytics.capture(Events.TicketPurchaseInitiated, {
+			event_id: this.eventId,
+			ticket_type_id: this.sale.ticketType.id,
+			ticket_count: this.ticketCount,
+			price_bucket: priceBucket(this.sale.ticketType.price),
+		})
 		this.busy = true
 		this.message = null
 		try {
@@ -434,6 +449,16 @@ export class CheckoutRoute implements IRouteViewModel {
 		} finally {
 			this.busy = false
 		}
+	}
+
+	/** Report each step the fan is shown (not loading or a read failure). */
+	public stepChanged(step: CheckoutStep): void {
+		if (!this.sale || !isReportedStep(step)) return
+		this.analytics.capture(Events.CheckoutStepViewed, {
+			event_id: this.eventId,
+			ticket_type_id: this.sale.ticketType.id,
+			step,
+		})
 	}
 
 	private holdWith(checkout: Checkout): void {
@@ -704,7 +729,7 @@ export class CheckoutRoute implements IRouteViewModel {
 
 	public async allowNotifications(): Promise<void> {
 		try {
-			await this.pushService.create()
+			await this.pushService.create('checkout')
 		} catch (err) {
 			this.logger.warn('Enabling notifications failed', { error: err })
 		}
@@ -756,4 +781,14 @@ export function outcomeOf(c: Checkout): CheckoutOutcome {
 		default:
 			return 'completing'
 	}
+}
+
+const UNREPORTED_STEPS: ReadonlySet<CheckoutStep> = new Set([
+	'loading',
+	'unavailable',
+	'not-found',
+])
+
+function isReportedStep(step: CheckoutStep): step is ReportedCheckoutStep {
+	return !UNREPORTED_STEPS.has(step)
 }

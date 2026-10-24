@@ -13,13 +13,19 @@ export class AuthStatus {
 	public async signIn(): Promise<void> {
 		this.logger.debug('Sign In clicked')
 		this.errorBoundary.addBreadcrumb('action', 'start_sign_in')
-		await this.auth.signIn({ uiLocales: currentLanguage(this.i18n) })
+		await this.auth.signIn({
+			uiLocales: currentLanguage(this.i18n),
+			source: 'auth_status',
+		})
 	}
 
 	public async signUp(): Promise<void> {
 		this.logger.debug('Sign Up clicked')
 		this.errorBoundary.addBreadcrumb('action', 'start_sign_up')
-		await this.auth.signUp({ uiLocales: currentLanguage(this.i18n) })
+		await this.auth.signUp({
+			uiLocales: currentLanguage(this.i18n),
+			source: 'auth_status',
+		})
 	}
 
 	public async signOut(): Promise<void> {

@@ -17,12 +17,17 @@ import {
 import { ITicketSaleRpcClient } from '../../src/adapter/rpc/client/ticket-sale-client'
 import type { Artist } from '../../src/entities/artist'
 import type { TicketSale, TicketType } from '../../src/entities/ticket-sale'
+import {
+	Events,
+	IAnalyticsService,
+} from '../../src/lib/analytics/analytics-service'
 import { EventRoute } from '../../src/routes/event/event-route'
 import { IAuthService } from '../../src/services/auth-service'
 import { IFollowStore } from '../../src/services/follow-store'
 import { IPurchasedTicketStore } from '../../src/services/purchased-ticket-store'
 import { IUserStore } from '../../src/services/user-store'
 import { createTestContainer } from '../helpers/create-container'
+import { createMockAnalytics } from '../helpers/mock-analytics'
 import { createMockAuth } from '../helpers/mock-auth'
 
 const EVENT_ID = '019a0000-0000-7000-8000-0000000000e1'
@@ -124,8 +129,10 @@ describe('EventRoute', () => {
 	let purchased: ReturnType<typeof makePurchasedStore>
 	let userStore: { currentLanguage: string }
 	let ticketSaleClient: { listByEvent: ReturnType<typeof vi.fn> }
+	let analytics: ReturnType<typeof createMockAnalytics>
 
 	function build(): EventRoute {
+		analytics = createMockAnalytics()
 		const container = createTestContainer(
 			Registration.instance(IConcertRpcClient, concertClient),
 			Registration.instance(IAuthService, auth),
@@ -133,6 +140,7 @@ describe('EventRoute', () => {
 			Registration.instance(IPurchasedTicketStore, purchased),
 			Registration.instance(IUserStore, userStore),
 			Registration.instance(ITicketSaleRpcClient, ticketSaleClient),
+			Registration.instance(IAnalyticsService, analytics),
 		)
 		container.register(EventRoute)
 		return container.get(EventRoute)
@@ -396,6 +404,7 @@ describe('EventRoute', () => {
 				origin: 'event-page',
 				returnTo: `/events/${EVENT_ID}`,
 				uiLocales: 'ja',
+				source: 'event_page',
 			})
 		})
 	})
@@ -480,6 +489,7 @@ describe('EventRoute', () => {
 				origin: 'event-page',
 				returnTo: `/events/${EVENT_ID}`,
 				uiLocales: 'ja',
+				source: 'event_page',
 			})
 		})
 
@@ -778,6 +788,39 @@ describe('EventRoute', () => {
 			Reflect.deleteProperty(navigator, 'share')
 		})
 
+		it('reports a completed share with the Event', async () => {
+			// @spec components/infrastructure/fan/web/route/event "Share"
+			Object.assign(navigator, { share: vi.fn().mockResolvedValue(undefined) })
+			const sut = build()
+			await open(sut)
+
+			await sut.share()
+
+			expect(analytics.capture.mock.calls).toEqual([
+				[
+					Events.ConcertShared,
+					{ event_id: EVENT_ID, method: 'share_sheet', outcome: 'completed' },
+				],
+			])
+			Reflect.deleteProperty(navigator, 'share')
+		})
+
+		it('reports a share sheet the fan closed as cancelled', async () => {
+			const abort = Object.assign(new Error('closed'), { name: 'AbortError' })
+			Object.assign(navigator, { share: vi.fn().mockRejectedValue(abort) })
+			const sut = build()
+			await open(sut)
+
+			await sut.share()
+
+			expect(analytics.capture).toHaveBeenCalledWith(Events.ConcertShared, {
+				event_id: EVENT_ID,
+				method: 'share_sheet',
+				outcome: 'cancelled',
+			})
+			Reflect.deleteProperty(navigator, 'share')
+		})
+
 		it('copies the link where the Web Share API is missing', async () => {
 			const writeText = vi.fn().mockResolvedValue(undefined)
 			Object.assign(navigator, { clipboard: { writeText } })
@@ -810,6 +853,10 @@ describe('EventRoute', () => {
 			sut.addToCalendar()
 
 			expect(click).toHaveBeenCalled()
+			expect(analytics.capture).toHaveBeenCalledWith(
+				Events.ConcertCalendarAdded,
+				{ event_id: EVENT_ID, surface: 'event_page' },
+			)
 			const ics = await blobs[0].text()
 			// 19:00 in Japan is 10:00 UTC.
 			expect(ics).toContain('DTSTART:20261120T100000Z')
@@ -935,6 +982,7 @@ describe('EventRoute', () => {
 				origin: 'event-page',
 				returnTo: `/events/${EVENT_ID}`,
 				uiLocales: 'ja',
+				source: 'event_page',
 			})
 			expect(kept()).toMatchObject({ code: 'member-a' })
 		})

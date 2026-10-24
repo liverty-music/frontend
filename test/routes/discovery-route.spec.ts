@@ -2,7 +2,10 @@ import { DI, IEventAggregator, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Snack } from '../../shared/ui/snack-bar/snack'
 import type { Artist } from '../../src/entities/artist'
-import { IAnalyticsService } from '../../src/lib/analytics/analytics-service'
+import {
+	Events,
+	IAnalyticsService,
+} from '../../src/lib/analytics/analytics-service'
 import { resetRevealEntryForTests } from '../../src/routes/discovery/reveal-timing'
 import { createTestContainer } from '../helpers/create-container'
 import { createMockRouter } from '../helpers/mock-router'
@@ -20,8 +23,13 @@ const mockIRouter = DI.createInterface('IRouter')
 const mockIOnboardingService = DI.createInterface('IOnboardingService')
 const mockICoachMarkService = DI.createInterface('ICoachMarkService')
 
-vi.mock('@aurelia/router', () => ({
-	IRouter: mockIRouter,
+// The real module (other code imports its IRouterEvents) with IRouter
+// swapped; the getter defers the read past this hoisted factory.
+vi.mock('@aurelia/router', async (importOriginal) => ({
+	...(await importOriginal<typeof import('@aurelia/router')>()),
+	get IRouter() {
+		return mockIRouter
+	},
 }))
 
 vi.mock('../../src/services/artist-store', () => ({
@@ -371,6 +379,34 @@ describe('DiscoveryRoute', () => {
 
 			expect(sut.genre.activeTag).toBe('')
 			expect(mockArtistClient.listTop).toHaveBeenLastCalledWith('Japan', '', 50)
+		})
+	})
+
+	describe('dashboard coach mark', () => {
+		it('reports the coach mark with the follow and concert counts', () => {
+			// @spec components/infrastructure/fan/web/route/discovery "Coach mark appears"
+			mockOnboarding.isOnboarding = true
+			Object.assign(mockFollowClient, { followedCount: 3 })
+			Object.assign(mockConcert, { artistsWithConcertsCount: 2 })
+			const route = sut as unknown as {
+				onShowDashboardCoachMarkChanged(show: boolean): void
+			}
+
+			route.onShowDashboardCoachMarkChanged(true)
+			// The coach mark appears once per visit.
+			route.onShowDashboardCoachMarkChanged(true)
+
+			expect(mockCoachMark.activate).toHaveBeenCalledOnce()
+			expect(
+				mockAnalytics.capture.mock.calls.filter(
+					([name]) => name === Events.OnboardingCoachmarkShown,
+				),
+			).toEqual([
+				[
+					Events.OnboardingCoachmarkShown,
+					{ followed_count: 3, artists_with_concerts_count: 2 },
+				],
+			])
 		})
 	})
 

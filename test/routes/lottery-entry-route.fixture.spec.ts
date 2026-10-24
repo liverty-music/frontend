@@ -11,6 +11,7 @@ import { IConcertRpcClient } from '../../src/adapter/rpc/client/concert-client'
 import { ILotteryEntryRpcClient } from '../../src/adapter/rpc/client/lottery-entry-client'
 import { ITicketSaleRpcClient } from '../../src/adapter/rpc/client/ticket-sale-client'
 import type { TicketSale } from '../../src/entities/ticket-sale'
+import { IAnalyticsService } from '../../src/lib/analytics/analytics-service'
 import en from '../../src/locales/en/translation.json'
 import ja from '../../src/locales/ja/translation.json'
 import { LotteryEntryRoute } from '../../src/routes/lottery-entry/lottery-entry-route'
@@ -18,6 +19,7 @@ import { IErrorBoundaryService } from '../../src/services/error-boundary-service
 import { IIdentityVerificationService } from '../../src/services/identity-verification-service'
 import { IStripeService } from '../../src/services/stripe-service'
 import { IUserStore } from '../../src/services/user-store'
+import { createMockAnalytics } from '../helpers/mock-analytics'
 import { createMockErrorBoundary } from '../helpers/mock-error-boundary'
 
 const EVENT_ID = 'event-1'
@@ -66,6 +68,7 @@ async function render(lng: 'ja' | 'en', user?: Record<string, string>) {
 		[
 			// Key actions add a step for the error report.
 			Registration.instance(IErrorBoundaryService, createMockErrorBoundary()),
+			Registration.instance(IAnalyticsService, createMockAnalytics()),
 			I18nConfiguration.customize((options) => {
 				options.initOptions = {
 					lng,

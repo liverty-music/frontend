@@ -1127,7 +1127,10 @@ export class DashboardRoute {
 
 	public onSignupRequested(): void {
 		this.errorBoundary.addBreadcrumb('action', 'start_sign_up')
-		this.authService.signUp({ uiLocales: currentLanguage(this.i18n) })
+		this.authService.signUp({
+			uiLocales: currentLanguage(this.i18n),
+			source: 'dashboard_prompt',
+		})
 	}
 
 	/**

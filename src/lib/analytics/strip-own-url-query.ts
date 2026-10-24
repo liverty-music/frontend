@@ -63,7 +63,7 @@ function stripValue(value: unknown, origin: string, depth: number): unknown {
 }
 
 /** The address without query and fragment when it is on `origin`. */
-function stripUrl(value: string, origin: string): string {
+export function stripUrl(value: string, origin: string): string {
 	if (!value.startsWith(origin)) return value
 	let url: URL
 	try {

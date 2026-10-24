@@ -5,6 +5,7 @@ import {
 	captureUrl,
 	flushInteractionStash,
 	type NotificationInteraction,
+	notificationInteraction,
 	reportNotificationInteraction,
 	resolvePushMetadata,
 	writeIdentitySnapshot,
@@ -122,6 +123,7 @@ const SNAPSHOT: AnalyticsIdentitySnapshot = {
 const OPENED: NotificationInteraction = {
 	event: Events.NotificationOpened,
 	notificationId: 'notif-1',
+	path: '/dashboard',
 	uuid: 'uuid-1',
 	timestamp: '2026-07-01T00:00:00.000Z',
 }
@@ -152,6 +154,58 @@ describe('resolvePushMetadata', () => {
 	})
 })
 
+describe('notification interaction properties', () => {
+	const SPEC = 'components/infrastructure/fan/web/global/service-worker'
+	const ORIGIN = 'https://liverty-music.app'
+
+	it(`@spec ${SPEC} "Opened sales reminder"`, () => {
+		// The push handler keeps the pushed data; the click reads it back.
+		const metadata = resolvePushMetadata({
+			title: 'Sales open',
+			data: {
+				url: '/events/e-1?from=push',
+				notification_id: 'notif-9',
+				type: 'sales_reminder',
+				milestone: 'apply_open',
+			},
+		})
+
+		const interaction = notificationInteraction(
+			Events.NotificationOpened,
+			metadata,
+			ORIGIN,
+		)
+
+		expect(buildCaptureBody(SNAPSHOT, interaction).properties).toEqual({
+			notification_id: 'notif-9',
+			type: 'sales_reminder',
+			milestone: 'apply_open',
+			path: '/events/e-1',
+			$insert_id: interaction.uuid,
+		})
+	})
+
+	it(`@spec ${SPEC} "Older message without a type"`, () => {
+		const metadata = resolvePushMetadata({
+			data: { url: '/dashboard', notification_id: 'notif-1' },
+		})
+
+		const interaction = notificationInteraction(
+			Events.NotificationDismissed,
+			metadata,
+			ORIGIN,
+		)
+
+		const body = buildCaptureBody(SNAPSHOT, interaction)
+		expect(body.event).toBe(Events.NotificationDismissed)
+		expect(body.properties).toEqual({
+			notification_id: 'notif-1',
+			path: '/dashboard',
+			$insert_id: interaction.uuid,
+		})
+	})
+})
+
 describe('buildCaptureBody / captureUrl', () => {
 	it('matches the PostHog capture shape (event, distinct_id, timestamp, $insert_id)', () => {
 		expect(buildCaptureBody(SNAPSHOT, OPENED)).toEqual({
@@ -161,6 +215,7 @@ describe('buildCaptureBody / captureUrl', () => {
 			timestamp: '2026-07-01T00:00:00.000Z',
 			properties: {
 				notification_id: 'notif-1',
+				path: '/dashboard',
 				$insert_id: 'uuid-1',
 			},
 		})

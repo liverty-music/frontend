@@ -103,6 +103,20 @@ const mockEa = {
 	},
 }
 
+// The router's navigation-end subscription; `navigate()` moves the page and
+// fires it.
+let navigationEnd: (() => void) | null = null
+const mockRouterEvents = {
+	subscribe: vi.fn((_event: string, handler: () => void) => {
+		navigationEnd = handler
+		return { dispose: () => (navigationEnd = null) }
+	}),
+}
+function navigate(path: string): void {
+	window.history.replaceState(null, '', path)
+	navigationEnd?.()
+}
+
 vi.mock('aurelia', async (importOriginal) => {
 	const actual = await importOriginal<typeof import('aurelia')>()
 	return {
@@ -118,6 +132,8 @@ vi.mock('aurelia', async (importOriginal) => {
 					return mockConsent
 				case 'IEventAggregator':
 					return mockEa
+				case 'IRouterEvents':
+					return mockRouterEvents
 				default:
 					return {}
 			}
@@ -125,6 +141,7 @@ vi.mock('aurelia', async (importOriginal) => {
 	}
 })
 
+import { AuthStarted } from '../../services/events/auth-started'
 import { SignedOut } from '../../services/events/signed-out'
 import { ConsentChanged } from '../consent/consent-changed'
 import { AnalyticsService } from './analytics-service'
@@ -137,6 +154,13 @@ function stubIdleCallback(): void {
 		writable: true,
 		value: vi.fn(),
 	})
+}
+
+/** `register` calls for the internal-traffic marker (not `display_mode`). */
+function internalTrafficRegisters(): unknown[][] {
+	return posthogStub.register.mock.calls.filter(
+		(c) => 'internal_traffic' in (c[0] as object),
+	)
 }
 
 function clearIdleCallback(): void {
@@ -231,7 +255,8 @@ describe('AnalyticsService', () => {
 				persistence: 'localStorage+cookie',
 				ip: true,
 				autocapture: false,
-				capture_pageview: false,
+				capture_pageview: 'history_change',
+				capture_pageleave: true,
 			})
 			// opt_in_capturing is asserted because a returning user who opted
 			// out then back in needs the explicit opt-in.
@@ -265,25 +290,6 @@ describe('AnalyticsService', () => {
 				},
 			})
 			expect(sent?.properties.$current_url).toBe(`${origin}/events/e-1`)
-		})
-
-		it('keeps session recording hard-disabled at boot even when sessionReplay is on (Decision 12)', async () => {
-			mockConsent.sessionReplay = true
-			const sut = new AnalyticsService()
-			await sut._waitForInitForTests()
-
-			// Recording is hard-disabled in current scope per design Decision
-			// 12 (masking 8.1–8.3 + sampling 8.5 deferred). The init config
-			// disables it, AND any set_config touching recording must keep it
-			// off, regardless of the default-on sessionReplay preference.
-			const [, config] = posthogStub.init.mock.calls[0]
-			expect(config).toMatchObject({ disable_session_recording: true })
-			const recordingCalls = posthogStub.set_config.mock.calls.filter(
-				(c) => 'disable_session_recording' in (c[0] as object),
-			)
-			for (const call of recordingCalls) {
-				expect(call[0]).toMatchObject({ disable_session_recording: true })
-			}
 		})
 
 		it('initialises opted-out (memory-only, no capture) when analytics is opted out at boot', async () => {
@@ -335,6 +341,36 @@ describe('AnalyticsService', () => {
 			mockEa.publish(new SignedOut())
 
 			expect(posthogStub.reset).toHaveBeenCalledOnce()
+			sut.dispose()
+		})
+
+		it('keeps an opted-out fan opted out after signing out', async () => {
+			mockConsent.analytics = false
+			const sut = new AnalyticsService()
+			await sut._waitForInitForTests()
+			posthogStub.opt_out_capturing.mockReset()
+
+			mockEa.publish(new SignedOut())
+
+			// reset() clears the SDK's consent; the opt-out is reapplied after it.
+			expect(posthogStub.opt_out_capturing).toHaveBeenCalledOnce()
+			expect(posthogStub.reset.mock.invocationCallOrder.at(-1)).toBeLessThan(
+				posthogStub.opt_out_capturing.mock.invocationCallOrder[0],
+			)
+			sut.dispose()
+		})
+
+		it('reports each start of sign-up or sign-in with its source', async () => {
+			const sut = new AnalyticsService()
+			await sut._waitForInitForTests()
+
+			mockEa.publish(new AuthStarted('sign_up', 'dashboard_prompt'))
+			// A start without a source (the admin app's) is not reported.
+			mockEa.publish(new AuthStarted('sign_in', undefined))
+
+			expect(posthogStub.capture.mock.calls.map(([n, p]) => [n, p])).toEqual([
+				[Events.AuthStarted, { kind: 'sign_up', source: 'dashboard_prompt' }],
+			])
 			sut.dispose()
 		})
 
@@ -513,7 +549,7 @@ describe('AnalyticsService', () => {
 				internal_traffic: true,
 			})
 			// Event-level: super-property stamps every future capture.
-			expect(posthogStub.register).toHaveBeenCalledTimes(1)
+			expect(internalTrafficRegisters()).toHaveLength(1)
 			expect(posthogStub.register).toHaveBeenCalledWith({
 				internal_traffic: true,
 			})
@@ -554,7 +590,7 @@ describe('AnalyticsService', () => {
 			expect(posthogStub.identify).toHaveBeenCalledWith('user-123', {
 				plan: 'pro',
 			})
-			expect(posthogStub.register).not.toHaveBeenCalled()
+			expect(internalTrafficRegisters()).toEqual([])
 		})
 
 		it('does NOT tag any user when the allowlist is empty', async () => {
@@ -565,7 +601,7 @@ describe('AnalyticsService', () => {
 			sut.identify('user-123')
 
 			expect(posthogStub.identify).toHaveBeenCalledWith('user-123', undefined)
-			expect(posthogStub.register).not.toHaveBeenCalled()
+			expect(internalTrafficRegisters()).toEqual([])
 		})
 
 		it('treats a missing internalTrafficUserIds config field as empty (no crash, no tagging)', async () => {
@@ -582,7 +618,7 @@ describe('AnalyticsService', () => {
 
 			expect(() => sut.identify('user-123')).not.toThrow()
 			expect(posthogStub.identify).toHaveBeenCalledWith('user-123', undefined)
-			expect(posthogStub.register).not.toHaveBeenCalled()
+			expect(internalTrafficRegisters()).toEqual([])
 		})
 
 		it('tags a pre-init (buffered) identify for an internal user once the SDK loads', async () => {
@@ -634,8 +670,12 @@ describe('AnalyticsService', () => {
 				persistence: 'memory',
 				ip: false,
 			})
-			// reset() severs the identity link on opt-out.
+			// reset() severs the identity link on opt-out. It also clears the
+			// SDK's consent, so it must run before the opt-out.
 			expect(posthogStub.reset).toHaveBeenCalledTimes(1)
+			expect(posthogStub.reset.mock.invocationCallOrder[0]).toBeLessThan(
+				posthogStub.opt_out_capturing.mock.invocationCallOrder[0],
+			)
 		})
 
 		it('re-enables: opt_in + persistent storage + identify (no reset)', async () => {
@@ -673,60 +713,213 @@ describe('AnalyticsService', () => {
 		})
 	})
 
-	describe('session replay — recording hard-disabled (Decision 12)', () => {
-		// Recording is out of scope until masking (8.1–8.3) + sampling (8.5)
-		// land. The sessionReplay consent toggle is tracked + persisted, but
-		// must NOT start/stop actual recording yet: toggling it either
-		// direction leaves recording off and never touches capture / identity.
-		function assertRecordingStaysOff(): void {
-			const recordingCalls = posthogStub.set_config.mock.calls.filter(
-				(c) => 'disable_session_recording' in (c[0] as object),
-			)
-			for (const call of recordingCalls) {
-				expect(call[0]).toMatchObject({ disable_session_recording: true })
-			}
+	describe('session replay', () => {
+		const SPEC = 'components/infrastructure/fan/web/global/analytics'
+
+		function initConfig(): Record<string, unknown> {
+			return posthogStub.init.mock.calls[0][1] as Record<string, unknown>
 		}
 
-		it('turning session replay OFF keeps recording off and leaves capture + identity untouched', async () => {
-			mockConsent.analytics = true
-			mockConsent.sessionReplay = true
+		function lastRecordingSetting(): boolean | undefined {
+			const calls = posthogStub.set_config.mock.calls.filter(
+				(c) => 'disable_session_recording' in (c[0] as object),
+			)
+			return (calls.at(-1)?.[0] as { disable_session_recording?: boolean })
+				?.disable_session_recording
+		}
+
+		it(`@spec ${SPEC} "Masked text"`, async () => {
 			const sut = new AnalyticsService()
 			await sut._waitForInitForTests()
 
+			expect(initConfig()).toMatchObject({
+				disable_session_recording: false,
+				// Console logs bypass masking.
+				enable_recording_console_log: false,
+				session_recording: {
+					maskAllInputs: true,
+					maskInputOptions: { password: true },
+					maskTextSelector: '*',
+				},
+			})
+			// Hidden inputs are recorded even with maskAllInputs, so they are
+			// blocked.
+			const { blockSelector } = initConfig().session_recording as {
+				blockSelector: string
+			}
+			expect(blockSelector.split(', ')).toContain('input[type="hidden"]')
+		})
+
+		it(`@spec ${SPEC} "Screen that is never recorded"`, async () => {
+			const sut = new AnalyticsService()
+			await sut._waitForInitForTests()
+
+			const options = initConfig().session_recording as {
+				blockSelector: string
+				maskCapturedNetworkRequestFn: (r: { name: string }) => {
+					name: string
+				}
+			}
+			const blocked = options.blockSelector.split(', ')
+			for (const screen of [
+				'checkout-route',
+				'lottery-entry-route',
+				'lottery-entry-status-route',
+				'verify-callback-route',
+				'settings-route',
+				'passkeys-route',
+			]) {
+				expect(blocked).toContain(screen)
+			}
+			// The selector is valid CSS and matches a route element.
+			const host = document.createElement('div')
+			host.innerHTML =
+				'<checkout-route></checkout-route><dashboard-route></dashboard-route>'
+			expect(
+				[...host.querySelectorAll(options.blockSelector)].map(
+					(e) => e.localName,
+				),
+			).toEqual(['checkout-route'])
+			// Addresses in a recording follow the query-string rule.
+			const origin = window.location.origin
+			expect(
+				options.maskCapturedNetworkRequestFn({
+					name: `${origin}/welcome?ref=member-a`,
+				}).name,
+			).toBe(`${origin}/welcome`)
+		})
+
+		it('stops recording on a screen that is never recorded and resumes after it', async () => {
+			// @spec components/infrastructure/fan/web/global/analytics "Screen that is never recorded"
+			navigate('/dashboard')
+			const sut = new AnalyticsService()
+			await sut._waitForInitForTests()
+			expect(initConfig()).toMatchObject({ disable_session_recording: false })
+
+			for (const path of [
+				'/events/e-1/checkout',
+				'/events/e-1/lottery/t-1',
+				'/events/e-1/lottery/t-1/entry',
+				'/verify/callback',
+				'/settings',
+				'/settings/passkeys',
+			]) {
+				navigate('/dashboard')
+				navigate(path)
+				expect(lastRecordingSetting()).toBe(true)
+			}
+			navigate('/events/e-1')
+			expect(lastRecordingSetting()).toBe(false)
+			sut.dispose()
+		})
+
+		it('does not start recording when the app opens on a screen never recorded', async () => {
+			navigate('/events/e-1/checkout')
+			const sut = new AnalyticsService()
+			await sut._waitForInitForTests()
+
+			expect(initConfig()).toMatchObject({ disable_session_recording: true })
+			sut.dispose()
+			navigate('/')
+		})
+
+		it('does not reconfigure the SDK when the posture stays the same', async () => {
+			navigate('/dashboard')
+			const sut = new AnalyticsService()
+			await sut._waitForInitForTests()
+			posthogStub.set_config.mockReset()
+
+			navigate('/discovery')
+
+			expect(posthogStub.set_config).not.toHaveBeenCalled()
+			sut.dispose()
+		})
+
+		it(`@spec ${SPEC} "Session replay off"`, async () => {
+			const sut = new AnalyticsService()
+			await sut._waitForInitForTests()
 			posthogStub.set_config.mockReset()
 			posthogStub.opt_out_capturing.mockReset()
 			posthogStub.reset.mockReset()
-			posthogStub.identify.mockReset()
 
-			// User turns session replay OFF but keeps analytics ON.
 			mockConsent.sessionReplay = false
 			mockEa.publish(
 				new ConsentChanged({ analytics: true, sessionReplay: false }),
 			)
 
-			// Recording stays disabled; analytics events + identity unaffected.
-			assertRecordingStaysOff()
+			expect(lastRecordingSetting()).toBe(true)
+			// Events are still sent and the identity is kept.
 			expect(posthogStub.opt_out_capturing).not.toHaveBeenCalled()
 			expect(posthogStub.reset).not.toHaveBeenCalled()
+			sut.capture(Events.ArtistSearch, { query_length: 1, result_count: 0 })
+			const [name, props] = posthogStub.capture.mock.calls[0]
+			expect(name).toBe(Events.ArtistSearch)
+			expect(props).toMatchObject({ query_length: 1 })
 		})
 
-		it('turning session replay ON does NOT start recording (deferred per Decision 12)', async () => {
-			mockConsent.analytics = true
+		it('does not record at boot when Session replay is off', async () => {
 			mockConsent.sessionReplay = false
 			const sut = new AnalyticsService()
 			await sut._waitForInitForTests()
 
+			expect(initConfig()).toMatchObject({ disable_session_recording: true })
+		})
+
+		it('stops recording when Analytics is turned off', async () => {
+			const sut = new AnalyticsService()
+			await sut._waitForInitForTests()
 			posthogStub.set_config.mockReset()
 
-			// User turns session replay back ON.
+			mockConsent.analytics = false
+			mockEa.publish(
+				new ConsentChanged({ analytics: false, sessionReplay: true }),
+			)
+
+			expect(lastRecordingSetting()).toBe(true)
+		})
+
+		it('starts recording when Session replay is turned back on', async () => {
+			mockConsent.sessionReplay = false
+			const sut = new AnalyticsService()
+			await sut._waitForInitForTests()
+			posthogStub.set_config.mockReset()
+
 			mockConsent.sessionReplay = true
 			mockEa.publish(
 				new ConsentChanged({ analytics: true, sessionReplay: true }),
 			)
 
-			// The preference flips, but recording must NOT actually enable —
-			// no set_config call may set disable_session_recording: false.
-			assertRecordingStaysOff()
+			expect(lastRecordingSetting()).toBe(false)
+		})
+	})
+
+	describe('display mode', () => {
+		it(`@spec components/infrastructure/fan/web/global/analytics "Installed app"`, async () => {
+			const matchMedia = vi.spyOn(window, 'matchMedia').mockImplementation(
+				(query: string) =>
+					({
+						matches: query === '(display-mode: standalone)',
+						media: query,
+						addEventListener: () => {},
+						removeEventListener: () => {},
+					}) as unknown as MediaQueryList,
+			)
+			const sut = new AnalyticsService()
+			await sut._waitForInitForTests()
+
+			expect(posthogStub.register).toHaveBeenCalledWith({
+				display_mode: 'standalone',
+			})
+			matchMedia.mockRestore()
+		})
+
+		it('states a browser tab otherwise', async () => {
+			const sut = new AnalyticsService()
+			await sut._waitForInitForTests()
+
+			expect(posthogStub.register).toHaveBeenCalledWith({
+				display_mode: 'browser',
+			})
 		})
 	})
 

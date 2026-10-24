@@ -12,6 +12,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ILocalStorage } from '../../src/adapter/storage/local-storage'
 import { IAppConfig } from '../../src/config/app-config'
 import { StorageKeys } from '../../src/constants/storage-keys'
+import { IAnalyticsService } from '../../src/lib/analytics/analytics-service'
 import en from '../../src/locales/en/translation.json'
 import ja from '../../src/locales/ja/translation.json'
 import { AuthCallbackRoute } from '../../src/routes/auth-callback/auth-callback-route'
@@ -286,6 +287,12 @@ describe('AuthCallbackRoute', () => {
 			expect(mockEa.publish).toHaveBeenCalledWith(
 				new GuestMigrationRequested('u1'),
 			)
+			// Identified first, so the merge's report belongs to the account.
+			const analytics = container.get(IAnalyticsService)
+			expect(analytics.identify).toHaveBeenCalledWith('u1')
+			expect(
+				vi.mocked(analytics.identify).mock.invocationCallOrder[0],
+			).toBeLessThan(mockEa.publish.mock.invocationCallOrder[0])
 			expect(storage.getItem('postSignup.shown')).toBe('pending')
 			expect(result).toBe('/dashboard')
 		})

@@ -15,6 +15,7 @@ import {
 	resolveAuthFlow,
 	resolveAuthReturnTo,
 } from '../src/services/auth-service'
+import { AuthStarted } from '../src/services/events/auth-started'
 import { createTestContainer } from './helpers/create-container'
 
 const nowSec = () => Math.floor(Date.now() / 1000)
@@ -299,6 +300,27 @@ describe('AuthService', () => {
 			prompt: 'create',
 			state: { flow: 'signup' },
 		})
+	})
+
+	it('publishes each start with its kind and source before the redirect', async () => {
+		const publish = vi.fn()
+		const container = createTestContainer(
+			Registration.instance(IEventAggregator, { publish, subscribe: vi.fn() }),
+		)
+		container.register(AuthService)
+		const s = container.get(IAuthService)
+
+		await s.signUp({ source: 'dashboard_prompt' })
+		await s.signIn({ source: 'welcome' })
+
+		expect(publish.mock.calls.map(([e]) => e)).toEqual([
+			new AuthStarted('sign_up', 'dashboard_prompt'),
+			new AuthStarted('sign_in', 'welcome'),
+		])
+		// Published before leaving for hosted login.
+		expect(publish.mock.invocationCallOrder[0]).toBeLessThan(
+			userManagerMock.signinRedirect.mock.invocationCallOrder[0],
+		)
 	})
 
 	it('signIn forwards uiLocales as ui_locales', async () => {

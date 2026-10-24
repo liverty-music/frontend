@@ -14,6 +14,7 @@ import {
 	expectOneRow,
 } from '../../../.storybook/bottom-banner'
 import { BusyOnClickCustomAttribute } from '../../custom-attributes/busy-on-click'
+import { IAnalyticsService } from '../../lib/analytics/analytics-service'
 import ja from '../../locales/ja/translation.json'
 import { IPwaInstallService } from '../../services/pwa-install-service'
 import { PwaInstallBanner } from './pwa-install-banner'
@@ -37,6 +38,9 @@ const meta = {
 } satisfies Meta<typeof PwaInstallBanner>
 
 export default meta
+/** The banner reports when it is shown; stories send nothing. */
+const noAnalytics = { capture: () => {} }
+
 type Story = StoryObj<typeof meta>
 
 /**
@@ -49,7 +53,10 @@ export const Hidden = {
 		defineAureliaStory({
 			template: '<pwa-install-banner></pwa-install-banner>',
 			register: [PwaInstallBanner, BusyOnClickCustomAttribute],
-			items: [Registration.instance(IPwaInstallService, mockPwaInstall(false))],
+			items: [
+				Registration.instance(IPwaInstallService, mockPwaInstall(false)),
+				Registration.instance(IAnalyticsService, noAnalytics),
+			],
 		}),
 	play: async ({ canvasElement }) => {
 		// @spec components/infrastructure/fan/web/global/pwa-install-banner "Banner is removed from DOM when hidden"
@@ -72,7 +79,10 @@ export const Visible = {
 		defineAureliaStory({
 			template: '<pwa-install-banner></pwa-install-banner>',
 			register: [PwaInstallBanner, BusyOnClickCustomAttribute],
-			items: [Registration.instance(IPwaInstallService, mockPwaInstall())],
+			items: [
+				Registration.instance(IPwaInstallService, mockPwaInstall()),
+				Registration.instance(IAnalyticsService, noAnalytics),
+			],
 		}),
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement)

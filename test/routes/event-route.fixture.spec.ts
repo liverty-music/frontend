@@ -19,6 +19,7 @@ import { EventDateTabs } from '../../src/components/event-date-tabs/event-date-t
 import { SvgIcon } from '../../src/components/svg-icon/svg-icon'
 import type { Artist } from '../../src/entities/artist'
 import type { TicketSale } from '../../src/entities/ticket-sale'
+import { IAnalyticsService } from '../../src/lib/analytics/analytics-service'
 import ja from '../../src/locales/ja/translation.json'
 import { EventRoute } from '../../src/routes/event/event-route'
 import { IAuthService } from '../../src/services/auth-service'
@@ -26,6 +27,7 @@ import { IErrorBoundaryService } from '../../src/services/error-boundary-service
 import { IFollowStore } from '../../src/services/follow-store'
 import { IPurchasedTicketStore } from '../../src/services/purchased-ticket-store'
 import { IUserStore } from '../../src/services/user-store'
+import { createMockAnalytics } from '../helpers/mock-analytics'
 import { createMockAuth } from '../helpers/mock-auth'
 import { createMockErrorBoundary } from '../helpers/mock-error-boundary'
 
@@ -85,6 +87,7 @@ describe('EventRoute (fixture)', () => {
 			[
 				// Key actions add a step for the error report.
 				Registration.instance(IErrorBoundaryService, createMockErrorBoundary()),
+				Registration.instance(IAnalyticsService, createMockAnalytics()),
 				I18nConfiguration.customize((o) => {
 					o.initOptions = { lng: 'en', resources: { en: { translation: {} } } }
 				}),
@@ -169,6 +172,7 @@ async function renderSales(sales: TicketSale[], authenticated: boolean) {
 		[
 			// Key actions add a step for the error report.
 			Registration.instance(IErrorBoundaryService, createMockErrorBoundary()),
+			Registration.instance(IAnalyticsService, createMockAnalytics()),
 			I18nConfiguration.customize((o) => {
 				o.initOptions = { lng: 'ja', resources: { ja: { translation: ja } } }
 			}),

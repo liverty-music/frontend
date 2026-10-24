@@ -11,8 +11,13 @@ vi.mock('../../src/services/follow-store', () => ({
 	IFollowStore: mockIFollowStore,
 }))
 
-vi.mock('@aurelia/router', () => ({
-	IRouter: mockIRouter,
+// The real module (other code imports its IRouterEvents) with IRouter
+// swapped; the getter defers the read past this hoisted factory.
+vi.mock('@aurelia/router', async (importOriginal) => ({
+	...(await importOriginal<typeof import('@aurelia/router')>()),
+	get IRouter() {
+		return mockIRouter
+	},
 }))
 
 vi.mock('../../src/services/onboarding-service', () => ({

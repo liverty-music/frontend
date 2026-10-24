@@ -80,7 +80,7 @@ export class PostSignupDialog {
 		// The busy/disabled state while this runs is handled by `busy-on-click`.
 		this.notificationError = false
 		try {
-			const endpoint = await this.pushService.create()
+			const endpoint = await this.pushService.create('post_signup_dialog')
 			if (!endpoint) {
 				// `create()` returns null when the user denies the browser
 				// permission prompt or VAPID is not configured — no subscription

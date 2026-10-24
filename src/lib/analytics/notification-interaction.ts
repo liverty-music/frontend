@@ -57,6 +57,12 @@ export interface AnalyticsIdentitySnapshot {
 export interface NotificationInteraction {
 	event: typeof Events.NotificationOpened | typeof Events.NotificationDismissed
 	notificationId: string
+	/** The Notification's type from the pushed data; absent on older messages. */
+	type?: string
+	/** A sales reminder's milestone from the pushed data. */
+	milestone?: string
+	/** Path of the screen the notification opens, without query or fragment. */
+	path: string
 	uuid: string
 	timestamp: string
 }
@@ -85,9 +91,26 @@ export interface PushPayload {
 	title?: string
 	body?: string
 	tag?: string
-	data?: { url?: string; notification_id?: string }
+	data?: {
+		url?: string
+		notification_id?: string
+		type?: string
+		milestone?: string
+	}
 	url?: string
 	notification_id?: string
+}
+
+/**
+ * The metadata the SW keeps in `showNotification` `options.data`, read back by
+ * `notificationclick` / `notificationclose`. `type` and `milestone` are absent
+ * on a message from before the backend sent them.
+ */
+export interface NotificationMetadata {
+	url: string
+	notificationId: string
+	type?: string
+	milestone?: string
 }
 
 /**
@@ -97,14 +120,45 @@ export interface PushPayload {
  * against a new payload) still navigates and correlates. `url` defaults to `/`;
  * `notificationId` is `''` when absent (interaction reporting then skips).
  */
-export function resolvePushMetadata(payload: PushPayload): {
-	url: string
-	notificationId: string
-} {
+export function resolvePushMetadata(
+	payload: PushPayload,
+): NotificationMetadata {
 	return {
 		url: payload.data?.url ?? payload.url ?? '/',
 		notificationId:
 			payload.data?.notification_id ?? payload.notification_id ?? '',
+		type: payload.data?.type,
+		milestone: payload.data?.milestone,
+	}
+}
+
+/**
+ * The interaction to report for a notification opened or dismissed, from the
+ * metadata in its `options.data` (OpenSpec `global/service-worker`,
+ * "Notification interactions name the notification's type").
+ */
+export function notificationInteraction(
+	event: NotificationInteraction['event'],
+	metadata: Partial<NotificationMetadata>,
+	origin: string,
+): NotificationInteraction {
+	return {
+		event,
+		notificationId: metadata.notificationId ?? '',
+		...(metadata.type ? { type: metadata.type } : {}),
+		...(metadata.milestone ? { milestone: metadata.milestone } : {}),
+		path: notificationPath(metadata.url ?? '/', origin),
+		uuid: crypto.randomUUID(),
+		timestamp: new Date().toISOString(),
+	}
+}
+
+/** The path a notification's link opens; no query or fragment leaves the SW. */
+function notificationPath(url: string, origin: string): string {
+	try {
+		return new URL(url, origin).pathname
+	} catch {
+		return '/'
 	}
 }
 
@@ -236,8 +290,7 @@ export function captureUrl(apiHost: string): string {
  * event shape (event name, `distinct_id`, `$insert_id`, explicit interaction
  * `timestamp`) so the SW path stays aligned with the app SDK. Properties reuse
  * the {@link NotificationOpenedProps} / {@link NotificationDismissedProps}
- * typings (only `notification_id` is carried; `event_id` / `artist_id` are
- * catalogue-optional and not threaded through the payload yet).
+ * typings.
  */
 export function buildCaptureBody(
 	snapshot: AnalyticsIdentitySnapshot,
@@ -245,6 +298,9 @@ export function buildCaptureBody(
 ): Record<string, unknown> {
 	const properties: NotificationOpenedProps | NotificationDismissedProps = {
 		notification_id: interaction.notificationId,
+		...(interaction.type ? { type: interaction.type } : {}),
+		...(interaction.milestone ? { milestone: interaction.milestone } : {}),
+		path: interaction.path,
 	}
 	return {
 		api_key: snapshot.projectKey,

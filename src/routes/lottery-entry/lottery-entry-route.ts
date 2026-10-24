@@ -13,7 +13,12 @@ import { referralCodeForSeries } from '../../adapter/storage/referral-storage'
 import { isVerified } from '../../entities/identity-verification'
 import type { LotteryEntry } from '../../entities/lottery-entry'
 import { isWindowOpen, type TicketSale } from '../../entities/ticket-sale'
+import {
+	Events,
+	IAnalyticsService,
+} from '../../lib/analytics/analytics-service'
 import { toDomesticDisplay, toE164 } from '../../lib/to-e164'
+import type { TicketLotteryEntryStartedProps } from '../../services/analytics-events'
 import { IErrorBoundaryService } from '../../services/error-boundary-service'
 import { IIdentityVerificationService } from '../../services/identity-verification-service'
 import { IStripeService } from '../../services/stripe-service'
@@ -78,6 +83,7 @@ export class LotteryEntryRoute implements IRouteViewModel {
 	private readonly identityVerifications = resolve(IIdentityVerificationService)
 	private readonly userStore = resolve(IUserStore)
 	private readonly router = resolve(IRouter)
+	private readonly analytics = resolve(IAnalyticsService)
 
 	public step: LotteryEntryStep = 'loading'
 	public event: EventPageEvent | null = null
@@ -264,6 +270,15 @@ export class LotteryEntryRoute implements IRouteViewModel {
 		return `${formatSaleStart(this.sale.saleStartTime, this.lang)} – ${formatSaleStart(this.sale.saleEndTime, this.lang)}`
 	}
 
+	/** The Event, TicketType and count an entry event reports. */
+	private choice(): TicketLotteryEntryStartedProps {
+		return {
+			event_id: this.eventId,
+			ticket_type_id: this.ticketTypeId,
+			ticket_count: this.ticketCount,
+		}
+	}
+
 	/** Where the fan reads the entry they made. */
 	public get entryStatusUrl(): string {
 		return `/events/${this.eventId}/lottery/${this.ticketTypeId}/entry`
@@ -293,6 +308,7 @@ export class LotteryEntryRoute implements IRouteViewModel {
 			// Another count replaces the Draft: its card is authorized anew.
 			if (entry.id !== this.entry?.id) this.forgetCard()
 			this.entry = entry
+			this.analytics.capture(Events.TicketLotteryEntryStarted, this.choice())
 			this.step = 'personal-details'
 		} catch (err) {
 			if (this.signal?.aborted) return
@@ -422,6 +438,7 @@ export class LotteryEntryRoute implements IRouteViewModel {
 
 		try {
 			this.entry = await this.entryClient.confirm(this.entry.id, this.signal)
+			this.analytics.capture(Events.TicketLotteryEntrySubmitted, this.choice())
 			this.destroyPaymentElement()
 			this.step = 'done'
 		} catch (err) {

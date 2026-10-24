@@ -6,6 +6,7 @@ import {
 	WebStorageStateStore,
 } from 'oidc-client-ts'
 import { type AppConfig, IAppConfig } from '../config/app-config'
+import { AuthStarted } from './events/auth-started'
 import { SignedOut } from './events/signed-out'
 
 /**
@@ -130,6 +131,8 @@ export interface SignUpOptions {
 	origin?: AuthFlowOrigin
 	/** Language the hosted login should show; see {@link SignInOptions.uiLocales}. */
 	uiLocales?: string
+	/** Where the start came from; see {@link SignInOptions.source}. */
+	source?: string
 }
 
 /** Options of {@link AuthService.signIn}. */
@@ -148,6 +151,11 @@ export interface SignInOptions {
 	 * the browser language.
 	 */
 	uiLocales?: string
+	/**
+	 * The screen or control the start came from, published with
+	 * {@link AuthStarted} for the fan app's usage analytics.
+	 */
+	source?: string
 }
 
 /**
@@ -453,6 +461,7 @@ export class AuthService {
 		// that resolved to the wrong org (organizer callback org enforcement).
 		// Optional OIDC params are spread in a single pass so adding a new param
 		// (e.g. acr_values) only requires one spread expression, not two branches.
+		this.ea.publish(new AuthStarted('sign_in', options?.source))
 		await this.userManager.signinRedirect({
 			...(import.meta.env.DEV || options?.forceLogin
 				? { prompt: 'login' }
@@ -476,6 +485,7 @@ export class AuthService {
 		const state: AuthFlowState = { flow: 'signup' }
 		if (options.origin) state.origin = options.origin
 		if (isInAppPath(options.returnTo)) state.returnTo = options.returnTo
+		this.ea.publish(new AuthStarted('sign_up', options.source))
 		await this.userManager.signinRedirect({
 			prompt: 'create',
 			state,

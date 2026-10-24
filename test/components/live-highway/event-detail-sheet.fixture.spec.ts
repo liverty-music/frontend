@@ -49,7 +49,10 @@ function event(overrides: Partial<LiveEvent> = {}): LiveEvent {
 	}
 }
 
+const analytics = { capture: vi.fn() }
+
 async function render(ev: LiveEvent) {
+	analytics.capture.mockClear()
 	const fixture = await createFixture(
 		'<event-detail-sheet event.bind="ev" component.ref="sheet"></event-detail-sheet>',
 		class Host {
@@ -77,7 +80,7 @@ async function render(ev: LiveEvent) {
 				journeyMap: new Map(),
 				statusFor: () => undefined,
 			}),
-			Registration.instance(IAnalyticsService, { capture: vi.fn() }),
+			Registration.instance(IAnalyticsService, analytics),
 		],
 	).started
 	await tasksSettled()
@@ -125,6 +128,27 @@ describe('EventDetailSheet (fixture)', () => {
 		expect(link.href).toBe('https://example.com/live')
 		expect(link.target).toBe('_blank')
 		expect(link.textContent).toContain('eventDetail.viewOfficialInfo')
+		await fixture.stop(true)
+	})
+
+	it('reports a tap on the source link and still follows it', async () => {
+		// @spec components/infrastructure/fan/web/global/event-detail-sheet "Source link"
+		const fixture = await render(event())
+		const link = fixture.appHost.querySelector(
+			'.sheet-actions a:not([data-variant])',
+		) as HTMLAnchorElement
+		// jsdom would try to navigate; the listener runs before the default.
+		link.addEventListener('click', (e) => {
+			expect(e.defaultPrevented).toBe(false)
+			e.preventDefault()
+		})
+
+		link.click()
+
+		expect(analytics.capture).toHaveBeenCalledWith('concert.source.clicked', {
+			event_id: event().id,
+			artist_id: event().artistId,
+		})
 		await fixture.stop(true)
 	})
 })

@@ -18,6 +18,7 @@ import {
 	type Hype,
 	hasFollow,
 } from '../entities/follow'
+import { Events, IAnalyticsService } from '../lib/analytics/analytics-service'
 import { IAuthService } from './auth-service'
 import { IConcertStore } from './concert-store'
 import { IErrorBoundaryService } from './error-boundary-service'
@@ -73,6 +74,7 @@ export class FollowStore {
 	private readonly storage = resolve(ILocalStorage)
 	private readonly ea = resolve(IEventAggregator)
 	private readonly haptic = resolve(IHapticService)
+	private readonly analytics = resolve(IAnalyticsService)
 
 	@observable public followedArtists: Artist[] = []
 
@@ -153,6 +155,11 @@ export class FollowStore {
 
 		if (!this.authService.isAuthenticated) {
 			this.followGuest(artist)
+			// A signed-in follow is reported by the server; a guest's is not.
+			this.analytics.capture(Events.ArtistFollowGuest, {
+				artist_id: artist.id,
+				followed_count: this.guestFollowsState.length,
+			})
 			// Meaningful confirm: pulse only once the action has committed (guest
 			// writes are synchronous), never on a path that rolls back. No-op
 			// where the Vibration API is unavailable.
@@ -321,7 +328,7 @@ export class FollowStore {
 			// Nothing to migrate, but still record that this account has been
 			// reconciled so a later residual-queue reconcile clears without
 			// re-migrating.
-			this.writeReceipt(userId)
+			this.finishMerge(userId, 0)
 			return
 		}
 
@@ -377,7 +384,7 @@ export class FollowStore {
 		// means genuine failures remain, and the next reconcile should retry them
 		// (no receipt yet) rather than clear them away.
 		if (allMigrated) {
-			this.writeReceipt(userId)
+			this.finishMerge(userId, migratedIds.length)
 			this.logger.info('Guest follow migration completed', { userId })
 		} else {
 			this.logger.warn(
@@ -494,6 +501,19 @@ export class FollowStore {
 	/** Whether the per-account guest-merge receipt exists. */
 	public hasReceipt(userId: string): boolean {
 		return this.storage.getItem(guestMergedReceiptKey(userId)) !== null
+	}
+
+	/**
+	 * Write the receipt and, the first time this account's merge finishes on
+	 * this device, report how many follows it carried over (zero included).
+	 * A finished merge is not reported again by a later callback or reconcile.
+	 */
+	private finishMerge(userId: string, mergedCount: number): void {
+		if (this.hasReceipt(userId)) return
+		this.writeReceipt(userId)
+		this.analytics.capture(Events.GuestFollowsMerged, {
+			merged_count: mergedCount,
+		})
 	}
 
 	private writeReceipt(userId: string): void {

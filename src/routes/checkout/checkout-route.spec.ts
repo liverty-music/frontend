@@ -125,6 +125,8 @@ const mockPwa = { canShowInstallOption: false, install: vi.fn() }
 const mockIdentityVerifications = { get: vi.fn() }
 const mockRouter = { load: vi.fn() }
 
+const mockAnalytics = { capture: vi.fn() }
+
 vi.mock('aurelia', async (importOriginal) => {
 	const actual = await importOriginal<typeof import('aurelia')>()
 	return {
@@ -134,6 +136,7 @@ vi.mock('aurelia', async (importOriginal) => {
 				ILogger: mockLogger,
 				// Key actions add a step for the error report.
 				IErrorBoundaryService: { addBreadcrumb: () => {} },
+				IAnalyticsService: mockAnalytics,
 				IConcertRpcClient: mockConcert,
 				ITicketSaleRpcClient: mockSale,
 				ICheckoutRpcClient: mockCheckout,
@@ -150,6 +153,7 @@ vi.mock('aurelia', async (importOriginal) => {
 	}
 })
 
+import { Events } from '../../lib/analytics/analytics-service'
 import { CheckoutRoute } from './checkout-route'
 
 const flush = () => new Promise((r) => setTimeout(r, 0))
@@ -322,6 +326,58 @@ describe('CheckoutRoute', () => {
 			await Promise.all([first, second])
 
 			expect(mockCheckout.start).toHaveBeenCalledTimes(1)
+		})
+	})
+
+	describe('usage events', () => {
+		const SPEC = 'components/infrastructure/fan/web/route/checkout'
+
+		function sentEvents(): unknown[][] {
+			return mockAnalytics.capture.mock.calls
+		}
+
+		it(`@spec ${SPEC} "Fan reaches the final confirmation"`, async () => {
+			await toConfirm()
+
+			const step = (name: string) => [
+				Events.CheckoutStepViewed,
+				{ event_id: EVENT_ID, ticket_type_id: 'type-1', step: name },
+			]
+			expect(sentEvents()).toEqual([
+				step('count'),
+				[
+					Events.TicketPurchaseInitiated,
+					{
+						event_id: EVENT_ID,
+						ticket_type_id: 'type-1',
+						ticket_count: 2,
+						price_bucket: '3000_5999',
+					},
+				],
+				step('personal-details'),
+				step('payment'),
+				step('confirm'),
+			])
+		})
+
+		it(`@spec ${SPEC} "Unverified fan on a verified sale"`, async () => {
+			mockSale.listByEvent.mockResolvedValue([
+				sale({}, { verificationRequirement: 'verifiedAny' }),
+			])
+
+			const sut = await open()
+
+			expect(sut.step).toBe('verify-required')
+			expect(sentEvents()).toEqual([
+				[
+					Events.CheckoutStepViewed,
+					{
+						event_id: EVENT_ID,
+						ticket_type_id: 'type-1',
+						step: 'verify-required',
+					},
+				],
+			])
 		})
 	})
 

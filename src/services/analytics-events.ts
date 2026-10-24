@@ -60,31 +60,156 @@ export type ConcertDetailViewedProps = {
 	source: EventSource
 }
 
-/**
- * The user submitted a ticket lottery entry form. Paired with the backend
- * `ticket.lottery.entry.accepted` / `.rejected` events.
- */
-export type TicketLotteryEntrySubmittedProps = {
+/** Values a ticket event shares: the Event, the TicketType and the count. */
+type TicketChoiceProps = {
 	event_id: string
-	lottery_round: number
+	ticket_type_id: string
+	ticket_count: number
 }
 
 /**
- * The user started the ticket purchase flow. Paired with the backend
- * `ticket.purchase.completed` / `.failed` events.
+ * The lottery entry screen started the entry (LotteryEntryService.Start
+ * succeeded).
  */
-export type TicketPurchaseInitiatedProps = {
-	ticket_id: string
-	event_id: string
-	price_bucket: string
-}
+export type TicketLotteryEntryStartedProps = TicketChoiceProps
 
 /**
- * The user attempted to check in at a venue gate (ZK proof submission
- * starting). Paired with the backend `entry.zk_proof.verified` / `.rejected`.
+ * Confirming the lottery entry succeeded. Paired with the backend
+ * `ticket.lottery.result` event.
  */
-export type EntryCheckinAttemptedProps = {
+export type TicketLotteryEntrySubmittedProps = TicketChoiceProps
+
+/**
+ * Continuing from the checkout's count step started holding the tickets.
+ * Paired with the backend `order.paid` / `checkout.expired` events.
+ */
+export type TicketPurchaseInitiatedProps = TicketChoiceProps & {
+	/** Price band of one ticket; see `priceBucket`. */
+	price_bucket: PriceBucket
+}
+
+/** Coarse price band of one ticket in yen, 税込. */
+export type PriceBucket =
+	| 'free'
+	| 'under_3000'
+	| '3000_5999'
+	| '6000_9999'
+	| '10000_plus'
+
+export function priceBucket(yen: number): PriceBucket {
+	if (yen <= 0) return 'free'
+	if (yen < 3000) return 'under_3000'
+	if (yen < 6000) return '3000_5999'
+	if (yen < 10000) return '6000_9999'
+	return '10000_plus'
+}
+
+/** The checkout steps that are reported (not loading or a read failure). */
+export type ReportedCheckoutStep =
+	| 'verify-required'
+	| 'count'
+	| 'personal-details'
+	| 'payment'
+	| 'confirm'
+	| 'done'
+	| 'outcome'
+
+/** The checkout showed one of its steps. */
+export type CheckoutStepViewedProps = {
 	event_id: string
+	ticket_type_id: string
+	step: ReportedCheckoutStep
+}
+
+/** A visitor tapped `[Get Started]` on the landing page. */
+export type OnboardingStartedProps = Record<string, never>
+
+/** The screen or control a sign-up or sign-in was started from. */
+export type AuthStartSource =
+	| 'welcome'
+	| 'dashboard_prompt'
+	| 'event_page'
+	| 'my_artists_prompt'
+	| 'settings'
+	| 'auth_status'
+
+/**
+ * The app sent the person to hosted login. Paired with the account events
+ * the backend sends once the account exists.
+ */
+export type AuthStartedProps = {
+	kind: 'sign_up' | 'sign_in'
+	source: AuthStartSource
+}
+
+/** A guest's follow took effect (a signed-in follow is reported by the server). */
+export type ArtistFollowGuestProps = {
+	artist_id: string
+	/** Artists the guest follows after this follow. */
+	followed_count: number
+}
+
+/** Discovery's coach mark towards the Dashboard appeared. */
+export type OnboardingCoachmarkShownProps = {
+	followed_count: number
+	artists_with_concerts_count: number
+}
+
+/** The merge of a guest's follows into the new account finished. */
+export type GuestFollowsMergedProps = {
+	merged_count: number
+}
+
+/** Where a push-permission request started. */
+export type PermissionRequestSource =
+	| 'notification_prompt'
+	| 'settings'
+	| 'post_signup_dialog'
+	| 'checkout'
+
+/** The fan answered the browser's push-permission request. */
+export type NotificationPermissionResultProps = {
+	/** `dismissed`: the request closed without an answer. */
+	answer: 'granted' | 'denied' | 'dismissed'
+	source: PermissionRequestSource
+}
+
+/** The install banner was shown. */
+export type PwaInstallBannerShownProps = {
+	/** `native`: the device's install request; `guide`: the manual guide. */
+	install_mode: 'native' | 'guide'
+}
+
+/** The fan started the install from the banner. */
+export type PwaInstallAnsweredProps = {
+	answer: 'accepted' | 'dismissed' | 'guide_opened'
+}
+
+/** The app was installed. */
+export type PwaInstalledProps = {
+	/** `appinstalled`: the browser reported it; `confirmed`: the fan said so (iOS). */
+	via: 'appinstalled' | 'confirmed'
+}
+
+/** The fan opened a concert's source link from the event detail sheet. */
+export type ConcertSourceClickedProps = {
+	event_id: string
+	artist_id: string
+}
+
+/** The fan used an add-to-calendar control. */
+export type ConcertCalendarAddedProps = {
+	event_id: string
+	artist_id?: string
+	surface: 'detail_sheet' | 'event_page'
+}
+
+/** The fan used the Event page's share control. */
+export type ConcertSharedProps = {
+	event_id: string
+	method: 'share_sheet' | 'copy_link'
+	/** `cancelled` only where the device reports it (the share sheet). */
+	outcome: 'completed' | 'cancelled' | 'failed'
 }
 
 /**
@@ -97,15 +222,23 @@ export type NotificationRequestedProps = {
 	source: EventSource
 }
 
-export type NotificationOpenedProps = {
+/**
+ * A push notification's interaction, as the pushed message's data states it.
+ * An older message without a type is reported without one.
+ */
+type NotificationInteractionProps = {
 	notification_id: string
-	event_id?: string
-	artist_id?: string
+	/** The Notification's type, e.g. `sales_reminder`. */
+	type?: string
+	/** A sales reminder's milestone. */
+	milestone?: string
+	/** Path of the screen the notification opens. */
+	path: string
 }
 
-export type NotificationDismissedProps = {
-	notification_id: string
-}
+export type NotificationOpenedProps = NotificationInteractionProps
+
+export type NotificationDismissedProps = NotificationInteractionProps
 
 export type WebVitalsProps = {
 	/** Metric name: LCP, INP, or CLS. */
@@ -214,9 +347,22 @@ export type DiscoveryRevealProps = {
 export const Events = {
 	ArtistSearch: 'artist.search',
 	ConcertDetailViewed: 'concert.detail.viewed',
+	TicketLotteryEntryStarted: 'ticket.lottery.entry.started',
 	TicketLotteryEntrySubmitted: 'ticket.lottery.entry.submitted',
 	TicketPurchaseInitiated: 'ticket.purchase.initiated',
-	EntryCheckinAttempted: 'entry.checkin.attempted',
+	CheckoutStepViewed: 'checkout.step.viewed',
+	OnboardingStarted: 'onboarding.started',
+	AuthStarted: 'auth.started',
+	ArtistFollowGuest: 'artist.follow.guest',
+	OnboardingCoachmarkShown: 'onboarding.coachmark.shown',
+	GuestFollowsMerged: 'guest.follows.merged',
+	NotificationPermissionResult: 'notification.permission.result',
+	PwaInstallBannerShown: 'pwa.install.banner_shown',
+	PwaInstallAnswered: 'pwa.install.answered',
+	PwaInstalled: 'pwa.installed',
+	ConcertSourceClicked: 'concert.source.clicked',
+	ConcertCalendarAdded: 'concert.calendar.added',
+	ConcertShared: 'concert.shared',
 	NotificationRequested: 'notification.requested',
 	NotificationOpened: 'notification.opened',
 	NotificationDismissed: 'notification.dismissed',
@@ -238,9 +384,22 @@ export type EventName = (typeof Events)[keyof typeof Events]
 export type EventPropsMap = {
 	'artist.search': ArtistSearchProps
 	'concert.detail.viewed': ConcertDetailViewedProps
+	'ticket.lottery.entry.started': TicketLotteryEntryStartedProps
 	'ticket.lottery.entry.submitted': TicketLotteryEntrySubmittedProps
 	'ticket.purchase.initiated': TicketPurchaseInitiatedProps
-	'entry.checkin.attempted': EntryCheckinAttemptedProps
+	'checkout.step.viewed': CheckoutStepViewedProps
+	'onboarding.started': OnboardingStartedProps
+	'auth.started': AuthStartedProps
+	'artist.follow.guest': ArtistFollowGuestProps
+	'onboarding.coachmark.shown': OnboardingCoachmarkShownProps
+	'guest.follows.merged': GuestFollowsMergedProps
+	'notification.permission.result': NotificationPermissionResultProps
+	'pwa.install.banner_shown': PwaInstallBannerShownProps
+	'pwa.install.answered': PwaInstallAnsweredProps
+	'pwa.installed': PwaInstalledProps
+	'concert.source.clicked': ConcertSourceClickedProps
+	'concert.calendar.added': ConcertCalendarAddedProps
+	'concert.shared': ConcertSharedProps
 	'notification.requested': NotificationRequestedProps
 	'notification.opened': NotificationOpenedProps
 	'notification.dismissed': NotificationDismissedProps

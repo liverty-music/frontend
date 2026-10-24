@@ -1,5 +1,9 @@
 import { IRouterEvents } from '@aurelia/router'
 import { type IDisposable, INode, observable, resolve, watch } from 'aurelia'
+import {
+	Events,
+	IAnalyticsService,
+} from '../../lib/analytics/analytics-service'
 import { IPwaInstallService } from '../../services/pwa-install-service'
 
 /** Which CTA the banner offers, driven reactively by the deferred prompt. */
@@ -12,6 +16,7 @@ export class PwaInstallBanner {
 	private readonly pwaInstall = resolve(IPwaInstallService)
 	private readonly element = resolve(INode) as HTMLElement
 	private readonly routerEvents = resolve(IRouterEvents)
+	private readonly analytics = resolve(IAnalyticsService)
 	private navigation: IDisposable | null = null
 
 	// isIos is immutable after boot — evaluated once and stored.
@@ -36,6 +41,7 @@ export class PwaInstallBanner {
 	}
 
 	public attached(): void {
+		if (this.isVisible) this.reportShown()
 		// The banner stays mounted in the shell across routes, so its counted
 		// cue would play only once per page load; start it again on every route.
 		this.navigation = this.routerEvents.subscribe(
@@ -58,6 +64,18 @@ export class PwaInstallBanner {
 		}
 	}
 
+	// The banner appears while mounted once the device allows the install.
+	@watch((vm: PwaInstallBanner) => vm.isVisible)
+	public isVisibleChanged(visible: boolean): void {
+		if (visible) this.reportShown()
+	}
+
+	private reportShown(): void {
+		this.analytics.capture(Events.PwaInstallBannerShown, {
+			install_mode: this.installMode,
+		})
+	}
+
 	private syncInstallMode(): void {
 		// Native one-tap needs a captured deferred prompt (`canShowFab`) and is
 		// never available on iOS (no `beforeinstallprompt`).
@@ -77,12 +95,18 @@ export class PwaInstallBanner {
 			return this.onInstall()
 		}
 		this.isGuideSheetOpen = true
+		this.analytics.capture(Events.PwaInstallAnswered, {
+			answer: 'guide_opened',
+		})
 	}
 
-	public onInstall(): Promise<void> {
-		// Return the promise so `busy-on-click` shows a busy state while the
+	public async onInstall(): Promise<void> {
+		// Returned to `busy-on-click`, which shows a busy state while the
 		// native browser install prompt is open.
-		return this.pwaInstall.install()
+		const answer = await this.pwaInstall.install()
+		if (answer !== null) {
+			this.analytics.capture(Events.PwaInstallAnswered, { answer })
+		}
 	}
 
 	public onConfirmInstalled(): void {

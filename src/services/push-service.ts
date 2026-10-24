@@ -2,6 +2,7 @@ import { Code, ConnectError } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
 import { IPushSubscriptionRpcClient } from '../adapter/rpc/client/push-subscription-client'
 import { IAppConfig } from '../config/app-config'
+import type { PermissionRequestSource } from './analytics-events'
 import { INotificationManager } from './notification-manager'
 
 export const IPushService = DI.createInterface<IPushService>(
@@ -84,9 +85,13 @@ export class PushServiceClient {
 	 * backend via the `Create` RPC.
 	 *
 	 * Returns the endpoint on success, or `null` when the user denied the
-	 * permission prompt or VAPID is missing.
+	 * permission prompt or VAPID is missing. `source` names where the request
+	 * started, for the permission answer's report; `null` for a re-subscribe
+	 * the app starts itself.
 	 */
-	public async create(): Promise<string | null> {
+	public async create(
+		source: PermissionRequestSource | null,
+	): Promise<string | null> {
 		if (!this.vapidPublicKey) {
 			this.logger.warn(
 				'VITE_VAPID_PUBLIC_KEY is not set, cannot subscribe to push',
@@ -94,7 +99,7 @@ export class PushServiceClient {
 			return null
 		}
 
-		const permission = await this.notificationManager.requestPermission()
+		const permission = await this.notificationManager.requestPermission(source)
 		if (permission !== 'granted') {
 			this.logger.info('Notification permission not granted', { permission })
 			return null
@@ -211,7 +216,8 @@ export class PushServiceClient {
 				this.logger.info(
 					'Permission granted but no browser subscription; auto re-subscribing',
 				)
-				const endpoint = await this.create()
+				// Permission is already granted: no request is shown.
+				const endpoint = await this.create(null)
 				return endpoint ? 'enabled' : 'error'
 			} finally {
 				this.resubscribing = false
