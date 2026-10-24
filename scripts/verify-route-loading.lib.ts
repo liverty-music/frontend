@@ -30,10 +30,7 @@ export type RouteLoadingResult =
  * Routes allowed to block, with the reason. Keep this short: every entry is a
  * screen that freezes while the network answers.
  */
-export const BLOCKING_ALLOWLIST: Record<string, string> = {
-	'verify-callback-route.ts':
-		'An OIDC-style callback whose entire purpose is to resolve an outcome and redirect; there is no view to show in the meantime.',
-}
+export const BLOCKING_ALLOWLIST: Record<string, string> = {}
 
 /** Extract the body of a method, by brace matching from its opening `{`. */
 function methodBody(source: string, methodStart: number): string | null {
@@ -96,12 +93,13 @@ function lineOf(source: string, index: number): number {
 
 export function checkRouteLoading(
 	files: { path: string; source: string }[],
+	allowlist: Record<string, string> = BLOCKING_ALLOWLIST,
 ): RouteLoadingResult {
 	const failures: RouteLoadingFailure[] = []
 
 	for (const { path, source } of files) {
 		const basename = path.split('/').pop() ?? path
-		if (basename in BLOCKING_ALLOWLIST) continue
+		if (basename in allowlist) continue
 
 		const match = /\b(?:public\s+)?(?:async\s+)?loading\s*\(/.exec(source)
 		if (!match) continue

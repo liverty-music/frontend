@@ -1,7 +1,6 @@
 /* Verify-callback route styles (identity-ekyc-jpki, Stamp flow).
    Mirrors the auth-callback layout: a centered transient screen that shows
-   while the Complete RPC is in flight and briefly after, before auto-navigating
-   back to Settings. */
+   while the Create RPC is in flight, before opening Settings. */
 @layer block {
 	@scope (verify-callback-route) {
 		:scope {
@@ -22,46 +21,6 @@
 
 			align-items: center;
 			color: var(--color-text-secondary);
-		}
-
-		/* Result card: icon + heading + body stacked. */
-		.verify-result {
-			--stack-gap: var(--space-s);
-
-			align-items: center;
-			max-inline-size: 32ch;
-			text-align: center;
-		}
-
-		/* Status icon — two variants via data attribute. */
-		.verify-icon {
-			inline-size: var(--space-xl);
-			block-size: var(--space-xl);
-
-			&[data-variant="success"] {
-				color: var(--color-success);
-			}
-
-			&[data-variant="error"] {
-				color: var(--color-error);
-			}
-		}
-
-		.verify-heading {
-			font-size: var(--step-1);
-			font-weight: var(--font-weight-semibold);
-			color: var(--color-text-primary);
-		}
-
-		.verify-body {
-			font-size: var(--step-0);
-			color: var(--color-text-secondary);
-		}
-
-		/* Small de-emphasised note explaining the auto-redirect. */
-		.verify-redirect-note {
-			font-size: var(--step--1);
-			color: var(--color-text-muted);
 		}
 	}
 }

@@ -94,6 +94,8 @@ async function render(o: Options) {
 			}),
 			Registration.instance(IIdentityVerificationService, {
 				current: undefined,
+				failure: null,
+				takeVerifiedNotice: () => false,
 			}),
 			Registration.instance(IRouter, { load: vi.fn() }),
 			Registration.instance(IAudioEngine, { muted: false, volume: 0.5 }),

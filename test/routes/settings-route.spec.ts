@@ -92,8 +92,10 @@ describe('SettingsRoute', () => {
 	let mockEa: { publish: ReturnType<typeof vi.fn> }
 	const mockIdentityVerifications = {
 		current: undefined,
+		failure: null,
 		get: vi.fn().mockResolvedValue(undefined),
 		start: vi.fn(),
+		takeVerifiedNotice: () => false,
 	}
 
 	beforeEach(() => {

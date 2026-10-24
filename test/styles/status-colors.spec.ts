@@ -4,7 +4,6 @@ import discoveryCss from '../../src/routes/discovery/discovery-route.css?raw'
 import passkeyRecoveryCss from '../../src/routes/passkey-recovery/passkey-recovery-route.css?raw'
 import languageSelectorCss from '../../src/routes/settings/language-selector.css?raw'
 import settingsCss from '../../src/routes/settings/settings-route.css?raw'
-import verifyCallbackCss from '../../src/routes/verify-callback/verify-callback-route.css?raw'
 import tokensCss from '../../src/styles/tokens.css?raw'
 import {
 	contrast,
@@ -77,9 +76,9 @@ describe('success color', () => {
 describe('status marks use the token of their meaning', () => {
 	it('@spec components/infrastructure/fan/web/global/design-tokens "Done looks the same everywhere"', () => {
 		const done = [
-			colorOf(verifyCallbackCss, '&[data-variant="success"]'),
 			// The /verify-email confirmation is the success mark.
 			colorOf(successMarkCss, ':scope'),
+			// Email and identity verification share the Settings badge.
 			colorOf(
 				settingsCss,
 				'.settings-verification-badge[data-verified="true"]',

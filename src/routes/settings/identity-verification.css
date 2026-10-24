@@ -29,5 +29,17 @@
 		.settings-identity-verification-dedupe {
 			color: var(--color-text-muted);
 		}
+
+		/* The reason the last verification failed, next to the button (M3
+		   keeps an error by the control the fan acts on). */
+		.settings-identity-verification-failure {
+			font-size: var(--step--1);
+			color: var(--color-error);
+
+			& a {
+				color: inherit;
+				text-decoration: underline;
+			}
+		}
 	}
 }

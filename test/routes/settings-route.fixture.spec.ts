@@ -12,7 +12,10 @@ import { SettingsRoute } from '../../src/routes/settings/settings-route'
 import { IAudioEngine } from '../../src/services/audio-engine'
 import { IAuthService } from '../../src/services/auth-service'
 import { IFabMenuService } from '../../src/services/fab-menu-service'
-import { IIdentityVerificationService } from '../../src/services/identity-verification-service'
+import {
+	IIdentityVerificationService,
+	type VerificationFailure,
+} from '../../src/services/identity-verification-service'
 import { IPushService } from '../../src/services/push-service'
 import { IUserStore } from '../../src/services/user-store'
 
@@ -64,9 +67,15 @@ function makeAuth(emailVerified = true) {
 	}
 }
 
+/** A stand-in for the IdentityVerificationService: unverified, no result. */
+function makeIdentityVerifications(failure: VerificationFailure | null = null) {
+	return { current: undefined, failure, takeVerifiedNotice: () => false }
+}
+
 async function render(
 	store: ReturnType<typeof makeUserStore>,
 	auth: ReturnType<typeof makeAuth> = makeAuth(),
+	identityVerifications = makeIdentityVerifications(),
 ) {
 	const fixture = await createFixture
 		.html('<settings-route></settings-route>')
@@ -83,9 +92,10 @@ async function render(
 			Registration.instance(IPushService, {
 				resolvePushState: vi.fn(async () => 'needs-permission'),
 			}),
-			Registration.instance(IIdentityVerificationService, {
-				status: undefined,
-			}),
+			Registration.instance(
+				IIdentityVerificationService,
+				identityVerifications,
+			),
 			Registration.instance(IRouter, { load: vi.fn() }),
 			Registration.instance(IAudioEngine, { muted: false, volume: 0.5 }),
 			Registration.instance(IAppConfig, { vapidPublicKey: '' }),
@@ -304,5 +314,60 @@ describe('SettingsRoute Sign Out group (fixture)', () => {
 		expect(scrollRule.slice(0, scrollRule.indexOf('}'))).not.toContain(
 			'--stack-gap',
 		)
+	})
+})
+
+describe('SettingsRoute identity verification result (fixture)', () => {
+	const row = (host: HTMLElement) =>
+		host.querySelector('[data-testid="identity-verification-failure"]')
+	const verifyButton = (host: HTMLElement) =>
+		[...host.querySelectorAll('button')].find(
+			(b) =>
+				b.textContent?.trim() === ja.settings.identityVerification.verifyCta,
+		)
+
+	it('shows the reason next to 本人確認する, which it describes', async () => {
+		const { fixture, host } = await render(
+			makeUserStore({ id: 'user-1' }),
+			makeAuth(),
+			makeIdentityVerifications('notCompleted'),
+		)
+
+		expect(row(host)?.textContent).toContain(
+			ja.verifyCallback.error.notCompleted,
+		)
+		expect(row(host)?.querySelector('a')).toBeNull()
+		expect(verifyButton(host)?.getAttribute('aria-describedby')).toBe(
+			'identity-verification-failure',
+		)
+
+		await fixture.stop(true)
+	})
+
+	it('shows the support contact instead of 本人確認する for a card used by another account', async () => {
+		const { fixture, host } = await render(
+			makeUserStore({ id: 'user-1' }),
+			makeAuth(),
+			makeIdentityVerifications('alreadyVerified'),
+		)
+
+		expect(row(host)?.textContent).toContain(
+			ja.verifyCallback.error.alreadyVerified,
+		)
+		expect(row(host)?.querySelector('a')?.getAttribute('href')).toBe(
+			'mailto:pannpers@pannpers.dev',
+		)
+		expect(verifyButton(host)).toBeUndefined()
+
+		await fixture.stop(true)
+	})
+
+	it('shows no reason when there is none', async () => {
+		const { fixture, host } = await render(makeUserStore({ id: 'user-1' }))
+
+		expect(row(host)).toBeNull()
+		expect(verifyButton(host)?.hasAttribute('aria-describedby')).toBe(false)
+
+		await fixture.stop(true)
 	})
 })
