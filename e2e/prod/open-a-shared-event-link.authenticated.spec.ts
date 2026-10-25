@@ -1,5 +1,6 @@
 import { existsSync } from 'node:fs'
-import { expect, test } from '@playwright/test'
+import { expect } from '@playwright/test'
+import { test } from './session'
 import { EVENTS, fillAndSubmit, testUser } from './support'
 
 /**

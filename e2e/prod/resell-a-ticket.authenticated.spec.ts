@@ -1,16 +1,23 @@
 import { existsSync } from 'node:fs'
 import {
 	type APIRequestContext,
-	type Browser,
 	type BrowserContext,
-	devices,
 	expect,
 	type Locator,
 	type Page,
-	test,
 } from '@playwright/test'
 import { authorizeCard, fillPersonalDetails, holdTickets } from './checkout'
 import { listByEvent, openFirstCome, openFreshSale } from './sale'
+import {
+	closeFan,
+	FAN_STATE,
+	fanContext,
+	hasOrganizerSession,
+	organizerToken,
+	SECOND_FAN_STATE,
+	THIRD_FAN_STATE,
+	test,
+} from './session'
 
 /**
  * Story `resell-a-ticket` on PRODUCTION in Stripe test mode.
@@ -23,8 +30,8 @@ import { listByEvent, openFirstCome, openFreshSale } from './sale'
  *
  * Needs a published Event of the test Organizer with a start time more than
  * a day away, by id in `E2E_RESALE_EVENT_ID`, on which neither fan holds
- * tickets, and an organizer access token of the test Organizer in
- * `E2E_ORGANIZER_TOKEN`. The run opens its own first-come sale of 2 tickets
+ * tickets, and the test Organizer's member session
+ * (`.auth/storageState.organizer.prod.json`). The run opens its own first-come sale of 2 tickets
  * at 5000 yen on it (ending the event's open first-come sale first), and the
  * listing fan buys both, so the sale sells out and its resale opens.
  *
@@ -41,7 +48,7 @@ import { listByEvent, openFirstCome, openFreshSale } from './sale'
  *
  * Run it in the pinned Playwright container with the host network:
  *   docker run --rm --network host -e E2E_RESALE_EVENT_ID=… \
- *     -e E2E_ORGANIZER_TOKEN -v "$PWD":/work -w /work \
+ *     -v "$PWD":/work -w /work \
  *     mcr.microsoft.com/playwright:v1.64.1-noble \
  *     npx playwright test -c playwright.prod.config.mjs resell-a-ticket
  *
@@ -52,9 +59,6 @@ import { listByEvent, openFirstCome, openFreshSale } from './sale'
  * Organizer the same total as before the resale.
  */
 const EVENT_ID = process.env.E2E_RESALE_EVENT_ID ?? ''
-const ORGANIZER_TOKEN = process.env.E2E_ORGANIZER_TOKEN ?? ''
-const SECOND_FAN_STATE = '.auth/storageState.prod.fan2.json'
-const THIRD_FAN_STATE = '.auth/storageState.prod.fan3.json'
 
 /** Ticket states as shown in either display language (a fan's own setting). */
 const LISTED = /出品中|Listed for resale/
@@ -73,15 +77,15 @@ test.describe('resell a ticket (signed in)', () => {
 	let reused = false
 
 	test.beforeAll(async ({ request, browser, baseURL }) => {
-		for (const state of ['.auth/storageState.prod.json', SECOND_FAN_STATE]) {
+		for (const state of [FAN_STATE, SECOND_FAN_STATE]) {
 			if (!existsSync(state)) {
 				throw new Error(`${state} is missing: see the spec's header`)
 			}
 		}
 		// A rerun reuses the sale an earlier run sold out to the listing fan.
 		reused = await soldOutForResale(request)
-		if (EVENT_ID && ORGANIZER_TOKEN && !reused) {
-			await openFreshSale(request, EVENT_ID, ORGANIZER_TOKEN, {
+		if (EVENT_ID && hasOrganizerSession() && !reused) {
+			await openFreshSale(request, EVENT_ID, await organizerToken(browser), {
 				price: 5000,
 				quantity: 2,
 				perAccountLimit: 2,
@@ -91,13 +95,13 @@ test.describe('resell a ticket (signed in)', () => {
 	})
 
 	test.afterAll(async () => {
-		await second?.close()
+		if (second) await closeFan(second, SECOND_FAN_STATE)
 	})
 
 	test.beforeEach(() => {
 		test.skip(
-			!EVENT_ID || !ORGANIZER_TOKEN,
-			'E2E_RESALE_EVENT_ID and E2E_ORGANIZER_TOKEN are required',
+			!EVENT_ID || !hasOrganizerSession(),
+			'E2E_RESALE_EVENT_ID and the organizer member session are required',
 		)
 	})
 
@@ -293,7 +297,7 @@ test.describe('resell a ticket (signed in)', () => {
 		await expect(loser.getByTestId('checkout-message')).toHaveText(
 			/現在売り切れです|Sold out for now/,
 		)
-		await third.close()
+		await closeFan(third, THIRD_FAN_STATE)
 	})
 })
 
@@ -308,21 +312,6 @@ async function soldOutForResale(request: APIRequestContext): Promise<boolean> {
 	return (
 		type?.state === 'TICKET_TYPE_STATE_SOLD_OUT' && type.resaleOpen === true
 	)
-}
-
-/** A signed-in context for another fan, on the project's device. */
-async function fanContext(
-	browser: Browser,
-	baseURL: string | undefined,
-	storageState: string,
-): Promise<BrowserContext> {
-	return browser.newContext({
-		...devices['Pixel 7'],
-		baseURL,
-		locale: 'ja-JP',
-		timezoneId: 'Asia/Tokyo',
-		storageState,
-	})
 }
 
 /** The fan's ticket cards for the event, on a freshly loaded Tickets screen. */

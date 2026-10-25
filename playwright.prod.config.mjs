@@ -9,6 +9,8 @@ import { defineConfig, devices } from '@playwright/test'
  * test Organizer's Events, passed in env vars) and a `storageState` from a
  * real OIDC login (`npm run auth:capture:password:prod` →
  * `.auth/storageState.prod.json`). Recorded in `docs/ci-coverage-gaps.md`.
+ * How to create, retire and pass those Events, and the organizer access
+ * token: `docs/prod-e2e-fixtures.md`.
  *
  * Usage:
  *   npm run auth:capture:password:prod          # once; needs .auth/password.prod.md
