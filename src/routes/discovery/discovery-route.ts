@@ -99,10 +99,12 @@ export class DiscoveryRoute {
 	}
 
 	/**
-	 * Report once per visit the moment the onboarding progress row becomes the
-	 * link to the Dashboard, with the counts that made it ready.
+	 * Report once per visit the moment the onboarding progress row is shown
+	 * as the link to the Dashboard, with the counts that made it ready. The
+	 * row is hidden in search mode, so a follow from search results reports
+	 * when the search closes.
 	 */
-	@watch((vm: DiscoveryRoute) => vm.isOnboarding && vm.readiness >= 1)
+	@watch((vm: DiscoveryRoute) => vm.showProgressRow && vm.readiness >= 1)
 	protected onTimetableReadyChanged(ready: boolean): void {
 		if (!ready || this.readyReported) return
 		this.readyReported = true

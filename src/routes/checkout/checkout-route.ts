@@ -420,12 +420,6 @@ export class CheckoutRoute implements IRouteViewModel {
 	public async hold(): Promise<void> {
 		if (this.busy || !this.sale) return
 		this.errorBoundary.addBreadcrumb('action', 'start_checkout')
-		this.analytics.capture(Events.TicketPurchaseInitiated, {
-			event_id: this.eventId,
-			ticket_type_id: this.sale.ticketType.id,
-			ticket_count: this.ticketCount,
-			price_bucket: priceBucket(this.sale.ticketType.price),
-		})
 		this.busy = true
 		this.message = null
 		try {
@@ -442,6 +436,14 @@ export class CheckoutRoute implements IRouteViewModel {
 			if (checkout.id !== this.checkout?.id) this.forgetCard()
 			this.holdWith(checkout)
 			saveCheckoutId(this.eventId, checkout.id)
+			// Reported once the tickets are held: a refused hold (the fan's
+			// verification, a limit, a sold-out sale) is not a purchase start.
+			this.analytics.capture(Events.TicketPurchaseInitiated, {
+				event_id: this.eventId,
+				ticket_type_id: checkout.ticketTypeId,
+				ticket_count: checkout.ticketCount,
+				price_bucket: priceBucket(this.sale.ticketType.price),
+			})
 			this.step = 'personal-details'
 		} catch (err) {
 			if (this.signal?.aborted) return

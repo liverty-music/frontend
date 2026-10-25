@@ -164,6 +164,7 @@ describe('PushOfferService', () => {
 
 	describe('pressing the action', () => {
 		// @spec components/infrastructure/fan/web/global/notification-prompt "Pressing the offer action shows the browser prompt"
+		// @spec components/infrastructure/fan/web/global/notification-prompt "Fan denies"
 		it('asks the browser at once, within the press', () => {
 			const sut = launch()
 			sut.offer('offer')

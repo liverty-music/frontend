@@ -380,6 +380,48 @@ describe('AnalyticsService', () => {
 			sut.dispose()
 		})
 
+		it('keeps a start from before the SDK loaded and sends it with its time on load', async () => {
+			// @spec stories/sign-up-or-sign-in "Started before analytics loaded"
+			const now = vi
+				.spyOn(Date, 'now')
+				.mockReturnValue(Date.UTC(2026, 9, 25, 1, 2, 3))
+			const sut = new AnalyticsService()
+
+			// The page leaves right after; the start waits in the tab's storage.
+			mockEa.publish(new AuthStarted('sign_in', 'welcome'))
+			expect(
+				sessionStorage.getItem('analytics:pending-auth-start'),
+			).not.toBeNull()
+
+			await sut._waitForInitForTests()
+
+			expect(posthogStub.capture).toHaveBeenCalledWith(
+				Events.AuthStarted,
+				expect.objectContaining({ kind: 'sign_in', source: 'welcome' }),
+				{ timestamp: new Date(Date.UTC(2026, 9, 25, 1, 2, 3)) },
+			)
+			expect(sessionStorage.getItem('analytics:pending-auth-start')).toBeNull()
+			now.mockRestore()
+			sut.dispose()
+		})
+
+		it('keeps no start from before the SDK loaded when analytics is off', async () => {
+			// @spec stories/sign-up-or-sign-in "Analytics off"
+			mockConsent.analytics = false
+			const sut = new AnalyticsService()
+
+			mockEa.publish(new AuthStarted('sign_up', 'settings'))
+
+			expect(sessionStorage.getItem('analytics:pending-auth-start')).toBeNull()
+			await sut._waitForInitForTests()
+			expect(posthogStub.capture).not.toHaveBeenCalledWith(
+				Events.AuthStarted,
+				expect.anything(),
+				expect.anything(),
+			)
+			sut.dispose()
+		})
+
 		it('drops events buffered before init when the user signs out', async () => {
 			const sut = new AnalyticsService()
 			sut.capture(Events.ArtistSearch, { query_length: 3, result_count: 1 })

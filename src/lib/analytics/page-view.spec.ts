@@ -30,6 +30,14 @@ vi.mock('./error-report-filter', async (importOriginal) => {
 })
 
 const mockConsent = { analytics: true, sessionReplay: false }
+// Event aggregator handlers by message class name, so a test can publish
+// one: each test re-imports the service, and with it a new class object.
+const handlers = new Map<string, (message: unknown) => void>()
+function publish(message: object): void {
+	const handler = handlers.get(message.constructor.name)
+	if (!handler) throw new Error(`no subscriber for ${message.constructor.name}`)
+	handler(message)
+}
 // A fresh project key per test gives each SDK instance its own storage.
 let projectKey = ''
 
@@ -59,6 +67,15 @@ vi.mock('aurelia', async (importOriginal) => {
 				case 'IConsentService':
 					return mockConsent
 				case 'IEventAggregator':
+					return {
+						subscribe: (
+							type: { name: string },
+							handler: (m: unknown) => void,
+						) => {
+							handlers.set(type.name, handler)
+							return { dispose: () => {} }
+						},
+					}
 				case 'IRouterEvents':
 					return { subscribe: () => ({ dispose: () => {} }) }
 				default:
@@ -68,6 +85,8 @@ vi.mock('aurelia', async (importOriginal) => {
 	}
 })
 
+import { SignedOut } from '../../services/events/signed-out'
+import { ConsentChanged } from '../consent/consent-changed'
 import type { AnalyticsService } from './analytics-service'
 
 // The SDK patches `history.pushState` once and skips an already patched
@@ -108,6 +127,7 @@ async function start(path: string): Promise<AnalyticsService> {
 describe('page views and campaign values (real SDK)', () => {
 	beforeEach(async () => {
 		sent.length = 0
+		handlers.clear()
 		mockConsent.analytics = true
 		projectKey = `phc_test_${testIndex++}`
 		// Each test gets a fresh SDK singleton.
@@ -155,7 +175,7 @@ describe('page views and campaign values (real SDK)', () => {
 		expect(leaves[0].properties.$pathname).toBe('/dashboard')
 	})
 
-	it(`@spec ${SPEC} "Analytics off"`, async () => {
+	it(`@spec ${SPEC} "No page views with analytics off"`, async () => {
 		mockConsent.analytics = false
 		await start('/welcome')
 
@@ -213,5 +233,31 @@ describe('page views and campaign values (real SDK)', () => {
 			)
 			expect(campaignValues).toEqual([])
 		}
+	})
+
+	it(`@spec ${SPEC} "Analytics turned off and on again"`, async () => {
+		const sut = await start('/dashboard')
+
+		for (const analytics of [false, true]) {
+			mockConsent.analytics = analytics
+			publish(new ConsentChanged({ analytics, sessionReplay: false }))
+		}
+		sent.length = 0
+		sut.capture('onboarding.started', {})
+
+		// The opt-out's reset() cleared the SDK's super properties.
+		expect(sent.at(-1)?.event).toBe('onboarding.started')
+		expect(sent.at(-1)?.properties.display_mode).toBe('browser')
+	})
+
+	it('keeps the display mode after a sign-out', async () => {
+		// @spec components/infrastructure/fan/web/global/analytics "Analytics turned off and on again"
+		const sut = await start('/dashboard')
+
+		publish(new SignedOut())
+		sent.length = 0
+		sut.capture('onboarding.started', {})
+
+		expect(sent.at(-1)?.properties.display_mode).toBe('browser')
 	})
 })

@@ -360,7 +360,7 @@ describe('CheckoutRoute', () => {
 			])
 		})
 
-		it(`@spec ${SPEC} "Unverified fan on a verified sale"`, async () => {
+		it(`@spec ${SPEC} "Verification notice instead of a hold"`, async () => {
 			mockSale.listByEvent.mockResolvedValue([
 				sale({}, { verificationRequirement: 'verifiedAny' }),
 			])
@@ -377,6 +377,41 @@ describe('CheckoutRoute', () => {
 						step: 'verify-required',
 					},
 				],
+			])
+		})
+
+		it('sends no purchase start when the hold is refused for the verification', async () => {
+			// @spec components/infrastructure/fan/web/route/checkout "Verification notice instead of a hold"
+			mockSale.listByEvent.mockResolvedValue([
+				sale({}, { verificationRequirement: 'jpkiOnly' }),
+			])
+			const activeJpki = {
+				id: 'iv1',
+				userId: 'u1',
+				method: 'jpki',
+				status: 'active',
+			}
+			mockIdentityVerifications.get.mockResolvedValueOnce(activeJpki)
+			const sut = await open()
+			mockIdentityVerifications.get.mockResolvedValue({
+				...activeJpki,
+				status: 'needsReverification',
+			})
+			mockCheckout.start.mockRejectedValue(
+				connectError(Code.FailedPrecondition),
+			)
+
+			await sut.hold()
+
+			expect(sut.step).toBe('verify-required')
+			expect(
+				sentEvents().map(([name, props]) => [
+					name,
+					(props as { step?: string }).step,
+				]),
+			).toEqual([
+				[Events.CheckoutStepViewed, 'count'],
+				[Events.CheckoutStepViewed, 'verify-required'],
 			])
 		})
 	})
