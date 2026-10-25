@@ -49,7 +49,8 @@
           ${row.state}
         </span>
       </div>
-      <p if.bind="row.firstParty" class="artist-concerts-orders">
+      <!-- Unread Orders show no counts: 0 would read as none paid. -->
+      <p if.bind="row.firstParty && !row.ordersError" class="artist-concerts-orders">
         <span class="artist-concerts-paid-count">${row.paidOrderIds.length} Paid Orders</span>
         ·
         <span class="artist-concerts-paid-total">${formatYen(row.paidTotal)}</span>

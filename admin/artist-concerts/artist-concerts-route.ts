@@ -42,7 +42,7 @@ export interface ConcertRow {
 	/** Total of the Paid Orders in yen. */
 	paidTotal: number
 	ordersError: string
-	/** Progress of a running Refund all, e.g. `Refunding 1 of 2…`. */
+	/** Progress of a running Refund all, e.g. `Refunding… 1 of 2 done`. */
 	progress: string
 	actionError: string
 	busy: boolean
@@ -244,7 +244,7 @@ export class ArtistConcertsRoute {
 		row.actionError = ''
 		try {
 			for (const orderId of orderIds) {
-				row.progress = `Refunding ${done + 1} of ${total}…`
+				row.progress = `Refunding… ${done} of ${total} done`
 				try {
 					await this.orderClient.refundCancellation(orderId)
 				} catch (err) {

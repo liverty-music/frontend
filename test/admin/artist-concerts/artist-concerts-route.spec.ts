@@ -278,6 +278,20 @@ describe('ArtistConcertsRoute', () => {
 			expect(fixture.appHost.textContent).toContain('Retry')
 		})
 
+		it('shows no order counts when the orders fail to load', async () => {
+			const c = clients([concert('e1', PublishState.CANCELLED)])
+			c.order.listByEvent.mockRejectedValue(
+				new ConnectError('down', Code.Unavailable),
+			)
+			const { fixture } = await build(c)
+
+			await vi.waitFor(() =>
+				expect(rowText(fixture)).toContain('Failed to load the orders.'),
+			)
+			expect(rowText(fixture)).not.toContain('Paid Orders')
+			expect(button(fixture, 'refund-all')).toBeNull()
+		})
+
 		it('shows a discovered concert without orders', async () => {
 			const c = clients([concert('e1', PublishState.UNSPECIFIED, false)])
 			const { fixture } = await build(c)
@@ -316,6 +330,37 @@ describe('ArtistConcertsRoute', () => {
 				expect(rowText(fixture)).toContain('0 Paid Orders'),
 			)
 			expect(button(fixture, 'refund-all')).toBeNull()
+		})
+
+		it('shows how many refunds are done while it runs', async () => {
+			const c = clients(
+				[concert('e1', PublishState.CANCELLED)],
+				[
+					[paid('o1'), paid('o2')],
+					[refunded('o1'), paid('o2')],
+				],
+			)
+			const gates: (() => void)[] = []
+			const refund = c.order.refundCancellation.getMockImplementation()
+			c.order.refundCancellation.mockImplementation(async (id: string) => {
+				await new Promise<void>((resolve) => gates.push(resolve))
+				return refund?.(id)
+			})
+			const { fixture, vm } = await build(c)
+
+			button(fixture, 'refund-all')?.click()
+			const run = vm.confirmRefundAll()
+			await vi.waitFor(() => expect(gates).toHaveLength(1))
+			await vi.waitFor(() =>
+				expect(rowText(fixture)).toContain('Refunding… 0 of 2 done'),
+			)
+			gates[0]()
+			await vi.waitFor(() => expect(gates).toHaveLength(2))
+			await vi.waitFor(() =>
+				expect(rowText(fixture)).toContain('Refunding… 1 of 2 done'),
+			)
+			gates[1]()
+			await run
 		})
 
 		it(`@spec ${SPEC} "Refund stops part-way"`, async () => {
