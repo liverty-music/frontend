@@ -20,6 +20,7 @@ import { IFabMenuService } from '../../src/services/fab-menu-service'
 import { IIdentityVerificationService } from '../../src/services/identity-verification-service'
 import { IPushService } from '../../src/services/push-service'
 import { IUserStore, UserStore } from '../../src/services/user-store'
+import { SETTINGS_ROWS } from '../helpers/settings-rows'
 
 // The shared language-change utility, spied but kept real, so a test can tell
 // Settings delegates to it.
@@ -108,6 +109,7 @@ async function render(o: Options) {
 			BusyOnClickCustomAttribute,
 			UserHomeSelectorStub,
 			BottomSheetStub,
+			...SETTINGS_ROWS,
 			SettingsRoute,
 		)
 		.build().started

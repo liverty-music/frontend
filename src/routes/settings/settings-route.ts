@@ -76,17 +76,6 @@ export class SettingsRoute {
 	public readonly supportedLanguages = SUPPORTED_LANGUAGES
 	private isToggling = false
 
-	/**
-	 * Per-row disclosure state for the Privacy & Analytics opt-out
-	 * descriptions. The description is hidden until the user expands it,
-	 * keeping each card compact while the full rationale stays one tap away.
-	 * Kept separate from the switch value so the disclosure and the switch
-	 * remain independent sibling controls (accessible: a `role="switch"`
-	 * button never nests another interactive element).
-	 */
-	public analyticsDescExpanded = false
-	public sessionReplayDescExpanded = false
-
 	public resendSuccess = false
 
 	/**
@@ -414,16 +403,6 @@ export class SettingsRoute {
 	/** Toggle the Session-replay opt-out (recording only; events unaffected). */
 	public handleSessionReplayToggle(): void {
 		this.writeConsent('sessionReplay', !this.consent.sessionReplay)
-	}
-
-	/** Toggle the Analytics opt-out description disclosure. */
-	public toggleAnalyticsDesc(): void {
-		this.analyticsDescExpanded = !this.analyticsDescExpanded
-	}
-
-	/** Toggle the Session-replay opt-out description disclosure. */
-	public toggleSessionReplayDesc(): void {
-		this.sessionReplayDescExpanded = !this.sessionReplayDescExpanded
 	}
 
 	private writeConsent(purpose: ConsentPurpose, enabled: boolean): void {

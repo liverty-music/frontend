@@ -1,0 +1,24 @@
+<import from="../settings-list/settings-list.css"></import>
+
+<div class="[ settings-row ] [ settings-row-toggle ]">
+  <svg-icon name.bind="icon" class="settings-icon"></svg-icon>
+  <button type="button" click.trigger="toggleExpanded()" aria-expanded.bind="expanded" class="settings-expand">
+    <span class="settings-expand-head">
+      <span class="settings-row-label">${label}</span>
+      <svg-icon name="chevron-right" class="settings-expand-caret" data-expanded.bind="expanded"></svg-icon>
+    </span>
+    <span if.bind="expanded" class="settings-toggle-desc">${description}</span>
+  </button>
+  <button
+    type="button"
+    busy-on-click.bind="action"
+    role="switch"
+    aria-checked.bind="checked"
+    aria-label.bind="label"
+    class="settings-switch"
+  >
+    <span class="settings-toggle-track" data-on.bind="checked">
+      <span class="settings-toggle-thumb" data-on.bind="checked"></span>
+    </span>
+  </button>
+</div>

@@ -611,25 +611,6 @@ describe('SettingsRoute', () => {
 		})
 	})
 
-	describe('opt-out description disclosure', () => {
-		it('toggleAnalyticsDesc flips the analytics disclosure state', () => {
-			expect(sut.analyticsDescExpanded).toBe(false)
-			sut.toggleAnalyticsDesc()
-			expect(sut.analyticsDescExpanded).toBe(true)
-			sut.toggleAnalyticsDesc()
-			expect(sut.analyticsDescExpanded).toBe(false)
-		})
-
-		it('disclosure toggle does not change the switch value (independent controls)', () => {
-			const before = sut.consent.sessionReplay
-			sut.toggleSessionReplayDesc()
-			expect(sut.sessionReplayDescExpanded).toBe(true)
-			// The disclosure and the switch are separate controls — expanding
-			// the description must not opt the user in/out.
-			expect(sut.consent.sessionReplay).toBe(before)
-		})
-	})
-
 	describe('opt-out toggle binding', () => {
 		it('both toggles default ON (opt-out model)', () => {
 			expect(sut.consent.analytics).toBe(true)

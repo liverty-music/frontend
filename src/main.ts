@@ -36,6 +36,10 @@ import { NotificationMockCard } from './components/notification-mock/notificatio
 import { PageHeader } from './components/page-header/page-header'
 import { PageHelp } from './components/page-help/page-help'
 import { PostSignupDialog } from './components/post-signup-dialog/post-signup-dialog'
+import { SettingsConsentRow } from './components/settings-consent-row/settings-consent-row'
+import { SettingsLinkRow } from './components/settings-link-row/settings-link-row'
+import { SettingsStatusRow } from './components/settings-status-row/settings-status-row'
+import { SettingsSwitchRow } from './components/settings-switch-row/settings-switch-row'
 import { SignupPromptBanner } from './components/signup-prompt-banner/signup-prompt-banner'
 import { StatePlaceholder } from './components/state-placeholder/state-placeholder'
 import { SuccessMark } from './components/success-mark/success-mark'
@@ -268,6 +272,12 @@ async function bootstrap(): Promise<void> {
 	au.register(PostSignupDialog)
 	au.register(StatePlaceholder)
 	au.register(SuccessMark)
+	au.register(
+		SettingsConsentRow,
+		SettingsLinkRow,
+		SettingsStatusRow,
+		SettingsSwitchRow,
+	)
 	au.register(SvgIcon)
 	au.register(UserHomeSelector)
 	au.register(AuthHook)

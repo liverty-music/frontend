@@ -1,6 +1,7 @@
 <import from="./language-selector.css"></import>
 <import from="./identity-verification.css"></import>
 <import from="./personal-details.css"></import>
+<import from="../../components/settings-list/settings-list.css"></import>
 
 <!-- The page title ("Settings") is owned by the shell-hosted <page-header>,
      driven from the route's data.titleKey. -->
@@ -32,75 +33,53 @@
     <ul class="settings-card" role="list">
       <!-- My Home Area -->
       <li class="settings-list-item">
-        <button click.trigger="openHomeSelector()" class="settings-row" data-testid="settings-first-row">
-          <svg-icon name="map-pin" class="settings-icon"></svg-icon>
-          <span t="settings.myHomeArea" class="settings-row-label"></span>
-          <div class="settings-row-end">
-            <span class="settings-row-value" t.bind="currentHomeKey"></span>
-            <svg-icon name="chevron-right" class="settings-chevron"></svg-icon>
-          </div>
-        </button>
+        <settings-link-row
+          icon="map-pin"
+          label.bind="'settings.myHomeArea' | t"
+          value.bind="currentHomeKey | t"
+          test-id="settings-first-row"
+          action.bind="() => openHomeSelector()"
+        ></settings-link-row>
       </li>
 
       <!-- Language -->
       <li class="settings-list-item">
-        <button click.trigger="openLanguageSelector()" class="settings-row">
-          <svg-icon name="globe" class="settings-icon"></svg-icon>
-          <span t="settings.language" class="settings-row-label"></span>
-          <div class="settings-row-end">
-            <span class="settings-row-value" t.bind="'languages.' + currentLocale"></span>
-            <svg-icon name="chevron-right" class="settings-chevron"></svg-icon>
-          </div>
-        </button>
+        <settings-link-row
+          icon="globe"
+          label.bind="'settings.language' | t"
+          value.bind="'languages.' + currentLocale | t"
+          action.bind="() => openLanguageSelector()"
+        ></settings-link-row>
       </li>
 
-      <!-- Push Notifications (whole row is the switch). When the VAPID key is
-           absent the row uses `aria-disabled` (not native `disabled`, which
-           removes it from AT discovery) and the explanatory hint is associated
-           via `aria-describedby`.
+      <!-- Push Notifications (whole row is the switch). Without the VAPID key
+           the row is unavailable and its description says why.
            Authenticated-only: a push subscription is persisted as a backend
            `push_subscriptions` row of the signed-in User, so before account creation
            (onboarding / guest) there is nothing to register and the toggle
            would no-op — hidden entirely, matching the ACCOUNT section below. -->
       <li if.bind="auth.isAuthenticated" class="settings-list-item">
-        <button
-          busy-on-click.bind="() => toggleNotifications()"
-          role="switch"
-          aria-checked.bind="notificationsEnabled"
-          aria-disabled.bind="!vapidAvailable"
-          aria-describedby="push-na-hint"
-          class="[ settings-row ] [ settings-row-toggle ]"
-          data-disabled.bind="!vapidAvailable"
-        >
-          <svg-icon name="bell" class="settings-icon"></svg-icon>
-          <div class="settings-toggle-col">
-            <span t="settings.pushNotifications" class="settings-row-label"></span>
-            <span id="push-na-hint" if.bind="!vapidAvailable" t="settings.notAvailable" class="settings-toggle-desc"></span>
-          </div>
-          <div class="settings-toggle-track" data-on.bind="notificationsEnabled">
-            <div class="settings-toggle-thumb" data-on.bind="notificationsEnabled"></div>
-          </div>
-        </button>
+        <settings-switch-row
+          icon="bell"
+          label.bind="'settings.pushNotifications' | t"
+          description.bind="(vapidAvailable ? '' : 'settings.notAvailable') | t"
+          description-id="push-na-hint"
+          checked.bind="notificationsEnabled"
+          unavailable.bind="!vapidAvailable"
+          action.bind="() => toggleNotifications()"
+        ></settings-switch-row>
       </li>
 
       <!-- Sound Effects (whole row is the switch) -->
       <li class="settings-list-item">
-        <button
-          click.trigger="toggleSound()"
-          role="switch"
-          aria-checked.bind="soundEnabled"
-          aria-describedby="sound-ios-hint"
-          class="[ settings-row ] [ settings-row-toggle ]"
-        >
-          <svg-icon name="music" class="settings-icon"></svg-icon>
-          <div class="settings-toggle-col">
-            <span t="settings.soundEffects" class="settings-row-label"></span>
-            <span id="sound-ios-hint" if.bind="isIOS" t="settings.soundEffectsHint" class="settings-toggle-desc"></span>
-          </div>
-          <div class="settings-toggle-track" data-on.bind="soundEnabled">
-            <div class="settings-toggle-thumb" data-on.bind="soundEnabled"></div>
-          </div>
-        </button>
+        <settings-switch-row
+          icon="music"
+          label.bind="'settings.soundEffects' | t"
+          description.bind="(isIOS ? 'settings.soundEffectsHint' : '') | t"
+          description-id="sound-ios-hint"
+          checked.bind="soundEnabled"
+          action.bind="() => toggleSound()"
+        ></settings-switch-row>
       </li>
 
       <!-- Sound volume: a sub-row of Sound Effects, so no divider above it. -->
@@ -124,21 +103,14 @@
       <!-- Left-handed mode: mirrors the FAB's action arc to open toward the left
            hand. Persisted via the storage adapter (fab-menu spec). -->
       <li class="settings-list-item">
-        <button
-          click.trigger="fabMenu.toggleHanded()"
-          role="switch"
-          aria-checked.bind="fabMenu.isLeftHanded"
-          class="[ settings-row ] [ settings-row-toggle ]"
-        >
-          <svg-icon name="swap" class="settings-icon"></svg-icon>
-          <div class="settings-toggle-col">
-            <span t="settings.leftHanded" class="settings-row-label"></span>
-            <span t="settings.leftHandedDesc" class="settings-toggle-desc"></span>
-          </div>
-          <div class="settings-toggle-track" data-on.bind="fabMenu.isLeftHanded">
-            <div class="settings-toggle-thumb" data-on.bind="fabMenu.isLeftHanded"></div>
-          </div>
-        </button>
+        <settings-switch-row
+          icon="swap"
+          label.bind="'settings.leftHanded' | t"
+          description.bind="'settings.leftHandedDesc' | t"
+          description-id="left-handed-desc"
+          checked.bind="fabMenu.isLeftHanded"
+          action.bind="() => fabMenu.toggleHanded()"
+        ></settings-switch-row>
       </li>
     </ul>
   </section>
@@ -147,87 +119,42 @@
   <section ref="analyticsSection" id="settings-analytics">
     <h2 t="settings.analytics.sectionTitle" class="settings-section-title"></h2>
     <ul class="settings-card" role="list">
-      <!-- Analytics consent. Icon (col1), disclosure (col2), switch (col3) are
-           siblings — a role="switch" must never contain another interactive
-           control, and keeping the icon a direct row child aligns it with the
-           other rows' icons. -->
+      <!-- Analytics consent: the label opens its description; the switch is
+           a separate control. -->
       <li class="settings-list-item">
-        <div class="[ settings-row ] [ settings-row-toggle ]">
-          <svg-icon name="info" class="settings-icon"></svg-icon>
-          <button
-            click.trigger="toggleAnalyticsDesc()"
-            aria-expanded.bind="analyticsDescExpanded"
-            class="settings-expand"
-          >
-            <span class="settings-expand-head">
-              <span t="settings.analytics.toggleLabel" class="settings-row-label"></span>
-              <svg-icon name="chevron-right" class="settings-expand-caret" data-expanded.bind="analyticsDescExpanded"></svg-icon>
-            </span>
-            <span
-              if.bind="analyticsDescExpanded"
-              t="settings.analytics.toggleDescription"
-              class="settings-toggle-desc"
-            ></span>
-          </button>
-          <button
-            click.trigger="handleAnalyticsToggle()"
-            role="switch"
-            aria-checked.bind="consent.analytics"
-            class="settings-switch"
-          >
-            <div class="settings-toggle-track" data-on.bind="consent.analytics">
-              <div class="settings-toggle-thumb" data-on.bind="consent.analytics"></div>
-            </div>
-          </button>
-        </div>
+        <settings-consent-row
+          icon="info"
+          label.bind="'settings.analytics.toggleLabel' | t"
+          description.bind="'settings.analytics.toggleDescription' | t"
+          checked.bind="consent.analytics"
+          action.bind="() => handleAnalyticsToggle()"
+        ></settings-consent-row>
       </li>
 
       <!-- Session-replay opt-out. Independent of Analytics: turning this off
            stops session recording only — catalogue events and the identified
            profile continue. Defaults ON. -->
       <li class="settings-list-item">
-        <div class="[ settings-row ] [ settings-row-toggle ]">
-          <svg-icon name="lock" class="settings-icon"></svg-icon>
-          <button
-            click.trigger="toggleSessionReplayDesc()"
-            aria-expanded.bind="sessionReplayDescExpanded"
-            class="settings-expand"
-          >
-            <span class="settings-expand-head">
-              <span t="settings.analytics.sessionReplayLabel" class="settings-row-label"></span>
-              <svg-icon name="chevron-right" class="settings-expand-caret" data-expanded.bind="sessionReplayDescExpanded"></svg-icon>
-            </span>
-            <span
-              if.bind="sessionReplayDescExpanded"
-              t="settings.analytics.sessionReplayDescription"
-              class="settings-toggle-desc"
-            ></span>
-          </button>
-          <button
-            click.trigger="handleSessionReplayToggle()"
-            role="switch"
-            aria-checked.bind="consent.sessionReplay"
-            class="settings-switch"
-          >
-            <div class="settings-toggle-track" data-on.bind="consent.sessionReplay">
-              <div class="settings-toggle-thumb" data-on.bind="consent.sessionReplay"></div>
-            </div>
-          </button>
-        </div>
+        <settings-consent-row
+          icon="lock"
+          label.bind="'settings.analytics.sessionReplayLabel' | t"
+          description.bind="'settings.analytics.sessionReplayDescription' | t"
+          checked.bind="consent.sessionReplay"
+          action.bind="() => handleSessionReplayToggle()"
+        ></settings-consent-row>
       </li>
 
       <!-- Privacy-policy link for both opt-out toggles. The policy names
            the analytics processor (PostHog / Klant Solutions B.V.) and the
            cross-border purpose; the toggles above are the always-available
            opt-out controls. Navigates in-app via the same openLegal handler
-           as the ABOUT-section Privacy Policy row, so there is a single
-           consistent in-app navigation path to /legal/privacy. -->
+           as the ABOUT-section Privacy Policy row. -->
       <li class="settings-list-item">
-        <button type="button" click.trigger="openLegal('/legal/privacy')" class="settings-row">
-          <svg-icon name="info" class="settings-icon"></svg-icon>
-          <span t="settings.analytics.privacyPolicyLink" class="settings-row-label"></span>
-          <svg-icon name="chevron-right" class="settings-chevron"></svg-icon>
-        </button>
+        <settings-link-row
+          icon="info"
+          label.bind="'settings.analytics.privacyPolicyLink' | t"
+          action.bind="() => openLegal('/legal/privacy')"
+        ></settings-link-row>
       </li>
     </ul>
   </section>
@@ -240,39 +167,28 @@
       <!-- Terms of Service. Navigates via the VM's root router (openLegal), not
            a load/href attribute — see SettingsRoute.openLegal for why. -->
       <li class="settings-list-item">
-        <button type="button" click.trigger="openLegal('/legal/terms')" class="settings-row">
-          <span t="settings.termsOfService" class="settings-row-label"></span>
-          <svg-icon name="chevron-right" class="settings-chevron"></svg-icon>
-        </button>
+        <settings-link-row label.bind="'settings.termsOfService' | t" action.bind="() => openLegal('/legal/terms')"></settings-link-row>
       </li>
 
       <!-- Privacy Policy -->
       <li class="settings-list-item">
-        <button type="button" click.trigger="openLegal('/legal/privacy')" class="settings-row">
-          <span t="settings.privacyPolicy" class="settings-row-label"></span>
-          <svg-icon name="chevron-right" class="settings-chevron"></svg-icon>
-        </button>
+        <settings-link-row label.bind="'settings.privacyPolicy' | t" action.bind="() => openLegal('/legal/privacy')"></settings-link-row>
       </li>
 
       <!-- OSS Licenses -->
       <li class="settings-list-item">
-        <button type="button" click.trigger="openLegal('/legal/licenses')" class="settings-row">
-          <span t="settings.ossLicenses" class="settings-row-label"></span>
-          <svg-icon name="chevron-right" class="settings-chevron"></svg-icon>
-        </button>
+        <settings-link-row label.bind="'settings.ossLicenses' | t" action.bind="() => openLegal('/legal/licenses')"></settings-link-row>
       </li>
 
       <!-- App version. Read-only display; tapping copies the version string
            to the clipboard as a support affordance. -->
       <li class="settings-list-item">
-        <button
-          type="button"
-          click.trigger="copyVersion()"
-          class="settings-row"
-        >
-          <span t="settings.version" class="settings-row-label"></span>
-          <span class="settings-row-value">${releaseVersion}</span>
-        </button>
+        <settings-link-row
+          label.bind="'settings.version' | t"
+          value.bind="releaseVersion"
+          chevron.bind="false"
+          action.bind="() => copyVersion()"
+        ></settings-link-row>
       </li>
     </ul>
   </section>
@@ -335,115 +251,77 @@
     <h2 t="settings.account" class="settings-section-title"></h2>
 
     <ul class="settings-card" role="list">
-      <!-- Email Verification. The badge is a polite live region (`<output>`)
-           associated with the email via `aria-describedby`, and carries a
-           non-color status icon so verification state is not conveyed by colour
-           alone. -->
+      <!-- Email Verification. The badge is a polite live region associated
+           with the address, and carries a status icon and text so the state is
+           not told by color alone. -->
       <li class="settings-list-item">
-        <div class="settings-row">
-          <svg-icon name="mail" class="settings-icon"></svg-icon>
-          <div class="settings-account">
-            <span id="account-email" class="settings-row-label" aria-describedby="email-verification-status">${auth.user.profile.email}</span>
-            <!-- The status and the action it allows share one line under the
-                 address, so the address keeps the row's full width. -->
-            <div class="[ settings-status-line ] [ cluster ]">
-              <output
-                id="email-verification-status"
-                class="settings-verification-badge"
-                aria-live="polite"
-                data-verified.bind="emailVerified"
-              >
-                <svg-icon if.bind="emailVerified" name="check" class="settings-verification-icon"></svg-icon>
-                <svg-icon if.bind="!emailVerified" name="alert-triangle" class="settings-verification-icon"></svg-icon>
-                <span if.bind="emailVerified" t="settings.emailVerified"></span>
-                <span if.bind="!emailVerified" t="settings.emailNotVerified"></span>
-              </output>
-              <button
-                if.bind="!emailVerified"
-                busy-on-click.bind="() => resendVerification()"
-                disabled.bind="resendSuccess"
-                aria-live="polite"
-                class="[ button settings-row-action ] [ pressable ]"
-                data-variant="outlined"
-              >
-                <span if.bind="resendSuccess" t="settings.resendSent"></span>
-                <span if.bind="!resendSuccess" t="settings.resendVerification"></span>
-              </button>
-            </div>
-          </div>
-        </div>
+        <settings-status-row
+          icon="mail"
+          label.bind="auth.user.profile.email"
+          label-id="account-email"
+          status-id="email-verification-status"
+          verified.bind="emailVerified"
+          verified-text.bind="'settings.emailVerified' | t"
+          unverified-text.bind="'settings.emailNotVerified' | t"
+          show-action.bind="!emailVerified"
+          action-label.bind="(resendSuccess ? 'settings.resendSent' : 'settings.resendVerification') | t"
+          action-disabled.bind="resendSuccess"
+          action.bind="() => resendVerification()"
+        ></settings-status-row>
       </li>
 
       <!-- 本人確認 (identity verification, identity-ekyc-jpki, PocketSign Stamp
-           flow). Shows whether the fan is verified (an Active
-           IdentityVerification), plus method + dedupe strength when verified.
-           The status badge is a polite live region (<output>) carrying a
-           non-colour status icon so state is not conveyed by colour alone.
-           Tapping "本人確認する" calls IdentityVerificationService.Start and
-           redirects the browser to the PocketSign app; the fan returns via the
-           /verify/callback route. -->
+           flow): whether the fan is verified (an Active IdentityVerification),
+           plus method + dedupe strength when verified. "本人確認する" calls
+           IdentityVerificationService.Start and redirects the browser to the
+           PocketSign app; the fan returns via the /verify/callback route. It is
+           hidden once the fan is verified, and when the card already verified
+           another account (only support can help then). -->
       <li class="settings-list-item">
-        <div class="settings-row">
-          <svg-icon name="shield-check" class="settings-icon"></svg-icon>
-          <div class="settings-identity-verification">
-            <span id="identity-verification-label" t="settings.identityVerification.label" class="settings-row-label"></span>
-            <div class="[ settings-status-line ] [ cluster ]">
-              <output
-                id="identity-verification-status"
-                class="settings-verification-badge"
-                aria-live="polite"
-                aria-describedby="identity-verification-label"
-                data-verified.bind="isVerified"
-              >
-                <svg-icon if.bind="isVerified" name="check" class="settings-verification-icon"></svg-icon>
-                <svg-icon if.bind="!isVerified" name="alert-triangle" class="settings-verification-icon"></svg-icon>
-                <span if.bind="isVerified" t="settings.identityVerification.verified"></span>
-                <span if.bind="!isVerified" t="settings.identityVerification.unverified"></span>
-              </output>
-              <!-- "本人確認する" button: redirects to PocketSign Stamp.
-                   Hidden once the fan is verified, and when the card already
-                   verified another account (only support can help then). -->
-              <button
-                if.bind="canStartIdentityVerification"
-                busy-on-click.bind="() => startIdentityVerification()"
-                aria-describedby.bind="identityFailureKey ? 'identity-verification-failure' : null"
-                class="[ button settings-row-action ] [ pressable ]"
-                data-variant="outlined"
-              >
-                <span t="settings.identityVerification.verifyCta"></span>
-              </button>
-            </div>
-            <!-- Why the last return from the PocketSign app did not verify the
-                 fan, kept next to the button until the fan starts again. -->
-            <p
-              if.bind="identityFailureKey"
-              id="identity-verification-failure"
-              class="settings-identity-verification-failure"
-              data-testid="identity-verification-failure"
-            >
-              <span t.bind="identityFailureKey"></span>
-              <span if.bind="identityFailureNeedsSupport">
-                <span t="verifyCallback.error.contact"></span><a href="mailto:${supportEmail}">${supportEmail}</a>
-              </span>
-            </p>
-            <!-- Method + dedupe strength, verified-only. -->
-            <span if.bind="isVerified && verificationMethodKey" class="settings-identity-verification-detail">
-              <span t="settings.identityVerification.methodPrefix"></span>
-              <span t.bind="verificationMethodKey"></span>
-              <span t.bind="dedupeStrengthKey" class="settings-identity-verification-dedupe"></span>
+        <settings-status-row
+          icon="shield-check"
+          label.bind="'settings.identityVerification.label' | t"
+          label-id="identity-verification-label"
+          status-id="identity-verification-status"
+          verified.bind="isVerified"
+          verified-text.bind="'settings.identityVerification.verified' | t"
+          unverified-text.bind="'settings.identityVerification.unverified' | t"
+          show-action.bind="canStartIdentityVerification"
+          action-label.bind="'settings.identityVerification.verifyCta' | t"
+          action-described-by.bind="identityFailureKey ? 'identity-verification-failure' : ''"
+          action.bind="() => startIdentityVerification()"
+        >
+          <!-- Why the last return from the PocketSign app did not verify the
+               fan, kept next to the button until the fan starts again. -->
+          <p
+            if.bind="identityFailureKey"
+            id="identity-verification-failure"
+            class="settings-identity-verification-failure"
+            data-testid="identity-verification-failure"
+          >
+            <span t.bind="identityFailureKey"></span>
+            <span if.bind="identityFailureNeedsSupport">
+              <span t="verifyCallback.error.contact"></span><a href="mailto:${supportEmail}">${supportEmail}</a>
             </span>
-          </div>
-        </div>
+          </p>
+          <!-- Method + dedupe strength, verified-only. -->
+          <span if.bind="isVerified && verificationMethodKey" class="settings-identity-verification-detail">
+            <span t="settings.identityVerification.methodPrefix"></span>
+            <span t.bind="verificationMethodKey"></span>
+            <span t.bind="dedupeStrengthKey" class="settings-identity-verification-dedupe"></span>
+          </span>
+        </settings-status-row>
       </li>
 
       <!-- Passkeys: opens passkey management, which requires a sign-in
            within the last 5 minutes (the hosted login asks again otherwise). -->
       <li class="settings-list-item">
-        <button type="button" click.trigger="openPasskeys()" class="settings-row" data-testid="settings-passkeys">
-          <svg-icon name="lock" class="settings-icon"></svg-icon>
-          <span t="settings.passkeys" class="settings-row-label"></span>
-          <svg-icon name="chevron-right" class="settings-chevron"></svg-icon>
-        </button>
+        <settings-link-row
+          icon="lock"
+          label.bind="'settings.passkeys' | t"
+          test-id="settings-passkeys"
+          action.bind="() => openPasskeys()"
+        ></settings-link-row>
       </li>
 
     </ul>

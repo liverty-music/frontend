@@ -1,0 +1,10 @@
+<import from="../settings-list/settings-list.css"></import>
+
+<button type="button" click.trigger="action()" class="settings-row" data-testid.bind="testId || null">
+  <svg-icon if.bind="icon" name.bind="icon" class="settings-icon"></svg-icon>
+  <span class="settings-row-label">${label}</span>
+  <span if.bind="value || chevron" class="settings-row-end">
+    <span if.bind="value" class="settings-row-value">${value}</span>
+    <svg-icon if.bind="chevron" name="chevron-right" class="settings-chevron"></svg-icon>
+  </span>
+</button>
