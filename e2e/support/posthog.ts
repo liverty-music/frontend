@@ -9,6 +9,8 @@ import type { Page, Route } from './test'
  */
 
 const API_HOST = 'https://eu.i.posthog.com'
+/** Where posthog-js loads its remote config and scripts for that host. */
+const ASSETS_HOST = 'https://eu-assets.i.posthog.com'
 
 /** One event as PostHog's ingest endpoint received it. */
 export interface SentEvent {
@@ -72,31 +74,87 @@ async function looksLikeABrowser(page: Page): Promise<void> {
 /** posthog-js's event ingest paths (`/e/`, `/i/v0/e/`, `/batch/`, `/capture/`). */
 const INGEST_PATH = /\/(e|i\/v0\/e|batch|capture)\/?(\?|$)/
 
+/** The project's session recording settings, as PostHog serves them. */
+const SESSION_RECORDING = { endpoint: '/s/', recorderVersion: 'v2' }
+
 /**
  * Answer every PostHog request locally and record the events sent to the
- * ingest endpoints, in arrival order. Remote config and flags answer empty,
- * so no recording or feature flag starts.
+ * ingest endpoints, in arrival order, session recording snapshots included.
+ * Remote config and flags answer empty, so no recording or feature flag
+ * starts, unless `recording` turns the project's session recording on.
  */
-export async function recordPostHog(page: Page): Promise<SentEvent[]> {
+export async function recordPostHog(
+	page: Page,
+	{ recording = false }: { recording?: boolean } = {},
+): Promise<SentEvent[]> {
 	const events: SentEvent[] = []
-	await page.route(`${API_HOST}/**`, (route: Route) => {
+	const answer = (route: Route) => {
 		const request = route.request()
-		if (INGEST_PATH.test(request.url())) {
+		const url = request.url()
+		if (INGEST_PATH.test(url) || SNAPSHOT_PATH.test(url)) {
 			events.push(...decodeEvents(request.postDataBuffer()))
 			return route.fulfill({ json: { status: 1 } })
 		}
-		if (request.url().includes('/flags')) {
+		if (url.includes('/flags')) {
 			return route.fulfill({
 				json: {
 					featureFlags: {},
 					featureFlagPayloads: {},
-					sessionRecording: false,
+					sessionRecording: recording ? SESSION_RECORDING : false,
 				},
 			})
 		}
+		// The remote config: its script is refused, so the SDK reads the JSON.
+		if (recording && /\/array\/[^/]+\/config\.js/.test(url)) {
+			return route.fulfill({ status: 404, body: '' })
+		}
+		if (recording && /\/array\/[^/]+\/config(\?|$)/.test(url)) {
+			return route.fulfill({ json: { sessionRecording: SESSION_RECORDING } })
+		}
 		return route.fulfill({ json: {} })
-	})
+	}
+	await page.route(`${API_HOST}/**`, answer)
+	await page.route(`${ASSETS_HOST}/**`, answer)
 	return events
+}
+
+/** posthog-js's session recording endpoint. */
+const SNAPSHOT_PATH = /\/s\/?(\?|$)/
+
+/**
+ * The recorded rrweb events in the `$snapshot` events sent, with the fields
+ * the recorder compresses in the browser (`cv`) decompressed.
+ */
+export function snapshotsOf(events: SentEvent[]): Record<string, unknown>[] {
+	return named(events, '$snapshot').flatMap((e) => {
+		const data = e.properties.$snapshot_data
+		return (Array.isArray(data) ? data : [data]).map((raw) => {
+			const snapshot = raw as Record<string, unknown>
+			const inner = snapshot.data
+			if (typeof inner === 'string') {
+				return { ...snapshot, data: inflate(inner) }
+			}
+			if (snapshot.cv && inner && typeof inner === 'object') {
+				const fields = Object.entries(inner as Record<string, unknown>).map(
+					([key, value]) => [
+						key,
+						typeof value === 'string' ? inflate(value) : value,
+					],
+				)
+				return { ...snapshot, data: Object.fromEntries(fields) }
+			}
+			return snapshot
+		})
+	})
+}
+
+/** A gzip-compressed JSON string as the recorder sends it, or the string. */
+function inflate(value: string): unknown {
+	try {
+		return JSON.parse(gunzipSync(Buffer.from(value, 'latin1')).toString('utf8'))
+	} catch {
+		return value
+	}
 }
 
 /**

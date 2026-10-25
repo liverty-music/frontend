@@ -1,13 +1,21 @@
-import { DI, IEventAggregator, Registration } from 'aurelia'
+import { I18N } from '@aurelia/i18n'
+import { tasksSettled } from '@aurelia/runtime'
+import { createFixture } from '@aurelia/testing'
+import { CustomElement, DI, IEventAggregator, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Snack } from '../../shared/ui/snack-bar/snack'
+import { IAppConfig } from '../../src/config/app-config'
 import type { Artist } from '../../src/entities/artist'
 import {
 	Events,
 	IAnalyticsService,
 } from '../../src/lib/analytics/analytics-service'
 import { resetRevealEntryForTests } from '../../src/routes/discovery/reveal-timing'
+import { IErrorBoundaryService } from '../../src/services/error-boundary-service'
 import { createTestContainer } from '../helpers/create-container'
+import { createMockAppConfig } from '../helpers/mock-app-config'
+import { createMockErrorBoundary } from '../helpers/mock-error-boundary'
+import { createMockI18n } from '../helpers/mock-i18n'
 import { createMockRouter } from '../helpers/mock-router'
 import {
 	createMockArtistServiceClient,
@@ -1014,7 +1022,99 @@ describe('DiscoveryRoute', () => {
 			expect(mockFollowClient.follow).not.toHaveBeenCalled()
 		})
 
+		/**
+		 * The route mounted with a bare template, so its `@watch` runs as in
+		 * the app; the canvas and the rest of the screen are left out.
+		 */
+		async function mountRoute(): Promise<{
+			vm: DiscoveryRoute
+			stop: () => Promise<void>
+		}> {
+			const Mounted = CustomElement.define(
+				{ name: 'mounted-discovery-route', template: '<div></div>' },
+				DiscoveryRoute,
+			)
+			const fixture = await createFixture
+				.html('<mounted-discovery-route></mounted-discovery-route>')
+				.deps(
+					Mounted,
+					Registration.instance(mockIArtistStore, mockArtistClient),
+					Registration.instance(mockIFollowStore, mockFollowClient),
+					Registration.instance(mockIConcertStore, mockConcert),
+					Registration.instance(IEventAggregator, mockEa),
+					Registration.instance(mockIRouter, mockRouter),
+					Registration.instance(mockIOnboardingService, mockOnboarding),
+					Registration.instance(IAnalyticsService, mockAnalytics),
+					Registration.instance(I18N, createMockI18n()),
+					Registration.instance(IAppConfig, createMockAppConfig()),
+					Registration.instance(
+						IErrorBoundaryService,
+						createMockErrorBoundary(),
+					),
+				)
+				.build().started
+			const vm = CustomElement.for(
+				fixture.appHost.querySelector('mounted-discovery-route') as HTMLElement,
+			).viewModel as DiscoveryRoute
+			vm.dnaOrbCanvas = sut.dnaOrbCanvas
+			return { vm, stop: () => fixture.stop(true) as Promise<void> }
+		}
+
+		async function followOn(
+			vm: DiscoveryRoute,
+			id: string,
+			concerts: number,
+		): Promise<void> {
+			;(
+				mockConcert.listByArtist as ReturnType<typeof vi.fn>
+			).mockResolvedValueOnce(
+				Array.from({ length: concerts }, (_, i) => ({ id: `${id}-c${i}` })),
+			)
+			await vm.onArtistSelected(
+				new CustomEvent('artist-selected', {
+					detail: { artist: makeArtist(id, id), position: { x: 0, y: 0 } },
+				}),
+			)
+			await vi.runAllTimersAsync()
+			await tasksSettled()
+		}
+
+		function readyEvents(): unknown[][] {
+			return mockAnalytics.capture.mock.calls.filter(
+				([name]) => name === Events.OnboardingTimetableReady,
+			)
+		}
+
 		// @spec components/infrastructure/fan/web/route/discovery "Timetable becomes ready"
+		it('reports the ready timetable once per visit when the row becomes ready', async () => {
+			const { vm, stop } = await mountRoute()
+			for (const id of ['a1', 'a2', 'a3']) await followOn(vm, id, 1)
+			await followOn(vm, 'a4', 1)
+
+			expect(readyEvents()).toEqual([
+				[
+					Events.OnboardingTimetableReady,
+					{ followed_count: 3, artists_with_concerts_count: 3 },
+				],
+			])
+			await stop()
+		})
+
+		// @spec components/infrastructure/fan/web/route/discovery "Ready while searching"
+		it('reports the ready timetable only once the search closes', async () => {
+			const { vm, stop } = await mountRoute()
+			vm.search.isSearchMode = true
+			for (const id of ['a1', 'a2', 'a3']) await followOn(vm, id, 1)
+
+			expect(readyEvents()).toEqual([])
+
+			vm.search.exitSearchMode()
+			await tasksSettled()
+
+			expect(readyEvents()).toHaveLength(1)
+			await stop()
+		})
+
 		it('reports the ready timetable once per visit, with the two counts', async () => {
 			const route = sut as unknown as {
 				onTimetableReadyChanged(ready: boolean): void

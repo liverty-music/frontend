@@ -8,8 +8,13 @@ import {
 	resolve,
 } from 'aurelia'
 import type { CaptureOptions, PostHog, PostHogConfig } from 'posthog-js'
+import {
+	savePendingAuthStart,
+	takePendingAuthStart,
+} from '../../adapter/storage/pending-auth-start-storage'
 import { IAppConfig } from '../../config/app-config'
 import {
+	type AuthStartedProps,
 	type AuthStartSource,
 	type EventName,
 	type EventProps,
@@ -286,20 +291,40 @@ export class AnalyticsService implements IAnalyticsService {
 	 * Reports a start of sign-up or sign-in. The page leaves for hosted login
 	 * right after, so the event is sent at once (`fetch` with keepalive
 	 * outlives the navigation) rather than left in the SDK's batch queue.
-	 * Before init it is queued like any event and is lost if the page leaves
-	 * first.
+	 * Before the SDK has loaded it is kept on the device and sent, with the
+	 * time of the start, once the SDK loads on the return.
 	 */
 	private handleAuthStarted(event: AuthStarted): void {
-		if (event.source === undefined) return
+		if (event.source === undefined || !this.isEnabled()) return
 		const props = {
 			kind: event.kind,
 			source: event.source as AuthStartSource,
 		}
-		if (this.isEnabled() && this.posthog !== null && !this.flushing) {
+		if (this.posthog === null) {
+			if (this.analyticsEnabled()) {
+				savePendingAuthStart({ ...props, time: Date.now() })
+			}
+			return
+		}
+		if (!this.flushing) {
 			this.dispatch(Events.AuthStarted, props, { send_instantly: true })
 			return
 		}
 		this.capture(Events.AuthStarted, props)
+	}
+
+	/** Send a start of sign-up or sign-in kept before the SDK loaded. */
+	private sendPendingAuthStart(analyticsEnabled: boolean): void {
+		const pending = takePendingAuthStart()
+		if (pending === null || !analyticsEnabled) return
+		this.dispatch(
+			Events.AuthStarted,
+			{
+				kind: pending.kind as AuthStartedProps['kind'],
+				source: pending.source as AuthStartSource,
+			},
+			{ timestamp: new Date(pending.time) },
+		)
 	}
 
 	public captureException(
@@ -402,6 +427,7 @@ export class AnalyticsService implements IAnalyticsService {
 			return
 		}
 		this.posthog.reset()
+		this.registerAppState()
 		// reset() clears the SDK's consent state; a fan who opted out stays
 		// opted out after signing out.
 		if (!this.consent.analytics) this.posthog.opt_out_capturing()
@@ -552,8 +578,7 @@ export class AnalyticsService implements IAnalyticsService {
 			posthog.init(this.config.posthogProjectKey, initConfig)
 			this.posthog = posthog
 			this.recordingDisabled = initConfig.disable_session_recording ?? null
-			// Every event states whether the app runs installed or in a tab.
-			posthog.register({ display_mode: displayMode() })
+			this.registerAppState()
 
 			if (analyticsEnabled) {
 				// Default state: ensure capture is opted in (the SDK persists
@@ -567,6 +592,9 @@ export class AnalyticsService implements IAnalyticsService {
 			}
 
 			this.flushQueue()
+			// Before identify, like the queue: the start was the anonymous
+			// visitor's.
+			this.sendPendingAuthStart(analyticsEnabled)
 			// Replay a buffered identify AFTER the queue flush so any pre-init
 			// `capture` is attributed to the anonymous id first; identify then
 			// MERGES that history into the real user_id (no reset()).
@@ -722,6 +750,8 @@ export class AnalyticsService implements IAnalyticsService {
 				persistence: 'localStorage+cookie',
 				ip: true,
 			})
+			// The opt-out's reset() cleared the super properties.
+			this.registerAppState()
 			// Re-identify if a user_id was buffered (e.g. UserHydrationTask
 			// ran while opted out — though identify() does not buffer in that
 			// case; this covers a re-enable within the same boot). No reset().
@@ -735,6 +765,16 @@ export class AnalyticsService implements IAnalyticsService {
 		// notificationclick / notificationclose honour it immediately.
 		this.syncIdentitySnapshot()
 		this.applySessionReplayToSdk(event.state.sessionReplay, analyticsEnabled)
+	}
+
+	/**
+	 * Every event states whether the app runs installed or in a tab. A
+	 * super property, so it is set again after each `reset()`, which clears
+	 * them (OpenSpec `global/analytics`, "Events state how the app is
+	 * running").
+	 */
+	private registerAppState(): void {
+		this.posthog?.register({ display_mode: displayMode() })
 	}
 
 	/**

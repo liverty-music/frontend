@@ -126,6 +126,20 @@ describe('PushServiceClient.resolvePushState (recovery matrix)', () => {
 		expect(mockRpc.create).not.toHaveBeenCalled()
 	})
 
+	it('asks for permission with the source of the request', async () => {
+		// @spec components/infrastructure/fan/web/global/notification-prompt "Fan denies"
+		mockNotificationManager.permission = 'denied'
+		const svc = new PushServiceClient()
+
+		await expect(svc.create('notification_prompt')).resolves.toBeNull()
+
+		// NotificationManager reports the answer with this source.
+		expect(mockNotificationManager.requestPermission).toHaveBeenCalledWith(
+			'notification_prompt',
+		)
+		expect(mockRpc.create).not.toHaveBeenCalled()
+	})
+
 	it('granted + no browser sub → auto re-subscribe and register → enabled', async () => {
 		pushManager.getSubscription.mockResolvedValue(null)
 		const svc = new PushServiceClient()
