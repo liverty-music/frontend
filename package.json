@@ -44,7 +44,7 @@
 		"@storybook/addon-docs": "10.6.3",
 		"@storybook/addon-vitest": "10.6.3",
 		"@storybook/builder-vite": "10.6.3",
-		"@swc/core": "1.16.18",
+		"@swc/core": "1.16.20",
 		"@types/matter-js": "0.20.2",
 		"@types/node": "26.6.5",
 		"@vitest/browser": "4.1.12",
