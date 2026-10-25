@@ -1258,6 +1258,35 @@ describe('DashboardRoute', () => {
 			})
 		})
 
+		// @spec components/infrastructure/fan/web/global/post-signup-dialog "Region selection still precedes both"
+		it('resolves the home area before the post-signup celebration and sheet', async () => {
+			mockAuth.isAuthenticated = true
+			mockStorage.getItem.mockImplementation((k: string) =>
+				k === 'postSignup.shown' ? 'pending' : null,
+			)
+			// A new account without a home area until the fan picks one.
+			mockUserStore.currentHome = null
+			;(mockUserStore as { updateHome?: unknown }).updateHome = vi.fn(
+				async () => {
+					mockUserStore.currentHome = 'JP-13'
+				},
+			)
+			sut = new DashboardRoute()
+			sut.needsRegion = true
+			await sut.loadData()
+			sut.attached()
+
+			expect(sut.showCelebration).toBe(false)
+			expect(sut.showPostSignupDialog).toBe(false)
+
+			await sut.onHomeSelected('JP-13')
+			expect(sut.showCelebration).toBe(true)
+			expect(sut.showPostSignupDialog).toBe(false)
+
+			sut.onCelebrationDismissed()
+			expect(sut.showPostSignupDialog).toBe(true)
+		})
+
 		it('does not celebrate for an authenticated returning user', async () => {
 			mockAuth.isAuthenticated = true
 			sut = new DashboardRoute()

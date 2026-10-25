@@ -1,6 +1,11 @@
 import { DI, resolve } from 'aurelia'
 import { ILocalStorage } from '../adapter/storage/local-storage'
 import { StorageKeys } from '../constants/storage-keys'
+import {
+	type CelebrationBus,
+	makeReverbImpulse,
+	playCheers,
+} from './celebration-sounds'
 
 /** Hard cap on simultaneously sounding voices to bound CPU usage. */
 const MAX_VOICES = 16
@@ -46,13 +51,6 @@ const NOISE_PEAK = 0.7
 const LANDING_FREQ = 280
 const LANDING_CUTOFF_FROM = 2200
 const LANDING_CUTOFF_TO = 700
-/**
- * Post-signup celebration: a rising major arpeggio (C5 E5 G5 C6), each note a
- * short bright bell, the last one held a little longer.
- */
-const CELEBRATION_NOTES = [523.25, 659.25, 783.99, 1046.5]
-/** Gap (seconds) between the arpeggio's notes. */
-const CELEBRATION_STEP_SEC = 0.085
 /** Default fallback glide duration when a voice does not override it. */
 const GLIDE_SEC = 0.05
 /** Default low-pass resonance. */
@@ -132,6 +130,8 @@ export class AudioEngine implements IAudioEngine {
 	private voices: Voice[] = []
 	/** Cached white-noise buffer, generated once and reused per tap transient. */
 	private noiseBuffer: AudioBuffer | null = null
+	/** The celebration's stereo room (dry + reverb), built on first use. */
+	private celebrationBus: CelebrationBus | null = null
 
 	private _muted: boolean
 	private _volume: number
@@ -225,18 +225,35 @@ export class AudioEngine implements IAudioEngine {
 
 	public playCelebration(): void {
 		if (this._muted || !this.ctx || !this.master) return
-		CELEBRATION_NOTES.forEach((freq, i) => {
-			const last = i === CELEBRATION_NOTES.length - 1
-			this.spawnVoice(freq, {
-				type: 'triangle',
-				attack: 0.004,
-				decay: last ? 0.5 : 0.16,
-				peak: 0.5,
-				delay: i * CELEBRATION_STEP_SEC,
-				cutoffFrom: 7000,
-				cutoffTo: 2500,
-			})
-		})
+		playCheers(this.ensureCelebrationBus(this.ctx, this.master))
+	}
+
+	/**
+	 * Dry and reverb paths into a gentle compressor, then the master gain, so
+	 * the celebration sits in a small room and never clips.
+	 */
+	private ensureCelebrationBus(
+		ctx: AudioContext,
+		master: GainNode,
+	): CelebrationBus {
+		if (this.celebrationBus) return this.celebrationBus
+		const glue = ctx.createDynamicsCompressor()
+		glue.threshold.value = -18
+		glue.ratio.value = 3
+		glue.attack.value = 0.003
+		glue.release.value = 0.25
+		glue.connect(master)
+		const dry = ctx.createGain()
+		dry.gain.value = 0.9
+		dry.connect(glue)
+		const reverb = ctx.createConvolver()
+		reverb.buffer = makeReverbImpulse(ctx)
+		const wet = ctx.createGain()
+		wet.gain.value = 0.5
+		reverb.connect(wet)
+		wet.connect(glue)
+		this.celebrationBus = { ctx, dry, wet: reverb }
+		return this.celebrationBus
 	}
 
 	public setMuted(muted: boolean): void {

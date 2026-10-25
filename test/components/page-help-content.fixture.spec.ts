@@ -87,20 +87,18 @@ describe('page help content', () => {
 
 	// @spec components/infrastructure/fan/web/global/page-help "My Artists help content"
 	// @spec components/infrastructure/fan/web/route/my-artists "Help text visible to touch device users"
-	it('My Artists: hype with the dot selector, and Edit in the menu', async () => {
+	it('My Artists: hype, and Edit in the action menu at the bottom centre', async () => {
 		const { titles, text } = await render('my-artists')
 
 		expect(titles).toEqual(['Hype（熱量） について', 'フォロー解除'])
-		expect(text).toContain(
-			'Hype（熱量）で通知の範囲が変わります。各行の点をタップして切り替えます。',
-		)
+		expect(text).toContain('Hype（熱量）で通知の範囲が変わります。')
 		expect(text).toContain(
 			'遠征してでも見たいアーティストは Away に設定してみましょう！',
 		)
 		expect(text).toContain(
-			'右下のメニューの「編集」をタップすると各行に削除ボタンが表示され、フォローを解除できます。',
+			'画面下中央のアクションメニューで「編集」を選ぶと、各行に削除ボタンが表示され、フォローを解除できます。',
 		)
-		expect(text).not.toMatch(/スライダー|ヘッダー|長押し/)
+		expect(text).not.toMatch(/スライダー|ヘッダー|長押し|右下/)
 	})
 
 	// @spec components/infrastructure/fan/web/route/my-artists "Help text available in all supported locales"
@@ -108,13 +106,11 @@ describe('page help content', () => {
 		const { titles, text } = await render('my-artists', 'en')
 
 		expect(titles).toEqual(['About Hype', 'Unfollowing'])
+		expect(text).toContain('Hype controls how far away you get notified.')
 		expect(text).toContain(
-			'Hype controls how far away you get notified. Tap a dot on the row to change it.',
+			'Choose Edit in the action menu at the bottom centre to show a remove button on each row and unfollow artists.',
 		)
-		expect(text).toContain(
-			'Tap Edit in the menu at the bottom right to reveal per-row remove controls and unfollow artists.',
-		)
-		expect(text).not.toMatch(/slider|header|long-press/i)
+		expect(text).not.toMatch(/slider|header|long-press|bottom right/i)
 	})
 
 	// @spec components/infrastructure/fan/web/global/page-help "Tier content per row"

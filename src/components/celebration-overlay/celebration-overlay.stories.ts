@@ -37,26 +37,42 @@ const TIERS: Record<
 	},
 }
 
-/** Bright stage cards with text, like a loaded timetable. */
-const TIMETABLE = `
-	<div class="story-timetable" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 8px">
-		<div repeat.for="i of 12" style="--artist-hue: \${i * 30}">
-			<p class="story-card">Artist \${i + 1} — Zepp Haneda</p>
-		</div>
-	</div>
+/**
+ * Story scaffolding: what the overlay sits over, sized by the viewport and the
+ * app's tokens, never by fixed pixels.
+ */
+const SCAFFOLD_STYLE = `
 	<style>
+		.story-stage {
+			min-block-size: 100dvb;
+		}
 		.story-card {
 			margin: 0;
-			padding: 24px 8px;
-			border-radius: 12px;
+			padding: var(--space-m) var(--space-2xs);
+			border-radius: var(--radius-card);
 			color: oklch(15% 0 0deg);
 			background: oklch(85% 0.15 var(--artist-hue));
+		}
+		.story-replay {
+			position: fixed;
+			inset-block-end: var(--space-s);
+			inset-inline-start: var(--space-s);
+			z-index: 1;
 		}
 	</style>
 `
 
+/** Bright stage cards with text, like a loaded timetable. */
+const TIMETABLE = `
+	<div class="grid-auto" style="--grid-min: 6rem">
+		<div repeat.for="i of 12" style="--artist-hue: \${i * 30}">
+			<p class="story-card">Artist \${i + 1} — Zepp Haneda</p>
+		</div>
+	</div>
+`
+
 const EMPTY = `
-	<div style="display: grid; place-items: center; block-size: 480px; text-align: center">
+	<div class="[ center ] [ story-stage ]">
 		<p>${ja.dashboard.empty.title}</p>
 	</div>
 `
@@ -79,6 +95,17 @@ const meta = {
 		},
 	},
 	args: { tier: 'postSignup', backdrop: 'empty' },
+	// A phone; switch the viewport to see other sizes.
+	globals: { viewport: { value: 'mobile1', isRotated: false } },
+	// Shown as the app shows it: Japanese text under `lang="ja"`, which the
+	// phrase-boundary line breaks need. Restored for the next story.
+	beforeEach: () => {
+		const lang = document.documentElement.lang
+		document.documentElement.lang = 'ja'
+		return () => {
+			document.documentElement.lang = lang
+		}
+	},
 } satisfies Meta<typeof CelebrationOverlay>
 
 export default meta
@@ -91,9 +118,10 @@ type Story = StoryObj<typeof meta>
 const render = (args: Args) =>
 	defineAureliaStory({
 		template: `
-			<div style="min-block-size: 480px">
+			${SCAFFOLD_STYLE}
+			<div class="story-stage">
 				<div aria-hidden="true">${args.backdrop === 'timetable' ? TIMETABLE : EMPTY}</div>
-				<button type="button" class="story-replay" click.trigger="replay()" style="position: fixed; inset-block-end: 16px; inset-inline-start: 16px; z-index: 1">
+				<button type="button" class="[ story-replay ] [ button ] [ pressable ]" data-variant="outlined" click.trigger="replay()">
 					Play again
 				</button>
 				<celebration-overlay

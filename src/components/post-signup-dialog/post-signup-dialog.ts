@@ -32,7 +32,7 @@ export class PostSignupDialog {
 	public installGuideShown = false
 
 	// True when the native `beforeinstallprompt` prompt is available, so
-	// 「追加する」 opens it. Driven by an explicit `@watch` on `canShowFab`
+	// 「ホーム画面に置く」 opens it. Driven by an explicit `@watch` on `canShowFab`
 	// rather than a plain getter: `if.bind` on a getter that traverses an
 	// injected service's `@observable` is not guaranteed to update reactively.
 	@observable public canInstallNatively = false
@@ -60,7 +60,7 @@ export class PostSignupDialog {
 		if (this.active) this.activeChanged()
 	}
 
-	// Switch 「追加する」 to the native prompt as soon as it arrives, even while
+	// Switch 「ホーム画面に置く」 to the native prompt as soon as it arrives, even while
 	// the install step is open.
 	@watch((vm: PostSignupDialog) => vm.pwaInstall.canShowFab)
 	public canShowFabChanged(): void {
@@ -131,7 +131,7 @@ export class PostSignupDialog {
 		this.next()
 	}
 
-	/** 「追加する」: the browser's own prompt, or the browser-menu steps. */
+	/** 「ホーム画面に置く」: the browser's own prompt, or the browser-menu steps. */
 	public async onInstall(): Promise<void> {
 		if (!this.canInstallNatively) {
 			this.installGuideShown = true

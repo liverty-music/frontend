@@ -4,10 +4,18 @@
 
 <div else class="onboarding-progress-track">
   <span id="onboarding-progress-label" class="onboarding-progress-label" t="discovery.progress.label"></span>
-  <progress
-    class="onboarding-progress-bar"
-    max="100"
-    value.bind="percent"
+  <div
+    class="onboarding-progress-meter"
+    role="progressbar"
     aria-labelledby="onboarding-progress-label"
-  ></progress>
+    aria-valuemin="0"
+    aria-valuemax="100"
+    aria-valuenow.bind="percent"
+    data-rise.bind="rises % 2"
+    style="--progress: ${percent}"
+  >
+    <span class="onboarding-progress-fill"></span>
+    <span class="onboarding-progress-spark"></span>
+  </div>
+  <span class="onboarding-progress-value" aria-hidden="true">${percent}%</span>
 </div>
