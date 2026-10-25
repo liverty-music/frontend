@@ -90,7 +90,7 @@ export interface FreshSaleOptions {
 	price?: number
 	/** Tickets offered. 5 when not given. */
 	quantity?: number
-	/** Most tickets one account may hold. 10 when not given. */
+	/** Most tickets one account may hold. The quantity, at most 10, when not given. */
 	perAccountLimit?: number
 }
 
@@ -137,7 +137,8 @@ export async function openFreshSale(
 					eventId: { value: eventId },
 					price: { value: String(options.price ?? 3000) },
 					quantity: options.quantity ?? 5,
-					perAccountLimit: options.perAccountLimit ?? 10,
+					perAccountLimit:
+						options.perAccountLimit ?? Math.min(options.quantity ?? 5, 10),
 				},
 			],
 		},

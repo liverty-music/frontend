@@ -1,15 +1,16 @@
 import { existsSync } from 'node:fs'
-import {
-	type APIRequestContext,
-	type Browser,
-	type BrowserContext,
-	devices,
-	expect,
-	type Page,
-	test,
-} from '@playwright/test'
+import { type APIRequestContext, expect, type Page } from '@playwright/test'
 import { authorizeCard, fillPersonalDetails, holdTickets } from './checkout'
 import { listByEvent, openFirstCome, openFreshSale } from './sale'
+import {
+	closeFan,
+	FAN_STATE,
+	fanContext,
+	hasOrganizerSession,
+	organizerToken,
+	SECOND_FAN_STATE,
+	test,
+} from './session'
 
 /**
  * Story `buy-tickets-first-come` on PRODUCTION in Stripe test mode, signed in
@@ -17,12 +18,14 @@ import { listByEvent, openFirstCome, openFreshSale } from './sale'
  *
  * Needs a published Event of the test Organizer, by id in `E2E_SALE_EVENT_ID`,
  * on which the test user holds no tickets (its Tickets for the event count
- * against the per-account limit). With an organizer access token of the test
- * Organizer in `E2E_ORGANIZER_TOKEN`, the run opens its own first-come sale on
- * that event through the organizer `TicketSaleService.Create` (5 tickets of
- * 3000 yen, a per-account limit of 10), ending the event's open first-come sale
- * first. Without it, the event's open first-come sale is used as it stands and
- * must have been created the same way in the organizer console.
+ * against the per-account limit). With the test Organizer's member session
+ * (`.auth/storageState.organizer.prod.json`), the run opens its own first-come
+ * sale on that event through the organizer `TicketSaleService.Create` (5
+ * tickets of 3000 yen, a per-account limit of 5), ending the event's open
+ * first-come sale first. Without it, the event's open first-come sale is used
+ * as it stands and must have been created the same way in the organizer
+ * console. A run buys up to 5 tickets, so each run needs an Event the test
+ * user holds no tickets for (docs/prod-e2e-fixtures.md).
  *
  * The tests run in order and share the sale:
  *   1. Two tickets bought: 2 sold.
@@ -38,7 +41,7 @@ import { listByEvent, openFirstCome, openFreshSale } from './sale'
  * Run it in the pinned Playwright container with the host network, which
  * keeps js.stripe.com reachable from inside it:
  *   docker run --rm --network host -e E2E_SALE_EVENT_ID=… \
- *     -e E2E_ORGANIZER_TOKEN -v "$PWD":/work -w /work \
+ *     -v "$PWD":/work -w /work \
  *     mcr.microsoft.com/playwright:v1.64.1-noble \
  *     npx playwright test -c playwright.prod.config.mjs buy-tickets-first-come
  *
@@ -49,8 +52,6 @@ import { listByEvent, openFirstCome, openFreshSale } from './sale'
  * canceled), and the ticket journey Paid.
  */
 const SALE_EVENT_ID = process.env.E2E_SALE_EVENT_ID ?? ''
-const ORGANIZER_TOKEN = process.env.E2E_ORGANIZER_TOKEN ?? ''
-const SECOND_FAN_STATE = '.auth/storageState.prod.fan2.json'
 
 /** The checkout's 15-minute hold, plus a margin for the server's clock. */
 const HOLD_MS = 15 * 60 * 1000
@@ -68,14 +69,14 @@ async function salePrice(request: APIRequestContext): Promise<number> {
 
 /**
  * The tickets of the open sale nobody has bought or holds, as the organizer
- * sees them. Undefined without an organizer token.
+ * sees them.
  */
 async function remaining(
 	request: APIRequestContext,
-): Promise<number | undefined> {
-	if (!ORGANIZER_TOKEN) return undefined
+	organizerToken: string,
+): Promise<number> {
 	const type = openFirstCome(
-		await listByEvent(request, SALE_EVENT_ID, 'organizer', ORGANIZER_TOKEN),
+		await listByEvent(request, SALE_EVENT_ID, 'organizer', organizerToken),
 	)?.ticketTypes[0]
 	if (!type) throw new Error('the event has no open first-come sale')
 	return (type.quantity ?? 0) - (type.soldCount ?? 0) - (type.heldCount ?? 0)
@@ -87,14 +88,14 @@ const yen = (n: number) => n.toLocaleString('ja-JP')
 test.describe.configure({ mode: 'serial' })
 
 test.describe('buy tickets first come (signed in)', () => {
-	test.beforeAll(async ({ request }) => {
-		if (!existsSync('.auth/storageState.prod.json')) {
+	test.beforeAll(async ({ request, browser }) => {
+		if (!existsSync(FAN_STATE)) {
 			throw new Error(
-				'.auth/storageState.prod.json is missing: run npm run auth:capture:password:prod',
+				`${FAN_STATE} is missing: run npm run auth:capture:password:prod`,
 			)
 		}
-		if (SALE_EVENT_ID && ORGANIZER_TOKEN)
-			await openFreshSale(request, SALE_EVENT_ID, ORGANIZER_TOKEN)
+		if (SALE_EVENT_ID && hasOrganizerSession())
+			await openFreshSale(request, SALE_EVENT_ID, await organizerToken(browser))
 	})
 
 	test.beforeEach(() => {
@@ -239,10 +240,12 @@ test.describe('buy tickets first come (signed in)', () => {
 		test.skip(!existsSync(SECOND_FAN_STATE), `${SECOND_FAN_STATE} is required`)
 		test.setTimeout(10 * 60 * 1000)
 		// Buy until one ticket remains: 2 remain after the tests above.
-		const left = (await remaining(request)) ?? 2
+		const left = hasOrganizerSession()
+			? await remaining(request, await organizerToken(browser))
+			: 2
 		for (let i = 1; i < left; i++) await buyOne(page)
 
-		const second = await secondFan(browser, baseURL)
+		const second = await fanContext(browser, baseURL, SECOND_FAN_STATE)
 		const other = await second.newPage()
 		await Promise.all([openCheckout(page), openCheckout(other)])
 		const fans = [page, other]
@@ -282,27 +285,13 @@ test.describe('buy tickets first come (signed in)', () => {
 		await expect(winner.getByTestId('checkout-done-summary')).toContainText(
 			/1枚|1 tickets?/,
 		)
-		await second.close()
+		await closeFan(second, SECOND_FAN_STATE)
 
 		// The last ticket is sold: the sale is sold out, not held.
 		const sale = openFirstCome(await listByEvent(request, SALE_EVENT_ID, 'fan'))
 		expect(sale?.ticketTypes[0].state).toBe('TICKET_TYPE_STATE_SOLD_OUT')
 	})
 })
-
-/** A signed-in context for the second fan, on the project's device. */
-async function secondFan(
-	browser: Browser,
-	baseURL: string | undefined,
-): Promise<BrowserContext> {
-	return browser.newContext({
-		...devices['Pixel 7'],
-		baseURL,
-		locale: 'ja-JP',
-		timezoneId: 'Asia/Tokyo',
-		storageState: SECOND_FAN_STATE,
-	})
-}
 
 /** Buy one ticket through the whole checkout. */
 async function buyOne(page: Page): Promise<void> {
