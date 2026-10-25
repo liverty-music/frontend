@@ -8,13 +8,13 @@ import { IConcertRpcClient } from '../../src/adapter/rpc/client/concert-client'
 import { IIdentityVerificationRpcClient } from '../../src/adapter/rpc/client/identity-verification-client'
 import { ITicketJourneyRpcClient } from '../../src/adapter/rpc/client/ticket-journey-client'
 import { IUserRpcClient } from '../../src/adapter/rpc/client/user-client'
+import settingsListCss from '../../src/components/settings-list/settings-list.css?raw'
 import { IAppConfig } from '../../src/config/app-config'
 import { BusyOnClickCustomAttribute } from '../../src/custom-attributes/busy-on-click'
 import type { IdentityVerification } from '../../src/entities/identity-verification'
 import { IConsentService } from '../../src/lib/consent/consent-service'
 import ja from '../../src/locales/ja/translation.json'
 import { SettingsRoute } from '../../src/routes/settings/settings-route'
-import settingsCss from '../../src/routes/settings/settings-route.css?raw'
 import { IAudioEngine } from '../../src/services/audio-engine'
 import { IAuthService } from '../../src/services/auth-service'
 import { IConcertStore } from '../../src/services/concert-store'
@@ -24,6 +24,7 @@ import { IIdentityVerificationService } from '../../src/services/identity-verifi
 import { IPushService } from '../../src/services/push-service'
 import { ITicketJourneyStore } from '../../src/services/ticket-journey-store'
 import { IUserStore } from '../../src/services/user-store'
+import { SETTINGS_ROWS } from '../helpers/settings-rows'
 
 const UserHomeSelectorStub = CustomElement.define(
 	{
@@ -120,6 +121,7 @@ describe('Sign-out from the settings screen (fixture)', () => {
 				UserHomeSelectorStub,
 				BottomSheetStub,
 				BusyOnClickCustomAttribute,
+				...SETTINGS_ROWS,
 				SettingsRoute,
 			)
 			.build()
@@ -152,12 +154,11 @@ describe('Sign-out from the settings screen (fixture)', () => {
 		)
 		expect(scroll?.lastElementChild?.contains(signOut)).toBe(true)
 		expect(signOut?.querySelector('.settings-sign-out-text')).not.toBeNull()
-		expect(settingsCss).toContain('--_signout-color: var(--color-error)')
-		const textRule = settingsCss.slice(
-			settingsCss.indexOf('.settings-sign-out-text {'),
+		const textRule = settingsListCss.slice(
+			settingsListCss.indexOf('.settings-sign-out-text {'),
 		)
 		expect(textRule.slice(0, textRule.indexOf('}'))).toContain(
-			'color: var(--_signout-color)',
+			'color: var(--color-error)',
 		)
 
 		signOut?.click()
@@ -224,6 +225,7 @@ describe('Sign Out for a guest (fixture)', () => {
 				UserHomeSelectorStub,
 				BottomSheetStub,
 				BusyOnClickCustomAttribute,
+				...SETTINGS_ROWS,
 				SettingsRoute,
 			)
 			.build().started

@@ -1,0 +1,381 @@
+/* The Settings list: a card of rows sharing one icon | content | control
+   grid. Used by the Settings route and by the settings-*-row components, so
+   it is scoped to the card, not to a route. Row components keep their host
+   out of layout (display: contents), so each row is still a subgrid item of
+   the card. */
+@layer block {
+	@scope (.settings-card) {
+		:scope {
+			--_hover-bg: var(--color-white);
+			--_toggle-off: var(--color-white);
+			--_thumb-bg: var(--color-white);
+
+			overflow: hidden;
+			display: grid;
+			grid-template-columns: auto 1fr auto;
+
+			margin: 0;
+			padding: 0;
+			border: 1px solid color-mix(in oklch, var(--color-white) 10%, transparent);
+			border-radius: var(--radius-card);
+
+			list-style: none;
+
+			background: var(--color-surface-raised);
+		}
+
+		/* Row components render their row inside a host that takes no box. */
+		:is(
+				settings-link-row,
+				settings-switch-row,
+				settings-consent-row,
+				settings-status-row
+			) {
+			display: contents;
+		}
+
+		/* Each settings row is wrapped in a semantic <li>; display:contents keeps
+		   the row itself the subgrid item so the card's column tracks still align
+		   every row (icon | content | control). */
+		.settings-list-item {
+			display: contents;
+		}
+
+		.settings-row {
+			display: grid;
+			grid-column: 1 / -1;
+			grid-template-columns: auto 1fr auto;
+
+			/* biome-ignore lint/suspicious/noDuplicateProperties: the declaration above is the fallback for browsers without subgrid */
+			grid-template-columns: subgrid;
+			column-gap: var(--space-xs);
+			align-items: center;
+
+			padding: var(--space-xs) var(--space-s);
+
+			/* Reset the UA `text-align: center` a <button>.settings-row would
+			   otherwise impose — its label is a stretched col2 grid item, so
+			   centred text would drift to the middle of the column. */
+			text-align: start;
+
+			transition: background var(--transition-normal);
+
+			/* Only a row that is itself the control (a <button> or <a>) reacts
+			   to the pointer; a row holding its own action button does not. */
+			&:is(button, a):hover {
+				background: color-mix(in oklch, var(--_hover-bg) 5%, transparent);
+			}
+
+			/* A full-width row reads better with a background-deepen than a scale.
+			   transform: none suppresses the global <button> baseline scale so a
+			   <button>.settings-row and an <a>.settings-row feel identical. The
+			   background-deepen needs no scale to suppress under reduced motion. */
+			&:is(button, a):active {
+				transform: none;
+				background: color-mix(in oklch, var(--_hover-bg) 10%, transparent);
+			}
+		}
+
+		/* Column placement. Each property targets whichever element is a DIRECT
+		   row child; the same class nested inside a flex cell (e.g. a label inside
+		   the toggle column) ignores `grid-column` harmlessly. */
+		.settings-icon {
+			grid-column: 1;
+			inline-size: 1.25rem;
+			block-size: 1.25rem;
+			color: var(--color-text-secondary);
+		}
+
+		.settings-row-label,
+		.settings-toggle-col,
+		.settings-expand {
+			grid-column: 2;
+		}
+
+		/* The account rows are two grid rows: the icon and the label (the
+		   address, 本人確認) share the first, centred on each other; the status
+		   and its action (then any detail) take the rows below, spanning the
+		   action column too. The wrapper only groups them in the markup. */
+		.settings-row:has(> .settings-status-body) {
+			row-gap: var(--space-xs);
+		}
+
+		.settings-status-body {
+			display: contents;
+
+			> * {
+				grid-column: 2 / -1;
+				min-inline-size: 0;
+			}
+		}
+
+		.settings-row-end,
+		.settings-chevron,
+		.settings-toggle-track,
+		.settings-switch,
+		.settings-row-action {
+			grid-column: 3;
+			justify-self: end;
+		}
+
+		/* Trailing value + chevron cluster (nav rows). */
+		.settings-row-end {
+			display: flex;
+			gap: var(--space-2xs);
+			align-items: center;
+		}
+
+		.settings-chevron {
+			inline-size: 1rem;
+			block-size: 1rem;
+			color: var(--color-text-muted);
+		}
+
+		.settings-row-label {
+			font-size: var(--step--1);
+			color: var(--color-text-primary);
+		}
+
+		.settings-row-value {
+			font-size: var(--step--1);
+			color: var(--color-text-secondary);
+		}
+
+		/* Rows of the route itself that opt out of the 3-column model and span
+		   the full width: the sound volume slider and Sign Out. Kept after the
+		   shared .settings-row rules so they win by source order. */
+		.settings-volume-row,
+		.settings-sign-out {
+			grid-column: 1 / -1;
+		}
+
+		.settings-volume-row {
+			display: flex;
+			gap: var(--space-s);
+			align-items: center;
+		}
+
+		/* accent-color themes the slider on Chrome/Android. Safari/WebKit does
+		   not support it, so iOS falls back to the native control by design —
+		   the project's CSS rules forbid the vendor-prefixed hand-rolled slider
+		   that a custom WebKit fallback would require. */
+		.settings-volume-slider {
+			cursor: pointer;
+			flex: 1;
+			accent-color: var(--color-brand-primary);
+		}
+
+		/* Full-width, centred — overrides the subgrid column tracks. */
+		.settings-sign-out {
+			grid-template-columns: 1fr;
+			justify-items: center;
+		}
+
+		.settings-sign-out-text {
+			font-size: var(--step--1);
+			font-weight: 600;
+			color: var(--color-error);
+		}
+
+		/* Inter-row separator. Replaces the former <hr> dividers (an <ul> may not
+		   contain <hr>, and SR announced them as separator noise). A hairline on
+		   every row after the first, except a sub-row (`.settings-list-subitem`,
+		   e.g. the volume slider) which reads as a continuation of the row above. */
+
+		/* The row is the item's child, or a row component's (whose host takes
+		   no box). */
+		.settings-list-item
+			+ .settings-list-item:not(.settings-list-subitem)
+			> .settings-row,
+		.settings-list-item
+			+ .settings-list-item:not(.settings-list-subitem)
+			> *
+			> .settings-row {
+			border-block-start: 1px solid
+				color-mix(in oklch, var(--color-white) 5%, transparent);
+		}
+
+		/* Content column (col2) for whole-row toggle buttons: label + optional
+		   hint/description stacked. */
+		.settings-toggle-col {
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-3xs);
+			align-items: flex-start;
+
+			min-inline-size: 0;
+		}
+
+		/* Toggle rows align their icon + control to the first line of the label
+		   rather than the vertical centre of an expanded description. */
+		.settings-row-toggle {
+			align-items: start;
+		}
+
+		/* Disclosure control (col2) wrapping the label + collapsible description.
+		   A sibling of `.settings-switch` — never a parent of it (a role="switch"
+		   must not nest another interactive control). */
+		.settings-expand {
+			cursor: pointer;
+
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-3xs);
+			align-items: flex-start;
+
+			min-inline-size: 0;
+			padding: 0;
+			border: 0;
+
+			text-align: start;
+
+			background: transparent;
+		}
+
+		/* Label + expand caret on one line, above the collapsible description. */
+		.settings-expand-head {
+			display: flex;
+			gap: var(--space-2xs);
+			align-items: center;
+		}
+
+		.settings-expand-caret {
+			inline-size: 1rem;
+			block-size: 1rem;
+			color: var(--color-text-muted);
+			transition: transform var(--transition-normal);
+		}
+
+		/* Switch control: the trailing (col3) cell for split consent rows. A
+		   transparent button wrapping just the track — `padding: 0` so the track
+		   sits flush at col3's end edge, pixel-aligned with every other row's
+		   trailing control. The track (2.75rem × 1.5rem) is the activation
+		   target: ≥24px on both axes per WCAG 2.5.8 (AA), with the adjacent
+		   disclosure control offering a larger neighbouring target. */
+		.settings-switch {
+			cursor: pointer;
+
+			display: flex;
+			align-items: center;
+
+			padding: 0;
+			border: 0;
+
+			background: transparent;
+		}
+
+		/* Collapsible toggle description. Decoupled from `.settings-row-hint`'s
+		   icon-alignment indent so it can use the full column width. */
+		.settings-toggle-desc {
+			font-size: var(--step--1);
+			line-height: var(--leading-relaxed);
+			color: var(--color-text-muted);
+			text-wrap: pretty;
+		}
+
+		.settings-toggle-track {
+			position: relative;
+
+			/* Fixed-size control. Its grid cell (col3) already pins the size;
+			   `flex-shrink: 0` additionally guards the consent rows, where the
+			   track lives inside a flex `.settings-switch` — without it the track
+			   could shrink and the absolutely-positioned thumb would overflow. */
+			flex-shrink: 0;
+
+			inline-size: var(--toggle-track-inline);
+			block-size: var(--toggle-track-block);
+			border-radius: var(--radius-full);
+
+			transition: background var(--transition-normal);
+		}
+
+		.settings-toggle-thumb {
+			position: absolute;
+			inset-block-start: var(--toggle-thumb-inset);
+			inset-inline-start: var(--toggle-thumb-inset);
+
+			inline-size: var(--toggle-thumb-size);
+			block-size: var(--toggle-thumb-size);
+			border-radius: var(--radius-full);
+
+			background: var(--_thumb-bg);
+			box-shadow: var(--shadow-soft);
+
+			transition: transform var(--transition-normal);
+		}
+
+		/* A label longer than the row (an email address) breaks between words,
+		   never inside one. */
+		.settings-status-body > .settings-row-label {
+			overflow-wrap: break-word;
+		}
+
+		/* A status and the action it allows: the badge at the start, the action
+		   at the end, wrapping under the badge when the row is too narrow. */
+		.settings-status-line {
+			--cluster-gap: var(--space-xs);
+
+			justify-content: space-between;
+		}
+
+		/* Status badge (<output>): a status icon + text, so verification state is
+		   conveyed by shape and label, not colour alone. */
+		.settings-verification-badge {
+			display: inline-flex;
+			gap: var(--space-3xs);
+			align-items: center;
+			font-size: var(--step--1);
+		}
+
+		.settings-verification-icon {
+			inline-size: 0.875rem;
+			block-size: 0.875rem;
+		}
+
+		/* A text button trailing a row (resend verification, start identity
+		   verification); the `button` block owns its look. Compact, like the
+		   action on a snack bar or a bottom banner, so it sits on the row's
+		   label size instead of taking the label's column. */
+		.settings-row-action {
+			--button-min-size: 2.25rem;
+			--button-padding-block: var(--space-3xs);
+			--button-padding-inline: var(--space-s);
+			--button-font-size: var(--step--1);
+
+			white-space: nowrap;
+		}
+
+		.settings-row[data-disabled="true"] {
+			cursor: not-allowed;
+			opacity: 0.5;
+		}
+
+		.settings-row[data-disabled="true"]:hover {
+			background: transparent;
+		}
+
+		.settings-expand-caret[data-expanded="true"] {
+			transform: rotate(90deg);
+		}
+
+		.settings-toggle-track[data-on="true"] {
+			background: var(--color-brand-primary);
+		}
+
+		.settings-toggle-track[data-on="false"] {
+			background: color-mix(in oklch, var(--_toggle-off) 20%, transparent);
+		}
+
+		.settings-toggle-thumb[data-on="true"] {
+			transform: translateX(var(--toggle-thumb-translate));
+		}
+
+		.settings-verification-badge[data-verified="true"] {
+			color: var(--color-success);
+		}
+
+		.settings-verification-badge[data-verified="false"] {
+			color: var(--color-warning);
+		}
+	}
+}

@@ -1,0 +1,29 @@
+<import from="../settings-list/settings-list.css"></import>
+
+<div class="settings-row">
+  <svg-icon name.bind="icon" class="settings-icon"></svg-icon>
+  <!-- display: contents: the label, the status line and any projected lines
+       are grid rows of the card's subgrid, the label sharing the icon's. -->
+  <div class="settings-status-body">
+    <span id.bind="labelId || null" aria-describedby.bind="statusId || null" class="settings-row-label">${label}</span>
+    <div class="[ settings-status-line ] [ cluster ]">
+      <output id.bind="statusId || null" aria-live="polite" class="settings-verification-badge" data-verified.bind="verified">
+        <svg-icon if.bind="verified" name="check" class="settings-verification-icon"></svg-icon>
+        <svg-icon else name="alert-triangle" class="settings-verification-icon"></svg-icon>
+        <span if.bind="verified">${verifiedText}</span>
+        <span else>${unverifiedText}</span>
+      </output>
+      <button
+        if.bind="showAction"
+        type="button"
+        busy-on-click.bind="action"
+        disabled.bind="actionDisabled"
+        aria-live="polite"
+        aria-describedby.bind="actionDescribedBy || null"
+        class="[ button settings-row-action ] [ pressable ]"
+        data-variant="outlined"
+      >${actionLabel}</button>
+    </div>
+    <au-slot></au-slot>
+  </div>
+</div>

@@ -18,6 +18,7 @@ import {
 } from '../../src/services/identity-verification-service'
 import { IPushService } from '../../src/services/push-service'
 import { IUserStore } from '../../src/services/user-store'
+import { SETTINGS_ROWS } from '../helpers/settings-rows'
 
 /** Sheet and selector stand-ins: the form under test does not use them. */
 const UserHomeSelectorStub = CustomElement.define(
@@ -106,6 +107,7 @@ async function render(
 			Registration.instance(IFabMenuService, { isLeftHanded: false }),
 			UserHomeSelectorStub,
 			BottomSheetStub,
+			...SETTINGS_ROWS,
 			SettingsRoute,
 		)
 		.build().started

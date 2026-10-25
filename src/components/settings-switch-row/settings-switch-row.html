@@ -1,0 +1,21 @@
+<import from="../settings-list/settings-list.css"></import>
+
+<button
+  type="button"
+  busy-on-click.bind="action"
+  role="switch"
+  aria-checked.bind="checked"
+  aria-disabled.bind="unavailable"
+  aria-describedby.bind="description ? descriptionId : null"
+  class="[ settings-row ] [ settings-row-toggle ]"
+  data-disabled.bind="unavailable"
+>
+  <svg-icon name.bind="icon" class="settings-icon"></svg-icon>
+  <span class="settings-toggle-col">
+    <span class="settings-row-label">${label}</span>
+    <span if.bind="description" id.bind="descriptionId" class="settings-toggle-desc">${description}</span>
+  </span>
+  <span class="settings-toggle-track" data-on.bind="checked">
+    <span class="settings-toggle-thumb" data-on.bind="checked"></span>
+  </span>
+</button>
