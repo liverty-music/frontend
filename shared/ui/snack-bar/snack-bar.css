@@ -134,8 +134,12 @@
 			margin-inline-start: auto;
 		}
 
+		/* A two-line message breaks between phrases, never inside a word, and
+		   balances its lines (graceful no-op where unsupported). */
 		.snack-message {
 			flex: 1;
+			text-wrap: balance;
+			word-break: auto-phrase;
 		}
 
 		/* M3 close affordance: a 24 px icon on a 48 px target. */

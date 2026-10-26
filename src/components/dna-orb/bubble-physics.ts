@@ -88,7 +88,15 @@ export class BubblePhysics {
 	private fadeOutPendingIds = new Set<string>()
 	private bottomWall: Matter.Body | null = null
 
-	public async init(width: number, height: number): Promise<void> {
+	/** Space kept clear above the canvas floor (see OrbRenderer.floorInset). */
+	private floorInset = 0
+
+	public async init(
+		width: number,
+		height: number,
+		floorInset = 0,
+	): Promise<void> {
+		this.floorInset = floorInset
 		if (this.initPromise) {
 			this.width = width
 			this.height = height
@@ -121,7 +129,7 @@ export class BubblePhysics {
 			const orbZoneHeight = 130
 			this.bottomWall = this.Matter?.Bodies.rectangle(
 				w / 2,
-				h - orbZoneHeight + wallThickness / 2,
+				h - this.floorInset - orbZoneHeight + wallThickness / 2,
 				w,
 				wallThickness,
 				{ isStatic: true },
@@ -169,11 +177,31 @@ export class BubblePhysics {
 	public updateOrbZone(orbRadius: number): void {
 		if (!this.Matter || !this.bottomWall || this.height === 0) return
 		const wallThickness = 50
-		const newY = this.height - (orbRadius * 2 + 20) + wallThickness / 2
+		const newY =
+			this.height - this.floorInset - (orbRadius * 2 + 20) + wallThickness / 2
 		this.Matter.Body.setPosition(this.bottomWall, {
 			x: this.width / 2,
 			y: newY,
 		})
+	}
+
+	/**
+	 * Move every bubble back inside the walls after the field changed size, so a
+	 * shorter field never leaves bubbles under the floor above the orb or past a
+	 * side wall, where they would be stuck out of sight.
+	 */
+	public keepBubblesInside(): void {
+		if (!this.Matter || !this.bottomWall) return
+		// The floor's top edge: its centre less half the wall thickness (50).
+		const floor = this.bottomWall.position.y - 25
+		for (const { body, radius } of this.bubbleMap.values()) {
+			const x = Math.min(Math.max(body.position.x, radius), this.width - radius)
+			const y = Math.min(Math.max(body.position.y, radius), floor - radius)
+			if (x !== body.position.x || y !== body.position.y) {
+				this.Matter.Body.setPosition(body, { x, y })
+				this.Matter.Body.setVelocity(body, { x: 0, y: 0 })
+			}
+		}
 	}
 
 	/**

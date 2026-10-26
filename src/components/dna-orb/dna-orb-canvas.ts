@@ -86,6 +86,10 @@ export class DnaOrbCanvas {
 	// One-shot observer that waits for a non-zero layout size before the first
 	// physics init/paint when the element attaches at 0×0 (SPA re-entry).
 	private sizeObserver: ResizeObserver | null = null
+	/** Space kept clear under the orb, read from `--orb-floor` on each layout. */
+	private floorInset = 0
+	/** Re-lays the canvas out whenever the element's size changes. */
+	private layoutObserver: ResizeObserver | null = null
 	// Resolver for the size-wait promise, so `detaching()` can settle it (avoids a
 	// forever-pending `attached()` when detached while still 0×0).
 	private sizeResolve: (() => void) | null = null
@@ -197,7 +201,6 @@ export class DnaOrbCanvas {
 			this.applyReducedMotion(reduced),
 		)
 
-		window.addEventListener('resize', this.onResize)
 		this.canvas.addEventListener('pointerdown', this.onPointerDown)
 		this.canvas.addEventListener('keydown', this.onKeyDown)
 
@@ -220,6 +223,11 @@ export class DnaOrbCanvas {
 
 		await this.initPhysics(width, height)
 		if (this.detached) return
+		// Follow the element's own size from now on, not the window's: the field
+		// changes height when a row above it appears or changes (the onboarding
+		// progress row, search mode), and the orb at its bottom must stay in view.
+		this.layoutObserver = new ResizeObserver(this.onResize)
+		this.layoutObserver.observe(this.element)
 		// Seed the orb DORMANT on entry (stage 0) regardless of the user's total
 		// follow count — the orb must not read as "activated" before a genuine follow
 		// this session. It grows only via `onAbsorbComplete` (a real follow gesture).
@@ -278,7 +286,9 @@ export class DnaOrbCanvas {
 		this.detached = true
 		this.settleSizeWait()
 		cancelAnimationFrame(this.animFrameId)
-		window.removeEventListener('resize', this.onResize)
+		this.layoutObserver?.disconnect()
+		this.layoutObserver = null
+		window.clearTimeout(this.resizeTimeout)
 		this.canvas.removeEventListener('pointerdown', this.onPointerDown)
 		this.canvas.removeEventListener('keydown', this.onKeyDown)
 		this.physics.destroy()
@@ -401,7 +411,8 @@ export class DnaOrbCanvas {
 		this.canvas.style.height = `${rect.height}px`
 		this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
-		this.orbRenderer.init(rect.width, rect.height)
+		this.floorInset = this.readFloorInset()
+		this.orbRenderer.init(rect.width, rect.height, this.floorInset)
 		// Re-apply the current session activation level for the now-known canvas
 		// width. `init()` alone leaves the orb at its width-agnostic default (radius
 		// 60); this keeps the orb at whatever stage the session's follows have
@@ -410,9 +421,20 @@ export class DnaOrbCanvas {
 		return { width: rect.width, height: rect.height }
 	}
 
+	/**
+	 * The space the page keeps clear under the orb (`--orb-floor`, a registered
+	 * length, so it reads back in px): whatever overlaps the canvas bottom, such
+	 * as the FAB in the navigation bar's notch on Discovery.
+	 */
+	private readFloorInset(): number {
+		if (!(this.element instanceof Element)) return 0
+		const value = getComputedStyle(this.element).getPropertyValue('--orb-floor')
+		return Number.parseFloat(value) || 0
+	}
+
 	/** Load and size the physics engine for a `width` × `height` canvas. */
 	private async initPhysics(width: number, height: number): Promise<void> {
-		await this.physics.init(width, height)
+		await this.physics.init(width, height, this.floorInset)
 		// On narrow canvases the orb is smaller and bottom-anchored, so align the
 		// physics floor with its top here; init() resets the bottom wall to a
 		// width-agnostic default. Left untouched on wide canvases to preserve the
@@ -420,9 +442,11 @@ export class DnaOrbCanvas {
 		if (width < 390) {
 			this.physics.updateOrbZone(this.orbRenderer.getStageParams().orbRadius)
 		}
+		this.physics.keepBubblesInside()
 	}
 
 	private resizeTimeout = 0
+	/** Debounced so a run of size changes re-lays the canvas out once. */
 	private readonly onResize = (): void => {
 		window.clearTimeout(this.resizeTimeout)
 		this.resizeTimeout = window.setTimeout(() => {

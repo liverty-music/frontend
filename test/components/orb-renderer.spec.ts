@@ -21,6 +21,17 @@ describe('OrbRenderer', () => {
 		vi.restoreAllMocks()
 	})
 
+	describe('floor inset', () => {
+		it('lifts the orb by the space kept clear under it', () => {
+			const plain = new OrbRenderer()
+			plain.init(360, 600)
+			const lifted = new OrbRenderer()
+			lifted.init(360, 600, 44)
+
+			expect(plain.orbY - lifted.orbY).toBe(44)
+		})
+	})
+
 	describe('injectColor', () => {
 		it('should inject particles with the given hue while keeping total at maxParticles', () => {
 			const renderer = createRenderer()

@@ -83,6 +83,17 @@ if (hasDOM) {
 		})
 	}
 
+	// jsdom does not implement `ResizeObserver`; provide an inert stub (it never
+	// reports) so components that follow their own size can attach. A test that
+	// needs a size change replaces it with its own.
+	if (typeof globalThis.ResizeObserver !== 'function') {
+		globalThis.ResizeObserver = class {
+			observe(): void {}
+			unobserve(): void {}
+			disconnect(): void {}
+		} as unknown as typeof ResizeObserver
+	}
+
 	const { BrowserPlatform } = await import('@aurelia/platform-browser')
 	const { onFixtureCreated, setPlatform } = await import('@aurelia/testing')
 

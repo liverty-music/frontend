@@ -3,6 +3,7 @@ import { tasksSettled } from '@aurelia/runtime'
 import { createFixture } from '@aurelia/testing'
 import { describe, expect, it } from 'vitest'
 import { OnboardingProgress } from '../../src/components/onboarding-progress/onboarding-progress'
+import { SvgIcon } from '../../src/components/svg-icon/svg-icon'
 import ja from '../../src/locales/ja/translation.json'
 
 async function render(value: number) {
@@ -21,6 +22,7 @@ async function render(value: number) {
 				}
 			}),
 			OnboardingProgress,
+			SvgIcon,
 		)
 		.build().started
 	await tasksSettled()
@@ -49,7 +51,19 @@ describe('onboarding-progress', () => {
 		const fixture = await render(1)
 		const link = fixture.appHost.querySelector('a')
 
-		expect(link?.textContent).toBe('タイムテーブルができました →')
+		// Seen: 「完成しました！」 and the timetable icon; heard: where it leads.
+		expect(link?.textContent?.replace(/\s+/g, ' ').trim()).toBe(
+			'完成しました！ タイムテーブルを見る',
+		)
+		expect(link?.querySelector('.visually-hidden')?.textContent).toBe(
+			'タイムテーブルを見る',
+		)
+		// The finished-timetable icon (a calendar with a check), not an arrow.
+		expect(
+			link
+				?.querySelector('[aria-hidden="true"] svg-icon path')
+				?.getAttribute('d'),
+		).toBe('m9 16 2 2 4-4')
 		expect(link?.getAttribute('href')).toBe('/dashboard')
 		expect(fixture.appHost.querySelector('[role="progressbar"]')).toBeNull()
 	})
