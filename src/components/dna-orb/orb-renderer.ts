@@ -84,9 +84,16 @@ export class OrbRenderer {
 	public orbY = 0
 	public orbRadius = 60
 
-	public init(canvasWidth: number, canvasHeight: number): void {
+	/**
+	 * Space kept clear under the orb, above the canvas floor, for whatever
+	 * overlaps the canvas bottom (the FAB in the navigation bar's notch).
+	 */
+	public floorInset = 0
+
+	public init(canvasWidth: number, canvasHeight: number, floorInset = 0): void {
 		this.canvasWidth = canvasWidth
 		this.canvasHeight = canvasHeight
+		this.floorInset = floorInset
 		this.orbX = canvasWidth / 2
 		this.orbY = this.computeOrbY()
 		this.initParticles()
@@ -104,10 +111,11 @@ export class OrbRenderer {
 	 * iPhone-14 visual-regression baseline).
 	 */
 	private computeOrbY(): number {
+		const floor = this.canvasHeight - this.floorInset
 		if (this.canvasWidth < 390) {
-			return this.canvasHeight - this.orbRadius - ORB_BOTTOM_GAP
+			return floor - this.orbRadius - ORB_BOTTOM_GAP
 		}
-		return this.canvasHeight - 80
+		return floor - 80
 	}
 
 	private initParticles(): void {

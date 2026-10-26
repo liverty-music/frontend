@@ -222,6 +222,35 @@ describe('BubblePhysics.reconcile', () => {
 	})
 })
 
+describe('BubblePhysics floor inset', () => {
+	it('raises the floor above the orb by the space kept clear under it', async () => {
+		const plain = new BubblePhysics()
+		await plain.init(400, 600)
+		const lifted = new BubblePhysics()
+		await lifted.init(400, 600, 44)
+
+		const floorY = (p: BubblePhysics) => (p as any).bottomWall.position.y
+		expect(floorY(plain) - floorY(lifted)).toBe(44)
+	})
+})
+
+describe('BubblePhysics.keepBubblesInside', () => {
+	it('moves bubbles left under the floor or past a wall back inside', async () => {
+		const physics = await mkPhysics()
+		physics.addBubbles(params(['a', 'b']))
+		const [a, b] = physics.getBubbles()
+		const Matter = (physics as any).Matter
+		Matter.Body.setPosition(a.body, { x: 200, y: 5000 })
+		Matter.Body.setPosition(b.body, { x: -300, y: 100 })
+
+		physics.keepBubblesInside()
+
+		const floor = (physics as any).bottomWall.bounds.min.y
+		expect(a.body.position.y).toBeLessThanOrEqual(floor - a.radius)
+		expect(b.body.position.x).toBeGreaterThanOrEqual(b.radius)
+	})
+})
+
 describe('BubblePhysics.addBubbles capacity', () => {
 	// @spec components/infrastructure/fan/web/route/discovery "Physics never silently drops a target member"
 	it('caps live bodies at MAX and reports the dropped count instead of silently truncating', async () => {

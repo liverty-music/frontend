@@ -195,6 +195,41 @@ describe('DnaOrbCanvas', () => {
 		})
 	})
 
+	describe('following its own size', () => {
+		it('re-lays the canvas out and keeps the bubbles inside when the field gets shorter', async () => {
+			let report: () => void = () => {}
+			const observed: Element[] = []
+			const Original = globalThis.ResizeObserver
+			globalThis.ResizeObserver = class {
+				constructor(callback: () => void) {
+					report = callback
+				}
+				observe(el: Element) {
+					observed.push(el)
+				}
+				unobserve() {}
+				disconnect() {}
+			} as unknown as typeof ResizeObserver
+			try {
+				await sut.attached()
+				expect(observed).toContain(mockElement)
+				const keepInside = vi.spyOn((sut as any).physics, 'keepBubblesInside')
+
+				// A row above the field appears: the field is 40px shorter.
+				;(
+					mockElement.getBoundingClientRect as ReturnType<typeof vi.fn>
+				).mockReturnValue({ width: 400, height: 560, top: 0, left: 0 })
+				report()
+				await vi.advanceTimersByTimeAsync(200)
+
+				expect(mockCanvas.style.height).toBe('560px')
+				expect(keepInside).toHaveBeenCalled()
+			} finally {
+				globalThis.ResizeObserver = Original
+			}
+		})
+	})
+
 	describe('detaching', () => {
 		// @spec components/infrastructure/fan/web/route/discovery "Tab deactivation"
 		it('should remove event listeners and destroy physics', async () => {

@@ -1,3 +1,10 @@
+/* Registered so the canvas reads the page's value back as a length in px. */
+@property --orb-floor {
+	inherits: true;
+	initial-value: 0;
+	syntax: "<length>";
+}
+
 @layer block {
 	@scope (dna-orb-canvas) {
 		:scope {

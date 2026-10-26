@@ -1,6 +1,10 @@
 <import from="./onboarding-progress.css"></import>
 
-<a if.bind="ready" href="/dashboard" class="onboarding-progress-ready" t="discovery.progress.ready"></a>
+<a if.bind="ready" href="/dashboard" class="onboarding-progress-ready">
+  <span t="discovery.progress.ready"></span>
+  <span class="visually-hidden" t="discovery.progress.readyAction"></span>
+  <span class="onboarding-progress-ready-icon" aria-hidden="true"><svg-icon name="calendar-check"></svg-icon></span>
+</a>
 
 <div else class="onboarding-progress-track">
   <span id="onboarding-progress-label" class="onboarding-progress-label" t="discovery.progress.label"></span>

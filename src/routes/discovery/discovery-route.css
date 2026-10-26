@@ -316,6 +316,10 @@
 		}
 
 		.bubble-area {
+			/* The FAB sits in the navigation bar's notch and rises into this
+			   field; keep the orb and the bubbles' floor above it. */
+			--orb-floor: calc(var(--fab-notch-radius) + var(--space-2xs));
+
 			position: relative;
 
 			container-name: bubble-area;

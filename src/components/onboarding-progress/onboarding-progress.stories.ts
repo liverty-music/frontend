@@ -99,7 +99,7 @@ export const Ready = {
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement)
 		const link = canvas.getByRole('link', {
-			name: 'タイムテーブルができました →',
+			name: '完成しました！ タイムテーブルを見る',
 		})
 		await expect(link).toHaveAttribute('href', '/dashboard')
 		await expect(canvas.queryByRole('progressbar')).toBeNull()

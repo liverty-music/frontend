@@ -246,7 +246,8 @@
 	"discovery": {
 		"progress": {
 			"label": "Until your timetable is ready",
-			"ready": "Your timetable is ready →"
+			"ready": "Complete!",
+			"readyAction": "Open my timetable"
 		},
 		"popoverGuide": "Tap the artists you care about — your picks become a timetable in the next step",
 		"generateDashboard": "👉 Generate Timetable",
