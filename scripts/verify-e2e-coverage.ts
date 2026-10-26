@@ -40,6 +40,16 @@ const KNOWN_GAPS: KnownGap[] = [
 			'Needs `storageState` from a real OIDC login with an ESC-held credential; CI cannot obtain it and `.auth/` is gitignored.',
 	},
 	{
+		spec: 'e2e/prod/complete-onboarding.guest.spec.ts',
+		reason:
+			'Runs against production (`playwright.prod.config.mjs`) and follows real Artists whose concerts only production has.',
+	},
+	{
+		spec: 'e2e/prod/complete-onboarding.authenticated.spec.ts',
+		reason:
+			"Needs the prod E2E user's `storageState` from a real OIDC login with an ESC-held credential.",
+	},
+	{
 		spec: 'e2e/prod/open-a-shared-event-link.guest.spec.ts',
 		reason:
 			"Runs against production with a test Organizer's Event ids (`playwright.prod.config.mjs`); a pull-request build has neither.",
