@@ -1,5 +1,5 @@
 import { I18N } from '@aurelia/i18n'
-import { IRouter, type Params, type RouteNode } from '@aurelia/router'
+import { IRouter } from '@aurelia/router'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { IEventAggregator, ILogger, resolve, watch } from 'aurelia'
 import { Snack } from '../../../shared/ui/snack-bar/snack'
@@ -37,9 +37,6 @@ import {
 } from '../../util/change-locale'
 
 export class SettingsRoute {
-	/** The privacy and analytics section, for opening the screen at it. */
-	public analyticsSection: HTMLElement | undefined
-	private openAtAnalytics = false
 	public readonly auth = resolve(IAuthService)
 	private readonly userStore = resolve(IUserStore)
 	private readonly storage = resolve(ILocalStorage)
@@ -294,10 +291,7 @@ export class SettingsRoute {
 		this.seedPersonalDetails()
 	}
 
-	public loading(_params?: Params, next?: RouteNode): void {
-		// `?section=analytics` (the Welcome analytics notice) opens the screen at
-		// the analytics opt-out.
-		this.openAtAnalytics = next?.queryParams.get('section') === 'analytics'
+	public loading(): void {
 		// Opt-out toggles bind `consent.analytics` / `consent.sessionReplay`
 		// (the service's `@observable` state) directly, so first paint reflects
 		// the default-on posture or a prior opt-out with no seeding here.
@@ -320,9 +314,6 @@ export class SettingsRoute {
 	public attached(): void {
 		document.addEventListener('visibilitychange', this.onVisibilityChange)
 		this.announceIdentityVerified()
-		if (this.openAtAnalytics) {
-			this.analyticsSection?.scrollIntoView({ block: 'start' })
-		}
 	}
 
 	public detaching(): void {

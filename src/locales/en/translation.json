@@ -16,12 +16,6 @@
 		}
 	},
 	"welcome": {
-		"analyticsNotice": {
-			"text": "We analyse how the app is used to make it easier to use. Names and email addresses are not used for this.",
-			"lead": "You can ",
-			"optOut": "turn this off anytime",
-			"details": "Details"
-		},
 		"hero": {
 			"title": "Never miss a live show from the bands you love.",
 			"subtitlePain": "Done patrolling official sites, socials, and ticket pages.",
