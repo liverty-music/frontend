@@ -13,9 +13,8 @@ import { ILogger, resolve } from 'aurelia'
  *
  * Acknowledging NEVER changes the default-on opt-out state and NEVER gates
  * onboarding progression: the route is a standalone public page
- * (`data: { auth: false }`) reached by an explicit link (the 「詳しく」 link of
- * the Welcome analytics notice), not a step in the onboarding flow. The
- * acknowledge action navigates to the dashboard.
+ * (`data: { auth: false }`) reached by an explicit link, not a step in the
+ * onboarding flow. The acknowledge action navigates to the dashboard.
  */
 
 export class ConsentRoute implements IRouteViewModel {
