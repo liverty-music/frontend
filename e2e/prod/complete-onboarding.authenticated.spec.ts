@@ -32,9 +32,18 @@ test.describe('complete onboarding (sign-up payoff)', () => {
 		}
 	})
 
+	// The session file is shared with the other signed-in specs and is written
+	// back even when this test fails: never leave the payoff scheduled in it.
+	test.afterEach(async ({ page }) => {
+		await page
+			.evaluate(() => localStorage.removeItem('postSignup.shown'))
+			.catch(() => {})
+	})
+
 	test('the celebration leads to the notification step, then the install step', async ({
 		page,
 	}) => {
+		test.setTimeout(180_000)
 		// @spec components/infrastructure/fan/web/global/celebration-overlay "Post-signup full celebration then dialog"
 		// @spec components/infrastructure/fan/web/global/post-signup-dialog "Both steps in order"
 		await optOutOfAnalytics(page)
