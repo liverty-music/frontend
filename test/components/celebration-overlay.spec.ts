@@ -244,10 +244,40 @@ describe('CelebrationOverlay', () => {
 					...this.node(),
 					type: '',
 					frequency: this.param(),
+					detune: this.param(),
 					start: vi.fn(),
 					stop: vi.fn(),
 					onended: null,
 				}
+			}
+			public sampleRate = 48_000
+			public createStereoPanner() {
+				return { ...this.node(), pan: this.param() }
+			}
+			public createConvolver() {
+				return { ...this.node(), buffer: null }
+			}
+			public createDynamicsCompressor() {
+				return {
+					...this.node(),
+					threshold: this.param(),
+					ratio: this.param(),
+					attack: this.param(),
+					release: this.param(),
+				}
+			}
+			public createDelay() {
+				return { ...this.node(), delayTime: this.param() }
+			}
+			public createBuffer(channels: number, length: number) {
+				const data = Array.from(
+					{ length: channels },
+					() => new Float32Array(length),
+				)
+				return { getChannelData: (c: number) => data[c] }
+			}
+			public createBufferSource() {
+				return { ...this.node(), buffer: null, start: vi.fn(), stop: vi.fn() }
 			}
 			public resume() {
 				return Promise.resolve()

@@ -172,9 +172,7 @@ describe('PostSignupDialog', () => {
 		it('says the search for the followed artists has started', async () => {
 			const d = await render({ followed: 5 })
 
-			expect(d.text('.post-signup-title')).toBe(
-				'新着ライブを、いち早くお知らせ',
-			)
+			expect(d.text('.post-signup-title')).toBe('新着ライブをいち早くお知らせ')
 			expect(d.text('.post-signup-body')).toBe(
 				'フォロー中の5組のライブを探し始めました。見つかったら通知で届けます。',
 			)

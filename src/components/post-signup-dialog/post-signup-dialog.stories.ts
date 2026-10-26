@@ -27,9 +27,7 @@ interface Setup {
 function story(setup: Setup) {
 	return defineAureliaStory({
 		template: `
-			<div style="inline-size: 390px">
-				<post-signup-dialog active.bind="true"></post-signup-dialog>
-			</div>
+			<post-signup-dialog active.bind="true"></post-signup-dialog>
 		`,
 		register: [PostSignupDialog, BusyOnClickCustomAttribute],
 		items: [
@@ -59,6 +57,17 @@ const meta = {
 	title: 'Components/PostSignupDialog',
 	component: PostSignupDialog,
 	tags: ['test', 'autodocs'],
+	// A phone; switch the viewport to see other sizes.
+	globals: { viewport: { value: 'mobile1', isRotated: false } },
+	// Shown as the app shows it: Japanese text under `lang="ja"`, which the
+	// phrase-boundary line breaks need. Restored for the next story.
+	beforeEach: () => {
+		const lang = document.documentElement.lang
+		document.documentElement.lang = 'ja'
+		return () => {
+			document.documentElement.lang = lang
+		}
+	},
 } satisfies Meta<typeof PostSignupDialog>
 
 export default meta
@@ -74,14 +83,14 @@ function primaries(canvasElement: HTMLElement): HTMLButtonElement[] {
 }
 
 /**
- * Close the sheet before the next story renders: Chromium intermittently
- * crashes when a story renders while another story's sheet is still open
- * (see the PwaInstallBanner stories).
+ * Close the open sheet at the end of a test run. Chromium intermittently
+ * crashes when a story's root is torn down with its sheet still open in the
+ * top layer (see the PwaInstallBanner stories). Only under the test runner, so
+ * the sheet stays open to look at in Storybook.
  */
-async function closeSheet(canvasElement: HTMLElement) {
-	for (const el of canvasElement.ownerDocument.querySelectorAll<HTMLElement>(
-		':popover-open',
-	)) {
+function closeSheetsAfterTest(): void {
+	if (import.meta.env.MODE !== 'test') return
+	for (const el of document.querySelectorAll<HTMLElement>(':popover-open')) {
 		el.hidePopover()
 	}
 }
@@ -111,7 +120,7 @@ export const Notify = {
 		await expect(rest).toHaveLength(0)
 		await expect(primary).toHaveTextContent(t.notify.enable)
 		await expect(body.getByRole('button', { name: t.defer })).toBeVisible()
-		await closeSheet(canvasElement)
+		closeSheetsAfterTest()
 	},
 } satisfies Story
 
@@ -122,7 +131,7 @@ export const NotifyNoFollows = {
 	play: async ({ canvasElement }) => {
 		const body = await expectTitle(canvasElement, t.notify.title)
 		await expect(body.getByText(t.notify.bodyNoFollows)).toBeVisible()
-		await closeSheet(canvasElement)
+		closeSheetsAfterTest()
 	},
 } satisfies Story
 
@@ -138,7 +147,7 @@ export const Install = {
 		await expect(primary).toHaveTextContent(t.install.add)
 		primary.click()
 		await waitFor(() => expect(body.getByText(t.install.step1)).toBeVisible())
-		await closeSheet(canvasElement)
+		closeSheetsAfterTest()
 	},
 } satisfies Story
 
@@ -156,6 +165,6 @@ export const IosGuide = {
 		await expect(
 			body.queryByRole('button', { name: t.notify.enable }),
 		).toBeNull()
-		await closeSheet(canvasElement)
+		closeSheetsAfterTest()
 	},
 } satisfies Story

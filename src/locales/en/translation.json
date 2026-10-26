@@ -169,10 +169,10 @@
 		},
 		"celebration": {
 			"complete": "Your timetable is ready!",
-			"welcome": "Welcome! You won't miss a live show again",
+			"welcome": "Welcome!\nYou won't miss a live show again",
 			"found": "Found {{concerts}} shows by {{artists}} artists",
 			"tapToView": "Tap to take a look",
-			"chasing": "Liverty Music keeps track of new shows for you!"
+			"chasing": "Liverty\u00a0Music keeps track of new shows for you!"
 		},
 		"loading": "Loading events…",
 		"empty": {
@@ -531,9 +531,9 @@
 			"failed": "Couldn't turn on notifications. You can turn them on later in Settings."
 		},
 		"install": {
-			"title": "Add to Home Screen",
-			"body": "Open it in one tap, like an app.",
-			"add": "Add",
+			"title": "Your timetable, one tap away",
+			"body": "Keep it on your Home Screen and open it like an app.",
+			"add": "Add to Home Screen",
 			"step1": "Open the browser menu (⋮)",
 			"step2": "Choose \"Add to Home Screen\"",
 			"step3": "Tap \"Add\""
@@ -573,14 +573,14 @@
 		},
 		"myArtists": {
 			"hypeSectionTitle": "About Hype",
-			"description": "Hype controls how far away you get notified. Tap a dot on the row to change it.",
+			"description": "Hype controls how far away you get notified.",
 			"watchDesc": "No notifications",
 			"homeDesc": "Notify for home-area concerts",
 			"nearbyDesc": "Notify for nearby concerts too",
 			"awayDesc": "Notify for every concert",
 			"tip": "Set artists you'd travel for to Away to never miss them!",
 			"unfollowSectionTitle": "Unfollowing",
-			"editModeTip": "Tap Edit in the menu at the bottom right to reveal per-row remove controls and unfollow artists."
+			"editModeTip": "Choose Edit in the action menu at the bottom centre to show a remove button on each row and unfollow artists."
 		}
 	},
 	"legal": {

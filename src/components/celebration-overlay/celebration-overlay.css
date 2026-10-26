@@ -68,8 +68,10 @@
 				0 0 48px var(--_glow-a),
 				0 0 80px var(--_glow-b);
 
-			/* Balance line lengths and break Japanese at natural phrase
-			   boundaries instead of mid-word (graceful no-op where unsupported). */
+			/* The copy breaks the headline where it means to (after 「ようこそ！」);
+			   longer lines balance and break Japanese at phrase boundaries,
+			   never mid-word (graceful no-op where unsupported). */
+			white-space: pre-line;
 			text-wrap: balance;
 			word-break: auto-phrase;
 
@@ -92,6 +94,7 @@
 			color: oklch(from var(--color-white) l c h / 90%);
 			text-align: center;
 			text-shadow: 0 1px 5px var(--_text-contrast);
+			white-space: pre-line;
 			text-wrap: balance;
 			word-break: auto-phrase;
 
