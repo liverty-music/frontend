@@ -31,6 +31,11 @@ and the visibility belong to the Series.
 
 `E2E_EVENT_PUBLIC_ID` and `E2E_EVENT_UPCOMING_ID` may be the same Event.
 
+`complete-onboarding` needs no Event:
+
+- The guest spec follows real Artists found by search.
+- The signed-in spec replays the sign-up payoff for the test user. If the test user has no home area yet, its first run sets the area to 東京, as the Timetable asks before the payoff.
+
 Keep the ids in `.auth/prod-e2e.env`, one `NAME=value` per line. Load them
 with `set -a && . .auth/prod-e2e.env && set +a`, or pass the file with
 `docker run --env-file`.
