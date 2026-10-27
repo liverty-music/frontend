@@ -8,14 +8,14 @@ test.describe.configure({ timeout: 60_000 })
 
 /**
  * The fan app's shared text button (`src/styles/button.css`) picks its look
- * from `data-variant`: a destructive action is `danger`, a secondary or
- * dismissive one `outlined`. These checks open real routes against a mocked
- * backend and read the variant the rendered button carries.
+ * from `data-variant`: a secondary or dismissive one is `outlined`. This check
+ * opens a real route against a mocked backend and reads the variant the
+ * rendered button carries. The `danger` variant of a destructive action is
+ * checked on the passkey removal in `test/routes/passkeys-route.fixture.spec.ts`.
  */
 
 const CAPABILITY = 'components/infrastructure/fan/web/global/ui-primitives'
 const EVENT_ID = fakeId('button-variants-event')
-const TICKET_TYPE_ID = fakeId('button-variants-ticket-type')
 const USER = {
 	user: {
 		id: { value: FAN_SUB },
@@ -75,38 +75,6 @@ function concert() {
 		venue: { name: { value: 'Zepp' }, adminArea: { value: 'JP-13' } },
 	}
 }
-
-test(`@spec ${CAPABILITY} "Destructive action"`, async ({ page }) => {
-	await seedSignedIn(page)
-	await mockFanRpc(page, {
-		'UserService/Get': USER,
-		'LotteryEntryService/ListByTicketType': {
-			lotteryEntries: [
-				{
-					id: { value: fakeId('button-variants-entry') },
-					ticketTypeId: { value: TICKET_TYPE_ID },
-					ticketCount: 2,
-					state: 'LOTTERY_ENTRY_STATE_ENTERED',
-				},
-			],
-		},
-	})
-
-	await page.goto(`/events/${EVENT_ID}/lottery/${TICKET_TYPE_ID}/entry`)
-	await expect(page.getByTestId('lottery-entry-status-entry')).toBeVisible({
-		timeout: 30_000,
-	})
-
-	// The action that opens the withdraw confirmation is itself dismissible
-	// until confirmed, so it is outlined; the confirming action is destructive.
-	await page.getByRole('button', { name: 'Withdraw my entry' }).click()
-	const withdraw = page.getByRole('button', { name: 'Withdraw', exact: true })
-	await expect(withdraw).toHaveClass(/\bbutton\b/)
-	await expect(withdraw).toHaveAttribute('data-variant', 'danger')
-	await expect(
-		page.getByRole('button', { name: 'Keep my entry' }),
-	).toHaveAttribute('data-variant', 'outlined')
-})
 
 test(`@spec ${CAPABILITY} "Secondary and dismissive actions are outlined"`, async ({
 	page,

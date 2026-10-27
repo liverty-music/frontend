@@ -12,7 +12,6 @@ const STATES: Record<number, LotteryEntryState> = {
 	[ProtoLotteryEntryState.ENTERED]: 'entered',
 	[ProtoLotteryEntryState.WON]: 'won',
 	[ProtoLotteryEntryState.LOST]: 'lost',
-	[ProtoLotteryEntryState.WITHDRAWN]: 'withdrawn',
 }
 
 /** Map a proto entry state to its domain union (unknown → `unknown`). */

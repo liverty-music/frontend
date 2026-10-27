@@ -14,9 +14,6 @@ describe('lottery-entry-mapper', () => {
 		)
 		expect(lotteryEntryStateFrom(ProtoLotteryEntryState.WON)).toBe('won')
 		expect(lotteryEntryStateFrom(ProtoLotteryEntryState.LOST)).toBe('lost')
-		expect(lotteryEntryStateFrom(ProtoLotteryEntryState.WITHDRAWN)).toBe(
-			'withdrawn',
-		)
 		expect(lotteryEntryStateFrom(ProtoLotteryEntryState.UNSPECIFIED)).toBe(
 			'unknown',
 		)

@@ -3,22 +3,15 @@
  *
  * - `draft`     — started; the card authorization is not confirmed yet, so
  *                 it takes no part in the draw.
- * - `entered`   — entered, awaiting the draw (card authorized, withdrawable).
+ * - `entered`   — entered, awaiting the draw (card authorized). An entry
+ *                 cannot be withdrawn.
  * - `won`       — drawn; the card authorization was captured (charged).
  * - `lost`      — not drawn; the card authorization was released.
- * - `withdrawn` — withdrawn, or a Draft abandoned at the draw; the card
- *                 authorization was released.
  * - `unknown`   — a state this app does not know.
  *
  * @source proto/liverty_music/entity/v1/lottery_entry.proto — LotteryEntryState
  */
-export type LotteryEntryState =
-	| 'draft'
-	| 'entered'
-	| 'won'
-	| 'lost'
-	| 'withdrawn'
-	| 'unknown'
+export type LotteryEntryState = 'draft' | 'entered' | 'won' | 'lost' | 'unknown'
 
 /**
  * A fan's entry to a lottery TicketType.

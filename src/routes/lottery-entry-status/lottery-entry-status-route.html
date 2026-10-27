@@ -33,40 +33,5 @@
 				<dd class="lottery-entry-status-summary-val" t.bind="stateLabelKey"></dd>
 			</div>
 		</dl>
-
-		<p class="lottery-entry-status-error" if.bind="messageKey" role="alert" t.bind="messageKey"></p>
-
-		<div class="[ lottery-entry-status-actions ] [ flow ]" if.bind="canWithdraw">
-			<button
-				type="button"
-				class="[ button ] [ pressable ]"
-				data-variant="outlined"
-				click.trigger="askWithdraw()"
-				if.bind="!confirmingWithdraw"
-				t="lotteryEntryStatus.withdraw.action"
-			></button>
-
-			<div class="[ lottery-entry-status-confirm ] [ flow ]" if.bind="confirmingWithdraw">
-				<p class="lottery-entry-status-lead" t="lotteryEntryStatus.withdraw.confirm"></p>
-				<div class="[ lottery-entry-status-confirm-actions ] [ cluster ]">
-					<button
-						type="button"
-						class="[ button ] [ pressable ]"
-						data-variant="outlined"
-						click.trigger="cancelWithdraw()"
-						disabled.bind="withdrawing"
-						t="lotteryEntryStatus.withdraw.cancel"
-					></button>
-					<button
-						type="button"
-						class="[ button ] [ pressable ]"
-						data-variant="danger"
-						click.trigger="confirmWithdraw()"
-						disabled.bind="withdrawing"
-						t.bind="withdrawing ? 'lotteryEntryStatus.withdraw.submitting' : 'lotteryEntryStatus.withdraw.submit'"
-					></button>
-				</div>
-			</div>
-		</div>
 	</section>
 </template>

@@ -166,7 +166,7 @@ const routeTable = [
 		title: 'Lottery Entry',
 		data: { titleKey: 'lotteryEntry.title', section: 'dashboard' },
 	},
-	// The fan's entry for that TicketType: its state and the withdraw action.
+	// The fan's entry for that TicketType and its state.
 	// Reached from the entry screen once the entry is made.
 	{
 		path: 'events/:id/lottery/:ticketTypeId/entry',

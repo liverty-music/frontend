@@ -34,9 +34,9 @@ export class LotteryEntryRpcClient {
 	/**
 	 * Starts a Draft entry for `count` tickets of the TicketType, or returns the
 	 * fan's Draft when the count is the same. A Draft with another count is
-	 * withdrawn and replaced. `referralCode` is the code of the referral link
-	 * the fan came from, if any; the server records it while the entry is a
-	 * Draft.
+	 * changed to the new count and loses its card authorization.
+	 * `referralCode` is the code of the referral link the fan came from, if
+	 * any; the server records it while the entry is a Draft.
 	 */
 	public async start(
 		ticketTypeId: string,
@@ -98,22 +98,7 @@ export class LotteryEntryRpcClient {
 		return lotteryEntryFrom(resp.lotteryEntry)
 	}
 
-	/** Withdraws the entry before the draw, releasing its card authorization. */
-	public async withdraw(
-		lotteryEntryId: string,
-		signal?: AbortSignal,
-	): Promise<void> {
-		this.logger.info('Withdrawing lottery entry', { lotteryEntryId })
-		await this.client.withdraw(
-			{ lotteryEntryId: { value: lotteryEntryId } },
-			{ signal },
-		)
-	}
-
-	/**
-	 * The fan's entries for the TicketType, withdrawn ones included, newest
-	 * first.
-	 */
+	/** The fan's entries for the TicketType, newest first. */
 	public async listByTicketType(
 		ticketTypeId: string,
 		signal?: AbortSignal,

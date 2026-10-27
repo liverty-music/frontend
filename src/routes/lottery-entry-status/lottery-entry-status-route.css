@@ -97,8 +97,7 @@
 				}
 			}
 
-			&[data-kind="lost"],
-			&[data-kind="withdrawn"] {
+			&[data-kind="lost"] {
 				background: color-mix(
 					in oklch,
 					var(--color-text-secondary) 8%,
@@ -142,22 +141,6 @@
 		.lottery-entry-status-error {
 			font-size: var(--step--1);
 			color: var(--color-error);
-		}
-
-		.lottery-entry-status-actions {
-			--flow-space: var(--space-s);
-		}
-
-		.lottery-entry-status-confirm {
-			--flow-space: var(--space-s);
-
-			padding: var(--space-s);
-			border: 1px solid color-mix(in oklch, var(--color-error) 30%, transparent);
-			border-radius: var(--radius-card);
-		}
-
-		.lottery-entry-status-confirm-actions {
-			--cluster-gap: var(--space-s);
 		}
 
 		/* Layout only; the look comes from the shared `button` block. */
