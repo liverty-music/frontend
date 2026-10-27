@@ -146,21 +146,6 @@ test.describe('delete my account', () => {
 
 	test.beforeEach(async ({ page }) => {
 		await optOutOfAnalytics(page)
-		// TODO: drop once FreshSignInService sends prompt=login itself.
-		// The hosted login ignores max_age, so the fresh sign-in asks for the
-		// password again only with prompt=login. Until the app sends it, add it
-		// to the fresh sign-in's request (the one carrying max_age).
-		await page.route(/\/oauth\/v2\/authorize/, (route) => {
-			const url = new URL(route.request().url())
-			if (!url.searchParams.has('max_age') || url.searchParams.has('prompt')) {
-				return route.continue()
-			}
-			url.searchParams.set('prompt', 'login')
-			return route.fulfill({
-				status: 302,
-				headers: { location: url.toString() },
-			})
-		})
 	})
 
 	test('a fan with nothing in progress deletes their account and can no longer sign in', async ({
