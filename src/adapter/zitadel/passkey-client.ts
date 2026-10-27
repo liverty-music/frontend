@@ -1,9 +1,9 @@
 import { DI, resolve } from 'aurelia'
 import { IAppConfig } from '../../config/app-config'
 import {
-	IPasskeyAuthService,
-	type PasskeySession,
-} from '../../services/passkey-auth-service'
+	type FreshSignInSession,
+	IFreshSignInService,
+} from '../../services/fresh-sign-in-service'
 
 /** One passkey registered for the fan's identity at the identity provider. */
 export interface Passkey {
@@ -65,7 +65,7 @@ export class PasskeyClient {
 		/\/+$/,
 		'',
 	)
-	private readonly passkeyAuth = resolve(IPasskeyAuthService)
+	private readonly freshSignIn = resolve(IFreshSignInService)
 
 	/** Every usable passkey of the fan's identity. */
 	public async list(): Promise<Passkey[]> {
@@ -94,12 +94,12 @@ export class PasskeyClient {
 		)
 	}
 
-	private passkeysUrl(session: PasskeySession): string {
+	private passkeysUrl(session: FreshSignInSession): string {
 		return `${this.baseUrl}/v2/users/${encodeURIComponent(session.userId)}/passkeys`
 	}
 
-	private requireSession(): PasskeySession {
-		const session = this.passkeyAuth.session
+	private requireSession(): FreshSignInSession {
+		const session = this.freshSignIn.sessionFor('passkeys')
 		if (!session) {
 			throw new PasskeyRequestError(
 				'unauthenticated',
@@ -110,7 +110,7 @@ export class PasskeyClient {
 	}
 
 	private async call(
-		session: PasskeySession,
+		session: FreshSignInSession,
 		url: string,
 		init: RequestInit,
 	): Promise<unknown> {

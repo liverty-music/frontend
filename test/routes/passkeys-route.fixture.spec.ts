@@ -22,12 +22,12 @@ import { PasskeysRoute } from '../../src/routes/passkeys/passkeys-route'
 import { PasskeysCallbackRoute } from '../../src/routes/passkeys-callback/passkeys-callback-route'
 import { IAuthService } from '../../src/services/auth-service'
 import {
-	IPasskeyAuthService,
-	PasskeyAuthService,
-} from '../../src/services/passkey-auth-service'
+	FreshSignInService,
+	IFreshSignInService,
+} from '../../src/services/fresh-sign-in-service'
 import { createTestContainer } from '../helpers/create-container'
 import { createMockAppConfig } from '../helpers/mock-app-config'
-import { mockPasskeyUserManager } from '../helpers/mock-passkey-user-manager'
+import { mockFreshSignInUserManager } from '../helpers/mock-fresh-sign-in-user-manager'
 
 vi.mock('oidc-client-ts', async (importOriginal) => {
 	const actual = await importOriginal<typeof import('oidc-client-ts')>()
@@ -51,16 +51,16 @@ const WINDOWS: Passkey = { id: 'pk-2', name: 'Windows, Chrome' }
 
 /**
  * The passkey-management sign-in, end to end on the app's side: the
- * passkeys route, the callback route and the real PasskeyAuthService over a
+ * passkeys route, the callback route and the real FreshSignInService over a
  * stand-in oidc-client-ts UserManager (the hosted login itself is not here).
  */
 describe('Passkey management requires a recent sign-in', () => {
-	let manager: ReturnType<typeof mockPasskeyUserManager>
+	let manager: ReturnType<typeof mockFreshSignInUserManager>
 	let container: ReturnType<typeof createTestContainer>
 
 	beforeEach(() => {
 		vi.mocked(UserManager).mockReset()
-		manager = mockPasskeyUserManager()
+		manager = mockFreshSignInUserManager()
 		container = createTestContainer(
 			Registration.instance(IAuthService, mainAuth()),
 			Registration.instance(IPasskeyClient, {
@@ -69,7 +69,7 @@ describe('Passkey management requires a recent sign-in', () => {
 			Registration.instance(IDocumentLocation, { assign: vi.fn() }),
 			Registration.instance(IPasskeyRpcClient, { list: vi.fn(async () => []) }),
 		)
-		container.register(PasskeyAuthService)
+		container.register(FreshSignInService)
 	})
 
 	const passkeysRoute = () => container.invoke(PasskeysRoute)
@@ -116,7 +116,7 @@ describe('Passkey management requires a recent sign-in', () => {
 
 		// Leaving discards the token.
 		open.unloading()
-		expect(container.get(IPasskeyAuthService).session).toBeNull()
+		expect(container.get(IFreshSignInService).sessionFor('passkeys')).toBeNull()
 
 		// Reopening needs the 5-minute rule again.
 		expect(await passkeysRoute().canLoad()).toBe(false)
@@ -131,7 +131,7 @@ describe('Passkey management requires a recent sign-in', () => {
 		const callback = callbackRoute()
 		expect(await callback.canLoad()).toBe(true)
 		expect(callback.failure).toBe('otherAccount')
-		expect(container.get(IPasskeyAuthService).session).toBeNull()
+		expect(container.get(IFreshSignInService).sessionFor('passkeys')).toBeNull()
 	})
 
 	it('shows a failure when the hosted login sign-in did not complete', async () => {
@@ -180,7 +180,12 @@ async function renderManagement(
 	}
 	const location = { assign: vi.fn() }
 	const passkeyAuth = {
-		session: { userId: FAN_SUB, accessToken: 'passkey-token' },
+		sessionFor: () => ({
+			userId: FAN_SUB,
+			accessToken: 'passkey-token',
+			idToken: 'fresh-id-token',
+			returnTo: 'passkeys',
+		}),
 		discard: vi.fn(),
 		start: vi.fn(async () => {}),
 	}
@@ -195,7 +200,7 @@ async function renderManagement(
 				}
 			}),
 			Registration.instance(IAuthService, mainAuth()),
-			Registration.instance(IPasskeyAuthService, passkeyAuth),
+			Registration.instance(IFreshSignInService, passkeyAuth),
 			Registration.instance(IPasskeyClient, client),
 			Registration.instance(IPasskeyRpcClient, records),
 			Registration.instance(IDocumentLocation, location),

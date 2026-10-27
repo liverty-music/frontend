@@ -27,7 +27,7 @@ import {
 } from '../../services/error-boundary-service'
 import { IFabMenuService } from '../../services/fab-menu-service'
 import { IIdentityVerificationService } from '../../services/identity-verification-service'
-import { PASSKEY_MANAGEMENT_PATH } from '../../services/passkey-auth-service'
+import { PASSKEY_MANAGEMENT_PATH } from '../../services/fresh-sign-in-service'
 import { IPushService } from '../../services/push-service'
 import { IUserStore } from '../../services/user-store'
 import {
