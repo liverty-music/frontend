@@ -7,7 +7,10 @@ import type {
 } from '@stripe/stripe-js'
 import { ILogger, resolve } from 'aurelia'
 import { IConcertRpcClient } from '../../adapter/rpc/client/concert-client'
-import { ILotteryEntryRpcClient } from '../../adapter/rpc/client/lottery-entry-client'
+import {
+	ILotteryEntryRpcClient,
+	type LotteryCardAuthorization,
+} from '../../adapter/rpc/client/lottery-entry-client'
 import { ITicketSaleRpcClient } from '../../adapter/rpc/client/ticket-sale-client'
 import { referralCodeForSeries } from '../../adapter/storage/referral-storage'
 import { isVerified } from '../../entities/identity-verification'
@@ -41,6 +44,8 @@ import {
  * - `count` → `personal-details` → `payment`: the entry's steps; `submitting` covers
  *   the card confirmation and LotteryEntryService.Confirm.
  * - `done`: the entry was made (Confirm succeeded).
+ * - `refused`: Confirm refused the card authorization; no entry was made and
+ *   nothing will be charged.
  */
 export type LotteryEntryStep =
 	| 'loading'
@@ -53,6 +58,7 @@ export type LotteryEntryStep =
 	| 'payment'
 	| 'submitting'
 	| 'done'
+	| 'refused'
 
 /** An i18n key with its parameters, shown as the step's message. */
 export interface LotteryEntryMessage {
@@ -66,12 +72,12 @@ export interface LotteryEntryMessage {
  * details (full name and phone number), authorize the card, and enter the
  * draw.
  *
- * The entry is built as a resource before the card authorization opens, as a
- * checkout is: LotteryEntryService.Start makes a Draft, AuthorizeCard saves the
- * name and phone number on the fan's account and returns the card
- * authorization secret, and Confirm enters the Draft once the card issuer has
- * authorized the card. The
- * screen shows the entry as made only after Confirm succeeds.
+ * No entry exists before Confirm: LotteryEntryService.AuthorizeCard saves the
+ * name and phone number on the fan's account and opens a card authorization
+ * for the chosen count, and Confirm makes the entry from it once the card
+ * issuer has authenticated the card. A count changed after authorizing is
+ * authorized anew. The screen shows the entry as made only after Confirm
+ * succeeds.
  */
 export class LotteryEntryRoute implements IRouteViewModel {
 	private readonly logger = resolve(ILogger).scopeTo('LotteryEntryRoute')
@@ -89,7 +95,7 @@ export class LotteryEntryRoute implements IRouteViewModel {
 	public event: EventPageEvent | null = null
 	/** The lottery sale, with the TicketType this screen enters. */
 	public sale: TicketSale | null = null
-	/** The fan's Draft, once started; the made entry after Confirm. */
+	/** The entry Confirm made, once it succeeded. */
 	public entry: LotteryEntry | null = null
 
 	public ticketCount = 1
@@ -108,11 +114,21 @@ export class LotteryEntryRoute implements IRouteViewModel {
 	private eventId = ''
 	private ticketTypeId = ''
 	/**
-	 * True once the card issuer authorized the Draft's card. A retry after a
-	 * failed Confirm must not confirm the card again: Stripe rejects
-	 * confirming a card authorization that already awaits capture.
+	 * The card authorization AuthorizeCard opened, with the count it is for;
+	 * Confirm names it. A count change opens a new one.
 	 */
-	private cardConfirmed = false
+	private cardAuthorization:
+		| (LotteryCardAuthorization & { readonly ticketCount: number })
+		| null = null
+	/**
+	 * True once the card issuer authenticated the card authorization. A retry
+	 * after a failed Confirm must not confirm the card again: Stripe rejects
+	 * confirming a card authorization that already awaits capture. From then
+	 * on the card authorization becomes the entry, so the count stays.
+	 */
+	public cardConfirmed = false
+	/** True once the entry-started event was sent (on the first AuthorizeCard). */
+	private startReported = false
 	private abortController: AbortController | null = null
 	private stripeHandles: { stripe: Stripe; elements: StripeElements } | null =
 		null
@@ -188,7 +204,8 @@ export class LotteryEntryRoute implements IRouteViewModel {
 	/**
 	 * True when the sale requires a verification the fan does not have. On a
 	 * status-read failure the entry proceeds: the server checks the
-	 * requirement at Start, so it is never bypassed, only surfaced later.
+	 * requirement at AuthorizeCard, so it is never bypassed, only surfaced
+	 * later.
 	 */
 	private async lacksVerification(signal: AbortSignal): Promise<boolean> {
 		const requirement = this.sale?.verificationRequirement ?? 'none'
@@ -279,6 +296,16 @@ export class LotteryEntryRoute implements IRouteViewModel {
 		}
 	}
 
+	/** True when a refusal is because the fan has an entry for the TicketType. */
+	public get alreadyEntered(): boolean {
+		return this.message?.key === 'lotteryEntry.refused.alreadyEntered'
+	}
+
+	/** True when a refusal leaves the fan free to authorize a card again. */
+	public get canTryAgain(): boolean {
+		return this.message?.key === 'lotteryEntry.refused.other'
+	}
+
 	/** Where the fan reads the entry they made. */
 	public get entryStatusUrl(): string {
 		return `/events/${this.eventId}/lottery/${this.ticketTypeId}/entry`
@@ -291,47 +318,11 @@ export class LotteryEntryRoute implements IRouteViewModel {
 		await this.router.load('/settings')
 	}
 
-	/** Start the Draft for the chosen count and continue to the 本人確認 step. */
-	public async toPersonalDetails(): Promise<void> {
+	/** Continue to the 本人確認 step with the chosen count. */
+	public toPersonalDetails(): void {
 		if (this.busy || !this.sale) return
-		this.busy = true
 		this.message = null
-		try {
-			const entry = await this.entryClient.start(
-				this.sale.ticketType.id,
-				this.ticketCount,
-				// The referral link's code counts only for the Series it was
-				// kept for (OpenSpec `referral-attribution`, design D7).
-				referralCodeForSeries(this.event?.seriesId),
-				this.signal,
-			)
-			// Another count replaces the Draft: its card is authorized anew.
-			if (entry.id !== this.entry?.id) this.forgetCard()
-			this.entry = entry
-			this.analytics.capture(Events.TicketLotteryEntryStarted, this.choice())
-			this.step = 'personal-details'
-		} catch (err) {
-			if (this.signal?.aborted) return
-			this.explainStartFailure(err)
-		} finally {
-			this.busy = false
-		}
-	}
-
-	private explainStartFailure(err: unknown): void {
-		if (ConnectError.from(err).code === Code.FailedPrecondition) {
-			// The window closed, or the fan would hold more than the limit.
-			this.message =
-				this.sale && isWindowOpen(this.sale, new Date())
-					? {
-							key: 'lotteryEntry.count.limit',
-							params: { limit: this.perAccountLimit },
-						}
-					: { key: 'lotteryEntry.closed' }
-			return
-		}
-		this.logger.error('Start failed', { error: err })
-		this.message = { key: 'lotteryEntry.error.retry' }
+		this.step = 'personal-details'
 	}
 
 	public backToCount(): void {
@@ -340,34 +331,61 @@ export class LotteryEntryRoute implements IRouteViewModel {
 	}
 
 	/**
-	 * Save the name and phone number and open the Draft's card authorization
-	 * (LotteryEntryService.AuthorizeCard), then mount the card form bound to
-	 * the card authorization secret.
+	 * From the card form back to the 本人確認 step (and on to the count). Not
+	 * once the card is authenticated: that card authorization becomes the entry.
+	 */
+	public backToPersonalDetails(): void {
+		if (this.step !== 'payment' || this.cardConfirmed) return
+		this.message = null
+		this.cardError = ''
+		this.step = 'personal-details'
+	}
+
+	/**
+	 * Save the name and phone number and open a card authorization for the
+	 * chosen count (LotteryEntryService.AuthorizeCard), then mount the card
+	 * form bound to its secret. Once the card was authenticated for this count,
+	 * the fan only returns to the card form: that card authorization becomes
+	 * the entry.
 	 */
 	public async toPayment(): Promise<void> {
-		if (!this.isPersonalDetailsValid || this.busy || !this.entry) return
+		if (!this.isPersonalDetailsValid || this.busy || !this.sale) return
+		if (
+			this.cardConfirmed &&
+			this.cardAuthorization?.ticketCount === this.ticketCount
+		) {
+			this.message = null
+			this.step = 'payment'
+			return
+		}
 		this.busy = true
 		this.message = null
 		try {
 			const fullName = this.fullName.trim()
 			const phoneNumber = this.phoneE164 ?? ''
-			const cardAuthorizationSecret = await this.entryClient.authorizeCard(
-				this.entry.id,
+			const ticketCount = this.ticketCount
+			const cardAuthorization = await this.entryClient.authorizeCard(
+				this.sale.ticketType.id,
+				ticketCount,
 				fullName,
 				phoneNumber,
+				// The referral link's code counts only for the Series it was
+				// kept for (OpenSpec `referral-attribution`, design D7).
+				referralCodeForSeries(this.event?.seriesId),
 				this.signal,
 			)
+			this.forgetCard()
+			this.cardAuthorization = { ...cardAuthorization, ticketCount }
+			if (!this.startReported) {
+				this.startReported = true
+				this.analytics.capture(Events.TicketLotteryEntryStarted, this.choice())
+			}
 			// The server saved them on the fan's User: the next screen prefills
 			// the same values.
 			const user = this.userStore.current
 			if (user) this.userStore.current = { ...user, fullName, phoneNumber }
-			if (this.cardConfirmed) {
-				this.step = 'payment'
-				return
-			}
-			this.destroyPaymentElement()
 			this.stripeHandles = await this.stripe.createElements(
-				cardAuthorizationSecret,
+				cardAuthorization.secret,
 			)
 			if (!this.stripeHandles) {
 				this.message = { key: 'lotteryEntry.error.payment' }
@@ -378,14 +396,37 @@ export class LotteryEntryRoute implements IRouteViewModel {
 			queueMicrotask(() => this.mountPaymentElement())
 		} catch (err) {
 			if (this.signal?.aborted) return
-			this.logger.error('AuthorizeCard failed', { error: err })
-			this.message =
-				ConnectError.from(err).code === Code.FailedPrecondition
-					? { key: 'lotteryEntry.closed' }
-					: { key: 'lotteryEntry.error.retry' }
+			await this.explainAuthorizeCardFailure(err)
 		} finally {
 			this.busy = false
 		}
+	}
+
+	private async explainAuthorizeCardFailure(err: unknown): Promise<void> {
+		const code = ConnectError.from(err).code
+		if (code === Code.FailedPrecondition || code === Code.InvalidArgument) {
+			if (this.sale && !isWindowOpen(this.sale, new Date())) {
+				this.message = { key: 'lotteryEntry.closed' }
+				return
+			}
+			if (await this.hasEntry()) {
+				if (this.signal?.aborted) return
+				this.message = { key: 'lotteryEntry.refused.alreadyEntered' }
+				this.step = 'refused'
+				return
+			}
+			if (this.signal?.aborted) return
+			// Otherwise the fan would hold more than the per-account limit:
+			// the count is what they change.
+			this.message = {
+				key: 'lotteryEntry.count.limit',
+				params: { limit: this.perAccountLimit },
+			}
+			this.step = 'count'
+			return
+		}
+		this.logger.error('AuthorizeCard failed', { error: err })
+		this.message = { key: 'lotteryEntry.error.retry' }
 	}
 
 	private mountPaymentElement(): void {
@@ -403,16 +444,18 @@ export class LotteryEntryRoute implements IRouteViewModel {
 	}
 
 	private forgetCard(): void {
+		this.cardAuthorization = null
 		this.cardConfirmed = false
 		this.destroyPaymentElement()
 	}
 
 	/**
-	 * Confirm the card authorization with the card issuer (once), then enter the Draft
-	 * with LotteryEntryService.Confirm. The card is charged only on a win.
+	 * Confirm the card authorization with the card issuer (once), then make the
+	 * entry from it with LotteryEntryService.Confirm. The card is charged only
+	 * on a win.
 	 */
 	public async confirmEntry(): Promise<void> {
-		if (this.step === 'submitting' || !this.entry) return
+		if (this.step === 'submitting' || !this.cardAuthorization) return
 		if (!this.cardConfirmed && !this.stripeHandles) {
 			this.message = { key: 'lotteryEntry.error.payment' }
 			return
@@ -437,16 +480,67 @@ export class LotteryEntryRoute implements IRouteViewModel {
 		}
 
 		try {
-			this.entry = await this.entryClient.confirm(this.entry.id, this.signal)
+			this.entry = await this.entryClient.confirm(
+				this.cardAuthorization.id,
+				this.signal,
+			)
 			this.analytics.capture(Events.TicketLotteryEntrySubmitted, this.choice())
 			this.destroyPaymentElement()
 			this.step = 'done'
 		} catch (err) {
 			if (this.signal?.aborted) return
+			const code = ConnectError.from(err).code
+			if (code === Code.FailedPrecondition || code === Code.InvalidArgument) {
+				await this.explainRefusal(err)
+				return
+			}
 			this.logger.error('Confirm failed', { error: err })
-			// The card authorization stays; trying again confirms the same entry.
+			// The card authorization stays; trying again confirms the same one.
 			this.message = { key: 'lotteryEntry.error.confirm' }
 			this.step = 'payment'
 		}
+	}
+
+	/**
+	 * Confirm refused the card authorization: it made no entry and released
+	 * the card authorization (or never held it), so nothing will be charged.
+	 * The error carries no reason, so the screen tells the two the fan can act
+	 * on from what it can read: the window has closed, or the fan's entry for
+	 * the TicketType exists already.
+	 */
+	private async explainRefusal(err: unknown): Promise<void> {
+		this.logger.warn('Confirm refused the entry', { error: err })
+		this.forgetCard()
+		let key = 'lotteryEntry.refused.other'
+		if (this.sale && !isWindowOpen(this.sale, new Date())) {
+			key = 'lotteryEntry.refused.closed'
+		} else if (await this.hasEntry()) {
+			key = 'lotteryEntry.refused.alreadyEntered'
+		}
+		if (this.signal?.aborted) return
+		this.message = { key }
+		this.step = 'refused'
+	}
+
+	/** True when the fan has an entry for the TicketType; false when unknown. */
+	private async hasEntry(): Promise<boolean> {
+		try {
+			const entries = await this.entryClient.listByTicketType(
+				this.ticketTypeId,
+				this.signal,
+			)
+			return entries.length > 0
+		} catch (err) {
+			if (!this.signal?.aborted) {
+				this.logger.warn('Entry read after a refusal failed', { error: err })
+			}
+			return false
+		}
+	}
+
+	/** After a refusal for another reason, the fan may authorize again. */
+	public tryAgain(): void {
+		this.message = null
+		this.step = 'personal-details'
 	}
 }

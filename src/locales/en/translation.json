@@ -870,6 +870,14 @@
 			"payment": "Could not prepare the payment. Please try again later.",
 			"confirm": "Your entry could not be made. Please try again (the amount stays reserved on your card)."
 		},
+		"refused": {
+			"title": "Your entry was not made",
+			"notCharged": "Nothing will be charged to your card for this entry.",
+			"closed": "The entry window for this lottery has closed.",
+			"alreadyEntered": "You already have an entry for this ticket.",
+			"other": "Your card could not be used for this entry. You can try again with another card.",
+			"tryAgain": "Try again"
+		},
 		"phoneInvalid": "Enter a valid phone number (e.g. 090-1234-5678 or +81 90 1234 5678)."
 	},
 	"lotteryEntryStatus": {

@@ -8,7 +8,6 @@ import type {
 } from '../../../entities/lottery-entry'
 
 const STATES: Record<number, LotteryEntryState> = {
-	[ProtoLotteryEntryState.DRAFT]: 'draft',
 	[ProtoLotteryEntryState.ENTERED]: 'entered',
 	[ProtoLotteryEntryState.WON]: 'won',
 	[ProtoLotteryEntryState.LOST]: 'lost',

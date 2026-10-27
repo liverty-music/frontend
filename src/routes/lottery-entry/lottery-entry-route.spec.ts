@@ -70,22 +70,27 @@ function presale(o: Partial<TicketSale> = {}): TicketSale {
 	}
 }
 
-function draft(o: Partial<LotteryEntry> = {}): LotteryEntry {
+function entered(o: Partial<LotteryEntry> = {}): LotteryEntry {
 	return {
 		id: 'entry-1',
 		ticketTypeId: TYPE_ID,
 		ticketCount: 2,
-		state: 'draft',
+		state: 'entered',
 		...o,
 	}
+}
+
+const CARD_AUTHORIZATION = {
+	id: 'pi_lottery_1',
+	secret: 'card_authorization_secret_123',
 }
 
 const mockConcert = { get: vi.fn() }
 const mockSale = { listByEvent: vi.fn() }
 const mockEntry = {
-	start: vi.fn(),
 	authorizeCard: vi.fn(),
 	confirm: vi.fn(),
+	listByTicketType: vi.fn(),
 }
 
 // A minimal fake Elements group + Payment Element. The service's
@@ -146,19 +151,19 @@ async function open(): Promise<LotteryEntryRoute> {
 	return sut
 }
 
-/** Open the entry, start a Draft for 2 tickets and fill in the personal details. */
+/** Open the entry, choose 2 tickets and fill in the personal details. */
 async function toPersonalDetails(
 	phone = '090-1234-5678',
 ): Promise<LotteryEntryRoute> {
 	const sut = await open()
 	sut.ticketCount = 2
-	await sut.toPersonalDetails()
+	sut.toPersonalDetails()
 	sut.fullName = '山田 花子'
 	sut.phoneNumber = phone
 	return sut
 }
 
-/** Reach the card form with an authorized Draft. */
+/** Reach the card form with a card authorization for 2 tickets. */
 async function toPayment(phone?: string): Promise<LotteryEntryRoute> {
 	const sut = await toPersonalDetails(phone)
 	sut.paymentElementHost = document.createElement('div')
@@ -174,9 +179,9 @@ describe('LotteryEntryRoute', () => {
 		mockUserStore.current = undefined
 		mockConcert.get.mockResolvedValue(concert)
 		mockSale.listByEvent.mockResolvedValue([presale()])
-		mockEntry.start.mockResolvedValue(draft())
-		mockEntry.authorizeCard.mockResolvedValue('card_authorization_secret_123')
-		mockEntry.confirm.mockResolvedValue(draft({ state: 'entered' }))
+		mockEntry.authorizeCard.mockResolvedValue(CARD_AUTHORIZATION)
+		mockEntry.confirm.mockResolvedValue(entered())
+		mockEntry.listByTicketType.mockResolvedValue([])
 		mockStripe.createElements.mockResolvedValue({
 			stripe: fakeStripe,
 			elements: fakeElements,
@@ -246,7 +251,7 @@ describe('LotteryEntryRoute', () => {
 		})
 	})
 
-	describe('Start → Authorize → Confirm', () => {
+	describe('AuthorizeCard → Confirm', () => {
 		it('reports the entry started and submitted with the count', async () => {
 			// @spec components/infrastructure/fan/web/route/lottery-entry "Entry submitted"
 			const sut = await toPayment()
@@ -265,6 +270,17 @@ describe('LotteryEntryRoute', () => {
 			expect(sut.step).toBe('done')
 		})
 
+		it('reports the entry started on the first AuthorizeCard only', async () => {
+			const sut = await toPayment()
+			sut.backToPersonalDetails()
+			await sut.toPayment()
+
+			expect(mockEntry.authorizeCard).toHaveBeenCalledTimes(2)
+			expect(mockAnalytics.capture.mock.calls.map(([name]) => name)).toEqual([
+				Events.TicketLotteryEntryStarted,
+			])
+		})
+
 		it('reports no submission when Confirm fails', async () => {
 			mockEntry.confirm.mockRejectedValue(new Error('unavailable'))
 			const sut = await toPayment()
@@ -276,25 +292,23 @@ describe('LotteryEntryRoute', () => {
 			])
 		})
 
-		it('starts a Draft for the TicketType and the count', async () => {
+		it('calls nothing until the fan authorizes their card', async () => {
 			const sut = await toPersonalDetails()
 
-			expect(mockEntry.start).toHaveBeenCalledWith(
-				TYPE_ID,
-				2,
-				undefined,
-				expect.anything(),
-			)
+			expect(mockEntry.authorizeCard).not.toHaveBeenCalled()
+			expect(mockAnalytics.capture).not.toHaveBeenCalled()
 			expect(sut.step).toBe('personal-details')
 		})
 
-		it('authorizes with the name and E.164 phone number and mounts the card form', async () => {
+		it('authorizes the count with the name and E.164 phone number and mounts the card form', async () => {
 			const sut = await toPayment()
 
 			expect(mockEntry.authorizeCard).toHaveBeenCalledWith(
-				'entry-1',
+				TYPE_ID,
+				2,
 				'山田 花子',
 				'+819012345678',
+				undefined,
 				expect.anything(),
 			)
 			expect(mockStripe.createElements).toHaveBeenCalledWith(
@@ -328,12 +342,13 @@ describe('LotteryEntryRoute', () => {
 			await flush()
 			expect(mockStripe.confirmCardAuthorization).toHaveBeenCalledOnce()
 			expect(mockEntry.confirm).toHaveBeenCalledWith(
-				'entry-1',
+				'pi_lottery_1',
 				expect.anything(),
 			)
 			expect(sut.step).toBe('submitting')
+			expect(sut.entry).toBeNull()
 
-			resolveConfirm(draft({ state: 'entered' }))
+			resolveConfirm(entered())
 			await done
 			expect(sut.step).toBe('done')
 			expect(sut.entry?.state).toBe('entered')
@@ -352,9 +367,11 @@ describe('LotteryEntryRoute', () => {
 			await sut.confirmEntry()
 
 			expect(mockEntry.authorizeCard).toHaveBeenCalledWith(
-				'entry-1',
+				TYPE_ID,
+				2,
 				'山田 花子',
 				sent,
+				undefined,
 				expect.anything(),
 			)
 			// The field keeps what the fan typed.
@@ -362,24 +379,47 @@ describe('LotteryEntryRoute', () => {
 			expect(sut.step).toBe('done')
 		})
 
-		it('opens the card authorization anew after a new count replaces the Draft', async () => {
+		it('authorizes the card again when the count changes after authorizing', async () => {
+			// @spec components/infrastructure/fan/web/route/lottery-entry "Count changed after authorizing"
 			const sut = await toPayment()
+			sut.backToPersonalDetails()
 			sut.backToCount()
-			mockEntry.start.mockResolvedValue(
-				draft({ id: 'entry-2', ticketCount: 3 }),
-			)
 			sut.ticketCount = 3
+			sut.toPersonalDetails()
+			mockEntry.authorizeCard.mockResolvedValueOnce({
+				id: 'pi_lottery_2',
+				secret: 'card_authorization_secret_456',
+			})
+			mockEntry.confirm.mockResolvedValueOnce(entered({ ticketCount: 3 }))
 
-			await sut.toPersonalDetails()
 			await sut.toPayment()
+			await flush()
+			await sut.confirmEntry()
 
-			expect(mockEntry.authorizeCard).toHaveBeenLastCalledWith(
-				'entry-2',
-				'山田 花子',
-				'+819012345678',
+			expect(mockEntry.authorizeCard.mock.calls.map((c) => c[1])).toEqual([
+				2, 3,
+			])
+			expect(mockStripe.createElements).toHaveBeenLastCalledWith(
+				'card_authorization_secret_456',
+			)
+			expect(mockEntry.confirm).toHaveBeenCalledOnce()
+			expect(mockEntry.confirm).toHaveBeenCalledWith(
+				'pi_lottery_2',
 				expect.anything(),
 			)
-			expect(mockStripe.createElements).toHaveBeenCalledTimes(2)
+			expect(sut.step).toBe('done')
+			expect(sut.entry?.ticketCount).toBe(3)
+		})
+
+		it('keeps the count once the card is authenticated', async () => {
+			mockEntry.confirm.mockRejectedValueOnce(new Error('unavailable'))
+			const sut = await toPayment()
+			await sut.confirmEntry()
+			expect(sut.cardConfirmed).toBe(true)
+
+			sut.backToPersonalDetails()
+
+			expect(sut.step).toBe('payment')
 		})
 	})
 
@@ -406,19 +446,35 @@ describe('LotteryEntryRoute', () => {
 	})
 
 	describe('errors', () => {
-		it('says how many tickets one account may hold when Start is refused', async () => {
-			mockEntry.start.mockRejectedValue(
+		it('says how many tickets one account may hold when AuthorizeCard is refused', async () => {
+			mockEntry.authorizeCard.mockRejectedValue(
 				new ConnectError('limit', Code.FailedPrecondition),
 			)
-			const sut = await open()
+			const sut = await toPersonalDetails()
 
-			await sut.toPersonalDetails()
+			await sut.toPayment()
 
 			expect(sut.step).toBe('count')
 			expect(sut.message).toEqual({
 				key: 'lotteryEntry.count.limit',
 				params: { limit: 4 },
 			})
+		})
+
+		it('says the fan has entered already when AuthorizeCard is refused for that', async () => {
+			mockEntry.authorizeCard.mockRejectedValue(
+				new ConnectError('entered', Code.FailedPrecondition),
+			)
+			mockEntry.listByTicketType.mockResolvedValue([entered()])
+			const sut = await toPersonalDetails()
+
+			await sut.toPayment()
+
+			expect(sut.step).toBe('refused')
+			expect(sut.message).toEqual({
+				key: 'lotteryEntry.refused.alreadyEntered',
+			})
+			expect(sut.alreadyEntered).toBe(true)
 		})
 
 		it('surfaces a card error and does not Confirm', async () => {
@@ -445,7 +501,89 @@ describe('LotteryEntryRoute', () => {
 			await sut.confirmEntry()
 			expect(mockStripe.confirmCardAuthorization).toHaveBeenCalledOnce()
 			expect(mockEntry.confirm).toHaveBeenCalledTimes(2)
+			expect(mockEntry.confirm).toHaveBeenLastCalledWith(
+				'pi_lottery_1',
+				expect.anything(),
+			)
 			expect(sut.step).toBe('done')
+		})
+	})
+
+	describe('a refused entry is explained', () => {
+		it('says the window has closed and nothing will be charged', async () => {
+			// @spec components/infrastructure/fan/web/route/lottery-entry "Window closed while confirming"
+			const sut = await toPayment()
+			mockEntry.confirm.mockRejectedValue(
+				new ConnectError('closed', Code.FailedPrecondition),
+			)
+			// The end time passes while the fan authenticates the card.
+			if (sut.sale) {
+				sut.sale = { ...sut.sale, saleEndTime: new Date(Date.now() - 1000) }
+			}
+
+			await sut.confirmEntry()
+
+			expect(sut.step).toBe('refused')
+			expect(sut.message).toEqual({ key: 'lotteryEntry.refused.closed' })
+			expect(sut.entry).toBeNull()
+			expect(mockAnalytics.capture.mock.calls.map(([name]) => name)).toEqual([
+				Events.TicketLotteryEntryStarted,
+			])
+		})
+
+		it('says the fan already has an entry for the TicketType', async () => {
+			const sut = await toPayment()
+			mockEntry.confirm.mockRejectedValue(
+				new ConnectError('second entry', Code.FailedPrecondition),
+			)
+			mockEntry.listByTicketType.mockResolvedValue([entered({ id: 'entry-0' })])
+
+			await sut.confirmEntry()
+
+			expect(mockEntry.listByTicketType).toHaveBeenCalledWith(
+				TYPE_ID,
+				expect.anything(),
+			)
+			expect(sut.step).toBe('refused')
+			expect(sut.message).toEqual({
+				key: 'lotteryEntry.refused.alreadyEntered',
+			})
+			expect(sut.alreadyEntered).toBe(true)
+			expect(sut.canTryAgain).toBe(false)
+		})
+
+		it.each([Code.FailedPrecondition, Code.InvalidArgument])(
+			'says the entry was not made for another refusal (%s) and lets the fan try again',
+			async (code) => {
+				const sut = await toPayment()
+				mockEntry.confirm.mockRejectedValue(new ConnectError('refused', code))
+
+				await sut.confirmEntry()
+
+				expect(sut.step).toBe('refused')
+				expect(sut.message).toEqual({ key: 'lotteryEntry.refused.other' })
+				expect(sut.canTryAgain).toBe(true)
+
+				// A new card authorization is opened for the next attempt.
+				sut.tryAgain()
+				expect(sut.step).toBe('personal-details')
+				await sut.toPayment()
+				expect(mockEntry.authorizeCard).toHaveBeenCalledTimes(2)
+				expect(sut.cardConfirmed).toBe(false)
+			},
+		)
+
+		it('says the entry was not made when the entry read fails', async () => {
+			const sut = await toPayment()
+			mockEntry.confirm.mockRejectedValue(
+				new ConnectError('refused', Code.FailedPrecondition),
+			)
+			mockEntry.listByTicketType.mockRejectedValue(new Error('offline'))
+
+			await sut.confirmEntry()
+
+			expect(sut.step).toBe('refused')
+			expect(sut.message).toEqual({ key: 'lotteryEntry.refused.other' })
 		})
 	})
 
@@ -492,7 +630,7 @@ describe('LotteryEntryRoute', () => {
 			expect(sut.step).toBe('count')
 		})
 
-		it('proceeds when the status read fails (the server checks it at Start)', async () => {
+		it('proceeds when the status read fails (the server checks it at AuthorizeCard)', async () => {
 			mockSale.listByEvent.mockResolvedValue([
 				presale({ verificationRequirement: 'verifiedAny' }),
 			])
@@ -521,34 +659,39 @@ describe('LotteryEntryRoute', () => {
 			localStorage.removeItem('referral')
 		})
 
-		function startedWith(): unknown {
-			return mockEntry.start.mock.calls.at(-1)?.[2]
+		/** The code the last AuthorizeCard sent. */
+		function authorizedWith(): unknown {
+			return mockEntry.authorizeCard.mock.calls.at(-1)?.[4]
 		}
 
 		it('sends the code kept for the same Series yesterday', async () => {
 			// @spec components/infrastructure/fan/web/route/lottery-entry "Entry from a referral link"
 			keptCode('member-a', 's1', 1)
-			await toPersonalDetails()
+			const sut = await toPayment()
 
-			expect(startedWith()).toBe('member-a')
+			expect(authorizedWith()).toBe('member-a')
+			// Confirming leaves the kept code on the device.
+			await sut.confirmEntry()
+			expect(sut.step).toBe('done')
+			expect(localStorage.getItem('referral')).not.toBeNull()
 		})
 
 		it('sends no code kept for another Series', async () => {
 			// @spec components/infrastructure/fan/web/route/lottery-entry "Another Series"
 			keptCode('member-a', 's-other', 1)
-			await toPersonalDetails()
+			await toPayment()
 
-			expect(mockEntry.start).toHaveBeenCalledOnce()
-			expect(startedWith()).toBeUndefined()
+			expect(mockEntry.authorizeCard).toHaveBeenCalledOnce()
+			expect(authorizedWith()).toBeUndefined()
 		})
 
 		it('sends no code once it has expired', async () => {
 			// @spec components/infrastructure/fan/web/route/lottery-entry "Code expired"
 			keptCode('member-a', 's1', 8)
-			await toPersonalDetails()
+			await toPayment()
 
-			expect(mockEntry.start).toHaveBeenCalledOnce()
-			expect(startedWith()).toBeUndefined()
+			expect(mockEntry.authorizeCard).toHaveBeenCalledOnce()
+			expect(authorizedWith()).toBeUndefined()
 		})
 	})
 })

@@ -22,20 +22,10 @@ export type EntryStatusViewStep = 'loading' | 'empty' | 'error' | 'loaded'
 export type ResultKind = 'entered' | 'won' | 'lost'
 
 /**
- * The entry a status screen shows: the newest that is not a Draft. A Draft
- * was never entered, so it is not an entry the fan made.
- */
-export function shownEntry(
-	entries: readonly LotteryEntry[],
-): LotteryEntry | null {
-	return entries.find((e) => e.state !== 'draft') ?? null
-}
-
-/**
  * The fan's lottery entry status for one TicketType
  * (`/events/:id/lottery/:ticketTypeId/entry`). Reads the fan's entries with
- * LotteryEntryService.ListByTicketType (newest first) and shows the newest
- * entry made: its count and state (抽選待ち / 当選 / 落選). An entry cannot be
+ * LotteryEntryService.ListByTicketType (at most one, made at Confirm) and
+ * shows it: its count and state (抽選待ち / 当選 / 落選). An entry cannot be
  * withdrawn once made.
  */
 export class LotteryEntryStatusRoute implements IRouteViewModel {
@@ -71,7 +61,7 @@ export class LotteryEntryStatusRoute implements IRouteViewModel {
 				signal,
 			)
 			if (signal.aborted) return
-			this.entry = shownEntry(entries)
+			this.entry = entries[0] ?? null
 			this.step = this.entry ? 'loaded' : 'empty'
 		} catch (err) {
 			if (signal.aborted) return

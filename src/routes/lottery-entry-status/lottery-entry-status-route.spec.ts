@@ -30,10 +30,7 @@ vi.mock('aurelia', async (importOriginal) => {
 	}
 })
 
-import {
-	LotteryEntryStatusRoute,
-	shownEntry,
-} from './lottery-entry-status-route'
+import { LotteryEntryStatusRoute } from './lottery-entry-status-route'
 
 function entry(o: Partial<LotteryEntry> = {}): LotteryEntry {
 	return {
@@ -51,19 +48,6 @@ async function open(): Promise<LotteryEntryStatusRoute> {
 	await vi.waitFor(() => expect(sut.step).not.toBe('loading'))
 	return sut
 }
-
-describe('shownEntry', () => {
-	it('shows the newest entry that is not a Draft', () => {
-		expect(
-			shownEntry([
-				entry({ id: 'draft', state: 'draft' }),
-				entry({ id: 'newest' }),
-				entry({ id: 'older', state: 'lost' }),
-			])?.id,
-		).toBe('newest')
-		expect(shownEntry([entry({ state: 'draft' })])).toBeNull()
-	})
-})
 
 describe('LotteryEntryStatusRoute', () => {
 	beforeEach(() => {
@@ -102,7 +86,7 @@ describe('LotteryEntryStatusRoute', () => {
 	})
 
 	it('is empty when the fan made no entry', async () => {
-		mockEntry.listByTicketType.mockResolvedValue([entry({ state: 'draft' })])
+		mockEntry.listByTicketType.mockResolvedValue([])
 		const sut = await open()
 		expect(sut.step).toBe('empty')
 	})

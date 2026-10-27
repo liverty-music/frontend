@@ -8,7 +8,6 @@ import { lotteryEntryFrom, lotteryEntryStateFrom } from './lottery-entry-mapper'
 
 describe('lottery-entry-mapper', () => {
 	it('maps every proto state to its domain union value', () => {
-		expect(lotteryEntryStateFrom(ProtoLotteryEntryState.DRAFT)).toBe('draft')
 		expect(lotteryEntryStateFrom(ProtoLotteryEntryState.ENTERED)).toBe(
 			'entered',
 		)
