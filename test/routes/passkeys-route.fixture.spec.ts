@@ -447,6 +447,25 @@ describe('Passkey management lists, adds and removes passkeys (fixture)', () => 
 		expect(q('passkeys-confirm')).toBeNull()
 	})
 
+	it('renders the removal in the danger variant and its cancel outlined', async () => {
+		// @spec components/infrastructure/fan/web/global/ui-primitives "Destructive action"
+		const { removeButtons, q, settle } = await renderManagement([
+			IPHONE,
+			WINDOWS,
+		])
+		removeButtons()[1]?.click()
+		await settle()
+
+		const remove = q<HTMLButtonElement>('passkeys-confirm-remove')
+		expect(remove?.classList.contains('button')).toBe(true)
+		expect(remove?.dataset.variant).toBe('danger')
+		const cancel = q('passkeys-confirm')?.querySelector<HTMLButtonElement>(
+			'button:not([data-testid])',
+		)
+		expect(cancel?.textContent).toBe(ja.passkeys.confirm.cancel)
+		expect(cancel?.dataset.variant).toBe('outlined')
+	})
+
 	it('disables removal of the last passkey and explains why', async () => {
 		// @spec components/infrastructure/fan/web/route/settings "Last passkey"
 		const { removeButtons, q, vm, client } = await renderManagement([IPHONE])

@@ -856,7 +856,6 @@
 			"notCharged": "You are not charged now. The amount is only reserved on your card.",
 			"chargedOnWin": "You are charged the reserved amount only if you win.",
 			"releasedOnLoss": "If you do not win, the amount reserved on your card is released and you are not charged.",
-			"withdraw": "You can withdraw your entry before the draw; the reserved amount is then released too.",
 			"brands": "Accepted cards: Visa / Mastercard / JCB / Diners Club / Discover in Japanese yen. American Express is not accepted.",
 			"confirm": "Agree and enter",
 			"submitting": "Processing…"
@@ -870,6 +869,14 @@
 			"retry": "Something went wrong. Please try again.",
 			"payment": "Could not prepare the payment. Please try again later.",
 			"confirm": "Your entry could not be made. Please try again (the amount stays reserved on your card)."
+		},
+		"refused": {
+			"title": "Your entry was not made",
+			"notCharged": "Nothing will be charged to your card for this entry.",
+			"closed": "The entry window for this lottery has closed.",
+			"alreadyEntered": "You already have an entry for this ticket.",
+			"other": "Your card could not be used for this entry. You can try again with another card.",
+			"tryAgain": "Try again"
 		},
 		"phoneInvalid": "Enter a valid phone number (e.g. 090-1234-5678 or +81 90 1234 5678)."
 	},
@@ -886,23 +893,12 @@
 			"entered": "Awaiting the draw",
 			"won": "Won",
 			"lost": "Not won",
-			"withdrawn": "Withdrawn",
 			"unknown": "—"
 		},
 		"note": {
 			"entered": "Please wait for the draw result. The amount is reserved on your card (you are not charged now); you are charged only if you win.",
 			"won": "You won. The reserved amount is charged to your card. Your tickets appear on the Tickets screen.",
-			"lost": "You did not win this time. The amount reserved on your card is released and you are not charged.",
-			"withdrawn": "This entry was withdrawn. The amount reserved on your card is released and you are not charged."
-		},
-		"withdraw": {
-			"action": "Withdraw my entry",
-			"confirm": "Withdraw your entry? The amount reserved on your card is released and you will no longer take part in this lottery.",
-			"cancel": "Keep my entry",
-			"submit": "Withdraw",
-			"submitting": "Processing…",
-			"drawn": "The draw has already run, so the entry could not be withdrawn. The latest result is shown.",
-			"failed": "The entry could not be withdrawn. Please try again."
+			"lost": "You did not win this time. The amount reserved on your card is released and you are not charged."
 		}
 	},
 	"eventCard": {

@@ -68,8 +68,8 @@ type TicketChoiceProps = {
 }
 
 /**
- * The lottery entry screen started the entry (LotteryEntryService.Start
- * succeeded).
+ * The lottery entry screen started the entry (its first
+ * LotteryEntryService.AuthorizeCard succeeded).
  */
 export type TicketLotteryEntryStartedProps = TicketChoiceProps
 
