@@ -1,0 +1,66 @@
+/* The All Nearby view and the swap tile that switches to it, on Discovery. */
+@layer block {
+	@scope (discovery-route) {
+		/* The All Nearby view covers the whole column, over the search bar,
+		   the genre chips and the bubbles, which keep their size underneath.
+		   Positioned like the bubble area, so DOM order puts it on top. */
+		.nearby-view {
+			position: relative;
+			grid-column: 1 / -1;
+			grid-row: 1 / -1;
+			background: var(--color-surface-base);
+		}
+
+		/* The swap tile sits beside the orb, just outside the largest orb, in
+		   the band under the bubbles' floor (130px above --orb-floor, see
+		   bubble-physics.ts) that no bubble enters. It follows the largest
+		   orb, not the current one, so it never moves as the fan follows. An
+		   open snack bar lifts it clear (--snack-stack-height, global.css).
+		   Percentage margins resolve against the grid area, so 50% is the
+		   orb's centre line. */
+		.swap-tile-slot {
+			position: relative;
+
+			grid-area: bubbles;
+			place-self: end start;
+
+			margin-block-end: max(
+				var(--orb-floor),
+				var(--snack-stack-height, 0px) +
+				var(--space-3xs)
+			);
+			margin-inline-start: calc(50% + var(--orb-max-r) + var(--space-s));
+
+			transition: margin-block-end var(--transition-normal);
+		}
+
+		/* Left-handed mode (the FAB menu's handedness) mirrors it. */
+		.swap-tile-slot[data-handed="left"] {
+			justify-self: end;
+			margin-inline: 0 calc(50% + var(--orb-max-r) + var(--space-s));
+		}
+
+		/* Hidden with the genre chips while searching. */
+		.discovery-layout[data-search-mode="true"] .swap-tile-slot {
+			display: none;
+		}
+
+		/* Under the All Nearby view the bubble field keeps its layout (the
+		   canvas is not resized) but is neither seen nor reachable. */
+		.discovery-layout[data-view="nearby"]
+			:is(.search-bar, .genre-bar, .bubble-area) {
+			visibility: hidden;
+		}
+
+		/* Named only while the swap tile switches the view (see global.css). */
+		.discovery-layout[data-revealing="true"] {
+			view-transition-name: discovery-view;
+		}
+
+		@container discovery-layout (width < 390px) {
+			.swap-tile-slot {
+				--orb-max-r: 56px;
+			}
+		}
+	}
+}

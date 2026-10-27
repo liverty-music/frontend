@@ -13,7 +13,7 @@
   <template switch.bind="page">
 
     <template case="discovery">
-      <!-- Discovery: 2 sub-sections — Finding Artists + Unfollowing. -->
+      <!-- Discovery: 3 sub-sections — Finding Artists, Near you, Unfollowing. -->
       <section class="page-help-content">
         <header class="page-help-header">
           <svg-icon name="info" size="md" class="page-help-icon"></svg-icon>
@@ -32,6 +32,14 @@
           <li t="pageHelp.discovery.genreTip"></li>
           <li t="pageHelp.discovery.searchTip"></li>
         </ul>
+      </section>
+
+      <section class="page-help-content">
+        <header class="page-help-header">
+          <svg-icon name="info" size="md" class="page-help-icon"></svg-icon>
+          <h3 class="help-section-title" t="pageHelp.discovery.nearbySectionTitle"></h3>
+        </header>
+        <p class="page-help-desc" t="pageHelp.discovery.nearbyDesc"></p>
       </section>
 
       <section class="page-help-content">

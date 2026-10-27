@@ -1,5 +1,5 @@
 import { I18N } from '@aurelia/i18n'
-import { INode, resolve } from 'aurelia'
+import { bindable, INode, resolve } from 'aurelia'
 import type { CalendarDate } from '../../adapter/rpc/client/concert-client'
 import {
 	type DatePresetId,
@@ -15,10 +15,10 @@ import {
 
 /**
  * The `range-changed` event payload. Carries the resolved {@link CalendarDate}
- * pair the dashboard feeds to `listByLocation`, plus the display `label` the
- * date chip renders (a preset name when a preset is active, else a localized
- * range). Emitting the label alongside the range keeps the chip's copy in sync
- * with the sheet's selection without the dashboard re-deriving it.
+ * pair the All Nearby view feeds to `listByLocation`, plus the display `label`
+ * the date chip renders (a preset name when a preset is active, else a
+ * localized range). Emitting the label alongside the range keeps the chip's
+ * copy in sync with the sheet's selection without the view re-deriving it.
  */
 export interface RangeChangedDetail extends DateRange {
 	label: string
@@ -35,6 +35,13 @@ export interface RangeChangedDetail extends DateRange {
  * mirroring the user-home-selector pattern.
  */
 export class DateRangeSheet {
+	/**
+	 * The range to start from, when the host already has one (the fan comes
+	 * back to the All Nearby view within a visit). Without it the sheet starts
+	 * on the "7日以内" preset.
+	 */
+	@bindable public initialRange: DateRange | null = null
+
 	public isOpen = false
 
 	/** The three quick presets rendered as a chip row. */
@@ -59,9 +66,10 @@ export class DateRangeSheet {
 	private readonly i18n = resolve(I18N)
 
 	public bound(): void {
+		if (this.initialRange) this.appliedRange = this.initialRange
 		this.seedDrafts(this.appliedRange)
-		// Emit the initial range so the dashboard can load before the user ever
-		// opens the sheet — mirrors the old selector's bound()-time emit.
+		// Emit the initial range so the view can load before the fan ever opens
+		// the sheet.
 		this.emit(this.appliedRange)
 	}
 

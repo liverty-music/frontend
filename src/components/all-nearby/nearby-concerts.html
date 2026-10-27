@@ -1,0 +1,76 @@
+<import from="./nearby-concerts.css"></import>
+<import from="./date-range-sheet"></import>
+
+<!-- Filters: a fixed-height row of exactly two chips, area and date. Neither
+     expands inline, so the timetable's height never changes; each opens a
+     bottom sheet. -->
+<div class="[ nearby-filters ] [ cluster ]" role="group" t="[aria-label]allNearby.filterBar.label">
+  <button type="button" class="filter-chip" data-testid="nearby-area-chip" click.trigger="openAreaSelector()">
+    <svg-icon name="map-pin" size="sm"></svg-icon>
+    <span if.bind="selectedAreaName" class="chip-label">${selectedAreaName}</span>
+    <span else class="chip-label chip-label-empty" t="allNearby.area.choose"></span>
+    <svg-icon name="chevron-right" size="xs" class="chip-caret"></svg-icon>
+  </button>
+  <button type="button" class="filter-chip" data-testid="nearby-date-chip" click.trigger="openDateSheet()">
+    <svg-icon name="calendar" size="sm"></svg-icon>
+    <span class="chip-label">${dateChipLabel}</span>
+    <svg-icon name="chevron-right" size="xs" class="chip-caret"></svg-icon>
+  </button>
+</div>
+
+<!-- Venue on every card; the AWAY lane is left out (two lanes). First in the
+     content cell, so the states below paint over it and take the tap. -->
+<concert-highway
+  date-groups.bind="dateGroups"
+  show-beams.bind="false"
+  show-venue-always.bind="true"
+  hide-away.bind="true"
+  event-selected.trigger="onEventSelected($event)"
+></concert-highway>
+
+<!-- Loading: content-shaped skeleton. -->
+<state-placeholder if.bind="isLoading" loading.bind="true" rows.bind="6" data-testid="all-nearby-loading"></state-placeholder>
+
+<inline-error
+  if.bind="loadError"
+  message.bind="i18n.tr('dashboard.error.load')"
+  retry-action.bind="() => load()"
+></inline-error>
+
+<!-- Empty: nothing for this area and period. The chips above stay, so the
+     suggestion (a longer period, another area) is one tap away. -->
+<state-placeholder
+  if.bind="!isLoading && !loadError && dateGroups.length === 0"
+  icon="clock"
+  data-testid="all-nearby-empty"
+>
+  <p t="allNearby.empty.title" class="nearby-empty-title"></p>
+  <p t="allNearby.empty.subtitle" class="nearby-empty-subtitle"></p>
+</state-placeholder>
+
+<!-- The follow action dispatches onSignupRequested for a guest. -->
+<event-detail-sheet
+  component.ref="detailSheet"
+  on-signup-requested.bind="() => onFollowSignupRequested()"
+></event-detail-sheet>
+
+<signup-prompt-banner
+  visible.bind="showSignupBanner && !isAuthenticated"
+  message.bind="i18n.tr('myArtists.signupBanner.message')"
+  signup-requested.trigger="onSignupRequested()"
+></signup-prompt-banner>
+
+<!-- Area override for this visit; never saved to the account or the device. -->
+<user-home-selector
+  component.ref="areaSelector"
+  current-code.bind="effectiveAreaCode"
+  on-home-selected.bind="(code) => onAreaSelected(code)"
+></user-home-selector>
+
+<!-- Emits its range on bind (seeding the chip and the first load), starting
+     from the visit's range when the fan comes back to this view. -->
+<date-range-sheet
+  component.ref="dateSheet"
+  initial-range.bind="visit.range"
+  range-changed.trigger="onRangeChanged($event)"
+></date-range-sheet>

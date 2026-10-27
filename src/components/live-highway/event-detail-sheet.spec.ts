@@ -139,6 +139,34 @@ describe('EventDetailSheet — history management', () => {
 		)
 	})
 
+	// @spec components/infrastructure/fan/web/route/discovery "Closing the detail sheet returns to the list"
+	it('closes back to the All Nearby view on Discovery it opened from', () => {
+		window.history.replaceState(null, '', '/discovery?view=nearby')
+		sut.open(makeEvent('e1'), 'all_nearby', true)
+		expect(mockHistory.pushState).toHaveBeenLastCalledWith(
+			{ concertId: 'e1' },
+			'',
+			'/concerts/e1',
+		)
+		sut.onSheetClosed()
+		expect(mockHistory.replaceState).toHaveBeenLastCalledWith(
+			null,
+			'',
+			'/discovery?view=nearby',
+		)
+	})
+
+	it('closes a deep-linked sheet to the dashboard', () => {
+		window.history.replaceState(null, '', '/concerts/e1')
+		sut.open(makeEvent('e1'))
+		sut.close()
+		expect(mockHistory.replaceState).toHaveBeenLastCalledWith(
+			null,
+			'',
+			'/dashboard',
+		)
+	})
+
 	// @spec components/infrastructure/fan/web/route/dashboard "Closing keeps the active filters in the URL"
 	it('closes back to the filtered dashboard URL it opened from', () => {
 		window.history.replaceState(
