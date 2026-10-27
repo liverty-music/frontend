@@ -148,6 +148,23 @@ test.describe('delete my account', () => {
 		await optOutOfAnalytics(page)
 	})
 
+	// A failed test may leave the account it signed up in production: delete
+	// it while the page still holds its session, or name it for an admin.
+	test.afterEach(async ({ page }, testInfo) => {
+		if (testInfo.status === testInfo.expectedStatus) return
+		testInfo.setTimeout(testInfo.timeout + 120_000)
+		const deleted = await (async () => {
+			if (!(await signedInFan(page))) return false
+			await deleteFromSettings(page)
+			return true
+		})().catch(() => false)
+		if (!deleted) {
+			console.warn(
+				`${ACCOUNT.email} may be left in production: delete it on the admin console's Users screen`,
+			)
+		}
+	})
+
 	test('a fan with nothing in progress deletes their account and can no longer sign in', async ({
 		page,
 		browser,
@@ -196,33 +213,31 @@ test.describe('delete my account', () => {
 		test.skip(!deletedFan, 'needs the account the previous test deleted')
 		await signUp(page)
 
-		try {
-			const fan = await signedInFan(page)
-			expect(fan).not.toBe(deletedFan)
+		const fan = await signedInFan(page)
+		expect(fan).not.toBe(deletedFan)
 
-			const follows = await callAsFan(
-				page,
-				'liverty_music.rpc.follow.v1.FollowService/List',
-			)
-			expect(follows.status).toBe(200)
-			expect(follows.body.artists ?? []).toEqual([])
+		const follows = await callAsFan(
+			page,
+			'liverty_music.rpc.follow.v1.FollowService/List',
+		)
+		expect(follows.status).toBe(200)
+		expect(follows.body.artists ?? []).toEqual([])
 
-			const tickets = await callAsFan(
-				page,
-				'liverty_music.rpc.ticket.v1.TicketService/List',
-			)
-			expect(tickets.status).toBe(200)
-			expect(tickets.body.tickets ?? []).toEqual([])
+		const tickets = await callAsFan(
+			page,
+			'liverty_music.rpc.ticket.v1.TicketService/List',
+		)
+		expect(tickets.status).toBe(200)
+		expect(tickets.body.tickets ?? []).toEqual([])
 
-			// No identity check (本人確認) result: Get answers NotFound.
-			const verification = await callAsFan(
-				page,
-				'liverty_music.rpc.identity_verification.v1.IdentityVerificationService/Get',
-			)
-			expect(verification.body.code).toBe('not_found')
-		} finally {
-			// Leave no account behind.
-			await deleteFromSettings(page)
-		}
+		// No identity check (本人確認) result: Get answers NotFound.
+		const verification = await callAsFan(
+			page,
+			'liverty_music.rpc.identity_verification.v1.IdentityVerificationService/Get',
+		)
+		expect(verification.body.code).toBe('not_found')
+
+		// Leave no account behind.
+		await deleteFromSettings(page)
 	})
 })
