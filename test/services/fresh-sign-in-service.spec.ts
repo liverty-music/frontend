@@ -49,13 +49,16 @@ describe('FreshSignInService', () => {
 		expect(userStore._store).toBeInstanceOf(InMemoryWebStorage)
 	})
 
-	it('starts the sign-in with max_age=300, the fan as login hint and the screen in the request state', async () => {
+	// Zitadel's login V2 ignores max_age (zitadel/zitadel#12258); prompt=login
+	// is what makes the hosted login ask the fan to sign in again.
+	it('starts the sign-in with prompt=login and max_age=300, the fan as login hint and the screen in the request state', async () => {
 		await sut.start('passkeys', {
 			loginHint: 'fan@example.com',
 			uiLocales: 'ja',
 		})
 		expect(manager.signinRedirect).toHaveBeenCalledWith({
 			max_age: 300,
+			prompt: 'login',
 			state: { returnTo: 'passkeys' },
 			login_hint: 'fan@example.com',
 			ui_locales: 'ja',
