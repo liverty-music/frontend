@@ -75,6 +75,11 @@ const KNOWN_GAPS: KnownGap[] = [
 			"Resells a ticket between two fans in production in Stripe test mode: needs two prod fans' `storageState`, a test Event id, a test Organizer's access token and a 16-minute wait for a hold to end.",
 	},
 	{
+		spec: 'e2e/prod/delete-my-account.guest.spec.ts',
+		reason:
+			"Signs up and deletes throwaway accounts at production's hosted login; a pull-request build has no identity provider to sign up at.",
+	},
+	{
 		spec: 'e2e/smoke/post-deploy.spec.ts',
 		reason:
 			'Runs against a deployed URL from push-image.yaml (`SMOKE_BASE_URL`), not against a PR build. Covered, but not by pull-request CI.',
