@@ -60,9 +60,10 @@ const routeTable = [
 		data: { auth: false, chrome: false },
 	},
 	{
-		// Return leg of the passkey-management sign-in (a second OIDC client with
-		// a short-lived, in-memory token; OpenSpec change
-		// `fan-passkey-recovery-and-management`, design D3).
+		// Return leg of the fresh sign-in of passkey management and the
+		// withdrawal screen (a second OIDC client with a short-lived, in-memory
+		// token; OpenSpec changes `fan-passkey-recovery-and-management` D3 and
+		// `delete-fan-accounts` D4).
 		path: 'auth/passkeys-callback',
 		component: import('./routes/passkeys-callback/passkeys-callback-route'),
 		title: 'Passkeys',
@@ -202,6 +203,15 @@ const routeTable = [
 		component: import('./routes/passkeys/passkeys-route'),
 		title: 'Passkeys',
 		data: { titleKey: 'passkeys.title' },
+	},
+	// The withdrawal screen, opened from the Settings Delete account control.
+	// Signed-in fans only; it asks for the same fresh sign-in as passkey
+	// management before it deletes (OpenSpec change `delete-fan-accounts`).
+	{
+		path: 'settings/delete-account',
+		component: import('./routes/delete-account/delete-account-route'),
+		title: 'Delete Account',
+		data: { titleKey: 'deleteAccount.title' },
 	},
 	// Order detail (roadmap ⑤, §5.1/§5.2). Authenticated by default — the order
 	// must belong to the caller (non-revealing NotFound otherwise). Reached by

@@ -5,7 +5,7 @@ import {
 	PasskeyClient,
 	PasskeyRequestError,
 } from '../../../src/adapter/zitadel/passkey-client'
-import { IPasskeyAuthService } from '../../../src/services/passkey-auth-service'
+import { IFreshSignInService } from '../../../src/services/fresh-sign-in-service'
 import { createTestContainer } from '../../helpers/create-container'
 
 const BASE = 'https://auth.test.local/v2/users/zitadel-user-1/passkeys'
@@ -27,10 +27,9 @@ describe('PasskeyClient (ZITADEL User v2 REST)', () => {
 		vi.stubGlobal('fetch', fetchMock)
 		session = { userId: 'zitadel-user-1', accessToken: 'passkey-token' }
 		const container = createTestContainer(
-			Registration.instance(IPasskeyAuthService, {
-				get session() {
-					return session
-				},
+			Registration.instance(IFreshSignInService, {
+				sessionFor: (screen: string) =>
+					screen === 'passkeys' ? session : null,
 			}),
 		)
 		container.register(PasskeyClient)

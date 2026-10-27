@@ -2,9 +2,11 @@ import { UserService } from '@buf/liverty-music_schema.bufbuild_es/liverty_music
 import { createClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
 import { IAppConfig } from '../../../config/app-config'
+import type { DeletionBlocker } from '../../../entities/deletion-blocker'
 import type { User } from '../../../entities/user'
 import { IAuthService } from '../../../services/auth-service'
 import { createTransport } from '../../../services/grpc-transport'
+import { deletionBlockersFrom } from '../mapper/deletion-blocker-mapper'
 import { userFrom } from '../mapper/user-mapper'
 
 export const IUserRpcClient = DI.createInterface<IUserRpcClient>(
@@ -107,5 +109,24 @@ export class UserRpcClient {
 			userId: { value: userId },
 			code: { value: code },
 		})
+	}
+
+	/**
+	 * What currently stops the caller's account from being deleted
+	 * (`UserService.ListDeletionBlockers`). Empty when it can be deleted.
+	 */
+	public async listDeletionBlockers(): Promise<DeletionBlocker[]> {
+		const resp = await this.userClient.listDeletionBlockers({})
+		return deletionBlockersFrom(resp.blockers)
+	}
+
+	/**
+	 * Deletes the caller's account (`UserService.Delete`). `idToken` is the ID
+	 * token of a sign-in made within the last 5 minutes; it is a credential and
+	 * is never logged. Rejects with FailedPrecondition while a blocker exists
+	 * and PermissionDenied when the proof is not accepted.
+	 */
+	public async delete(idToken: string): Promise<void> {
+		await this.userClient.delete({ idToken })
 	}
 }

@@ -20,9 +20,9 @@ import { IAppConfig } from '../../config/app-config'
 import type { PasskeyRecord } from '../../entities/passkey'
 import { IAuthService } from '../../services/auth-service'
 import {
-	IPasskeyAuthService,
+	IFreshSignInService,
 	PASSKEY_MANAGEMENT_PATH,
-} from '../../services/passkey-auth-service'
+} from '../../services/fresh-sign-in-service'
 import { currentLanguage } from '../../util/change-locale'
 
 /**
@@ -56,7 +56,7 @@ export type PasskeyListState = 'loading' | 'ready' | 'error'
  */
 export class PasskeysRoute {
 	private readonly auth = resolve(IAuthService)
-	private readonly passkeyAuth = resolve(IPasskeyAuthService)
+	private readonly freshSignIn = resolve(IFreshSignInService)
 	private readonly client = resolve(IPasskeyClient)
 	private readonly records = resolve(IPasskeyRpcClient)
 	private readonly location = resolve(IDocumentLocation)
@@ -87,7 +87,7 @@ export class PasskeysRoute {
 	public async canLoad(): Promise<boolean | NavigationInstruction> {
 		await this.auth.ready
 		if (!this.auth.isAuthenticated) return '/settings'
-		if (this.passkeyAuth.session) return true
+		if (this.freshSignIn.sessionFor('passkeys')) return true
 		await this.reauthenticate()
 		return false
 	}
@@ -108,7 +108,7 @@ export class PasskeysRoute {
 	}
 
 	public unloading(): void {
-		this.passkeyAuth.discard()
+		this.freshSignIn.discard()
 	}
 
 	private readonly onPageShow = (event: PageTransitionEvent): void => {
@@ -255,8 +255,8 @@ export class PasskeysRoute {
 	}
 
 	private async reauthenticate(): Promise<void> {
-		this.passkeyAuth.discard()
-		await this.passkeyAuth.start({
+		this.freshSignIn.discard()
+		await this.freshSignIn.start('passkeys', {
 			loginHint: this.auth.user?.profile.email,
 			uiLocales: currentLanguage(this.i18n),
 		})

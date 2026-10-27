@@ -4,6 +4,7 @@ import approvedConcertsHtml from '../../admin/approved-concerts/approved-concert
 import artistConcertsHtml from '../../admin/artist-concerts/artist-concerts-route.html?raw'
 import authCallbackHtml from '../../admin/auth-callback/auth-callback-route.html?raw'
 import organizersHtml from '../../admin/organizers/organizers-route.html?raw'
+import usersHtml from '../../admin/users/users-route.html?raw'
 import welcomeHtml from '../../admin/welcome/welcome-route.html?raw'
 
 /**
@@ -22,9 +23,11 @@ import welcomeHtml from '../../admin/welcome/welcome-route.html?raw'
 describe('admin sibling navigation uses parent-relative paths', () => {
 	const cases: ReadonlyArray<[name: string, html: string, target: string]> = [
 		['welcome-route', welcomeHtml, '../approval-queue'],
+		['welcome-route', welcomeHtml, '../users'],
 		['approval-queue-route', approvalQueueHtml, '../welcome'],
 		['approved-concerts-route', approvedConcertsHtml, '../welcome'],
 		['organizers-route', organizersHtml, '../welcome'],
+		['users-route', usersHtml, '../welcome'],
 		['auth-callback-route', authCallbackHtml, '../welcome'],
 		['artist-concerts-route', artistConcertsHtml, '../organizers'],
 	]

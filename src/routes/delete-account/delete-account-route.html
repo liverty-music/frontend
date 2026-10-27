@@ -1,0 +1,92 @@
+<!-- The page title is owned by the shell-hosted <page-header> (data.titleKey). -->
+<main class="[ delete-account ] [ stack ]">
+  <!-- After deletion: the session is gone; only the way to Welcome remains. -->
+  <section if.bind="deletionState === 'deleted'" class="[ delete-account-done ] [ stack ]" role="status" data-testid="delete-account-deleted">
+    <h2 t="deleteAccount.deleted.title" class="delete-account-heading"></h2>
+    <p t="deleteAccount.deleted.body" class="delete-account-text"></p>
+    <a href="/welcome" t="deleteAccount.deleted.toWelcome" class="delete-account-link" data-testid="delete-account-to-welcome"></a>
+  </section>
+
+  <output if.bind="deletionState === 'deleting'" class="delete-account-status" aria-busy="true" t="deleteAccount.deleting" data-testid="delete-account-deleting"></output>
+
+  <template if.bind="deletionState !== 'deleted' && deletionState !== 'deleting'">
+    <p t="deleteAccount.lead" class="delete-account-lead"></p>
+
+    <p if.bind="deletionState === 'notDeleted'" role="alert" t="deleteAccount.notDeleted" class="delete-account-notice" data-testid="delete-account-not-deleted"></p>
+
+    <section if.bind="deletionState === 'failed'" class="[ delete-account-error ] [ stack ]" role="alert" data-testid="delete-account-failed">
+      <p t="deleteAccount.deleteFailed"></p>
+      <button type="button" busy-on-click.bind="() => retryDelete()" class="[ button ] [ pressable ]" data-variant="outlined" t="deleteAccount.retry" data-testid="delete-account-retry-delete"></button>
+    </section>
+
+    <output if.bind="blockersState === 'loading'" class="delete-account-status" aria-busy="true" t="deleteAccount.loading"></output>
+
+    <section if.bind="blockersState === 'error'" class="[ delete-account-error ] [ stack ]" role="alert" data-testid="delete-account-load-error">
+      <p t="deleteAccount.loadFailed"></p>
+      <button type="button" busy-on-click.bind="() => loadBlockers()" class="[ button ] [ pressable ]" data-variant="outlined" t="deleteAccount.retry" data-testid="delete-account-retry-load"></button>
+    </section>
+
+    <!-- What blocks deletion, each kind with its count. -->
+    <section if.bind="blockersState === 'ready' && blockers.length > 0" class="[ delete-account-blockers ] [ stack ]" data-testid="delete-account-blockers">
+      <h2 t="deleteAccount.blockers.title" class="delete-account-heading"></h2>
+      <ul class="delete-account-card" role="list">
+        <li repeat.for="blocker of blockers" class="delete-account-item" data-testid="delete-account-blocker" t.bind="blocker.key" t-params.bind="{ count: blocker.count }"></li>
+      </ul>
+      <p t="deleteAccount.blockers.note" class="delete-account-text"></p>
+    </section>
+
+    <!-- What deletion means, stated before the delete control. -->
+    <section if.bind="canDelete" class="[ delete-account-statements ] [ stack ]" data-testid="delete-account-statements">
+      <h2 t="deleteAccount.statements.title" class="delete-account-heading"></h2>
+      <ul class="[ delete-account-list ] [ stack ]" role="list">
+        <li t="deleteAccount.statements.removed" data-testid="delete-account-statement"></li>
+        <li t="deleteAccount.statements.history" data-testid="delete-account-statement"></li>
+        <li t="deleteAccount.statements.irreversible" data-testid="delete-account-statement"></li>
+        <li t="deleteAccount.statements.signUpAgain" data-testid="delete-account-statement"></li>
+        <li data-testid="delete-account-statement">
+          <span t="deleteAccount.statements.records"></span>
+          <a href="/legal/privacy" t="deleteAccount.statements.privacyPolicy" class="delete-account-link" data-testid="delete-account-privacy-link"></a>
+        </li>
+      </ul>
+      <button
+        type="button"
+        click.trigger="askDelete()"
+        aria-haspopup="dialog"
+        class="[ button ] [ pressable ]"
+        data-variant="danger"
+        t="deleteAccount.delete"
+        data-testid="delete-account-delete"
+      ></button>
+    </section>
+
+    <a href="/settings" t="deleteAccount.backToSettings" class="delete-account-link"></a>
+  </template>
+
+  <!-- Confirmation. Modal: the platform traps focus and closes on Escape. -->
+  <dialog ref="confirmDialog" class="delete-account-dialog" aria-labelledby="delete-account-confirm-title" data-testid="delete-account-confirm">
+    <div class="[ delete-account-dialog-body ] [ stack ]">
+      <h2 id="delete-account-confirm-title" t="deleteAccount.confirm.title" class="delete-account-heading"></h2>
+      <p t="deleteAccount.confirm.body" class="delete-account-text"></p>
+      <div class="[ delete-account-dialog-actions ] [ cluster ]">
+        <button
+          ref="confirmCancel"
+          type="button"
+          autofocus
+          click.trigger="cancelDelete()"
+          class="[ button ] [ pressable ]"
+          data-variant="outlined"
+          t="deleteAccount.confirm.cancel"
+          data-testid="delete-account-confirm-cancel"
+        ></button>
+        <button
+          type="button"
+          busy-on-click.bind="() => confirmDelete()"
+          class="[ button ] [ pressable ]"
+          data-variant="danger"
+          t="deleteAccount.confirm.delete"
+          data-testid="delete-account-confirm-delete"
+        ></button>
+      </div>
+    </div>
+  </dialog>
+</main>

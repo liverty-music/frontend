@@ -348,6 +348,7 @@
 		"resendRateLimited": "Too many requests. Please try again later.",
 		"signOut": "Sign Out",
 		"signOutError": "Sign-out failed. Please try again.",
+		"deleteAccount": "Delete account",
 		"languageChangeError": "Couldn't save the language change. Wait a moment and try again.",
 		"notificationError": "Couldn't turn on notifications. Wait a moment and try again.",
 		"analytics": {
@@ -665,7 +666,7 @@
 		},
 		"privacy": {
 			"title": "Privacy Policy",
-			"lastUpdated": "October 23, 2026",
+			"lastUpdated": "October 27, 2026",
 			"intro": "pannpers.dev (\"we\" or \"us\") establishes this Privacy Policy (the \"Policy\") regarding the handling of users' personal information in the application \"Liverty Music\" (the \"Service\"), as set out below. We comply with Japan's Act on the Protection of Personal Information (the \"APPI\") and other applicable laws.",
 			"sections": [
 				{
@@ -750,13 +751,22 @@
 					]
 				},
 				{
-					"heading": "9. Security Management Measures",
+					"heading": "9. Deleting Your Account",
+					"body": [
+						"You can delete your account and leave the Service at any time from \"Delete account\" in Settings. While you have a ticket for an upcoming concert, a resale listing on sale, a lottery entry awaiting its draw or a purchase being paid, your account cannot be deleted until those are finished.",
+						"Deleting your account removes your account, your sign-in (including your passkeys), the artists you follow, your notification settings and your identity verification result.",
+						"Records of orders and tickets are kept for 7 years after your account is deleted, for accounting, tax and dispute handling. The kept records are no longer linked to the deleted account.",
+						"Usage analytics data already collected is kept in a form that no longer identifies you."
+					]
+				},
+				{
+					"heading": "10. Security Management Measures",
 					"body": [
 						"We take necessary and appropriate measures to manage the security of the personal information we collect, including preventing its leakage, loss, or damage."
 					]
 				},
 				{
-					"heading": "10. Revisions to This Policy",
+					"heading": "11. Revisions to This Policy",
 					"body": [
 						"We may revise this Policy as necessary. When there is a change in how we handle personal information — for example, when we begin integrating with a new external service — we will review this Policy.",
 						"The revised Policy takes effect when displayed within the Service."
@@ -1141,5 +1151,46 @@
 			"added": "Passkey added.",
 			"notAdded": "No passkey was added. If this device already has a passkey, you can sign in with it as it is."
 		}
+	},
+	"deleteAccount": {
+		"title": "Delete Account",
+		"lead": "Delete your Liverty Music account and leave the service.",
+		"loading": "Loading…",
+		"loadFailed": "We couldn't check whether your account can be deleted.",
+		"retry": "Try again",
+		"blockers": {
+			"title": "Your account can't be deleted yet",
+			"upcomingTicket": "Tickets for upcoming concerts: {{count}}",
+			"listedResale": "Resale listings on sale: {{count}}",
+			"pendingLotteryEntry": "Lottery entries awaiting the draw: {{count}}",
+			"paymentInProgress": "Purchases being paid: {{count}}",
+			"other": "Other things in progress: {{count}}",
+			"note": "You can delete your account once these are finished. A concert ticket stops blocking deletion the day after the concert."
+		},
+		"statements": {
+			"title": "If you delete your account",
+			"removed": "Your account and its follows, notification settings, passkeys and identity check result are removed.",
+			"history": "You can no longer view your purchase history or past tickets.",
+			"irreversible": "This cannot be undone.",
+			"signUpAgain": "Signing up again with the same email address starts a new, empty account.",
+			"records": "Records of orders and tickets are kept as described in the Privacy Policy.",
+			"privacyPolicy": "Read the Privacy Policy"
+		},
+		"delete": "Delete my account",
+		"confirm": {
+			"title": "Delete your account?",
+			"body": "To confirm it is you, you will sign in again with your passkey. Your account is deleted as soon as you have signed in.",
+			"delete": "Sign in and delete",
+			"cancel": "Cancel"
+		},
+		"deleting": "Deleting your account…",
+		"notDeleted": "Your account was not deleted. To delete it, sign in again with the account you are using in the app.",
+		"deleteFailed": "We couldn't delete your account. Please try again.",
+		"deleted": {
+			"title": "Your account has been deleted",
+			"body": "Thank you for using Liverty Music.",
+			"toWelcome": "Go to the start screen"
+		},
+		"backToSettings": "Back to Settings"
 	}
 }

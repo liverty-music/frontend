@@ -504,6 +504,20 @@ export class AuthService {
 		await this.userManager.signoutRedirect()
 	}
 
+	/**
+	 * End the session on this device only, without the identity provider's
+	 * end-session redirect: used after the account was deleted, when the
+	 * identity no longer exists (OpenSpec change `delete-fan-accounts`, design
+	 * D6). Publishes {@link SignedOut} first, like {@link signOut}, so every
+	 * store clears the account's state.
+	 */
+	public async signOutLocally(): Promise<void> {
+		this.logger.info('Ending the session on this device')
+		this.ea.publish(new SignedOut())
+		// removeUser fires `userUnloaded`, which clears `user`.
+		await this.userManager.removeUser()
+	}
+
 	public async handleCallback(): Promise<User> {
 		this.logger.info('Processing auth callback')
 		try {
