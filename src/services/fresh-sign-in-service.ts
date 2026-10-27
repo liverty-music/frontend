@@ -125,8 +125,11 @@ export interface IFreshSignInService extends FreshSignInService {}
  * design D3, and `delete-fan-accounts` design D4).
  *
  * A second oidc-client-ts `UserManager`, separate from the main session's:
- * - it asks for `max_age=300`, so the hosted login asks for a passkey when the
- *   fan's last sign-in is older than 5 minutes and answers silently otherwise;
+ * - it asks for `prompt=login`, so the hosted login always asks the fan to
+ *   sign in again. `max_age=300` alone is not enough: Zitadel's login V2
+ *   ignores it and answers with the existing session (zitadel/zitadel#12258),
+ *   whose `auth_time` the backend then rejects for account deletion. `max_age`
+ *   stays so the ID token carries `auth_time`;
  * - its token carries the identity provider's API audience, which the main
  *   token never does (passkey management needs it);
  * - the screen to return to travels in the request state, and the single
@@ -185,6 +188,7 @@ export class FreshSignInService {
 		const state: FreshSignInState = { returnTo: screen }
 		await this.userManager.signinRedirect({
 			max_age: FRESH_SIGN_IN_MAX_AGE_SEC,
+			prompt: 'login',
 			state,
 			...(options.loginHint ? { login_hint: options.loginHint } : {}),
 			...(options.uiLocales ? { ui_locales: options.uiLocales } : {}),

@@ -75,19 +75,21 @@ describe('Passkey management requires a recent sign-in', () => {
 	const passkeysRoute = () => container.invoke(PasskeysRoute)
 	const callbackRoute = () => container.invoke(PasskeysCallbackRoute)
 
-	it('opens passkey management straight from a sign-in the hosted login still accepts', async () => {
+	it('asks the hosted login to sign in again even right after a sign-in', async () => {
 		// @spec components/infrastructure/fan/web/route/settings "Recent sign-in"
-		// Opening the row asks the hosted login for a sign-in no older than 300 s.
+		// Opening the row always asks for a new sign-in: Zitadel's login V2
+		// ignores max_age, so prompt=login is what makes it ask.
 		expect(await passkeysRoute().canLoad()).toBe(false)
 		expect(manager.signinRedirect).toHaveBeenCalledWith(
-			expect.objectContaining({ max_age: 300, login_hint: 'fan@example.com' }),
-		)
-		expect(manager.signinRedirect.mock.lastCall?.[0]).not.toHaveProperty(
-			'prompt',
+			expect.objectContaining({
+				max_age: 300,
+				prompt: 'login',
+				login_hint: 'fan@example.com',
+			}),
 		)
 
-		// Signed in 2 minutes ago: the hosted login returns without asking.
-		manager.signInAs(FAN_SUB, nowSec() - 120)
+		// The fan signs in again in the hosted login.
+		manager.signInAs(FAN_SUB, nowSec())
 		expect(await callbackRoute().canLoad()).toBe('/settings/passkeys')
 		expect(await passkeysRoute().canLoad()).toBe(true)
 		expect(manager.signinRedirect).toHaveBeenCalledTimes(1)
@@ -95,11 +97,11 @@ describe('Passkey management requires a recent sign-in', () => {
 
 	it('opens passkey management after the hosted login asked for a passkey again', async () => {
 		// @spec components/infrastructure/fan/web/route/settings "Older sign-in"
-		// Signed in 3 days ago: max_age=300 makes the hosted login ask for a
-		// passkey before it returns.
+		// Signed in 3 days ago: the hosted login asks for a sign-in before it
+		// returns.
 		expect(await passkeysRoute().canLoad()).toBe(false)
 		expect(manager.signinRedirect).toHaveBeenCalledWith(
-			expect.objectContaining({ max_age: 300 }),
+			expect.objectContaining({ max_age: 300, prompt: 'login' }),
 		)
 
 		manager.signInAs(FAN_SUB, nowSec())
@@ -118,11 +120,11 @@ describe('Passkey management requires a recent sign-in', () => {
 		open.unloading()
 		expect(container.get(IFreshSignInService).sessionFor('passkeys')).toBeNull()
 
-		// Reopening needs the 5-minute rule again.
+		// Reopening asks the hosted login for a sign-in again.
 		expect(await passkeysRoute().canLoad()).toBe(false)
 		expect(manager.signinRedirect).toHaveBeenCalledTimes(1)
 		expect(manager.signinRedirect).toHaveBeenLastCalledWith(
-			expect.objectContaining({ max_age: 300 }),
+			expect.objectContaining({ max_age: 300, prompt: 'login' }),
 		)
 	})
 

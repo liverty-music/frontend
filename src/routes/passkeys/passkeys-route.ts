@@ -49,10 +49,9 @@ export type PasskeyListState = 'loading' | 'ready' | 'error'
  * of the fan's identity, adds one on the device in hand and removes others.
  *
  * It opens only with the passkey-management token, which the hosted login
- * issues for a sign-in within the last 5 minutes. Without one, canLoad sends
- * the fan to the hosted login, which returns through
- * `/auth/passkeys-callback`. Leaving the screen discards the token, so the
- * next opening asks the 5-minute rule again.
+ * issues after the fan signs in again. Without one, canLoad sends the fan to
+ * the hosted login, which returns through `/auth/passkeys-callback`. Leaving
+ * the screen discards the token, so the next opening asks for a sign-in again.
  */
 export class PasskeysRoute {
 	private readonly auth = resolve(IAuthService)
