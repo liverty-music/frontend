@@ -31,6 +31,14 @@ const ACCOUNT = {
 }
 
 /** The signed-in fan's identity (`sub`) from the app's stored OIDC session. */
+/**
+ * Whether the account the running test signed up may still exist: set once
+ * the sign-up submits, cleared once the deleted-account view shows. The
+ * cleanup after a failed test trusts this, not the page's storage, because a
+ * failure can leave the page on the hosted login's origin.
+ */
+let accountMayExist = false
+
 function signedInFan(page: Page): Promise<string | null> {
 	return page.evaluate(() => {
 		const key = Object.keys(localStorage).find((k) =>
@@ -104,6 +112,7 @@ async function signUp(page: Page): Promise<void> {
 	await page.locator('input[name="confirmPassword"]').fill(ACCOUNT.password)
 	await page.getByRole('button', { name: '続行' }).click()
 
+	accountMayExist = true
 	// Back in the app once the sign-up callback has run.
 	await page.waitForURL(
 		(u) => !u.hostname.startsWith('auth.') && !u.pathname.startsWith('/auth/'),
@@ -135,6 +144,7 @@ async function deleteFromSettings(page: Page): Promise<void> {
 	await expect(page.getByTestId('delete-account-deleted')).toBeVisible({
 		timeout: 60_000,
 	})
+	accountMayExist = false
 	await expect(page).toHaveURL(/\/settings\/delete-account$/)
 	expect(await signedInFan(page)).toBeNull()
 }
@@ -151,9 +161,12 @@ test.describe('delete my account', () => {
 	// A failed test may leave the account it signed up in production: delete
 	// it while the page still holds its session, or name it for an admin.
 	test.afterEach(async ({ page }, testInfo) => {
-		if (testInfo.status === testInfo.expectedStatus) return
+		if (testInfo.status === testInfo.expectedStatus || !accountMayExist) return
 		testInfo.setTimeout(testInfo.timeout + 120_000)
 		const deleted = await (async () => {
+			// The session lives in the app origin's storage; the failure may
+			// have left the page on the hosted login.
+			await page.goto('/settings')
 			if (!(await signedInFan(page))) return false
 			await deleteFromSettings(page)
 			return true
