@@ -1,0 +1,184 @@
+/* The admin Users screen: one email field, the found User with its deletion
+   blockers, and the delete confirmation. */
+@layer block {
+	@scope (users-route) {
+		:scope {
+			--_radius: 0.5rem;
+			--_gap-xs: 0.25rem;
+			--_step-1: 1.25rem;
+			--_step-2: 1.563rem;
+			--_pad-input: 0.5rem;
+			--_pad-btn: 0.5rem 1rem;
+			--_border: color-mix(
+				in oklch,
+				var(--color-text-secondary) 25%,
+				transparent
+			);
+			--_surface-raised: oklch(24% 0.04 275deg);
+			--_backdrop-bg: oklch(0% 0 0deg / 50%);
+		}
+
+		.users {
+			--flow-space: var(--space-m);
+
+			max-inline-size: 48rem;
+			margin-inline: auto;
+			padding: var(--space-l) var(--space-m);
+		}
+
+		.users-brand {
+			font-size: var(--step--1);
+			font-weight: 700;
+			color: var(--color-brand-primary);
+			text-transform: uppercase;
+			letter-spacing: 0.08em;
+		}
+
+		.users-title {
+			font-size: var(--step-3);
+			color: var(--color-text-primary);
+		}
+
+		.users-subtitle,
+		.users-muted,
+		.users-status {
+			color: var(--color-text-secondary);
+		}
+
+		.users-back-link {
+			display: inline-block;
+			color: var(--color-brand-primary);
+			text-decoration: underline;
+		}
+
+		.users-lookup,
+		.users-detail {
+			--flow-space: var(--space-s);
+
+			padding: var(--space-m);
+			border: 1px solid var(--_border);
+			border-radius: var(--_radius);
+		}
+
+		.users-field {
+			display: flex;
+			flex-direction: column;
+			gap: var(--_gap-xs);
+
+			font-size: var(--step--1);
+			color: var(--color-text-secondary);
+		}
+
+		.users-input {
+			padding: var(--_pad-input);
+			border: 1px solid var(--_border);
+			border-radius: var(--_radius);
+
+			font: inherit;
+			color: var(--color-text-primary);
+
+			background: var(--_surface-raised);
+		}
+
+		.users-section-title {
+			font-size: var(--_step-2);
+			color: var(--color-text-primary);
+			overflow-wrap: anywhere;
+		}
+
+		.users-subsection-title {
+			font-size: var(--_step-1);
+			color: var(--color-text-primary);
+		}
+
+		.users-facts {
+			display: grid;
+			grid-template-columns: auto 1fr;
+			gap: var(--_gap-xs) var(--space-s);
+
+			color: var(--color-text-primary);
+			overflow-wrap: anywhere;
+
+			& dt {
+				color: var(--color-text-secondary);
+			}
+		}
+
+		.users-blockers {
+			--flow-space: var(--space-xs);
+		}
+
+		.users-blocker-list {
+			padding-inline-start: var(--space-m);
+			color: var(--color-text-primary);
+			list-style: disc;
+		}
+
+		.users-notice {
+			color: var(--color-text-primary);
+		}
+
+		.users-btn {
+			cursor: pointer;
+
+			padding: var(--_pad-btn);
+			border: 1px solid var(--_border);
+			border-radius: var(--_radius);
+
+			font: inherit;
+			color: var(--color-text-primary);
+
+			background: var(--_surface-raised);
+
+			&:disabled {
+				cursor: not-allowed;
+				opacity: 0.5;
+			}
+
+			&[data-variant="primary"] {
+				border-color: var(--color-brand-primary);
+				color: var(--color-surface-base);
+				background: var(--color-brand-primary);
+			}
+
+			&[data-variant="danger"] {
+				border-color: var(--color-error);
+				color: var(--color-error);
+			}
+		}
+
+		.users-error {
+			font-size: var(--step--1);
+			color: var(--color-error);
+		}
+
+		.users-dialog {
+			max-inline-size: min(28rem, 92vi);
+			margin: auto;
+			padding: var(--space-l);
+			border: 1px solid var(--_border);
+			border-radius: var(--_radius);
+
+			color: var(--color-text-primary);
+
+			background: var(--color-surface-base);
+
+			&::backdrop {
+				background: var(--_backdrop-bg);
+			}
+		}
+
+		.users-dialog-body {
+			--flow-space: var(--space-s);
+		}
+
+		.users-dialog-target {
+			color: var(--color-text-secondary);
+			overflow-wrap: anywhere;
+		}
+
+		.users-dialog-actions {
+			justify-content: flex-end;
+		}
+	}
+}

@@ -1,0 +1,125 @@
+<main class="[ users ] [ flow ]">
+  <header class="users-header">
+    <p class="users-brand">Liverty Music Admin</p>
+    <h1 class="users-title">Users</h1>
+    <p class="users-subtitle">
+      Find a fan's account by email address and delete it at their request.
+    </p>
+    <a load="../welcome" class="users-back-link">← Back to console</a>
+  </header>
+
+  <form class="[ users-lookup ] [ flow ]" novalidate submit.trigger="lookUp()">
+    <label class="users-field">
+      Email address
+      <input
+        type="email"
+        class="users-input"
+        value.bind="email"
+        placeholder="fan@example.com"
+        maxlength.bind="emailMaxLength"
+        autocomplete="off"
+        spellcheck="false"
+        aria-invalid.bind="emailError ? 'true' : null"
+        aria-describedby="users-email-error"
+        disabled.bind="phase === 'loading'"
+        required
+      />
+    </label>
+    <p id="users-email-error" if.bind="emailError" class="users-error" role="alert">${emailError}</p>
+    <button type="submit" class="users-btn" data-variant="primary" disabled.bind="phase === 'loading'">
+      Look up
+    </button>
+  </form>
+
+  <output if.bind="phase === 'loading'" class="users-status" role="status" aria-busy="true">
+    Looking up…
+  </output>
+
+  <p if.bind="deletedEmail" class="users-notice" role="status" data-testid="users-deleted">
+    The account of ${deletedEmail} was deleted.
+  </p>
+
+  <p if.bind="phase === 'notFound'" class="users-notice" role="status" data-testid="users-not-found">
+    No account has that address.
+  </p>
+
+  <p if.bind="phase === 'error'" class="users-error" role="alert" data-testid="users-lookup-error">
+    ${lookupError}
+  </p>
+
+  <section if.bind="found" class="[ users-detail ] [ flow ]" data-testid="users-detail">
+    <h2 class="users-section-title">${found.name}</h2>
+    <dl class="users-facts">
+      <dt>Email</dt>
+      <dd data-testid="users-email">${found.email}</dd>
+      <dt>ID</dt>
+      <dd data-testid="users-id">${found.id}</dd>
+    </dl>
+
+    <section class="[ users-blockers ] [ flow ]">
+      <h3 class="users-subsection-title">Deletion blockers</h3>
+      <ul if.bind="found.blockers.length > 0" class="users-blocker-list" data-testid="users-blockers">
+        <li repeat.for="blocker of found.blockers" data-testid="users-blocker">
+          ${blocker.label}: ${blocker.count}
+        </li>
+      </ul>
+      <p if.bind="found.blockers.length > 0" class="users-muted">
+        The account can be deleted once these are finished.
+      </p>
+      <p else class="users-muted" data-testid="users-no-blocker">None. The account can be deleted.</p>
+    </section>
+
+    <button
+      if.bind="canDelete"
+      type="button"
+      class="users-btn"
+      data-variant="danger"
+      aria-haspopup="dialog"
+      disabled.bind="deleting"
+      click.trigger="requestDelete()"
+      data-testid="users-delete"
+    >
+      Delete
+    </button>
+    <p if.bind="deleteError" class="users-error" role="alert" data-testid="users-delete-error">
+      ${deleteError}
+    </p>
+  </section>
+
+  <dialog
+    ref="deleteDialog"
+    class="users-dialog"
+    aria-labelledby="users-delete-title"
+    close.trigger="onDialogClose()"
+    data-testid="users-dialog"
+  >
+    <div class="[ users-dialog-body ] [ flow ]">
+      <h2 id="users-delete-title" class="users-section-title">Delete this account?</h2>
+      <p class="users-dialog-target">${found.name} (${found.email})</p>
+      <p class="users-error">
+        This permanently removes the account and its sign-in. It cannot be
+        undone. Order and ticket records remain.
+      </p>
+      <div class="[ users-dialog-actions ] [ cluster ]">
+        <button
+          ref="deleteCancelButton"
+          type="button"
+          class="users-btn"
+          autofocus
+          click.trigger="cancelDelete()"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          class="users-btn"
+          data-variant="danger"
+          disabled.bind="deleting"
+          click.trigger="confirmDelete()"
+        >
+          ${deleting ? 'Deleting…' : 'Delete'}
+        </button>
+      </div>
+    </div>
+  </dialog>
+</main>
