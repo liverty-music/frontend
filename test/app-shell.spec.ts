@@ -69,6 +69,10 @@ vi.mock(
 	stub('PasskeysCallbackRoute'),
 )
 vi.mock('../src/routes/passkeys/passkeys-route', stub('PasskeysRoute'))
+vi.mock(
+	'../src/routes/delete-account/delete-account-route',
+	stub('DeleteAccountRoute'),
+)
 
 const PAGE_HEADER = 'page-header'
 const BOTTOM_NAV = 'bottom-nav-bar'

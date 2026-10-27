@@ -148,11 +148,17 @@ describe('Sign-out from the settings screen (fixture)', () => {
 
 		const signOut =
 			fixture.appHost.querySelector<HTMLButtonElement>('.settings-sign-out')
-		// At the bottom of the settings list, in the error (red) colour.
+		// At the bottom of the settings list, followed only by the Delete
+		// account group, in the error (red) colour.
 		const scroll = fixture.appHost.querySelector(
 			'[data-testid="settings-scroll"]',
 		)
-		expect(scroll?.lastElementChild?.contains(signOut)).toBe(true)
+		expect(
+			scroll?.lastElementChild?.previousElementSibling?.contains(signOut),
+		).toBe(true)
+		expect(scroll?.lastElementChild?.getAttribute('data-testid')).toBe(
+			'settings-delete-account-group',
+		)
 		expect(signOut?.querySelector('.settings-sign-out-text')).not.toBeNull()
 		const textRule = settingsListCss.slice(
 			settingsListCss.indexOf('.settings-sign-out-text {'),
@@ -182,53 +188,58 @@ describe('Sign-out from the settings screen (fixture)', () => {
 	})
 })
 
+/** Settings as a guest sees it. */
+async function renderGuest() {
+	return createFixture
+		.html('<settings-route></settings-route>')
+		.deps(
+			I18nConfiguration.customize((options) => {
+				options.initOptions = {
+					lng: 'ja',
+					resources: { ja: { translation: ja } },
+					fallbackLng: 'ja',
+				}
+			}),
+			Registration.instance(IAuthService, {
+				isAuthenticated: false,
+				user: null,
+				signOut: vi.fn(),
+			}),
+			Registration.instance(IUserRpcClient, { get: vi.fn() }),
+			Registration.instance(IConcertRpcClient, {
+				listFollowed: vi.fn(async () => []),
+				listByArtists: vi.fn(async () => []),
+			}),
+			Registration.instance(IIdentityVerificationRpcClient, {
+				get: vi.fn(async () => undefined),
+			}),
+			Registration.instance(ITicketJourneyRpcClient, {
+				list: vi.fn(async () => new Map()),
+			}),
+			Registration.instance(IPushService, {
+				resolvePushState: vi.fn(async () => 'needs-permission'),
+			}),
+			Registration.instance(IRouter, { load: vi.fn() }),
+			Registration.instance(IAudioEngine, { muted: false, volume: 0.5 }),
+			Registration.instance(IAppConfig, { vapidPublicKey: '' }),
+			Registration.instance(IConsentService, {
+				analytics: true,
+				sessionReplay: true,
+			}),
+			Registration.instance(IFabMenuService, { isLeftHanded: false }),
+			UserHomeSelectorStub,
+			BottomSheetStub,
+			BusyOnClickCustomAttribute,
+			...SETTINGS_ROWS,
+			SettingsRoute,
+		)
+		.build().started
+}
+
 describe('Sign Out for a guest (fixture)', () => {
 	it('is not rendered for an unauthenticated user', async () => {
 		// @spec components/infrastructure/fan/web/route/settings "Sign out hidden for guests"
-		const fixture = await createFixture
-			.html('<settings-route></settings-route>')
-			.deps(
-				I18nConfiguration.customize((options) => {
-					options.initOptions = {
-						lng: 'ja',
-						resources: { ja: { translation: ja } },
-						fallbackLng: 'ja',
-					}
-				}),
-				Registration.instance(IAuthService, {
-					isAuthenticated: false,
-					user: null,
-					signOut: vi.fn(),
-				}),
-				Registration.instance(IUserRpcClient, { get: vi.fn() }),
-				Registration.instance(IConcertRpcClient, {
-					listFollowed: vi.fn(async () => []),
-					listByArtists: vi.fn(async () => []),
-				}),
-				Registration.instance(IIdentityVerificationRpcClient, {
-					get: vi.fn(async () => undefined),
-				}),
-				Registration.instance(ITicketJourneyRpcClient, {
-					list: vi.fn(async () => new Map()),
-				}),
-				Registration.instance(IPushService, {
-					resolvePushState: vi.fn(async () => 'needs-permission'),
-				}),
-				Registration.instance(IRouter, { load: vi.fn() }),
-				Registration.instance(IAudioEngine, { muted: false, volume: 0.5 }),
-				Registration.instance(IAppConfig, { vapidPublicKey: '' }),
-				Registration.instance(IConsentService, {
-					analytics: true,
-					sessionReplay: true,
-				}),
-				Registration.instance(IFabMenuService, { isLeftHanded: false }),
-				UserHomeSelectorStub,
-				BottomSheetStub,
-				BusyOnClickCustomAttribute,
-				...SETTINGS_ROWS,
-				SettingsRoute,
-			)
-			.build().started
+		const fixture = await renderGuest()
 
 		// The guest sees the sign-in hero, and no Sign Out control anywhere.
 		expect(
@@ -239,6 +250,25 @@ describe('Sign Out for a guest (fixture)', () => {
 			fixture.appHost.querySelector('[data-testid="settings-sign-out-group"]'),
 		).toBeNull()
 		expect(fixture.appHost.textContent).not.toContain(ja.settings.signOut)
+
+		await fixture.stop(true)
+	})
+})
+
+describe('Delete account for a guest (fixture)', () => {
+	it('is not rendered for an unauthenticated user', async () => {
+		// @spec components/infrastructure/fan/web/route/settings "Guest"
+		const fixture = await renderGuest()
+
+		expect(
+			fixture.appHost.querySelector('[data-testid="settings-delete-account"]'),
+		).toBeNull()
+		expect(
+			fixture.appHost.querySelector(
+				'[data-testid="settings-delete-account-group"]',
+			),
+		).toBeNull()
+		expect(fixture.appHost.textContent).not.toContain(ja.settings.deleteAccount)
 
 		await fixture.stop(true)
 	})

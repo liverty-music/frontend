@@ -26,8 +26,11 @@ import {
 	REPORT_EMAIL_ADDRESS,
 } from '../../services/error-boundary-service'
 import { IFabMenuService } from '../../services/fab-menu-service'
+import {
+	DELETE_ACCOUNT_PATH,
+	PASSKEY_MANAGEMENT_PATH,
+} from '../../services/fresh-sign-in-service'
 import { IIdentityVerificationService } from '../../services/identity-verification-service'
-import { PASSKEY_MANAGEMENT_PATH } from '../../services/fresh-sign-in-service'
 import { IPushService } from '../../services/push-service'
 import { IUserStore } from '../../services/user-store'
 import {
@@ -607,6 +610,11 @@ export class SettingsRoute {
 	 */
 	public async openPasskeys(): Promise<void> {
 		await this.router.load(PASSKEY_MANAGEMENT_PATH)
+	}
+
+	/** Open the withdrawal screen. */
+	public async openDeleteAccount(): Promise<void> {
+		await this.router.load(DELETE_ACCOUNT_PATH)
 	}
 
 	public get releaseVersion(): string {

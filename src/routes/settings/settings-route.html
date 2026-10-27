@@ -339,6 +339,22 @@
       </li>
     </ul>
   </section>
+
+  <!-- Delete account stands in a group of its own below Sign Out, separated
+       by the same scroll stack gap (at least 24px), and opens the withdrawal
+       screen, which asks again before anything is deleted. -->
+  <section if.bind="auth.isAuthenticated" aria-label.bind="'settings.deleteAccount' | t" data-testid="settings-delete-account-group">
+    <ul class="settings-card" role="list">
+      <li class="settings-list-item">
+        <settings-link-row
+          icon="trash"
+          label.bind="'settings.deleteAccount' | t"
+          test-id="settings-delete-account"
+          action.bind="() => openDeleteAccount()"
+        ></settings-link-row>
+      </li>
+    </ul>
+  </section>
   </div>
 </main>
 

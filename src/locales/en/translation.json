@@ -348,6 +348,7 @@
 		"resendRateLimited": "Too many requests. Please try again later.",
 		"signOut": "Sign Out",
 		"signOutError": "Sign-out failed. Please try again.",
+		"deleteAccount": "Delete account",
 		"languageChangeError": "Couldn't save the language change. Wait a moment and try again.",
 		"notificationError": "Couldn't turn on notifications. Wait a moment and try again.",
 		"analytics": {
@@ -1141,5 +1142,46 @@
 			"added": "Passkey added.",
 			"notAdded": "No passkey was added. If this device already has a passkey, you can sign in with it as it is."
 		}
+	},
+	"deleteAccount": {
+		"title": "Delete Account",
+		"lead": "Delete your Liverty Music account and leave the service.",
+		"loading": "Loading…",
+		"loadFailed": "We couldn't check whether your account can be deleted.",
+		"retry": "Try again",
+		"blockers": {
+			"title": "Your account can't be deleted yet",
+			"upcomingTicket": "Tickets for upcoming concerts: {{count}}",
+			"listedResale": "Resale listings on sale: {{count}}",
+			"pendingLotteryEntry": "Lottery entries awaiting the draw: {{count}}",
+			"paymentInProgress": "Purchases being paid: {{count}}",
+			"other": "Other things in progress: {{count}}",
+			"note": "You can delete your account once these are finished. A concert ticket stops blocking deletion the day after the concert."
+		},
+		"statements": {
+			"title": "If you delete your account",
+			"removed": "Your account and its follows, notification settings, passkeys and identity check result are removed.",
+			"history": "You can no longer view your purchase history or past tickets.",
+			"irreversible": "This cannot be undone.",
+			"signUpAgain": "Signing up again with the same email address starts a new, empty account.",
+			"records": "Records of orders and tickets are kept as described in the Privacy Policy.",
+			"privacyPolicy": "Read the Privacy Policy"
+		},
+		"delete": "Delete my account",
+		"confirm": {
+			"title": "Delete your account?",
+			"body": "To confirm it is you, you will sign in again with your passkey. Your account is deleted as soon as you have signed in.",
+			"delete": "Sign in and delete",
+			"cancel": "Cancel"
+		},
+		"deleting": "Deleting your account…",
+		"notDeleted": "Your account was not deleted. To delete it, sign in again with the account you are using in the app.",
+		"deleteFailed": "We couldn't delete your account. Please try again.",
+		"deleted": {
+			"title": "Your account has been deleted",
+			"body": "Thank you for using Liverty Music.",
+			"toWelcome": "Go to the start screen"
+		},
+		"backToSettings": "Back to Settings"
 	}
 }

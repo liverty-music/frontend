@@ -361,6 +361,17 @@ describe('AuthService', () => {
 		)
 	})
 
+	it('signOutLocally clears the stores and the stored session without the end-session redirect', async () => {
+		// @spec components/infrastructure/fan/web/route/delete-account "Deletion succeeds"
+		const { s, publish } = await buildSutWithPublish()
+		await s.signOutLocally()
+		expect(publish).toHaveBeenCalledTimes(1)
+		expect(publish.mock.calls[0][0].constructor.name).toBe('SignedOut')
+		expect(userManagerMock.removeUser).toHaveBeenCalled()
+		// The identity is gone, so there is no provider session to end.
+		expect(userManagerMock.signoutRedirect).not.toHaveBeenCalled()
+	})
+
 	it('handleCallback calls signinCallback, updates state, and returns the user', async () => {
 		const result = await sut.handleCallback()
 		expect(userManagerMock.signinCallback).toHaveBeenCalled()

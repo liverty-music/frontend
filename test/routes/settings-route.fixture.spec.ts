@@ -319,6 +319,36 @@ describe('SettingsRoute Sign Out group (fixture)', () => {
 	})
 })
 
+describe('SettingsRoute Delete account group (fixture)', () => {
+	it('shows Delete account in its own group below Sign Out, at least 24px apart, opening the withdrawal screen', async () => {
+		// @spec components/infrastructure/fan/web/route/settings "Signed-in fan"
+		const { fixture, host } = await render(
+			makeUserStore({ id: 'user-1', fullName: '', phoneNumber: '' }),
+		)
+		const row = host.querySelector<HTMLButtonElement>(
+			'[data-testid="settings-delete-account"]',
+		)
+		expect(row?.textContent).toContain(ja.settings.deleteAccount)
+
+		const signOutSection = host
+			.querySelector('.settings-sign-out')
+			?.closest('section')
+		const deleteSection = row?.closest('section')
+		// A group of its own, directly below Sign Out in the scroll stack,
+		// whose gap is at least 24px (asserted for Sign Out above).
+		expect(deleteSection).not.toBe(signOutSection)
+		expect(signOutSection?.contains(row ?? null)).toBe(false)
+		expect(signOutSection?.nextElementSibling).toBe(deleteSection)
+		expect(deleteSection?.parentElement?.classList.contains('stack')).toBe(true)
+
+		row?.click()
+		await tasksSettled()
+		expect(fixture.container.get(IRouter).load).toHaveBeenCalledWith(
+			'/settings/delete-account',
+		)
+	})
+})
+
 describe('SettingsRoute identity verification result (fixture)', () => {
 	const row = (host: HTMLElement) =>
 		host.querySelector('[data-testid="identity-verification-failure"]')
