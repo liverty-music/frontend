@@ -75,7 +75,7 @@ const PRIVACY_COLLECTED = {
 			'購入に関する情報を用いたチケットの発行、入場時の購入者の本人確認および返金の対応',
 			'どの紹介リンクから購入されたかの計測、および紹介コードごとの購入数の公演の主催者への報告',
 		],
-		lastUpdated: '2026年10月23日',
+		lastUpdated: '2026年10月27日',
 	},
 	en: {
 		categories: [
@@ -94,7 +94,7 @@ const PRIVACY_COLLECTED = {
 			"Issuing tickets, checking the buyer's identity at entry, and handling refunds, using the purchase information",
 			'Measuring which referral links led to purchases, and reporting the number of purchases per referral code to the organizer of the event',
 		],
-		lastUpdated: 'October 23, 2026',
+		lastUpdated: 'October 27, 2026',
 	},
 } as const
 
@@ -240,6 +240,41 @@ describe('Privacy Policy discloses session recordings', () => {
 			// @spec components/infrastructure/fan/web/global/legal-document "Recording disclosed"
 			const text = await privacyText(lng)
 			for (const part of RECORDING_DISCLOSURES[lng]) {
+				expect(text).toContain(part)
+			}
+		})
+	}
+})
+
+// What the Privacy Policy says about deleting an account, per language.
+const WITHDRAWAL_DISCLOSURES = {
+	ja: [
+		// How to delete.
+		'設定画面の「アカウントを削除」から、いつでもアカウントを削除して退会できます',
+		// What blocks it.
+		'開催前の公演のチケット、出品中のリセール、抽選待ちの応募、または手続き中の購入があるときは、それらが終わるまで削除できません',
+		// What is removed.
+		'アカウント、ログイン情報（パスキーを含む）、フォロー中のアーティスト、通知の設定および本人確認の結果を削除します',
+		// What is kept, for how many years and why.
+		'注文およびチケットの取引記録は、会計、税務および紛争への対応のため、アカウントの削除後も7年間保管します',
+		// What happens to analytics data.
+		'すでに取得した利用状況の分析データは、利用者個人を識別できない状態で保持します',
+	],
+	en: [
+		'You can delete your account and leave the Service at any time from "Delete account" in Settings',
+		'While you have a ticket for an upcoming concert, a resale listing on sale, a lottery entry awaiting its draw or a purchase being paid, your account cannot be deleted until those are finished',
+		'removes your account, your sign-in (including your passkeys), the artists you follow, your notification settings and your identity verification result',
+		'Records of orders and tickets are kept for 7 years after your account is deleted, for accounting, tax and dispute handling',
+		'Usage analytics data already collected is kept in a form that no longer identifies you',
+	],
+} as const
+
+describe('Privacy Policy discloses what remains after withdrawal', () => {
+	for (const lng of ['ja', 'en'] as const) {
+		it(`states how to delete, the blockers, what is removed and kept, and analytics in ${lng}`, async () => {
+			// @spec components/infrastructure/fan/web/global/legal-document "Withdrawal disclosed"
+			const text = await privacyText(lng)
+			for (const part of WITHDRAWAL_DISCLOSURES[lng]) {
 				expect(text).toContain(part)
 			}
 		})
