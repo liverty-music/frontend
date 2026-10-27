@@ -69,6 +69,7 @@ import {
 import { IConsentService } from './lib/consent/consent-service'
 import { FanI18nConfiguration } from './lib/i18n/fan-i18n-configuration'
 import { PUSH_SUBSCRIPTION_CHANGED_MESSAGE } from './lib/push/push-renewal'
+import { checkForServiceWorkerUpdates } from './lib/pwa/sw-update-check'
 import { Events } from './services/analytics-events'
 import { IArtistBubbleStore } from './services/artist-bubble-store'
 import { IArtistStore } from './services/artist-store'
@@ -400,12 +401,7 @@ if (!import.meta.env.DEV) {
 		},
 		onRegisteredSW(_url, registration) {
 			if (!registration) return
-			registration.update()
-			document.addEventListener('visibilitychange', () => {
-				if (document.visibilityState === 'visible') {
-					registration.update()
-				}
-			})
+			checkForServiceWorkerUpdates(registration)
 		},
 	})
 }
