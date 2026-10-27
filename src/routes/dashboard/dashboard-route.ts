@@ -1,21 +1,8 @@
 import { I18N } from '@aurelia/i18n'
 import { IRouter, type Params, type RouteNode } from '@aurelia/router'
-import {
-	ILogger,
-	observable,
-	queueTask,
-	resolve,
-	runTasks,
-	watch,
-} from 'aurelia'
+import { ILogger, observable, queueTask, resolve, watch } from 'aurelia'
 import { IHistory } from '../../adapter/browser/history'
 import { ILocalStorage } from '../../adapter/storage/local-storage'
-import type { DateRange } from '../../components/all-nearby/date-presets'
-import { rangeCacheKey } from '../../components/all-nearby/date-presets'
-import type {
-	DateRangeSheet,
-	RangeChangedDetail,
-} from '../../components/all-nearby/date-range-sheet'
 import type { ArtistFilterBar } from '../../components/artist-filter-bar/artist-filter-bar'
 import type { ConcertHighway } from '../../components/live-highway/concert-highway'
 import type { EventDetailSheet } from '../../components/live-highway/event-detail-sheet'
@@ -34,11 +21,6 @@ import type {
 	TimetableAnchor,
 } from '../../entities/concert'
 import { isJourneyStatus } from '../../entities/ticket-journey'
-import {
-	displayName,
-	type GeoLocationInit,
-	geoLocationFromLevel1,
-} from '../../entities/user'
 import {
 	type CalendarDate,
 	formatDateInput,
@@ -61,9 +43,6 @@ import { IResumeRevalidator } from '../../services/resume-revalidator'
 import { ITicketJourneyStore } from '../../services/ticket-journey-store'
 import { IUserStore } from '../../services/user-store'
 import { currentLanguage } from '../../util/change-locale'
-
-/** Dashboard concert view mode. Session-only — never persisted. */
-export type ViewMode = 'timetable' | 'allNearby'
 
 export class DashboardRoute {
 	public dateGroups: DateGroup[] = []
@@ -92,7 +71,7 @@ export class DashboardRoute {
 	public hasSettled = false
 	/**
 	 * Cached timetable parked by loadData()'s fast path, waiting to be reflected
-	 * from the component lifecycle (`bound()`). Never assigned to `dateGroups`
+	 * from the component lifecycle (`binding()`). Never assigned to `dateGroups`
 	 * inside the pre-activation `loading()` hook: render state belongs to the
 	 * component lifecycle, not to the router's.
 	 */
@@ -121,8 +100,6 @@ export class DashboardRoute {
 
 	public homeSelector: UserHomeSelector | undefined
 	public detailSheet: EventDetailSheet | undefined
-	public areaSelector: UserHomeSelector | undefined
-	public dateSheet: DateRangeSheet | undefined
 	// The filter + help surfaces stay owned by the dashboard (their sheets and
 	// bindings are unchanged); only their triggers moved into the FAB launcher.
 	public filterBar: ArtistFilterBar | undefined
@@ -131,7 +108,7 @@ export class DashboardRoute {
 	public highway: ConcertHighway | undefined
 	/**
 	 * The date the fan left the timetable on, handed to the highway so it builds
-	 * its first window around that date and opens on it. Read in `bound()`.
+	 * its first window around that date and opens on it. Read in `binding()`.
 	 */
 	public timetableAnchor: TimetableAnchor | null = null
 	/** Disposer for this route's contributed FAB actions; released in detaching(). */
@@ -144,49 +121,6 @@ export class DashboardRoute {
 	 * refresh never re-opens the sheet. See resolvePendingDeepLink.
 	 */
 	private pendingConcertId: string | null = null
-
-	// --- All Nearby mode (session-only, never persisted) ---
-
-	/**
-	 * Active dashboard view. Route-local session state — a fresh DashboardRoute
-	 * instance (created on every navigation) always starts on My Timetable.
-	 */
-	@observable public viewMode: ViewMode = 'timetable'
-
-	/**
-	 * Area override for All Nearby, an ISO 3166-2 code chosen via the area
-	 * selector. Null means "use the user's home area". Not persisted — it does
-	 * NOT call userStore.updateHome().
-	 */
-	public selectedAreaCode: string | null = null
-
-	/** The active All Nearby date range, resolved by the date-range sheet. */
-	public allNearbyRange: DateRange | null = null
-
-	/**
-	 * Display label for the date chip — a preset name (今週末 / 7日以内 / 30日以内)
-	 * when a preset is active, else a localized range (e.g. `8/12〜8/20`). Supplied
-	 * by the date-range sheet alongside the resolved range so the chip never
-	 * re-derives it.
-	 */
-	public dateChipLabel = ''
-
-	/** Derived DateGroup[] for the current All Nearby filter, rendered as-is. */
-	public allNearbyDateGroups: DateGroup[] = []
-
-	public allNearbyLoading = false
-	public allNearbyError: unknown = null
-
-	/**
-	 * Route-local All Nearby cache, keyed by (adminArea + from + to). Kept
-	 * separate from the My Timetable cache (owned by ConcertStore) so switching
-	 * modes never refetches or disturbs either side; re-selecting All Nearby with
-	 * unchanged filters reuses the cached DateGroup[].
-	 */
-	private readonly allNearbyCache = new Map<string, DateGroup[]>()
-
-	/** AbortController for the in-flight All Nearby request, aborted on filter change. */
-	private allNearbyAbort: AbortController | null = null
 
 	private readonly logger = resolve(ILogger).scopeTo('DashboardRoute')
 	private readonly errorBoundary = resolve(IErrorBoundaryService)
@@ -212,35 +146,6 @@ export class DashboardRoute {
 
 	public get isAuthenticated(): boolean {
 		return this.authService.isAuthenticated
-	}
-
-	public get isAllNearby(): boolean {
-		return this.viewMode === 'allNearby'
-	}
-
-	/**
-	 * The effective area code for All Nearby: the explicit override, else the
-	 * user's home area, else null (prompt the user to pick one).
-	 */
-	public get effectiveAreaCode(): string | null {
-		return this.selectedAreaCode ?? this.userStore.currentHome
-	}
-
-	/** Display name of the effective All Nearby area, or empty when none is set. */
-	public get selectedAreaName(): string {
-		const code = this.effectiveAreaCode
-		if (!code) return ''
-		const lang = this.userStore.currentLanguage === 'ja' ? 'ja' : 'en'
-		return displayName(code, lang)
-	}
-
-	/**
-	 * True when All Nearby has no resolvable area yet (unauthenticated visitor
-	 * with no home, no override). The area selector must be opened before any
-	 * listByLocation call can run.
-	 */
-	public get allNearbyNeedsArea(): boolean {
-		return this.effectiveAreaCode === null
 	}
 
 	/**
@@ -385,58 +290,39 @@ export class DashboardRoute {
 
 	/**
 	 * Build this route's FAB launcher action set for the current context. The
-	 * first action sits closest to the FAB on the thumb arc: beam, filter,
-	 * mode-swap, help. The beam toggle and the filter are only present in My
-	 * Timetable, and the filter only outside onboarding — mirroring the header
-	 * gating they replace.
+	 * first action sits closest to the FAB on the thumb arc: beam, filter, help.
+	 * The filter is left out during onboarding (dashboard-artist-filter spec:
+	 * "Filter still suppressed during onboarding"); the beam is not.
 	 */
 	private buildFabActions(): FabAction[] {
-		const actions: FabAction[] = []
-
-		// Filter + beam are My Timetable-only (per the beam/filter specs). Only the
-		// FILTER is additionally suppressed during onboarding (dashboard-artist-filter
-		// spec: "Filter still suppressed during onboarding"); beam is not.
-		if (!this.isAllNearby) {
-			actions.push({
+		const actions: FabAction[] = [
+			{
 				id: 'beam',
 				labelKey: 'fabMenu.beam',
 				icon: 'spotlight',
 				kind: 'toggle',
 				isOn: () => this.showBeams,
 				invoke: () => this.toggleBeams(),
+			},
+		]
+		if (!this.isOnboarding) {
+			actions.push({
+				id: 'filter',
+				labelKey: 'fabMenu.filter',
+				icon: 'filter',
+				kind: 'command',
+				isOn: () => this.filterBar?.isFilterActive ?? false,
+				invoke: () => this.filterBar?.openSheet(),
 			})
-			if (!this.isOnboarding) {
-				actions.push({
-					id: 'filter',
-					labelKey: 'fabMenu.filter',
-					icon: 'filter',
-					kind: 'command',
-					isOn: () => this.filterBar?.isFilterActive ?? false,
-					invoke: () => this.filterBar?.openSheet(),
-				})
-			}
 		}
-
-		// Mode swap: available in both views (names the destination).
-		actions.push({
-			id: 'mode-swap',
-			// Names the OTHER view (the destination); recomputed on re-register.
-			labelKey: this.swapLabelKey,
-			icon: 'swap',
-			kind: 'command',
-			// Highlight while All Nearby is active (parity with the old header pill).
-			isOn: () => this.isAllNearby,
-			invoke: () => this.toggleMode(),
-		})
-
 		actions.push(helpAction(() => this.pageHelp?.open()))
 		return actions
 	}
 
 	/**
-	 * (Re-)contribute this route's actions to the launcher. Owner-keyed, so a
-	 * mode switch or onboarding transition replaces the set without accumulating
-	 * (design D2). Re-runs on the context @watch below and on attach.
+	 * (Re-)contribute this route's actions to the launcher. Owner-keyed, so an
+	 * onboarding transition replaces the set without accumulating (design D2).
+	 * Re-runs on the context @watch below and on attach.
 	 */
 	private registerFabActions(): void {
 		this.fabDisposer?.()
@@ -444,11 +330,11 @@ export class DashboardRoute {
 	}
 
 	/**
-	 * Re-register the FAB actions whenever the mode or onboarding state changes,
-	 * so the launcher never shows a stale or duplicated set (My Timetable-only
-	 * items must drop in All Nearby).
+	 * Re-register the FAB actions whenever the onboarding state changes, so the
+	 * launcher never shows a stale or duplicated set (the filter joins once
+	 * onboarding ends).
 	 */
-	@watch((vm: DashboardRoute) => `${vm.isAllNearby}|${vm.isOnboarding}`)
+	@watch((vm: DashboardRoute) => vm.isOnboarding)
 	protected onFabContextChanged(): void {
 		this.registerFabActions()
 	}
@@ -513,7 +399,7 @@ export class DashboardRoute {
 		// Fast path: we have a previous render for this user. The groups are parked
 		// here rather than assigned, because loadData() is reached from loading() —
 		// a PRE-ACTIVATION router hook, which must not assign render state.
-		// bound() reflects them instead (see reflectCachedGroups), so the first
+		// binding() reflects them instead (see reflectCachedGroups), so the first
 		// render already shows the timetable; that render is bounded by the
 		// highway's date window, whatever the number of cached dates.
 		// The rendered timetable lives in the ConcertStore singleton, which
@@ -581,7 +467,7 @@ export class DashboardRoute {
 
 	/**
 	 * Reflect the cached timetable parked by loadData()'s fast path. Runs from the
-	 * component lifecycle, before the first render (`bound()`), so re-entry paints
+	 * component lifecycle, before the first render (`binding()`), so re-entry paints
 	 * the cached timetable directly instead of a skeleton and then the content.
 	 * The highway builds only a window of it, around `timetableAnchor`, and
 	 * positions itself there in its own `attached()` — nothing is forced to flush.
@@ -792,12 +678,15 @@ export class DashboardRoute {
 	}
 
 	/**
-	 * Reflect the cached timetable before the first render. `bound()` is a
+	 * Reflect the cached timetable before the first render. `binding()` is a
 	 * component-lifecycle hook that runs after the router's `loading()` and
-	 * before this component's children bind, so the highway builds its first
-	 * window from the cache and around the remembered date.
+	 * before this view's own bindings bind — `bound()` would be too late, since
+	 * the highway's `date-groups` and `initial-anchor` bindings sit directly in
+	 * this view and would hand it the empty, anchorless values first — so the
+	 * highway builds its first window from the cache and around the remembered
+	 * date.
 	 */
-	public bound(): void {
+	public binding(): void {
 		this.timetableAnchor = this.concertService.timetableAnchor(
 			this.timetableKey(),
 		)
@@ -986,9 +875,8 @@ export class DashboardRoute {
 		}
 		// Tag the source as the dashboard so concert.detail.viewed events from
 		// the dashboard concert list are attributable to that surface in PostHog.
-		// Thread the All Nearby flag so the sheet surfaces the follow CTA only in
-		// that context; My Timetable stays unchanged (isAllNearby === false).
-		this.detailSheet?.open(event.detail.event, 'dashboard', this.isAllNearby)
+		// The timetable shows followed artists only, so no follow action.
+		this.detailSheet?.open(event.detail.event, 'dashboard', false)
 	}
 
 	private async openEventPage(
@@ -998,193 +886,12 @@ export class DashboardRoute {
 		await this.router.load(`/events/${concert.id}`, { historyStrategy })
 	}
 
-	// --- All Nearby mode ---
-
-	/** Label for the swap control — always names the OTHER mode (the destination). */
-	public get swapLabelKey(): string {
-		return this.isAllNearby
-			? 'allNearby.modeToggle.timetable'
-			: 'allNearby.modeToggle.allNearby'
-	}
-
-	/** Toggle to the opposite view (bound to the header swap control). */
-	public toggleMode(): void {
-		this.switchMode(this.isAllNearby ? 'timetable' : 'allNearby')
-	}
-
-	/**
-	 * Switch the dashboard view. My Timetable is never refetched on switch. The
-	 * header title stays the dashboard's in both modes (the toggle shows the
-	 * mode). The mode change is wrapped in a View Transition so the content
-	 * cross-fades; falls back to an instant swap when the API is unavailable or
-	 * the user prefers reduced motion.
-	 *
-	 * The callback flushes Aurelia's queued DOM writes SYNCHRONOUSLY via runTasks
-	 * and returns void — so the transition captures the new state immediately after
-	 * the callback. It must NOT return a promise that awaits requestAnimationFrame:
-	 * the browser suspends rAF during the transition's snapshot phase, so an
-	 * rAF-settled promise never resolves and the transition times out.
-	 */
-	public switchMode(mode: ViewMode): void {
-		if (this.viewMode === mode) return
-		const doc = document as Document & {
-			startViewTransition?: (cb: () => void) => unknown
-		}
-		const reduce = window.matchMedia?.(
-			'(prefers-reduced-motion: reduce)',
-		).matches
-		if (!doc.startViewTransition || reduce) {
-			this.viewMode = mode
-			return
-		}
-		doc.startViewTransition(() => {
-			this.viewMode = mode
-			runTasks()
-		})
-	}
-
-	/**
-	 * React to the view switch: entering All Nearby triggers a load (served from
-	 * the route-local cache when the filter is unchanged); leaving it aborts any
-	 * in-flight request but leaves both caches intact.
-	 */
-	protected viewModeChanged(mode: ViewMode): void {
-		if (mode === 'allNearby') {
-			void this.loadAllNearby()
-		} else {
-			this.allNearbyAbort?.abort()
-		}
-	}
-
-	/** The date-range sheet emitted a new resolved range + display label. */
-	public onRangeChanged(event: CustomEvent<RangeChangedDetail>): void {
-		const { label, ...range } = event.detail
-		this.allNearbyRange = range
-		this.dateChipLabel = label
-		if (this.isAllNearby) {
-			void this.loadAllNearby()
-		}
-	}
-
-	/** Open the date-range bottom sheet. */
-	public openDateSheet(): void {
-		this.dateSheet?.open()
-	}
-
-	/** Open the area selector bottom sheet. */
-	public openAreaSelector(): void {
-		this.areaSelector?.open()
-	}
-
-	/**
-	 * Area override chosen. Updates route-local state ONLY — never calls
-	 * userStore.updateHome(). Triggers a refetch for the new area.
-	 */
-	public onAreaSelected(code: string): void {
-		this.logger.info('All Nearby area override selected', { code })
-		this.selectedAreaCode = code
-		if (this.isAllNearby) {
-			void this.loadAllNearby()
-		}
-	}
-
-	/**
-	 * Resolve the GeoLocation reference point for listByLocation. Uses the
-	 * override centroid when set, else the user's home. The FE `User` type does
-	 * not carry a centroid, so the home path resolves via geoLocationFromLevel1
-	 * over the home level-1 code. Returns null when no area is resolvable.
-	 */
-	private resolveGeoLocation(): GeoLocationInit | null {
-		if (this.selectedAreaCode) {
-			return geoLocationFromLevel1(this.selectedAreaCode) ?? null
-		}
-		const home = this.userStore.currentHome
-		if (!home) return null
-		return geoLocationFromLevel1(home) ?? null
-	}
-
-	/**
-	 * Load (or serve from cache) the All Nearby concert list for the current
-	 * area + date range. Aborts any in-flight request, dedupes on the
-	 * (area, from, to) cache key, and converts the ProximityGroup[] to
-	 * DateGroup[] for rendering. Only HOME/NEARBY lanes are populated by the
-	 * backend for this path.
-	 */
-	public async loadAllNearby(): Promise<void> {
-		const range = this.allNearbyRange
-		if (!range) return
-
-		const geo = this.resolveGeoLocation()
-		if (!geo) {
-			// No area resolvable (unauthenticated, no home, no override). Prompt the
-			// user to choose one rather than firing a location-less request.
-			this.allNearbyDateGroups = []
-			this.allNearbyError = null
-			this.openAreaSelector()
-			return
-		}
-
-		const key = rangeCacheKey(geo.adminArea, range.from, range.to)
-		const cached = this.allNearbyCache.get(key)
-		if (cached) {
-			this.allNearbyDateGroups = cached
-			this.allNearbyError = null
-			return
-		}
-
-		// Abort a superseded in-flight request before starting a new one.
-		this.allNearbyAbort?.abort()
-		this.allNearbyAbort = new AbortController()
-		const signal = this.allNearbyAbort.signal
-
-		this.allNearbyLoading = true
-		this.allNearbyError = null
-		try {
-			const groups = await this.concertService.listByLocation(
-				geo,
-				range.from,
-				range.to,
-				signal,
-			)
-			if (signal.aborted) return
-			// Resolve each card's artist from the concert's own performers (these
-			// catalog artists are not in the user's follow set), so names render.
-			const dateGroups = this.concertService.toDateGroupsForLocation(
-				groups,
-				this.purchasedTickets.countByEvent,
-			)
-			this.allNearbyCache.set(key, dateGroups)
-			this.allNearbyDateGroups = dateGroups
-			this.logger.info('All Nearby loaded', {
-				adminArea: geo.adminArea,
-				groups: dateGroups.length,
-			})
-		} catch (err) {
-			if ((err as Error).name === 'AbortError') return
-			this.logger.error('Failed to load All Nearby', { error: err })
-			this.allNearbyError = err
-			this.allNearbyDateGroups = []
-		} finally {
-			if (!signal.aborted) this.allNearbyLoading = false
-		}
-	}
-
 	public onSignupRequested(): void {
 		this.errorBoundary.addBreadcrumb('action', 'start_sign_up')
 		this.authService.signUp({
 			uiLocales: currentLanguage(this.i18n),
 			source: 'dashboard_prompt',
 		})
-	}
-
-	/**
-	 * A guest tapped the All Nearby follow CTA. Instead of an immediate OIDC
-	 * redirect, surface the persistent sign-up prompt banner — following is the
-	 * conversion moment, and the banner keeps the discovered concert in view.
-	 */
-	public onFollowSignupRequested(): void {
-		if (this.isAuthenticated) return
-		this.showSignupBanner = true
 	}
 
 	/**
@@ -1214,8 +921,6 @@ export class DashboardRoute {
 		this.fabDisposer = null
 		this.abortController?.abort()
 		this.abortController = null
-		this.allNearbyAbort?.abort()
-		this.allNearbyAbort = null
 		// Release the post-signup banner suppression if the user navigates away
 		// mid-celebration (before the PostSignupDialog takes over the flag).
 		this.promptCoordinator.isPostSignupSurfaceOpen = false

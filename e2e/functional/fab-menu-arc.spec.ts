@@ -27,7 +27,7 @@ test.use({ viewport: { width: 390, height: 844 } })
  */
 
 const CAPABILITY = 'components/infrastructure/fan/web/global/fab-menu'
-const DASHBOARD_ACTIONS = ['beam', 'filter', 'mode-swap', 'help']
+const DASHBOARD_ACTIONS = ['beam', 'filter', 'help']
 
 const glyph = (page: Page) => page.locator('fab-menu .fab-glyph')
 const opacity = (page: Page, selector: string) =>

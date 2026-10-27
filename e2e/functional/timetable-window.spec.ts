@@ -311,26 +311,24 @@ test.describe('timetable date window', () => {
 		await scrollDown(page, 12)
 		// Three lanes, including groups added while scrolling.
 		expect(await misalignedLanes(page, 3)).toEqual([])
+	})
 
-		// The collapsed two-lane (All Nearby) presentation, same guarantee.
-		await page.click('fab-menu .fab-toggle')
-		await page.click('fab-menu .fab-item[data-action-id="mode-swap"]')
-		await expect(
-			page
-				.locator('concert-highway [data-hide-away="true"] [data-live-card]')
-				.first(),
-		).toBeVisible({
-			timeout: 10000,
-		})
+	test(`@spec components/infrastructure/fan/web/route/discovery "HOME and NEARBY lanes rendered"`, async ({
+		page,
+	}) => {
+		// The two-lane presentation lives on Discovery's All Nearby view; it
+		// builds the same window and keeps every group aligned the same way.
+		await openDashboard(page)
+		await page.goto(`${APP}/discovery?view=nearby`)
+		const card = page
+			.locator(
+				'nearby-concerts concert-highway [data-hide-away="true"] [data-live-card]',
+			)
+			.first()
+		await expect(card).toBeVisible({ timeout: 15000 })
 		await settle(page)
-		await page.evaluate(() => {
-			const host = document.querySelector(
-				'concert-highway:has([data-hide-away="true"])',
-			) as HTMLElement
-			const s = host.querySelector('.concert-scroll') as HTMLElement
-			for (let i = 0; i < 12; i++) s.scrollTop += s.clientHeight
-		})
-		await settle(page)
+		expect((await builtKeys(page)).length).toBeLessThanOrEqual(24)
+		await scrollDown(page, 12)
 		expect(await misalignedLanes(page, 2)).toEqual([])
 	})
 

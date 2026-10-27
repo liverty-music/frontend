@@ -439,46 +439,75 @@ describe('DashboardRoute', () => {
 		})
 	})
 
-	// ---- detaching ----
+	// ---- FAB actions ----
 
-	// ---- Mode toggle (My Timetable ↔ All Nearby) ----
+	describe('FAB actions', () => {
+		type Action = { id: string; labelKey: string }
+		function registered(): string[][] {
+			const register = (
+				sut as unknown as { fabMenu: { register: ReturnType<typeof vi.fn> } }
+			).fabMenu.register
+			return register.mock.calls.map(([, actions]) =>
+				(actions as Action[]).map((a) => a.id),
+			)
+		}
 
-	describe('mode toggle', () => {
-		type ModeSwap = { id: string; labelKey: string; isOn?: () => boolean }
-		const modeSwap = (): ModeSwap | undefined =>
-			(sut as unknown as { buildFabActions(): ModeSwap[] })
-				.buildFabActions()
-				.find((a) => a.id === 'mode-swap')
-
-		// @spec components/infrastructure/fan/web/route/dashboard "Default mode is My Timetable"
-		it('starts on My Timetable on every load, with the toggle showing it selected', async () => {
-			await sut.loading()
-			expect(sut.viewMode).toBe('timetable')
-			expect(sut.isAllNearby).toBe(false)
-			// The toggle is not highlighted and offers the other mode.
-			expect(modeSwap()?.isOn?.()).toBe(false)
-			expect(modeSwap()?.labelKey).toBe('allNearby.modeToggle.allNearby')
-
-			// A reload builds a fresh route instance, which starts over on My
-			// Timetable even if the previous one had switched away.
-			vi.spyOn(sut, 'loadAllNearby').mockResolvedValue()
-			sut.switchMode('allNearby')
-			const reloaded = buildSut()
-			await reloaded.loading()
-			expect(reloaded.viewMode).toBe('timetable')
+		beforeEach(() => {
+			const fabMenu = (sut as unknown as { fabMenu: object }).fabMenu
+			vi.spyOn(
+				fabMenu as { register: (o: object, a: Action[]) => () => void },
+				'register',
+			)
 		})
 
-		// @spec components/infrastructure/fan/web/route/dashboard "Mode-specific filters appear only in All Nearby"
-		it('gates the area and date filters on All Nearby', async () => {
-			vi.spyOn(sut, 'loadAllNearby').mockResolvedValue()
-			expect(sut.isAllNearby).toBe(false)
-			sut.switchMode('allNearby')
-			expect(sut.isAllNearby).toBe(true)
-			sut.switchMode('timetable')
-			expect(sut.isAllNearby).toBe(false)
+		// @spec components/infrastructure/fan/web/global/fab-menu "Dashboard contributes its actions"
+		// @spec components/infrastructure/fan/web/global/fab-menu "Toggle button placement and icon"
+		it('contributes the beam toggle, the filter and help to a fan who is not onboarding', () => {
+			sut.attached()
+			expect(registered().at(-1)).toEqual(['beam', 'filter', 'help'])
+			const beam = (
+				sut as unknown as {
+					buildFabActions(): (Action & { icon: string; kind: string })[]
+				}
+			).buildFabActions()[0]
+			expect(beam).toEqual(
+				expect.objectContaining({
+					icon: 'spotlight',
+					kind: 'toggle',
+					labelKey: 'fabMenu.beam',
+				}),
+			)
+			sut.detaching()
+		})
 
-			// The template renders the filter row (area chip + date chip) and both
-			// of their sheets only while `isAllNearby` holds.
+		// @spec components/infrastructure/fan/web/global/fab-menu "No active filter — header unchanged"
+		// @spec components/infrastructure/fan/web/global/fab-menu "Active filter — icon state only"
+		// @spec components/infrastructure/fan/web/global/fab-menu "Dismissing an active filter"
+		it('lights the filter item while a filter is active and opens the sheet from it, never a header chip', async () => {
+			const filterBar = { isFilterActive: false, openSheet: vi.fn() }
+			sut.filterBar = filterBar as unknown as typeof sut.filterBar
+			const filter = (
+				sut as unknown as {
+					buildFabActions(): (Action & {
+						isOn(): boolean
+						invoke(): void
+					})[]
+				}
+			)
+				.buildFabActions()
+				.find((a) => a.id === 'filter')
+			expect(filter?.isOn()).toBe(false)
+
+			filterBar.isFilterActive = true
+			expect(filter?.isOn()).toBe(true)
+
+			// The sheet opens with the current selection pre-selected (the filter
+			// bar copies it in openSheet), to be reduced or cleared.
+			filter?.invoke()
+			expect(filterBar.openSheet).toHaveBeenCalledOnce()
+
+			// The route renders no artist chips and no filter trigger of its own;
+			// the filter bar renders its sheet only.
 			const { default: html } = await import(
 				'../../src/routes/dashboard/dashboard-route.html?raw'
 			)
@@ -486,76 +515,148 @@ describe('DashboardRoute', () => {
 				`<body>${html}</body>`,
 				'text/html',
 			)
-			const gated = [
-				'.all-nearby-filters',
-				'user-home-selector[component\\.ref="areaSelector"]',
-				'date-range-sheet',
-			].map((selector) => doc.querySelector(selector)?.getAttribute('if.bind'))
-			expect(gated).toEqual(['isAllNearby', 'isAllNearby', 'isAllNearby'])
 			expect(
-				doc
-					.querySelector('.all-nearby-filters')
-					?.querySelectorAll('button.filter-chip'),
-			).toHaveLength(2)
+				doc.querySelector('.filter-chip, [data-testid*="filter"]'),
+			).toBeNull()
 		})
 
-		// @spec components/infrastructure/fan/web/route/dashboard "Switching modes replaces the concert list"
-		it('loads All Nearby by location and date range, then reverts to the cached timetable', async () => {
-			const timetable = [
-				{ date: 'timetable' },
-			] as unknown as typeof sut.dateGroups
-			const nearby = [{ date: 'nearby' }] as unknown as typeof sut.dateGroups
-			const proximityGroups = [{ key: 'p' }]
-			const listByLocation = vi.fn().mockResolvedValue(proximityGroups)
-			const toDateGroupsForLocation = vi.fn().mockReturnValue(nearby)
-			Object.assign(mockConcert, { listByLocation, toDateGroupsForLocation })
+		// @spec components/infrastructure/fan/web/global/fab-menu "No filter trigger in the header"
+		it('puts no filter trigger in the page header', async () => {
+			const { default: header } = await import(
+				'../../src/components/page-header/page-header.html?raw'
+			)
+			expect(header).not.toMatch(/filter/i)
+		})
+
+		// @spec components/infrastructure/fan/web/global/fab-menu "Actions removed on navigation away"
+		it('removes its actions when the fan leaves the dashboard', () => {
+			const fabMenu = (sut as unknown as { fabMenu: { actions: Action[] } })
+				.fabMenu
+			sut.attached()
+			expect(fabMenu.actions.map((a) => a.id)).toEqual([
+				'beam',
+				'filter',
+				'help',
+			])
+			sut.detaching()
+			expect(fabMenu.actions).toEqual([])
+		})
+
+		// @spec components/infrastructure/fan/web/global/fab-menu "Within-route mode change replaces, not accumulates"
+		it('replaces its set when onboarding ends, adding the filter without duplicates', () => {
+			mockOnboarding = makeOnboarding(true)
 			sut = buildSut()
-			sut.dateGroups = timetable
-			sut.selectedAreaCode = 'JP-13'
-			const range = { from: '2026-10-01', to: '2026-10-07' }
-			sut.allNearbyRange = range as unknown as typeof sut.allNearbyRange
+			const fabMenu = (
+				sut as unknown as {
+					fabMenu: {
+						register: (o: object, a: Action[]) => () => void
+						actions: Action[]
+					}
+				}
+			).fabMenu
+			const register = vi.spyOn(fabMenu, 'register')
+			sut.attached()
+			expect(fabMenu.actions.map((a) => a.id)).toEqual(['beam', 'help'])
 
-			sut.switchMode('allNearby')
-			await vi.waitFor(() => expect(sut.allNearbyDateGroups).toBe(nearby))
-			expect(listByLocation).toHaveBeenCalledWith(
-				expect.objectContaining({ adminArea: 'JP-13' }),
-				range.from,
-				range.to,
-				expect.any(AbortSignal),
-			)
-			expect(toDateGroupsForLocation).toHaveBeenCalledWith(
-				proximityGroups,
-				mockPurchased.countByEvent,
-			)
+			mockOnboarding.isOnboarding = false
+			;(sut as unknown as { onFabContextChanged(): void }).onFabContextChanged()
 
-			const followerCalls = mockConcert.listFollowed.mock.calls.length
-			sut.switchMode('timetable')
-			expect(sut.isAllNearby).toBe(false)
-			// My Timetable comes back from what it already had, not a refetch.
-			expect(sut.dateGroups).toBe(timetable)
-			expect(mockConcert.listFollowed).toHaveBeenCalledTimes(followerCalls)
+			expect(register).toHaveBeenCalledTimes(2)
+			expect(fabMenu.actions.map((a) => a.id)).toEqual([
+				'beam',
+				'filter',
+				'help',
+			])
+			sut.detaching()
+			expect(fabMenu.actions).toEqual([])
 		})
 	})
 
-	// ---- switchMode() ----
+	describe('empty timetable offers the All Nearby view', () => {
+		async function emptyStates() {
+			const { default: html } = await import(
+				'../../src/routes/dashboard/dashboard-route.html?raw'
+			)
+			const doc = new DOMParser().parseFromString(
+				`<body>${html}</body>`,
+				'text/html',
+			)
+			return [...doc.querySelectorAll('state-placeholder')].map((p) => ({
+				gate: p.getAttribute('if.bind') ?? '',
+				links: [...p.querySelectorAll('a')].map((a) => [
+					a.getAttribute('href'),
+					a.getAttribute('t'),
+				]),
+			}))
+		}
 
-	describe('switchMode', () => {
-		// @spec components/infrastructure/fan/web/route/dashboard "Header title does not change with the mode"
-		it('switches only the mode; the header title stays the route’s own', () => {
-			vi.spyOn(sut, 'loadAllNearby').mockResolvedValue()
+		// @spec components/infrastructure/fan/web/route/dashboard "Guest with no follows"
+		it('offers Discovery and the concerts nearby to a guest who follows no artist', async () => {
+			mockAuth.isAuthenticated = false
+			mockFollow.followedCount = 0
+			expect(sut.showGuestEmptyState).toBe(true)
 
-			sut.switchMode('allNearby')
-			expect(sut.viewMode).toBe('allNearby')
-			// The toggle names the other mode, so it reflects the new selection.
-			expect(sut.swapLabelKey).toBe('allNearby.modeToggle.timetable')
+			const guest = (await emptyStates()).find((p) =>
+				p.gate.includes('&& showGuestEmptyState'),
+			)
+			expect(guest?.links).toEqual([
+				['/discovery', 'dashboard.guestEmpty.cta'],
+				['/discovery?view=nearby', 'dashboard.nearbyCta'],
+			])
+		})
 
-			sut.switchMode('timetable')
-			expect(sut.viewMode).toBe('timetable')
-			expect(sut.swapLabelKey).toBe('allNearby.modeToggle.allNearby')
+		// @spec components/infrastructure/fan/web/route/dashboard "Followed artists with nothing to show"
+		it('offers both links when the followed artists have no concert to show', async () => {
+			mockAuth.isAuthenticated = true
+			mockFollow.followedCount = 3
+			await sut.loadData()
+			expect(sut.showGuestEmptyState).toBe(false)
+			expect(sut.hasSettled).toBe(true)
+			expect(sut.filteredDateGroups).toEqual([])
 
-			// The dashboard owns no header title: the shell header shows the
-			// route's configured `data.titleKey` in both modes.
-			expect('modeTitleKey' in sut).toBe(false)
+			const empty = (await emptyStates()).find((p) =>
+				p.gate.includes(
+					'!showGuestEmptyState && filteredDateGroups.length === 0',
+				),
+			)
+			expect(empty?.links).toEqual([
+				['/discovery', 'dashboard.empty.discoverLink'],
+				['/discovery?view=nearby', 'dashboard.nearbyCta'],
+			])
+		})
+
+		// @spec components/infrastructure/fan/web/route/dashboard "Timetable with concerts"
+		it('shows no link to the All Nearby view while the timetable has a concert', async () => {
+			mockAuth.isAuthenticated = true
+			mockFollow.followedCount = 1
+			sut.dateGroups = [
+				{
+					dateKey: '2026-11-20',
+					home: [{ id: 'c1', artistId: 'a1' }],
+					nearby: [],
+					away: [],
+				},
+			] as unknown as typeof sut.dateGroups
+			sut.hasSettled = true
+			expect(sut.filteredDateGroups).toHaveLength(1)
+
+			// Both links live only inside the empty states, which are gated on an
+			// empty timetable (or a guest with no follow).
+			const { default: html } = await import(
+				'../../src/routes/dashboard/dashboard-route.html?raw'
+			)
+			const doc = new DOMParser().parseFromString(
+				`<body>${html}</body>`,
+				'text/html',
+			)
+			const nearby = [
+				...doc.querySelectorAll('a[href="/discovery?view=nearby"]'),
+			]
+			expect(nearby).toHaveLength(2)
+			for (const link of nearby) {
+				expect(link.closest('state-placeholder')).not.toBeNull()
+			}
+			expect(sut.showGuestEmptyState).toBe(false)
 		})
 	})
 
@@ -595,6 +696,7 @@ describe('DashboardRoute', () => {
 		it('opens the detail sheet for a discovered concert', () => {
 			// @spec components/infrastructure/fan/web/route/dashboard "Open detail from dashboard"
 			// @spec components/infrastructure/fan/web/route/dashboard "Event selection handled by dashboard"
+			// @spec components/infrastructure/fan/web/global/bottom-sheet "Follow button hidden in My Timetable context"
 			const open = vi.fn()
 			sut.detailSheet = { open } as unknown as typeof sut.detailSheet
 
@@ -636,52 +738,8 @@ describe('DashboardRoute', () => {
 
 			// The back control re-creates the route, which reads the anchor.
 			const returned = buildSut()
-			returned.bound()
+			returned.binding()
 			expect(returned.timetableAnchor).toEqual(anchor)
-		})
-	})
-
-	describe('All Nearby area override', () => {
-		// @spec components/infrastructure/fan/web/global/user-home-selector "Caller owns persistence — session-only override"
-		it('keeps the chosen area in route state only, persisting nothing', () => {
-			mockAuth.isAuthenticated = true
-			const updateHome = vi.fn()
-			Object.assign(mockUserStore, { updateHome })
-			sut = buildSut()
-
-			sut.onAreaSelected('JP-27')
-
-			expect(sut.selectedAreaCode).toBe('JP-27')
-			expect(sut.selectedAreaName).not.toBe('')
-			expect(updateHome).not.toHaveBeenCalled()
-			expect(mockUserStore.setGuestHome).not.toHaveBeenCalled()
-			expect(mockStorage.setItem).not.toHaveBeenCalledWith(
-				'guest.home',
-				expect.anything(),
-			)
-			expect(localStorage.getItem('guest.home')).toBeNull()
-		})
-	})
-
-	describe('follow from the detail sheet', () => {
-		// @spec components/infrastructure/fan/web/route/dashboard "Follow button for unauthenticated user"
-		it('surfaces the sign-up prompt banner when a guest taps follow', () => {
-			mockAuth.isAuthenticated = false
-			expect(sut.showSignupBanner).toBe(false)
-
-			sut.onFollowSignupRequested()
-
-			// The sheet calls this instead of FollowService.Follow (covered by the
-			// event-detail-sheet follow fixture).
-			expect(sut.showSignupBanner).toBe(true)
-		})
-
-		it('shows no banner for a signed-in fan', () => {
-			mockAuth.isAuthenticated = true
-
-			sut.onFollowSignupRequested()
-
-			expect(sut.showSignupBanner).toBe(false)
 		})
 	})
 
