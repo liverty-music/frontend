@@ -106,7 +106,13 @@ async function render(ev: LiveEvent, isAllNearby: boolean, o: Options = {}) {
 			Registration.instance(IAnalyticsService, { capture: vi.fn() }),
 		],
 	).started
-	fixture.component.sheet.open(ev, 'dashboard', isAllNearby)
+	// The All Nearby view on Discovery opens the sheet with the follow action;
+	// the dashboard timetable opens it without.
+	fixture.component.sheet.open(
+		ev,
+		isAllNearby ? 'all_nearby' : 'dashboard',
+		isAllNearby,
+	)
 	await tasksSettled()
 	const button = () =>
 		fixture.appHost.querySelector<HTMLButtonElement>('.follow-action')
@@ -117,7 +123,6 @@ async function render(ev: LiveEvent, isAllNearby: boolean, o: Options = {}) {
 
 describe('EventDetailSheet follow CTA (fixture)', () => {
 	// @spec components/infrastructure/fan/web/global/bottom-sheet "Follow button visible for unfollowed artist in All Nearby context"
-	// @spec components/infrastructure/fan/web/route/dashboard "Follow button visible for unfollowed artist"
 	it('shows the follow button for an unfollowed artist in All Nearby', async () => {
 		const { fixture, button } = await render(event(), true)
 
@@ -140,7 +145,6 @@ describe('EventDetailSheet follow CTA (fixture)', () => {
 	})
 
 	// @spec components/infrastructure/fan/web/global/bottom-sheet "Follow action from detail sheet"
-	// @spec components/infrastructure/fan/web/route/dashboard "Follow action from detail sheet"
 	it('follows the artist and turns the button into a Following indicator', async () => {
 		const { fixture, followStore, button, following } = await render(
 			event(),
@@ -174,7 +178,6 @@ describe('EventDetailSheet follow CTA (fixture)', () => {
 	})
 
 	// @spec components/infrastructure/fan/web/global/bottom-sheet "No follow button for already-followed artist"
-	// @spec components/infrastructure/fan/web/route/dashboard "No follow button for already-followed artist"
 	it('shows no follow button for an artist the fan already follows', async () => {
 		const { fixture, button } = await render(event(), true, {
 			followed: ['a1'],
@@ -185,7 +188,6 @@ describe('EventDetailSheet follow CTA (fixture)', () => {
 	})
 
 	// @spec components/infrastructure/fan/web/global/bottom-sheet "Follow prompt for unauthenticated user"
-	// @spec components/infrastructure/fan/web/route/dashboard "Follow button for unauthenticated user"
 	it('asks a guest to sign up instead of following', async () => {
 		const { fixture, followStore, onSignupRequested, button } = await render(
 			event(),

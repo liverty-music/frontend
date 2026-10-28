@@ -1,16 +1,14 @@
 <import from="./dashboard-route.css"></import>
-<import from="../../components/all-nearby/date-range-sheet"></import>
 
 <!-- The page title is owned by the shell-hosted <page-header>, driven from
-     the route's data.titleKey; it stays the same in both modes (the mode
-     toggle shows which one is active). -->
+     the route's data.titleKey. -->
 
 <!-- Filter + help surfaces stay owned by the dashboard: only their triggers
      moved to the FAB launcher, so the components render sheet-only here (their
      bottom sheets and bindings are unchanged). The launcher opens them via the
      component refs. -->
 <artist-filter-bar
-  if.bind="!isOnboarding && !isAllNearby"
+  if.bind="!isOnboarding"
   component.ref="filterBar"
   counted-artists.bind="countedArtists"
   selected-ids.two-way="filteredArtistIds"
@@ -21,105 +19,59 @@
 ></artist-filter-bar>
 <page-help component.ref="pageHelp" page="dashboard"></page-help>
 
-<!-- All Nearby filters: a fixed-height row of exactly two chips — area + date.
-     Neither expands inline, so the ConcertHighway timetable height is stable.
-     Each chip opens a bottom sheet. (All Nearby mode only.) -->
-<div if.bind="isAllNearby" class="[ all-nearby-filters ] [ cluster ]" role="group" t="[aria-label]allNearby.filterBar.label">
-  <button type="button" class="filter-chip" click.trigger="openAreaSelector()">
-    <svg-icon name="map-pin" size="sm"></svg-icon>
-    <span if.bind="selectedAreaName" class="chip-label">${selectedAreaName}</span>
-    <span else class="chip-label chip-label-empty" t="allNearby.area.choose"></span>
-    <svg-icon name="chevron-right" size="xs" class="chip-caret"></svg-icon>
-  </button>
-  <button type="button" class="filter-chip" click.trigger="openDateSheet()">
-    <svg-icon name="calendar" size="sm"></svg-icon>
-    <span class="chip-label">${dateChipLabel}</span>
-    <svg-icon name="chevron-right" size="xs" class="chip-caret"></svg-icon>
-  </button>
-</div>
+<!-- ── My Timetable ── -->
+<!-- The loading placeholder lives inside <concert-highway>, which owns the
+     lane grid and so can shape it like the real timetable — see its `loading`
+     binding below. A generic bar stack here would have had to be replaced by a
+     differently-shaped grid, shifting layout at exactly the moment the fan is
+     watching. -->
 
-<!-- ── My Timetable view ── -->
-<template if.bind="!isAllNearby">
-  <!-- The loading placeholder lives inside <concert-highway>, which owns the
-       lane grid and so can shape it like the real timetable — see its `loading`
-       binding below. A generic bar stack here would have had to be replaced by a
-       differently-shaped grid, shifting layout at exactly the moment the fan is
-       watching. -->
+<!-- Concert highway — always in DOM for E2E compatibility. First in the
+     content cell, so the error and the empty states that share the cell
+     paint over it and their links and retry button take the tap. -->
+<concert-highway
+  component.ref="highway"
+  loading.bind="!hasSettled && !loadError"
+  date-groups.bind="filteredDateGroups"
+  initial-anchor.bind="timetableAnchor"
+  show-beams.bind="showBeams"
+  data-blurred.bind="needsRegion"
+  event-selected.trigger="onEventSelected($event)"
+></concert-highway>
 
-  <!-- Error state -->
-  <inline-error
-    if.bind="loadError"
-    message.bind="i18n.tr('dashboard.error.load')"
-    retry-action.bind="() => loadData()"
-  ></inline-error>
+<!-- Error state -->
+<inline-error
+  if.bind="loadError"
+  message.bind="i18n.tr('dashboard.error.load')"
+  retry-action.bind="() => loadData()"
+></inline-error>
 
-  <!-- Guest empty-state CTA: unauthenticated visitor with zero follows. Soft gate
-       guidance toward discovery instead of a guard redirect. -->
-  <state-placeholder if.bind="hasSettled && !loadError && showGuestEmptyState && !needsRegion" icon="clock">
-    <p t="dashboard.guestEmpty.title" class="dashboard-empty-title"></p>
-    <p t="dashboard.guestEmpty.subtitle" class="dashboard-empty-subtitle"></p>
+<!-- Guest empty-state CTA: unauthenticated visitor with zero follows. Soft gate
+     guidance toward discovery instead of a guard redirect, and toward the
+     concerts nearby on Discovery's All Nearby view. -->
+<state-placeholder if.bind="hasSettled && !loadError && showGuestEmptyState && !needsRegion" icon="clock">
+  <p t="dashboard.guestEmpty.title" class="dashboard-empty-title"></p>
+  <p t="dashboard.guestEmpty.subtitle" class="dashboard-empty-subtitle"></p>
+  <div class="[ dashboard-empty-actions ] [ cluster ]">
     <a href="/discovery" t="dashboard.guestEmpty.cta" class="[ button ] [ pressable ]" data-testid="discover-link"></a>
-  </state-placeholder>
+    <a href="/discovery?view=nearby" t="dashboard.nearbyCta" class="[ button ] [ pressable ]" data-variant="outlined" data-testid="nearby-link"></a>
+  </div>
+</state-placeholder>
 
-  <!-- Empty state. `hasSettled` is required: `filteredDateGroups.length === 0`
-       alone is also true before the cached groups have been reflected, which is
-       exactly when this must NOT render. -->
-  <state-placeholder if.bind="hasSettled && !loadError && !showGuestEmptyState && filteredDateGroups.length === 0" icon="clock">
-    <p t="dashboard.empty.title" class="dashboard-empty-title"></p>
-    <p t="dashboard.empty.subtitle" class="dashboard-empty-subtitle"></p>
+<!-- Empty state. `hasSettled` is required: `filteredDateGroups.length === 0`
+     alone is also true before the cached groups have been reflected, which is
+     exactly when this must NOT render. -->
+<state-placeholder if.bind="hasSettled && !loadError && !showGuestEmptyState && filteredDateGroups.length === 0" icon="clock">
+  <p t="dashboard.empty.title" class="dashboard-empty-title"></p>
+  <p t="dashboard.empty.subtitle" class="dashboard-empty-subtitle"></p>
+  <div class="[ dashboard-empty-actions ] [ cluster ]">
     <a href="/discovery" t="dashboard.empty.discoverLink" class="[ button ] [ pressable ]" data-testid="discover-link"></a>
-  </state-placeholder>
+    <a href="/discovery?view=nearby" t="dashboard.nearbyCta" class="[ button ] [ pressable ]" data-variant="outlined" data-testid="nearby-link"></a>
+  </div>
+</state-placeholder>
 
-  <!-- Concert highway — always in DOM for E2E compatibility -->
-  <concert-highway
-    component.ref="highway"
-    loading.bind="!hasSettled && !loadError"
-    date-groups.bind="filteredDateGroups"
-    initial-anchor.bind="timetableAnchor"
-    show-beams.bind="showBeams"
-    data-blurred.bind="needsRegion"
-    event-selected.trigger="onEventSelected($event)"
-  ></concert-highway>
-</template>
-
-<!-- ── All Nearby view ── -->
-<template if.bind="isAllNearby">
-  <!-- Loading state: content-shaped skeleton (see My Timetable above). -->
-  <state-placeholder if.bind="allNearbyLoading" loading.bind="true" rows.bind="6" data-testid="all-nearby-loading"></state-placeholder>
-
-  <!-- Error state -->
-  <inline-error
-    if.bind="allNearbyError"
-    message.bind="i18n.tr('dashboard.error.load')"
-    retry-action.bind="() => loadAllNearby()"
-  ></inline-error>
-
-  <!-- Empty state: no concerts for the selected area + date range. -->
-  <state-placeholder
-    if.bind="!allNearbyLoading && !allNearbyError && allNearbyDateGroups.length === 0"
-    icon="clock"
-  >
-    <p t="allNearby.empty.title" class="dashboard-empty-title"></p>
-    <p t="allNearby.empty.subtitle" class="dashboard-empty-subtitle"></p>
-    <a href="/discovery" t="allNearby.empty.discoverLink" class="[ button ] [ pressable ]" data-testid="discover-link"></a>
-  </state-placeholder>
-
-  <!-- All Nearby highway — venue shown on every card; AWAY lane omitted (2 lanes). -->
-  <concert-highway
-    date-groups.bind="allNearbyDateGroups"
-    show-beams.bind="false"
-    show-venue-always.bind="true"
-    hide-away.bind="true"
-    event-selected.trigger="onEventSelected($event)"
-  ></concert-highway>
-</template>
-
-<!-- Bottom sheet for event details (top-layer dialog). The All Nearby follow CTA
-     dispatches signup-requested for guests → surface the sign-up prompt banner. -->
-<event-detail-sheet
-  component.ref="detailSheet"
-  on-signup-requested.bind="() => onFollowSignupRequested()"
-></event-detail-sheet>
+<!-- Bottom sheet for event details (top-layer dialog). -->
+<event-detail-sheet component.ref="detailSheet"></event-detail-sheet>
 
 <!-- Signup prompt banner for unauthenticated users (non-dismissable) -->
 <signup-prompt-banner
@@ -135,27 +87,6 @@
   on-home-selected.bind="(code) => onHomeSelected(code)"
   required.bind="isOnboarding"
 ></user-home-selector>
-
-<!-- All Nearby area-override selector. Route-local only — does NOT persist to
-     userStore.updateHome(). Rendered only in All Nearby mode so it never
-     collides with the onboarding selector above (two user-home-selector
-     instances would otherwise both be in the DOM). -->
-<user-home-selector
-  if.bind="isAllNearby"
-  component.ref="areaSelector"
-  current-code.bind="selectedAreaCode ?? userStore.currentHome"
-  on-home-selected.bind="(code) => onAreaSelected(code)"
-></user-home-selector>
-
-<!-- All Nearby date-range sheet. Rendered only in All Nearby mode so its
-     bound()-time initial emit fires on entry (seeding allNearbyRange +
-     dateChipLabel and driving the first load), and it never lingers in the DOM
-     for My Timetable. -->
-<date-range-sheet
-  if.bind="isAllNearby"
-  component.ref="dateSheet"
-  range-changed.trigger="onRangeChanged($event)"
-></date-range-sheet>
 
 <!-- Celebration overlay — two tiers (guest light / post-signup confetti),
      gated on timetable readiness via maybeCelebrate() -->

@@ -78,6 +78,7 @@ describe('ArtistFilterBar', () => {
 			expect(sut.isSheetOpen).toBe(false)
 		})
 
+		// @spec components/infrastructure/fan/web/global/fab-menu "Dismissing an active filter"
 		it('clears both filters when all pending are deselected', () => {
 			sut.selectedIds = ['a1']
 			sut.selectedStatuses = ['applied']

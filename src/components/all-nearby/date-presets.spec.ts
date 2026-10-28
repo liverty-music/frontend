@@ -20,6 +20,7 @@ import {
 const WED: CalendarDate = { year: 2026, month: 8, day: 12 }
 
 describe('resolvePreset', () => {
+	// @spec components/infrastructure/fan/web/route/discovery "7日以内 preset date range"
 	it('week spans today through +6 days inclusive (7 days)', () => {
 		const range = resolvePreset('week', WED)
 		expect(range).toEqual({
@@ -29,6 +30,7 @@ describe('resolvePreset', () => {
 		expect(range && inclusiveDaySpan(range.from, range.to)).toBe(7)
 	})
 
+	// @spec components/infrastructure/fan/web/route/discovery "30日以内 preset date range"
 	it('month spans MAX_RANGE_DAYS inclusive days', () => {
 		const range = resolvePreset('month', WED)
 		expect(range?.from).toEqual({ year: 2026, month: 8, day: 12 })
@@ -36,6 +38,7 @@ describe('resolvePreset', () => {
 	})
 
 	describe('weekend rule', () => {
+		// @spec components/infrastructure/fan/web/route/discovery "今週末 preset date range"
 		it('Mon–Fri → the coming Sat..Sun', () => {
 			// Wednesday 2026-08-12 → Saturday 2026-08-15, Sunday 2026-08-16.
 			const range = resolvePreset('weekend', WED)
@@ -45,6 +48,7 @@ describe('resolvePreset', () => {
 			})
 		})
 
+		// @spec components/infrastructure/fan/web/route/discovery "今週末 when today is Saturday or Sunday"
 		it('Saturday → today (Sat)..tomorrow (Sun)', () => {
 			const sat: CalendarDate = { year: 2026, month: 8, day: 15 }
 			expect(resolvePreset('weekend', sat)).toEqual({
@@ -53,6 +57,7 @@ describe('resolvePreset', () => {
 			})
 		})
 
+		// @spec components/infrastructure/fan/web/route/discovery "今週末 when today is Saturday or Sunday"
 		it('Sunday → single-day today range', () => {
 			const sun: CalendarDate = { year: 2026, month: 8, day: 16 }
 			expect(resolvePreset('weekend', sun)).toEqual({
@@ -113,11 +118,13 @@ describe('inclusiveDaySpan', () => {
 })
 
 describe('formatRangeLabel', () => {
+	// @spec components/infrastructure/fan/web/route/discovery "Single-day range"
 	it('renders a single localized day when from === to', () => {
 		const day = { year: 2026, month: 8, day: 12 }
 		expect(formatRangeLabel({ from: day, to: day })).toBe('8/12')
 	})
 
+	// @spec components/infrastructure/fan/web/route/discovery "Date chip shows a localized range"
 	it('joins two localized days with a wave dash for a multi-day range', () => {
 		expect(
 			formatRangeLabel({

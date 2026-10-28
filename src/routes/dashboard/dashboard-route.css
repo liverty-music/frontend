@@ -21,68 +21,14 @@
 			grid-area: content;
 		}
 
-		/* The mode-swap, filter, beam, and help triggers moved to the FAB action
-		   launcher; the dashboard header is now title-only. */
+		/* The filter, beam, and help triggers live in the FAB action launcher;
+		   the dashboard header is title-only. */
 
-		/* ── All Nearby filter bar (occupies the controls grid row) ──
-		   A single fixed-height row of exactly two chips (area + date). No inline
-		   expansion, so the ConcertHighway height below never shifts. */
-		.all-nearby-filters {
-			--cluster-gap: var(--space-2xs);
-
-			grid-area: controls;
-			align-items: center;
-			align-self: stretch;
-
-			padding-block-end: var(--space-2xs);
-			padding-inline: var(--space-s);
-		}
-
-		/* Area chip + date chip: identical pill affordance, each opens a sheet. */
-		.filter-chip {
-			cursor: pointer;
-
-			display: inline-flex;
-			gap: var(--space-3xs);
-			align-items: center;
-
-			min-block-size: 2.75rem;
-			padding-block: var(--space-3xs);
-			padding-inline: var(--space-s);
-			border: 1px solid var(--color-border-subtle);
-			border-radius: var(--radius-full);
-
-			font-size: var(--step--1);
-			color: var(--color-text-primary);
-
-			background: var(--color-surface-raised);
-
-			transition:
-				border-color var(--transition-fast),
-				color var(--transition-fast);
-
-			&:hover {
-				border-color: color-mix(
-					in oklch,
-					var(--color-brand-primary) 40%,
-					transparent
-				);
-			}
-
-			&:focus-visible {
-				outline: 2px solid var(--color-brand-primary);
-				outline-offset: 2px;
-			}
-
-			/* Trailing caret cue: muted, smaller than the leading icon. */
-			& .chip-caret {
-				color: var(--color-text-muted);
-			}
-		}
-
-		/* "Choose area" prompt reads as placeholder text. */
-		.chip-label-empty {
-			color: var(--color-text-muted);
+		/* Positioned, after the highway in the DOM, so they paint over it and
+		   take the tap (the highway is positioned and fills the same cell). */
+		inline-error,
+		state-placeholder {
+			position: relative;
 		}
 
 		state-placeholder {
@@ -114,6 +60,13 @@
 			margin-block-end: var(--space-s);
 			font-size: var(--step--1);
 			color: var(--color-text-muted);
+		}
+
+		/* Discovery and the concerts nearby, side by side (wrapping when narrow). */
+		.dashboard-empty-actions {
+			--cluster-gap: var(--space-2xs);
+
+			justify-content: center;
 		}
 	}
 }

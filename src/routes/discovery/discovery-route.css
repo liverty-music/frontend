@@ -87,9 +87,18 @@
 		}
 
 		.discovery-layout {
+			/* The FAB sits in the navigation bar's notch and rises into the
+			   bubble field; keep the orb and the bubbles' floor above it. */
+			--orb-floor: calc(var(--fab-notch-radius) + var(--space-2xs));
+
+			/* The largest radius the orb grows to (stage-effects.ts MAX_RADIUS,
+			   or NARROW_MAX_RADIUS on a canvas narrower than 390px). */
+			--orb-max-r: 90px;
+
 			isolation: isolate;
 			position: relative;
 
+			container: discovery-layout / inline-size;
 			overflow: hidden;
 			display: grid;
 			grid-area: content;
@@ -316,10 +325,6 @@
 		}
 
 		.bubble-area {
-			/* The FAB sits in the navigation bar's notch and rises into this
-			   field; keep the orb and the bubbles' floor above it. */
-			--orb-floor: calc(var(--fab-notch-radius) + var(--space-2xs));
-
 			position: relative;
 
 			container-name: bubble-area;

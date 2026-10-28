@@ -19,6 +19,9 @@ export const StorageKeys = {
 	// FAB action-launcher placement (left-handed mode). 'left'/'right',
 	// defaults to 'right' (bottom-right corner). Mirrors the beam preference.
 	fabHanded: 'fab.handed',
+	// The Discovery view used last on this device: 'artists' (the bubbles) or
+	// 'nearby' (the All Nearby view). Absent means the bubbles.
+	discoveryView: 'discovery.view',
 	// The language last applied on this device, in every auth state; the
 	// i18next detector reads it on boot (see FanI18nConfiguration).
 	language: 'language',

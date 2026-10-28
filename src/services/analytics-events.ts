@@ -45,6 +45,7 @@ export type EventSource =
 	| 'dashboard'
 	| 'notification'
 	| 'discovery_orb'
+	| 'all_nearby'
 
 // -- Per-event property type declarations -------------------------------------
 
@@ -128,6 +129,7 @@ export type OnboardingStartedProps = Record<string, never>
 export type AuthStartSource =
 	| 'welcome'
 	| 'dashboard_prompt'
+	| 'all_nearby_prompt'
 	| 'event_page'
 	| 'my_artists_prompt'
 	| 'settings'

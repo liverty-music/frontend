@@ -1,7 +1,10 @@
 <template>
   <import from="./discovery-route.css"></import>
+  <import from="./discovery-swap.css"></import>
   <import from="../../components/dna-orb/dna-orb-canvas"></import>
   <import from="../../components/onboarding-progress/onboarding-progress"></import>
+  <import from="../../components/all-nearby/nearby-concerts"></import>
+  <import from="../../components/discovery-swap-button/discovery-swap-button"></import>
 
   <!-- The page title ("Discovery") is owned by the shell-hosted <page-header>,
        driven from the route's data.titleKey. -->
@@ -10,7 +13,7 @@
        the ref. Auto-open on first visit is unchanged. -->
   <page-help component.ref="pageHelp" page="discovery"></page-help>
 
-  <main class="[ discovery-layout ]" data-search-mode.bind="search.isSearchMode">
+  <main class="[ discovery-layout ]" data-search-mode.bind="search.isSearchMode" data-view.bind="view" data-revealing.bind="revealing">
 
     <!-- Search bar -->
     <search class="search-bar">
@@ -105,6 +108,25 @@
       </ul>
     </section>
 
+    <!-- All Nearby view: in place of the search bar, the genre chips and the
+         bubbles, which keep their size underneath (the field is not rebuilt). -->
+    <nearby-concerts
+      if.bind="view === 'nearby'"
+      class="nearby-view"
+      visit.bind="nearbyVisit"
+      on-signup-requested.bind="() => offerSignUp()"
+    ></nearby-concerts>
+
+    <!-- Swap tile beside the orb, in the band under the bubbles' floor that no
+         bubble enters; mirrored in left-handed mode, hidden in search mode. -->
+    <discovery-swap-button
+      ref="swapTile"
+      class="swap-tile-slot"
+      data-handed.bind="fabMenu.handed"
+      view.bind="view"
+      on-swap.bind="() => switchView()"
+    ></discovery-swap-button>
+
     <!-- Screen reader status -->
     <output
       role="status"
@@ -113,4 +135,13 @@
       textcontent.bind="srStatusText"
     ></output>
   </main>
+
+  <!-- Sign-up prompt for a guest who tapped follow in the All Nearby view.
+       Outside <main>: the banner is fixed to the viewport, and the layout is
+       a size container that would become its containing block. -->
+  <signup-prompt-banner
+    visible.bind="showSignupBanner && !isAuthenticated"
+    message.bind="i18n.tr('myArtists.signupBanner.message')"
+    signup-requested.trigger="onSignupRequested()"
+  ></signup-prompt-banner>
 </template>

@@ -390,7 +390,7 @@ describe('DashboardRoute', () => {
 
 	describe('loadData() fast-path (warm re-entry)', () => {
 		// @spec components/infrastructure/fan/web/global/bottom-nav-bar "A cached result is reflected from the component lifecycle"
-		it('parks the cache in loading() and reflects it from bound(), before the first render', async () => {
+		it('parks the cache in loading() and reflects it from binding(), before the first render', async () => {
 			const cached = makeCachedGroups()
 			mockConcertService.peekDateGroups.mockReturnValue(cached)
 			sut.needsRegion = false
@@ -407,10 +407,10 @@ describe('DashboardRoute', () => {
 			// and it is why the skeleton cannot be gated on isLoading.
 			expect(sut.isLoading).toBe(false)
 
-			// bound() is a component-lifecycle hook that runs before the first
+			// binding() is a component-lifecycle hook that runs before the first
 			// render, so re-entry renders the timetable directly — no skeleton first,
 			// and nothing forced to flush.
-			sut.bound()
+			sut.binding()
 
 			expect(sut.dateGroups).toEqual(cached)
 			expect(sut.hasSettled).toBe(true)
@@ -425,7 +425,7 @@ describe('DashboardRoute', () => {
 			await sut.loadData()
 
 			// Both empty-state placeholders are gated on hasSettled, so nothing can
-			// flash an empty state between loading() and bound().
+			// flash an empty state between loading() and binding().
 			expect(sut.hasSettled).toBe(false)
 			expect(sut.dateGroups).toEqual([])
 		})
@@ -454,12 +454,12 @@ describe('DashboardRoute', () => {
 			sut.needsRegion = false
 
 			await sut.loadData()
-			// The refresh is fire-and-forget; letting it settle before bound()
+			// The refresh is fire-and-forget; letting it settle before binding()
 			// models the fast-network case. Reflecting the cache afterwards would
 			// replace fresh data with stale.
 			await flushMicrotasks()
 
-			sut.bound()
+			sut.binding()
 
 			expect(sut.dateGroups).toEqual(fresh)
 		})
@@ -481,7 +481,7 @@ describe('DashboardRoute', () => {
 			// its own attached() — the route no longer restores anything.
 			const next = new DashboardRoute()
 			await next.loadData()
-			next.bound()
+			next.binding()
 
 			expect(next.timetableAnchor).toEqual(ANCHOR)
 			expect(next.dateGroups).toEqual(makeCachedGroups())
@@ -492,13 +492,13 @@ describe('DashboardRoute', () => {
 			sut.needsRegion = false
 
 			await sut.loadData()
-			sut.bound()
+			sut.binding()
 
 			expect(sut.timetableAnchor).toBeNull()
 		})
 
 		// @spec components/infrastructure/fan/web/route/dashboard "Deferring the render preserves load-path side effects"
-		it('keeps the refresh, the data-ready latch and a pending deep-link when reflecting in bound()', async () => {
+		it('keeps the refresh, the data-ready latch and a pending deep-link when reflecting in binding()', async () => {
 			mockAuth.isAuthenticated = true
 			mockUserStore.current = { home: 'JP-13' }
 			sut = new DashboardRoute()
@@ -518,7 +518,7 @@ describe('DashboardRoute', () => {
 			setPendingConcertId(sut, 'h-artist-1')
 
 			await sut.loadData()
-			sut.bound()
+			sut.binding()
 			// The data-ready latch fires once, from the lifecycle reflection.
 			expect(sut.timetableLoaded).toBe(true)
 			expect(onLoaded).toHaveBeenCalledTimes(1)
@@ -1249,7 +1249,7 @@ describe('DashboardRoute', () => {
 			sut.needsRegion = false
 
 			await sut.loadData()
-			sut.bound()
+			sut.binding()
 
 			expect(sut.showCelebration).toBe(true)
 			expect(mockI18n.tr).toHaveBeenCalledWith('dashboard.celebration.found', {
@@ -1436,7 +1436,7 @@ describe('DashboardRoute', () => {
 			try {
 				// Dashboard entry: the cached timetable is on screen.
 				await sut.loadData()
-				sut.bound()
+				sut.binding()
 				sut.attached()
 				await flushMicrotasks()
 				expect(sut.dateGroups).toEqual(cached)
@@ -1505,10 +1505,9 @@ describe('DashboardRoute', () => {
 			expect(sut.filteredDateGroups).toEqual([])
 
 			// The filter sheet (which holds "過去のコンサートも表示") stays mounted —
-			// its gate is `!isOnboarding && !isAllNearby` — and the FAB still offers
-			// the filter action that opens it.
+			// its gate is `!isOnboarding` — and the FAB still offers the filter
+			// action that opens it.
 			expect(sut.isOnboarding).toBe(false)
-			expect(sut.isAllNearby).toBe(false)
 			sut.attached()
 			const calls = mockFabMenu.register.mock.calls as unknown as [
 				unknown,

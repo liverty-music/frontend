@@ -4,6 +4,7 @@ import { createFixture } from '@aurelia/testing'
 import { CustomElement, DI, IEventAggregator, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Snack } from '../../shared/ui/snack-bar/snack'
+import { IHistory } from '../../src/adapter/browser/history'
 import { IAppConfig } from '../../src/config/app-config'
 import type { Artist } from '../../src/entities/artist'
 import {
@@ -15,6 +16,7 @@ import { IErrorBoundaryService } from '../../src/services/error-boundary-service
 import { createTestContainer } from '../helpers/create-container'
 import { createMockAppConfig } from '../helpers/mock-app-config'
 import { createMockErrorBoundary } from '../helpers/mock-error-boundary'
+import { createMockHistory } from '../helpers/mock-history'
 import { createMockI18n } from '../helpers/mock-i18n'
 import { createMockRouter } from '../helpers/mock-router'
 import {
@@ -29,6 +31,7 @@ const mockIFollowStore = DI.createInterface('IFollowStore')
 const mockIConcertStore = DI.createInterface('IConcertStore')
 const mockIRouter = DI.createInterface('IRouter')
 const mockIOnboardingService = DI.createInterface('IOnboardingService')
+const mockIAuthService = DI.createInterface('IAuthService')
 
 // The real module (other code imports its IRouterEvents) with IRouter
 // swapped; the getter defers the read past this hoisted factory.
@@ -53,6 +56,10 @@ vi.mock('../../src/services/concert-store', () => ({
 
 vi.mock('../../src/services/onboarding-service', () => ({
 	IOnboardingService: mockIOnboardingService,
+}))
+
+vi.mock('../../src/services/auth-service', () => ({
+	IAuthService: mockIAuthService,
 }))
 
 vi.mock('../../src/routes/discovery/discovery-route.css?raw', () => ({
@@ -97,6 +104,8 @@ describe('DiscoveryRoute', () => {
 	let mockConcert: ReturnType<typeof createMockConcertService>
 	let mockEa: ReturnType<typeof createMockEventAggregator>
 	let mockRouter: ReturnType<typeof createMockRouter>
+	let mockHistory: ReturnType<typeof createMockHistory>
+	let mockAuth: { isAuthenticated: boolean; signUp: ReturnType<typeof vi.fn> }
 	let mockOnboarding: {
 		isOnboarding: boolean
 		isCompleted: boolean
@@ -108,9 +117,39 @@ describe('DiscoveryRoute', () => {
 		reset: ReturnType<typeof vi.fn>
 		getFeatureFlag: ReturnType<typeof vi.fn>
 	}
+	function buildSut() {
+		const container = createTestContainer(
+			Registration.instance(mockIArtistStore, mockArtistClient),
+			Registration.instance(mockIFollowStore, mockFollowClient),
+			Registration.instance(mockIConcertStore, mockConcert),
+			Registration.instance(IEventAggregator, mockEa),
+			Registration.instance(mockIRouter, mockRouter),
+			Registration.instance(mockIOnboardingService, mockOnboarding),
+			Registration.instance(IAnalyticsService, mockAnalytics),
+			Registration.instance(IHistory, mockHistory),
+			Registration.instance(mockIAuthService, mockAuth),
+		)
+		container.register(DiscoveryRoute)
+		const route = container.get(DiscoveryRoute)
+
+		// Stub the dnaOrbCanvas ref. The field owner (ArtistBubbleStore) now drives
+		// physics via the field binding; the route only calls the absorb flourish.
+		route.dnaOrbCanvas = {
+			pause: vi.fn(),
+			resume: vi.fn(),
+			spawnAndAbsorbAfterSearch: vi.fn(),
+			bubbleCount: 0,
+			canvasRect: { width: 400, height: 600 },
+		} as never
+		return route
+	}
+
 	beforeEach(() => {
 		vi.useFakeTimers()
 		resetRevealEntryForTests()
+		localStorage.clear()
+		mockHistory = createMockHistory()
+		mockAuth = { isAuthenticated: false, signUp: vi.fn() }
 
 		mockArtistClient = createMockArtistServiceClient()
 		mockFollowClient = createMockFollowStore()
@@ -135,27 +174,7 @@ describe('DiscoveryRoute', () => {
 			},
 		)
 
-		const container = createTestContainer(
-			Registration.instance(mockIArtistStore, mockArtistClient),
-			Registration.instance(mockIFollowStore, mockFollowClient),
-			Registration.instance(mockIConcertStore, mockConcert),
-			Registration.instance(IEventAggregator, mockEa),
-			Registration.instance(mockIRouter, mockRouter),
-			Registration.instance(mockIOnboardingService, mockOnboarding),
-			Registration.instance(IAnalyticsService, mockAnalytics),
-		)
-		container.register(DiscoveryRoute)
-		sut = container.get(DiscoveryRoute)
-
-		// Stub the dnaOrbCanvas ref. The field owner (ArtistBubbleStore) now drives
-		// physics via the field binding; the route only calls the absorb flourish.
-		sut.dnaOrbCanvas = {
-			pause: vi.fn(),
-			resume: vi.fn(),
-			spawnAndAbsorbAfterSearch: vi.fn(),
-			bubbleCount: 0,
-			canvasRect: { width: 400, height: 600 },
-		} as never
+		sut = buildSut()
 	})
 
 	afterEach(() => {
@@ -1044,6 +1063,7 @@ describe('DiscoveryRoute', () => {
 					Registration.instance(IEventAggregator, mockEa),
 					Registration.instance(mockIRouter, mockRouter),
 					Registration.instance(mockIOnboardingService, mockOnboarding),
+					Registration.instance(mockIAuthService, mockAuth),
 					Registration.instance(IAnalyticsService, mockAnalytics),
 					Registration.instance(I18N, createMockI18n()),
 					Registration.instance(IAppConfig, createMockAppConfig()),
@@ -1381,6 +1401,222 @@ describe('DiscoveryRoute', () => {
 			sut.onRevealMark(revealMark('all-names', 300))
 
 			expect(mockAnalytics.capture).not.toHaveBeenCalled()
+		})
+	})
+
+	describe('view: artist bubbles or All Nearby', () => {
+		function routeTo(query = '') {
+			return { queryParams: new URLSearchParams(query) } as never
+		}
+
+		function setHidden(hidden: boolean) {
+			Object.defineProperty(document, 'hidden', {
+				value: hidden,
+				writable: true,
+			})
+		}
+
+		afterEach(() => setHidden(false))
+
+		// @spec components/infrastructure/fan/web/route/discovery "Link to the All Nearby view"
+		it('opens on the All Nearby view from /discovery?view=nearby, at any onboarding state', () => {
+			sut.loading(undefined, routeTo('view=nearby'))
+			expect(sut.view).toBe('nearby')
+
+			mockOnboarding.isOnboarding = true
+			const onboarding = buildSut()
+			onboarding.loading(undefined, routeTo('view=nearby'))
+			expect(onboarding.view).toBe('nearby')
+			onboarding.attached()
+			expect(onboarding.dnaOrbCanvas.pause).toHaveBeenCalled()
+			onboarding.detaching()
+		})
+
+		// @spec components/infrastructure/fan/web/route/discovery "Switching rewrites the address"
+		it('rewrites the address in place on each switch, adding no history entry', () => {
+			sut.loading(undefined, routeTo())
+			expect(sut.view).toBe('artists')
+
+			sut.switchView()
+			expect(sut.view).toBe('nearby')
+			expect(mockHistory.replaceState).toHaveBeenLastCalledWith(
+				null,
+				'',
+				'/discovery?view=nearby',
+			)
+
+			sut.switchView()
+			expect(sut.view).toBe('artists')
+			expect(mockHistory.replaceState).toHaveBeenLastCalledWith(
+				null,
+				'',
+				'/discovery',
+			)
+			expect(mockHistory.pushState).not.toHaveBeenCalled()
+		})
+
+		// @spec components/infrastructure/fan/web/route/discovery "The last view is remembered"
+		it('opens on the view the fan left on this device', () => {
+			sut.loading(undefined, routeTo())
+			sut.switchView()
+			expect(localStorage.getItem('discovery.view')).toBe('nearby')
+
+			// Later, from the bottom navigation (no query): a new route instance.
+			const later = buildSut()
+			later.loading(undefined, routeTo())
+			expect(later.view).toBe('nearby')
+			// The address names the view it opened on.
+			later.attached()
+			expect(mockHistory.replaceState).toHaveBeenLastCalledWith(
+				null,
+				'',
+				'/discovery?view=nearby',
+			)
+			later.detaching()
+		})
+
+		// @spec components/infrastructure/fan/web/route/discovery "Onboarding opens on the artist bubbles"
+		it('opens on the bubbles while the fan is onboarding, whatever was used last', () => {
+			localStorage.setItem('discovery.view', 'nearby')
+			mockOnboarding.isOnboarding = true
+			const onboarding = buildSut()
+			onboarding.loading(undefined, routeTo())
+			expect(onboarding.view).toBe('artists')
+		})
+
+		// @spec components/infrastructure/fan/web/route/discovery "The device keeps nothing"
+		it('opens on the bubbles when the storage cannot be read or written', () => {
+			const denied = () => {
+				throw new DOMException('denied', 'SecurityError')
+			}
+			const read = vi.spyOn(localStorage, 'getItem').mockImplementation(denied)
+			const write = vi.spyOn(localStorage, 'setItem').mockImplementation(denied)
+			try {
+				sut.loading(undefined, routeTo())
+				expect(sut.view).toBe('artists')
+				expect(() => sut.switchView()).not.toThrow()
+				expect(sut.view).toBe('nearby')
+			} finally {
+				read.mockRestore()
+				write.mockRestore()
+			}
+		})
+
+		// @spec components/infrastructure/fan/web/route/discovery "All Nearby view pauses the simulation"
+		it('pauses the bubbles on the All Nearby view and resumes them on the way back', () => {
+			sut.loading(undefined, routeTo())
+			sut.attached()
+			const canvas = sut.dnaOrbCanvas as unknown as {
+				pause: ReturnType<typeof vi.fn>
+				resume: ReturnType<typeof vi.fn>
+			}
+
+			sut.switchView()
+			expect(canvas.pause).toHaveBeenCalledOnce()
+			expect(canvas.resume).not.toHaveBeenCalled()
+
+			// Back while the document is visible: the bubbles run again.
+			sut.switchView()
+			expect(canvas.resume).toHaveBeenCalledOnce()
+
+			// A visibility change on the All Nearby view keeps them paused.
+			sut.switchView()
+			setHidden(false)
+			document.dispatchEvent(new Event('visibilitychange'))
+			expect(canvas.resume).toHaveBeenCalledOnce()
+
+			// Back while the document is hidden: they stay paused.
+			setHidden(true)
+			sut.switchView()
+			expect(canvas.resume).toHaveBeenCalledOnce()
+			sut.detaching()
+		})
+
+		// @spec components/infrastructure/fan/web/route/discovery "All Nearby view pauses the simulation"
+		it('does not resume the bubbles under search mode', () => {
+			sut.loading(undefined, routeTo('view=nearby'))
+			sut.search.isSearchMode = true
+			sut.switchView()
+			expect(sut.dnaOrbCanvas.resume).not.toHaveBeenCalled()
+		})
+
+		// @spec components/infrastructure/fan/web/route/discovery "The bubble field is kept while the All Nearby view is shown"
+		it('keeps the bubble field and the follows across a switch and back', async () => {
+			;(mockArtistClient.listTop as ReturnType<typeof vi.fn>).mockResolvedValue(
+				[makeArtist('a1', 'Artist One'), makeArtist('a2', 'Artist Two')],
+			)
+			sut.loading(undefined, routeTo())
+			await sut.refreshField()
+			simulateFollow(mockFollowClient, makeArtist('f1', 'Followed'))
+			const field = sut.bubbleStore.field.map((a) => a.id)
+
+			sut.switchView()
+			sut.switchView()
+
+			expect(sut.bubbleStore.field.map((a) => a.id)).toEqual(field)
+			expect(sut.followedIds.has('f1')).toBe(true)
+		})
+
+		it('keeps the All Nearby visit across switches within a visit', () => {
+			sut.loading(undefined, routeTo())
+			const visit = sut.nearbyVisit
+			visit.areaCode = 'JP-43'
+			sut.switchView()
+			sut.switchView()
+			expect(sut.nearbyVisit).toBe(visit)
+			expect(buildSut().nearbyVisit.areaCode).toBeNull()
+		})
+
+		it('ignores a tap while the previous swap is still revealing', () => {
+			let finish: () => void = () => {}
+			const start = vi.fn((cb: () => void) => {
+				cb()
+				return {
+					finished: new Promise<void>((r) => {
+						finish = r
+					}),
+				}
+			})
+			Object.assign(document, { startViewTransition: start })
+			try {
+				sut.loading(undefined, routeTo())
+				sut.switchView()
+				expect(sut.view).toBe('nearby')
+				expect(sut.revealing).toBe(true)
+
+				// A second tap during the reveal changes nothing.
+				sut.switchView()
+				expect(start).toHaveBeenCalledOnce()
+				expect(sut.view).toBe('nearby')
+				finish()
+			} finally {
+				delete (document as { startViewTransition?: unknown })
+					.startViewTransition
+			}
+		})
+
+		// @spec components/infrastructure/fan/web/global/bottom-sheet "Follow prompt for unauthenticated user"
+		it('shows the sign-up prompt banner when a guest taps follow in the All Nearby view', () => {
+			sut.offerSignUp()
+			expect(sut.showSignupBanner).toBe(true)
+			sut.onSignupRequested()
+			expect(mockAuth.signUp).toHaveBeenCalledWith(
+				expect.objectContaining({ source: 'all_nearby_prompt' }),
+			)
+
+			mockAuth.isAuthenticated = true
+			const signedIn = buildSut()
+			signedIn.offerSignUp()
+			expect(signedIn.showSignupBanner).toBe(false)
+		})
+
+		it('hides the onboarding progress row on the All Nearby view', () => {
+			mockOnboarding.isOnboarding = true
+			const onboarding = buildSut()
+			onboarding.loading(undefined, routeTo())
+			expect(onboarding.showProgressRow).toBe(true)
+			onboarding.switchView()
+			expect(onboarding.showProgressRow).toBe(false)
 		})
 	})
 

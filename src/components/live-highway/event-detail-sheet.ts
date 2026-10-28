@@ -201,14 +201,17 @@ export class EventDetailSheet {
 		this.isOpen = true
 
 		if (this.manageHistory) {
-			// The dashboard URL the fan is on, filters included, so closing can
-			// return to exactly it. Only when the sheet was closed: opening another
-			// concert over an open sheet keeps the URL from before the first one.
+			// The address the fan is on, its query included (the dashboard's
+			// filters, Discovery's `view=nearby`), so closing returns to exactly
+			// it. A deep-linked `/concerts/:id` has no list address of its own
+			// yet and returns to the dashboard. Only when the sheet was closed:
+			// opening another concert over an open sheet keeps the address from
+			// before the first one.
 			if (!alreadyOpen) {
 				const { pathname, search } = window.location
-				this.returnUrl = pathname.startsWith('/dashboard')
-					? `${pathname}${search}`
-					: '/dashboard'
+				this.returnUrl = pathname.startsWith('/concerts/')
+					? '/dashboard'
+					: `${pathname}${search}`
 			}
 			// Push URL without triggering Aurelia Router navigation — the sheet is an
 			// overlay on the dashboard, not a separate route component. A full navigation
@@ -233,10 +236,10 @@ export class EventDetailSheet {
 	}
 
 	/**
-	 * Programmatic close — returns to the dashboard URL the fan was on when the
-	 * sheet opened, filters included, when this sheet manages history. A bare
-	 * `/dashboard` here would drop the filters still shown behind the sheet, so a
-	 * reload or a shared link would show a different timetable.
+	 * Programmatic close — returns to the address the fan was on when the sheet
+	 * opened, query included, when this sheet manages history. A bare
+	 * `/dashboard` here would drop the filters still shown behind the sheet, and
+	 * on Discovery it would leave the page altogether on a reload.
 	 */
 	public close(): void {
 		if (!this.isOpen) return

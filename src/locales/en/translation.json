@@ -179,6 +179,7 @@
 			"subtitle": "Follow a few artists and their upcoming shows appear here.",
 			"cta": "Find Artists"
 		},
+		"nearbyCta": "See shows near you",
 		"error": {
 			"load": "Failed to load live events"
 		}
@@ -271,7 +272,11 @@
 		"resetBubbles": "Reset to top artists",
 		"resetFailed": "Failed to reset discovery view",
 		"genreLoadFailed": "Couldn't load {{tag}} artists",
-		"searchFailed": "Search couldn't complete — your connection may be unstable. Wait a moment and try again."
+		"searchFailed": "Search couldn't complete — your connection may be unstable. Wait a moment and try again.",
+		"swap": {
+			"toNearby": "Near you",
+			"toArtists": "Artists"
+		}
 	},
 	"errorBanner": {
 		"reportCooldown": "Please wait a moment before opening the email again.",
@@ -552,6 +557,8 @@
 			"description": "Tap a bubble to follow an artist.",
 			"genreTip": "Filter by genre using the tabs",
 			"searchTip": "Search by name using the search bar",
+			"nearbySectionTitle": "Near you",
+			"nearbyDesc": "Tap the tile beside the orb to see the concerts in an area and period you choose, including artists you don’t follow yet. Open a concert to follow its artist.",
 			"unfollowSectionTitle": "Unfollowing",
 			"unfollowDesc": "You can unfollow from the My Artists page."
 		},
@@ -782,11 +789,6 @@
 		}
 	},
 	"allNearby": {
-		"modeToggle": {
-			"groupLabel": "Switch concert view",
-			"timetable": "My Timetable",
-			"allNearby": "All Nearby"
-		},
 		"filterBar": {
 			"label": "Filter by area and dates"
 		},
@@ -813,8 +815,7 @@
 		},
 		"empty": {
 			"title": "No concerts found for this area and dates",
-			"subtitle": "Try a wider date range or a different area.",
-			"discoverLink": "Discover Artists"
+			"subtitle": "Try a wider date range or a different area."
 		},
 		"follow": {
 			"action": "Follow this artist",

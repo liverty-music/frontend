@@ -61,6 +61,8 @@ describe('EventDetailSheet', () => {
 	}
 
 	beforeEach(() => {
+		// Opened from the dashboard; closing returns to the address it opened on.
+		window.history.replaceState(null, '', '/dashboard')
 		mockHistory = createMockHistory()
 		mockAnalytics = {
 			capture: vi.fn(),

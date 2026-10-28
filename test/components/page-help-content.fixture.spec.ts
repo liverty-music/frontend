@@ -51,11 +51,17 @@ async function render(page: PageHelpPage, lng: 'ja' | 'en' = 'ja') {
 
 describe('page help content', () => {
 	// @spec components/infrastructure/fan/web/global/page-help "Discovery help content"
-	it('Discovery: finding artists and unfollowing', async () => {
+	it('Discovery: finding artists, concerts near you and unfollowing', async () => {
 		const { host, titles, text } = await render('discovery')
 		const t = ja.pageHelp.discovery
 
-		expect(titles).toEqual([t.findingSectionTitle, t.unfollowSectionTitle])
+		expect(titles).toEqual([
+			t.findingSectionTitle,
+			t.nearbySectionTitle,
+			t.unfollowSectionTitle,
+		])
+		expect(t.nearbySectionTitle).toBe('近くのライブ')
+		expect(text).toContain(t.nearbyDesc)
 		expect(text).toContain(t.description)
 		expect(host.querySelector('.page-help-chip-demo')).not.toBeNull()
 		expect(
