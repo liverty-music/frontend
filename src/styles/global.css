@@ -131,27 +131,45 @@
 		animation: none;
 	}
 
-	/* Discovery's swap tile: the new view grows as a circle out of the tile,
-	   over the old one. The route names its layout `discovery-view` only for
-	   the swap and publishes the tile's centre as --swap-x / --swap-y. */
+	/* Discovery's swap tile: the view turns over like a card, the same half
+	   turn as the tile's arrows. The old view turns edge-on, then the new one
+	   turns in from the other edge, so the two never show at once. The route
+	   names its layout `discovery-view` only for the swap. */
+	::view-transition-image-pair(discovery-view) {
+		perspective: 1200px;
+	}
+
 	::view-transition-old(discovery-view) {
-		animation: none;
+		backface-visibility: hidden;
+		animation: 300ms cubic-bezier(0.4, 0, 1, 1) both discovery-flip-out;
 	}
 
 	::view-transition-new(discovery-view) {
-		animation: discovery-reveal 520ms cubic-bezier(0.2, 0, 0, 1) both;
+		backface-visibility: hidden;
+		animation: 300ms cubic-bezier(0, 0, 0.2, 1) 300ms both discovery-flip-in;
 	}
 
-	@keyframes discovery-reveal {
-		from {
-			clip-path: circle(0 at var(--swap-x, 50%) var(--swap-y, 100%));
-		}
-
+	@keyframes discovery-flip-out {
 		to {
-			clip-path: circle(150% at var(--swap-x, 50%) var(--swap-y, 100%));
+			transform: rotateY(90deg);
+		}
+	}
+
+	@keyframes discovery-flip-in {
+		from {
+			transform: rotateY(-90deg);
 		}
 	}
 	/* stylelint-enable cube/prefer-where-in-reset */
+
+	/* A named snapshot paints above the root one, and the FAB overlaps the
+	   route area, so a route that names part of itself (vt-suppress-root)
+	   would draw over the FAB's upper half. Naming the FAB too keeps it on
+	   top: snapshots paint in the order of their elements, and the FAB is in
+	   the top layer. */
+	:where(:root.vt-suppress-root) {
+		--fab-transition-name: fab-toggle;
+	}
 
 	/* While a snack bar is open or a persistent bottom banner (signup prompt or
 	   install banner) is visible, the FAB sinks into the navigation bar's notch

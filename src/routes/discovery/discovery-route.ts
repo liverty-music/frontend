@@ -72,9 +72,6 @@ export class DiscoveryRoute {
 	 */
 	public readonly nearbyVisit = new NearbyVisit()
 
-	/** The swap tile; the All Nearby view grows out of its centre. */
-	public swapTile: HTMLElement | undefined
-
 	/** True while a swap's View Transition runs (names the layout for it). */
 	public revealing = false
 
@@ -343,9 +340,9 @@ export class DiscoveryRoute {
 	// --- Swap between the artist bubbles and the All Nearby view ---
 
 	/**
-	 * The swap tile was tapped. The new view grows as a circle out of the tile
-	 * inside a View Transition; without the API, or with a reduced-motion
-	 * preference, it changes at once. The callback flushes Aurelia's queue
+	 * The swap tile was tapped. The view turns over like a card, the same half
+	 * turn as the tile's arrows, inside a View Transition; without the API, or
+	 * with a reduced-motion preference, it changes at once. The callback flushes Aurelia's queue
 	 * synchronously (`runTasks()`) and returns nothing: the browser suspends
 	 * rAF while it snapshots, so a promise settled on a frame would never
 	 * resolve and the transition would time out.
@@ -366,10 +363,9 @@ export class DiscoveryRoute {
 			this.applyView(next)
 			return
 		}
-		this.markRevealOrigin()
 		// Name the layout before the old snapshot is taken, so the old and new
-		// views pair up and only the new one animates; the page chrome swaps
-		// without a cross-fade.
+		// views pair up and turn over; the page chrome swaps without a
+		// cross-fade.
 		const root = document.documentElement
 		root.classList.add('vt-suppress-root')
 		this.revealing = true
@@ -382,16 +378,6 @@ export class DiscoveryRoute {
 			root.classList.remove('vt-suppress-root')
 			this.revealing = false
 		})
-	}
-
-	/** Publish the tile's centre for the reveal's circle (see global.css). */
-	private markRevealOrigin(): void {
-		const tile = this.swapTile?.getBoundingClientRect()
-		const layout = this.swapTile?.parentElement?.getBoundingClientRect()
-		if (!tile || !layout) return
-		const style = document.documentElement.style
-		style.setProperty('--swap-x', `${tile.x + tile.width / 2 - layout.x}px`)
-		style.setProperty('--swap-y', `${tile.y + tile.height / 2 - layout.y}px`)
 	}
 
 	/**

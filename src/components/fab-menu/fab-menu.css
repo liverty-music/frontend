@@ -70,6 +70,11 @@
 				scale var(--md-spring-spatial-duration) var(--md-spring-spatial),
 				transform var(--md-spring-spatial-fast-duration)
 				var(--md-spring-spatial-fast);
+
+			/* Named while a route animates part of itself in a View
+			   Transition (global.css), so the FAB keeps its own snapshot above
+			   the animated part instead of being painted under it. */
+			view-transition-name: var(--fab-transition-name, none);
 		}
 
 		.fab-toggle:active {
