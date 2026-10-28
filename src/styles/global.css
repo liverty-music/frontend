@@ -163,12 +163,13 @@
 	}
 
 	/* While a snack bar is open, the room it takes above the route area: its
-	   gap above the navigation bar (or a bottom banner) and one snack row, the
-	   compact action button (2.25rem) with the snack's block padding. Content
-	   that floats over the route's bottom edge (the Discovery swap tile) keeps
-	   clear of it from the first frame, with no measuring script. */
+	   gap above the navigation bar (or a bottom banner) and a snack whose
+	   message runs to two lines (68px at 375px wide; a one-line snack with
+	   its action button is 53px). Content that floats over the route's bottom
+	   edge (the Discovery swap tile) keeps clear of it from the first frame,
+	   with no measuring script. */
 	:where(:root:has(.snack-item:popover-open)) {
-		--snack-stack-height: calc(var(--space-s) + 2.25rem + 2 * var(--space-2xs));
+		--snack-stack-height: calc(var(--space-s) + 4.5rem);
 	}
 
 	/* While a bottom banner shows, its height is published for the route area

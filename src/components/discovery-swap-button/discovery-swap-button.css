@@ -30,13 +30,11 @@
 			transition: scale 160ms ease;
 		}
 
-		/* Tile over its label; the label names where a tap leads. */
+		/* The tile alone; its hidden label names where a tap leads. */
 		.discovery-swap-button {
 			cursor: pointer;
 
 			display: grid;
-			gap: var(--space-3xs);
-			justify-items: center;
 
 			padding: 0;
 			border: 0;
@@ -62,17 +60,14 @@
 			}
 		}
 
+		/* No outline by default: the global `svg { stroke: currentcolor }`
+		   would trace every arrow and letter in white. The parts that want a
+		   line (badge, rims, pin, perforation) set their own. */
 		.swap-icon {
 			overflow: visible;
 			inline-size: calc(var(--_tile-size) - 0.5rem);
 			block-size: calc(var(--_tile-size) - 0.5rem);
-		}
-
-		.swap-label {
-			font-size: var(--step--2);
-			font-weight: 600;
-			color: var(--color-text-secondary);
-			white-space: nowrap;
+			stroke: none;
 		}
 
 		/* ── Arrows: a half turn per tap, always the same way ── */
@@ -154,14 +149,19 @@
 		}
 
 		/* ── All Nearby glyph details (the LIVE text is sized in the SVG's
-		   own units by its presentation attributes) ── */
+		   own units by its presentation attributes, and fitted to the ticket's
+		   face with textLength) ── */
 		.swap-ticket-perforation {
 			stroke: oklch(30% 0.06 45deg / 55%);
 			stroke-dasharray: 1.4 1.4;
 			stroke-width: 1;
 		}
 
+		/* About 7px on screen: bold enough to read, with no outline to fill
+		   the counters in. */
 		.swap-ticket-text {
+			font-family: var(--font-display);
+			font-weight: 700;
 			fill: oklch(25% 0.06 45deg);
 		}
 

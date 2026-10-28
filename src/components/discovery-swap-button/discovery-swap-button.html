@@ -1,7 +1,7 @@
 <import from="./discovery-swap-button.css"></import>
 
-<!-- The label names the view a tap leads to, and is the button's accessible
-     name; the icon is decoration (aria-hidden). -->
+<!-- The icon is decoration (aria-hidden); the visually hidden label names
+     the view a tap leads to and is the button's accessible name. -->
 <button
   type="button"
   class="discovery-swap-button"
@@ -86,12 +86,12 @@
         <g transform="rotate(-14)">
           <path d="M-13 -7.5 H13 V-2.6 A2.6 2.6 0 0 0 13 2.6 V7.5 H-13 V2.6 A2.6 2.6 0 0 0 -13 -2.6 Z" fill="url(#swap-ticket)"></path>
           <path class="swap-ticket-perforation" d="M4.5 -6.2 V6.2"></path>
-          <text class="swap-ticket-text" x="-4.5" y="2" text-anchor="middle" font-family="system-ui, sans-serif" font-size="5.6" font-weight="800">LIVE</text>
+          <text class="swap-ticket-text" x="-3" y="2.1" text-anchor="middle" font-size="6" textLength="12.5" lengthAdjust="spacingAndGlyphs">LIVE</text>
         </g>
         <path class="swap-pin" d="M9 3 C6.2 0.2 4.2 -1.8 4.2 -4.4 A4.8 4.8 0 1 1 13.8 -4.4 C13.8 -1.8 11.8 0.2 9 3 Z"></path>
         <circle class="swap-pin-hole" cx="9" cy="-4.6" r="1.7"></circle>
       </g>
     </svg>
   </span>
-  <span class="swap-label" t.bind="labelKey"></span>
+  <span class="visually-hidden" t.bind="labelKey"></span>
 </button>
