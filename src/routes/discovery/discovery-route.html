@@ -114,6 +114,7 @@
       if.bind="view === 'nearby'"
       class="nearby-view"
       visit.bind="nearbyVisit"
+      on-signup-requested.bind="() => offerSignUp()"
     ></nearby-concerts>
 
     <!-- Swap tile beside the orb, in the band under the bubbles' floor that no
@@ -134,4 +135,13 @@
       textcontent.bind="srStatusText"
     ></output>
   </main>
+
+  <!-- Sign-up prompt for a guest who tapped follow in the All Nearby view.
+       Outside <main>: the banner is fixed to the viewport, and the layout is
+       a size container that would become its containing block. -->
+  <signup-prompt-banner
+    visible.bind="showSignupBanner && !isAuthenticated"
+    message.bind="i18n.tr('myArtists.signupBanner.message')"
+    signup-requested.trigger="onSignupRequested()"
+  ></signup-prompt-banner>
 </template>

@@ -31,6 +31,7 @@ const mockIFollowStore = DI.createInterface('IFollowStore')
 const mockIConcertStore = DI.createInterface('IConcertStore')
 const mockIRouter = DI.createInterface('IRouter')
 const mockIOnboardingService = DI.createInterface('IOnboardingService')
+const mockIAuthService = DI.createInterface('IAuthService')
 
 // The real module (other code imports its IRouterEvents) with IRouter
 // swapped; the getter defers the read past this hoisted factory.
@@ -55,6 +56,10 @@ vi.mock('../../src/services/concert-store', () => ({
 
 vi.mock('../../src/services/onboarding-service', () => ({
 	IOnboardingService: mockIOnboardingService,
+}))
+
+vi.mock('../../src/services/auth-service', () => ({
+	IAuthService: mockIAuthService,
 }))
 
 vi.mock('../../src/routes/discovery/discovery-route.css?raw', () => ({
@@ -100,6 +105,7 @@ describe('DiscoveryRoute', () => {
 	let mockEa: ReturnType<typeof createMockEventAggregator>
 	let mockRouter: ReturnType<typeof createMockRouter>
 	let mockHistory: ReturnType<typeof createMockHistory>
+	let mockAuth: { isAuthenticated: boolean; signUp: ReturnType<typeof vi.fn> }
 	let mockOnboarding: {
 		isOnboarding: boolean
 		isCompleted: boolean
@@ -121,6 +127,7 @@ describe('DiscoveryRoute', () => {
 			Registration.instance(mockIOnboardingService, mockOnboarding),
 			Registration.instance(IAnalyticsService, mockAnalytics),
 			Registration.instance(IHistory, mockHistory),
+			Registration.instance(mockIAuthService, mockAuth),
 		)
 		container.register(DiscoveryRoute)
 		const route = container.get(DiscoveryRoute)
@@ -142,6 +149,7 @@ describe('DiscoveryRoute', () => {
 		resetRevealEntryForTests()
 		localStorage.clear()
 		mockHistory = createMockHistory()
+		mockAuth = { isAuthenticated: false, signUp: vi.fn() }
 
 		mockArtistClient = createMockArtistServiceClient()
 		mockFollowClient = createMockFollowStore()
@@ -1055,6 +1063,7 @@ describe('DiscoveryRoute', () => {
 					Registration.instance(IEventAggregator, mockEa),
 					Registration.instance(mockIRouter, mockRouter),
 					Registration.instance(mockIOnboardingService, mockOnboarding),
+					Registration.instance(mockIAuthService, mockAuth),
 					Registration.instance(IAnalyticsService, mockAnalytics),
 					Registration.instance(I18N, createMockI18n()),
 					Registration.instance(IAppConfig, createMockAppConfig()),
@@ -1556,6 +1565,49 @@ describe('DiscoveryRoute', () => {
 			sut.switchView()
 			expect(sut.nearbyVisit).toBe(visit)
 			expect(buildSut().nearbyVisit.areaCode).toBeNull()
+		})
+
+		it('ignores a tap while the previous swap is still revealing', () => {
+			let finish: () => void = () => {}
+			const start = vi.fn((cb: () => void) => {
+				cb()
+				return {
+					finished: new Promise<void>((r) => {
+						finish = r
+					}),
+				}
+			})
+			Object.assign(document, { startViewTransition: start })
+			try {
+				sut.loading(undefined, routeTo())
+				sut.switchView()
+				expect(sut.view).toBe('nearby')
+				expect(sut.revealing).toBe(true)
+
+				// A second tap during the reveal changes nothing.
+				sut.switchView()
+				expect(start).toHaveBeenCalledOnce()
+				expect(sut.view).toBe('nearby')
+				finish()
+			} finally {
+				delete (document as { startViewTransition?: unknown })
+					.startViewTransition
+			}
+		})
+
+		// @spec components/infrastructure/fan/web/global/bottom-sheet "Follow prompt for unauthenticated user"
+		it('shows the sign-up prompt banner when a guest taps follow in the All Nearby view', () => {
+			sut.offerSignUp()
+			expect(sut.showSignupBanner).toBe(true)
+			sut.onSignupRequested()
+			expect(mockAuth.signUp).toHaveBeenCalledWith(
+				expect.objectContaining({ source: 'all_nearby_prompt' }),
+			)
+
+			mockAuth.isAuthenticated = true
+			const signedIn = buildSut()
+			signedIn.offerSignUp()
+			expect(signedIn.showSignupBanner).toBe(false)
 		})
 
 		it('hides the onboarding progress row on the All Nearby view', () => {

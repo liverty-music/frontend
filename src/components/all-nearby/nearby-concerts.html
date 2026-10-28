@@ -54,12 +54,6 @@
   on-signup-requested.bind="() => onFollowSignupRequested()"
 ></event-detail-sheet>
 
-<signup-prompt-banner
-  visible.bind="showSignupBanner && !isAuthenticated"
-  message.bind="i18n.tr('myArtists.signupBanner.message')"
-  signup-requested.trigger="onSignupRequested()"
-></signup-prompt-banner>
-
 <!-- Area override for this visit; never saved to the account or the device. -->
 <user-home-selector
   component.ref="areaSelector"

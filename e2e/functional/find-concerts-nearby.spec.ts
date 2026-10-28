@@ -287,7 +287,15 @@ test(`@spec ${STORY} "Guest taps follow"`, async ({ page }) => {
 	await cardOf(page, ARTISTS.kumamoto.name).click({ timeout: 15_000 })
 	await page.getByRole('button', { name: 'このアーティストをフォロー' }).click()
 
-	await expect(page.locator('.signup-banner')).toBeVisible()
+	const banner = page.locator('.signup-banner')
+	await expect(banner).toBeVisible()
+	// Docked on the navigation bar across the full width, as on every other
+	// screen — not anchored to Discovery's layout box.
+	const b = await page.locator('signup-prompt-banner').boundingBox()
+	const nav = await page.locator('bottom-nav-bar nav').boundingBox()
+	expect(b && nav && Math.abs(b.y + b.height - nav.y)).toBeLessThanOrEqual(1)
+	expect(b?.x).toBe(0)
+	expect(b?.width).toBe(390)
 	expect(callsOf(calls, 'FollowService/Follow')).toEqual([])
 	expect(
 		await page.evaluate(() => localStorage.getItem('guest.followedArtists')),

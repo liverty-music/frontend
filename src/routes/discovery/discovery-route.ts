@@ -28,11 +28,14 @@ import {
 } from '../../lib/analytics/analytics-service'
 import { IArtistBubbleStore } from '../../services/artist-bubble-store'
 import { IArtistStore } from '../../services/artist-store'
+import { IAuthService } from '../../services/auth-service'
 import { IConcertStore } from '../../services/concert-store'
+import { IErrorBoundaryService } from '../../services/error-boundary-service'
 import { helpAction, IFabMenuService } from '../../services/fab-menu-service'
 import { IFollowStore } from '../../services/follow-store'
 import { IOnboardingService } from '../../services/onboarding-service'
 import { IResumeRevalidator } from '../../services/resume-revalidator'
+import { currentLanguage } from '../../util/change-locale'
 import { GenreFilterController } from './genre-filter-controller'
 import { detectRevealEntry, RevealTiming } from './reveal-timing'
 import { SearchController } from './search-controller'
@@ -48,6 +51,8 @@ export class DiscoveryRoute {
 	private readonly resumeRevalidator = resolve(IResumeRevalidator)
 	public readonly fabMenu = resolve(IFabMenuService)
 	private readonly history = resolve(IHistory)
+	private readonly authService = resolve(IAuthService)
+	private readonly errorBoundary = resolve(IErrorBoundaryService)
 	private readonly logger = resolve(ILogger).scopeTo('DiscoveryRoute')
 	public readonly i18n = resolve(I18N)
 
@@ -72,6 +77,27 @@ export class DiscoveryRoute {
 
 	/** True while a swap's View Transition runs (names the layout for it). */
 	public revealing = false
+
+	/** A guest tapped follow in the All Nearby view: offer sign-up. */
+	public showSignupBanner = false
+
+	public get isAuthenticated(): boolean {
+		return this.authService.isAuthenticated
+	}
+
+	/** A guest tapped follow in the All Nearby view. */
+	public offerSignUp(): void {
+		if (this.isAuthenticated) return
+		this.showSignupBanner = true
+	}
+
+	public onSignupRequested(): void {
+		this.errorBoundary.addBreadcrumb('action', 'start_sign_up')
+		this.authService.signUp({
+			uiLocales: currentLanguage(this.i18n),
+			source: 'all_nearby_prompt',
+		})
+	}
 
 	/** Help sheet ref; its trigger lives in the FAB launcher. */
 	public pageHelp: PageHelp | undefined
@@ -325,6 +351,10 @@ export class DiscoveryRoute {
 	 * resolve and the transition would time out.
 	 */
 	public switchView(): void {
+		// A tap while a swap is still revealing is ignored: a second View
+		// Transition would skip the first, whose cleanup would then clear the
+		// flags the second one still needs.
+		if (this.revealing) return
 		const next: DiscoveryView = this.view === 'nearby' ? 'artists' : 'nearby'
 		const doc = document as Document & {
 			startViewTransition?: (cb: () => void) => { finished: Promise<void> }

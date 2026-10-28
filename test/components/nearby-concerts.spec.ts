@@ -399,22 +399,21 @@ describe('NearbyConcerts', () => {
 
 	describe('follow from the detail sheet', () => {
 		// @spec components/infrastructure/fan/web/global/bottom-sheet "Follow prompt for unauthenticated user"
-		it('shows the sign-up prompt banner when a guest taps follow', () => {
+		it('asks the host to offer sign-up when a guest taps follow', () => {
 			mockAuth.isAuthenticated = false
 			const sut = build()
+			const offer = vi.fn()
+			sut.onSignupRequested = offer
 			sut.onFollowSignupRequested()
-			expect(sut.showSignupBanner).toBe(true)
-
-			sut.onSignupRequested()
-			expect(mockAuth.signUp).toHaveBeenCalledWith(
-				expect.objectContaining({ source: 'all_nearby_prompt' }),
-			)
+			expect(offer).toHaveBeenCalledOnce()
 		})
 
-		it('shows no banner for a signed-in fan', () => {
+		it('asks nothing for a signed-in fan', () => {
 			const sut = build()
+			const offer = vi.fn()
+			sut.onSignupRequested = offer
 			sut.onFollowSignupRequested()
-			expect(sut.showSignupBanner).toBe(false)
+			expect(offer).not.toHaveBeenCalled()
 		})
 	})
 })

@@ -8,10 +8,8 @@ import {
 } from '../../entities/user'
 import { IAuthService } from '../../services/auth-service'
 import { IConcertStore } from '../../services/concert-store'
-import { IErrorBoundaryService } from '../../services/error-boundary-service'
 import { IPurchasedTicketStore } from '../../services/purchased-ticket-store'
 import { IUserStore } from '../../services/user-store'
-import { currentLanguage } from '../../util/change-locale'
 import type { EventDetailSheet } from '../live-highway/event-detail-sheet'
 import type { DateGroup, LiveEvent } from '../live-highway/live-event'
 import type { UserHomeSelector } from '../user-home-selector/user-home-selector'
@@ -48,6 +46,13 @@ export class NearbyConcerts {
 	@bindable public visit: NearbyVisit = new NearbyVisit()
 
 	/**
+	 * Invoked when a guest taps the follow action. The host shows the sign-up
+	 * prompt banner, outside this view: the banner is fixed to the viewport,
+	 * and Discovery's layout is a container that would anchor it instead.
+	 */
+	@bindable public onSignupRequested?: () => void
+
+	/**
 	 * The date chip's label — a preset name (今週末 / 7日以内 / 30日以内) or a
 	 * localized range (e.g. `8/12〜8/20`), supplied by the date-range sheet
 	 * alongside the resolved range so the chip never re-derives it.
@@ -56,7 +61,6 @@ export class NearbyConcerts {
 	public dateGroups: DateGroup[] = []
 	public isLoading = false
 	public loadError: unknown = null
-	public showSignupBanner = false
 
 	public areaSelector: UserHomeSelector | undefined
 	public dateSheet: DateRangeSheet | undefined
@@ -69,7 +73,6 @@ export class NearbyConcerts {
 	public readonly i18n = resolve(I18N)
 	private readonly authService = resolve(IAuthService)
 	private readonly concertStore = resolve(IConcertStore)
-	private readonly errorBoundary = resolve(IErrorBoundaryService)
 	private readonly purchasedTickets = resolve(IPurchasedTicketStore)
 	private readonly router = resolve(IRouter)
 	public readonly userStore = resolve(IUserStore)
@@ -207,20 +210,12 @@ export class NearbyConcerts {
 
 	/**
 	 * A guest tapped the follow action. Following is the conversion moment, so
-	 * the sign-up prompt banner appears instead of a guest follow, keeping the
-	 * concert in view.
+	 * the host's sign-up prompt banner appears instead of a guest follow,
+	 * keeping the concert in view.
 	 */
 	public onFollowSignupRequested(): void {
 		if (this.isAuthenticated) return
-		this.showSignupBanner = true
-	}
-
-	public onSignupRequested(): void {
-		this.errorBoundary.addBreadcrumb('action', 'start_sign_up')
-		this.authService.signUp({
-			uiLocales: currentLanguage(this.i18n),
-			source: 'all_nearby_prompt',
-		})
+		this.onSignupRequested?.()
 	}
 
 	public detaching(): void {
