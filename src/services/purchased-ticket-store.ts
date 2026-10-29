@@ -29,6 +29,25 @@ export function countIssuedByEvent(
 }
 
 /**
+ * The Orders of the Issued tickets per event id: the fan's Paid Orders,
+ * whose TicketStock says which seat type the fan holds for the event.
+ */
+export function issuedOrderIdsByEvent(
+	tickets: readonly Ticket[],
+): Map<string, string[]> {
+	const ids = new Map<string, string[]>()
+	for (const t of tickets) {
+		const eventId = t.eventId?.value
+		const orderId = t.orderId?.value
+		if (!eventId || !orderId || t.status !== TicketStatus.ISSUED) continue
+		const list = ids.get(eventId) ?? []
+		if (!list.includes(orderId)) list.push(orderId)
+		ids.set(eventId, list)
+	}
+	return ids
+}
+
+/**
  * Single observable owner of the signed-in fan's purchased (Issued) ticket
  * counts per event id. The Dashboard's first-party cards and the Event page's
  * ticket section both read it, from one `TicketService.List` call per load.
@@ -44,6 +63,8 @@ export class PurchasedTicketStore {
 	private readonly ea = resolve(IEventAggregator)
 
 	@observable public countByEvent: Map<string, number> = new Map()
+	/** The Orders of the Issued tickets per event id. */
+	private orderIdsByEvent: Map<string, string[]> = new Map()
 
 	constructor() {
 		this.ea.subscribe(SignedOut, () => this.clear())
@@ -54,22 +75,30 @@ export class PurchasedTicketStore {
 		return eventId ? (this.countByEvent.get(eventId) ?? 0) : 0
 	}
 
+	/** The Orders of the Issued tickets the fan holds for one event. */
+	public orderIdsFor(eventId: string | undefined): readonly string[] {
+		return eventId ? (this.orderIdsByEvent.get(eventId) ?? []) : []
+	}
+
 	/**
 	 * Populate the store from the backend. Rejects when the RPC fails; callers
 	 * that must not fail on it (the Dashboard) fall back to an empty map.
 	 */
 	public async load(signal?: AbortSignal): Promise<Map<string, number>> {
 		if (!this.authService.isAuthenticated) {
+			this.orderIdsByEvent = new Map()
 			this.countByEvent = new Map()
 			return this.countByEvent
 		}
 		const tickets = await this.rpcClient.list(signal)
+		this.orderIdsByEvent = issuedOrderIdsByEvent(tickets)
 		this.countByEvent = countIssuedByEvent(tickets)
 		return this.countByEvent
 	}
 
 	/** Clear all purchased-ticket state (sign-out). */
 	public clear(): void {
+		this.orderIdsByEvent = new Map()
 		this.countByEvent = new Map()
 		this.logger.info('Purchased ticket state cleared')
 	}

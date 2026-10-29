@@ -1,5 +1,6 @@
 import {
 	confirmDialog,
+	connectError,
 	installConsole,
 	type RpcMocks,
 	SERIES,
@@ -9,8 +10,13 @@ import {
 	jst,
 	organizer,
 	payoutAccount,
+	type SeatTypeSpec,
+	type StockSpec,
 	salesOf,
+	seatType,
+	seatTypesOf,
 	seriesList,
+	stocksOf,
 	XX_TOUR,
 } from '../support/organizer-data'
 import { expect, type Page, test } from '../support/test'
@@ -45,8 +51,6 @@ const BASE: RpcMocks = {
 						method: 'LOTTERY',
 						start: jst('2026-10-20', '12:00'),
 						end: jst('2026-11-01', '23:59'),
-						price: 6800,
-						quantity: 1000,
 					},
 				])
 			: salesOf('none', []),
@@ -337,5 +341,177 @@ test.describe('publish or cancel the dates together', () => {
 		await page.keyboard.press('Escape')
 		await expect(page.getByRole('menu', { name: 'その他の操作' })).toBeHidden()
 		await expect(more).toBeFocused()
+	})
+})
+
+test.describe("the concert's seat types", () => {
+	const section = (page: Page) => page.getByTestId('seat-types')
+	const item = (page: Page, name: string) =>
+		section(page).locator('.seat-type').filter({ hasText: name })
+
+	/**
+	 * Seat types held in memory, and the stocks of each date (by event id), so
+	 * the page reads what it added or deleted.
+	 */
+	function seatTypeServer(
+		initial: SeatTypeSpec[] = [],
+		stocked: Record<string, StockSpec[]> = {},
+		concert: ConcertSpec = XX_TOUR,
+	) {
+		const seatTypes = [...initial]
+		let next = seatTypes.length
+		const rpc: RpcMocks = {
+			...BASE,
+			'SeriesService/List': seriesList([concert]),
+			'SeatTypeService/ListBySeries': () => ({
+				body: seatTypesOf('s-tour', seatTypes),
+			}),
+			'SeatTypeService/Create': (req) => {
+				const name = (req.name as { value: string }).value
+				if (seatTypes.some((t) => t.name === name)) {
+					return connectError('already_exists', 'seat type name taken', 409)
+				}
+				next += 1
+				const t: SeatTypeSpec = {
+					id: `seat-${next}`,
+					name,
+					price: Number((req.price as { value: string }).value),
+				}
+				seatTypes.push(t)
+				return { body: { seatType: seatType('s-tour', t) } }
+			},
+			'SeatTypeService/Delete': (req) => {
+				const id = (req.seatTypeId as { value: string }).value
+				if (
+					Object.values(stocked)
+						.flat()
+						.some((s) => s.seatType.id === id)
+				) {
+					return connectError('failed_precondition', 'seat type in use')
+				}
+				seatTypes.splice(
+					seatTypes.findIndex((t) => t.id === id),
+					1,
+				)
+				return { body: {} }
+			},
+			'TicketStockService/ListByEvent': (req) => {
+				const id = (req.eventId as { value: string }).value
+				return { body: stocksOf(id, stocked[id] ?? []) }
+			},
+		}
+		return { rpc, seatTypes }
+	}
+
+	async function add(page: Page, name: string, price: string) {
+		await section(page)
+			.getByLabel(/席種名/)
+			.fill(name)
+		await section(page).getByLabel(/価格/).fill(price)
+		await section(page).getByRole('button', { name: '席種を追加' }).click()
+	}
+
+	async function confirmAdd(page: Page) {
+		const dialog = confirmDialog(page, { name: /を追加しますか？/ })
+		await expect(dialog).toContainText('席種名と価格はあとから変えられません')
+		await dialog.getByRole('button', { name: '席種を追加' }).click()
+	}
+
+	test(`@spec ${SPEC} "Dome tour seat types"`, async ({ page }) => {
+		const server = seatTypeServer()
+		await openConcert(page, `${SERIES}/s-tour`, server.rpc)
+		await expect(
+			section(page).getByRole('heading', { level: 2, name: '席種' }),
+		).toBeVisible()
+
+		for (const [name, price] of [
+			['S席', '12000'],
+			['A席', '9000'],
+			['B席', '7000'],
+		]) {
+			await add(page, name, price)
+			await confirmAdd(page)
+			await expect(item(page, name)).toBeVisible()
+		}
+
+		await expect(section(page).locator('.seat-type-name')).toHaveText([
+			'S席',
+			'A席',
+			'B席',
+		])
+		await expect(item(page, 'S席')).toContainText('12,000円')
+		await expect(item(page, 'A席')).toContainText('9,000円')
+		await expect(item(page, 'B席')).toContainText('7,000円')
+		await expect(section(page)).toContainText(
+			'枚数は公演日ごとに、公演日の販売タブで決めます。',
+		)
+	})
+
+	test(`@spec ${SPEC} "Price mistake before stocking"`, async ({ page }) => {
+		const server = seatTypeServer([{ id: 'seat-s', name: 'S席', price: 1200 }])
+		const log = await openConcert(page, `${SERIES}/s-tour`, server.rpc)
+
+		await expect(item(page, 'S席')).toContainText('1,200円')
+		await item(page, 'S席').getByRole('button', { name: '削除' }).click()
+		await confirmDialog(page, { name: 'S席を削除しますか？' })
+			.getByRole('button', { name: '削除' })
+			.click()
+		await expect(item(page, 'S席')).toHaveCount(0)
+
+		await add(page, 'S席', '12000')
+		await confirmAdd(page)
+		await expect(item(page, 'S席')).toContainText('12,000円')
+		expect(
+			log.calls.find((c) => c.method === 'SeatTypeService/Delete')?.body,
+		).toEqual({ seatTypeId: { value: 'seat-s' } })
+	})
+
+	test(`@spec ${SPEC} "Seat type in use"`, async ({ page }) => {
+		const S: SeatTypeSpec = { id: 'seat-s', name: 'S席', price: 12000 }
+		const server = seatTypeServer([S], {
+			'e-1103': [{ id: 'stock-s', seatType: S, quantity: 300 }],
+		})
+		await openConcert(page, `${SERIES}/s-tour`, server.rpc)
+
+		await expect(item(page, 'S席')).toContainText(
+			'公演日に枚数があるため削除できません',
+		)
+		await expect(item(page, 'S席').getByRole('button')).toHaveCount(0)
+		await expect(item(page, 'S席').getByRole('textbox')).toHaveCount(0)
+	})
+
+	test(`@spec ${SPEC} "Name already used"`, async ({ page }) => {
+		const server = seatTypeServer([{ id: 'seat-s', name: 'S席', price: 12000 }])
+		const log = await openConcert(page, `${SERIES}/s-tour`, server.rpc)
+		await expect(item(page, 'S席')).toBeVisible()
+
+		await add(page, 'S席', '9000')
+
+		await expect(
+			section(page).locator('[data-field="seat-type-name"]'),
+		).toContainText('「S席」はこの公演の別の席種で使われています')
+		await expect(confirmDialog(page)).toHaveCount(0)
+		expect(log.calls.some((c) => c.method === 'SeatTypeService/Create')).toBe(
+			false,
+		)
+	})
+
+	test('offers neither action once every date is cancelled', async ({
+		page,
+	}) => {
+		const cancelled: ConcertSpec = {
+			...XX_TOUR,
+			events: XX_TOUR.events.map((e) => ({ ...e, state: 'CANCELLED' })),
+		}
+		const server = seatTypeServer(
+			[{ id: 'seat-s', name: 'S席', price: 12000 }],
+			{},
+			cancelled,
+		)
+		await openConcert(page, `${SERIES}/s-tour`, server.rpc)
+
+		await expect(item(page, 'S席')).toBeVisible()
+		await expect(section(page).getByRole('button')).toHaveCount(0)
+		await expect(section(page).getByLabel(/席種名/)).toHaveCount(0)
 	})
 })

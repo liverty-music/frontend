@@ -185,14 +185,39 @@
 		}
 
 		.event-sale,
+		.event-stock,
 		.event-resale {
 			--flow-space: var(--space-2xs);
 		}
 
-		.event-resale {
-			margin-block-start: var(--space-s);
+		.event-stocks {
+			--flow-space: var(--space-s);
+		}
+
+		/* Each seat type after the first is set off by a rule. */
+		.event-stock + .event-stock {
 			padding-block-start: var(--space-s);
 			border-block-start: 1px solid var(--color-border-subtle);
+		}
+
+		.event-stock-head {
+			--cluster-gap: var(--space-xs);
+			align-items: baseline;
+		}
+
+		.event-stock-name {
+			font-size: var(--step-1);
+			font-weight: 600;
+			color: var(--color-text-primary);
+		}
+
+		.event-sale-held {
+			font-weight: 600;
+			color: var(--color-text-primary);
+		}
+
+		.event-resale {
+			padding-block-start: var(--space-2xs);
 		}
 
 		.event-sale-name {

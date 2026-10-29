@@ -34,6 +34,55 @@
       <section class="focus" aria-labelledby="concert-events-heading">
         <h2 id="concert-events-heading" class="section-title">${'concert.events' & t}</h2>
         <data-list columns.bind="columns" rows.bind="rows" label.bind="'concert.events' & t" class="dates"></data-list>
+
+        <section class="[ seat-types ] [ flow ]" aria-labelledby="concert-seat-types-heading" data-testid="seat-types">
+          <h2 id="concert-seat-types-heading" class="section-title">${'seatType.title' & t}</h2>
+          <p class="note">${'seatType.note' & t}</p>
+          <div if.bind="seatTypeState === 'error'" class="message" role="alert">
+            <p>${'seatType.loadFailed' & t}</p>
+            <console-button variant="tonal" click.trigger="loadSeatTypes()">${'common.retry' & t}</console-button>
+          </div>
+          <template if.bind="seatTypeState === 'ready'">
+            <ul if.bind="seatTypes.length" class="seat-type-list" aria-labelledby="concert-seat-types-heading">
+              <li repeat.for="seatType of seatTypes; key: id" class="seat-type" data-seat-type.bind="seatType.id">
+                <span class="seat-type-name">${seatType.name}</span>
+                <span class="seat-type-price">${seatType.price | yen} ${'stock.taxIncluded' & t}</span>
+                <console-button
+                  if.bind="canEditSeatTypes && !seatType.stocked"
+                  variant="text"
+                  click.trigger="deleteSeatType(seatType)"
+                >${'common.delete' & t}</console-button>
+                <span if.bind="seatType.stocked" class="note">${'seatType.inUse' & t}</span>
+              </li>
+            </ul>
+            <p else class="message">${'seatType.empty' & t}</p>
+
+            <form if.bind="canEditSeatTypes" class="seat-type-form" novalidate submit.trigger="false">
+              <h3 class="form-title">${'seatType.add' & t}</h3>
+              <div class="row">
+                <console-field
+                  label.bind="'seatType.name' & t"
+                  value.bind="seatTypeForm.name"
+                  required.bind="true"
+                  placeholder.bind="'seatType.namePlaceholder' & t"
+                  error.bind="seatTypeError(seatTypeErrors.name, seatTypeSubmitted) || seatTypeProblem"
+                  data-field="seat-type-name"
+                ></console-field>
+                <console-field
+                  type="yen"
+                  label.bind="'seatType.price' & t"
+                  value.bind="seatTypeForm.price"
+                  required.bind="true"
+                  error.bind="seatTypeError(seatTypeErrors.price, seatTypeSubmitted)"
+                  data-field="seat-type-price"
+                ></console-field>
+              </div>
+              <div class="form-actions">
+                <console-button variant="outlined" icon="add" action.bind="() => addSeatType()" pending-label.bind="'common.saving' & t">${'seatType.add' & t}</console-button>
+              </div>
+            </form>
+          </template>
+        </section>
       </section>
 
       <aside class="supporting" aria-labelledby="concert-summary-heading">
@@ -83,5 +132,16 @@
       confirm-key="concert.cancelConcert"
       confirm-variant="danger"
     >${'concert.cancelConfirmBody' & t}</confirm-dialog>
+    <confirm-dialog
+      component.ref="addSeatTypeDialog"
+      heading-key="seatType.addConfirmTitle" heading-params.bind="addSeatTypeParams"
+      confirm-key="seatType.add"
+    >${'seatType.addConfirmBody' & t}</confirm-dialog>
+    <confirm-dialog
+      component.ref="deleteSeatTypeDialog"
+      heading-key="seatType.deleteConfirmTitle" heading-params.bind="{ name: seatTypeToDelete.name }"
+      confirm-key="common.delete"
+      confirm-variant="danger"
+    >${'seatType.deleteConfirmBody' & t}</confirm-dialog>
   </template>
 </section>

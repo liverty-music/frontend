@@ -303,19 +303,21 @@ describe('OSS licenses page renders in ja and en', () => {
 const TERMS_RESALE = {
 	ja: [
 		'第7条（公式リセール）',
-		'完売した場合にのみ開始されます',
-		'完売しなかった公演には公式リセールはなく',
+		'その席種が完売した場合にのみ開始されます',
+		'完売しなかった席種には公式リセールはなく',
 		'入場開始時（開演の3時間前）に締め切られます',
 		'10%のリセール手数料',
 		'購入時に利用したカードへ返金されます',
+		'購入されるか出品の受付が締め切られるまで取り消せます',
 	],
 	en: [
 		'7. Official Resale',
-		'opens only when tickets sold first come, first served sell out',
-		'A concert that does not sell out has no official resale',
+		'opens for a seat type of a concert only when that seat type sells out',
+		'A seat type that does not sell out has no official resale',
 		'Listing closes when admission to the concert opens, 3 hours before the start time',
 		'a resale fee of 10%',
 		'to the card you paid with',
+		'until it is bought or listing closes',
 	],
 } as const
 

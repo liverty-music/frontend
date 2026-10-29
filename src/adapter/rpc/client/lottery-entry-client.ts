@@ -5,7 +5,10 @@ import { IAppConfig } from '../../../config/app-config'
 import type { LotteryEntry } from '../../../entities/lottery-entry'
 import { IAuthService } from '../../../services/auth-service'
 import { createTransport } from '../../../services/grpc-transport'
-import { lotteryEntryFrom } from '../mapper/lottery-entry-mapper'
+import {
+	lotteryEntriesFrom,
+	lotteryEntryFrom,
+} from '../mapper/lottery-entry-mapper'
 
 export const ILotteryEntryRpcClient =
 	DI.createInterface<ILotteryEntryRpcClient>('ILotteryEntryRpcClient', (x) =>
@@ -24,7 +27,7 @@ export interface LotteryCardAuthorization {
 
 /**
  * The signed-in fan's lottery entries (`LotteryEntryService`). AuthorizeCard
- * opens a card authorization for a ticket count of a TicketType, and Confirm
+ * opens a card authorization for a ticket count of a sale's TicketStock, and Confirm
  * makes the Entered entry from it once the card is authenticated; no entry
  * exists before Confirm. The fan is the caller; no request names them.
  * ConnectErrors propagate to the caller, which tells the fan what happened.
@@ -42,13 +45,15 @@ export class LotteryEntryRpcClient {
 
 	/**
 	 * Saves the full name and phone number on the fan's account and opens a
-	 * card authorization for `count` tickets of the TicketType. Authorizing
-	 * again, for another count, opens a new card authorization.
+	 * card authorization for `count` tickets of the TicketStock in the
+	 * lottery sale. Authorizing again, for another count, opens a new card
+	 * authorization.
 	 * `referralCode` is the code of the referral link the fan came from, if
 	 * any; it goes with the card authorization onto the entry Confirm makes.
 	 */
 	public async authorizeCard(
-		ticketTypeId: string,
+		ticketSaleId: string,
+		ticketStockId: string,
 		count: number,
 		fullName: string,
 		phoneNumber: string,
@@ -56,12 +61,14 @@ export class LotteryEntryRpcClient {
 		signal?: AbortSignal,
 	): Promise<LotteryCardAuthorization> {
 		this.logger.info('Authorizing card for lottery entry', {
-			ticketTypeId,
+			ticketSaleId,
+			ticketStockId,
 			count,
 		})
 		const resp = await this.client.authorizeCard(
 			{
-				ticketTypeId: { value: ticketTypeId },
+				ticketSaleId: { value: ticketSaleId },
+				ticketStockId: { value: ticketStockId },
 				ticketCount: count,
 				fullName: { value: fullName },
 				phoneNumber: { value: phoneNumber },
@@ -91,18 +98,21 @@ export class LotteryEntryRpcClient {
 			{ signal },
 		)
 		if (!resp.lotteryEntry) throw new Error('Confirm returned no lottery entry')
-		return lotteryEntryFrom(resp.lotteryEntry)
+		return lotteryEntryFrom(resp.lotteryEntry, resp.order)
 	}
 
-	/** The fan's entry for the TicketType, if any (at most one). */
-	public async listByTicketType(
-		ticketTypeId: string,
+	/**
+	 * The fan's entries in the lottery sale, each with its TicketStock and
+	 * count: at most one per event the sale names.
+	 */
+	public async listBySale(
+		ticketSaleId: string,
 		signal?: AbortSignal,
 	): Promise<LotteryEntry[]> {
 		const resp = await this.client.listByTicketType(
-			{ ticketTypeId: { value: ticketTypeId } },
+			{ ticketSaleId: { value: ticketSaleId } },
 			{ signal },
 		)
-		return resp.lotteryEntries.map(lotteryEntryFrom)
+		return lotteryEntriesFrom(resp.lotteryEntries, resp.orders)
 	}
 }

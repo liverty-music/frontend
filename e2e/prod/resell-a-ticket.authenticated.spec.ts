@@ -6,8 +6,20 @@ import {
 	type Locator,
 	type Page,
 } from '@playwright/test'
-import { authorizeCard, fillPersonalDetails, holdTickets } from './checkout'
-import { listByEvent, openFirstCome, openFreshSale } from './sale'
+import {
+	authorizeCard,
+	fillPersonalDetails,
+	holdTickets,
+	openCheckout,
+	stockRow,
+} from './checkout'
+import {
+	fanTickets,
+	openFreshSale,
+	SOLD_OUT,
+	type SaleStock,
+	stockOf,
+} from './sale'
 import {
 	closeFan,
 	FAN_STATE,
@@ -15,65 +27,64 @@ import {
 	hasOrganizerSession,
 	organizerToken,
 	SECOND_FAN_STATE,
-	THIRD_FAN_STATE,
 	test,
 } from './session'
 
 /**
- * Story `resell-a-ticket` on PRODUCTION in Stripe test mode.
+ * Story `resell-a-ticket` on PRODUCTION in Stripe test mode: a ticket of a
+ * sold-out seat type is listed. Buying a listed ticket arrives with the change
+ * `resell-tickets-by-lottery`; until then no fan can buy one, and this spec
+ * checks that the event page offers no purchase.
  *
  * The listing fan is the prod E2E test user (`.auth/storageState.prod.json`);
- * the purchasing fan is a second fan (`.auth/storageState.prod.fan2.json`,
- * from `E2E_USERNAME=… E2E_STATE_FILE=storageState.prod.fan2.json npm run
- * auth:capture:password:prod`). "Two fans, one listing" also needs a third
- * fan (`.auth/storageState.prod.fan3.json`) and is skipped without it.
+ * a second fan (`.auth/storageState.prod.fan2.json`, from `E2E_USERNAME=…
+ * E2E_STATE_FILE=storageState.prod.fan2.json npm run
+ * auth:capture:password:prod`) looks at the event page.
  *
  * Needs a published Event of the test Organizer with a start time more than
  * a day away, by id in `E2E_RESALE_EVENT_ID`, on which neither fan holds
- * tickets, and the test Organizer's member session
- * (`.auth/storageState.organizer.prod.json`). The run opens its own first-come sale of 2 tickets
- * at 5000 yen on it (ending the event's open first-come sale first), and the
- * listing fan buys both, so the sale sells out and its resale opens.
+ * tickets, whose per-account limit is at least 2 (Events have 4 unless set
+ * otherwise while DRAFT; the limit is fixed once the Event is published), and
+ * the test Organizer's member session
+ * (`.auth/storageState.organizer.prod.json`). The run opens its own sale: a
+ * fresh SeatType of 5000 yen with a TicketStock of 2 tickets and a first-come
+ * sale on the Event (ending the Event's open first-come sale first). The
+ * listing fan buys both, so the stock sells out and its resale opens. Each run
+ * needs a new Event, unless the run ended right after the stock sold out (a
+ * rerun picks that stock up) (docs/prod-e2e-fixtures.md).
  *
- * The tests run in order and share the sale:
- *   1. Sold out, nothing listed: the event page shows 公式リセール, no action.
- *   2. The listing fan lists ticket 1 (5,000円 / 手数料 500円 / 返金 4,500円).
- *   3. The second fan buys it through the checkout's resale confirmation.
- *   4. The listing fan sees ticket 1 リセール済み and refunded within 2 minutes.
- *   5. The listing fan lists ticket 2 and withdraws it: 未入場, no resale offer.
- *   6. Purchase abandoned: ticket 2 listed again, the second fan holds it and
- *      leaves; 16 minutes later the event page offers it again.
- *   7. Two fans, one listing (third fan): one holds it, the other is told it
- *      is sold out for now.
+ * The tests run in order and share the stock:
+ *   1. Sold out with resale open: the event page shows 公式リセール, no action.
+ *   2. The listing fan lists ticket 1 (5,000円 / 手数料 500円 / 返金 4,500円);
+ *      ResaleListingService.List shows it Listed at 5000 yen and both
+ *      Tickets stay Issued and not admitted.
+ *   3. The listing fan withdraws it: 未入場, and still no purchase offered.
+ *
+ * "Lottery-won ticket listed" needs a drawn lottery and is covered by the
+ * backend story test.
  *
  * Run it in the pinned Playwright container with the host network:
  *   docker run --rm --network host -e E2E_RESALE_EVENT_ID=… \
  *     -v "$PWD":/work -w /work \
  *     mcr.microsoft.com/playwright:v1.64.1-noble \
  *     npx playwright test -c playwright.prod.config.mjs resell-a-ticket
- *
- * What a browser cannot see is checked separately against production: the
- * listing fan's sold email (`resale_listings.sold_email_send_at`), the
- * refund of 4500 yen on their original charge in the Stripe test dashboard,
- * the Voided listed Ticket, and the two Orders' Held settlements paying the
- * Organizer the same total as before the resale.
  */
 const EVENT_ID = process.env.E2E_RESALE_EVENT_ID ?? ''
+
+const API_BASE =
+	process.env.PROD_API_BASE_URL ?? 'https://api.liverty-music.app'
 
 /** Ticket states as shown in either display language (a fan's own setting). */
 const LISTED = /出品中|Listed for resale/
 const NOT_ENTERED = /未入場|Not entered/
-const RESOLD = /リセール済み|Resold/
-
-/** The checkout's 15-minute hold, plus a margin for the sweeper. */
-const HOLD_MS = 15 * 60 * 1000
-const MARGIN_MS = 60 * 1000
 
 test.describe.configure({ mode: 'serial' })
 
 test.describe('resell a ticket (signed in)', () => {
 	let second: BrowserContext
-	/** True when an earlier run already sold the sale out to the listing fan. */
+	/** The stock the run sells out: the fresh one, or one a rerun picks up. */
+	let saleStock: SaleStock = { id: '', seatTypeName: '' }
+	/** True when an earlier run already sold the stock out to the listing fan. */
 	let reused = false
 
 	test.beforeAll(async ({ request, browser, baseURL }) => {
@@ -82,15 +93,16 @@ test.describe('resell a ticket (signed in)', () => {
 				throw new Error(`${state} is missing: see the spec's header`)
 			}
 		}
-		// A rerun reuses the sale an earlier run sold out to the listing fan.
-		reused = await soldOutForResale(request)
-		if (EVENT_ID && hasOrganizerSession() && !reused) {
-			await openFreshSale(request, EVENT_ID, await organizerToken(browser), {
+		if (!EVENT_ID || !hasOrganizerSession()) return
+		// A rerun reuses the stock an earlier run sold out to the listing fan.
+		const soldOut = await soldOutForResale(request)
+		reused = soldOut !== null
+		saleStock =
+			soldOut ??
+			(await openFreshSale(request, EVENT_ID, await organizerToken(browser), {
 				price: 5000,
 				quantity: 2,
-				perAccountLimit: 2,
-			})
-		}
+			}))
 		second = await fanContext(browser, baseURL, SECOND_FAN_STATE)
 	})
 
@@ -105,15 +117,13 @@ test.describe('resell a ticket (signed in)', () => {
 		)
 	})
 
-	test('sells out to the listing fan; resale opens with nothing listed', async ({
+	test('sells out to the listing fan; resale opens and no purchase is offered', async ({
 		page,
 		request,
 	}) => {
 		test.setTimeout(5 * 60 * 1000)
 		if (!reused) {
-			await page.goto(`/events/${EVENT_ID}`)
-			await page.getByTestId('event-buy').click()
-			await expect(page.getByTestId('checkout-count')).toBeVisible()
+			await openCheckout(page, EVENT_ID, saleStock)
 			await holdTickets(page, 2)
 			await fillPersonalDetails(page)
 			await authorizeCard(page)
@@ -123,24 +133,25 @@ test.describe('resell a ticket (signed in)', () => {
 			})
 		}
 
-		const type = openFirstCome(await listByEvent(request, EVENT_ID, 'fan'))
-			?.ticketTypes[0]
-		expect(type?.state).toBe('TICKET_TYPE_STATE_SOLD_OUT')
-		expect(type?.resaleOpen).toBe(true)
+		const { stock } = stockOf(await fanTickets(request, EVENT_ID), saleStock.id)
+		expect(stock.state).toBe(SOLD_OUT)
+		expect(stock.resaleOpen).toBe(true)
 
-		// @spec components/infrastructure/fan/web/route/event "Sold out, nothing listed"
+		// @spec components/infrastructure/fan/web/route/event "Sold out with resale open"
 		const other = await second.newPage()
 		await other.goto(`/events/${EVENT_ID}`)
-		await expect(other.getByTestId('event-sale-sold-out')).toBeVisible()
-		await expect(other.getByTestId('event-resale-waiting')).toBeVisible()
-		await expect(other.getByTestId('event-resale-buy')).toHaveCount(0)
+		const row = stockRow(other, saleStock)
+		await expect(row.getByTestId('event-sale-sold-out')).toBeVisible()
+		await expect(row.getByTestId('event-resale-listing')).toBeVisible()
+		await expect(row.getByTestId('event-buy')).toHaveCount(0)
 		await other.close()
 	})
 
-	test('lists one ticket after showing the price, fee and refund', async ({
+	test('lists one of two tickets after showing the price, fee and refund', async ({
 		page,
 	}) => {
 		// @spec components/infrastructure/fan/web/route/tickets "Fan lists a ticket"
+		// @spec stories/resell-a-ticket "One of two tickets listed"
 		const cards = await eventCards(page)
 		await expect(cards).toHaveCount(2)
 		await cards.nth(0).getByTestId('tickets-list-for-resale').click()
@@ -155,163 +166,106 @@ test.describe('resell a ticket (signed in)', () => {
 		await expect(cards.nth(1).getByTestId('tickets-state')).toHaveText(
 			NOT_ENTERED,
 		)
+
+		// The listing is Listed at face value, and both Tickets stay valid for
+		// entry: Issued and not admitted.
+		const token = await accessToken(page)
+		const { resaleListings = [] } = await fanRpc<{
+			resaleListings?: {
+				ticketId: { value: string }
+				ticketStockId?: { value: string }
+				status: string
+				price: { value: string }
+			}[]
+		}>(page.request, 'resale_listing.v1.ResaleListingService/List', token)
+		const listed = resaleListings.filter(
+			(l) =>
+				l.ticketStockId?.value === saleStock.id &&
+				l.status === 'RESALE_LISTING_STATUS_LISTED',
+		)
+		expect(listed).toHaveLength(1)
+		expect(listed[0].price.value).toBe('5000')
+		const { tickets = [] } = await fanRpc<{
+			tickets?: {
+				eventId: { value: string }
+				status: string
+				admitTime?: string
+			}[]
+		}>(page.request, 'ticket.v1.TicketService/List', token)
+		const ofEvent = tickets.filter((t) => t.eventId.value === EVENT_ID)
+		expect(ofEvent).toHaveLength(2)
+		for (const t of ofEvent) {
+			expect(t.status).toBe('TICKET_STATUS_ISSUED')
+			expect(t.admitTime).toBeUndefined()
+		}
 	})
 
-	test('another fan buys the resale ticket at face value', async () => {
-		// @spec stories/resell-a-ticket "One of two tickets resold"
-		// @spec components/infrastructure/fan/web/route/event "Sold out with a resale ticket"
-		// @spec components/infrastructure/fan/web/route/checkout "Resale final confirmation"
-		test.setTimeout(5 * 60 * 1000)
-		const buyer = await second.newPage()
-		await buyer.goto(`/events/${EVENT_ID}`)
-		await expect(buyer.getByTestId('event-resale-price')).toContainText('5,000')
-		await buyer.getByTestId('event-resale-buy').click()
-		await expect(buyer.getByTestId('checkout-count')).toBeVisible()
-		await holdTickets(buyer, 1)
-		await fillPersonalDetails(buyer)
-		await authorizeCard(buyer)
-
-		await expect(
-			buyer.getByTestId('checkout-confirm-official-resale'),
-		).toContainText(/券面価格|face value/)
-		await expect(buyer.getByTestId('checkout-confirm-period')).toContainText(
-			/入場開始時|admission opens/,
-		)
-		const place = buyer.getByTestId('checkout-place-order')
-		await expect(place).toContainText('5,000')
-		await place.click()
-		await expect(buyer.getByTestId('checkout-done')).toBeVisible({
-			timeout: 60_000,
-		})
-
-		// The purchasing fan holds a new ticket for the event.
-		const bought = await eventCards(buyer)
-		await expect(bought).toHaveCount(1)
-		await expect(bought.nth(0).getByTestId('tickets-state')).toHaveText(
-			NOT_ENTERED,
-		)
-		await buyer.close()
-	})
-
-	test('shows the resold ticket refunded within 2 minutes', async ({
+	test('withdraws the listing; still no purchase is offered', async ({
 		page,
 	}) => {
-		// @spec stories/resell-a-ticket "One of two tickets resold"
-		// @spec components/infrastructure/fan/web/route/tickets "Refund made"
-		test.setTimeout(5 * 60 * 1000)
-		const deadline = Date.now() + 2 * 60 * 1000 + 30 * 1000
-		let cards = await eventCards(page)
-		await expect(cards.nth(0).getByTestId('tickets-state')).toHaveText(RESOLD)
-		while (
-			!(await cards.nth(0).getByTestId('tickets-resold').textContent())?.match(
-				/返金済み|Refunded on/,
-			) &&
-			Date.now() < deadline
-		) {
-			await page.waitForTimeout(15_000)
-			cards = await eventCards(page)
-		}
-		const resold = cards.nth(0).getByTestId('tickets-resold')
-		await expect(resold).toContainText('4,500')
-		await expect(resold).toContainText(/返金済み|Refunded on/)
-		await expect(cards.nth(1).getByTestId('tickets-state')).toHaveText(
-			NOT_ENTERED,
-		)
-	})
-
-	test('withdraws a listing nobody is buying', async ({ page }) => {
-		// @spec stories/resell-a-ticket "Withdrawn first"
 		// @spec components/infrastructure/fan/web/route/tickets "Fan withdraws"
 		const cards = await eventCards(page)
-		await listTicket(page, cards.nth(1))
-		await cards.nth(1).getByTestId('tickets-withdraw').click()
-		await expect(cards.nth(1).getByTestId('tickets-state')).toHaveText(
+		await expect(cards.nth(0).getByTestId('tickets-state')).toHaveText(LISTED)
+		await cards.nth(0).getByTestId('tickets-withdraw').click()
+		await expect(cards.nth(0).getByTestId('tickets-state')).toHaveText(
 			NOT_ENTERED,
 		)
 
 		const other = await second.newPage()
 		await other.goto(`/events/${EVENT_ID}`)
-		await expect(other.getByTestId('event-resale-waiting')).toBeVisible()
-		await expect(other.getByTestId('event-resale-buy')).toHaveCount(0)
+		const row = stockRow(other, saleStock)
+		await expect(row.getByTestId('event-resale-listing')).toBeVisible()
+		await expect(row.getByTestId('event-buy')).toHaveCount(0)
 		await other.close()
-	})
-
-	test('offers the listing again after a purchase is abandoned', async ({
-		page,
-	}) => {
-		// @spec stories/resell-a-ticket "Purchase abandoned"
-		test.setTimeout(HOLD_MS + 4 * MARGIN_MS + 5 * 60 * 1000)
-		const cards = await eventCards(page)
-		await listTicket(page, cards.nth(1))
-
-		const buyer = await second.newPage()
-		await buyer.goto(`/events/${EVENT_ID}`)
-		await buyer.getByTestId('event-resale-buy').click()
-		await holdTickets(buyer, 1)
-		await buyer.close()
-
-		const view = await second.newPage()
-		await view.goto(`/events/${EVENT_ID}`)
-		await expect(view.getByTestId('event-resale-waiting')).toBeVisible()
-
-		// The listing fan cannot withdraw it while it is held.
-		// @spec components/infrastructure/fan/web/route/tickets "Someone is buying it"
-		await cards.nth(1).getByTestId('tickets-withdraw').click()
-		await expect(cards.nth(1)).toContainText(/購入手続き中|buying this ticket/)
-		await expect(cards.nth(1).getByTestId('tickets-state')).toHaveText(LISTED)
-
-		await view.waitForTimeout(HOLD_MS + MARGIN_MS)
-		await view.reload()
-		await expect(view.getByTestId('event-resale-buy')).toBeVisible()
-		await view.close()
-	})
-
-	test('sells one listing to one of two fans and charges only that fan', async ({
-		browser,
-		baseURL,
-	}) => {
-		// @spec stories/resell-a-ticket "Two fans, one listing"
-		test.skip(!existsSync(THIRD_FAN_STATE), `${THIRD_FAN_STATE} is required`)
-		test.setTimeout(10 * 60 * 1000)
-		const third = await fanContext(browser, baseURL, THIRD_FAN_STATE)
-		const fans = [await second.newPage(), await third.newPage()]
-		for (const fan of fans) {
-			await fan.goto(`/events/${EVENT_ID}`)
-			await fan.getByTestId('event-resale-buy').click()
-			await fan.getByTestId('checkout-count-select').selectOption('1')
-		}
-		const starts = fans.map((fan) =>
-			fan.waitForResponse(/CheckoutService\/Start$/),
-		)
-		await Promise.all(
-			fans.map((fan) => fan.getByTestId('checkout-hold').click()),
-		)
-		const statuses = await Promise.all(
-			starts.map(async (start) => (await start).status()),
-		)
-		// One hold is made; the other Start fails with RESOURCE_EXHAUSTED (429)
-		// before any card is authorized.
-		expect(statuses.filter((s) => s === 200)).toHaveLength(1)
-		expect(statuses.filter((s) => s === 429)).toHaveLength(1)
-		const loser = fans[statuses.indexOf(429)]
-		await expect(loser.getByTestId('checkout-message')).toHaveText(
-			/現在売り切れです|Sold out for now/,
-		)
-		await closeFan(third, THIRD_FAN_STATE)
 	})
 })
 
 /**
- * True when the event's open first-come sale is already sold out with its
- * resale open, as an earlier run of this spec leaves it.
+ * The Event's stock that is already sold out with its resale open, as an
+ * earlier run of this spec leaves it, or null.
  */
-async function soldOutForResale(request: APIRequestContext): Promise<boolean> {
-	if (!EVENT_ID) return false
-	const type = openFirstCome(await listByEvent(request, EVENT_ID, 'fan'))
-		?.ticketTypes[0]
-	return (
-		type?.state === 'TICKET_TYPE_STATE_SOLD_OUT' && type.resaleOpen === true
+async function soldOutForResale(
+	request: APIRequestContext,
+): Promise<SaleStock | null> {
+	const tickets = await fanTickets(request, EVENT_ID)
+	const stock = tickets.stocks.find(
+		(s) => s.state === SOLD_OUT && s.resaleOpen === true,
 	)
+	if (!stock) return null
+	return {
+		id: stock.id.value,
+		seatTypeName: stockOf(tickets, stock.id.value).seatTypeName,
+	}
+}
+
+/** A fan RPC with an empty request, as the signed-in fan. */
+async function fanRpc<T>(
+	request: APIRequestContext,
+	method: string,
+	token: string,
+): Promise<T> {
+	const res = await request.post(`${API_BASE}/liverty_music.rpc.${method}`, {
+		data: {},
+		headers: {
+			'content-type': 'application/json',
+			authorization: `Bearer ${token}`,
+		},
+	})
+	if (!res.ok()) {
+		throw new Error(`${method} failed: ${res.status()} ${await res.text()}`)
+	}
+	return (await res.json()) as T
+}
+
+/** The signed-in fan's access token, as the app keeps it. */
+async function accessToken(page: Page): Promise<string> {
+	return page.evaluate(() => {
+		const key = Object.keys(localStorage).find((k) =>
+			k.startsWith('oidc.user:'),
+		)
+		const user = key ? JSON.parse(localStorage.getItem(key) ?? '{}') : {}
+		return (user as { access_token?: string }).access_token ?? ''
+	})
 }
 
 /** The fan's ticket cards for the event, on a freshly loaded Tickets screen. */
@@ -322,14 +276,4 @@ async function eventCards(page: Page): Promise<Locator> {
 	)
 	await expect(section).toBeVisible({ timeout: 30_000 })
 	return section.locator('li.tickets-card')
-}
-
-/** List the ticket of the card for official resale. */
-async function listTicket(page: Page, card: Locator): Promise<void> {
-	await card.getByTestId('tickets-list-for-resale').click()
-	await page
-		.getByTestId('tickets-resale-confirm')
-		.getByTestId('tickets-resale-confirm-list')
-		.click()
-	await expect(card.getByTestId('tickets-state')).toHaveText(LISTED)
 }

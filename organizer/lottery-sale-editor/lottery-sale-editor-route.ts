@@ -12,8 +12,10 @@ import {
 	findConcert,
 	findEvent,
 	paths,
+	perAccountLimitOf,
 	venueName,
 } from '../model/concert-model'
+import { type StockView, stockViewsOf } from '../model/stock-model'
 import { IClock } from '../services/clock'
 import { IOrganizerClient } from '../services/organizer-client'
 import { findOverlappingSale } from '../services/sale-window'
@@ -22,7 +24,7 @@ import {
 	ITicketSaleClient,
 	type TicketSale,
 } from '../services/ticket-sale-client'
-import { ITicketTypeClient } from '../services/ticket-type-client'
+import { ITicketStockClient } from '../services/ticket-stock-client'
 import { IBreadcrumbs } from '../shell/breadcrumbs'
 import { IConsoleContext } from '../shell/console-context'
 import { IPageProgress } from '../shell/page-progress'
@@ -34,7 +36,6 @@ import {
 	isFormValid,
 	type LotterySaleFormErrors,
 	type LotterySaleFormModel,
-	MAX_PER_ACCOUNT_LIMIT,
 	MAX_WINDOW_DAYS,
 	MIN_WINDOW_DAYS,
 	parseDateTime,
@@ -58,20 +59,20 @@ export function overlapError(sale: TicketSale): FieldError {
 /**
  * Starts a lottery sale for one event (`ticket-sales/new?method=lottery`) or
  * changes one before it opens (`ticket-sales/:saleId/edit`), opened by the
- * sale editor route: the window in Japan time, the
- * price, the quantity and the per-account limit. Opened from the event's Sales
- * tab and back there after saving or leaving; unsaved changes are guarded.
- * While the event is cancelled or unpublished, has no start time, or the
- * Organizer's business details are incomplete, it shows why instead of the
- * form, as the first-come editor does.
+ * sale editor route: the sale's name and its window in Japan time. It
+ * draws from every TicketStock of the event, listed with their seat types,
+ * prices and quantities, and the per-account limit is the event's. Opened
+ * from the event's Sales tab and back there after saving or leaving; unsaved
+ * changes are guarded. While the event is cancelled or unpublished, has no
+ * start time or no TicketStock, or the Organizer's business details are
+ * incomplete, it shows why instead of the form, as the first-come editor does.
  *
- * A change saves the window with SetWindow and the TicketType with Update,
- * skipping a call whose values did not change. When the second call fails the
- * editor stays open, says which part was not saved, and offers 再試行 (D13).
+ * A change saves only the window, with SetWindow, and nothing when it did not
+ * change.
  */
 export class LotterySaleEditorRoute {
 	private readonly ticketSales = resolve(ITicketSaleClient)
-	private readonly ticketTypes = resolve(ITicketTypeClient)
+	private readonly ticketStocks = resolve(ITicketStockClient)
 	private readonly series = resolve(ISeriesClient)
 	private readonly organizers = resolve(IOrganizerClient)
 	private readonly router = resolve(IRouter)
@@ -108,7 +109,8 @@ export class LotterySaleEditorRoute {
 
 	public readonly minWindowDays = MIN_WINDOW_DAYS
 	public readonly maxWindowDays = MAX_WINDOW_DAYS
-	public readonly maxLimit = MAX_PER_ACCOUNT_LIMIT
+	/** The event's TicketStocks: what the lottery draws from. */
+	public stocks: StockView[] = []
 
 	private existingSales: TicketSale[] = []
 	private sale: TicketSale | undefined
@@ -165,6 +167,11 @@ export class LotterySaleEditorRoute {
 		return this.event ? venueName(this.event) : ''
 	}
 
+	/** The event's per-account limit, across every sale and seat type. */
+	public get perAccountLimit(): number {
+		return this.event ? perAccountLimitOf(this.event) : 0
+	}
+
 	public get isDirty(): boolean {
 		return this.state === 'ready' && JSON.stringify(this.model) !== this.saved
 	}
@@ -214,31 +221,30 @@ export class LotterySaleEditorRoute {
 	private async load(): Promise<void> {
 		this.state = 'loading'
 		try {
-			const [concerts, organizer, sales] = await Promise.all([
+			const [concerts, organizer, sales, stocks] = await Promise.all([
 				this.series.list(this.abort.signal),
 				this.organizers.get(this.abort.signal),
 				this.ticketSales.listByEvent(this.eventId, this.abort.signal),
+				this.ticketStocks.listByEvent(this.eventId, this.abort.signal),
 			])
 			const concert = findConcert(concerts, this.seriesId)
 			this.event = findEvent(concert, this.eventId)
 			this.title = concert ? concertTitle(concert) : ''
 			this.existingSales = sales.ticketSales
+			this.stocks = stockViewsOf(stocks)
 			if (!this.event) {
 				this.state = 'notFound'
 				return
 			}
 			this.setBreadcrumb()
-			this.blocks = saleBlocksOf(this.event, organizer)
+			this.blocks = saleBlocksOf(this.event, organizer, this.stocks.length)
 			if (this.blocks.length > 0) {
 				this.state = 'blocked'
 				return
 			}
 			if (this.isChange) {
 				this.sale = this.existingSales.find((s) => s.id?.value === this.saleId)
-				const type = this.sale?.ticketTypes.find(
-					(t) => t.eventId?.value === this.eventId,
-				)
-				if (!this.sale || !type) {
+				if (!this.sale) {
 					this.state = 'notFound'
 					return
 				}
@@ -254,9 +260,6 @@ export class LotterySaleEditorRoute {
 					saleEnd: this.sale.saleEndTime
 						? toDateTime(timestampDate(this.sale.saleEndTime))
 						: emptyJstDateTime(),
-					quantity: String(type.quantity ?? ''),
-					perAccountLimit: String(type.perAccountLimit),
-					price: String(type.price?.value ?? ''),
 				}
 			} else {
 				this.model = emptyFormModel(new Date(this.clock.now()))
@@ -323,13 +326,10 @@ export class LotterySaleEditorRoute {
 		}
 	}
 
-	/** Window first, TicketType second; each only when it changed (D13). */
+	/** Only the window changes; nothing is sent when it did not (D13). */
 	private async saveChange(): Promise<void> {
 		const sale = this.sale
-		const type = sale?.ticketTypes.find(
-			(t) => t.eventId?.value === this.eventId,
-		)
-		if (!sale || !type) return
+		if (!sale) return
 		if (this.hasOpened(sale)) {
 			this.saveProblem = 'lotteryEditor.openedWhileEditing'
 			return
@@ -340,19 +340,15 @@ export class LotterySaleEditorRoute {
 				(sale.saleStartTime
 					? timestampDate(sale.saleStartTime).getTime()
 					: 0) ||
-			input.saleEndTime?.getTime() !==
+			input.saleEndTime.getTime() !==
 				(sale.saleEndTime ? timestampDate(sale.saleEndTime).getTime() : 0)
-		const typeChanged =
-			input.price !== Number(type.price?.value ?? 0) ||
-			input.quantity !== (type.quantity ?? 0) ||
-			input.perAccountLimit !== type.perAccountLimit
 
 		if (windowChanged) {
 			try {
 				const updated = await this.ticketSales.setWindow(
 					this.saleId,
 					input.saleStartTime,
-					input.saleEndTime ?? input.saleStartTime,
+					input.saleEndTime,
 					this.abort.signal,
 				)
 				if (updated) {
@@ -361,28 +357,6 @@ export class LotterySaleEditorRoute {
 				}
 			} catch (err) {
 				this.logger.warn('Window not saved', err)
-				this.failed(err, () => void this.save())
-				return
-			}
-		}
-		if (typeChanged) {
-			try {
-				const updated = await this.ticketTypes.update(
-					{
-						ticketTypeId: type.id?.value ?? '',
-						price: input.price,
-						quantity: input.quantity,
-						perAccountLimit: input.perAccountLimit ?? 0,
-					},
-					this.abort.signal,
-				)
-				if (updated) Object.assign(type, updated)
-			} catch (err) {
-				this.logger.warn('Ticket type not saved', err)
-				if (windowChanged) {
-					// The window is saved; only the price, quantity and limit are not.
-					this.saveProblem = 'lotteryEditor.partlySaved'
-				}
 				this.failed(err, () => void this.save())
 				return
 			}

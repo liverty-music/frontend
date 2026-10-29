@@ -45,6 +45,59 @@
 			color: var(--md-color-on-surface);
 		}
 
+		.seat-types {
+			margin-block-start: var(--space-m);
+		}
+
+		.note {
+			color: var(--md-color-on-surface-variant);
+		}
+
+		.seat-type-list {
+			display: grid;
+			gap: var(--space-2xs);
+
+			margin: 0;
+			padding: 0;
+
+			list-style: none;
+		}
+
+		/* One seat type per line: name, price, then its action at the end. */
+		.seat-type {
+			display: flex;
+			flex-wrap: wrap;
+			gap: var(--space-2xs) var(--space-s);
+			align-items: center;
+			font-variant-numeric: tabular-nums;
+		}
+
+		.seat-type-name {
+			font: var(--md-type-title-small);
+			color: var(--md-color-on-surface);
+		}
+
+		.seat-type-form {
+			display: grid;
+			gap: var(--space-xs);
+			max-inline-size: 600px;
+		}
+
+		.form-title {
+			font: var(--md-type-title-small);
+			color: var(--md-color-on-surface);
+		}
+
+		.row {
+			display: flex;
+			flex-wrap: wrap;
+			gap: var(--space-xs);
+
+			& > * {
+				flex: 1 1 200px;
+			}
+		}
+
 		.cover {
 			aspect-ratio: 1;
 			inline-size: 100%;

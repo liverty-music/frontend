@@ -12,9 +12,15 @@ import {
 	payoutAccount,
 	type SaleSpec,
 	type ScannerSpec,
+	type SeatTypeSpec,
+	type StockSpec,
 	salesOf,
 	scanner,
+	seatType,
+	seatTypesOf,
 	seriesList,
+	stocksOf,
+	ticketStock,
 	XX_SOLO,
 } from '../support/organizer-data'
 import { expect, type Page, test } from '../support/test'
@@ -22,8 +28,9 @@ import { expect, type Page, test } from '../support/test'
 /**
  * Story: a member takes one event from draft to the door in the console,
  * reaching every step by navigation (stories/run-an-event-from-the-organizer-console).
- * The organizer API is a small in-memory server that publishes, creates the
- * sale and issues scanners, so each screen reads what the previous step did.
+ * The organizer API is a small in-memory server that publishes, adds the seat
+ * type and its stock, creates the sale and issues scanners, so each screen
+ * reads what the previous step did.
  */
 
 const STORY = 'stories/run-an-event-from-the-organizer-console'
@@ -38,6 +45,8 @@ function server(): Server {
 	const concert: ConcertSpec = structuredClone(XX_SOLO)
 	const sales: SaleSpec[] = []
 	const scanners: ScannerSpec[] = []
+	const seatTypes: SeatTypeSpec[] = []
+	const stocks: StockSpec[] = []
 	const list = () => seriesList([concert])
 	return {
 		published: () => concert.events[0].state === 'PUBLISHED',
@@ -60,23 +69,42 @@ function server(): Server {
 			'ArtistService/List': {
 				artists: [{ id: { value: 'a-1' }, name: { value: 'Band A' } }],
 			},
+			'SeatTypeService/ListBySeries': () => ({
+				body: seatTypesOf('s-solo', seatTypes),
+			}),
+			'SeatTypeService/Create': (req) => {
+				const t: SeatTypeSpec = {
+					id: `seat-${seatTypes.length + 1}`,
+					name: (req.name as { value: string }).value,
+					price: Number((req.price as { value: string }).value),
+				}
+				seatTypes.push(t)
+				return { body: { seatType: seatType('s-solo', t) } }
+			},
+			'TicketStockService/ListByEvent': () => ({
+				body: stocksOf(EVENT, stocks, 's-solo'),
+			}),
+			'TicketStockService/Create': (req) => {
+				const id = (req.seatTypeId as { value: string }).value
+				const s: StockSpec = {
+					id: `stock-${stocks.length + 1}`,
+					seatType: seatTypes.find((t) => t.id === id) ?? seatTypes[0],
+					quantity: req.quantity as number,
+				}
+				stocks.push(s)
+				return { body: { ticketStock: ticketStock(EVENT, s) } }
+			},
 			'TicketSaleService/ListByEvent': () => ({ body: salesOf(EVENT, sales) }),
 			'TicketSaleService/Create': (req) => {
-				const types = req.ticketTypes as Array<{
-					price: { value: string }
-					quantity: number
-					perAccountLimit?: number
-				}>
 				const sale: SaleSpec = {
 					id: `sale-${sales.length + 1}`,
 					name: (req.name as { value: string }).value,
 					method: 'LOTTERY',
 					start: req.saleStartTime as string,
 					end: req.saleEndTime as string,
-					price: Number(types[0].price.value),
-					quantity: types[0].quantity,
-					perAccountLimit: types[0].perAccountLimit,
-					stats: { entries: 0, requested: 0 },
+					eventIds: (req.eventIds as Array<{ value: string }>).map(
+						(e) => e.value,
+					),
 				}
 				sales.push(sale)
 				return {
@@ -111,6 +139,26 @@ function server(): Server {
 const navigation = (page: Page) =>
 	page.getByRole('navigation', { name: 'メインナビゲーション' })
 
+/** 席種を追加 on the concert page: S席 at 8000 yen, confirmed. */
+async function addSeatType(page: Page): Promise<void> {
+	const section = page.getByTestId('seat-types')
+	await section.getByLabel(/席種名/).fill('S席')
+	await section.getByLabel(/価格/).fill('8000')
+	await section.getByRole('button', { name: '席種を追加' }).click()
+	const dialog = confirmDialog(page, {
+		name: 'S席（8,000円）を追加しますか？',
+	})
+	await expect(dialog).toContainText('席種名と価格はあとから変えられません')
+	await dialog.getByRole('button', { name: '席種を追加' }).click()
+	await expect(
+		page
+			.locator('snack-bar [role="status"]')
+			.filter({ hasText: 'S席を追加しました' }),
+	).toBeVisible()
+	await expect(section.locator('.seat-type')).toContainText('S席')
+	await expect(section.locator('.seat-type')).toContainText('8,000円')
+}
+
 async function walk(page: Page, api: Server, log: RpcLog): Promise<void> {
 	// Home lists the draft concert; the item opens the concert page.
 	const draftItem = page.locator('[data-kind="draft"]')
@@ -119,6 +167,9 @@ async function walk(page: Page, api: Server, log: RpcLog): Promise<void> {
 	await expect(
 		page.getByRole('heading', { level: 1, name: 'XX 単独公演' }),
 	).toBeVisible()
+
+	// Add the seat type S席 at 8000 yen on the concert page, after confirming.
+	await addSeatType(page)
 
 	// The concert lists its 20 December date; it opens the event page.
 	await page
@@ -140,17 +191,30 @@ async function walk(page: Page, api: Server, log: RpcLog): Promise<void> {
 	)
 	expect(api.published()).toBe(true)
 
+	// Stock 100 S席 tickets on the Sales tab, after confirming.
+	const stocks = page.getByTestId('ticket-stocks')
+	await stocks.getByLabel(/^席種 /).selectOption({ label: 'S席（8,000円）' })
+	await stocks.getByRole('spinbutton', { name: /^枚数/ }).fill('100')
+	await stocks.getByRole('button', { name: '席種を追加' }).click()
+	await confirmDialog(page, { name: 'S席を100枚追加しますか？' })
+		.getByRole('button', { name: '席種を追加' })
+		.click()
+	await expect(
+		page
+			.locator('snack-bar [role="status"]')
+			.filter({ hasText: 'S席を追加しました' }),
+	).toBeVisible()
+	await expect(stocks.locator('.stock')).toContainText('8,000円 税込 · 100枚')
+
 	// Start a lottery from the Sales tab.
 	await page.getByRole('link', { name: '抽選で販売する' }).click()
 	await page.getByLabel(/販売名/).fill('ファンクラブ先行')
-	await page.getByLabel(/^価格/).fill('8000')
-	await page.getByLabel(/^販売枚数/).fill('100')
 	await page.getByRole('button', { name: '抽選販売を始める' }).click()
 	await expect(page).toHaveURL(/\/events\/e-1220\/ticket-sales$/)
 	const sale = page.locator('sales-tab .sale').first()
 	await expect(sale).toContainText('ファンクラブ先行')
-	await expect(sale).toContainText('100枚')
-	await expect(sale).toContainText('8,000円')
+	await expect(stocks.locator('.stock')).toContainText('S席')
+	await expect(stocks.locator('.stock')).toContainText('8,000円 税込 · 100枚')
 	expect(log.calls.some((c) => c.method === 'TicketSaleService/Create')).toBe(
 		true,
 	)
@@ -216,6 +280,20 @@ test.describe('run an event from the organizer console', () => {
 		)
 	})
 
+	test(`@spec ${STORY} "Seat type confirmed as fixed"`, async ({ page }) => {
+		const api = server()
+		const log = await installConsole(page, { rpc: api.rpc, language: 'ja' })
+		await page.goto(`${SERIES}/s-solo`)
+		await addSeatType(page)
+		expect(
+			log.calls.find((c) => c.method === 'SeatTypeService/Create')?.body,
+		).toEqual({
+			seriesId: { value: 's-solo' },
+			name: { value: 'S席' },
+			price: { value: '8000' },
+		})
+	})
+
 	test(`@spec ${STORY} "Scanner revoked"`, async ({ page }) => {
 		const api = server()
 		const log = await installConsole(page, { rpc: api.rpc, language: 'ja' })
@@ -242,9 +320,11 @@ test.describe('run an event from the organizer console', () => {
 		await dialog.getByRole('button', { name: '取り消す' }).click()
 
 		await expect(first).toContainText('取り消し済み')
-		await expect(page.locator('snack-bar [role="status"]')).toContainText(
-			'受付1を取り消しました',
-		)
+		await expect(
+			page
+				.locator('snack-bar [role="status"]')
+				.filter({ hasText: '受付1を取り消しました' }),
+		).toBeVisible()
 		// The device stops working because the server revoked the Scanner.
 		expect(
 			log.calls.find((c) => c.method === 'ScannerService/Revoke')?.body,

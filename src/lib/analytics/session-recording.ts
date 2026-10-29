@@ -76,7 +76,7 @@ export function sessionRecordingOptions(
  * screen.
  */
 const UNRECORDED_PATHS: readonly RegExp[] = [
-	/^\/events\/[^/]+\/checkout\/?$/,
+	/^\/events\/[^/]+\/checkout(\/[^/]+)?\/?$/,
 	/^\/events\/[^/]+\/lottery\//,
 	/^\/verify\//,
 	/^\/settings(\/|$)/,

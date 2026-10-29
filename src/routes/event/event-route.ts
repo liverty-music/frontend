@@ -13,9 +13,12 @@ import type { EventDateTab } from '../../components/event-date-tabs/event-date-t
 import type { Artist } from '../../entities/artist'
 import {
 	currentSale,
+	type EventTicketSales,
+	hasEnded,
 	isWindowOpen,
-	showsResale,
+	NO_TICKET_SALES,
 	type TicketSale,
+	type TicketStock,
 } from '../../entities/ticket-sale'
 import {
 	Events,
@@ -25,6 +28,7 @@ import type { ConcertSharedProps } from '../../services/analytics-events'
 import { IAuthService } from '../../services/auth-service'
 import { IErrorBoundaryService } from '../../services/error-boundary-service'
 import { IFollowStore } from '../../services/follow-store'
+import { IHeldSeatTypeService } from '../../services/held-seat-type-service'
 import { IPurchasedTicketStore } from '../../services/purchased-ticket-store'
 import { IUserStore } from '../../services/user-store'
 import { currentLanguage } from '../../util/change-locale'
@@ -53,6 +57,20 @@ import {
  */
 export type EventPageState = 'loading' | 'ready' | 'not-found' | 'error'
 
+/** One TicketStock as the ticket section shows it under the shown sale. */
+export interface StockRow {
+	readonly stock: TicketStock
+	/** "3,000": the price with thousands separators. */
+	readonly price: string
+	/**
+	 * False when the fan holds or applied for another seat type of the event:
+	 * the row shows no action.
+	 */
+	readonly offered: boolean
+	/** Where the action to buy or to enter leads a signed-in fan. */
+	readonly actionUrl: string
+}
+
 /**
  * The public Event page (`/events/:id`): one Event of a first-party Series.
  * Guests and signed-in fans alike open it; it starts loading without waiting
@@ -68,6 +86,7 @@ export class EventRoute implements IRouteViewModel {
 	private readonly authService = resolve(IAuthService)
 	private readonly followStore = resolve(IFollowStore)
 	private readonly purchasedTickets = resolve(IPurchasedTicketStore)
+	private readonly heldSeatTypes = resolve(IHeldSeatTypeService)
 	private readonly userStore = resolve(IUserStore)
 	private readonly analytics = resolve(IAnalyticsService)
 
@@ -75,8 +94,13 @@ export class EventRoute implements IRouteViewModel {
 	public event: EventPageEvent | null = null
 	/** All Events of the Series in date order; empty until they load. */
 	public seriesEvents: EventPageEvent[] = []
-	/** The event's sales, each with its TicketType for the event. */
-	public sales: TicketSale[] = []
+	/** The event's sales, its TicketStocks and its per-account limit. */
+	public tickets: EventTicketSales = NO_TICKET_SALES
+	/**
+	 * The stock whose seat type the signed-in fan already holds or applied
+	 * for at this event, or null.
+	 */
+	public heldStock: TicketStock | null = null
 	/** The current time, read when the sales arrive. */
 	public now = new Date()
 	public followUpdatingId = ''
@@ -116,7 +140,8 @@ export class EventRoute implements IRouteViewModel {
 		this.state = 'loading'
 		this.event = null
 		this.seriesEvents = []
-		this.sales = []
+		this.tickets = NO_TICKET_SALES
+		this.heldStock = null
 		this.followsLoaded = false
 		try {
 			const proto = await this.concertClient.get(this.eventId, signal)
@@ -145,9 +170,10 @@ export class EventRoute implements IRouteViewModel {
 		// None blocks the page: the dates, the sale, the follow state and the
 		// purchased line fill in.
 		void this.loadSeriesEvents(this.event.seriesId, signal)
-		void this.loadSale(signal)
+		const sale = this.loadSale(signal)
 		void this.loadFollowed(signal)
-		void this.loadPurchasedTickets(signal)
+		const purchased = this.loadPurchasedTickets(signal)
+		void this.loadHeldSeatType(sale, purchased, signal)
 	}
 
 	/**
@@ -183,13 +209,13 @@ export class EventRoute implements IRouteViewModel {
 	/** Load the event's sales; the ticket section shows one once they arrive. */
 	private async loadSale(signal: AbortSignal): Promise<void> {
 		try {
-			const sales = await this.ticketSaleClient.listByEvent(
+			const tickets = await this.ticketSaleClient.listByEvent(
 				this.eventId,
 				signal,
 			)
 			if (signal.aborted) return
 			this.now = new Date()
-			this.sales = sales
+			this.tickets = tickets
 		} catch (err) {
 			if (signal.aborted) return
 			// The section falls back to the sign-up hint without a sale.
@@ -220,16 +246,39 @@ export class EventRoute implements IRouteViewModel {
 		if (!signal.aborted) this.followsLoaded = true
 	}
 
-	private async loadPurchasedTickets(signal: AbortSignal): Promise<void> {
+	/** Load the fan's tickets; true when they were read. */
+	private async loadPurchasedTickets(signal: AbortSignal): Promise<boolean> {
 		try {
 			await this.authService.ready
-			if (signal.aborted || !this.authService.isAuthenticated) return
+			if (signal.aborted || !this.authService.isAuthenticated) return false
 			await this.purchasedTickets.load(signal)
+			return true
 		} catch (err) {
-			if (signal.aborted) return
+			if (signal.aborted) return false
 			// The purchased line is optional; the page stands without it.
 			this.logger.warn('Ticket read failed', { error: err })
+			return false
 		}
+	}
+
+	/**
+	 * Once the sales and the fan's tickets are read, find the seat type the
+	 * fan already holds or applied for: the section then offers only it.
+	 */
+	private async loadHeldSeatType(
+		sale: Promise<void>,
+		purchased: Promise<boolean>,
+		signal: AbortSignal,
+	): Promise<void> {
+		const [, ticketsLoaded] = await Promise.all([sale, purchased])
+		if (signal.aborted || !ticketsLoaded) return
+		const held = await this.heldSeatTypes.heldTickets(
+			this.eventId,
+			this.tickets,
+			signal,
+			true,
+		)
+		if (!signal.aborted) this.heldStock = held?.stock ?? null
 	}
 
 	public retry(): void {
@@ -290,28 +339,50 @@ export class EventRoute implements IRouteViewModel {
 	 * open, otherwise the last that ended. None for a cancelled concert.
 	 */
 	public get shownSale(): TicketSale | null {
-		return this.isCancelled ? null : currentSale(this.sales, this.now)
+		return this.isCancelled ? null : currentSale(this.tickets.sales, this.now)
 	}
 
-	/** True when the shown first-come sale offers 公式リセール (official resale). */
-	public get showsResale(): boolean {
+	/** True while the shown sale's window is open. */
+	public get isSaleOpen(): boolean {
 		const sale = this.shownSale
-		return sale?.method === 'firstCome' && showsResale(sale.ticketType)
+		return sale !== null && isWindowOpen(sale, this.now)
 	}
 
-	/** True while the shown lottery sale takes entries. */
-	public get isLotteryOpen(): boolean {
+	/** True before the shown sale's window opens. */
+	public get isSaleUpcoming(): boolean {
 		const sale = this.shownSale
-		return sale?.method === 'lottery' && isWindowOpen(sale, this.now)
+		return sale !== null && sale.saleStartTime.getTime() > this.now.getTime()
 	}
 
-	/** True once the shown lottery sale's window has closed. */
-	public get isLotteryEnded(): boolean {
+	/** True once the shown sale's window has closed. */
+	public get isSaleEnded(): boolean {
 		const sale = this.shownSale
-		return (
-			sale?.method === 'lottery' &&
-			sale.saleEndTime.getTime() <= this.now.getTime()
-		)
+		return sale !== null && hasEnded(sale, this.now)
+	}
+
+	/** The event's per-account limit, across every sale; 0 when unknown. */
+	public get perAccountLimit(): number {
+		return this.tickets.perAccountLimit ?? 0
+	}
+
+	/**
+	 * Each TicketStock of the event under the shown sale, with whether it is
+	 * offered: only the held seat type once the fan holds or applied for one.
+	 */
+	public get stockRows(): StockRow[] {
+		const sale = this.shownSale
+		const event = this.event
+		if (!sale || !event) return []
+		const held = this.heldStock
+		return this.tickets.stocks.map((stock) => ({
+			stock,
+			price: stock.price.toLocaleString('ja-JP'),
+			offered: held === null || held.id === stock.id,
+			actionUrl:
+				sale.method === 'lottery'
+					? `/events/${event.id}/lottery/${sale.id}/${stock.id}`
+					: `/events/${event.id}/checkout/${stock.id}`,
+		}))
 	}
 
 	/** The sale start in Japan time, e.g. "2026年11月1日(日) 10:00". */
@@ -324,25 +395,6 @@ export class EventRoute implements IRouteViewModel {
 	public get saleEndLabel(): string {
 		const sale = this.shownSale
 		return sale ? formatSaleStart(sale.saleEndTime, this.lang) : ''
-	}
-
-	/** The price of one ticket with thousands separators, e.g. "3,000". */
-	public get salePrice(): string {
-		const sale = this.shownSale
-		return sale ? sale.ticketType.price.toLocaleString('ja-JP') : ''
-	}
-
-	/** Where the action to buy leads a signed-in fan. */
-	public get checkoutUrl(): string {
-		return this.event ? `/events/${this.event.id}/checkout` : '#'
-	}
-
-	/** Where the action to enter leads a signed-in fan. */
-	public get lotteryEntryUrl(): string {
-		const sale = this.shownSale
-		return this.event && sale
-			? `/events/${this.event.id}/lottery/${sale.ticketType.id}`
-			: '#'
 	}
 
 	public get dateNav(): DateNavMode {

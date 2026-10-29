@@ -27,6 +27,9 @@
       <prerequisite-callout case="noStartTime" level.bind="2" guide-chapter="publish" heading.bind="'sale.prerequisite.noStartTime' & t" action-label.bind="'sale.prerequisite.editConcert' & t" action-href.bind="editConcertHref">
         ${'sale.prerequisite.noStartTimeBody' & t}
       </prerequisite-callout>
+      <prerequisite-callout case="noStock" level.bind="2" guide-chapter="sell" heading.bind="'sale.prerequisite.noStock' & t" action-label.bind="'saleEditor.toStocks' & t" action-href.bind="salesHref">
+        ${'saleEditor.noStockBody' & t}
+      </prerequisite-callout>
       <prerequisite-callout case="businessDetails" level.bind="2" guide-chapter="business-and-payout" heading.bind="'sale.prerequisite.businessDetails' & t">
         ${'sale.prerequisite.businessDetailsBody' & t}
       </prerequisite-callout>
@@ -88,34 +91,16 @@
       ></console-time-field>
     </div>
 
-    <h2 class="section-title">${'lotteryEditor.sections.tickets' & t}</h2>
-    <div class="row">
-      <console-field
-        type="yen"
-        label.bind="'lotteryEditor.price' & t"
-        value.bind="model.price"
-        required.bind="true"
-        error.bind="error(errors.price, submitted)"
-        data-field="price"
-      ></console-field>
-      <console-field
-        type="number"
-        label.bind="'lotteryEditor.quantity' & t"
-        value.bind="model.quantity"
-        required.bind="true"
-        error.bind="error(errors.quantity, submitted)"
-        data-field="quantity"
-      ></console-field>
-      <console-field
-        type="number"
-        label.bind="'lotteryEditor.limit' & t"
-        value.bind="model.perAccountLimit"
-        required.bind="true"
-        hint.bind="'lotteryEditor.limitHint' & t:{ max: maxLimit }"
-        error.bind="error(errors.perAccountLimit, submitted)"
-        data-field="limit"
-      ></console-field>
-    </div>
+    <section class="tickets" aria-labelledby="lottery-tickets">
+      <h2 id="lottery-tickets" class="section-title">${'lotteryEditor.sections.tickets' & t}</h2>
+      <p class="note">${'saleEditor.drawsEveryStock' & t:{ limit: perAccountLimit }}</p>
+      <ul class="stock-list">
+        <li repeat.for="stock of stocks; key: id" class="stock" data-stock.bind="stock.id">
+          <span class="stock-name">${stock.name}</span>
+          <span>${stock.price | yen} ${'stock.taxIncluded' & t} · ${'sale.quantity' & t:{ tickets: stock.quantity }}</span>
+        </li>
+      </ul>
+    </section>
 
     <p if.bind="saveProblem" class="problem" role="alert"><console-icon name="error"></console-icon><span>${saveProblem & t}</span></p>
 

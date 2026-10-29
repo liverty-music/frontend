@@ -395,44 +395,61 @@ th { font-weight: 700; color: var(--on-surface-variant); font-size: 0.85rem; }
   <!-- 6. Sell -->
   <section id="sell" aria-labelledby="sell-h">
     <h2 id="sell-h">チケットを販売する</h2>
-    <p class="lead">販売は公演日ごとです。公演日のページの <span class="key">販売</span> タブから始めます。売り方は抽選と先着の2つです。</p>
+    <p class="lead">チケットは、公演の <b>席種</b>、公演日ごとの <b>席種と枚数</b>、公演日ごとの販売の3つで売ります。販売は公演日のページの <span class="key">販売</span> タブから始めます。売り方は抽選と先着の2つです。</p>
+    <h3>席種をつくる（公演ページ）</h3>
+    <ol class="steps">
+      <li>公演ページの「席種」で、席種名（例: S席）と価格（税込）を入れて <span class="key">席種を追加</span> を押します。</li>
+      <li>確認の画面で、席種名と価格はあとから変えられないことを確かめて <span class="key">席種を追加</span> を押します。</li>
+    </ol>
+    <p>公演のすべての公演日が、同じ席種を売ります。2日公演やツアーでも、S席は1回つくれば足ります。価格が違うときは別の席種にします。</p>
+    <h3>1アカウントの上限（公演の編集）</h3>
+    <p><span class="key">公演を編集</span> で、公演日ごとに <b>1アカウントの上限</b> を1〜10枚で入れます（はじめは4枚）。すべての販売・席種・公式リセールを合わせて、1つのアカウントが持てる枚数です。公演日を公開すると変えられません。</p>
+    <h3>席種と枚数（販売タブ）</h3>
+    <ol class="steps">
+      <li>販売タブの「席種と枚数」で、席種を選び、枚数を入れて <span class="key">席種を追加</span> を押します。</li>
+      <li>確認の画面で、枚数はあとから変えられないこと、この公演日のすべての販売がこの枚数から売ることを確かめて <span class="key">席種を追加</span> を押します。</li>
+    </ol>
+    <p>席種ごとに、販売済み・購入手続き中の枚数と、<span class="badge ok">販売可</span>、<span class="badge info">残りは購入手続き中</span>、<span class="badge neutral">完売</span> のどれかが出ます。</p>
     <h3>販売を始める前に</h3>
     <p>次の表示が出ているあいだは、販売を始められません。表示の中のリンクから直せます。</p>
     <div class="notice"><b>販売を始めるには、公演を公開してください</b><p>→ <span class="key">公開する</span>（<a href="#publish">公演をつくって公開する</a>）</p></div>
     <div class="notice"><b>開始時刻を設定してください</b><p>→ <span class="key">公演を編集</span> で開演時刻を入れます。</p></div>
+    <div class="notice"><b>席種と枚数を追加してください</b><p>→ 販売タブの「席種と枚数」で追加します。</p></div>
     <div class="notice"><b>事業者情報が未登録です</b><p>→ Liverty Music の担当者に連絡します（<a href="#business-and-payout">事業者情報と受取口座</a>）。</p></div>
     <h3>抽選で売る</h3>
     <ol class="steps">
       <li><span class="key">抽選で販売する</span> を押します。</li>
-      <li>販売名（例: ファンクラブ先行）、受付期間、価格（税込）、販売枚数、1人あたりの上限枚数を入れます。受付期間は1〜14日（はじめは10日）で、公演の開始前に締め切ります。</li>
+      <li>販売名（例: ファンクラブ先行）と受付期間を入れます。受付期間は1〜14日（はじめは10日）で、公演の開始前に締め切ります。抽選するのは、公演日のすべての席種です。</li>
       <li><span class="key primary">抽選販売を始める</span> を押すと、販売タブに戻ります。</li>
     </ol>
     <h3>先着で売る</h3>
     <ol class="steps">
       <li><span class="key">先着で販売する</span> を押します。</li>
-      <li>販売名（はじめは 一般発売）、販売期間、価格、販売枚数、上限枚数（はじめは4枚）を入れます。販売期間は開演時刻までに終わるようにします。</li>
+      <li>販売名（はじめは 一般発売）と販売期間を入れます。販売期間は開演時刻までに終わるようにします。売るのは、公演日のすべての席種です。</li>
       <li><span class="key primary">先着販売を始める</span> を押します。</li>
     </ol>
-    <p>1つの公演日の販売どうしは、期間を重ねられません。抽選のあとにもう一度抽選や先着を足せます（先着は1つの公演日に1つまで）。</p>
+    <p>1つの公演日の販売どうしは、期間を重ねられません。抽選のあとにもう一度抽選や先着を足せます（先着は1つの公演日に1つまで）。販売で変えられるのは期間だけです。</p>
     <h3>販売の状態</h3>
     <div class="table-wrap">
       <table>
         <thead><tr><th>抽選</th><th>意味</th></tr></thead>
         <tbody>
           <tr><td><span class="badge info">受付開始前</span></td><td>受付が始まるまでの残り時間が出ます。<span class="key">編集</span> で変えられるのはこのあいだだけです。</td></tr>
-          <tr><td><span class="badge ok">受付中</span></td><td>応募数・申込枚数・販売枚数が出ます。</td></tr>
+          <tr><td><span class="badge ok">受付中</span></td><td>席種ごとに、応募数・申込枚数・残りの枚数が出ます。</td></tr>
           <tr><td><span class="badge warn">抽選待ち</span></td><td>受付が終わり、抽選を待っています。</td></tr>
           <tr><td><span class="badge neutral">抽選済み</span></td><td>当選・当選枚数・落選が出ます。</td></tr>
         </tbody>
       </table>
     </div>
-    <p>先着の販売は <span class="badge info">受付開始前</span>、<span class="badge ok">販売中</span>、<span class="badge warn">残りは購入手続き中</span>、<span class="badge neutral">完売</span>、<span class="badge neutral">販売終了</span> のどれかです。</p>
+    <p>先着の販売は <span class="badge info">受付開始前</span>、<span class="badge ok">受付中</span>、<span class="badge neutral">販売終了</span> のどれかです。売れた枚数は「席種と枚数」に出ます。</p>
     <div class="unsaid">
       <b>画面に出ないこと</b>
       <ul>
+        <li>1つの公演日のすべての販売は、<strong>同じ枚数から</strong>すべての席種を売ります。先行販売ですべて売れると、あとの販売で売るチケットは残りません。</li>
+        <li>席種名と価格、公演日の枚数は、<strong>保存すると変えられません</strong>。もっと売るときは、別の席種（例: 注釈付き指定席）をつくって枚数を追加します。</li>
+        <li>1つのアカウントが持てるのは、1つの公演日につき<strong>1つの席種だけ</strong>で、すべての販売を合わせて1アカウントの上限までです。</li>
         <li>抽選は、受付期間が終わると<strong>すぐに自動で行われます</strong>。抽選のボタンはありません。当選した人だけに決済され、落選した人には請求されません。</li>
         <li>抽選は、受付が始まると何も変えられません（受付開始後は変更できません）。始まる前に確認してください。</li>
-        <li>先着は、チケットが販売済みまたは購入手続き中になると価格を変えられません。枚数は増やせます。</li>
         <li>本人確認（本人確認なし・本人確認済み・マイナンバーカードで本人確認済み）はいつでも変えられますが、すでに受け付けた申込は確認し直しません。</li>
       </ul>
     </div>
@@ -441,7 +458,7 @@ th { font-weight: 700; color: var(--on-surface-variant); font-size: 0.85rem; }
   <!-- 7. Sales and referral codes -->
   <section id="sales-and-referral" aria-labelledby="sales-and-referral-h">
     <h2 id="sales-and-referral-h">売れ行きと紹介コード</h2>
-    <p class="lead">売れ行きは公演日の <span class="key">販売</span> タブで見ます。販売ごとの数字の下に「紹介コード別の購入」があり、どのリンクから買われたかが分かります。</p>
+    <p class="lead">売れ行きは公演日の <span class="key">販売</span> タブで見ます。席種ごとの販売済み・購入手続き中の枚数は「席種と枚数」に、抽選の応募は販売ごとに出ます。その下に「紹介コード別の購入」があり、どのリンクから買われたかが分かります。</p>
     <h3>紹介リンクをつくる</h3>
     <ol class="steps">
       <li>公開中の公演日のページにある「ファンページ」のアドレスをコピーします（限定公開の公演には出ません）。</li>

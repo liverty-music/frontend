@@ -5,21 +5,30 @@ import {
 	expect,
 	type Page,
 } from '@playwright/test'
-import { authorizeCard, fillPersonalDetails, holdTickets } from './checkout'
-import { openFreshSale } from './sale'
+import {
+	authorizeCard,
+	fillPersonalDetails,
+	holdTickets,
+	openCheckout,
+	stockRow,
+} from './checkout'
+import { openFreshSale, type SaleStock } from './sale'
 import { FAN_STATE, hasOrganizerSession, organizerToken, test } from './session'
 
 /**
  * Story `attribute-a-purchase-to-a-referral-link` on PRODUCTION in Stripe test
  * mode, signed in as the prod E2E test user (`.auth/storageState.prod.json`).
  *
- * Needs a published Event of the test Organizer on which the test user can
- * still buy 2 tickets under the per-account limit, by id in
- * `E2E_REFERRAL_EVENT_ID`, and the test Organizer's member session
- * (`.auth/storageState.organizer.prod.json`). It is not the buy-tickets
- * spec's Event, whose run leaves no room under the limit. The run opens its own first-come sale on the event
- * (as the buy-tickets spec does) and reads the purchases per referral code
- * from the organizer `TicketSaleService.ListByEvent`. Each test buys one ticket after
+ * Needs a published Event of the test Organizer on which the test user holds
+ * no tickets, by id in `E2E_REFERRAL_EVENT_ID`, and the test Organizer's
+ * member session (`.auth/storageState.organizer.prod.json`). A run buys 2
+ * tickets, so the Event's per-account limit must be at least 2 (Events have
+ * 4 unless set otherwise while DRAFT). Each run opens its own sale on a fresh
+ * SeatType (as the buy-tickets spec does), and one account holds one seat
+ * type per Event, so each run needs an Event the test user holds no tickets
+ * for (docs/prod-e2e-fixtures.md). It is not the buy-tickets spec's Event.
+ * The run reads the purchases per referral code from the organizer
+ * `TicketSaleService.ListByEvent`. Each test buys one ticket after
  * opening the Event page from a link with `?ref=`, and checks that the code's
  * row on the Sales read grew by that Order.
  *
@@ -35,6 +44,9 @@ import { FAN_STATE, hasOrganizerSession, organizerToken, test } from './session'
  *     npx playwright test -c playwright.prod.config.mjs attribute-a-purchase
  */
 const EVENT_ID = process.env.E2E_REFERRAL_EVENT_ID ?? ''
+
+/** The fresh stock the run buys from. */
+let saleStock: SaleStock = { id: '', seatTypeName: '' }
 
 const ORGANIZER_API_BASE =
 	process.env.PROD_ORGANIZER_API_BASE_URL ??
@@ -76,10 +88,7 @@ async function statsOf(
 
 /** Open the Event page from a referral link and buy one ticket. */
 async function buyOneFromLink(page: Page, code: string): Promise<void> {
-	await page.goto(`/events/${EVENT_ID}?ref=${code}`)
-	await page.getByTestId('event-buy').click()
-	await expect(page).toHaveURL(new RegExp(`/events/${EVENT_ID}/checkout$`))
-	await expect(page.getByTestId('checkout-count')).toBeVisible()
+	await openCheckout(page, EVENT_ID, saleStock, `?ref=${code}`)
 	await holdTickets(page, 1)
 	await fillPersonalDetails(page)
 	await authorizeCard(page)
@@ -101,7 +110,11 @@ test.describe('attribute a purchase to a referral link (signed in)', () => {
 		// Start from an open sale with stock, whatever an earlier run of this or
 		// the buy-tickets spec left behind.
 		if (EVENT_ID && hasOrganizerSession()) {
-			await openFreshSale(request, EVENT_ID, await organizerToken(browser))
+			saleStock = await openFreshSale(
+				request,
+				EVENT_ID,
+				await organizerToken(browser),
+			)
 		}
 	})
 
@@ -141,7 +154,9 @@ test.describe('attribute a purchase to a referral link (signed in)', () => {
 		// The fan opens member A's link first, then member B's; the newer
 		// link replaces the kept code.
 		await page.goto(`/events/${EVENT_ID}?ref=e2e-member-a`)
-		await expect(page.getByTestId('event-buy')).toBeVisible()
+		await expect(
+			stockRow(page, saleStock).getByTestId('event-buy'),
+		).toBeVisible()
 		await buyOneFromLink(page, 'e2e-member-b')
 
 		expect(await statsOf(request, browser, 'e2e-member-b')).toEqual({

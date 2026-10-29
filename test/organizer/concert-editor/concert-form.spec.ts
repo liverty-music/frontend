@@ -38,10 +38,14 @@ function validModel(): ConcertFormModel {
 				localDate: '2026-06-16',
 				startTime: '19:00',
 				openTime: '18:00',
+				perAccountLimit: '4',
 			},
 		],
 	}
 }
+
+const LIMIT_SPEC =
+	'components/infrastructure/organizer/web/route/concert-editor'
 
 describe('a new concert and an added date (design D19)', () => {
 	it('starts the first date of a new concert with doors 17:00 and start 19:00', () => {
@@ -67,6 +71,7 @@ describe('a new concert and an added date (design D19)', () => {
 			localDate: '2026-11-03',
 			openTime: '17:00',
 			startTime: '18:00',
+			perAccountLimit: '6',
 		}
 		const next = nextEventRow(previous)
 		expect(next).toEqual({
@@ -76,6 +81,8 @@ describe('a new concert and an added date (design D19)', () => {
 			localDate: '2026-11-03',
 			openTime: '17:00',
 			startTime: '18:00',
+			// A new date starts at the default limit, not the previous date's.
+			perAccountLimit: '4',
 		})
 		// The new date has its own venue, so a new pick changes only it.
 		expect(next.venue).not.toBe(previous.venue)
@@ -89,6 +96,7 @@ describe('a new concert and an added date (design D19)', () => {
 			localDate: '2026-11-03',
 			openTime: '',
 			startTime: '18:00',
+			perAccountLimit: '4',
 		})
 		expect(next.venue).toBeNull()
 		expect(next.localDate).toBe('2026-11-03')
@@ -295,5 +303,52 @@ describe('toSeriesDraftInput', () => {
 		const input = toSeriesDraftInput(model)
 		expect(input.events[0].startTime).toBeUndefined()
 		expect(input.events[0].openTime).toBeUndefined()
+	})
+})
+
+describe("each date's per-account limit", () => {
+	it(`@spec ${LIMIT_SPEC} "New date"`, () => {
+		expect(emptyFormModel().events[0].perAccountLimit).toBe('4')
+		expect(nextEventRow(undefined).perAccountLimit).toBe('4')
+	})
+
+	it(`@spec ${LIMIT_SPEC} "Group tickets"`, () => {
+		const model = validModel()
+		model.events[0].perAccountLimit = '6'
+		const errors = validateConcertForm(model, { today: TODAY })
+		expect(isFormValid(errors)).toBe(true)
+		expect(toSeriesDraftInput(model).events[0].perAccountLimit).toBe(6)
+	})
+
+	it(`@spec ${LIMIT_SPEC} "Above one admission code"`, () => {
+		for (const value of ['11', '0', '', '2.5']) {
+			const model = validModel()
+			model.events[0].perAccountLimit = value
+			const errors = validateConcertForm(model, { today: TODAY })
+			expect(errors.rows[0].perAccountLimit).toBe(
+				'concertEditor.error.perAccountLimit',
+			)
+			expect(isFormValid(errors)).toBe(false)
+		}
+		const model = validModel()
+		model.events[0].perAccountLimit = '10'
+		expect(
+			validateConcertForm(model, { today: TODAY }).rows[0].perAccountLimit,
+		).toBeUndefined()
+	})
+
+	it(`@spec ${LIMIT_SPEC} "Published date"`, () => {
+		// A published date's limit is not checked and goes back as loaded,
+		// so Update keeps it.
+		const model = validModel()
+		model.events[0] = {
+			...model.events[0],
+			eventId: 'e1',
+			publishState: PublishState.PUBLISHED,
+			perAccountLimit: '6',
+		}
+		const errors = validateConcertForm(model, { today: TODAY })
+		expect(errors.rows[0].perAccountLimit).toBeUndefined()
+		expect(toSeriesDraftInput(model).events[0].perAccountLimit).toBe(6)
 	})
 })

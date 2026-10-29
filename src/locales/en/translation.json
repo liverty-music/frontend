@@ -166,7 +166,7 @@
 			"welcome": "Welcome!\nYou won't miss a live show again",
 			"found": "Found {{concerts}} shows by {{artists}} artists",
 			"tapToView": "Tap to take a look",
-			"chasing": "Liverty\u00a0Music keeps track of new shows for you!"
+			"chasing": "Liverty Music keeps track of new shows for you!"
 		},
 		"loading": "Loading events…",
 		"empty": {
@@ -432,13 +432,14 @@
 		"field": {
 			"fullName": "Name",
 			"phoneNumber": "Phone number",
+			"seatType": "Seat type",
 			"seat": "Seat",
 			"noSeat": "Not assigned"
 		},
 		"resaleProhibited": "This is a designated live-entertainment ticket (特定興行入場券). Resale without the organizer's consent is prohibited by law.",
 		"resale": {
 			"list": "List for official resale",
-			"onlyWhenSoldOut": "Official resale opens only if the concert sells out.",
+			"onlyWhenSoldOut": "Official resale opens only if this seat type sells out for the concert.",
 			"confirmTitle": "List for official resale",
 			"price": "Price (face value)",
 			"fee": "Resale fee (10%)",
@@ -447,13 +448,13 @@
 			"termRefund": "When another fan buys it, the refund goes to the card you paid with.",
 			"termDeadline": "Listing closes when admission opens ({{deadline}}).",
 			"termNotGuaranteed": "A sale is not guaranteed. An unsold ticket stays valid for entry.",
-			"termWithdraw": "You can withdraw the listing until another fan starts buying it.",
+			"termWithdraw": "You can withdraw the listing until it is sold or listing closes.",
 			"termInvalid": "A ticket that sells is no longer valid for entry.",
 			"confirm": "List 1 ticket",
 			"cancel": "Cancel",
 			"listedNote": "Listed for official resale until admission opens ({{deadline}}).",
 			"withdraw": "Withdraw the listing",
-			"beingBought": "Another fan is buying this ticket right now, so it cannot be withdrawn unless that purchase lapses.",
+			"withdrawClosed": "This ticket was already sold or listing has closed, so the listing cannot be withdrawn.",
 			"cannotList": "This ticket cannot be listed: official resale has closed or the ticket is no longer valid.",
 			"failed": "Something went wrong. Please try again later.",
 			"refund": "Refund",
@@ -504,8 +505,7 @@
 			"card": "Card"
 		},
 		"status": {
-			"refundedDesc": "This order has been refunded. All tickets have been voided.",
-			"failedDesc": "Ticket issuance failed; your payment was automatically refunded."
+			"refundedDesc": "This order has been refunded. All tickets have been voided."
 		},
 		"tickets": {
 			"title": "Issued Tickets",
@@ -590,7 +590,7 @@
 		"lastUpdatedLabel": "Last updated",
 		"terms": {
 			"title": "Terms of Service",
-			"lastUpdated": "October 20, 2026",
+			"lastUpdated": "October 29, 2026",
 			"intro": "These Terms of Service (the \"Terms\") govern your use of the application \"Liverty Music\" (the \"Service\") provided by pannpers.dev (\"we\" or \"us\"). By using the Service, you are deemed to have agreed to these Terms.",
 			"sections": [
 				{
@@ -637,9 +637,9 @@
 					"heading": "7. Official Resale",
 					"body": [
 						"The organizer consents to the transfer of tickets only through official resale on the Service at face value. Resale by any other means is prohibited.",
-						"Official resale opens only when tickets sold first come, first served sell out. A concert that does not sell out has no official resale, and if you can no longer attend there is no refund unless the concert is cancelled.",
+						"Official resale opens for a seat type of a concert only when that seat type sells out. A seat type that does not sell out has no official resale, and if you can no longer attend there is no refund unless the concert is cancelled.",
 						"Listing closes when admission to the concert opens, 3 hours before the start time. A ticket that has not been bought by then stays yours and remains valid for entry.",
-						"You can withdraw a listing until another user starts buying it. A sale of a listed ticket is not guaranteed.",
+						"You can withdraw a listing until it is bought or listing closes. A sale of a listed ticket is not guaranteed.",
 						"When a listed ticket is bought, it becomes invalid and a new ticket is issued to the user who bought it. You are refunded the face value minus a resale fee of 10% to the card you paid with.",
 						"If the concert is cancelled after an official resale is completed, the resale fee is not refunded."
 					]
@@ -840,7 +840,7 @@
 		"backToEvent": "Back to the event page",
 		"back": "Back",
 		"price": "¥{{price}} per ticket (tax included)",
-		"limit": "Up to {{limit}} tickets per account",
+		"limit": "Up to {{limit}} tickets per account across all sales",
 		"window": "Entries {{window}}",
 		"total": "Total ¥{{total}} (tax included)",
 		"verify": {
@@ -852,7 +852,7 @@
 			"title": "Choose the number of tickets",
 			"label": "Tickets (1 to {{limit}})",
 			"continue": "Continue to identity check",
-			"limit": "One account can hold up to {{limit}} tickets for this event, counting the tickets it already holds."
+			"limit": "One account can hold up to {{limit}} tickets for this event, counting the tickets it already holds and has applied for."
 		},
 		"personalDetails": {
 			"title": "Identity check",
@@ -885,7 +885,9 @@
 			"title": "Your entry was not made",
 			"notCharged": "Nothing will be charged to your card for this entry.",
 			"closed": "The entry window for this lottery has closed.",
-			"alreadyEntered": "You already have an entry for this ticket.",
+			"alreadyEntered": "You already have an entry in this sale for this date.",
+			"otherSeatType": "Your tickets for this date are {{seatType}}. One account holds tickets of one seat type per date.",
+			"limit": "One account can hold up to {{limit}} tickets for this event, counting the tickets it already holds and has applied for.",
 			"other": "Your card could not be used for this entry. You can try again with another card.",
 			"tryAgain": "Try again"
 		},
@@ -897,6 +899,7 @@
 		"empty": "No entry to this lottery was found.",
 		"error": "Your entry could not be loaded. Please try again later.",
 		"reload": "Reload",
+		"seatType": "Seat type",
 		"count": "Tickets",
 		"countValue": "{{count}}",
 		"status": "Status",
@@ -973,10 +976,10 @@
 			},
 			"resale": {
 				"title": "Official resale",
-				"faceValue": "Official resale tickets are sold at face value.",
-				"buy": "Buy a resale ticket",
-				"waiting": "Tickets listed by fans who can no longer attend can be bought here."
-			}
+				"listing": "Fans who can no longer attend can list their tickets from the Tickets screen."
+			},
+			"limit": "Up to {{limit}} tickets per account across all sales",
+			"held": "Your tickets for this date are {{seatType}}. One account holds tickets of one seat type per date."
 		}
 	},
 	"checkout": {
@@ -1003,7 +1006,8 @@
 			"price": "¥{{price}} per ticket (tax included)",
 			"continue": "Hold tickets and continue",
 			"allHeld": "Sold out for now. Other fans are checking out, so tickets may be available again in a few minutes.",
-			"limit": "One account can hold up to {{limit}} tickets for this event, counting the tickets it already holds.",
+			"limit": "One account can hold up to {{limit}} tickets for this event, counting the tickets it already holds and has applied for.",
+			"otherSeatType": "Your tickets for this date are {{seatType}}. One account holds tickets of one seat type per date.",
 			"soldOut": "The tickets have sold out.",
 			"ended": "The sale has ended.",
 			"cancelled": "This concert was cancelled, so its tickets are not on sale."
@@ -1027,10 +1031,7 @@
 			"title": "Review your order",
 			"event": "Concert",
 			"tickets": "Tickets and amount",
-			"officialResale": "Official resale",
-			"officialResaleValue": "These are official resale tickets: tickets listed by fans who can no longer attend, sold at face value and newly issued to your own account and name.",
-			"resaleSalePeriod": "Official resale closes when admission opens ({{deadline}})",
-			"ticketsValue": "{{count}} × ¥{{price}} = ¥{{total}} total (tax included)",
+			"ticketsValue": "{{seatType}}: {{count}} × ¥{{price}} = ¥{{total}} total (tax included)",
 			"payment": "Payment",
 			"creditCard": "Credit card",
 			"chargedOnOrder": "Your card is charged when you place the order.",
@@ -1041,7 +1042,7 @@
 			"resale": "Resale",
 			"resaleValue": "Reselling tickets without the organizer's consent is prohibited. Tickets are issued to your own account and name.",
 			"cancellation": "Cancellation and refunds",
-			"cancellationValue": "Orders cannot be cancelled or refunded unless the concert is cancelled. Cooling-off does not apply. Official resale opens only if the concert sells out.",
+			"cancellationValue": "Orders cannot be cancelled or refunded unless the concert is cancelled. Cooling-off does not apply. Official resale opens only if this seat type sells out for the concert.",
 			"businessDetails": "Sold by",
 			"representative": "Representative:",
 			"changeCount": "Change the number of tickets",

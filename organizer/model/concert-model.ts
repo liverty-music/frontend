@@ -53,6 +53,20 @@ export function venueName(event: Event): string {
 	return event.venue?.name?.value || event.listedVenueName?.value || ''
 }
 
+/** The per-account limit of a date that was given none (the server's default). */
+export const DEFAULT_PER_ACCOUNT_LIMIT = 4
+/** Inclusive bounds of a date's per-account limit: one admission code presents at most 10 tickets. */
+export const MIN_PER_ACCOUNT_LIMIT = 1
+export const MAX_PER_ACCOUNT_LIMIT = 10
+
+/**
+ * The most tickets one account may hold for the event, across every sale,
+ * seat type and official resale of it.
+ */
+export function perAccountLimitOf(event: Event): number {
+	return event.perAccountLimit ?? DEFAULT_PER_ACCOUNT_LIMIT
+}
+
 export function isCancelled(event: Event): boolean {
 	return event.publishState === PublishState.CANCELLED
 }

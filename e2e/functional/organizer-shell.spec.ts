@@ -11,8 +11,10 @@ import {
 	type ConcertSpec,
 	organizer,
 	payoutAccount,
+	S_SEAT,
 	salesOf,
 	seriesList,
+	stocksOf,
 	XX_SOLO,
 	XX_TOUR,
 } from '../support/organizer-data'
@@ -28,6 +30,9 @@ const RPC: RpcMocks = {
 	'OrganizerService/Get': organizer(),
 	'PayoutAccountService/Get': payoutAccount('ACTIVE'),
 	'TicketSaleService/ListByEvent': salesOf('e-1103', []),
+	'TicketStockService/ListByEvent': stocksOf('e-1103', [
+		{ id: 'stock-s', seatType: S_SEAT, quantity: 100 },
+	]),
 	'ScannerService/ListByEvent': { scanners: [] },
 }
 

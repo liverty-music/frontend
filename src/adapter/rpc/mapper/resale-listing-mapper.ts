@@ -20,6 +20,7 @@ export function resaleListingFrom(proto: ProtoResaleListing): ResaleListing {
 	return {
 		id: proto.id?.value ?? '',
 		ticketId: proto.ticketId?.value ?? '',
+		ticketStockId: proto.ticketStockId?.value ?? '',
 		price: Number(proto.price?.value ?? 0),
 		fee: Number(proto.fee),
 		refundAmount: Number(proto.refundAmount),

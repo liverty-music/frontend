@@ -1,7 +1,21 @@
 import { existsSync } from 'node:fs'
 import { type APIRequestContext, expect, type Page } from '@playwright/test'
-import { authorizeCard, fillPersonalDetails, holdTickets } from './checkout'
-import { listByEvent, openFirstCome, openFreshSale } from './sale'
+import {
+	authorizeCard,
+	fillPersonalDetails,
+	holdTickets,
+	openCheckout as openStockCheckout,
+	stockRow,
+} from './checkout'
+import {
+	fanTickets,
+	onlyStock,
+	openFreshSale,
+	organizerStocks,
+	SOLD_OUT,
+	type SaleStock,
+	stockOf,
+} from './sale'
 import {
 	closeFan,
 	FAN_STATE,
@@ -17,15 +31,21 @@ import {
  * as the prod E2E test user (`.auth/storageState.prod.json`).
  *
  * Needs a published Event of the test Organizer, by id in `E2E_SALE_EVENT_ID`,
- * on which the test user holds no tickets (its Tickets for the event count
- * against the per-account limit). With the test Organizer's member session
- * (`.auth/storageState.organizer.prod.json`), the run opens its own first-come
- * sale on that event through the organizer `TicketSaleService.Create` (5
- * tickets of 3000 yen, a per-account limit of 5), ending the event's open
- * first-come sale first. Without it, the event's open first-come sale is used
- * as it stands and must have been created the same way in the organizer
- * console. A run buys up to 5 tickets, so each run needs an Event the test
- * user holds no tickets for (docs/prod-e2e-fixtures.md).
+ * on which the test user holds no tickets, whose per-account limit is at
+ * least 5. A run buys up to 5 tickets, and the limit counts every ticket the
+ * fan holds or applied for at the Event. The limit is the Event's and can be
+ * changed only while the Event is DRAFT, so set it to 5 or more in the concert
+ * editor before publishing (Events published before the limit existed have 4).
+ * One account also holds one seat type per Event, so each run needs an Event
+ * the test user holds no tickets for (docs/prod-e2e-fixtures.md).
+ *
+ * With the test Organizer's member session
+ * (`.auth/storageState.organizer.prod.json`), the run opens its own sale:
+ * a fresh SeatType of 3000 yen on the Event's Series, a TicketStock of 5
+ * tickets of it, and a first-come sale on the Event, ending the Event's open
+ * first-come sale first. Without it, the Event's only stock and its open
+ * first-come sale are used as they stand and must have been created the same
+ * way in the organizer console.
  *
  * The tests run in order and share the sale:
  *   1. Two tickets bought: 2 sold.
@@ -53,6 +73,9 @@ import {
  */
 const SALE_EVENT_ID = process.env.E2E_SALE_EVENT_ID ?? ''
 
+/** The stock the run buys from: the fresh one, or the Event's only one. */
+let saleStock: SaleStock = { id: '', seatTypeName: '' }
+
 /** The checkout's 15-minute hold, plus a margin for the server's clock. */
 const HOLD_MS = 15 * 60 * 1000
 const MARGIN_MS = 60 * 1000
@@ -60,26 +83,24 @@ const MARGIN_MS = 60 * 1000
 const API_BASE =
 	process.env.PROD_API_BASE_URL ?? 'https://api.liverty-music.app'
 
-/** The sale's price of one ticket in yen, read as a guest. */
+/** The stock's seat type price of one ticket in yen, read as a guest. */
 async function salePrice(request: APIRequestContext): Promise<number> {
-	const sale = openFirstCome(await listByEvent(request, SALE_EVENT_ID, 'fan'))
-	expect(sale, 'the event has an open first-come sale').toBeDefined()
-	return Number(sale?.ticketTypes[0].price.value)
+	return stockOf(await fanTickets(request, SALE_EVENT_ID), saleStock.id).price
 }
 
 /**
- * The tickets of the open sale nobody has bought or holds, as the organizer
+ * The tickets of the stock nobody has bought or holds, as the organizer
  * sees them.
  */
 async function remaining(
 	request: APIRequestContext,
 	organizerToken: string,
 ): Promise<number> {
-	const type = openFirstCome(
-		await listByEvent(request, SALE_EVENT_ID, 'organizer', organizerToken),
-	)?.ticketTypes[0]
-	if (!type) throw new Error('the event has no open first-come sale')
-	return (type.quantity ?? 0) - (type.soldCount ?? 0) - (type.heldCount ?? 0)
+	const stock = (
+		await organizerStocks(request, SALE_EVENT_ID, organizerToken)
+	).find((s) => s.id.value === saleStock.id)
+	if (!stock) throw new Error(`the event has no stock ${saleStock.id}`)
+	return (stock.quantity ?? 0) - (stock.soldCount ?? 0) - (stock.heldCount ?? 0)
 }
 
 /** A yen amount as the checkout writes it, e.g. "6,000". */
@@ -94,8 +115,14 @@ test.describe('buy tickets first come (signed in)', () => {
 				`${FAN_STATE} is missing: run npm run auth:capture:password:prod`,
 			)
 		}
-		if (SALE_EVENT_ID && hasOrganizerSession())
-			await openFreshSale(request, SALE_EVENT_ID, await organizerToken(browser))
+		if (!SALE_EVENT_ID) return
+		saleStock = hasOrganizerSession()
+			? await openFreshSale(
+					request,
+					SALE_EVENT_ID,
+					await organizerToken(browser),
+				)
+			: await onlyStock(request, SALE_EVENT_ID)
 	})
 
 	test.beforeEach(() => {
@@ -215,17 +242,17 @@ test.describe('buy tickets first come (signed in)', () => {
 		})
 		const view = await guest.newPage()
 		await view.goto(`/events/${SALE_EVENT_ID}`)
-		await expect(view.getByTestId('event-sale')).toHaveAttribute(
-			'data-sale-state',
+		await expect(stockRow(view, saleStock)).toHaveAttribute(
+			'data-stock-state',
 			'allHeld',
 		)
 
 		// By 16 minutes after the hold started, the tickets are on sale again.
 		await view.waitForTimeout(HOLD_MS + MARGIN_MS)
 		await view.reload()
-		await expect(view.getByTestId('event-sale')).toHaveAttribute(
-			'data-sale-state',
-			'onSale',
+		await expect(stockRow(view, saleStock)).toHaveAttribute(
+			'data-stock-state',
+			'available',
 		)
 		await guest.close()
 	})
@@ -287,9 +314,12 @@ test.describe('buy tickets first come (signed in)', () => {
 		)
 		await closeFan(second, SECOND_FAN_STATE)
 
-		// The last ticket is sold: the sale is sold out, not held.
-		const sale = openFirstCome(await listByEvent(request, SALE_EVENT_ID, 'fan'))
-		expect(sale?.ticketTypes[0].state).toBe('TICKET_TYPE_STATE_SOLD_OUT')
+		// The last ticket is sold: the stock is sold out, not held.
+		const { stock } = stockOf(
+			await fanTickets(request, SALE_EVENT_ID),
+			saleStock.id,
+		)
+		expect(stock.state).toBe(SOLD_OUT)
 	})
 })
 
@@ -316,10 +346,7 @@ async function accessToken(page: Page): Promise<string> {
 	})
 }
 
-/** Open the checkout from the Event page's action to buy. */
+/** Open the checkout from the action to buy on the stock's seat type. */
 async function openCheckout(page: Page): Promise<void> {
-	await page.goto(`/events/${SALE_EVENT_ID}`)
-	await page.getByTestId('event-buy').click()
-	await expect(page).toHaveURL(new RegExp(`/events/${SALE_EVENT_ID}/checkout$`))
-	await expect(page.getByTestId('checkout-count')).toBeVisible()
+	await openStockCheckout(page, SALE_EVENT_ID, saleStock)
 }

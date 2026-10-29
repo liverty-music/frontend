@@ -20,8 +20,9 @@ test.use({ locale: 'en-US', viewport: { width: 390, height: 844 } })
 const SPEC = 'components/infrastructure/fan/web/route/lottery-entry'
 const EVENT_ID = fakeId('lottery-entry-event')
 const SALE_ID = fakeId('lottery-entry-sale')
-// A UUID: the client validates the TicketTypeId it sends.
-const TICKET_TYPE_ID = fakeId('lottery-entry-ticket-type')
+// UUIDs: the client validates the ids it sends.
+const STOCK_ID = fakeId('lottery-entry-stock')
+const SEAT_TYPE_ID = fakeId('lottery-entry-seat-type')
 
 function concert() {
 	const d = new Date()
@@ -57,19 +58,25 @@ function sales() {
 				saleStartTime: new Date(Date.now() - day).toISOString(),
 				saleEndTime: new Date(Date.now() + 9 * day).toISOString(),
 				verificationRequirement: 'VERIFICATION_REQUIREMENT_UNSPECIFIED',
-				ticketTypes: [
-					{
-						id: { value: TICKET_TYPE_ID },
-						ticketSaleId: { value: SALE_ID },
-						eventId: { value: EVENT_ID },
-						price: { value: '8000' },
-						quantity: 100,
-						perAccountLimit: 4,
-						state: 'TICKET_TYPE_STATE_ON_SALE',
-					},
-				],
+				eventIds: [{ value: EVENT_ID }],
 			},
 		],
+		ticketStocks: [
+			{
+				id: { value: STOCK_ID },
+				eventId: { value: EVENT_ID },
+				seatTypeId: { value: SEAT_TYPE_ID },
+				state: 'TICKET_STOCK_STATE_AVAILABLE',
+			},
+		],
+		seatTypes: [
+			{
+				id: { value: SEAT_TYPE_ID },
+				name: { value: 'S席' },
+				price: { value: '8000' },
+			},
+		],
+		perAccountLimit: 4,
 	}
 }
 
@@ -108,7 +115,7 @@ async function openEntry(
 		},
 		'LotteryEntryService/Confirm': confirm,
 	})
-	await page.goto(`/events/${EVENT_ID}/lottery/${TICKET_TYPE_ID}`)
+	await page.goto(`/events/${EVENT_ID}/lottery/${SALE_ID}/${STOCK_ID}`)
 	await expect(page.getByTestId('lottery-entry-count')).toBeVisible({
 		timeout: 30_000,
 	})
@@ -131,10 +138,15 @@ const confirmEntered = (body: Record<string, unknown>) => {
 		body: {
 			lotteryEntry: {
 				id: { value: fakeId('lottery-entry-made') },
-				ticketTypeId: { value: TICKET_TYPE_ID },
-				ticketCount: Number(id.replace('pi_e2e_', '')),
+				orderId: { value: fakeId('lottery-entry-order') },
+				ticketSaleId: { value: SALE_ID },
 				state: 'LOTTERY_ENTRY_STATE_ENTERED',
-				cardAuthorizationId: { value: id },
+			},
+			order: {
+				id: { value: fakeId('lottery-entry-order') },
+				ticketStockId: { value: STOCK_ID },
+				ticketCount: Number(id.replace('pi_e2e_', '')),
+				status: 'ORDER_STATUS_PENDING',
 			},
 		},
 	}

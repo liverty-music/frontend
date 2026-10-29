@@ -91,6 +91,15 @@ describe('toSeriesDraft', () => {
 		expect(draft.events[0].placeId).toBeUndefined()
 		expect(draft.events[0].startTime).toBeUndefined()
 		expect(draft.events[0].openTime).toBeUndefined()
+		expect(draft.events[0].perAccountLimit).toBeUndefined()
+	})
+
+	it("marshals each date's per-account limit", () => {
+		const draft = toSeriesDraft({
+			...BASE,
+			events: [{ ...BASE.events[0], perAccountLimit: 6 }],
+		})
+		expect(draft.events[0].perAccountLimit).toBe(6)
 	})
 })
 

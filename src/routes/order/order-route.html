@@ -40,23 +40,14 @@
 		class="[ order-content ] [ flow ]"
 		if.bind="step === 'loaded'"
 	>
-		<!-- §5.2 Refund / Failed banner (shown prominently before payment details) -->
+		<!-- §5.2 Refund banner (shown prominently before payment details) -->
 		<output
 			class="order-status-banner"
 			data-kind.bind="order.statusKind"
-			if.bind="order.statusKind === 'refunded' || order.statusKind === 'failed'"
+			if.bind="order.statusKind === 'refunded'"
 		>
 			<span class="order-status-banner-label">${statusLabel}</span>
-			<p
-				class="order-status-banner-desc"
-				if.bind="order.statusKind === 'refunded'"
-				t="order.status.refundedDesc"
-			></p>
-			<p
-				class="order-status-banner-desc"
-				if.bind="order.statusKind === 'failed'"
-				t="order.status.failedDesc"
-			></p>
+			<p class="order-status-banner-desc" t="order.status.refundedDesc"></p>
 		</output>
 
 		<!-- §5.1 Payment result card -->

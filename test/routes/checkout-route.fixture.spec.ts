@@ -13,12 +13,16 @@ import { ITicketSaleRpcClient } from '../../src/adapter/rpc/client/ticket-sale-c
 import { IAppConfig } from '../../src/config/app-config'
 import type { Checkout } from '../../src/entities/checkout'
 import type { IdentityVerification } from '../../src/entities/identity-verification'
-import type { TicketSale } from '../../src/entities/ticket-sale'
+import type {
+	EventTicketSales,
+	TicketSale,
+} from '../../src/entities/ticket-sale'
 import { IAnalyticsService } from '../../src/lib/analytics/analytics-service'
 import en from '../../src/locales/en/translation.json'
 import ja from '../../src/locales/ja/translation.json'
 import { CheckoutRoute } from '../../src/routes/checkout/checkout-route'
 import { IErrorBoundaryService } from '../../src/services/error-boundary-service'
+import { IHeldSeatTypeService } from '../../src/services/held-seat-type-service'
 import { IIdentityVerificationService } from '../../src/services/identity-verification-service'
 import { INotificationManager } from '../../src/services/notification-manager'
 import { IPushService } from '../../src/services/push-service'
@@ -41,14 +45,27 @@ const jpkiOnlySale: TicketSale = {
 	saleStartTime: new Date(Date.now() - 60 * 60 * 1000),
 	saleEndTime: new Date(Date.now() + 9 * 24 * 60 * 60 * 1000),
 	verificationRequirement: 'jpkiOnly',
-	ticketType: {
-		id: 'type-1',
-		eventId: EVENT_ID,
-		price: 3000,
+	eventIds: [EVENT_ID],
+}
+
+/** ListByEvent's answer for `sale`: the event's S席 stock, 3000 yen, limit 4. */
+function ticketsOf(sale: TicketSale): EventTicketSales {
+	return {
+		sales: [sale],
+		stocks: [
+			{
+				id: 'stock-s',
+				eventId: EVENT_ID,
+				seatTypeId: 'seat-s',
+				seatTypeName: 'S席',
+				price: 3000,
+				state: 'available',
+				lowStock: false,
+				resaleOpen: false,
+			},
+		],
 		perAccountLimit: 4,
-		state: 'onSale',
-		lowStock: false,
-	},
+	}
 }
 
 const concert = {
@@ -67,7 +84,9 @@ const concert = {
 
 const held: Checkout = {
 	id: 'checkout-1',
-	ticketTypeId: 'type-1',
+	orderId: 'order-1',
+	ticketSaleId: 'sale-1',
+	ticketStockId: 'stock-s',
 	ticketCount: 1,
 	amount: 3000,
 	status: 'held',
@@ -122,7 +141,12 @@ async function render(
 				get: vi.fn().mockResolvedValue(concert),
 			}),
 			Registration.instance(ITicketSaleRpcClient, {
-				listByEvent: vi.fn().mockResolvedValue([options.sale ?? jpkiOnlySale]),
+				listByEvent: vi
+					.fn()
+					.mockResolvedValue(ticketsOf(options.sale ?? jpkiOnlySale)),
+			}),
+			Registration.instance(IHeldSeatTypeService, {
+				heldTickets: vi.fn().mockResolvedValue(null),
 			}),
 			Registration.instance(ICheckoutRpcClient, checkoutClient),
 			options.stripe ??
@@ -146,7 +170,7 @@ async function render(
 	).started
 	const host = fixture.appHost.querySelector('checkout-route') as Element
 	const vm = CustomElement.for<CheckoutRoute>(host).viewModel
-	vm.loading({ id: EVENT_ID })
+	vm.loading({ id: EVENT_ID, stockId: 'stock-s' })
 	await vi.waitFor(() => expect(vm.step).not.toBe('loading'))
 	await tasksSettled()
 	return { fixture, vm, checkoutClient, router }
@@ -208,7 +232,7 @@ describe('CheckoutRoute verified sale (fixture)', () => {
 		await vi.waitFor(() => expect(vm.step).toBe('personal-details'))
 
 		expect(checkoutClient.start).toHaveBeenCalledWith(
-			'type-1',
+			'stock-s',
 			1,
 			undefined,
 			expect.anything(),
@@ -330,6 +354,62 @@ describe('CheckoutRoute card failures (fixture)', () => {
 		expect(host.textContent).not.toContain('Your card number is incomplete')
 		// Nothing is authorized for a card the form refused.
 		expect(checkoutClient.authorizeCard).not.toHaveBeenCalled()
+		await fixture.stop(true)
+	})
+})
+
+describe('CheckoutRoute seat type (fixture)', () => {
+	beforeEach(() => {
+		localStorage.clear()
+	})
+
+	it('shows the seat type with the count, the price and the total on the count step', async () => {
+		// @spec components/infrastructure/fan/web/route/checkout "Fan picks two tickets"
+		const { fixture, vm } = await render('ja', undefined, { sale: openSale })
+		const host = fixture.appHost
+		vm.ticketCount = 2
+		await tasksSettled()
+
+		expect(byTestId(host, 'checkout-seat-type')?.textContent).toBe('S席')
+		expect(byTestId(host, 'checkout-total')?.textContent).toBe(
+			'合計 6,000円（税込）',
+		)
+		const options = [
+			...(byTestId(host, 'checkout-count-select')?.querySelectorAll('option') ??
+				[]),
+		].map((o) => o.textContent)
+		expect(options).toEqual(['1', '2', '3', '4'])
+		await fixture.stop(true)
+	})
+
+	it('names the seat type on the final confirmation and states the amount it pays', async () => {
+		// @spec components/infrastructure/fan/web/route/checkout "Final confirmation shown"
+		const { fixture, vm, checkoutClient } = await render('ja', undefined, {
+			sale: openSale,
+		})
+		checkoutClient.start.mockResolvedValue({
+			...held,
+			ticketCount: 2,
+			amount: 6000,
+		})
+		await vm.hold()
+		vm.card = { tokenId: 'ctoken_1', brand: 'visa', last4: '4242' }
+		vm.step = 'confirm'
+		await tasksSettled()
+		const host = fixture.appHost
+
+		expect(byTestId(host, 'checkout-confirm-tickets')?.textContent).toBe(
+			'S席 2枚 × 3,000円 = 合計 6,000円（税込）',
+		)
+		expect(byTestId(host, 'checkout-confirm-payment')?.textContent).toContain(
+			'VISA •••• 4242',
+		)
+		expect(host.textContent).toContain(
+			'公式リセールは、この公演でその席種が完売した場合にのみ開始されます',
+		)
+		expect(byTestId(host, 'checkout-place-order')?.textContent).toBe(
+			'6,000円を支払って購入する',
+		)
 		await fixture.stop(true)
 	})
 })

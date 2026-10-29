@@ -110,9 +110,10 @@ const routeTable = [
 		data: { auth: false, section: 'dashboard' },
 	},
 	{
-		// The checkout of an Event's first-come sale. Signed-in fans only; a
-		// guest is sent through sign-up from the Event page.
-		path: 'events/:id/checkout',
+		// The checkout of one TicketStock (seat type) of an Event, in its
+		// first-come sale. Signed-in fans only; a guest is sent through sign-up
+		// from the Event page.
+		path: 'events/:id/checkout/:stockId',
 		component: import('./routes/checkout/checkout-route'),
 		title: 'Checkout',
 		data: { titleKey: 'checkout.title', section: 'dashboard' },
@@ -158,19 +159,19 @@ const routeTable = [
 		component: import('./routes/verify-callback/verify-callback-route'),
 		title: 'Identity Verification',
 	},
-	// The lottery entry of one TicketType of an Event's lottery sale, opened
-	// from the Event page's ticket section. Signed-in fans only; a guest is
-	// sent through sign-up from the Event page.
+	// The lottery entry of one TicketStock (seat type) of an Event in a
+	// lottery sale, opened from the Event page's ticket section. Signed-in fans
+	// only; a guest is sent through sign-up from the Event page.
 	{
-		path: 'events/:id/lottery/:ticketTypeId',
+		path: 'events/:id/lottery/:saleId/:stockId',
 		component: import('./routes/lottery-entry/lottery-entry-route'),
 		title: 'Lottery Entry',
 		data: { titleKey: 'lotteryEntry.title', section: 'dashboard' },
 	},
-	// The fan's entry for that TicketType and its state.
+	// The fan's entry in that sale for that event and its state.
 	// Reached from the entry screen once the entry is made.
 	{
-		path: 'events/:id/lottery/:ticketTypeId/entry',
+		path: 'events/:id/lottery/:saleId/:stockId/entry',
 		component: import(
 			'./routes/lottery-entry-status/lottery-entry-status-route'
 		),

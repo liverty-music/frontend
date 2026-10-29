@@ -12,9 +12,11 @@ import {
 	jst,
 	organizer,
 	payoutAccount,
+	S_SEAT,
 	type SaleSpec,
 	salesOf,
 	seriesList,
+	stocksOf,
 	XX_TOUR,
 } from '../support/organizer-data'
 import { expect, type Page, test } from '../support/test'
@@ -35,16 +37,13 @@ const NOW = new Date('2026-10-01T12:00:00+09:00')
 const SALES = `${SERIES}/s-tour/events/e-1103/ticket-sales`
 const NEW_LOTTERY = `${SALES}/new?method=lottery`
 
-/** An unopened lottery for 3 November: 10 to 17 October, 100 tickets at 8000 yen. */
+/** An unopened lottery for 3 November: 10 to 17 October. */
 const PRESALE: SaleSpec = {
 	id: 'l-1',
 	name: 'ファンクラブ先行',
 	method: 'LOTTERY',
 	start: jst('2026-10-10', '12:00'),
 	end: jst('2026-10-17', '12:00'),
-	price: 8000,
-	quantity: 100,
-	perAccountLimit: 4,
 }
 
 const BASE: RpcMocks = {
@@ -52,6 +51,10 @@ const BASE: RpcMocks = {
 	'OrganizerService/Get': organizer(),
 	'PayoutAccountService/Get': payoutAccount('ACTIVE'),
 	'TicketSaleService/ListByEvent': salesOf('e-1103', []),
+	// The event's one stock: S席 8,000円 × 100.
+	'TicketStockService/ListByEvent': stocksOf('e-1103', [
+		{ id: 'stock-s', seatType: S_SEAT, quantity: 100 },
+	]),
 	'ScannerService/ListByEvent': { scanners: [] },
 }
 
@@ -120,8 +123,6 @@ async function shownWindow(page: Page, which: 'start' | 'end') {
 async function fillPresale(page: Page, opts: { name?: string } = {}) {
 	if (opts.name !== '')
 		await field(page, '販売名').fill(opts.name ?? 'ファンクラブ先行')
-	await field(page, '販売枚数').fill('100')
-	await field(page, '価格').fill('8000')
 }
 
 interface CreateBody {
@@ -129,12 +130,7 @@ interface CreateBody {
 	method: string
 	saleStartTime: string
 	saleEndTime: string
-	ticketTypes: Array<{
-		eventId: { value: string }
-		price: { value: string }
-		quantity: number
-		perAccountLimit: number
-	}>
+	eventIds: Array<{ value: string }>
 }
 
 test.describe('a new lottery', () => {
@@ -145,7 +141,9 @@ test.describe('a new lottery', () => {
 		).toBeVisible()
 		await expect.poll(() => shownWindow(page, 'start')).toBe('2026-10-01 12:00')
 		expect(await shownWindow(page, 'end')).toBe('2026-10-11 12:00')
-		await expect(field(page, '1人あたりの上限枚数')).toHaveValue('4')
+		// No price, quantity or limit: those are the event's.
+		await expect(field(page, '価格')).toHaveCount(0)
+		await expect(field(page, '1人あたりの上限枚数')).toHaveCount(0)
 	})
 
 	test(`@spec ${SPEC} "Window too long"`, async ({ page }) => {
@@ -174,6 +172,12 @@ test.describe('a new lottery', () => {
 				)[0],
 			},
 		})
+		// It draws from the event's S席, up to the event's limit.
+		const tickets = page.locator('.tickets')
+		await expect(tickets.locator('.stock')).toHaveText([
+			/S席\s*8,000円 税込 · 100枚/,
+		])
+		await expect(tickets).toContainText('1アカウント4枚まで')
 		await fillPresale(page)
 		await page.getByRole('button', { name: '抽選販売を始める' }).click()
 		await expect
@@ -190,14 +194,7 @@ test.describe('a new lottery', () => {
 		expect(new Date(body.saleEndTime).toISOString()).toBe(
 			jst('2026-10-11', '12:00'),
 		)
-		expect(body.ticketTypes).toEqual([
-			{
-				eventId: { value: 'e-1103' },
-				price: { value: '8000' },
-				quantity: 100,
-				perAccountLimit: 4,
-			},
-		])
+		expect(body.eventIds).toEqual([{ value: 'e-1103' }])
 	})
 
 	test(`@spec ${SPEC} "Missing name"`, async ({ page }) => {
@@ -351,7 +348,7 @@ test.describe('a new lottery', () => {
 			/\/series\/s-tour\/events\/e-1103\/ticket-sales$/,
 		)
 		await expect(
-			page.getByRole('heading', { level: 2, name: 'ファンクラブ先行' }),
+			page.getByRole('heading', { level: 3, name: 'ファンクラブ先行' }),
 		).toBeVisible()
 		await expect(snackbar(page)).toContainText(
 			'「ファンクラブ先行」の抽選販売をつくりました',
@@ -505,48 +502,13 @@ test.describe('changing a lottery before it opens', () => {
 		expect(new Date(body.saleEndTime).toISOString()).toBe(
 			jst('2026-10-19', '12:00'),
 		)
-		expect(calls(log, 'TicketTypeService/Update')).toHaveLength(0)
-	})
-
-	test(`@spec ${SPEC} "Change the price before it opens"`, async ({ page }) => {
-		const store = salesStore('e-1103', [PRESALE])
-		const log = await openEditor(page, EDIT, {
-			'TicketSaleService/ListByEvent': store.answer,
-			'TicketTypeService/Update': () => {
-				const cheaper = { ...PRESALE, price: 7500 }
-				store.set([cheaper])
-				const sale = (
-					salesOf('e-1103', [cheaper]).ticketSales as Array<{
-						ticketTypes: unknown[]
-					}>
-				)[0]
-				return { body: { ticketType: sale.ticketTypes[0] } }
-			},
-		})
-		await expect(field(page, '価格')).toHaveValue('8000')
-		await field(page, '価格').fill('7500')
-		await page.getByRole('button', { name: '保存する' }).click()
-
-		await expect(page).toHaveURL(
-			/\/series\/s-tour\/events\/e-1103\/ticket-sales$/,
-		)
-		await expect(
-			page.getByRole('listitem').filter({ hasText: 'ファンクラブ先行' }),
-		).toContainText('7,500円')
-		expect(calls(log, 'TicketTypeService/Update')[0].body).toEqual({
-			ticketTypeId: { value: 'type-l-1' },
-			price: { value: '7500' },
-			quantity: 100,
-			perAccountLimit: 4,
-		})
-		expect(calls(log, 'TicketSaleService/SetWindow')).toHaveLength(0)
 	})
 
 	test(`@spec ${SPEC} "Sale opened while editing"`, async ({ page }) => {
 		const log = await openEditor(page, EDIT, {
 			'TicketSaleService/ListByEvent': salesOf('e-1103', [PRESALE]),
 		})
-		await field(page, '価格').fill('7500')
+		await enterWindow(page, 'start', '2026-10-12', '12:00')
 		// The window opens while the member is still editing.
 		await page.clock.setFixedTime(new Date('2026-10-10T12:30:00+09:00'))
 		await page.getByRole('button', { name: '保存する' }).click()
@@ -556,6 +518,5 @@ test.describe('changing a lottery before it opens', () => {
 		)
 		await expect(page).toHaveURL(/\/ticket-sales\/l-1\/edit$/)
 		expect(calls(log, 'TicketSaleService/SetWindow')).toHaveLength(0)
-		expect(calls(log, 'TicketTypeService/Update')).toHaveLength(0)
 	})
 })

@@ -13,6 +13,7 @@ import {
 	concertTitle,
 	findConcert,
 	paths,
+	perAccountLimitOf,
 	performs,
 } from '../model/concert-model'
 import { IArtistClient } from '../services/artist-client'
@@ -107,6 +108,7 @@ export class ConcertEditorRoute {
 	public venueFields: VenueField[] = []
 	public dateFields: ConsoleField[] = []
 	public startTimeFields: ConsoleTimeField[] = []
+	public limitFields: ConsoleField[] = []
 
 	/** The served cover, the picked image while it is processed, and the upload in flight. */
 	public coverImageUrl = ''
@@ -311,6 +313,7 @@ export class ConcertEditorRoute {
 					openTime: e.openTime?.value
 						? toJstTimeInput(timestampDate(e.openTime.value))
 						: '',
+					perAccountLimit: String(perAccountLimitOf(e)),
 				}
 			}),
 		}
@@ -412,13 +415,14 @@ export class ConcertEditorRoute {
 			return
 		}
 		const row = this.errors.rows.findIndex(
-			(r) => r.venueName || r.localDate || r.time,
+			(r) => r.venueName || r.localDate || r.time || r.perAccountLimit,
 		)
 		if (row < 0) return
 		const errors = this.errors.rows[row]
 		if (errors.venueName) this.venueFields[row]?.focus()
 		else if (errors.localDate) this.dateFields[row]?.focus()
-		else this.startTimeFields[row]?.focus()
+		else if (errors.time) this.startTimeFields[row]?.focus()
+		else this.limitFields[row]?.focus()
 	}
 
 	/**

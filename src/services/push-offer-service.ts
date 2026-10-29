@@ -1,6 +1,6 @@
 import { I18N } from '@aurelia/i18n'
 import { DI, IEventAggregator, ILogger, resolve } from 'aurelia'
-import { Snack, SNACK_LONG_MS } from '../../shared/ui/snack-bar/snack'
+import { SNACK_LONG_MS, Snack } from '../../shared/ui/snack-bar/snack'
 import { ILocalStorage } from '../adapter/storage/local-storage'
 import { StorageKeys } from '../constants/storage-keys'
 import type { PermissionRequestSource } from './analytics-events'

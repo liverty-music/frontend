@@ -102,6 +102,8 @@ export interface EventDraftInput {
 	readonly localDate: CalendarDate
 	readonly startTime?: Date
 	readonly openTime?: Date
+	/** The most tickets one account may hold for the date (1 to 10); the server's default is 4. */
+	readonly perAccountLimit?: number
 }
 
 /** The plain, transport-agnostic authoring payload shared by create + update. */
@@ -136,6 +138,9 @@ function toEventDraft(input: EventDraftInput): ProtoEventDraft {
 			: {}),
 		...(input.openTime
 			? { openTime: { value: timestampFromDate(input.openTime) } }
+			: {}),
+		...(input.perAccountLimit !== undefined
+			? { perAccountLimit: input.perAccountLimit }
 			: {}),
 	})
 }

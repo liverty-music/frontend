@@ -12,20 +12,13 @@ import {
 
 /** 2026-11-20 19:00 in Japan time. */
 const EVENT_START = new Date(Date.UTC(2026, 10, 20, 10, 0))
-const CTX: TicketSaleFormContext = {
-	eventStart: EVENT_START,
-	soldCount: 0,
-	heldCount: 0,
-}
+const CTX: TicketSaleFormContext = { eventStart: EVENT_START }
 
 function valid(): TicketSaleFormModel {
 	return {
 		name: '一般発売',
 		saleStart: { date: '2026-11-01', time: '12:00' },
 		saleEnd: { date: '2026-11-20', time: '19:00' },
-		price: '3000',
-		quantity: '150',
-		perAccountLimit: '4',
 	}
 }
 
@@ -45,9 +38,6 @@ describe('Japan-time inputs', () => {
 			name: '一般発売',
 			saleStartTime: new Date('2026-11-20T23:30:00Z'),
 			saleEndTime: EVENT_START,
-			price: BigInt(3000),
-			quantity: 150,
-			perAccountLimit: 4,
 		})
 		expect(model.saleStart).toEqual({ date: '2026-11-21', time: '08:30' })
 		expect(model.saleEnd).toEqual({ date: '2026-11-20', time: '19:00' })
@@ -62,10 +52,10 @@ describe('Japan-time inputs', () => {
 })
 
 describe('blankFormModel', () => {
-	it('ends the sale at the event start and allows 4 per account', () => {
+	it('ends the sale at the event start, with no price, quantity or limit', () => {
 		const model = blankFormModel(EVENT_START, '一般発売')
 		expect(model.saleEnd).toEqual({ date: '2026-11-20', time: '19:00' })
-		expect(model.perAccountLimit).toBe('4')
+		expect(Object.keys(model).sort()).toEqual(['name', 'saleEnd', 'saleStart'])
 		expect(model.name).toBe('一般発売')
 		expect(model.saleStart).toEqual({ date: '', time: '' })
 	})
@@ -127,53 +117,9 @@ describe('validateTicketSaleForm', () => {
 		})
 		expect(noTimes.saleEndTime).toEqual({ key: 'firstComeEditor.error.end' })
 	})
-
-	it.each([
-		['0', true],
-		['1', false],
-		['1000000', false],
-		['1000001', true],
-		['12.5', true],
-		['', true],
-	])('price %s is an error: %s', (price, isError) => {
-		const errors = validateTicketSaleForm({ ...valid(), price }, CTX)
-		expect(Boolean(errors.price)).toBe(isError)
-	})
-
-	it.each([
-		['0', true],
-		['1', false],
-		['', true],
-	])('quantity %s is an error: %s', (quantity, isError) => {
-		const errors = validateTicketSaleForm({ ...valid(), quantity }, CTX)
-		expect(Boolean(errors.quantity)).toBe(isError)
-	})
-
-	it.each([
-		['0', true],
-		['1', false],
-		['10', false],
-		['11', true],
-	])('limit %s is an error: %s', (perAccountLimit, isError) => {
-		const errors = validateTicketSaleForm({ ...valid(), perAccountLimit }, CTX)
-		expect(Boolean(errors.perAccountLimit)).toBe(isError)
-	})
-
-	it('refuses a quantity below sold plus held and accepts it at the floor', () => {
-		const ctx = { ...CTX, soldCount: 100, heldCount: 6 }
-		expect(
-			validateTicketSaleForm({ ...valid(), quantity: '105' }, ctx).quantity,
-		).toEqual({
-			key: 'firstComeEditor.error.quantityFloor',
-			params: { sold: 100, held: 6, floor: 106 },
-		})
-		expect(
-			validateTicketSaleForm({ ...valid(), quantity: '106' }, ctx).quantity,
-		).toBeUndefined()
-	})
 })
 
-describe('validateTicketSaleForm — name and limit', () => {
+describe('validateTicketSaleForm — name', () => {
 	it.each([
 		['', true],
 		['一般発売', false],
@@ -184,30 +130,18 @@ describe('validateTicketSaleForm — name and limit', () => {
 			Boolean(validateTicketSaleForm({ ...valid(), name }, CTX).name),
 		).toBe(isError)
 	})
-
-	it('refuses a limit above the quantity', () => {
-		expect(
-			validateTicketSaleForm(
-				{ ...valid(), quantity: '3', perAccountLimit: '4' },
-				CTX,
-			).perAccountLimit,
-		).toEqual({ key: 'firstComeEditor.error.limitOverQuantity' })
-	})
 })
 
 describe('toCreateInput', () => {
-	it('converts the model into a FirstCome sale with absolute instants and numbers', () => {
+	it('converts the model into a FirstCome sale naming the event', () => {
 		const input = toCreateInput('series-1', 'event-1', valid())
 		expect(input).toEqual({
 			seriesId: 'series-1',
 			name: '一般発売',
 			method: 'firstCome',
-			eventId: 'event-1',
 			saleStartTime: new Date('2026-11-01T03:00:00Z'),
 			saleEndTime: EVENT_START,
-			price: 3000,
-			quantity: 150,
-			perAccountLimit: 4,
+			eventIds: ['event-1'],
 		})
 	})
 })

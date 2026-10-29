@@ -24,28 +24,27 @@
       <prerequisite-callout case="noStartTime" level.bind="2" guide-chapter="publish" heading.bind="'sale.prerequisite.noStartTime' & t" action-label.bind="'sale.prerequisite.editConcert' & t" action-href.bind="editConcertHref">
         ${'sale.prerequisite.noStartTimeBody' & t}
       </prerequisite-callout>
+      <prerequisite-callout case="noStock" level.bind="2" guide-chapter="sell" heading.bind="'sale.prerequisite.noStock' & t" action-label.bind="'saleEditor.toStocks' & t" action-href.bind="salesHref">
+        ${'saleEditor.noStockBody' & t}
+      </prerequisite-callout>
       <prerequisite-callout case="businessDetails" level.bind="2" guide-chapter="business-and-payout" heading.bind="'sale.prerequisite.businessDetails' & t">
         ${'sale.prerequisite.businessDetailsBody' & t}
       </prerequisite-callout>
     </div>
 
-    <div if.bind="sale" class="status">
-      <status-badge if.bind="stateKey" tone="info" label.bind="stateKey & t"></status-badge>
-      <div class="stats">
-        <stat-tile label.bind="'sale.stats.sold' & t" value.bind="soldCount | count"></stat-tile>
-        <stat-tile label.bind="'sale.stats.held' & t" value.bind="heldCount | count"></stat-tile>
-        <stat-tile label.bind="'sale.stats.quantity' & t" value.bind="quantity | count"></stat-tile>
-      </div>
-    </div>
-
     <form if.bind="!blocks.length" class="form" novalidate submit.trigger="false">
       <p class="note">${'common.requiredNote' & t}</p>
       <console-field
+        if.bind="!sale"
         label.bind="'lotteryEditor.name' & t"
         value.bind="model.name"
         required.bind="true"
         error.bind="error(errors.name, submitted)"
       ></console-field>
+      <div else class="fixed">
+        <span class="label">${'lotteryEditor.name' & t}</span>
+        <span>${model.name}</span>
+      </div>
       <h2 class="section-title">${'firstComeEditor.sections.window' & t}</h2>
       <div class="row">
         <console-field
@@ -82,33 +81,16 @@
           data-field="end-time"
         ></console-time-field>
       </div>
-      <h2 class="section-title">${'firstComeEditor.sections.tickets' & t}</h2>
-      <div class="row">
-        <console-field
-          type="yen"
-          label.bind="'lotteryEditor.price' & t"
-          value.bind="model.price"
-          required.bind="true"
-          disabled.bind="priceLocked"
-          hint.bind="priceHintKey & t"
-          error.bind="error(errors.price, submitted)"
-        ></console-field>
-        <console-field
-          type="number"
-          label.bind="'lotteryEditor.quantity' & t"
-          value.bind="model.quantity"
-          required.bind="true"
-          error.bind="error(errors.quantity, submitted)"
-        ></console-field>
-        <console-field
-          type="number"
-          label.bind="'lotteryEditor.limit' & t"
-          value.bind="model.perAccountLimit"
-          required.bind="true"
-          hint.bind="'firstComeEditor.limitHint' & t:{ min: minLimit, max: maxLimit }"
-          error.bind="error(errors.perAccountLimit, submitted)"
-        ></console-field>
-      </div>
+      <section class="tickets" aria-labelledby="first-come-tickets">
+        <h2 id="first-come-tickets" class="section-title">${'firstComeEditor.sections.tickets' & t}</h2>
+        <p class="note">${'saleEditor.sellsEveryStock' & t:{ limit: perAccountLimit }}</p>
+        <ul class="stock-list">
+          <li repeat.for="stock of stocks; key: id" class="stock" data-stock.bind="stock.id">
+            <span class="stock-name">${stock.name}</span>
+            <span>${stock.price | yen} ${'stock.taxIncluded' & t} · ${'sale.quantity' & t:{ tickets: stock.quantity }}</span>
+          </li>
+        </ul>
+      </section>
 
       <p if.bind="saveProblem" class="problem" role="alert"><console-icon name="error"></console-icon><span>${saveProblem & t}</span></p>
 

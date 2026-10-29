@@ -4,6 +4,11 @@ import {
 	Visibility,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
 import { parseJstDateAndTime, toJstDateInput } from '../i18n/format'
+import {
+	DEFAULT_PER_ACCOUNT_LIMIT,
+	MAX_PER_ACCOUNT_LIMIT,
+	MIN_PER_ACCOUNT_LIMIT,
+} from '../model/concert-model'
 import type {
 	CalendarDate,
 	EventDraftInput,
@@ -33,6 +38,12 @@ export interface EventFormRow {
 	startTime: string
 	/** `HH:mm` from the console time field; empty when unset. */
 	openTime: string
+	/**
+	 * 1アカウントの上限: the most tickets one account may hold for the date,
+	 * as a raw input string. Editable while the date is DRAFT; a published
+	 * date's is shown and sent back unchanged.
+	 */
+	perAccountLimit: string
 }
 
 /** The editable model of the whole series form. */
@@ -67,6 +78,7 @@ export interface EventRowErrors {
 	venueName?: string
 	localDate?: string
 	time?: string
+	perAccountLimit?: string
 }
 
 /** Returns a blank event row. */
@@ -78,6 +90,7 @@ export function emptyEventRow(): EventFormRow {
 		localDate: '',
 		startTime: '',
 		openTime: '',
+		perAccountLimit: String(DEFAULT_PER_ACCOUNT_LIMIT),
 	}
 }
 
@@ -98,6 +111,7 @@ export function firstEventRow(): EventFormRow {
  * The date 日程を追加 adds after `previous`: a new DRAFT with the previous
  * date's venue (and the place it was picked as), date, open and start time,
  * so a run of nights at one venue needs only the date changed (design D19).
+ * Its per-account limit starts at the default, as every new date's does.
  * A venue that was never matched to a map place (an older published date) is
  * not copied: a new date's venue is always a picked place.
  */
@@ -179,7 +193,8 @@ export function todayCalendarDate(now: Date = new Date()): CalendarDate {
  * sees inline errors before a round-trip: title required; a valid series type
  * and visibility (the UNSPECIFIED zero value is rejected); at least one
  * performer; at least one event; each event needs a venue name and a valid,
- * non-past local date; and open time must not be after start time.
+ * non-past local date; open time must not be after start time; and a new or
+ * DRAFT date's per-account limit is a whole number from 1 to 10.
  *
  * `today` is injected (defaults to the caller's local today) so the past-date
  * rule is deterministic and unit-testable. The past-date rule applies only to
@@ -234,10 +249,21 @@ export function validateConcertForm(
 				rowErrors.time = 'concertEditor.error.openAfterStart'
 			}
 		}
+		if (!hasFixedVenueAndDate(row) && !isPerAccountLimit(row.perAccountLimit)) {
+			rowErrors.perAccountLimit = 'concertEditor.error.perAccountLimit'
+		}
 		errors.rows.push(rowErrors)
 	}
 
 	return errors
+}
+
+/** True for a whole number of tickets one admission code can present (1 to 10). */
+export function isPerAccountLimit(value: string): boolean {
+	const trimmed = value.trim()
+	if (!/^\d+$/.test(trimmed)) return false
+	const n = Number(trimmed)
+	return n >= MIN_PER_ACCOUNT_LIMIT && n <= MAX_PER_ACCOUNT_LIMIT
 }
 
 /** True when the row's venue and date are fixed (a PUBLISHED or CANCELLED event). */
@@ -259,7 +285,9 @@ export function isFormValid(errors: ConcertFormErrors): boolean {
 	) {
 		return false
 	}
-	return errors.rows.every((r) => !r.venueName && !r.localDate && !r.time)
+	return errors.rows.every(
+		(r) => !r.venueName && !r.localDate && !r.time && !r.perAccountLimit,
+	)
 }
 
 /**
@@ -280,6 +308,10 @@ export function toSeriesDraftInput(model: ConcertFormModel): SeriesDraftInput {
 			localDate: date,
 			...(start ? { startTime: start } : {}),
 			...(open ? { openTime: open } : {}),
+			// A published date's limit is sent back as loaded, so Update keeps it.
+			...(isPerAccountLimit(row.perAccountLimit)
+				? { perAccountLimit: Number(row.perAccountLimit.trim()) }
+				: {}),
 		}
 	})
 	return {

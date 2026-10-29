@@ -61,10 +61,10 @@ export type ConcertDetailViewedProps = {
 	source: EventSource
 }
 
-/** Values a ticket event shares: the Event, the TicketType and the count. */
+/** Values a ticket event shares: the Event, the TicketStock and the count. */
 type TicketChoiceProps = {
 	event_id: string
-	ticket_type_id: string
+	ticket_stock_id: string
 	ticket_count: number
 }
 
@@ -118,7 +118,7 @@ export type ReportedCheckoutStep =
 /** The checkout showed one of its steps. */
 export type CheckoutStepViewedProps = {
 	event_id: string
-	ticket_type_id: string
+	ticket_stock_id: string
 	step: ReportedCheckoutStep
 }
 

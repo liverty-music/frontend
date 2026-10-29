@@ -9,7 +9,11 @@ import { Code, ConnectError } from '@connectrpc/connect'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ResolvedConcert } from '../../adapter/rpc/client/concert-client'
 import type { LotteryEntry } from '../../entities/lottery-entry'
-import type { TicketSale } from '../../entities/ticket-sale'
+import type {
+	EventTicketSales,
+	TicketSale,
+	TicketStock,
+} from '../../entities/ticket-sale'
 import type { ConfirmCardAuthorizationResult } from '../../services/stripe-service'
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
@@ -24,7 +28,9 @@ const mockLogger = {
 }
 
 const EVENT_ID = '019a0000-0000-7000-8000-0000000000e1'
-const TYPE_ID = '019a0000-0000-7000-8000-0000000000t1'
+const SALE_ID = '019a0000-0000-7000-8000-0000000000c1'
+const STOCK_ID = '019a0000-0000-7000-8000-0000000000d1'
+const A_STOCK_ID = '019a0000-0000-7000-8000-0000000000d2'
 
 /** An instant at the given Japan-time hour on a 2026-11 day. */
 function jst(day: number, hour: number): Date {
@@ -50,30 +56,49 @@ const concert: ResolvedConcert = {
 /** The ファンクラブ先行 lottery, open now, 8000 yen with a limit of 4. */
 function presale(o: Partial<TicketSale> = {}): TicketSale {
 	return {
-		id: 'sale-1',
+		id: SALE_ID,
 		name: 'ファンクラブ先行',
 		method: 'lottery',
 		saleStartTime: new Date(Date.now() - 24 * 60 * 60 * 1000),
 		saleEndTime: new Date(Date.now() + 9 * 24 * 60 * 60 * 1000),
 		verificationRequirement: 'none',
-		ticketType: {
-			id: TYPE_ID,
-			eventId: EVENT_ID,
-			price: 8000,
-			perAccountLimit: 4,
-			state: 'ended',
-			lowStock: false,
-			resaleOpen: false,
-			resaleAvailable: false,
-		},
+		eventIds: [EVENT_ID],
 		...o,
 	}
+}
+
+/** The 3 November event's S席 stock, 8000 yen. */
+const S_SEAT: TicketStock = {
+	id: STOCK_ID,
+	eventId: EVENT_ID,
+	seatTypeId: 'seat-s',
+	seatTypeName: 'S席',
+	price: 8000,
+	state: 'available',
+	lowStock: false,
+	resaleOpen: false,
+}
+
+/** Its A席 stock, 6000 yen. */
+const A_SEAT: TicketStock = {
+	...S_SEAT,
+	id: A_STOCK_ID,
+	seatTypeId: 'seat-a',
+	seatTypeName: 'A席',
+	price: 6000,
+}
+
+/** ListByEvent's answer: `sale` with the S席 and A席 stocks, limit 4. */
+function tickets(sale: TicketSale = presale()): EventTicketSales {
+	return { sales: [sale], stocks: [S_SEAT, A_SEAT], perAccountLimit: 4 }
 }
 
 function entered(o: Partial<LotteryEntry> = {}): LotteryEntry {
 	return {
 		id: 'entry-1',
-		ticketTypeId: TYPE_ID,
+		orderId: 'order-1',
+		ticketSaleId: SALE_ID,
+		ticketStockId: STOCK_ID,
 		ticketCount: 2,
 		state: 'entered',
 		...o,
@@ -90,8 +115,9 @@ const mockSale = { listByEvent: vi.fn() }
 const mockEntry = {
 	authorizeCard: vi.fn(),
 	confirm: vi.fn(),
-	listByTicketType: vi.fn(),
+	listBySale: vi.fn(),
 }
+const mockHeldSeatTypes = { heldTickets: vi.fn() }
 
 // A minimal fake Elements group + Payment Element. The service's
 // createElements/confirmCardAuthorization are mocked, so these only need to
@@ -132,6 +158,7 @@ vi.mock('aurelia', async (importOriginal) => {
 				IIdentityVerificationService: mockIdentityVerifications,
 				IUserStore: mockUserStore,
 				IRouter: mockRouter,
+				IHeldSeatTypeService: mockHeldSeatTypes,
 			}
 			return map[(token as { friendlyName?: string }).friendlyName ?? ''] ?? {}
 		}),
@@ -146,7 +173,7 @@ const flush = () => new Promise((r) => setTimeout(r, 0))
 
 async function open(): Promise<LotteryEntryRoute> {
 	const sut = new LotteryEntryRoute()
-	sut.loading({ id: EVENT_ID, ticketTypeId: TYPE_ID })
+	sut.loading({ id: EVENT_ID, saleId: SALE_ID, stockId: STOCK_ID })
 	await vi.waitFor(() => expect(sut.step).not.toBe('loading'))
 	return sut
 }
@@ -178,10 +205,11 @@ describe('LotteryEntryRoute', () => {
 		mockStripe.isConfigured = true
 		mockUserStore.current = undefined
 		mockConcert.get.mockResolvedValue(concert)
-		mockSale.listByEvent.mockResolvedValue([presale()])
+		mockSale.listByEvent.mockResolvedValue(tickets())
+		mockHeldSeatTypes.heldTickets.mockResolvedValue(null)
 		mockEntry.authorizeCard.mockResolvedValue(CARD_AUTHORIZATION)
 		mockEntry.confirm.mockResolvedValue(entered())
-		mockEntry.listByTicketType.mockResolvedValue([])
+		mockEntry.listBySale.mockResolvedValue([])
 		mockStripe.createElements.mockResolvedValue({
 			stripe: fakeStripe,
 			elements: fakeElements,
@@ -192,8 +220,8 @@ describe('LotteryEntryRoute', () => {
 		mockIdentityVerifications.get.mockResolvedValue(undefined)
 	})
 
-	describe('the TicketType entered', () => {
-		it('shows the sale name, the event, the price and offers 1 to the limit', async () => {
+	describe('the seat type entered', () => {
+		it('shows the sale name, the event, the seat type, the price and offers 1 to the limit', async () => {
 			// @spec components/infrastructure/fan/web/route/lottery-entry "Presale entry"
 			const sut = await open()
 
@@ -201,21 +229,24 @@ describe('LotteryEntryRoute', () => {
 			expect(sut.sale?.name).toBe('ファンクラブ先行')
 			expect(sut.event?.title).toBe('ONE MAN LIVE')
 			expect(sut.dateLabel).toBe('2026年11月3日(火)')
+			expect(sut.seatTypeName).toBe('S席')
 			expect(sut.yen(sut.price)).toBe('8,000')
 			expect(sut.perAccountLimit).toBe(4)
 			expect(sut.countOptions).toEqual([1, 2, 3, 4])
 		})
 
-		it('shows not found for a TicketType the event does not offer by lottery', async () => {
-			mockSale.listByEvent.mockResolvedValue([presale({ method: 'firstCome' })])
+		it('shows not found for a sale that is not a lottery', async () => {
+			mockSale.listByEvent.mockResolvedValue(
+				tickets(presale({ method: 'firstCome' })),
+			)
 			const sut = await open()
 			expect(sut.step).toBe('not-found')
 		})
 
 		it('says the lottery takes no entries outside its window', async () => {
-			mockSale.listByEvent.mockResolvedValue([
-				presale({ saleEndTime: new Date(Date.now() - 1000) }),
-			])
+			mockSale.listByEvent.mockResolvedValue(
+				tickets(presale({ saleEndTime: new Date(Date.now() - 1000) })),
+			)
 			const sut = await open()
 			expect(sut.step).toBe('closed')
 		})
@@ -260,7 +291,7 @@ describe('LotteryEntryRoute', () => {
 
 			const choice = {
 				event_id: EVENT_ID,
-				ticket_type_id: TYPE_ID,
+				ticket_stock_id: STOCK_ID,
 				ticket_count: 2,
 			}
 			expect(mockAnalytics.capture.mock.calls).toEqual([
@@ -304,7 +335,8 @@ describe('LotteryEntryRoute', () => {
 			const sut = await toPayment()
 
 			expect(mockEntry.authorizeCard).toHaveBeenCalledWith(
-				TYPE_ID,
+				SALE_ID,
+				STOCK_ID,
 				2,
 				'山田 花子',
 				'+819012345678',
@@ -367,7 +399,8 @@ describe('LotteryEntryRoute', () => {
 			await sut.confirmEntry()
 
 			expect(mockEntry.authorizeCard).toHaveBeenCalledWith(
-				TYPE_ID,
+				SALE_ID,
+				STOCK_ID,
 				2,
 				'山田 花子',
 				sent,
@@ -396,7 +429,7 @@ describe('LotteryEntryRoute', () => {
 			await flush()
 			await sut.confirmEntry()
 
-			expect(mockEntry.authorizeCard.mock.calls.map((c) => c[1])).toEqual([
+			expect(mockEntry.authorizeCard.mock.calls.map((c) => c[2])).toEqual([
 				2, 3,
 			])
 			expect(mockStripe.createElements).toHaveBeenLastCalledWith(
@@ -461,11 +494,30 @@ describe('LotteryEntryRoute', () => {
 			})
 		})
 
+		it('says the fan holds another seat type when AuthorizeCard is refused for that', async () => {
+			mockEntry.authorizeCard.mockRejectedValue(
+				new ConnectError('seat type', Code.FailedPrecondition),
+			)
+			mockHeldSeatTypes.heldTickets.mockResolvedValue({
+				stock: A_SEAT,
+				count: 2,
+			})
+			const sut = await toPersonalDetails()
+
+			await sut.toPayment()
+
+			expect(sut.step).toBe('refused')
+			expect(sut.message).toEqual({
+				key: 'lotteryEntry.refused.otherSeatType',
+				params: { seatType: 'A席' },
+			})
+		})
+
 		it('says the fan has entered already when AuthorizeCard is refused for that', async () => {
 			mockEntry.authorizeCard.mockRejectedValue(
 				new ConnectError('entered', Code.FailedPrecondition),
 			)
-			mockEntry.listByTicketType.mockResolvedValue([entered()])
+			mockEntry.listBySale.mockResolvedValue([entered()])
 			const sut = await toPersonalDetails()
 
 			await sut.toPayment()
@@ -531,17 +583,21 @@ describe('LotteryEntryRoute', () => {
 			])
 		})
 
-		it('says the fan already has an entry for the TicketType', async () => {
+		it('says the fan already has an entry in this sale for this event', async () => {
+			// @spec components/infrastructure/fan/web/route/lottery-entry "Already entered the sale"
 			const sut = await toPayment()
 			mockEntry.confirm.mockRejectedValue(
 				new ConnectError('second entry', Code.FailedPrecondition),
 			)
-			mockEntry.listByTicketType.mockResolvedValue([entered({ id: 'entry-0' })])
+			// The earlier entry is for A席; this one chose S席.
+			mockEntry.listBySale.mockResolvedValue([
+				entered({ id: 'entry-0', ticketStockId: A_STOCK_ID }),
+			])
 
 			await sut.confirmEntry()
 
-			expect(mockEntry.listByTicketType).toHaveBeenCalledWith(
-				TYPE_ID,
+			expect(mockEntry.listBySale).toHaveBeenCalledWith(
+				SALE_ID,
 				expect.anything(),
 			)
 			expect(sut.step).toBe('refused')
@@ -573,12 +629,64 @@ describe('LotteryEntryRoute', () => {
 			},
 		)
 
+		it("does not count the fan's entry for another date of the sale", async () => {
+			const sut = await toPayment()
+			mockEntry.confirm.mockRejectedValue(
+				new ConnectError('refused', Code.FailedPrecondition),
+			)
+			mockEntry.listBySale.mockResolvedValue([
+				entered({ ticketStockId: 'stock-of-another-date' }),
+			])
+
+			await sut.confirmEntry()
+
+			expect(sut.message).toEqual({ key: 'lotteryEntry.refused.other' })
+		})
+
+		it('says the fan holds another seat type of the date', async () => {
+			const sut = await toPayment()
+			mockEntry.confirm.mockRejectedValue(
+				new ConnectError('refused', Code.FailedPrecondition),
+			)
+			mockHeldSeatTypes.heldTickets.mockResolvedValue({
+				stock: A_SEAT,
+				count: 2,
+			})
+
+			await sut.confirmEntry()
+
+			expect(sut.step).toBe('refused')
+			expect(sut.message).toEqual({
+				key: 'lotteryEntry.refused.otherSeatType',
+				params: { seatType: 'A席' },
+			})
+		})
+
+		it('says the per-account limit would be exceeded', async () => {
+			const sut = await toPayment()
+			mockEntry.confirm.mockRejectedValue(
+				new ConnectError('refused', Code.FailedPrecondition),
+			)
+			// 3 S席 held already, and 2 more would make 5 over the limit of 4.
+			mockHeldSeatTypes.heldTickets.mockResolvedValue({
+				stock: S_SEAT,
+				count: 3,
+			})
+
+			await sut.confirmEntry()
+
+			expect(sut.message).toEqual({
+				key: 'lotteryEntry.refused.limit',
+				params: { limit: 4 },
+			})
+		})
+
 		it('says the entry was not made when the entry read fails', async () => {
 			const sut = await toPayment()
 			mockEntry.confirm.mockRejectedValue(
 				new ConnectError('refused', Code.FailedPrecondition),
 			)
-			mockEntry.listByTicketType.mockRejectedValue(new Error('offline'))
+			mockEntry.listBySale.mockRejectedValue(new Error('offline'))
 
 			await sut.confirmEntry()
 
@@ -589,9 +697,9 @@ describe('LotteryEntryRoute', () => {
 
 	describe('verification gate', () => {
 		it('parks an unverified fan when the sale requires verification', async () => {
-			mockSale.listByEvent.mockResolvedValue([
-				presale({ verificationRequirement: 'verifiedAny' }),
-			])
+			mockSale.listByEvent.mockResolvedValue(
+				tickets(presale({ verificationRequirement: 'verifiedAny' })),
+			)
 			const sut = await open()
 
 			expect(mockIdentityVerifications.get).toHaveBeenCalledOnce()
@@ -601,9 +709,9 @@ describe('LotteryEntryRoute', () => {
 		})
 
 		it('lets a verified fan straight into the count step', async () => {
-			mockSale.listByEvent.mockResolvedValue([
-				presale({ verificationRequirement: 'verifiedAny' }),
-			])
+			mockSale.listByEvent.mockResolvedValue(
+				tickets(presale({ verificationRequirement: 'verifiedAny' })),
+			)
 			mockIdentityVerifications.get.mockResolvedValue({
 				method: 'driverLicence',
 				status: 'active',
@@ -613,9 +721,9 @@ describe('LotteryEntryRoute', () => {
 		})
 
 		it('parks a fan verified by driver licence when the sale is JPKI only', async () => {
-			mockSale.listByEvent.mockResolvedValue([
-				presale({ verificationRequirement: 'jpkiOnly' }),
-			])
+			mockSale.listByEvent.mockResolvedValue(
+				tickets(presale({ verificationRequirement: 'jpkiOnly' })),
+			)
 			mockIdentityVerifications.get.mockResolvedValue({
 				method: 'driverLicence',
 				status: 'active',
@@ -631,9 +739,9 @@ describe('LotteryEntryRoute', () => {
 		})
 
 		it('proceeds when the status read fails (the server checks it at AuthorizeCard)', async () => {
-			mockSale.listByEvent.mockResolvedValue([
-				presale({ verificationRequirement: 'verifiedAny' }),
-			])
+			mockSale.listByEvent.mockResolvedValue(
+				tickets(presale({ verificationRequirement: 'verifiedAny' })),
+			)
 			mockIdentityVerifications.get.mockRejectedValue(new Error('UNAVAILABLE'))
 			const sut = await open()
 			expect(sut.step).toBe('count')
@@ -661,7 +769,7 @@ describe('LotteryEntryRoute', () => {
 
 		/** The code the last AuthorizeCard sent. */
 		function authorizedWith(): unknown {
-			return mockEntry.authorizeCard.mock.calls.at(-1)?.[4]
+			return mockEntry.authorizeCard.mock.calls.at(-1)?.[5]
 		}
 
 		it('sends the code kept for the same Series yesterday', async () => {

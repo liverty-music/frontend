@@ -18,13 +18,22 @@ import { ITicketSaleRpcClient } from '../../src/adapter/rpc/client/ticket-sale-c
 import { EventDateTabs } from '../../src/components/event-date-tabs/event-date-tabs'
 import { SvgIcon } from '../../src/components/svg-icon/svg-icon'
 import type { Artist } from '../../src/entities/artist'
-import type { TicketSale } from '../../src/entities/ticket-sale'
+import {
+	type EventTicketSales,
+	NO_TICKET_SALES,
+	type TicketSale,
+	type TicketStock,
+} from '../../src/entities/ticket-sale'
 import { IAnalyticsService } from '../../src/lib/analytics/analytics-service'
 import ja from '../../src/locales/ja/translation.json'
 import { EventRoute } from '../../src/routes/event/event-route'
 import { IAuthService } from '../../src/services/auth-service'
 import { IErrorBoundaryService } from '../../src/services/error-boundary-service'
 import { IFollowStore } from '../../src/services/follow-store'
+import {
+	type HeldTickets,
+	IHeldSeatTypeService,
+} from '../../src/services/held-seat-type-service'
 import { IPurchasedTicketStore } from '../../src/services/purchased-ticket-store'
 import { IUserStore } from '../../src/services/user-store'
 import { createMockAnalytics } from '../helpers/mock-analytics'
@@ -106,7 +115,10 @@ describe('EventRoute (fixture)', () => {
 				}),
 				Registration.instance(IUserStore, { currentLanguage: 'en' }),
 				Registration.instance(ITicketSaleRpcClient, {
-					listByEvent: vi.fn().mockResolvedValue([]),
+					listByEvent: vi.fn().mockResolvedValue(NO_TICKET_SALES),
+				}),
+				Registration.instance(IHeldSeatTypeService, {
+					heldTickets: vi.fn().mockResolvedValue(null),
 				}),
 			],
 		).started
@@ -161,8 +173,15 @@ function fixtureConcert() {
 	)
 }
 
-/** Render the real Event page in Japanese with the given sales. */
-async function renderSales(sales: TicketSale[], authenticated: boolean) {
+/**
+ * Render the real Event page in Japanese with the given sales and stocks;
+ * `held` is what the signed-in fan already holds for the event.
+ */
+async function renderSales(
+	tickets: EventTicketSales,
+	authenticated: boolean,
+	held: HeldTickets | null = null,
+) {
 	const concert = fixtureConcert()
 	const fixture = await createFixture(
 		'<event-route component.ref="route"></event-route>',
@@ -194,13 +213,19 @@ async function renderSales(sales: TicketSale[], authenticated: boolean) {
 			}),
 			Registration.instance(IUserStore, { currentLanguage: 'ja' }),
 			Registration.instance(ITicketSaleRpcClient, {
-				listByEvent: vi.fn().mockResolvedValue(sales),
+				listByEvent: vi.fn().mockResolvedValue(tickets),
+			}),
+			Registration.instance(IHeldSeatTypeService, {
+				heldTickets: vi.fn().mockResolvedValue(held),
 			}),
 		],
 	).started
 	const route = fixture.component.route
 	route.loading({ id: EVENT_ID })
-	await vi.waitFor(() => expect(route.sales).toHaveLength(sales.length))
+	await vi.waitFor(() =>
+		expect(route.tickets.sales).toHaveLength(tickets.sales.length),
+	)
+	if (held) await vi.waitFor(() => expect(route.heldStock).not.toBeNull())
 	await tasksSettled()
 	return fixture
 }
@@ -215,82 +240,197 @@ function onSale(o: Partial<TicketSale> = {}): TicketSale {
 		saleStartTime: new Date(Date.now() - DAY),
 		saleEndTime: new Date(Date.now() + DAY),
 		verificationRequirement: 'none',
-		ticketType: {
-			id: 'type-1',
-			eventId: EVENT_ID,
-			price: 3000,
-			perAccountLimit: 4,
-			state: 'onSale',
-			lowStock: true,
-		},
+		eventIds: [EVENT_ID],
 		...o,
 	}
 }
 
-describe('EventRoute ticket section (fixture)', () => {
-	it('shows the price, few left and the action to buy, with no count', async () => {
-		// @spec components/infrastructure/fan/web/route/event "On sale with few left"
-		const fixture = await renderSales([onSale()], false)
-		const section = fixture.appHost.querySelector(
-			'[data-testid="event-sale"]',
-		) as HTMLElement
+function stock(o: Partial<TicketStock> = {}): TicketStock {
+	return {
+		id: 'stock-s',
+		eventId: EVENT_ID,
+		seatTypeId: 'seat-s',
+		seatTypeName: 'S席',
+		price: 3000,
+		state: 'available',
+		lowStock: false,
+		resaleOpen: false,
+		...o,
+	}
+}
 
-		expect(
-			section.querySelector('[data-testid="event-sale-price"]')?.textContent,
-		).toBe('3,000円（税込）')
-		expect(
-			section.querySelector('[data-testid="event-sale-low"]')?.textContent,
-		).toBe('残りわずか')
-		expect(section.querySelector('[data-testid="event-buy"]')).not.toBeNull()
-		expect(section.textContent).not.toMatch(/\d+枚/)
+const A_SEAT = stock({
+	id: 'stock-a',
+	seatTypeId: 'seat-a',
+	seatTypeName: 'A席',
+	price: 2000,
+})
+
+function tickets(
+	sales: TicketSale[],
+	stocks: TicketStock[] = [stock()],
+): EventTicketSales {
+	return { sales, stocks, perAccountLimit: 4 }
+}
+
+/** The rendered row of a seat type in the ticket section. */
+function rowOf(host: HTMLElement, name: string): HTMLElement {
+	const row = [
+		...host.querySelectorAll<HTMLElement>('[data-testid="event-stock"]'),
+	].find(
+		(r) =>
+			r.querySelector('[data-testid="event-stock-name"]')?.textContent === name,
+	)
+	if (!row) throw new Error(`no row for ${name}`)
+	return row
+}
+
+const testid = (el: HTMLElement, id: string) =>
+	el.querySelector(`[data-testid="${id}"]`)
+
+describe('EventRoute ticket section (fixture)', () => {
+	it('shows the seat type, its price, few left and the action to buy, with no count', async () => {
+		// @spec components/infrastructure/fan/web/route/event "On sale with few left"
+		const fixture = await renderSales(
+			tickets([onSale()], [stock({ lowStock: true })]),
+			false,
+		)
+		const section = testid(fixture.appHost, 'event-sale') as HTMLElement
+		const s = rowOf(section, 'S席')
+
+		expect(testid(s, 'event-sale-price')?.textContent).toBe('3,000円（税込）')
+		expect(testid(s, 'event-sale-low')?.textContent).toBe('残りわずか')
+		expect(testid(s, 'event-buy')).not.toBeNull()
+		expect(testid(section, 'event-sale-limit')?.textContent).toContain('4枚')
+		expect(s.textContent).not.toMatch(/\d+枚/)
 		await fixture.stop(true)
 	})
 
-	it('shows an open lottery by name with its window, price and the action to enter', async () => {
+	it('shows each seat type: the available one with the action to buy, the sold-out one as 売り切れ', async () => {
+		// @spec components/infrastructure/fan/web/route/event "Two seat types"
+		const fixture = await renderSales(
+			tickets([onSale()], [stock(), { ...A_SEAT, state: 'soldOut' }]),
+			true,
+		)
+		const s = rowOf(fixture.appHost, 'S席')
+		const a = rowOf(fixture.appHost, 'A席')
+
+		expect(
+			(testid(s, 'event-buy') as HTMLAnchorElement).getAttribute('href'),
+		).toBe(`/events/${EVENT_ID}/checkout/stock-s`)
+		expect(testid(a, 'event-sale-sold-out')?.textContent).toBe('売り切れ')
+		expect(testid(a, 'event-buy')).toBeNull()
+		await fixture.stop(true)
+	})
+
+	it('shows the opening time and each seat type with its price, and no action to buy', async () => {
+		// @spec components/infrastructure/fan/web/route/event "Not yet on sale"
+		const fixture = await renderSales(
+			tickets([
+				onSale({
+					saleStartTime: new Date(Date.now() + DAY),
+					saleEndTime: new Date(Date.now() + 2 * DAY),
+				}),
+			]),
+			false,
+		)
+		const section = testid(fixture.appHost, 'event-sale') as HTMLElement
+
+		expect(testid(section, 'event-sale-opens')?.textContent).toContain(
+			'販売開始',
+		)
+		expect(testid(rowOf(section, 'S席'), 'event-sale-price')?.textContent).toBe(
+			'3,000円（税込）',
+		)
+		expect(testid(section, 'event-buy')).toBeNull()
+		await fixture.stop(true)
+	})
+
+	it('shows an all-held seat type as 売り切れ with the note', async () => {
+		// @spec components/infrastructure/fan/web/route/event "Temporarily all held"
+		const fixture = await renderSales(
+			tickets([onSale()], [stock({ state: 'allHeld' })]),
+			false,
+		)
+		const s = rowOf(fixture.appHost, 'S席')
+
+		expect(testid(s, 'event-sale-sold-out')?.textContent).toBe('売り切れ')
+		expect(testid(s, 'event-sale-all-held')?.textContent).toContain('数分後')
+		expect(testid(s, 'event-buy')).toBeNull()
+		await fixture.stop(true)
+	})
+
+	it('shows 公式リセール under a sold-out seat type with the listing note and no action', async () => {
+		// @spec components/infrastructure/fan/web/route/event "Sold out with resale open"
+		const fixture = await renderSales(
+			tickets(
+				[onSale()],
+				[stock({ price: 5000, state: 'soldOut', resaleOpen: true })],
+			),
+			true,
+		)
+		const s = rowOf(fixture.appHost, 'S席')
+
+		expect(testid(s, 'event-sale-sold-out')?.textContent).toBe('売り切れ')
+		expect(testid(s, 'event-resale')?.textContent).toContain('公式リセール')
+		expect(testid(s, 'event-resale-listing')?.textContent).toContain(
+			'チケット画面',
+		)
+		expect(testid(s, 'event-buy')).toBeNull()
+		expect(s.textContent).not.toMatch(/\d+枚/)
+		await fixture.stop(true)
+	})
+
+	it('offers only the held seat type and names it', async () => {
+		// @spec components/infrastructure/fan/web/route/event "Fan already holds another seat type"
+		const fixture = await renderSales(
+			tickets([onSale()], [stock(), A_SEAT]),
+			true,
+			{ stock: stock(), count: 2 },
+		)
+		const section = testid(fixture.appHost, 'event-sale') as HTMLElement
+
+		expect(testid(rowOf(section, 'S席'), 'event-buy')).not.toBeNull()
+		expect(testid(rowOf(section, 'A席'), 'event-buy')).toBeNull()
+		expect(testid(section, 'event-sale-held')?.textContent).toContain(
+			'この日程でお持ちのチケットはS席です',
+		)
+		await fixture.stop(true)
+	})
+
+	it('shows an open lottery by name with its window, seat type, price and the action to enter', async () => {
 		// @spec components/infrastructure/fan/web/route/event "Lottery open"
 		const lottery = onSale({
 			id: 'presale',
 			name: 'ファンクラブ先行',
 			method: 'lottery',
-			ticketType: {
-				id: 'presale-type',
-				eventId: EVENT_ID,
-				price: 8000,
-				perAccountLimit: 4,
-				state: 'ended',
-				lowStock: false,
-			},
 		})
-		const fixture = await renderSales([lottery], true)
-		const section = fixture.appHost.querySelector(
-			'[data-testid="event-sale"]',
-		) as HTMLElement
-
-		expect(
-			section.querySelector('[data-testid="event-sale-name"]')?.textContent,
-		).toBe('ファンクラブ先行')
-		expect(
-			section.querySelector('[data-testid="event-sale-window"]')?.textContent,
-		).toContain('受付期間')
-		expect(
-			section.querySelector('[data-testid="event-sale-price"]')?.textContent,
-		).toBe('8,000円（税込）')
-		const enter = section.querySelector(
-			'[data-testid="event-enter"]',
-		) as HTMLAnchorElement
-		expect(enter.getAttribute('href')).toBe(
-			`/events/${EVENT_ID}/lottery/presale-type`,
+		const fixture = await renderSales(
+			tickets([lottery], [stock({ price: 8000 })]),
+			true,
 		)
-		expect(section.querySelector('[data-testid="event-buy"]')).toBeNull()
+		const section = testid(fixture.appHost, 'event-sale') as HTMLElement
+		const s = rowOf(section, 'S席')
+
+		expect(testid(section, 'event-sale-name')?.textContent).toBe(
+			'ファンクラブ先行',
+		)
+		expect(testid(section, 'event-sale-window')?.textContent).toContain(
+			'受付期間',
+		)
+		expect(testid(s, 'event-sale-price')?.textContent).toBe('8,000円（税込）')
+		const enter = testid(s, 'event-enter') as HTMLAnchorElement
+		expect(enter.getAttribute('href')).toBe(
+			`/events/${EVENT_ID}/lottery/presale/stock-s`,
+		)
+		expect(testid(section, 'event-buy')).toBeNull()
 		await fixture.stop(true)
 	})
 
-	it('shows no sale when no sale offers the event', async () => {
+	it('shows no sale when no sale names the event', async () => {
 		// @spec components/infrastructure/fan/web/route/event "No sale"
-		const fixture = await renderSales([], true)
-		expect(
-			fixture.appHost.querySelector('[data-testid="event-sale"]'),
-		).toBeNull()
+		const fixture = await renderSales(NO_TICKET_SALES, true)
+		expect(testid(fixture.appHost, 'event-sale')).toBeNull()
 		await fixture.stop(true)
 	})
 })

@@ -7,13 +7,18 @@ import {
 	SERIES,
 } from '../support/organizer'
 import {
+	A_SEAT,
 	jst,
 	organizer,
 	payoutAccount,
+	S_SEAT,
 	type SaleSpec,
+	type StockSpec,
 	salesOf,
 	scanner,
+	seatTypesOf,
 	seriesList,
+	stocksOf,
 	XX_SOLO,
 	XX_TOUR,
 } from '../support/organizer-data'
@@ -133,16 +138,21 @@ const FAN: Screen[] = [
 
 // ---------------------------------------------------------- organizer entry
 
+/** The tour's S席 on 3 November: 1,500 tickets, 300 sold. */
+const S_STOCK: StockSpec = {
+	id: 'stock-s',
+	seatType: S_SEAT,
+	quantity: 1500,
+	sold: 300,
+}
+
 const OPEN_LOTTERY: SaleSpec = {
 	id: 'sale-open',
 	name: 'ファンクラブ先行',
 	method: 'LOTTERY',
 	start: jst('2026-10-05', '12:00'),
 	end: jst('2026-10-12', '23:59'),
-	price: 6500,
-	quantity: 1200,
-	perAccountLimit: 4,
-	stats: { entries: 412, requested: 1380 },
+	stats: [{ stock: S_STOCK, entries: 412, requested: 1380 }],
 }
 
 const GENERAL: SaleSpec = {
@@ -151,12 +161,6 @@ const GENERAL: SaleSpec = {
 	method: 'FIRST_COME',
 	start: jst('2026-10-20', '10:00'),
 	end: jst('2026-11-03', '17:00'),
-	price: 7000,
-	quantity: 150,
-	perAccountLimit: 4,
-	typeState: 'NOT_YET_ON_SALE',
-	sold: 0,
-	held: 0,
 }
 
 /** A lottery that has not opened yet, so its editor is editable. */
@@ -166,7 +170,7 @@ const LATER_LOTTERY: SaleSpec = {
 	name: '先行抽選',
 	start: jst('2026-10-25', '12:00'),
 	end: jst('2026-10-30', '23:59'),
-	stats: { entries: 0, requested: 0 },
+	stats: [{ stock: S_STOCK, entries: 0, requested: 0 }],
 }
 
 /** One organizer with a tour on sale and a draft solo show. */
@@ -179,6 +183,8 @@ const CONSOLE_RPC: RpcMocks = {
 		LATER_LOTTERY,
 		GENERAL,
 	]),
+	'TicketStockService/ListByEvent': stocksOf('e-1103', [S_STOCK]),
+	'SeatTypeService/ListBySeries': seatTypesOf('s-tour', [S_SEAT, A_SEAT]),
 	'ScannerService/ListByEvent': {
 		scanners: [
 			scanner('e-1103', {

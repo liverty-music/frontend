@@ -152,6 +152,7 @@ interface DraftBody {
 			venueName: { value: string }
 			placeId?: { value: string }
 			startTime?: { value: string }
+			perAccountLimit?: number
 		}>
 	}
 }
@@ -788,6 +789,71 @@ async function pickCover(page: Page) {
 const preview = (page: Page) => page.getByTestId('cover-preview')
 const PROCESSING =
 	'選んだ画像を表示しています。最適化した画像の準備ができると切り替わります。'
+
+test.describe("each date's per-account limit", () => {
+	const limit = (scope: Locator) => scope.getByLabel(/1アカウントの上限/)
+
+	test(`@spec ${SPEC} "New date"`, async ({ page }) => {
+		await openEditor(page, `${SERIES}/s-solo/edit`)
+		await page.getByRole('button', { name: '公演日を追加' }).click()
+		await expect(limit(row(page, 1))).toHaveValue('4')
+		await expect(limit(row(page, 1))).toBeEditable()
+	})
+
+	test(`@spec ${SPEC} "Group tickets"`, async ({ page }) => {
+		const log = await openEditor(page, `${SERIES}/s-solo/edit`, {
+			'SeriesService/Update': oneSeries(XX_SOLO),
+		})
+		await expect(limit(row(page, 0))).toHaveValue('4')
+		await limit(row(page, 0)).fill('6')
+		await page.getByRole('button', { name: '保存する' }).click()
+		await expect(snackbar(page)).toContainText('変更を保存しました')
+
+		const body = calls(log, 'SeriesService/Update')[0]
+			.body as unknown as DraftBody
+		expect(body.draft.events[0].perAccountLimit).toBe(6)
+	})
+
+	test(`@spec ${SPEC} "Above one admission code"`, async ({ page }) => {
+		const log = await openEditor(page, `${SERIES}/s-solo/edit`)
+		await limit(row(page, 0)).fill('11')
+		await page.getByRole('button', { name: '保存する' }).click()
+
+		const box = row(page, 0).locator('[data-field="limit"]')
+		await expect(box).toContainText(
+			'1アカウントの上限は1〜10枚の整数で入力してください',
+		)
+		await expect(limit(row(page, 0))).toHaveAttribute('aria-invalid', 'true')
+		expect(calls(log, 'SeriesService/Update')).toHaveLength(0)
+	})
+
+	test(`@spec ${SPEC} "Published date"`, async ({ page }) => {
+		const sixPerAccount: ConcertSpec = {
+			...TOUR,
+			events: TOUR.events.map((e) => ({ ...e, perAccountLimit: 6 })),
+		}
+		const log = await openEditor(page, `${SERIES}/s-tour/edit`, {
+			'SeriesService/List': seriesList([sixPerAccount, XX_SOLO]),
+			'SeriesService/Update': oneSeries(sixPerAccount),
+		})
+		const first = row(page, 0)
+		await expect(limit(first)).toHaveValue('6')
+		await expect(limit(first)).not.toBeEditable()
+		await expect(first.locator('[data-field="limit"]')).toContainText(
+			'公演日を公開すると変えられません。',
+		)
+		await titleField(page).fill('XX Tour 2026 追加公演あり')
+		await page.getByRole('button', { name: '保存する' }).click()
+		await expect(snackbar(page)).toContainText('変更を保存しました')
+
+		// Saving sends the limit back as it was, so it stays.
+		const body = calls(log, 'SeriesService/Update')[0]
+			.body as unknown as DraftBody
+		expect(body.draft.events.map((e) => e.perAccountLimit)).toEqual([
+			6, 6, 6, 6,
+		])
+	})
+})
 
 test.describe('cover image', () => {
 	test(`@spec ${SPEC} "Image just uploaded"`, async ({ page }) => {

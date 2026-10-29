@@ -15,7 +15,14 @@ import { ITicketSaleRpcClient } from '../../adapter/rpc/client/ticket-sale-clien
 import { referralCodeForSeries } from '../../adapter/storage/referral-storage'
 import { isVerified } from '../../entities/identity-verification'
 import type { LotteryEntry } from '../../entities/lottery-entry'
-import { isWindowOpen, type TicketSale } from '../../entities/ticket-sale'
+import {
+	countOptions,
+	type EventTicketSales,
+	isWindowOpen,
+	NO_TICKET_SALES,
+	type TicketSale,
+	type TicketStock,
+} from '../../entities/ticket-sale'
 import {
 	Events,
 	IAnalyticsService,
@@ -23,6 +30,7 @@ import {
 import { toDomesticDisplay, toE164 } from '../../lib/to-e164'
 import type { TicketLotteryEntryStartedProps } from '../../services/analytics-events'
 import { IErrorBoundaryService } from '../../services/error-boundary-service'
+import { IHeldSeatTypeService } from '../../services/held-seat-type-service'
 import { IIdentityVerificationService } from '../../services/identity-verification-service'
 import { IStripeService } from '../../services/stripe-service'
 import { IUserStore } from '../../services/user-store'
@@ -38,7 +46,7 @@ import {
  *
  * - `loading`: the event and its sales are read.
  * - `unavailable`: card payments are not configured in this environment.
- * - `not-found`: the event offers no lottery TicketType with this id.
+ * - `not-found`: the event has no such lottery sale or TicketStock.
  * - `closed`: the lottery's window is not open.
  * - `verify-required`: the sale requires a verification the fan lacks.
  * - `count` → `personal-details` → `payment`: the entry's steps; `submitting` covers
@@ -67,8 +75,9 @@ export interface LotteryEntryMessage {
 }
 
 /**
- * The fan's lottery entry for one TicketType
- * (`/events/:id/lottery/:ticketTypeId`): choose the count, give the personal
+ * The fan's lottery entry for one TicketStock (seat type) of an event in a
+ * lottery sale (`/events/:id/lottery/:saleId/:stockId`): choose the count,
+ * give the personal
  * details (full name and phone number), authorize the card, and enter the
  * draw.
  *
@@ -90,11 +99,16 @@ export class LotteryEntryRoute implements IRouteViewModel {
 	private readonly userStore = resolve(IUserStore)
 	private readonly router = resolve(IRouter)
 	private readonly analytics = resolve(IAnalyticsService)
+	private readonly heldSeatTypes = resolve(IHeldSeatTypeService)
 
 	public step: LotteryEntryStep = 'loading'
 	public event: EventPageEvent | null = null
-	/** The lottery sale, with the TicketType this screen enters. */
+	/** The lottery sale this screen enters. */
 	public sale: TicketSale | null = null
+	/** The TicketStock this screen enters: one seat type of the event. */
+	public stock: TicketStock | null = null
+	/** The event's sales, stocks and per-account limit as read. */
+	public tickets: EventTicketSales = NO_TICKET_SALES
 	/** The entry Confirm made, once it succeeded. */
 	public entry: LotteryEntry | null = null
 
@@ -112,7 +126,8 @@ export class LotteryEntryRoute implements IRouteViewModel {
 	public paymentElementHost?: HTMLElement
 
 	private eventId = ''
-	private ticketTypeId = ''
+	private saleId = ''
+	private stockId = ''
 	/**
 	 * The card authorization AuthorizeCard opened, with the count it is for;
 	 * Confirm names it. A count change opens a new one.
@@ -136,7 +151,8 @@ export class LotteryEntryRoute implements IRouteViewModel {
 
 	public loading(params: Params): void {
 		this.eventId = params.id ?? ''
-		this.ticketTypeId = params.ticketTypeId ?? ''
+		this.saleId = params.saleId ?? ''
+		this.stockId = params.stockId ?? ''
 		// Never hold the view swap on data: start the reads and return.
 		void this.load()
 	}
@@ -150,7 +166,7 @@ export class LotteryEntryRoute implements IRouteViewModel {
 		return this.abortController?.signal
 	}
 
-	/** Read the event and the lottery sale this TicketType belongs to. */
+	/** Read the event, the lottery sale and the TicketStock it enters. */
 	public async load(): Promise<void> {
 		this.abortController?.abort()
 		this.abortController = new AbortController()
@@ -162,17 +178,18 @@ export class LotteryEntryRoute implements IRouteViewModel {
 			return
 		}
 		try {
-			const [concert, sales] = await Promise.all([
+			const [concert, tickets] = await Promise.all([
 				this.concertClient.get(this.eventId, signal),
 				this.saleClient.listByEvent(this.eventId, signal),
 			])
 			if (signal.aborted) return
 			this.event = eventFromConcert(concert)
+			this.tickets = tickets
 			this.sale =
-				sales.find(
-					(s) =>
-						s.method === 'lottery' && s.ticketType.id === this.ticketTypeId,
+				tickets.sales.find(
+					(s) => s.method === 'lottery' && s.id === this.saleId,
 				) ?? null
+			this.stock = tickets.stocks.find((s) => s.id === this.stockId) ?? null
 		} catch (err) {
 			if (signal.aborted) return
 			if (ConnectError.from(err).code !== Code.NotFound) {
@@ -184,7 +201,7 @@ export class LotteryEntryRoute implements IRouteViewModel {
 			this.step = 'not-found'
 			return
 		}
-		if (!this.event || !this.sale || this.event.cancelled) {
+		if (!this.event || !this.sale || !this.stock || this.event.cancelled) {
 			this.step = 'not-found'
 			return
 		}
@@ -237,17 +254,24 @@ export class LotteryEntryRoute implements IRouteViewModel {
 
 	// ── Derived view ──────────────────────────────────────────────────────────
 
+	/** The event's per-account limit, across every sale and seat type. */
 	public get perAccountLimit(): number {
-		return this.sale?.ticketType.perAccountLimit ?? 1
+		return this.tickets.perAccountLimit ?? 1
 	}
 
-	/** The counts a fan may pick, 1 to the per-account limit. */
+	/** The counts a fan may pick, 1 to the event's per-account limit. */
 	public get countOptions(): number[] {
-		return Array.from({ length: this.perAccountLimit }, (_, i) => i + 1)
+		return countOptions(this.perAccountLimit)
 	}
 
+	/** The seat type's name, e.g. "S席". */
+	public get seatTypeName(): string {
+		return this.stock?.seatTypeName ?? ''
+	}
+
+	/** The seat type's price of one ticket in yen, 税込. */
 	public get price(): number {
-		return this.sale?.ticketType.price ?? 0
+		return this.stock?.price ?? 0
 	}
 
 	/** The amount the card authorization covers: price × count. */
@@ -287,16 +311,16 @@ export class LotteryEntryRoute implements IRouteViewModel {
 		return `${formatSaleStart(this.sale.saleStartTime, this.lang)} – ${formatSaleStart(this.sale.saleEndTime, this.lang)}`
 	}
 
-	/** The Event, TicketType and count an entry event reports. */
+	/** The Event, TicketStock and count an entry event reports. */
 	private choice(): TicketLotteryEntryStartedProps {
 		return {
 			event_id: this.eventId,
-			ticket_type_id: this.ticketTypeId,
+			ticket_stock_id: this.stockId,
 			ticket_count: this.ticketCount,
 		}
 	}
 
-	/** True when a refusal is because the fan has an entry for the TicketType. */
+	/** True when a refusal is because the fan has an entry in the sale for the event. */
 	public get alreadyEntered(): boolean {
 		return this.message?.key === 'lotteryEntry.refused.alreadyEntered'
 	}
@@ -308,7 +332,7 @@ export class LotteryEntryRoute implements IRouteViewModel {
 
 	/** Where the fan reads the entry they made. */
 	public get entryStatusUrl(): string {
-		return `/events/${this.eventId}/lottery/${this.ticketTypeId}/entry`
+		return `/events/${this.eventId}/lottery/${this.saleId}/${this.stockId}/entry`
 	}
 
 	// ── Step transitions ──────────────────────────────────────────────────────
@@ -349,7 +373,8 @@ export class LotteryEntryRoute implements IRouteViewModel {
 	 * the entry.
 	 */
 	public async toPayment(): Promise<void> {
-		if (!this.isPersonalDetailsValid || this.busy || !this.sale) return
+		if (!this.isPersonalDetailsValid || this.busy || !this.sale || !this.stock)
+			return
 		if (
 			this.cardConfirmed &&
 			this.cardAuthorization?.ticketCount === this.ticketCount
@@ -365,7 +390,8 @@ export class LotteryEntryRoute implements IRouteViewModel {
 			const phoneNumber = this.phoneE164 ?? ''
 			const ticketCount = this.ticketCount
 			const cardAuthorization = await this.entryClient.authorizeCard(
-				this.sale.ticketType.id,
+				this.sale.id,
+				this.stock.id,
 				ticketCount,
 				fullName,
 				phoneNumber,
@@ -415,7 +441,16 @@ export class LotteryEntryRoute implements IRouteViewModel {
 				this.step = 'refused'
 				return
 			}
+			const other = await this.otherSeatType()
 			if (this.signal?.aborted) return
+			if (other) {
+				this.message = {
+					key: 'lotteryEntry.refused.otherSeatType',
+					params: { seatType: other },
+				}
+				this.step = 'refused'
+				return
+			}
 			// Otherwise the fan would hold more than the per-account limit:
 			// the count is what they change.
 			this.message = {
@@ -504,32 +539,73 @@ export class LotteryEntryRoute implements IRouteViewModel {
 	/**
 	 * Confirm refused the card authorization: it made no entry and released
 	 * the card authorization (or never held it), so nothing will be charged.
-	 * The error carries no reason, so the screen tells the two the fan can act
-	 * on from what it can read: the window has closed, or the fan's entry for
-	 * the TicketType exists already.
+	 * The error carries no reason, so the screen tells the ones the fan can
+	 * act on from what it can read: the window has closed, the fan's entry in
+	 * the sale for the event exists already, the fan holds another seat type
+	 * of the event, or the count would exceed the per-account limit.
 	 */
 	private async explainRefusal(err: unknown): Promise<void> {
 		this.logger.warn('Confirm refused the entry', { error: err })
 		this.forgetCard()
-		let key = 'lotteryEntry.refused.other'
-		if (this.sale && !isWindowOpen(this.sale, new Date())) {
-			key = 'lotteryEntry.refused.closed'
-		} else if (await this.hasEntry()) {
-			key = 'lotteryEntry.refused.alreadyEntered'
-		}
+		this.message = await this.refusalMessage()
 		if (this.signal?.aborted) return
-		this.message = { key }
 		this.step = 'refused'
 	}
 
-	/** True when the fan has an entry for the TicketType; false when unknown. */
+	private async refusalMessage(): Promise<LotteryEntryMessage> {
+		if (this.sale && !isWindowOpen(this.sale, new Date())) {
+			return { key: 'lotteryEntry.refused.closed' }
+		}
+		if (await this.hasEntry()) {
+			return { key: 'lotteryEntry.refused.alreadyEntered' }
+		}
+		const held = await this.heldSeatTypes.heldTickets(
+			this.eventId,
+			this.tickets,
+			this.signal,
+		)
+		if (held && held.stock.id !== this.stockId) {
+			return {
+				key: 'lotteryEntry.refused.otherSeatType',
+				params: { seatType: held.stock.seatTypeName },
+			}
+		}
+		if (held && held.count + this.ticketCount > this.perAccountLimit) {
+			return {
+				key: 'lotteryEntry.refused.limit',
+				params: { limit: this.perAccountLimit },
+			}
+		}
+		return { key: 'lotteryEntry.refused.other' }
+	}
+
+	/**
+	 * The seat type's name when the fan holds or applied for another seat type
+	 * of the event, else null.
+	 */
+	private async otherSeatType(): Promise<string | null> {
+		const held = await this.heldSeatTypes.heldTickets(
+			this.eventId,
+			this.tickets,
+			this.signal,
+		)
+		return held && held.stock.id !== this.stockId
+			? held.stock.seatTypeName
+			: null
+	}
+
+	/**
+	 * True when the fan has an entry in the sale for this event (one of its
+	 * stocks); false when unknown.
+	 */
 	private async hasEntry(): Promise<boolean> {
+		const stocks = new Set(this.tickets.stocks.map((s) => s.id))
 		try {
-			const entries = await this.entryClient.listByTicketType(
-				this.ticketTypeId,
+			const entries = await this.entryClient.listBySale(
+				this.saleId,
 				this.signal,
 			)
-			return entries.length > 0
+			return entries.some((e) => stocks.has(e.ticketStockId))
 		} catch (err) {
 			if (!this.signal?.aborted) {
 				this.logger.warn('Entry read after a refusal failed', { error: err })

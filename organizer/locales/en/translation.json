@@ -21,7 +21,8 @@
 		"moreActions": "More actions",
 		"cancelEdit": "Cancel",
 		"requiredNote": "* marks a required field.",
-		"learnMore": "Learn more"
+		"learnMore": "Learn more",
+		"delete": "Delete"
 	},
 	"format": {
 		"yen": "¥{{amount}}",
@@ -141,10 +142,8 @@
 			"drawn": "Drawn"
 		},
 		"firstComeState": {
-			"notYetOnSale": "Not on sale yet",
-			"onSale": "On sale",
-			"allHeld": "Rest held in checkout",
-			"soldOut": "Sold out",
+			"scheduled": "Not open yet",
+			"open": "Open",
 			"ended": "Ended"
 		},
 		"verification": {
@@ -167,8 +166,7 @@
 			"hours": "Opens in {{hours}} h {{minutes}} min"
 		},
 		"quantity": "{{tickets, number}} tickets",
-		"perAccount": "up to {{limit, number}} per account",
-		"oversubscribed": "Requests are {{percent, number}}% of the tickets.",
+		"oversubscribed": "Requests are {{percent, number}}% of the remaining tickets.",
 		"stats": {
 			"entries": "Entries",
 			"requested": "Requested tickets",
@@ -177,7 +175,8 @@
 			"wonTickets": "Tickets won",
 			"lost": "Lost",
 			"sold": "Sold",
-			"held": "In checkout"
+			"held": "In checkout",
+			"remaining": "Remaining"
 		},
 		"lockedAfterOpen": "Cannot change after it opens",
 		"verificationSaved": "Verification requirement changed",
@@ -189,7 +188,9 @@
 			"noStartTimeBody": "A sale needs the date’s start time.",
 			"editConcert": "Edit the concert",
 			"businessDetails": "Business details are missing",
-			"businessDetailsBody": "Liverty Music enters your business details (the commercial transactions disclosure) during vetting. Contact your Liverty Music representative to add or change them. Sales cannot start until they are complete."
+			"businessDetailsBody": "Liverty Music enters your business details (the commercial transactions disclosure) during vetting. Contact your Liverty Music representative to add or change them. Sales cannot start until they are complete.",
+			"noStock": "Add seat types and quantities",
+			"noStockBody": "To start a sale, first add the seat types and quantities this date sells in “Seat types and quantities” below."
 		},
 		"referral": {
 			"title": "Purchases per referral code",
@@ -202,7 +203,9 @@
 			"direct": "Direct (no code)",
 			"orderCount": "{{count, number}} orders",
 			"ticketCount": "{{count, number}} tickets"
-		}
+		},
+		"title": "Sales",
+		"sharedStocks": "Every sale sells the seat types in “Seat types and quantities” above, from the same quantities. One account may hold up to {{limit, number}} tickets for this date across all sales."
 	},
 	"concert": {
 		"notFound": "Concert not found",
@@ -375,7 +378,8 @@
 			"venueNotPicked": "Pick a venue from the search results",
 			"date": "Enter a date",
 			"pastDate": "The date cannot be in the past",
-			"openAfterStart": "Doors must open before the start"
+			"openAfterStart": "Doors must open before the start",
+			"perAccountLimit": "Enter a whole number from 1 to 10"
 		},
 		"cover": {
 			"title": "Cover image",
@@ -393,7 +397,10 @@
 		"visibilityFixed": "This concert has published or cancelled dates, so its visibility is fixed.",
 		"sections": {
 			"about": "About the concert"
-		}
+		},
+		"perAccountLimit": "Limit per account",
+		"perAccountLimitHint": "1 to 10. The most tickets one account may hold for this date, across every sale, seat type and official resale.",
+		"perAccountLimitFixed": "Fixed once the date is published."
 	},
 	"lotteryEditor": {
 		"newTitle": "Sell by lottery",
@@ -407,17 +414,12 @@
 		"endDate": "Closing date",
 		"endTime": "Closing time",
 		"windowHint": "The window lasts {{min}}–{{max}} days and closes before the event starts.",
-		"price": "Price",
-		"quantity": "Tickets",
-		"limit": "Limit per account",
-		"limitHint": "Up to {{max}}",
 		"create": "Start the lottery",
 		"created": "Lottery “{{name}}” created",
 		"changed": "Lottery changed",
 		"saveFailed": "Could not save",
-		"partlySaved": "The window is saved. The price, tickets and limit are not.",
 		"openedWhileEditing": "A lottery cannot change once its window has opened. Nothing was saved.",
-		"rejected": "This lottery could not be created. Check that the date is published and timed, your business details are complete, and the window does not overlap another sale.",
+		"rejected": "This lottery could not be created. Check that the date is published and timed, has seat types and quantities, your business details are complete, and the window does not overlap another sale.",
 		"notFound": "Sale not found",
 		"loadFailed": "Could not open the editor.",
 		"toSales": "Back to sales",
@@ -429,11 +431,6 @@
 			"endBeforeStart": "The window must close after it opens",
 			"windowLength": "The window must last {{min}}–{{max}} days (now {{days}} days)",
 			"closeAfterEvent": "Close the window before the event starts",
-			"quantity": "Enter a whole number of tickets",
-			"limit": "Enter a whole-number limit",
-			"limitMax": "The limit is at most {{max}}",
-			"limitOverQuantity": "The limit cannot exceed the tickets",
-			"price": "Enter a whole-yen price of at least 1",
 			"overlap": "The window overlaps the sale “{{name}}” ({{start}} – {{end}})"
 		},
 		"sections": {
@@ -451,12 +448,10 @@
 		"endDate": "Sale closing date",
 		"endTime": "Sale closing time",
 		"endHint": "Close by the event’s start time.",
-		"priceLocked": "Tickets are sold or in checkout, so the price is fixed.",
-		"limitHint": "{{min}}–{{max}}",
 		"create": "Start the sale",
 		"saved": "First-come sale saved",
 		"saveFailed": "Could not save",
-		"rejected": "Could not save. Check that the date is published and timed, your business details are complete and the window does not overlap another sale. While tickets are sold or in checkout the price is fixed and the quantity cannot go below them.",
+		"rejected": "Could not save. Check that the date is published and timed, has seat types and quantities, your business details are complete and the window does not overlap another sale.",
 		"loadFailed": "Could not load the sale.",
 		"error": {
 			"name": "Enter a sale name",
@@ -465,11 +460,6 @@
 			"end": "Enter when the sale closes",
 			"endAfterEvent": "Close the sale by the start time ({{eventStart}} JST)",
 			"endBeforeStart": "The sale must close after it opens",
-			"price": "Enter a whole-yen price from {{min, number}} to {{max, number}}",
-			"quantity": "Enter a whole number of tickets",
-			"quantityFloor": "The quantity cannot go below the {{floor, number}} tickets sold ({{sold, number}}) or in checkout ({{held, number}})",
-			"limit": "Enter a limit from {{min}} to {{max}}",
-			"limitOverQuantity": "The limit cannot exceed the tickets",
 			"overlap": "The window overlaps the sale “{{name}}” ({{start}} – {{end}})"
 		},
 		"sections": {
@@ -497,5 +487,72 @@
 		"emailRequired": "Enter your email address.",
 		"emailInvalid": "The email address is not valid.",
 		"emailTooLong": "The email address must be {{max}} characters or fewer."
+	},
+	"stock": {
+		"title": "Seat types and quantities",
+		"note": "Every sale of this date sells these seat types from the same quantities. A quantity cannot change later. To sell more, add another seat type (such as obstructed view) on the concert page and add its quantity here.",
+		"noSeatTypes": "This concert has no seat types yet. Add them on the concert page.",
+		"toConcert": "Go to the concert",
+		"empty": "This date has no seat types and quantities yet.",
+		"state": {
+			"available": "Available",
+			"allHeld": "Rest held in checkout",
+			"soldOut": "Sold out"
+		},
+		"taxIncluded": "incl. tax",
+		"add": "Add a seat type",
+		"seatType": "Seat type",
+		"chooseSeatType": "Choose",
+		"seatTypeOption": "{{name}} (¥{{price, number}})",
+		"quantity": "Quantity",
+		"quantityHint": "Cannot change later.",
+		"addConfirmTitle": "Add {{quantity, number}} {{name}} tickets?",
+		"addConfirmBody": "The quantity cannot change later. Every sale of this date sells from it.",
+		"added": "{{name}} added",
+		"addFailed": "Could not add the seat type",
+		"refreshFailed": "Could not reload the seat types and quantities",
+		"addRefused": "A cancelled date cannot get seat types.",
+		"deleteConfirmTitle": "Delete {{name}}?",
+		"deleteConfirmBody": "The seat type and its quantity are removed from this date.",
+		"deleted": "{{name}} deleted",
+		"deleteFailed": "Could not delete",
+		"deleteRefused": "{{name}} has entries or purchases, so it cannot be deleted.",
+		"error": {
+			"seatType": "Choose a seat type",
+			"quantity": "Enter a whole number of at least 1",
+			"alreadyStocked": "This date already has this seat type"
+		}
+	},
+	"seatType": {
+		"title": "Seat types",
+		"note": "Every date of this concert sells these seat types. The quantity of each is set per date, on the date’s Sales tab.",
+		"loadFailed": "Could not load the seat types.",
+		"empty": "No seat types yet.",
+		"inUse": "Cannot be deleted: a date has a quantity of it",
+		"add": "Add a seat type",
+		"name": "Seat type name",
+		"namePlaceholder": "e.g. S seats",
+		"price": "Price (incl. tax)",
+		"addConfirmTitle": "Add {{name}} (¥{{price, number}})?",
+		"addConfirmBody": "The name and price cannot change later. To fix a mistake, delete it while no date has a quantity of it and add it again.",
+		"added": "{{name}} added",
+		"addFailed": "Could not add the seat type",
+		"deleteConfirmTitle": "Delete {{name}}?",
+		"deleteConfirmBody": "The seat type is removed from the concert.",
+		"deleted": "{{name}} deleted",
+		"deleteFailed": "Could not delete",
+		"deleteRefused": "{{name}} cannot be deleted: a date has a quantity of it.",
+		"error": {
+			"name": "Enter a seat type name",
+			"nameLength": "Use {{max}} characters or fewer",
+			"nameUsed": "“{{name}}” is already a seat type of this concert",
+			"price": "Enter a whole-yen price from {{min, number}} to {{max, number}}"
+		}
+	},
+	"saleEditor": {
+		"toStocks": "Seat types and quantities",
+		"noStockBody": "To start a sale, first add the seat types and quantities to sell on the date’s Sales tab.",
+		"sellsEveryStock": "This sale sells every seat type of the date. Up to {{limit, number}} tickets per account, across all sales of this date.",
+		"drawsEveryStock": "This lottery draws for every seat type of the date. Up to {{limit, number}} tickets per account, across all sales of this date."
 	}
 }

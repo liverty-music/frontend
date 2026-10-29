@@ -2,7 +2,6 @@ import {
 	TicketSaleMethod,
 	VerificationRequirement,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_sale_pb.js'
-import { TicketTypeState } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_type_pb.js'
 import { timestampDate } from '@bufbuild/protobuf/wkt'
 import type {
 	EventTicketSales,
@@ -10,22 +9,32 @@ import type {
 } from '../services/ticket-sale-client'
 import type { DataColumn, DataRow } from '../ui/data-list/data-list'
 import type { StatusTone } from '../ui/status-badge/status-badge'
+import type { StockView } from './stock-model'
 
 export { VerificationRequirement }
 
 export type LotteryState = 'scheduled' | 'open' | 'awaitingDraw' | 'drawn'
-export type FirstComeState =
-	| 'notYetOnSale'
-	| 'onSale'
-	| 'allHeld'
-	| 'soldOut'
-	| 'ended'
+export type FirstComeState = 'scheduled' | 'open' | 'ended'
 
 /** Time left until a sale opens, in whole units. */
 export interface Countdown {
 	days: number
 	hours: number
 	minutes: number
+}
+
+/** An open lottery's demand for one seat type of the event. */
+export interface LotteryStockStats {
+	/** The TicketStock the stats are for. */
+	id: string
+	/** The seat type's name, e.g. S席. */
+	name: string
+	entries: number
+	requested: number
+	/** The stock's tickets neither sold nor held now. */
+	remaining: number
+	/** Requested tickets as a percentage of the remaining ones, when above them. */
+	oversubscribedPercent?: number
 }
 
 /** One TicketSale of an event as the Sales tab shows it. */
@@ -41,20 +50,15 @@ export interface SaleView {
 	stateKey: string
 	/** Set while the sale has not opened. */
 	countdown?: Countdown
-	price: number
-	quantity: number
-	perAccountLimit: number
 	verification: VerificationRequirement
 	lottery?: {
-		entries: number
-		requested: number
-		/** Requested tickets as a percentage of the quantity, when above it. */
-		oversubscribedPercent?: number
+		/** Per seat type of the event, in the order of its stocks. */
+		stocks: LotteryStockStats[]
+		/** Totals over every seat type, shown once the lottery is drawn. */
 		won: number
 		wonTickets: number
 		lost: number
 	}
-	firstCome?: { sold: number; held: number }
 	/** A lottery changes only before it opens; a first-come sale always. */
 	editable: boolean
 }
@@ -70,18 +74,6 @@ export function countdownTo(start: Date, now: number): Countdown {
 	}
 }
 
-const FIRST_COME: Record<number, { state: FirstComeState; tone: StatusTone }> =
-	{
-		[TicketTypeState.NOT_YET_ON_SALE]: {
-			state: 'notYetOnSale',
-			tone: 'warning',
-		},
-		[TicketTypeState.ON_SALE]: { state: 'onSale', tone: 'success' },
-		[TicketTypeState.ALL_HELD]: { state: 'allHeld', tone: 'info' },
-		[TicketTypeState.SOLD_OUT]: { state: 'soldOut', tone: 'neutral' },
-		[TicketTypeState.ENDED]: { state: 'ended', tone: 'neutral' },
-	}
-
 const LOTTERY_TONE: Record<LotteryState, StatusTone> = {
 	scheduled: 'warning',
 	open: 'success',
@@ -89,45 +81,57 @@ const LOTTERY_TONE: Record<LotteryState, StatusTone> = {
 	drawn: 'neutral',
 }
 
+const FIRST_COME_TONE: Record<FirstComeState, StatusTone> = {
+	scheduled: 'warning',
+	open: 'success',
+	ended: 'neutral',
+}
+
 /**
  * The event's sales in start order, each with its state at `now`. Only the
- * TicketType offered for `eventId` is read from each sale.
+ * sales naming `eventId` are listed. A closed lottery is drawn once none of
+ * its entries is Entered: each of its stats counts as many entries as won
+ * and lost ones (components/entity/ticket-sale "Drawn lottery"). An open
+ * lottery's demand per seat type is compared with the remaining tickets of
+ * the event's `stocks`; the sold and held tickets of a first-come sale are
+ * shown per stock in 席種と枚数, not on the sale.
  */
 export function saleViewsOf(
 	eventId: string,
 	sales: EventTicketSales,
 	now: number,
+	stocks: readonly StockView[] = [],
 ): SaleView[] {
 	const views = sales.ticketSales.flatMap((sale): SaleView[] => {
-		const type = sale.ticketTypes.find((t) => t.eventId?.value === eventId)
-		if (!type) return []
+		if (!sale.eventIds.some((e) => e.value === eventId)) return []
+		const id = sale.id?.value ?? ''
 		const start = sale.saleStartTime
 			? timestampDate(sale.saleStartTime)
 			: undefined
 		const end = sale.saleEndTime ? timestampDate(sale.saleEndTime) : undefined
 		const notOpenYet = start !== undefined && now < start.getTime()
+		const closed = end !== undefined && now >= end.getTime()
 		const base = {
-			id: sale.id?.value ?? '',
+			id,
 			name: sale.name?.value ?? '',
 			start,
 			end,
-			price: Number(type.price?.value ?? 0),
-			quantity: type.quantity ?? 0,
-			perAccountLimit: type.perAccountLimit,
 			verification: sale.verificationRequirement,
 			countdown: notOpenYet && start ? countdownTo(start, now) : undefined,
 		}
 
 		if (sale.method === TicketSaleMethod.LOTTERY) {
-			const stats = sales.lotteryEntryStats.find(
-				(s) => s.ticketTypeId?.value === type.id?.value,
+			const stats = sales.lotteryEntryStats.filter(
+				(s) => s.ticketSaleId?.value === id,
 			)
+			const drawn =
+				closed &&
+				stats.every((s) => s.entryCount === s.wonEntryCount + s.lostEntryCount)
 			let state: LotteryState
-			if (sale.drawTime) state = 'drawn'
-			else if (notOpenYet) state = 'scheduled'
-			else if (end && now >= end.getTime()) state = 'awaitingDraw'
+			if (notOpenYet) state = 'scheduled'
+			else if (drawn) state = 'drawn'
+			else if (closed) state = 'awaitingDraw'
 			else state = 'open'
-			const requested = stats?.ticketCount ?? 0
 			return [
 				{
 					...base,
@@ -136,31 +140,42 @@ export function saleViewsOf(
 					tone: LOTTERY_TONE[state],
 					stateKey: `sale.lotteryState.${state}`,
 					lottery: {
-						entries: stats?.entryCount ?? 0,
-						requested,
-						oversubscribedPercent:
-							base.quantity > 0 && requested > base.quantity
-								? Math.round((requested / base.quantity) * 100)
-								: undefined,
-						won: stats?.wonEntryCount ?? 0,
-						wonTickets: stats?.wonTicketCount ?? 0,
-						lost: stats?.lostEntryCount ?? 0,
+						stocks: stocks.map((stock) => {
+							const s = stats.find((x) => x.ticketStockId?.value === stock.id)
+							const requested = s?.ticketCount ?? 0
+							return {
+								id: stock.id,
+								name: stock.name,
+								entries: s?.entryCount ?? 0,
+								requested,
+								remaining: stock.remaining,
+								oversubscribedPercent:
+									requested > stock.remaining && stock.remaining > 0
+										? Math.round((requested / stock.remaining) * 100)
+										: undefined,
+							}
+						}),
+						won: sum(stats.map((s) => s.wonEntryCount)),
+						wonTickets: sum(stats.map((s) => s.wonTicketCount)),
+						lost: sum(stats.map((s) => s.lostEntryCount)),
 					},
 					editable: notOpenYet,
 				},
 			]
 		}
 
-		const firstCome =
-			FIRST_COME[type.state] ?? FIRST_COME[TicketTypeState.ENDED]
+		const state: FirstComeState = notOpenYet
+			? 'scheduled'
+			: closed
+				? 'ended'
+				: 'open'
 		return [
 			{
 				...base,
 				method: 'firstCome',
-				state: firstCome.state,
-				tone: firstCome.tone,
-				stateKey: `sale.firstComeState.${firstCome.state}`,
-				firstCome: { sold: type.soldCount ?? 0, held: type.heldCount ?? 0 },
+				state,
+				tone: FIRST_COME_TONE[state],
+				stateKey: `sale.firstComeState.${state}`,
 				editable: true,
 			},
 		]
@@ -170,9 +185,13 @@ export function saleViewsOf(
 	)
 }
 
+function sum(values: readonly number[]): number {
+	return values.reduce((a, b) => a + b, 0)
+}
+
 /** The sale the lists show for an event: the open one, else the next, else the last. */
 export function currentSale(views: readonly SaleView[]): SaleView | undefined {
-	const open = views.find((v) => v.state === 'open' || v.state === 'onSale')
+	const open = views.find((v) => v.state === 'open')
 	if (open) return open
 	const next = views.find((v) => v.countdown !== undefined)
 	return next ?? views[views.length - 1]

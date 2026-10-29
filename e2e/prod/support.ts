@@ -30,6 +30,8 @@ export interface ApiConcert {
 	performers?: { id: { value: string }; name: { value: string } }[]
 	listedVenueName?: { value: string }
 	venue?: { name?: { value: string } }
+	/** The event's start time (RFC 3339), when announced. */
+	startTime?: string
 }
 
 /** A Concert in Connect JSON: its Event and the ids of its Artists. */
@@ -39,6 +41,7 @@ interface WireConcert {
 		seriesId: { value: string }
 		listedVenueName?: { value: string }
 		venue?: { name?: { value: string } }
+		startTime?: { value?: string }
 	}
 	artistIds?: { value: string }[]
 }
@@ -65,6 +68,7 @@ function joined(concert: WireConcert, lists: SideLists): ApiConcert {
 		),
 		listedVenueName: concert.event.listedVenueName,
 		venue: concert.event.venue,
+		startTime: concert.event.startTime?.value,
 	}
 }
 

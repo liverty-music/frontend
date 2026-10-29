@@ -57,5 +57,33 @@
 			gap: var(--space-xs);
 			justify-items: start;
 		}
+
+		/* The event's seat types the sale sells: name, then price and quantity. */
+		.tickets {
+			display: grid;
+			gap: var(--space-xs);
+		}
+
+		.stock-list {
+			display: grid;
+			gap: var(--space-2xs);
+
+			margin: 0;
+			padding: 0;
+
+			list-style: none;
+		}
+
+		.stock {
+			display: flex;
+			flex-wrap: wrap;
+			gap: var(--space-3xs) var(--space-s);
+			font-variant-numeric: tabular-nums;
+		}
+
+		.stock-name {
+			font: var(--md-type-title-small);
+			color: var(--md-color-on-surface);
+		}
 	}
 }

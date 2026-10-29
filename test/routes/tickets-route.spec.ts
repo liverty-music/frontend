@@ -25,13 +25,18 @@ import {
 	concertResolver,
 	IConcertRpcClient,
 } from '../../src/adapter/rpc/client/concert-client'
+import { IOrderRpcClient } from '../../src/adapter/rpc/client/order-client'
 import { IResaleListingRpcClient } from '../../src/adapter/rpc/client/resale-listing-client'
 import { ITicketRpcClient } from '../../src/adapter/rpc/client/ticket-client'
 import { ITicketSaleRpcClient } from '../../src/adapter/rpc/client/ticket-sale-client'
 import { IWalletPublicKeyRpcClient } from '../../src/adapter/rpc/client/wallet-public-key-client'
 import { IWalletStorage } from '../../src/adapter/storage/wallet-storage'
 import type { ResaleListing } from '../../src/entities/resale-listing'
-import type { TicketSale, TicketType } from '../../src/entities/ticket-sale'
+import {
+	type EventTicketSales,
+	NO_TICKET_SALES,
+	type TicketStock,
+} from '../../src/entities/ticket-sale'
 import ja from '../../src/locales/ja/translation.json'
 import { TicketsRoute } from '../../src/routes/tickets/tickets-route'
 import { ITicketWallet, TicketWallet } from '../../src/services/ticket-wallet'
@@ -165,6 +170,29 @@ describe('TicketsRoute', () => {
 		withdraw: ReturnType<typeof vi.fn>
 	}
 	let saleClient: { listByEvent: ReturnType<typeof vi.fn> }
+	/** OrderService: every ticket's Order is of the S席 stock. */
+	let orderClient: { get: ReturnType<typeof vi.fn> }
+
+	/** event-1's sales with its S席 stock, 5000 yen. */
+	function salesWith(o: Partial<TicketStock> = {}): EventTicketSales {
+		return {
+			sales: [],
+			stocks: [
+				{
+					id: 'stock-s',
+					eventId: EVENT,
+					seatTypeId: 'seat-s',
+					seatTypeName: 'S席',
+					price: 5000,
+					state: 'soldOut',
+					lowStock: false,
+					resaleOpen: true,
+					...o,
+				},
+			],
+			perAccountLimit: 4,
+		}
+	}
 
 	/** A fresh screen on the same device (same storage). */
 	function build(): TicketsRoute {
@@ -178,6 +206,7 @@ describe('TicketsRoute', () => {
 			Registration.instance(IUserStore, userStore),
 			Registration.instance(IResaleListingRpcClient, resaleClient),
 			Registration.instance(ITicketSaleRpcClient, saleClient),
+			Registration.instance(IOrderRpcClient, orderClient),
 		)
 		container.register(TicketsRoute)
 		return container.get(TicketsRoute)
@@ -243,7 +272,13 @@ describe('TicketsRoute', () => {
 			create: vi.fn(),
 			withdraw: vi.fn(),
 		}
-		saleClient = { listByEvent: vi.fn().mockResolvedValue([]) }
+		saleClient = { listByEvent: vi.fn().mockResolvedValue(NO_TICKET_SALES) }
+		orderClient = {
+			get: vi.fn(async (id: string) => ({
+				id: { value: id },
+				ticketStockId: { value: 'stock-s' },
+			})),
+		}
 		vi.useFakeTimers({
 			toFake: [
 				'Date',
@@ -269,6 +304,9 @@ describe('TicketsRoute', () => {
 				protoTicket(2),
 				protoTicket(3),
 			])
+			saleClient.listByEvent.mockResolvedValue(
+				salesWith({ state: 'available', resaleOpen: false }),
+			)
 			const sut = await open()
 
 			expect(sut.step).toBe('loaded')
@@ -285,13 +323,15 @@ describe('TicketsRoute', () => {
 				expect(t.state).toBe('not-entered')
 				expect(t.userId).toBe(USER)
 				expect(t.resaleWithoutConsentProhibited).toBe(true)
+				expect(t.seatTypeName).toBe('S席')
 				expect(sut.stateLabel(t)).toBe('tickets.state.not-entered')
 			}
 			expect(ja.tickets.state['not-entered']).toBe('未入場')
 			expect(ja.tickets.resaleProhibited).toContain('転売')
 			expect(ja.tickets.field.noSeat).toBe('指定なし')
-			// One read per event, not per ticket.
+			// One read per event, not per ticket, and one per Order.
 			expect(concertClient.get).toHaveBeenCalledTimes(1)
+			expect(orderClient.get).toHaveBeenCalledTimes(1)
 		})
 
 		it("shows the User's new phone number on every ticket after a change", async () => {
@@ -677,6 +717,7 @@ describe('TicketsRoute', () => {
 					Registration.instance(IUserStore, userStore),
 					Registration.instance(IResaleListingRpcClient, resaleClient),
 					Registration.instance(ITicketSaleRpcClient, saleClient),
+					Registration.instance(IOrderRpcClient, orderClient),
 				],
 			).started
 			const sut = fixture.component.route
@@ -800,27 +841,9 @@ describe('TicketsRoute', () => {
 	})
 
 	describe('official resale', () => {
-		/** event-1's first-come sale at 5000 yen. */
-		function firstCome(t: Partial<TicketType> = {}): TicketSale {
-			return {
-				id: 'sale-1',
-				name: '一般発売',
-				method: 'firstCome',
-				saleStartTime: jst(1, 10),
-				saleEndTime: jst(19, 23),
-				verificationRequirement: 'none',
-				ticketType: {
-					id: 'type-1',
-					eventId: EVENT,
-					price: 5000,
-					perAccountLimit: 4,
-					state: 'soldOut',
-					lowStock: false,
-					resaleOpen: true,
-					resaleAvailable: false,
-					...t,
-				},
-			}
+		/** event-1's S席 stock at 5000 yen, sold out with its resale open. */
+		function firstCome(o: Partial<TicketStock> = {}): EventTicketSales {
+			return salesWith(o)
 		}
 
 		/** fan's listing of ticket i, priced 5000 yen. */
@@ -828,6 +851,7 @@ describe('TicketsRoute', () => {
 			return {
 				id: `listing-${i}`,
 				ticketId: ticketId(i),
+				ticketStockId: 'stock-s',
 				price: 5000,
 				fee: 500,
 				refundAmount: 4500,
@@ -841,16 +865,16 @@ describe('TicketsRoute', () => {
 		it('lists a ticket after showing the price, fee and refund', async () => {
 			// @spec components/infrastructure/fan/web/route/tickets "Fan lists a ticket"
 			ticketClient.list.mockResolvedValue([protoTicket(1), protoTicket(2)])
-			saleClient.listByEvent.mockResolvedValue([firstCome()])
+			saleClient.listByEvent.mockResolvedValue(firstCome())
 			resaleClient.create.mockResolvedValue(listing(1))
 			const sut = await open()
 			const group = sut.groups[0]
 			const [first, second] = group.tickets
 
-			expect(sut.offersListing(group, first)).toBe(true)
+			expect(sut.offersListing(first)).toBe(true)
 			sut.askToList(group, first)
 			expect(sut.isListingOpen).toBe(true)
-			const price = sut.listingPrice(sut.listingGroup)
+			const price = sut.listingPrice(sut.listingTicket)
 			expect(sut.yen(price)).toBe('5,000')
 			expect(sut.yen(sut.listingFee(price))).toBe('500')
 			expect(sut.yen(price - sut.listingFee(price))).toBe('4,500')
@@ -860,7 +884,9 @@ describe('TicketsRoute', () => {
 			)
 			expect(ja.tickets.resale.termRefund).toContain('購入時のカード')
 			expect(ja.tickets.resale.termNotGuaranteed).toContain('保証はありません')
-			expect(ja.tickets.resale.termWithdraw).toContain('取り消せます')
+			expect(ja.tickets.resale.termWithdraw).toContain(
+				'売れるか出品の受付が終わるまで',
+			)
 			expect(ja.tickets.resale.termInvalid).toContain('入場に使えなくなります')
 
 			await sut.confirmListing()
@@ -879,35 +905,35 @@ describe('TicketsRoute', () => {
 		it('offers no listing for an event that never sold out and says why', async () => {
 			// @spec components/infrastructure/fan/web/route/tickets "Event not sold out"
 			ticketClient.list.mockResolvedValue([protoTicket(1)])
-			saleClient.listByEvent.mockResolvedValue([
-				firstCome({ state: 'onSale', resaleOpen: false }),
-			])
+			saleClient.listByEvent.mockResolvedValue(
+				firstCome({ state: 'available', resaleOpen: false }),
+			)
 			const sut = await open()
 			const group = sut.groups[0]
 
-			expect(sut.offersListing(group, group.tickets[0])).toBe(false)
+			expect(sut.offersListing(group.tickets[0])).toBe(false)
 			expect(sut.explainsNoResale(group)).toBe(true)
-			expect(ja.tickets.resale.onlyWhenSoldOut).toContain('完売した場合にのみ')
+			expect(ja.tickets.resale.onlyWhenSoldOut).toContain(
+				'この席種が完売した場合にのみ',
+			)
 		})
 
 		it('offers no listing once admission opened', async () => {
 			// @spec components/infrastructure/fan/web/route/tickets "Admission opened"
 			vi.setSystemTime(jst(20, 16))
 			ticketClient.list.mockResolvedValue([protoTicket(1)])
-			saleClient.listByEvent.mockResolvedValue([
-				firstCome({ resaleOpen: false }),
-			])
+			saleClient.listByEvent.mockResolvedValue(firstCome({ resaleOpen: false }))
 			const sut = await open()
 			const group = sut.groups[0]
 
-			expect(sut.offersListing(group, group.tickets[0])).toBe(false)
+			expect(sut.offersListing(group.tickets[0])).toBe(false)
 			expect(sut.explainsNoResale(group)).toBe(false)
 		})
 
 		it('shows a withdrawn ticket as 未入場 again', async () => {
 			// @spec components/infrastructure/fan/web/route/tickets "Fan withdraws"
 			ticketClient.list.mockResolvedValue([protoTicket(1)])
-			saleClient.listByEvent.mockResolvedValue([firstCome()])
+			saleClient.listByEvent.mockResolvedValue(firstCome())
 			resaleClient.list.mockResolvedValue([listing(1)])
 			resaleClient.withdraw.mockResolvedValue(
 				listing(1, { status: 'withdrawn' }),
@@ -925,22 +951,23 @@ describe('TicketsRoute', () => {
 			expect(sut.shownState(ticket)).toBe('not-entered')
 		})
 
-		it('says another fan is buying it when withdrawing fails', async () => {
-			// @spec components/infrastructure/fan/web/route/tickets "Someone is buying it"
+		it('says the listing can no longer be withdrawn once it is closed', async () => {
+			// @spec components/infrastructure/fan/web/route/tickets "Listing already closed"
 			ticketClient.list.mockResolvedValue([protoTicket(1)])
-			saleClient.listByEvent.mockResolvedValue([firstCome()])
+			saleClient.listByEvent.mockResolvedValue(firstCome())
 			resaleClient.list.mockResolvedValue([listing(1)])
 			resaleClient.withdraw.mockRejectedValue(
-				new ConnectError('held', Code.FailedPrecondition),
+				new ConnectError('closed', Code.FailedPrecondition),
 			)
 			const sut = await open()
 			const ticket = sut.groups[0].tickets[0]
+			resaleClient.list.mockClear()
 
 			await sut.withdraw(ticket)
 
-			expect(sut.resaleMessageFor(ticket)).toBe('tickets.resale.beingBought')
-			expect(ja.tickets.resale.beingBought).toContain('購入手続き中')
-			expect(sut.shownState(ticket)).toBe('listed')
+			expect(sut.resaleMessageFor(ticket)).toBe('tickets.resale.withdrawClosed')
+			expect(ja.tickets.resale.withdrawClosed).toContain('取り消せません')
+			expect(resaleClient.list).toHaveBeenCalledTimes(1)
 		})
 
 		it('shows a resold ticket with its refund and no QR code', async () => {
@@ -949,7 +976,7 @@ describe('TicketsRoute', () => {
 			ticketClient.list.mockResolvedValue([
 				protoTicket(1, { status: TicketStatus.VOIDED }),
 			])
-			saleClient.listByEvent.mockResolvedValue([firstCome()])
+			saleClient.listByEvent.mockResolvedValue(firstCome())
 			resaleClient.list.mockResolvedValue([
 				listing(1, {
 					status: 'sold',
@@ -964,7 +991,7 @@ describe('TicketsRoute', () => {
 			expect(sut.shownState(ticket)).toBe('resold')
 			expect(ja.tickets.state.resold).toBe('リセール済み')
 			expect(sut.offersCode(group)).toBe(false)
-			expect(sut.offersListing(group, ticket)).toBe(false)
+			expect(sut.offersListing(ticket)).toBe(false)
 			expect(sut.yen(sut.listingOf(ticket)?.refundAmount ?? 0)).toBe('4,500')
 			expect(sut.day(sut.listingOf(ticket)?.refundTime)).toBe('11/12')
 		})
@@ -974,9 +1001,7 @@ describe('TicketsRoute', () => {
 			vi.setSystemTime(jst(20, 16))
 			await prepareOnline([protoTicket(1)])
 			ticketClient.list.mockResolvedValue([protoTicket(1)])
-			saleClient.listByEvent.mockResolvedValue([
-				firstCome({ resaleOpen: false }),
-			])
+			saleClient.listByEvent.mockResolvedValue(firstCome({ resaleOpen: false }))
 			resaleClient.list.mockResolvedValue([listing(1, { status: 'expired' })])
 			const sut = await open()
 			const group = sut.groups[0]
@@ -988,7 +1013,7 @@ describe('TicketsRoute', () => {
 
 		it('renders 出品中 once a ticket is listed and 未入場 once withdrawn', async () => {
 			ticketClient.list.mockResolvedValue([protoTicket(1)])
-			saleClient.listByEvent.mockResolvedValue([firstCome()])
+			saleClient.listByEvent.mockResolvedValue(firstCome())
 			resaleClient.create.mockResolvedValue(listing(1))
 			resaleClient.withdraw.mockResolvedValue(
 				listing(1, { status: 'withdrawn' }),
@@ -1016,6 +1041,7 @@ describe('TicketsRoute', () => {
 					Registration.instance(IUserStore, userStore),
 					Registration.instance(IResaleListingRpcClient, resaleClient),
 					Registration.instance(ITicketSaleRpcClient, saleClient),
+					Registration.instance(IOrderRpcClient, orderClient),
 				],
 			).started
 			const sut = fixture.component.route
@@ -1030,6 +1056,11 @@ describe('TicketsRoute', () => {
 				fixture.appHost.querySelector('[data-testid="tickets-list-for-resale"]')
 			expect(state()).toBe('未入場')
 			expect(listButton()).not.toBeNull()
+			// The ticket's face names its seat type.
+			expect(
+				fixture.appHost.querySelector('[data-testid="tickets-seat-type"]')
+					?.textContent,
+			).toBe('S席')
 
 			const group = sut.groups[0]
 			sut.askToList(group, group.tickets[0])
@@ -1046,7 +1077,7 @@ describe('TicketsRoute', () => {
 
 		it('keeps the listings for the offline list', async () => {
 			ticketClient.list.mockResolvedValueOnce([protoTicket(1)])
-			saleClient.listByEvent.mockResolvedValue([firstCome()])
+			saleClient.listByEvent.mockResolvedValue(firstCome())
 			resaleClient.list.mockResolvedValueOnce([listing(1)])
 			const online = await open()
 			online.detaching()
@@ -1057,9 +1088,7 @@ describe('TicketsRoute', () => {
 
 			expect(sut.offline).toBe(true)
 			expect(sut.shownState(sut.groups[0].tickets[0])).toBe('listed')
-			expect(sut.offersListing(sut.groups[0], sut.groups[0].tickets[0])).toBe(
-				false,
-			)
+			expect(sut.offersListing(sut.groups[0].tickets[0])).toBe(false)
 		})
 	})
 })

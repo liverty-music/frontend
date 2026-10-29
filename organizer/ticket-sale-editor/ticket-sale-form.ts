@@ -12,28 +12,18 @@ export type { FieldError, JstDateTime }
 
 /** Maximum length of the sale's name, in characters. */
 export const MAX_NAME_LENGTH = 100
-/** The per-account limit a new sale starts with (server default too). */
-export const DEFAULT_PER_ACCOUNT_LIMIT = 4
-/** Inclusive bounds of the per-account limit (one entry QR covers ≤ 10). */
-export const MIN_PER_ACCOUNT_LIMIT = 1
-export const MAX_PER_ACCOUNT_LIMIT = 10
-/** Inclusive bounds of the tax-inclusive price per ticket, in yen. */
-export const MIN_PRICE = 1
-export const MAX_PRICE = 1_000_000
 
 /**
- * The editable model of the sale form. The window's start and end are each a
- * date and a 24-hour time read as Japan time whatever the browser's zone is
- * (design D19); numbers stay raw input strings so an empty control differs
- * from `0`.
+ * The editable model of the sale form: its name and window. The window's
+ * start and end are each a date and a 24-hour time read as Japan time
+ * whatever the browser's zone is (design D19). The seat types, prices and
+ * quantities are the event's TicketStocks and the per-account limit is the
+ * event's, so the sale carries none of them.
  */
 export interface TicketSaleFormModel {
 	name: string
 	saleStart: JstDateTime
 	saleEnd: JstDateTime
-	price: string
-	quantity: string
-	perAccountLimit: string
 }
 
 /** Per-field errors, shown next to each control. */
@@ -46,18 +36,12 @@ export interface TicketSaleFormErrors {
 	/** The end's date is unset, or the end is out of order. */
 	saleEndDate?: FieldError
 	saleEndTime?: FieldError
-	price?: FieldError
-	quantity?: FieldError
-	perAccountLimit?: FieldError
 }
 
 /** What the form is checked against besides its own values. */
 export interface TicketSaleFormContext {
 	/** The event's start time; the sale must end by then. */
 	readonly eventStart: Date | null
-	/** Tickets sold plus held: the quantity cannot go below it. */
-	readonly soldCount: number
-	readonly heldCount: number
 }
 
 /** The instant of a date and time entered in Japan time, or null. */
@@ -65,24 +49,9 @@ export function parseDateTime(value: JstDateTime): Date | null {
 	return parseJstDateTime(value) ?? null
 }
 
-function parseWholeNumber(value: string): number | null {
-	const trimmed = value.trim()
-	if (!/^\d+$/.test(trimmed)) return null
-	const n = Number(trimmed)
-	return Number.isSafeInteger(n) ? n : null
-}
-
-const yen = new Intl.NumberFormat('ja-JP')
-
-/** `3,000` for 3000. */
-export function formatYen(value: number | bigint): string {
-	return yen.format(value)
-}
-
 /**
- * The form for an event without a first-come sale: the name is
- * the given default name, the sale ends at the event's start time and the
- * limit is {@link DEFAULT_PER_ACCOUNT_LIMIT}.
+ * The form for an event without a first-come sale: the name is the given
+ * default name and the sale ends at the event's start time.
  */
 export function blankFormModel(
 	eventStart: Date | null,
@@ -92,9 +61,6 @@ export function blankFormModel(
 		name: defaultName,
 		saleStart: emptyJstDateTime(),
 		saleEnd: eventStart ? toJstDateTime(eventStart) : emptyJstDateTime(),
-		price: '',
-		quantity: '',
-		perAccountLimit: String(DEFAULT_PER_ACCOUNT_LIMIT),
 	}
 }
 
@@ -103,9 +69,6 @@ export function formModelOf(sale: {
 	readonly name: string
 	readonly saleStartTime: Date | null
 	readonly saleEndTime: Date | null
-	readonly price: bigint
-	readonly quantity: number
-	readonly perAccountLimit: number
 }): TicketSaleFormModel {
 	return {
 		name: sale.name,
@@ -115,20 +78,14 @@ export function formModelOf(sale: {
 		saleEnd: sale.saleEndTime
 			? toJstDateTime(sale.saleEndTime)
 			: emptyJstDateTime(),
-		price: sale.price.toString(),
-		quantity: String(sale.quantity),
-		perAccountLimit: String(sale.perAccountLimit),
 	}
 }
 
 /**
  * Checks the form the way the server will, so errors show next to the field
  * before a round trip: the name 1–{@link MAX_NAME_LENGTH} characters, both
- * times required, the end after the start and not after the event's start
- * time, the price {@link MIN_PRICE}–{@link MAX_PRICE} yen, the quantity at
- * least 1 and at least what is sold and held, and the limit
- * {@link MIN_PER_ACCOUNT_LIMIT}–{@link MAX_PER_ACCOUNT_LIMIT} and not above
- * the quantity.
+ * times required, and the end after the start and not after the event's
+ * start time.
  */
 export function validateTicketSaleForm(
 	model: TicketSaleFormModel,
@@ -168,39 +125,6 @@ export function validateTicketSaleForm(
 		errors.saleEndDate = { key: 'firstComeEditor.error.endBeforeStart' }
 	}
 
-	const price = parseWholeNumber(model.price)
-	if (price === null || price < MIN_PRICE || price > MAX_PRICE) {
-		errors.price = {
-			key: 'firstComeEditor.error.price',
-			params: { min: MIN_PRICE, max: MAX_PRICE },
-		}
-	}
-
-	const quantity = parseWholeNumber(model.quantity)
-	const floor = ctx.soldCount + ctx.heldCount
-	if (quantity === null || quantity < 1) {
-		errors.quantity = { key: 'firstComeEditor.error.quantity' }
-	} else if (quantity < floor) {
-		errors.quantity = {
-			key: 'firstComeEditor.error.quantityFloor',
-			params: { sold: ctx.soldCount, held: ctx.heldCount, floor },
-		}
-	}
-
-	const limit = parseWholeNumber(model.perAccountLimit)
-	if (
-		limit === null ||
-		limit < MIN_PER_ACCOUNT_LIMIT ||
-		limit > MAX_PER_ACCOUNT_LIMIT
-	) {
-		errors.perAccountLimit = {
-			key: 'firstComeEditor.error.limit',
-			params: { min: MIN_PER_ACCOUNT_LIMIT, max: MAX_PER_ACCOUNT_LIMIT },
-		}
-	} else if (quantity !== null && quantity >= 1 && limit > quantity) {
-		errors.perAccountLimit = { key: 'firstComeEditor.error.limitOverQuantity' }
-	}
-
 	return errors
 }
 
@@ -211,7 +135,7 @@ export function isFormValid(errors: TicketSaleFormErrors): boolean {
 
 /**
  * Converts a validated model into the input of a FirstCome sale of the
- * event's Series with one TicketType for the event. The caller gates on
+ * event's Series naming the event. The caller gates on
  * {@link validateTicketSaleForm} first.
  */
 export function toCreateInput(
@@ -224,10 +148,7 @@ export function toCreateInput(
 		name: model.name.trim(),
 		method: 'firstCome',
 		saleStartTime: parseDateTime(model.saleStart) ?? new Date(0),
-		saleEndTime: parseDateTime(model.saleEnd) ?? undefined,
-		eventId,
-		price: Number(model.price.trim()),
-		quantity: Number(model.quantity.trim()),
-		perAccountLimit: Number(model.perAccountLimit.trim()),
+		saleEndTime: parseDateTime(model.saleEnd) ?? new Date(0),
+		eventIds: [eventId],
 	}
 }
