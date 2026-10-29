@@ -109,10 +109,10 @@ async function signUp(page: Page): Promise<void> {
 	// Passkey is the form's first and default choice; once the hosted login
 	// offers no password, it is the only one.
 	await page.getByRole('button', { name: '続行' }).click()
-
-	// Continuing created the account; its passkey is registered next.
-	await page.waitForURL(/\/ui\/v2\/login\/passkey\/set/)
+	// Continuing creates the account; its passkey is registered next.
 	accountMayExist = true
+
+	await page.waitForURL(/\/ui\/v2\/login\/passkey\/set/)
 	await page.getByTestId('submit-button').click()
 
 	// Back in the app once the sign-up callback has run.
