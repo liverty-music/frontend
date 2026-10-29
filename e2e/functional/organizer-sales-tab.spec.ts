@@ -1,4 +1,5 @@
 import {
+	confirmDialog,
 	connectError,
 	expectGuideLink,
 	installConsole,
@@ -7,13 +8,18 @@ import {
 	shownTime,
 } from '../support/organizer'
 import {
+	A_SEAT,
 	type ConcertSpec,
 	jst,
 	organizer,
 	payoutAccount,
+	S_SEAT,
 	type SaleSpec,
+	type StockSpec,
 	salesOf,
+	seatTypesOf,
 	seriesList,
+	stocksOf,
 	XX_SOLO,
 	XX_TOUR,
 } from '../support/organizer-data'
@@ -29,11 +35,21 @@ const SPEC = 'components/infrastructure/organizer/web/route/event'
 const NOW = new Date('2026-10-08T09:00:00+09:00')
 const SALES = `${SERIES}/s-tour/events/e-1103/ticket-sales`
 
+/** S席 of the 3 November event: 1,500 tickets, 300 sold, so 1,200 remain. */
+const S_STOCK: StockSpec = {
+	id: 'stock-s',
+	seatType: S_SEAT,
+	quantity: 1500,
+	sold: 300,
+}
+
 function rpc(
 	sales: SaleSpec[],
 	options: {
 		concerts?: ConcertSpec[]
 		organizer?: Record<string, unknown>
+		stocks?: StockSpec[]
+		seatTypes?: (typeof S_SEAT)[]
 	} = {},
 ): RpcMocks {
 	return {
@@ -41,6 +57,14 @@ function rpc(
 		'OrganizerService/Get': options.organizer ?? organizer(),
 		'PayoutAccountService/Get': payoutAccount('ACTIVE'),
 		'TicketSaleService/ListByEvent': salesOf('e-1103', sales),
+		'TicketStockService/ListByEvent': stocksOf(
+			'e-1103',
+			options.stocks ?? [S_STOCK],
+		),
+		'SeatTypeService/ListBySeries': seatTypesOf(
+			's-tour',
+			options.seatTypes ?? [S_SEAT, A_SEAT],
+		),
 		'ScannerService/ListByEvent': { scanners: [] },
 	}
 }
@@ -54,6 +78,8 @@ async function open(page: Page, mocks: RpcMocks, path = SALES) {
 
 const tab = (page: Page) => page.locator('sales-tab')
 const sale = (page: Page, id: string) => page.locator(`[data-sale="${id}"]`)
+const stocks = (page: Page) => tab(page).getByTestId('ticket-stocks')
+const stock = (page: Page, id: string) => page.locator(`[data-stock="${id}"]`)
 const tile = (scope: ReturnType<Page['locator']>, label: string) =>
 	scope
 		.locator('stat-tile')
@@ -65,7 +91,7 @@ const startLottery = (page: Page) =>
 const startFirstCome = (page: Page) =>
 	tab(page).getByRole('link', { name: '先着で販売する' })
 
-/** A lottery of 1,200 tickets at 6,500 yen, up to 4 per account. */
+/** A lottery of the event, drawing from its stocks. */
 function lottery(
 	over: Partial<SaleSpec> & Pick<SaleSpec, 'id' | 'start'>,
 ): SaleSpec {
@@ -73,14 +99,11 @@ function lottery(
 		name: 'ファンクラブ先行',
 		method: 'LOTTERY',
 		end: jst('2026-10-17', '23:59'),
-		price: 6500,
-		quantity: 1200,
-		perAccountLimit: 4,
 		...over,
 	}
 }
 
-/** The 一般発売 first-come sale of 150 tickets. */
+/** The 一般発売 first-come sale. */
 function firstCome(over: Partial<SaleSpec> = {}): SaleSpec {
 	return {
 		id: 'sale-general',
@@ -88,12 +111,6 @@ function firstCome(over: Partial<SaleSpec> = {}): SaleSpec {
 		method: 'FIRST_COME',
 		start: jst('2026-10-20', '10:00'),
 		end: jst('2026-11-03', '17:00'),
-		price: 7000,
-		quantity: 150,
-		perAccountLimit: 4,
-		typeState: 'NOT_YET_ON_SALE',
-		sold: 0,
-		held: 0,
 		...over,
 	}
 }
@@ -102,8 +119,19 @@ const OPEN_LOTTERY = lottery({
 	id: 'sale-open',
 	start: jst('2026-10-05', '12:00'),
 	end: jst('2026-10-12', '23:59'),
-	stats: { entries: 412, requested: 1380 },
+	stats: [{ stock: S_STOCK, entries: 412, requested: 1380 }],
 })
+
+const DRAWN_STATS = [
+	{
+		stock: S_STOCK,
+		entries: 412,
+		requested: 1380,
+		won: 318,
+		wonTickets: 1198,
+		lost: 94,
+	},
+]
 
 test.describe('prerequisites', () => {
 	test(`@spec ${SPEC} "Draft event"`, async ({ page }) => {
@@ -168,6 +196,26 @@ test.describe('prerequisites', () => {
 		await expect(startFirstCome(page)).toHaveCount(0)
 	})
 
+	test(`@spec ${SPEC} "No seat type stocked"`, async ({ page }) => {
+		await open(page, rpc([], { stocks: [] }))
+
+		const callout = tab(page).locator('prerequisite-callout')
+		await expect(
+			callout.getByRole('heading', { name: '席種と枚数を追加してください' }),
+		).toBeVisible()
+		await expect(callout).toContainText('下の「席種と枚数」で')
+		await expectGuideLink(callout, 'sell')
+		await expect(startLottery(page)).toHaveCount(0)
+		await expect(startFirstCome(page)).toHaveCount(0)
+		// The section it points to is on the same tab, with its add form.
+		await expect(
+			stocks(page).getByRole('heading', { level: 2, name: '席種と枚数' }),
+		).toBeVisible()
+		await expect(
+			stocks(page).getByRole('button', { name: '席種を追加' }),
+		).toBeVisible()
+	})
+
 	test(`@spec ${SPEC} "Business details incomplete"`, async ({ page }) => {
 		await open(
 			page,
@@ -214,10 +262,11 @@ test.describe('the sales list', () => {
 		await expect(row).toContainText(
 			'10月10日(土) 12:00 〜 10月17日(土) 23:59 JST',
 		)
-		await expect(row).toContainText('6,500円')
-		await expect(row).toContainText('1,200枚')
-		await expect(row).toContainText('1人4枚まで')
 		await expect(row).toContainText('抽選')
+		// Said once above the list: the seat types are shared, the limit is the event's.
+		await expect(tab(page)).toContainText(
+			'1アカウントの上限は、この公演日のすべての販売を合わせて4枚です。',
+		)
 	})
 
 	test(`@spec ${SPEC} "Open lottery, oversubscribed"`, async ({ page }) => {
@@ -225,10 +274,12 @@ test.describe('the sales list', () => {
 
 		const row = sale(page, 'sale-open')
 		await expect(row.locator('status-badge')).toHaveText('受付中')
-		await expect(tile(row, '応募数')).toContainText('412')
-		await expect(tile(row, '申込枚数')).toContainText('1,380')
-		await expect(tile(row, '販売枚数')).toContainText('1,200')
-		await expect(row).toContainText('申込枚数は販売枚数の115%です。')
+		const s = row.locator('[data-lottery-stock="stock-s"]')
+		await expect(s.getByRole('heading', { name: 'S席' })).toBeVisible()
+		await expect(tile(s, '応募数')).toContainText('412')
+		await expect(tile(s, '申込枚数')).toContainText('1,380')
+		await expect(tile(s, '残り')).toContainText('1,200')
+		await expect(s).toContainText('申込枚数は残りの枚数の115%です。')
 	})
 
 	test(`@spec ${SPEC} "Drawn lottery"`, async ({ page }) => {
@@ -239,14 +290,7 @@ test.describe('the sales list', () => {
 					id: 'sale-drawn',
 					start: jst('2026-09-20', '12:00'),
 					end: jst('2026-09-27', '23:59'),
-					drawTime: jst('2026-09-28', '12:00'),
-					stats: {
-						entries: 412,
-						requested: 1380,
-						won: 318,
-						wonTickets: 1198,
-						lost: 94,
-					},
+					stats: DRAWN_STATS,
 				}),
 			]),
 		)
@@ -261,22 +305,27 @@ test.describe('the sales list', () => {
 	test(`@spec ${SPEC} "First-come sale on sale"`, async ({ page }) => {
 		await open(
 			page,
-			rpc([
-				firstCome({
-					start: jst('2026-10-01', '10:00'),
-					typeState: 'ON_SALE',
-					sold: 100,
-					held: 6,
-				}),
-			]),
+			rpc([firstCome({ start: jst('2026-10-01', '10:00') })], {
+				stocks: [
+					{
+						id: 'stock-s',
+						seatType: S_SEAT,
+						quantity: 150,
+						sold: 100,
+						held: 6,
+					},
+				],
+			}),
 		)
 
 		const row = sale(page, 'sale-general')
-		await expect(row.locator('status-badge')).toHaveText('販売中')
+		await expect(row.locator('status-badge')).toHaveText('受付中')
 		await expect(row).toContainText('先着')
-		await expect(tile(row, '販売済み')).toContainText('100')
-		await expect(tile(row, '購入手続き中')).toContainText('6')
-		await expect(tile(row, '販売枚数')).toContainText('150')
+		const s = stock(page, 'stock-s')
+		await expect(s.getByRole('heading', { name: 'S席' })).toBeVisible()
+		await expect(tile(s, '販売済み')).toContainText('100')
+		await expect(tile(s, '購入手続き中')).toContainText('6')
+		await expect(tile(s, '販売枚数')).toContainText('150')
 	})
 
 	test(`@spec ${SPEC} "Presale drawn, general sale scheduled"`, async ({
@@ -291,21 +340,17 @@ test.describe('the sales list', () => {
 					id: 'sale-fc',
 					start: jst('2026-09-20', '12:00'),
 					end: jst('2026-09-27', '23:59'),
-					drawTime: jst('2026-09-28', '12:00'),
-					stats: {
-						entries: 412,
-						requested: 1380,
-						won: 318,
-						wonTickets: 1198,
-						lost: 94,
-					},
+					stats: DRAWN_STATS,
 				}),
 			]),
 		)
 
-		// One card per sale, each headed by its name right under the page title.
+		// One card per sale, each headed by its name under the section 販売.
 		await expect(
-			tab(page).locator('.sales').getByRole('heading', { level: 2 }),
+			tab(page).getByRole('heading', { level: 2, name: '販売', exact: true }),
+		).toBeVisible()
+		await expect(
+			tab(page).locator('.sales').getByRole('heading', { level: 3 }),
 		).toHaveText(['ファンクラブ先行', '一般発売'])
 		await expect(sale(page, 'sale-fc').locator('status-badge')).toHaveText(
 			'抽選済み',
@@ -333,12 +378,7 @@ test.describe('the sales list', () => {
 
 test.describe('purchases per referral code', () => {
 	const referrals = (page: Page) => tab(page).getByTestId('referrals')
-	const ON_SALE = firstCome({
-		start: jst('2026-10-01', '10:00'),
-		typeState: 'ON_SALE',
-		sold: 57,
-		held: 0,
-	})
+	const ON_SALE = firstCome({ start: jst('2026-10-01', '10:00') })
 
 	function withReferrals(stats: Record<string, unknown>[]): RpcMocks {
 		const mocks = rpc([ON_SALE])
@@ -421,14 +461,11 @@ test.describe('starting and editing a sale', () => {
 			body: salesOf('e-1103', created ? [created] : []),
 		})
 		mocks['TicketSaleService/Create'] = (body) => {
-			const type = (body.ticketTypes as Array<Record<string, unknown>>)[0]
 			created = lottery({
 				id: 'sale-new',
 				name: (body.name as { value: string }).value,
 				start: body.saleStartTime as string,
 				end: body.saleEndTime as string,
-				price: Number((type.price as { value: string }).value),
-				quantity: type.quantity as number,
 			})
 			const list = salesOf('e-1103', [created]) as { ticketSales: unknown[] }
 			return { body: { ticketSale: list.ticketSales[0] } }
@@ -438,8 +475,6 @@ test.describe('starting and editing a sale', () => {
 		await startLottery(page).click()
 		await expect(page).toHaveURL(/\/ticket-sales\/new\?method=lottery$/)
 		await page.getByLabel('販売名').fill('ファンクラブ先行')
-		await page.getByLabel('価格').fill('6500')
-		await page.getByLabel('販売枚数').fill('1200')
 		await page.getByRole('button', { name: '抽選販売を始める' }).click()
 
 		await expect(page).toHaveURL(/\/events\/e-1103\/ticket-sales$/)
@@ -461,13 +496,7 @@ test.describe('starting and editing a sale', () => {
 			seriesId: { value: 's-tour' },
 			name: { value: 'ファンクラブ先行' },
 			method: 'TICKET_SALE_METHOD_LOTTERY',
-			ticketTypes: [
-				{
-					eventId: { value: 'e-1103' },
-					price: { value: '6500' },
-					quantity: 1200,
-				},
-			],
+			eventIds: [{ value: 'e-1103' }],
 		})
 	})
 
@@ -485,11 +514,10 @@ test.describe('starting and editing a sale', () => {
 		await expect(
 			page.getByRole('heading', { level: 1, name: '先着販売を変更' }),
 		).toBeVisible()
-		await expect(page.getByLabel('販売名')).toHaveValue('一般発売')
 		await expect(page.getByLabel('販売開始日')).toHaveValue('2026-10-20')
 		await expect.poll(() => shownTime(page, '販売開始時刻')).toBe('10:00')
-		await expect(page.getByLabel('価格')).toHaveValue('7000')
-		await expect(page.getByLabel('販売枚数')).toHaveValue('150')
+		// The name is shown, not edited.
+		await expect(page.locator('.fixed')).toContainText('一般発売')
 	})
 
 	test(`@spec ${SPEC} "Edit a lottery before it opens"`, async ({ page }) => {
@@ -516,9 +544,9 @@ test.describe('starting and editing a sale', () => {
 		await expect(page.getByLabel('受付終了日')).toHaveValue('2026-10-16')
 		// A minute off the 5-minute steps is shown as saved.
 		expect(await shownTime(page, '受付終了時刻')).toBe('23:59')
-		await expect(page.getByLabel('価格')).toHaveValue('6500')
-		await expect(page.getByLabel('販売枚数')).toHaveValue('1200')
-		await expect(page.getByLabel('1人あたりの上限枚数')).toHaveValue('4')
+		await expect(
+			page.locator('lottery-sale-editor-route .fixed'),
+		).toContainText('ファンクラブ先行')
 	})
 
 	test(`@spec ${SPEC} "Lottery already open"`, async ({ page }) => {
@@ -591,5 +619,164 @@ test.describe('verification requirement', () => {
 			'本人確認なし',
 		)
 		await expect(select(page)).toHaveValue('0')
+	})
+})
+
+test.describe('seat types and quantities', () => {
+	test(`@spec ${SPEC} "Two seat types stocked"`, async ({ page }) => {
+		const stocked: StockSpec[] = []
+		const mocks = rpc([], { stocks: [] })
+		mocks['TicketStockService/ListByEvent'] = () => ({
+			body: stocksOf('e-1103', stocked),
+		})
+		mocks['TicketStockService/Create'] = (body) => {
+			const seat = [S_SEAT, A_SEAT].find(
+				(t) => t.id === (body.seatTypeId as { value: string }).value,
+			)
+			const added: StockSpec = {
+				id: `stock-${seat?.id}`,
+				seatType: seat ?? S_SEAT,
+				quantity: body.quantity as number,
+			}
+			stocked.push(added)
+			return {
+				body: {
+					ticketStock: (
+						stocksOf('e-1103', [added]) as { ticketStocks: unknown[] }
+					).ticketStocks[0],
+				},
+			}
+		}
+		const log = await open(page, mocks)
+
+		for (const [label, quantity] of [
+			['S席（8,000円）', '300'],
+			['A席（6,000円）', '700'],
+		]) {
+			await stocks(page)
+				.getByLabel(/^席種 /)
+				.selectOption({ label })
+			await stocks(page)
+				.getByRole('spinbutton', { name: /^枚数/ })
+				.fill(quantity)
+			await stocks(page).getByRole('button', { name: '席種を追加' }).click()
+			const dialog = confirmDialog(page)
+			await expect(dialog).toContainText('枚数はあとから変えられません')
+			await expect(dialog).toContainText('すべての販売が、この枚数から売ります')
+			await dialog.getByRole('button', { name: '席種を追加' }).click()
+		}
+
+		await expect(stock(page, 'stock-seat-s')).toContainText(
+			'8,000円 税込 · 300枚',
+		)
+		await expect(stock(page, 'stock-seat-a')).toContainText(
+			'6,000円 税込 · 700枚',
+		)
+		for (const id of ['stock-seat-s', 'stock-seat-a']) {
+			await expect(stock(page, id).locator('status-badge')).toHaveText('販売可')
+			await expect(tile(stock(page, id), '販売済み')).toContainText('0')
+			await expect(tile(stock(page, id), '購入手続き中')).toContainText('0')
+		}
+		expect(
+			log.calls
+				.filter((c) => c.method === 'TicketStockService/Create')
+				.map((c) => c.body),
+		).toEqual([
+			{
+				eventId: { value: 'e-1103' },
+				seatTypeId: { value: 'seat-s' },
+				quantity: 300,
+			},
+			{
+				eventId: { value: 'e-1103' },
+				seatTypeId: { value: 'seat-a' },
+				quantity: 700,
+			},
+		])
+		// Every seat type of the concert is stocked: nothing left to add.
+		await expect(
+			stocks(page).getByRole('button', { name: '席種を追加' }),
+		).toHaveCount(0)
+	})
+
+	test(`@spec ${SPEC} "More tickets later"`, async ({ page }) => {
+		const ANNOTATED = { id: 'seat-note', name: '注釈付き指定席', price: 7000 }
+		await open(
+			page,
+			rpc([], {
+				stocks: [{ id: 'stock-s', seatType: S_SEAT, quantity: 300, sold: 300 }],
+				seatTypes: [S_SEAT, ANNOTATED],
+			}),
+		)
+
+		const s = stock(page, 'stock-s')
+		await expect(s.locator('status-badge')).toHaveText('完売')
+		// No field or action changes a stock's quantity.
+		await expect(s.getByRole('spinbutton')).toHaveCount(0)
+		await expect(s.getByRole('button')).toHaveCount(0)
+		// The concert's other seat type can be stocked instead.
+		const options = stocks(page)
+			.getByLabel(/^席種 /)
+			.locator('option')
+		await expect(options).toHaveText([
+			'選んでください',
+			'注釈付き指定席（7,000円）',
+		])
+	})
+
+	test(`@spec ${SPEC} "Stock already ordered"`, async ({ page }) => {
+		await open(
+			page,
+			rpc([], {
+				stocks: [
+					{ id: 'stock-s', seatType: S_SEAT, quantity: 300, sold: 2 },
+					{ id: 'stock-a', seatType: A_SEAT, quantity: 700 },
+				],
+			}),
+		)
+
+		await expect(
+			stock(page, 'stock-s').getByRole('button', { name: '削除' }),
+		).toHaveCount(0)
+		await expect(
+			stock(page, 'stock-a').getByRole('button', { name: '削除' }),
+		).toBeVisible()
+	})
+
+	test('says a stock with an entry cannot be deleted when the server refuses', async ({
+		page,
+	}) => {
+		const mocks = rpc([], {
+			stocks: [{ id: 'stock-a', seatType: A_SEAT, quantity: 700 }],
+		})
+		mocks['TicketStockService/Delete'] = () =>
+			connectError('failed_precondition', 'stock has orders')
+		await open(page, mocks)
+
+		await stock(page, 'stock-a').getByRole('button', { name: '削除' }).click()
+		await confirmDialog(page, { name: 'A席を削除しますか？' })
+			.getByRole('button', { name: '削除' })
+			.click()
+
+		await expect(
+			snackbar(page).filter({
+				hasText: 'A席は申込または購入があるため削除できません。',
+			}),
+		).toBeVisible()
+		await expect(stock(page, 'stock-a')).toBeVisible()
+	})
+
+	test(`@spec ${SPEC} "Concert without seat types"`, async ({ page }) => {
+		await open(page, rpc([], { stocks: [], seatTypes: [] }))
+
+		await expect(stocks(page)).toContainText(
+			'この公演にはまだ席種がありません。公演ページで席種を追加してください。',
+		)
+		await expect(
+			stocks(page).getByRole('link', { name: '公演ページへ' }),
+		).toHaveAttribute('href', /\/series\/s-tour$/)
+		await expect(
+			stocks(page).getByRole('button', { name: '席種を追加' }),
+		).toHaveCount(0)
 	})
 })

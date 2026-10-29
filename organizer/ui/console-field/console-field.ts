@@ -12,10 +12,11 @@ export type ConsoleFieldType =
 	| 'time'
 	| 'yen'
 
-/** A choice of a select: its value and the catalog key of its label. */
+/** A choice of a select: its value and the catalog key of its label, with the label's values. */
 export interface FieldOption {
 	value: string
 	labelKey: string
+	params?: Record<string, unknown>
 }
 
 /** A field error as a catalog key, or a key with its values. */

@@ -1,11 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
-	DEFAULT_PER_ACCOUNT_LIMIT,
 	DEFAULT_WINDOW_DAYS,
 	emptyFormModel,
 	isFormValid,
 	type LotterySaleFormModel,
-	MAX_PER_ACCOUNT_LIMIT,
 	MAX_WINDOW_DAYS,
 	MIN_WINDOW_DAYS,
 	parseDateTime,
@@ -25,9 +23,6 @@ function validModel(windowDays = DEFAULT_WINDOW_DAYS): LotterySaleFormModel {
 		name: 'ファンクラブ先行',
 		saleStart: toDateTime(open),
 		saleEnd: toDateTime(close),
-		quantity: '200',
-		perAccountLimit: '4',
-		price: '6500',
 	}
 }
 
@@ -39,7 +34,8 @@ describe('emptyFormModel', () => {
 		expect(model.saleStart).toEqual({ date: '2026-10-01', time: '12:00' })
 		expect(model.saleEnd).toEqual({ date: '2026-10-11', time: '12:00' })
 		expect(model.name).toBe('')
-		expect(model.perAccountLimit).toBe(String(DEFAULT_PER_ACCOUNT_LIMIT))
+		// The sale carries no price, quantity or limit (they are the event's).
+		expect(Object.keys(model).sort()).toEqual(['name', 'saleEnd', 'saleStart'])
 	})
 
 	it('rounds "now" up to the time field\'s 5-minute steps', () => {
@@ -141,80 +137,8 @@ describe('validateLotterySaleForm — name', () => {
 	})
 })
 
-describe('validateLotterySaleForm — ticket fields', () => {
-	it.each(['', '0', '-5', '3.5', 'abc'])(
-		'rejects a non-positive-integer quantity (%s)',
-		(value) => {
-			const model = validModel()
-			model.quantity = value
-			expect(validateLotterySaleForm(model).quantity).toBeDefined()
-		},
-	)
-
-	it.each(['', '0', '-1', '2.2', 'x'])(
-		'rejects a non-positive-integer per-account limit (%s)',
-		(value) => {
-			const model = validModel()
-			model.perAccountLimit = value
-			expect(validateLotterySaleForm(model).perAccountLimit).toBeDefined()
-		},
-	)
-
-	it.each(['', '0', '-100', '12.5', 'free'])(
-		'rejects a non-positive-integer price (%s)',
-		(value) => {
-			const model = validModel()
-			model.price = value
-			expect(validateLotterySaleForm(model).price).toBeDefined()
-		},
-	)
-
-	it('rejects a per-account limit above the quantity', () => {
-		const model = validModel()
-		model.quantity = '3'
-		model.perAccountLimit = '4'
-		const errors = validateLotterySaleForm(model)
-		expect(errors.perAccountLimit).toBeDefined()
-		expect(isFormValid(errors)).toBe(false)
-	})
-
-	it('rejects a per-account limit above one admission code (11)', () => {
-		// @spec components/entity/ticket-type "Limit larger than one admission code"
-		const model = validModel()
-		model.quantity = '100'
-		model.perAccountLimit = '11'
-		const errors = validateLotterySaleForm(model)
-		expect(errors.perAccountLimit).toEqual({
-			key: 'lotteryEditor.error.limitMax',
-			params: { max: MAX_PER_ACCOUNT_LIMIT },
-		})
-		expect(isFormValid(errors)).toBe(false)
-	})
-
-	it.each(['1', '10'])(
-		'accepts a per-account limit at the bound (%s)',
-		(value) => {
-			const model = validModel()
-			model.quantity = '100'
-			model.perAccountLimit = value
-			const errors = validateLotterySaleForm(model)
-			expect(errors.perAccountLimit).toBeUndefined()
-			expect(isFormValid(errors)).toBe(true)
-		},
-	)
-
-	it('accepts a per-account limit equal to the quantity', () => {
-		const model = validModel()
-		model.quantity = '4'
-		model.perAccountLimit = '4'
-		const errors = validateLotterySaleForm(model)
-		expect(errors.perAccountLimit).toBeUndefined()
-		expect(isFormValid(errors)).toBe(true)
-	})
-})
-
 describe('toCreateInput', () => {
-	it('marshals a validated model into a Lottery sale with one TicketType', () => {
+	it('marshals a validated model into a Lottery sale naming the event', () => {
 		const input = toCreateInput(
 			'series-1',
 			'event-1',
@@ -224,13 +148,10 @@ describe('toCreateInput', () => {
 			seriesId: 'series-1',
 			name: 'ファンクラブ先行',
 			method: 'lottery',
-			eventId: 'event-1',
-			quantity: 200,
-			perAccountLimit: 4,
-			price: 6500,
+			eventIds: ['event-1'],
 		})
-		expect(
-			windowDurationDays(input.saleStartTime, input.saleEndTime ?? new Date(0)),
-		).toBe(DEFAULT_WINDOW_DAYS)
+		expect(windowDurationDays(input.saleStartTime, input.saleEndTime)).toBe(
+			DEFAULT_WINDOW_DAYS,
+		)
 	})
 })

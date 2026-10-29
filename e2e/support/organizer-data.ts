@@ -17,6 +17,8 @@ export interface EventSpec {
 	venue?: string
 	placeId?: string
 	state?: PublishStateName
+	/** The date's per-account limit; the server sends 4 when none was given. */
+	perAccountLimit?: number
 }
 
 export interface ConcertSpec {
@@ -51,6 +53,9 @@ function event(seriesId: string, e: EventSpec): Json {
 				}
 			: {}),
 		publishState: `PUBLISH_STATE_${e.state ?? 'DRAFT'}`,
+		...(e.perAccountLimit !== undefined
+			? { perAccountLimit: e.perAccountLimit }
+			: {}),
 	}
 }
 
@@ -153,65 +158,128 @@ export function scanner(eventId: string, s: ScannerSpec): Json {
 	}
 }
 
+/** A seat type (席種) of a Series: its name and whole-yen 税込 price. */
+export interface SeatTypeSpec {
+	id: string
+	name: string
+	price: number
+}
+
+/** The tickets of one seat type for one event, with its counts now. */
+export interface StockSpec {
+	id: string
+	seatType: SeatTypeSpec
+	quantity: number
+	sold?: number
+	held?: number
+	state?: 'AVAILABLE' | 'ALL_HELD' | 'SOLD_OUT'
+}
+
+/** S席 at 8,000 yen. */
+export const S_SEAT: SeatTypeSpec = { id: 'seat-s', name: 'S席', price: 8000 }
+/** A席 at 6,000 yen. */
+export const A_SEAT: SeatTypeSpec = { id: 'seat-a', name: 'A席', price: 6000 }
+
+export function seatType(seriesId: string, t: SeatTypeSpec): Json {
+	return {
+		id: { value: t.id },
+		seriesId: { value: seriesId },
+		name: { value: t.name },
+		price: { value: String(t.price) },
+	}
+}
+
+/** A `SeatTypeService.ListBySeries` response. */
+export function seatTypesOf(seriesId: string, seatTypes: SeatTypeSpec[]): Json {
+	return { seatTypes: seatTypes.map((t) => seatType(seriesId, t)) }
+}
+
+export function ticketStock(eventId: string, s: StockSpec): Json {
+	const sold = s.sold ?? 0
+	const held = s.held ?? 0
+	const state =
+		s.state ??
+		(sold >= s.quantity
+			? 'SOLD_OUT'
+			: sold + held >= s.quantity
+				? 'ALL_HELD'
+				: 'AVAILABLE')
+	return {
+		id: { value: s.id },
+		eventId: { value: eventId },
+		seatTypeId: { value: s.seatType.id },
+		quantity: s.quantity,
+		soldCount: sold,
+		heldCount: held,
+		state: `TICKET_STOCK_STATE_${state}`,
+	}
+}
+
+/** A `TicketStockService.ListByEvent` response: the stocks and their seat types. */
+export function stocksOf(
+	eventId: string,
+	stocks: StockSpec[],
+	seriesId = 's-tour',
+): Json {
+	const seatTypes = new Map(stocks.map((s) => [s.seatType.id, s.seatType]))
+	return {
+		ticketStocks: stocks.map((s) => ticketStock(eventId, s)),
+		seatTypes: [...seatTypes.values()].map((t) => seatType(seriesId, t)),
+	}
+}
+
+/** One lottery's entries for one stock of the event. */
+export interface EntryStatsSpec {
+	stock: StockSpec
+	entries: number
+	requested: number
+	won?: number
+	wonTickets?: number
+	lost?: number
+}
+
 export interface SaleSpec {
 	id: string
 	name: string
 	method: 'LOTTERY' | 'FIRST_COME'
 	/** RFC 3339 */
 	start: string
-	end?: string
-	drawTime?: string
-	price: number
-	quantity: number
-	perAccountLimit?: number
+	end: string
 	verification?: 'UNSPECIFIED' | 'VERIFIED_ANY' | 'JPKI_ONLY'
-	typeState?: 'NOT_YET_ON_SALE' | 'ON_SALE' | 'ALL_HELD' | 'SOLD_OUT' | 'ENDED'
-	sold?: number
-	held?: number
-	stats?: {
-		entries: number
-		requested: number
-		won?: number
-		wonTickets?: number
-		lost?: number
+	/** The events the sale names; the listed event when omitted. */
+	eventIds?: string[]
+	/** A lottery's entries per stock. */
+	stats?: EntryStatsSpec[]
+}
+
+export function ticketSale(eventId: string, s: SaleSpec): Json {
+	return {
+		id: { value: s.id },
+		name: { value: s.name },
+		method: `TICKET_SALE_METHOD_${s.method}`,
+		saleStartTime: s.start,
+		saleEndTime: s.end,
+		verificationRequirement: `VERIFICATION_REQUIREMENT_${s.verification ?? 'UNSPECIFIED'}`,
+		eventIds: (s.eventIds ?? [eventId]).map((id) => ({ value: id })),
 	}
 }
 
 /** A `TicketSaleService.ListByEvent` response. */
 export function salesOf(eventId: string, sales: SaleSpec[]): Json {
 	return {
-		ticketSales: sales.map((s) => ({
-			id: { value: s.id },
-			name: { value: s.name },
-			method: `TICKET_SALE_METHOD_${s.method}`,
-			saleStartTime: s.start,
-			...(s.end ? { saleEndTime: s.end } : {}),
-			...(s.drawTime ? { drawTime: s.drawTime } : {}),
-			verificationRequirement: `VERIFICATION_REQUIREMENT_${s.verification ?? 'UNSPECIFIED'}`,
-			ticketTypes: [
-				{
-					id: { value: `type-${s.id}` },
-					ticketSaleId: { value: s.id },
-					eventId: { value: eventId },
-					price: { value: String(s.price) },
-					quantity: s.quantity,
-					perAccountLimit: s.perAccountLimit ?? 4,
-					...(s.sold !== undefined ? { soldCount: s.sold } : {}),
-					...(s.held !== undefined ? { heldCount: s.held } : {}),
-					state: `TICKET_TYPE_STATE_${s.typeState ?? 'NOT_YET_ON_SALE'}`,
-				},
-			],
-		})),
-		lotteryEntryStats: sales
-			.filter((s) => s.stats)
-			.map((s) => ({
-				ticketTypeId: { value: `type-${s.id}` },
-				entryCount: s.stats?.entries ?? 0,
-				ticketCount: s.stats?.requested ?? 0,
-				wonEntryCount: s.stats?.won ?? 0,
-				wonTicketCount: s.stats?.wonTickets ?? 0,
-				lostEntryCount: s.stats?.lost ?? 0,
+		ticketSales: sales.map((s) => ticketSale(eventId, s)),
+		lotteryEntryStats: sales.flatMap((s) =>
+			(s.stats ?? []).map((st) => ({
+				ticketSaleId: { value: s.id },
+				ticketStockId: { value: st.stock.id },
+				seatTypeId: { value: st.stock.seatType.id },
+				entryCount: st.entries,
+				ticketCount: st.requested,
+				wonEntryCount: st.won ?? 0,
+				wonTicketCount: st.wonTickets ?? 0,
+				lostEntryCount: st.lost ?? 0,
 			})),
+		),
 	}
 }
 

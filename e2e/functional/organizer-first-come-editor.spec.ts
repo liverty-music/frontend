@@ -9,21 +9,25 @@ import {
 	timeField,
 } from '../support/organizer'
 import {
+	A_SEAT,
 	type ConcertSpec,
 	jst,
 	organizer,
 	payoutAccount,
+	S_SEAT,
 	type SaleSpec,
 	salesOf,
 	seriesList,
+	stocksOf,
 	XX_TOUR,
 } from '../support/organizer-data'
 import { expect, type Page, test } from '../support/test'
 
 /**
  * The first-come sale editor at `sales/first-come` under the event: a new
- * sale with sensible defaults, what can change once it has started, the
- * prerequisites, and back to the event's Sales tab.
+ * sale with sensible defaults that sells the event's seat types, only its
+ * window changing once it exists, the prerequisites, and back to the event's
+ * Sales tab.
  */
 
 const SPEC = 'components/infrastructure/organizer/web/route/ticket-sale-editor'
@@ -58,11 +62,6 @@ const GENERAL: SaleSpec = {
 	method: 'FIRST_COME',
 	start: jst('2026-11-11', '12:00'),
 	end: jst('2026-11-20', '18:00'),
-	price: 6500,
-	quantity: 150,
-	perAccountLimit: 4,
-	sold: 0,
-	held: 0,
 }
 
 const PRESALE: SaleSpec = {
@@ -71,15 +70,24 @@ const PRESALE: SaleSpec = {
 	method: 'LOTTERY',
 	start: jst('2026-11-01', '12:00'),
 	end: jst('2026-11-10', '12:00'),
-	price: 6500,
-	quantity: 100,
 }
+
+/** The show's stocks: S席 8,000円 × 300 and A席 6,000円 × 700. */
+const STOCKS = stocksOf(
+	'e-1120',
+	[
+		{ id: 'stock-s', seatType: S_SEAT, quantity: 300 },
+		{ id: 'stock-a', seatType: A_SEAT, quantity: 700 },
+	],
+	's-show',
+)
 
 const BASE: RpcMocks = {
 	'SeriesService/List': seriesList([SHOW, XX_TOUR]),
 	'OrganizerService/Get': organizer(),
 	'PayoutAccountService/Get': payoutAccount('ACTIVE'),
 	'TicketSaleService/ListByEvent': salesOf('e-1120', []),
+	'TicketStockService/ListByEvent': STOCKS,
 	'ScannerService/ListByEvent': { scanners: [] },
 }
 
@@ -109,9 +117,7 @@ function salesStore(eventId: string, initial: SaleSpec[]) {
 }
 
 function oneSale(eventId: string, sale: SaleSpec) {
-	return (
-		salesOf(eventId, [sale]).ticketSales as Array<{ ticketTypes: unknown[] }>
-	)[0]
+	return (salesOf(eventId, [sale]).ticketSales as unknown[])[0]
 }
 
 const field = (page: Page, label: string) => page.getByLabel(label)
@@ -149,7 +155,16 @@ test.describe('a new first-come sale', () => {
 		).toBeVisible()
 		await expect.poll(() => shownWindow(page, 'end')).toBe('2026-11-20 19:00')
 		await expect(field(page, '販売名')).toHaveValue('一般発売')
-		await expect(field(page, '1人あたりの上限枚数')).toHaveValue('4')
+		const tickets = page.locator('.tickets')
+		await expect(tickets.locator('.stock')).toHaveText([
+			/S席\s*8,000円 税込 · 300枚/,
+			/A席\s*6,000円 税込 · 700枚/,
+		])
+		await expect(tickets).toContainText('すべての席種を売ります')
+		await expect(tickets).toContainText('1アカウント4枚まで')
+		// The sale has no price, quantity or limit of its own.
+		await expect(page.getByLabel('価格')).toHaveCount(0)
+		await expect(page.getByLabel('1人あたりの上限枚数')).toHaveCount(0)
 		await expect(fieldBox(page, '販売終了日')).toContainText('JST')
 		await expect(timeField(page, '販売終了時刻')).toContainText('JST')
 	})
@@ -158,8 +173,6 @@ test.describe('a new first-come sale', () => {
 		const log = await openEditor(page)
 		await enterWindow(page, 'start', '2026-11-11', '12:00')
 		await enterWindow(page, 'end', '2026-11-20', '19:30')
-		await field(page, '価格').fill('6500')
-		await field(page, '販売枚数').fill('150')
 		await save(page)
 
 		await expect(fieldBox(page, '販売終了日')).toContainText(
@@ -177,8 +190,6 @@ test.describe('a new first-come sale', () => {
 			'TicketSaleService/ListByEvent': salesOf('e-1120', [PRESALE]),
 		})
 		await enterWindow(page, 'start', '2026-11-08', '12:00')
-		await field(page, '価格').fill('6500')
-		await field(page, '販売枚数').fill('150')
 		await save(page)
 
 		await expect(
@@ -203,23 +214,23 @@ test.describe('a new first-come sale', () => {
 		await expect(field(page, '販売名')).toHaveValue('一般発売')
 
 		await enterWindow(page, 'start', '2026-11-11', '12:00')
-		await field(page, '価格').fill('6500')
-		await field(page, '販売枚数').fill('150')
 		await save(page)
 
 		await expect(page).toHaveURL(
 			/\/series\/s-show\/events\/e-1120\/ticket-sales$/,
 		)
 		await expect(
-			page.getByRole('heading', { level: 2, name: '一般発売' }),
+			page.getByRole('heading', { level: 3, name: '一般発売' }),
 		).toBeVisible()
 		await expect(snackbar(page)).toContainText('先着販売を保存しました')
 		const body = calls(log, 'TicketSaleService/Create')[0].body as {
 			method: string
 			saleStartTime: string
 			saleEndTime: string
+			eventIds: unknown
 		}
 		expect(body.method).toBe('TICKET_SALE_METHOD_FIRST_COME')
+		expect(body.eventIds).toEqual([{ value: 'e-1120' }])
 		expect(new Date(body.saleStartTime).toISOString()).toBe(
 			jst('2026-11-11', '12:00'),
 		)
@@ -251,46 +262,21 @@ test.describe('a new first-come sale', () => {
 })
 
 test.describe('a sale that has started', () => {
-	test(`@spec ${SPEC} "Price locked"`, async ({ page }) => {
+	test(`@spec ${SPEC} "Nothing else to edit"`, async ({ page }) => {
 		await openEditor(page, EDITOR, {
-			'TicketSaleService/ListByEvent': salesOf('e-1120', [
-				{ ...GENERAL, held: 2 },
-			]),
+			'TicketSaleService/ListByEvent': salesOf('e-1120', [GENERAL]),
 		})
 		await expect(
 			page.getByRole('heading', { level: 1, name: '先着販売を変更' }),
 		).toBeVisible()
-		await expect(field(page, '価格')).toBeDisabled()
-		await expect(fieldBox(page, '価格')).toContainText(
-			'チケットが販売済みまたは購入手続き中のため、価格は変更できません。',
-		)
-	})
-
-	test(`@spec ${SPEC} "More tickets"`, async ({ page }) => {
-		const store = salesStore('e-1120', [GENERAL])
-		const log = await openEditor(page, EDITOR, {
-			'TicketSaleService/ListByEvent': store.answer,
-			'TicketTypeService/Update': () => {
-				const more = { ...GENERAL, quantity: 180 }
-				store.set([more])
-				return { body: { ticketType: oneSale('e-1120', more).ticketTypes[0] } }
-			},
-		})
-		await expect(field(page, '販売枚数')).toHaveValue('150')
-		await field(page, '販売枚数').fill('180')
-		await save(page)
-
-		await expect(page).toHaveURL(/\/ticket-sales$/)
-		await expect(
-			page.getByRole('listitem').filter({ hasText: '一般発売' }),
-		).toContainText('180枚')
-		expect(calls(log, 'TicketTypeService/Update')[0].body).toEqual({
-			ticketTypeId: { value: 'type-f-1' },
-			price: { value: '6500' },
-			quantity: 180,
-			perAccountLimit: 4,
-		})
-		expect(calls(log, 'TicketSaleService/SetWindow')).toHaveLength(0)
+		// The name is shown, the window is the only thing to change.
+		await expect(page.locator('.fixed')).toContainText('一般発売')
+		await expect(page.locator('form console-field')).toHaveCount(2)
+		await expect(page.getByLabel('価格')).toHaveCount(0)
+		await expect(page.getByLabel('販売枚数')).toHaveCount(0)
+		await expect(page.getByLabel('1人あたりの上限枚数')).toHaveCount(0)
+		await expect(field(page, '販売開始日')).toBeVisible()
+		await expect(field(page, '販売終了日')).toBeVisible()
 	})
 
 	test(`@spec ${SPEC} "Sale extended"`, async ({ page }) => {
@@ -320,11 +306,8 @@ test.describe('a sale that has started', () => {
 		expect(new Date(body.saleEndTime).toISOString()).toBe(
 			jst('2026-11-20', '19:00'),
 		)
-		expect(calls(log, 'TicketTypeService/Update')).toHaveLength(0)
-		const sale = page.getByRole('listitem').filter({ hasText: '一般発売' })
-		await expect(sale).toContainText('6,500円')
-		await expect(sale).toContainText('150枚')
-		await expect(sale).toContainText('1人4枚まで')
+		const sale = page.locator('[data-sale="f-1"]')
+		await expect(sale).toContainText('11月20日(金) 19:00')
 	})
 })
 
@@ -349,6 +332,25 @@ test.describe('prerequisites', () => {
 			}),
 			'publish',
 		)
+		await expect(
+			page.getByRole('button', { name: /先着販売を始める|保存する/ }),
+		).toHaveCount(0)
+	})
+
+	test(`@spec ${SPEC} "No seat type stocked"`, async ({ page }) => {
+		await boot(page, {
+			'TicketStockService/ListByEvent': stocksOf('e-1120', []),
+		})
+		await page.goto(EDITOR)
+
+		const callout = page.locator('prerequisite-callout')
+		await expect(
+			callout.getByRole('heading', { name: '席種と枚数を追加してください' }),
+		).toBeVisible()
+		await expect(
+			callout.getByRole('link', { name: '席種と枚数へ' }),
+		).toHaveAttribute('href', /\/series\/s-show\/events\/e-1120\/ticket-sales$/)
+		await expectGuideLink(callout, 'sell')
 		await expect(
 			page.getByRole('button', { name: /先着販売を始める|保存する/ }),
 		).toHaveCount(0)

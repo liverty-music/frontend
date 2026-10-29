@@ -3,7 +3,6 @@ import {
 	TicketSaleMethod,
 	VerificationRequirement,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_sale_pb.js'
-import type { TicketType } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_type_pb.js'
 import {
 	type LotteryEntryStats,
 	type ReferralCodeStats,
@@ -17,31 +16,26 @@ import { IAuthService } from '../../shared/services/auth-service'
 import { IConsoleLanguage } from '../i18n/console-language'
 import { createOrganizerTransport } from './organizer-transport'
 
-export type { LotteryEntryStats, ReferralCodeStats, TicketSale, TicketType }
+export type { LotteryEntryStats, ReferralCodeStats, TicketSale }
 export { TicketSaleMethod, VerificationRequirement }
 
 /**
- * The plain, transport-agnostic input of a new sale with one TicketType for
- * one event. Times are absolute instants (the editors compose them from
- * Japan-time inputs); `price` is the whole-yen, tax-inclusive price per
- * ticket. A FirstCome sale may omit `saleEndTime` (the server uses the
- * event's start time), and `perAccountLimit` may be omitted (the server's
- * default is 4).
+ * The plain, transport-agnostic input of a new sale of one event. Times are
+ * absolute instants (the editors compose them from Japan-time inputs). The
+ * sale sells every TicketStock of its events; prices are on the seat types,
+ * quantities on the stocks and the per-account limit on the event.
  */
 export interface CreateTicketSaleInput {
 	readonly seriesId: string
 	readonly name: string
 	readonly method: 'lottery' | 'firstCome'
 	readonly saleStartTime: Date
-	readonly saleEndTime?: Date
-	readonly eventId: string
-	readonly price: number
-	readonly quantity: number
-	readonly perAccountLimit?: number
+	readonly saleEndTime: Date
+	readonly eventIds: readonly string[]
 }
 
 /**
- * An event's sales, with each lottery TicketType's entry stats and the event's
+ * An event's sales, with each lottery sale's entry stats per TicketStock and the event's
  * Paid Orders per referral code (most Orders first; the direct group, without
  * a code, among them).
  */
@@ -60,9 +54,9 @@ export interface ITicketSaleClient extends TicketSaleClient {}
 
 /**
  * Organizer-local wrapper around the generated organizer `TicketSaleService`
- * client: {@link listByEvent} reads one event's sales with their TicketTypes
- * (quantity, sold and held counts) and lottery entry stats, {@link create} opens a
- * sale by lottery or first come with one TicketType for one event, and
+ * client: {@link listByEvent} reads one event's sales with the lottery entry
+ * stats of each TicketStock, {@link create} opens a sale by lottery or first
+ * come naming its events, and
  * {@link setWindow} moves a sale's start and end times. The caller's
  * Organizer is resolved from the token.
  *
@@ -85,8 +79,8 @@ export class TicketSaleClient {
 	)
 
 	/**
-	 * The event's sales, with the entry stats of each lottery TicketType and
-	 * the purchases per referral code.
+	 * The event's sales, with the entry stats of each lottery sale per
+	 * TicketStock and the purchases per referral code.
 	 */
 	public async listByEvent(
 		eventId: string,
@@ -109,13 +103,13 @@ export class TicketSaleClient {
 		}
 	}
 
-	/** Creates the sale with its one TicketType and returns it. */
+	/** Creates the sale naming its events and returns it. */
 	public async create(
 		input: CreateTicketSaleInput,
 		signal?: AbortSignal,
 	): Promise<TicketSale | undefined> {
 		this.logger.info('Creating ticket sale', {
-			eventId: input.eventId,
+			eventIds: input.eventIds,
 			method: input.method,
 		})
 		try {
@@ -128,27 +122,15 @@ export class TicketSaleClient {
 							? TicketSaleMethod.LOTTERY
 							: TicketSaleMethod.FIRST_COME,
 					saleStartTime: timestampFromDate(input.saleStartTime),
-					...(input.saleEndTime
-						? { saleEndTime: timestampFromDate(input.saleEndTime) }
-						: {}),
-					ticketTypes: [
-						{
-							eventId: { value: input.eventId },
-							// Whole yen; the wire field is int64 → bigint.
-							price: { value: BigInt(input.price) },
-							quantity: input.quantity,
-							...(input.perAccountLimit !== undefined
-								? { perAccountLimit: input.perAccountLimit }
-								: {}),
-						},
-					],
+					saleEndTime: timestampFromDate(input.saleEndTime),
+					eventIds: input.eventIds.map((id) => ({ value: id })),
 				},
 				{ signal },
 			)
 			return response.ticketSale
 		} catch (err) {
 			this.logger.warn('create failed', {
-				eventId: input.eventId,
+				eventIds: input.eventIds,
 				error: err,
 			})
 			throw err

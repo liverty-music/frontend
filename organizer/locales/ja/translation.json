@@ -21,7 +21,8 @@
 		"moreActions": "その他の操作",
 		"cancelEdit": "キャンセル",
 		"requiredNote": "* は必須項目です。",
-		"learnMore": "詳しく見る"
+		"learnMore": "詳しく見る",
+		"delete": "削除"
 	},
 	"format": {
 		"yen": "{{amount}}円",
@@ -141,10 +142,8 @@
 			"drawn": "抽選済み"
 		},
 		"firstComeState": {
-			"notYetOnSale": "受付開始前",
-			"onSale": "販売中",
-			"allHeld": "残りは購入手続き中",
-			"soldOut": "完売",
+			"scheduled": "受付開始前",
+			"open": "受付中",
 			"ended": "販売終了"
 		},
 		"verification": {
@@ -167,8 +166,7 @@
 			"hours": "あと {{hours}}時間 {{minutes}}分"
 		},
 		"quantity": "{{tickets, number}}枚",
-		"perAccount": "1人{{limit, number}}枚まで",
-		"oversubscribed": "申込枚数は販売枚数の{{percent, number}}%です。",
+		"oversubscribed": "申込枚数は残りの枚数の{{percent, number}}%です。",
 		"stats": {
 			"entries": "応募数",
 			"requested": "申込枚数",
@@ -177,7 +175,8 @@
 			"wonTickets": "当選枚数",
 			"lost": "落選",
 			"sold": "販売済み",
-			"held": "購入手続き中"
+			"held": "購入手続き中",
+			"remaining": "残り"
 		},
 		"lockedAfterOpen": "受付開始後は変更できません",
 		"verificationSaved": "本人確認の設定を変更しました",
@@ -189,7 +188,9 @@
 			"noStartTimeBody": "販売を始めるには、公演日の開始時刻が必要です。",
 			"editConcert": "公演を編集",
 			"businessDetails": "事業者情報が未登録です",
-			"businessDetailsBody": "事業者情報（特定商取引法に基づく表記）は、審査のときに Liverty Music が登録します。登録や変更は Liverty Music の担当者にご連絡ください。登録が終わるまで販売は始められません。"
+			"businessDetailsBody": "事業者情報（特定商取引法に基づく表記）は、審査のときに Liverty Music が登録します。登録や変更は Liverty Music の担当者にご連絡ください。登録が終わるまで販売は始められません。",
+			"noStock": "席種と枚数を追加してください",
+			"noStockBody": "販売を始めるには、下の「席種と枚数」で、この公演日に売る席種と枚数を先に追加してください。"
 		},
 		"referral": {
 			"title": "紹介コード別の購入",
@@ -202,7 +203,9 @@
 			"direct": "直接（コードなし）",
 			"orderCount": "{{count, number}}件",
 			"ticketCount": "{{count, number}}枚"
-		}
+		},
+		"title": "販売",
+		"sharedStocks": "どの販売も、上の「席種と枚数」の席種を同じ枚数から売ります。1アカウントの上限は、この公演日のすべての販売を合わせて{{limit, number}}枚です。"
 	},
 	"concert": {
 		"notFound": "公演が見つかりません",
@@ -375,7 +378,8 @@
 			"venueNotPicked": "検索結果から会場を選んでください",
 			"date": "日付を入力してください",
 			"pastDate": "過去の日付は選べません",
-			"openAfterStart": "開場は開演より前にしてください"
+			"openAfterStart": "開場は開演より前にしてください",
+			"perAccountLimit": "1アカウントの上限は1〜10枚の整数で入力してください"
 		},
 		"cover": {
 			"title": "カバー画像",
@@ -393,7 +397,10 @@
 		"visibilityFixed": "公開または中止した公演日があるため、公開範囲は変更できません。",
 		"sections": {
 			"about": "公演の情報"
-		}
+		},
+		"perAccountLimit": "1アカウントの上限",
+		"perAccountLimitHint": "1〜10枚。この公演日のすべての販売・席種・公式リセールを合わせて、1つのアカウントが持てる枚数です。",
+		"perAccountLimitFixed": "公演日を公開すると変えられません。"
 	},
 	"lotteryEditor": {
 		"newTitle": "抽選で販売する",
@@ -407,17 +414,12 @@
 		"endDate": "受付終了日",
 		"endTime": "受付終了時刻",
 		"windowHint": "受付期間は{{min}}〜{{max}}日です。公演の開始前に締め切ります。",
-		"price": "価格",
-		"quantity": "販売枚数",
-		"limit": "1人あたりの上限枚数",
-		"limitHint": "{{max}}枚まで",
 		"create": "抽選販売を始める",
 		"created": "「{{name}}」の抽選販売をつくりました",
 		"changed": "抽選販売を変更しました",
 		"saveFailed": "保存できませんでした",
-		"partlySaved": "受付期間は保存しました。価格・枚数・上限枚数は保存できませんでした。",
 		"openedWhileEditing": "受付が始まった抽選は変更できません。何も保存していません。",
-		"rejected": "この抽選販売はつくれませんでした。公演の公開状態、開始時刻、事業者情報、ほかの販売と期間が重ならないかを確認してください。",
+		"rejected": "この抽選販売はつくれませんでした。公演の公開状態、開始時刻、席種と枚数、事業者情報、ほかの販売と期間が重ならないかを確認してください。",
 		"notFound": "販売が見つかりません",
 		"loadFailed": "エディタを開けませんでした。",
 		"toSales": "販売へ戻る",
@@ -429,11 +431,6 @@
 			"endBeforeStart": "受付終了は受付開始より後にしてください",
 			"windowLength": "受付期間は{{min}}〜{{max}}日にしてください（いまは{{days}}日です）",
 			"closeAfterEvent": "公演の開始前に締め切ってください",
-			"quantity": "販売枚数は1以上の整数で入力してください",
-			"limit": "上限枚数は1以上の整数で入力してください",
-			"limitMax": "上限枚数は{{max}}枚までです",
-			"limitOverQuantity": "上限枚数は販売枚数以下にしてください",
-			"price": "価格は1円以上の整数で入力してください",
 			"overlap": "販売「{{name}}」（{{start}} 〜 {{end}}）と期間が重なっています"
 		},
 		"sections": {
@@ -451,12 +448,10 @@
 		"endDate": "販売終了日",
 		"endTime": "販売終了時刻",
 		"endHint": "開演時刻までに終わるようにしてください。",
-		"priceLocked": "チケットが販売済みまたは購入手続き中のため、価格は変更できません。",
-		"limitHint": "{{min}}〜{{max}}枚",
 		"create": "先着販売を始める",
 		"saved": "先着販売を保存しました",
 		"saveFailed": "保存できませんでした",
-		"rejected": "保存できませんでした。公演の公開状態・開始時刻・事業者情報と、ほかの販売と期間が重ならないかを確認してください。購入手続き中または販売済みのチケットがある間は価格を変更できず、販売枚数はその合計を下回れません。",
+		"rejected": "保存できませんでした。公演の公開状態・開始時刻・席種と枚数・事業者情報と、ほかの販売と期間が重ならないかを確認してください。",
 		"loadFailed": "販売設定を読み込めませんでした。",
 		"error": {
 			"name": "販売名を入力してください",
@@ -465,11 +460,6 @@
 			"end": "販売終了の日時を入力してください",
 			"endAfterEvent": "販売終了は開演時刻（{{eventStart}} JST）までにしてください",
 			"endBeforeStart": "販売終了は販売開始より後にしてください",
-			"price": "価格は{{min, number}}円から{{max, number}}円の整数で入力してください",
-			"quantity": "販売枚数は1以上の整数で入力してください",
-			"quantityFloor": "販売済み{{sold, number}}枚と購入手続き中{{held, number}}枚の合計（{{floor, number}}枚）を下回る枚数にはできません",
-			"limit": "上限枚数は{{min}}〜{{max}}枚で入力してください",
-			"limitOverQuantity": "上限枚数は販売枚数以下にしてください",
 			"overlap": "販売「{{name}}」（{{start}} 〜 {{end}}）と期間が重なっています"
 		},
 		"sections": {
@@ -497,5 +487,71 @@
 		"emailRequired": "メールアドレスを入力してください。",
 		"emailInvalid": "メールアドレスの形式が正しくありません。",
 		"emailTooLong": "メールアドレスは{{max}}文字以内で入力してください。"
+	},
+	"stock": {
+		"title": "席種と枚数",
+		"note": "この公演日のすべての販売が、ここにある席種を同じ枚数から売ります。枚数はあとから変えられません。もっと売るときは、公演ページで別の席種（例: 注釈付き指定席）を追加して、ここで枚数を追加します。",
+		"noSeatTypes": "この公演にはまだ席種がありません。公演ページで席種を追加してください。",
+		"toConcert": "公演ページへ",
+		"empty": "この公演日にはまだ席種と枚数がありません。",
+		"state": {
+			"available": "販売可",
+			"allHeld": "残りは購入手続き中",
+			"soldOut": "完売"
+		},
+		"taxIncluded": "税込",
+		"add": "席種を追加",
+		"seatType": "席種",
+		"chooseSeatType": "選んでください",
+		"seatTypeOption": "{{name}}（{{price, number}}円）",
+		"quantity": "枚数",
+		"quantityHint": "あとから変えられません。",
+		"addConfirmTitle": "{{name}}を{{quantity, number}}枚追加しますか？",
+		"addConfirmBody": "枚数はあとから変えられません。この公演日のすべての販売が、この枚数から売ります。",
+		"added": "{{name}}を追加しました",
+		"addFailed": "席種を追加できませんでした",
+		"addRefused": "中止した公演日には席種を追加できません。",
+		"deleteConfirmTitle": "{{name}}を削除しますか？",
+		"deleteConfirmBody": "この公演日から、この席種と枚数を削除します。",
+		"deleted": "{{name}}を削除しました",
+		"deleteFailed": "削除できませんでした",
+		"deleteRefused": "{{name}}は申込または購入があるため削除できません。",
+		"error": {
+			"seatType": "席種を選んでください",
+			"quantity": "枚数は1以上の整数で入力してください",
+			"alreadyStocked": "この席種はすでにこの公演日にあります"
+		}
+	},
+	"seatType": {
+		"title": "席種",
+		"note": "この公演のすべての公演日が、ここにある席種を売ります。枚数は公演日ごとに、公演日の販売タブで決めます。",
+		"loadFailed": "席種を読み込めませんでした。",
+		"empty": "まだ席種がありません。",
+		"inUse": "公演日に枚数があるため削除できません",
+		"add": "席種を追加",
+		"name": "席種名",
+		"namePlaceholder": "例: S席",
+		"price": "価格（税込）",
+		"addConfirmTitle": "{{name}}（{{price, number}}円）を追加しますか？",
+		"addConfirmBody": "席種名と価格はあとから変えられません。間違えたときは、どの公演日にも枚数がないうちに削除して、つくり直してください。",
+		"added": "{{name}}を追加しました",
+		"addFailed": "席種を追加できませんでした",
+		"deleteConfirmTitle": "{{name}}を削除しますか？",
+		"deleteConfirmBody": "この席種を公演から削除します。",
+		"deleted": "{{name}}を削除しました",
+		"deleteFailed": "削除できませんでした",
+		"deleteRefused": "{{name}}は公演日に枚数があるため削除できません。",
+		"error": {
+			"name": "席種名を入力してください",
+			"nameLength": "席種名は{{max}}文字以内にしてください",
+			"nameUsed": "「{{name}}」はこの公演の別の席種で使われています",
+			"price": "価格は{{min, number}}円から{{max, number}}円の整数で入力してください"
+		}
+	},
+	"saleEditor": {
+		"toStocks": "席種と枚数へ",
+		"noStockBody": "販売を始めるには、公演日の販売タブで、売る席種と枚数を先に追加してください。",
+		"sellsEveryStock": "この販売は、公演日のすべての席種を売ります。1アカウント{{limit, number}}枚まで（この公演日のすべての販売を合わせて）。",
+		"drawsEveryStock": "この抽選は、公演日のすべての席種を抽選します。1アカウント{{limit, number}}枚まで（この公演日のすべての販売を合わせて）。"
 	}
 }

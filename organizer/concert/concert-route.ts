@@ -1,6 +1,8 @@
 import { IRouter, type Params } from '@aurelia/router'
 import { Visibility } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
+import { Code, ConnectError } from '@connectrpc/connect'
 import { ILogger, resolve } from 'aurelia'
+import type { FieldError } from '../i18n/field-error'
 import {
 	concertTitle,
 	eventDay,
@@ -20,14 +22,17 @@ import {
 	visibilityKey,
 } from '../model/concert-model'
 import { currentSale, type SaleView, saleViewsOf } from '../model/sale-model'
+import { priceOf } from '../model/stock-model'
 import { IClock } from '../services/clock'
 import {
 	ICoverPreviews,
 	type PendingCover,
 	watchCover,
 } from '../services/cover-previews'
+import { ISeatTypeClient, type SeatType } from '../services/seat-type-client'
 import { type AuthoredSeries, ISeriesClient } from '../services/series-client'
 import { ITicketSaleClient } from '../services/ticket-sale-client'
+import { ITicketStockClient } from '../services/ticket-stock-client'
 import { IBreadcrumbs } from '../shell/breadcrumbs'
 import { IConsoleContext } from '../shell/console-context'
 import { IPageProgress } from '../shell/page-progress'
@@ -35,6 +40,22 @@ import type { ConfirmDialog } from '../ui/confirm-dialog/confirm-dialog'
 import { ISnackbar } from '../ui/console-snackbar/snackbar'
 import type { DataColumn, DataRow } from '../ui/data-list/data-list'
 import type { MenuItem } from '../ui/overflow-menu/overflow-menu'
+import {
+	emptySeatTypeForm,
+	isSeatTypeFormValid,
+	type SeatTypeFormErrors,
+	type SeatTypeFormModel,
+	validateSeatTypeForm,
+} from './seat-type-form'
+
+/** One of the concert's seat types as the 席種 section lists it. */
+export interface SeatTypeView {
+	id: string
+	name: string
+	price: number
+	/** True when a date of the concert stocks it: it offers no delete. */
+	stocked: boolean
+}
 
 type LoadState = 'loading' | 'ready' | 'notFound' | 'error'
 
@@ -53,10 +74,17 @@ type LoadState = 'loading' | 'ready' | 'notFound' | 'error'
  * A cover image picked in the editor and still processed shows here with the
  * processing note, instead of the previous cover, until the processed image
  * is served (design D19).
+ *
+ * The section 席種 lists the concert's seat types (SeatTypeService.ListBySeries)
+ * that every date sells, adds one after a confirmation that its name and
+ * price never change, and deletes one no date stocks. Which seat types a
+ * date stocks is read from each date's TicketStocks.
  */
 export class ConcertRoute {
 	private readonly series = resolve(ISeriesClient)
 	private readonly ticketSales = resolve(ITicketSaleClient)
+	private readonly seatTypeClient = resolve(ISeatTypeClient)
+	private readonly ticketStocks = resolve(ITicketStockClient)
 	private readonly breadcrumbs = resolve(IBreadcrumbs)
 	private readonly snackbar = resolve(ISnackbar)
 	private readonly clock = resolve(IClock)
@@ -90,6 +118,17 @@ export class ConcertRoute {
 	/** The picked cover image while it is processed. */
 	public pendingCover: PendingCover | undefined
 	public coverNote: '' | 'processing' | 'slow' = ''
+
+	public seatTypeState: 'loading' | 'ready' | 'error' = 'loading'
+	public seatTypes: SeatTypeView[] = []
+	public seatTypeForm: SeatTypeFormModel = emptySeatTypeForm()
+	public seatTypeSubmitted = false
+	/** Set when the server refused a name the form thought unused. */
+	public seatTypeProblem: FieldError | null = null
+	public addSeatTypeDialog!: ConfirmDialog
+	public deleteSeatTypeDialog!: ConfirmDialog
+	/** The seat type the delete dialog asks about. */
+	public seatTypeToDelete: SeatTypeView | null = null
 
 	private stopCoverWatch: (() => void) | null = null
 	private sales = new Map<string, SaleView | null>()
@@ -179,6 +218,134 @@ export class ConcertRoute {
 		if (id === 'cancel') void this.cancelConcert()
 	}
 
+	/** A concert whose dates are all cancelled offers neither add nor delete. */
+	public get canEditSeatTypes(): boolean {
+		return this.canCancelConcert
+	}
+
+	public get seatTypeErrors(): SeatTypeFormErrors {
+		return validateSeatTypeForm(
+			this.seatTypeForm,
+			this.seatTypes.map((t) => t.name),
+		)
+	}
+
+	/** The error of a seat type field once 席種を追加 was pressed. */
+	public seatTypeError(
+		error: FieldError | undefined,
+		submitted = this.seatTypeSubmitted,
+	): FieldError | null {
+		return submitted && error ? error : null
+	}
+
+	/** The add dialog's title values: the name and price entered. */
+	public get addSeatTypeParams(): Record<string, unknown> {
+		return {
+			name: this.seatTypeForm.name.trim(),
+			price: Number(this.seatTypeForm.price.trim()),
+		}
+	}
+
+	/**
+	 * 席種を追加: asks to confirm that the name and price never change, then
+	 * creates the SeatType. A name already used is shown next to the name.
+	 */
+	public async addSeatType(): Promise<void> {
+		this.seatTypeSubmitted = true
+		this.seatTypeProblem = null
+		if (!isSeatTypeFormValid(this.seatTypeErrors)) return
+		if (!(await this.addSeatTypeDialog.ask())) return
+		const name = this.seatTypeForm.name.trim()
+		try {
+			await this.seatTypeClient.create(
+				{
+					seriesId: this.seriesId,
+					name,
+					price: Number(this.seatTypeForm.price.trim()),
+				},
+				this.abort.signal,
+			)
+			this.seatTypeForm = emptySeatTypeForm()
+			this.seatTypeSubmitted = false
+			this.snackbar.show('seatType.added', { name })
+			await this.loadSeatTypes()
+		} catch (err) {
+			this.logger.warn('Seat type not added', err)
+			if (err instanceof ConnectError && err.code === Code.AlreadyExists) {
+				this.seatTypeProblem = {
+					key: 'seatType.error.nameUsed',
+					params: { name },
+				}
+				return
+			}
+			this.snackbar.showError('seatType.addFailed', {
+				retry: () => void this.addSeatType(),
+			})
+		}
+	}
+
+	/** 削除: deletes a seat type no date stocks, after confirmation. */
+	public async deleteSeatType(seatType: SeatTypeView): Promise<void> {
+		this.seatTypeToDelete = seatType
+		if (!(await this.deleteSeatTypeDialog.ask())) return
+		try {
+			await this.seatTypeClient.delete(seatType.id, this.abort.signal)
+			this.snackbar.show('seatType.deleted', { name: seatType.name })
+		} catch (err) {
+			this.logger.warn('Seat type not deleted', err)
+			if (err instanceof ConnectError && err.code === Code.FailedPrecondition) {
+				// A date stocked it since the page read the stocks.
+				this.snackbar.showError('seatType.deleteRefused', {
+					params: { name: seatType.name },
+				})
+			} else {
+				this.snackbar.showError('seatType.deleteFailed', {
+					retry: () => void this.deleteSeatType(seatType),
+				})
+				return
+			}
+		}
+		await this.loadSeatTypes()
+	}
+
+	/** Reads the seat types and, from every date's stocks, which are stocked. */
+	public async loadSeatTypes(): Promise<void> {
+		const concert = this.concert
+		if (!concert) return
+		try {
+			const [seatTypes, stocked] = await Promise.all([
+				this.seatTypeClient.listBySeries(this.seriesId, this.abort.signal),
+				this.stockedSeatTypeIds(concert),
+			])
+			this.seatTypes = seatTypes.map((t: SeatType) => ({
+				id: t.id?.value ?? '',
+				name: t.name?.value ?? '',
+				price: priceOf(t),
+				stocked: stocked.has(t.id?.value ?? ''),
+			}))
+			this.seatTypeState = 'ready'
+		} catch (err) {
+			if (this.abort.signal.aborted) return
+			this.logger.warn('Seat types unavailable', err)
+			this.seatTypeState = 'error'
+		}
+	}
+
+	private async stockedSeatTypeIds(
+		concert: AuthoredSeries,
+	): Promise<Set<string>> {
+		const reads = await Promise.all(
+			concert.events.map((event) =>
+				this.ticketStocks.listByEvent(eventId(event), this.abort.signal),
+			),
+		)
+		return new Set(
+			reads.flatMap((r) =>
+				r.ticketStocks.map((s) => s.seatTypeId?.value ?? ''),
+			),
+		)
+	}
+
 	public get unlisted(): boolean {
 		return this.concert?.series.visibility === Visibility.UNLISTED
 	}
@@ -264,6 +431,7 @@ export class ConcertRoute {
 			this.render()
 			this.showPendingCover()
 			void this.loadSales()
+			void this.loadSeatTypes()
 		} catch (err) {
 			if (this.abort.signal.aborted) return
 			this.logger.warn('Concert unavailable', err)

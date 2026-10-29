@@ -1,7 +1,6 @@
 import { IRouteContext, IRouter } from '@aurelia/router'
 import type { Event } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/event_pb.js'
 import { TicketSaleMethod } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_sale_pb.js'
-import { TicketTypeState } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_type_pb.js'
 import { timestampDate } from '@bufbuild/protobuf/wkt'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { ILogger, resolve } from 'aurelia'
@@ -16,8 +15,10 @@ import {
 	findConcert,
 	findEvent,
 	paths,
+	perAccountLimitOf,
 	venueName,
 } from '../model/concert-model'
+import { type StockView, stockViewsOf } from '../model/stock-model'
 import { IClock } from '../services/clock'
 import { IOrganizerClient } from '../services/organizer-client'
 import { findOverlappingSale } from '../services/sale-window'
@@ -25,9 +26,8 @@ import { ISeriesClient } from '../services/series-client'
 import {
 	ITicketSaleClient,
 	type TicketSale,
-	type TicketType,
 } from '../services/ticket-sale-client'
-import { ITicketTypeClient } from '../services/ticket-type-client'
+import { ITicketStockClient } from '../services/ticket-stock-client'
 import { IBreadcrumbs } from '../shell/breadcrumbs'
 import { IConsoleContext } from '../shell/console-context'
 import { IPageProgress } from '../shell/page-progress'
@@ -37,22 +37,12 @@ import {
 	blankFormModel,
 	formModelOf,
 	isFormValid,
-	MAX_PER_ACCOUNT_LIMIT,
-	MIN_PER_ACCOUNT_LIMIT,
 	parseDateTime,
 	type TicketSaleFormErrors,
 	type TicketSaleFormModel,
 	toCreateInput,
 	validateTicketSaleForm,
 } from './ticket-sale-form'
-
-const STATE_KEYS: Record<number, string> = {
-	[TicketTypeState.NOT_YET_ON_SALE]: 'sale.firstComeState.notYetOnSale',
-	[TicketTypeState.ON_SALE]: 'sale.firstComeState.onSale',
-	[TicketTypeState.ALL_HELD]: 'sale.firstComeState.allHeld',
-	[TicketTypeState.SOLD_OUT]: 'sale.firstComeState.soldOut',
-	[TicketTypeState.ENDED]: 'sale.firstComeState.ended',
-}
 
 /**
  * The event's first-come sale: the open one, else the next, else the most
@@ -65,7 +55,7 @@ export function firstComeSaleOf(
 ): TicketSale | undefined {
 	const timed = sales.flatMap((s) => {
 		if (s.method !== TicketSaleMethod.FIRST_COME) return []
-		if (!s.ticketTypes.some((t) => t.eventId?.value === eventId)) return []
+		if (!s.eventIds.some((e) => e.value === eventId)) return []
 		if (!s.saleStartTime || !s.saleEndTime) return []
 		return [
 			{
@@ -85,16 +75,17 @@ export function firstComeSaleOf(
 }
 
 /**
- * Starts the event's first-come sale, or changes it at any time: the window
- * in Japan time, the price (fixed once a ticket is sold or held), the quantity
- * (never below sold plus held) and the per-account limit. Opened from the
- * Sales tab and back there after saving or leaving.
+ * Starts the event's first-come sale, or moves its window at any time, in
+ * Japan time. The sale sells every TicketStock of the event, listed with
+ * their seat types, prices and quantities, and the per-account limit is the
+ * event's: neither is set here. Opened from the Sales tab and back there
+ * after saving or leaving.
  */
 export class TicketSaleEditorRoute {
 	private readonly series = resolve(ISeriesClient)
 	private readonly organizers = resolve(IOrganizerClient)
 	private readonly ticketSales = resolve(ITicketSaleClient)
-	private readonly ticketTypes = resolve(ITicketTypeClient)
+	private readonly ticketStocks = resolve(ITicketStockClient)
 	private readonly router = resolve(IRouter)
 	private readonly context = resolve(IRouteContext)
 	private readonly breadcrumbs = resolve(IBreadcrumbs)
@@ -117,9 +108,8 @@ export class TicketSaleEditorRoute {
 	/** Catalog key of a message about the whole save; the template translates it. */
 	public saveProblem = ''
 	public guard!: UnsavedChanges
-
-	public readonly minLimit = MIN_PER_ACCOUNT_LIMIT
-	public readonly maxLimit = MAX_PER_ACCOUNT_LIMIT
+	/** The event's TicketStocks: what the sale sells. */
+	public stocks: StockView[] = []
 
 	private sales: TicketSale[] = []
 	private saved = ''
@@ -173,34 +163,9 @@ export class TicketSaleEditorRoute {
 		return this.event ? venueName(this.event) : ''
 	}
 
-	public get ticketType(): TicketType | undefined {
-		return this.sale?.ticketTypes.find((t) => t.eventId?.value === this.eventId)
-	}
-
-	public get soldCount(): number {
-		return this.ticketType?.soldCount ?? 0
-	}
-
-	public get heldCount(): number {
-		return this.ticketType?.heldCount ?? 0
-	}
-
-	public get quantity(): number {
-		return this.ticketType?.quantity ?? 0
-	}
-
-	/** The price is fixed once a ticket is sold or held. */
-	public get priceLocked(): boolean {
-		return this.soldCount + this.heldCount > 0
-	}
-
-	/** Catalog key of the price field's supporting text. */
-	public get priceHintKey(): string {
-		return this.priceLocked ? 'firstComeEditor.priceLocked' : ''
-	}
-
-	public get stateKey(): string {
-		return this.ticketType ? (STATE_KEYS[this.ticketType.state] ?? '') : ''
+	/** The event's per-account limit, across every sale and seat type. */
+	public get perAccountLimit(): number {
+		return this.event ? perAccountLimitOf(this.event) : 0
 	}
 
 	public get isDirty(): boolean {
@@ -214,8 +179,6 @@ export class TicketSaleEditorRoute {
 	public get errors(): TicketSaleFormErrors {
 		const errors = validateTicketSaleForm(this.model, {
 			eventStart: this.start ?? null,
-			soldCount: this.soldCount,
-			heldCount: this.heldCount,
 		})
 		const start = parseDateTime(this.model.saleStart)
 		const end = parseDateTime(this.model.saleEnd)
@@ -271,10 +234,11 @@ export class TicketSaleEditorRoute {
 	private async load(): Promise<void> {
 		this.state = 'loading'
 		try {
-			const [concerts, organizer, sales] = await Promise.all([
+			const [concerts, organizer, sales, stocks] = await Promise.all([
 				this.series.list(this.abort.signal),
 				this.organizers.get(this.abort.signal),
 				this.ticketSales.listByEvent(this.eventId, this.abort.signal),
+				this.ticketStocks.listByEvent(this.eventId, this.abort.signal),
 			])
 			const concert = findConcert(concerts, this.seriesId)
 			this.event = findEvent(concert, this.eventId)
@@ -295,7 +259,8 @@ export class TicketSaleEditorRoute {
 				{ day: eventDay(this.event), href: this.salesHref },
 				{ labelKey: 'firstComeEditor.crumb' },
 			])
-			this.blocks = saleBlocksOf(this.event, organizer)
+			this.stocks = stockViewsOf(stocks)
+			this.blocks = saleBlocksOf(this.event, organizer, this.stocks.length)
 			this.sales = sales.ticketSales
 			this.applySale(
 				firstComeSaleOf(this.sales, this.eventId, this.clock.now()),
@@ -323,7 +288,6 @@ export class TicketSaleEditorRoute {
 			this.logger.warn('First-come sale not saved', err)
 			if (err instanceof ConnectError && err.code === Code.FailedPrecondition) {
 				this.saveProblem = 'firstComeEditor.rejected'
-				await this.refreshCounts()
 				return
 			}
 			this.snackbar.showError('firstComeEditor.saveFailed', {
@@ -341,77 +305,31 @@ export class TicketSaleEditorRoute {
 		this.applySale(sale)
 	}
 
-	/** Window first, then the TicketType; each only when it changed. */
+	/** Only the window changes; nothing is sent when it did not. */
 	private async saveChanges(sale: TicketSale): Promise<void> {
 		const stored = this.storedModel()
-		let updated = sale
 		if (
-			!sameJstDateTime(this.model.saleStart, stored.saleStart) ||
-			!sameJstDateTime(this.model.saleEnd, stored.saleEnd)
+			sameJstDateTime(this.model.saleStart, stored.saleStart) &&
+			sameJstDateTime(this.model.saleEnd, stored.saleEnd)
 		) {
-			updated =
-				(await this.ticketSales.setWindow(
-					sale.id?.value ?? '',
-					parseDateTime(this.model.saleStart) ?? new Date(0),
-					parseDateTime(this.model.saleEnd) ?? new Date(0),
-					this.abort.signal,
-				)) ?? updated
+			return
 		}
-		const type = this.ticketType
-		if (
-			type &&
-			(this.model.price.trim() !== stored.price ||
-				this.model.quantity.trim() !== stored.quantity ||
-				this.model.perAccountLimit.trim() !== stored.perAccountLimit)
-		) {
-			const changed = await this.ticketTypes.update(
-				{
-					ticketTypeId: type.id?.value ?? '',
-					price: Number(this.model.price.trim()),
-					quantity: Number(this.model.quantity.trim()),
-					perAccountLimit: Number(this.model.perAccountLimit.trim()),
-				},
+		const updated =
+			(await this.ticketSales.setWindow(
+				sale.id?.value ?? '',
+				parseDateTime(this.model.saleStart) ?? new Date(0),
+				parseDateTime(this.model.saleEnd) ?? new Date(0),
 				this.abort.signal,
-			)
-			if (changed) {
-				updated = {
-					...updated,
-					ticketTypes: updated.ticketTypes.map((t) =>
-						t.id?.value === changed.id?.value ? changed : t,
-					),
-				}
-			}
-		}
+			)) ?? sale
 		this.sales = this.sales.map((s) =>
 			s.id?.value === updated.id?.value ? updated : s,
 		)
 		this.applySale(updated)
 	}
 
-	/** After a refusal, re-read the counts: the price lock and quantity floor may have moved. */
-	private async refreshCounts(): Promise<void> {
-		try {
-			const { ticketSales } = await this.ticketSales.listByEvent(this.eventId)
-			this.sales = ticketSales
-			const sale = this.sale
-				? ticketSales.find((s) => s.id?.value === this.sale?.id?.value)
-				: undefined
-			if (!sale) return
-			this.sale = sale
-			if (this.priceLocked) {
-				this.model.price = (
-					this.ticketType?.price?.value ?? BigInt(0)
-				).toString()
-			}
-		} catch (err) {
-			this.logger.warn('Refreshing the sale failed', err)
-		}
-	}
-
 	private storedModel(): TicketSaleFormModel {
 		const sale = this.sale
-		const type = this.ticketType
-		if (!sale || !type) {
+		if (!sale) {
 			// A value the member saves, in the language of the moment.
 			return blankFormModel(
 				this.start ?? null,
@@ -424,9 +342,6 @@ export class TicketSaleEditorRoute {
 				? timestampDate(sale.saleStartTime)
 				: null,
 			saleEndTime: sale.saleEndTime ? timestampDate(sale.saleEndTime) : null,
-			price: type.price?.value ?? BigInt(0),
-			quantity: type.quantity ?? 0,
-			perAccountLimit: type.perAccountLimit,
 		})
 	}
 

@@ -19,14 +19,6 @@ export const MIN_WINDOW_DAYS = 1
  * window (mirrors the backend + schema constraint).
  */
 export const MAX_WINDOW_DAYS = 14
-/**
- * Maximum accepted per-account limit (inclusive). One entry QR code presents
- * at most 10 tickets and a companion group enters together with one code
- * (mirrors the backend + schema constraint).
- */
-export const MAX_PER_ACCOUNT_LIMIT = 10
-/** The per-account limit a new lottery starts with (server default too). */
-export const DEFAULT_PER_ACCOUNT_LIMIT = 4
 /** Maximum length of the sale's name, in characters. */
 export const MAX_NAME_LENGTH = 100
 
@@ -36,11 +28,9 @@ const MINUTE_STEP_MS = 5 * 60 * 1000
 
 /**
  * The editable, transport-agnostic model of the lottery form: the sale's name
- * and window, and its one TicketType for the event. The window's start and
- * end are each a date and a 24-hour time in Japan time (design D19); numeric
- * fields are kept as strings so an empty control is distinguishable from `0`
- * and `value.bind` maps onto the native `<input type="number">` without
- * coercion surprises.
+ * and window. The window's start and end are each a date and a 24-hour time
+ * in Japan time (design D19). The sale draws from every TicketStock of the
+ * event and the per-account limit is the event's, so it carries neither.
  */
 export interface LotterySaleFormModel {
 	/** The sale's name, e.g. ファンクラブ先行. */
@@ -49,12 +39,6 @@ export interface LotterySaleFormModel {
 	saleStart: JstDateTime
 	/** When the window closes, in Japan time. */
 	saleEnd: JstDateTime
-	/** Positive integer (tickets drawn for), as a raw input string. */
-	quantity: string
-	/** 1 to {@link MAX_PER_ACCOUNT_LIMIT}, ≤ quantity, as a raw input string. */
-	perAccountLimit: string
-	/** Positive whole-yen JPY price, as a raw input string. */
-	price: string
 }
 
 /** Per-field validation errors, keyed for inline display next to each control. */
@@ -68,9 +52,6 @@ export interface LotterySaleFormErrors {
 	saleEndTime?: FieldError
 	/** The window as a whole (length, order, event start, overlap). */
 	window?: FieldError
-	quantity?: FieldError
-	perAccountLimit?: FieldError
-	price?: FieldError
 }
 
 /** What the form is checked against besides its own values. */
@@ -86,8 +67,7 @@ export function toDateTime(date: Date): JstDateTime {
 
 /**
  * Returns a blank form model with the window defaulted (open now, close
- * {@link DEFAULT_WINDOW_DAYS} later) and the limit
- * {@link DEFAULT_PER_ACCOUNT_LIMIT}. "Now" is rounded up to the time field's
+ * {@link DEFAULT_WINDOW_DAYS} later). "Now" is rounded up to the time field's
  * 5-minute steps, so the default is a time the field offers. `now` is
  * injected for deterministic tests.
  */
@@ -100,24 +80,12 @@ export function emptyFormModel(now: Date = new Date()): LotterySaleFormModel {
 		name: '',
 		saleStart: toDateTime(open),
 		saleEnd: toDateTime(close),
-		quantity: '',
-		perAccountLimit: String(DEFAULT_PER_ACCOUNT_LIMIT),
-		price: '',
 	}
 }
 
 /** The instant of a date and time entered in Japan time, or null. */
 export function parseDateTime(value: JstDateTime): Date | null {
 	return parseJstDateTime(value) ?? null
-}
-
-/** Parses a raw input string into a positive integer, or null. */
-function parsePositiveInt(value: string): number | null {
-	const trimmed = value.trim()
-	if (trimmed === '' || !/^\d+$/.test(trimmed)) return null
-	const n = Number(trimmed)
-	if (!Number.isSafeInteger(n) || n <= 0) return null
-	return n
 }
 
 /** Whole days (fractional) between two instants; may be fractional. */
@@ -130,9 +98,7 @@ export function windowDurationDays(open: Date, close: Date): number {
  * inline errors before a round-trip: the name required and at most
  * {@link MAX_NAME_LENGTH} characters; open/close required and parseable; the
  * window {@link MIN_WINDOW_DAYS}–{@link MAX_WINDOW_DAYS} days long with close
- * strictly after open and before the event's start time; quantity and price
- * each a positive integer; and the limit 1–{@link MAX_PER_ACCOUNT_LIMIT} and
- * not above the quantity.
+ * strictly after open and before the event's start time.
  */
 export function validateLotterySaleForm(
 	model: LotterySaleFormModel,
@@ -182,28 +148,6 @@ export function validateLotterySaleForm(
 		}
 	}
 
-	const quantity = parsePositiveInt(model.quantity)
-	if (quantity === null) {
-		errors.quantity = { key: 'lotteryEditor.error.quantity' }
-	}
-
-	const limit = parsePositiveInt(model.perAccountLimit)
-	if (limit === null) {
-		errors.perAccountLimit = { key: 'lotteryEditor.error.limit' }
-	} else if (limit > MAX_PER_ACCOUNT_LIMIT) {
-		errors.perAccountLimit = {
-			key: 'lotteryEditor.error.limitMax',
-			params: { max: MAX_PER_ACCOUNT_LIMIT },
-		}
-	} else if (quantity !== null && limit > quantity) {
-		errors.perAccountLimit = { key: 'lotteryEditor.error.limitOverQuantity' }
-	}
-
-	const price = parsePositiveInt(model.price)
-	if (price === null) {
-		errors.price = { key: 'lotteryEditor.error.price' }
-	}
-
 	return errors
 }
 
@@ -214,9 +158,9 @@ export function isFormValid(errors: LotterySaleFormErrors): boolean {
 
 /**
  * Converts a validated form model into the input of a Lottery sale of the
- * event's Series with one TicketType for the event. Assumes the model already
+ * event's Series naming the event. Assumes the model already
  * passed {@link validateLotterySaleForm} (the caller gates on validity
- * first); a defensive parse failure falls back to a zero/epoch value the
+ * first); a defensive parse failure falls back to an epoch value the
  * server rejects.
  */
 export function toCreateInput(
@@ -230,9 +174,6 @@ export function toCreateInput(
 		method: 'lottery',
 		saleStartTime: parseDateTime(model.saleStart) ?? new Date(0),
 		saleEndTime: parseDateTime(model.saleEnd) ?? new Date(0),
-		eventId,
-		quantity: Number(model.quantity.trim()) || 0,
-		perAccountLimit: Number(model.perAccountLimit.trim()) || 0,
-		price: Number(model.price.trim()) || 0,
+		eventIds: [eventId],
 	}
 }

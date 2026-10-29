@@ -48,8 +48,6 @@ const RPC: RpcMocks = {
 							method: 'LOTTERY',
 							start: jst('2026-10-20', '12:00'),
 							end: jst('2026-11-01', '23:59'),
-							price: 6800,
-							quantity: 1000,
 						},
 					])
 				: salesOf('none', []),

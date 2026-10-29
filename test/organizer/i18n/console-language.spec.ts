@@ -1,5 +1,7 @@
 import { tasksSettled } from '@aurelia/runtime'
 import { createFixture } from '@aurelia/testing'
+import { SeatTypeSchema } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/seat_type_pb.js'
+import { create } from '@bufbuild/protobuf'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
 	ConsoleI18nConfiguration,
@@ -12,6 +14,7 @@ import {
 	parseJstDateTimeLocal,
 	toJstDateTimeLocal,
 } from '../../../organizer/i18n/format'
+import { priceOf } from '../../../organizer/model/stock-model'
 
 function browserLanguages(languages: string[]): void {
 	vi.spyOn(navigator, 'languages', 'get').mockReturnValue(languages)
@@ -123,8 +126,10 @@ describe('yen and counts', () => {
 
 	it('@spec components/infrastructure/organizer/web/global/i18n "Ticket price"', async () => {
 		browserLanguages(['ja-JP'])
+		// A SeatType's price is int64 yen on the wire.
+		const seatType = create(SeatTypeSchema, { price: { value: BigInt(6500) } })
 		const { assertText, tearDown } = await mount(`<p>\${price | yen}</p>`, {
-			price: 6500,
+			price: priceOf(seatType),
 		})
 		assertText('6,500円')
 		await tearDown()

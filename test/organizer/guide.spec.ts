@@ -137,8 +137,24 @@ describe('members guide', () => {
 			ja.sale.lockedAfterOpen,
 			ja.sale.prerequisite.notPublished,
 			ja.sale.prerequisite.noStartTime,
+			ja.sale.prerequisite.noStock,
 			ja.sale.prerequisite.businessDetails,
+			ja.seatType.title,
+			ja.seatType.add,
+			ja.stock.title,
+			ja.stock.add,
+			...Object.values(ja.stock.state),
+			ja.concertEditor.perAccountLimit,
+			ja.event.editConcert,
 		])
+	})
+
+	it(`@spec ${SPEC} "Shared quantities"`, () => {
+		const sell = chapter('sell')
+		expect(sell).toContain('同じ枚数から')
+		expect(sell).toContain('保存すると変えられません')
+		expect(sell).toContain('別の席種（例: 注釈付き指定席）')
+		expect(sell).toContain('1つの席種だけ')
 	})
 
 	it('quotes the other screens as they read', () => {

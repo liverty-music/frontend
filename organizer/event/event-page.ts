@@ -33,21 +33,25 @@ export type SaleBlock =
 	| 'cancelled'
 	| 'notPublished'
 	| 'noStartTime'
+	| 'noStock'
 	| 'businessDetails'
 
 /**
  * The reasons, in the order the sale editors show them, that a sale of the
  * event cannot be saved (ticket-sale-editor "Prerequisites explained"): a
- * cancelled or unpublished event, no start time, incomplete business details.
+ * cancelled or unpublished event, no start time, no TicketStock, incomplete
+ * business details.
  */
 export function saleBlocksOf(
 	event: Event,
 	organizer: Organizer | undefined,
+	stockCount: number,
 ): SaleBlock[] {
 	const blocks: SaleBlock[] = []
 	if (isCancelled(event)) blocks.push('cancelled')
 	else if (!isPublished(event)) blocks.push('notPublished')
 	if (!eventStart(event)) blocks.push('noStartTime')
+	if (stockCount === 0) blocks.push('noStock')
 	if (!businessDetailsComplete(organizer)) blocks.push('businessDetails')
 	return blocks
 }

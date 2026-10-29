@@ -2,12 +2,16 @@ import { IRouteContext, IRouter } from '@aurelia/router'
 import { tasksSettled } from '@aurelia/runtime'
 import { createFixture } from '@aurelia/testing'
 import { OrganizerSchema } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/organizer_pb.js'
+import { SeatTypeSchema } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/seat_type_pb.js'
 import { PublishState } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
 import {
 	TicketSaleMethod,
 	TicketSaleSchema,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_sale_pb.js'
-import { TicketTypeState } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_type_pb.js'
+import {
+	TicketStockSchema,
+	TicketStockState,
+} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_stock_pb.js'
 import { create } from '@bufbuild/protobuf'
 import { timestampFromDate } from '@bufbuild/protobuf/wkt'
 import { Code, ConnectError } from '@connectrpc/connect'
@@ -23,7 +27,10 @@ import {
 	ITicketSaleClient,
 	type TicketSale,
 } from '../../../organizer/services/ticket-sale-client'
-import { ITicketTypeClient } from '../../../organizer/services/ticket-type-client'
+import {
+	type EventTicketStocks,
+	ITicketStockClient,
+} from '../../../organizer/services/ticket-stock-client'
 import { IBreadcrumbs } from '../../../organizer/shell/breadcrumbs'
 import { IConsoleContext } from '../../../organizer/shell/console-context'
 import {
@@ -44,6 +51,8 @@ import { UnsavedChanges } from '../../../organizer/ui/unsaved-changes/unsaved-ch
 import { authoredSeries } from '../authored-series'
 
 const SPEC = 'components/infrastructure/organizer/web/global/error-messages'
+const EDITOR_SPEC =
+	'components/infrastructure/organizer/web/route/ticket-sale-editor'
 
 /** 2026-11-20 19:00 in Japan time. */
 const EVENT_START = new Date(Date.UTC(2026, 10, 20, 10, 0))
@@ -76,7 +85,7 @@ const COMPLETE_ORGANIZER = {
 	contactEmail: { value: 'owner@xx-records.example' },
 }
 
-/** A first-come sale of event e-1 (or another event) with one TicketType. */
+/** A first-come sale naming event e-1 (or another event). */
 function firstComeSale(init: {
 	id: string
 	name?: string
@@ -84,11 +93,6 @@ function firstComeSale(init: {
 	end: Date
 	eventId?: string
 	method?: TicketSaleMethod
-	sold?: number
-	held?: number
-	price?: number
-	quantity?: number
-	state?: TicketTypeState
 }): TicketSale {
 	return create(TicketSaleSchema, {
 		id: { value: init.id },
@@ -96,19 +100,39 @@ function firstComeSale(init: {
 		method: init.method ?? TicketSaleMethod.FIRST_COME,
 		saleStartTime: timestampFromDate(init.start),
 		saleEndTime: timestampFromDate(init.end),
-		ticketTypes: [
-			{
-				id: { value: `tt-${init.id}` },
-				eventId: { value: init.eventId ?? 'e-1' },
-				price: { value: BigInt(init.price ?? 3000) },
-				quantity: init.quantity ?? 150,
-				perAccountLimit: 4,
-				soldCount: init.sold ?? 0,
-				heldCount: init.held ?? 0,
-				state: init.state ?? TicketTypeState.ON_SALE,
-			},
-		],
+		eventIds: [{ value: init.eventId ?? 'e-1' }],
 	})
+}
+
+/** The event's stocks: S席 8,000円 × 300 and A席 6,000円 × 700. */
+function twoStocks(): EventTicketStocks {
+	return {
+		ticketStocks: [
+			{ id: 'st-s', seat: 'seat-s', quantity: 300 },
+			{ id: 'st-a', seat: 'seat-a', quantity: 700 },
+		].map((s) =>
+			create(TicketStockSchema, {
+				id: { value: s.id },
+				eventId: { value: 'e-1' },
+				seatTypeId: { value: s.seat },
+				quantity: s.quantity,
+				soldCount: 0,
+				heldCount: 0,
+				state: TicketStockState.AVAILABLE,
+			}),
+		),
+		seatTypes: [
+			{ id: 'seat-s', name: 'S席', price: 8000 },
+			{ id: 'seat-a', name: 'A席', price: 6000 },
+		].map((t) =>
+			create(SeatTypeSchema, {
+				id: { value: t.id },
+				seriesId: { value: 's-1' },
+				name: { value: t.name },
+				price: { value: BigInt(t.price) },
+			}),
+		),
+	}
 }
 
 interface Doubles {
@@ -117,7 +141,7 @@ interface Doubles {
 	listByEvent: ReturnType<typeof vi.fn>
 	create: ReturnType<typeof vi.fn>
 	setWindow: ReturnType<typeof vi.fn>
-	update: ReturnType<typeof vi.fn>
+	listStocks: ReturnType<typeof vi.fn>
 	load: ReturnType<typeof vi.fn>
 	show: ReturnType<typeof vi.fn>
 	showError: ReturnType<typeof vi.fn>
@@ -136,7 +160,7 @@ function doubles(over: Partial<Doubles> = {}): Doubles {
 		listByEvent: vi.fn().mockResolvedValue({ ticketSales: [] }),
 		create: vi.fn(),
 		setWindow: vi.fn(),
-		update: vi.fn(),
+		listStocks: vi.fn().mockResolvedValue(twoStocks()),
 		load: vi.fn().mockResolvedValue(undefined),
 		show: vi.fn(),
 		showError: vi.fn(),
@@ -163,7 +187,7 @@ function registrations(d: Doubles) {
 			create: d.create,
 			setWindow: d.setWindow,
 		}),
-		Registration.instance(ITicketTypeClient, { update: d.update }),
+		Registration.instance(ITicketStockClient, { listByEvent: d.listStocks }),
 		Registration.instance(IRouter, { load: d.load }),
 		Registration.instance(IRouteContext, {
 			getRouteParameters: () => ({ seriesId: 's-1', eventId: 'e-1' }),
@@ -217,9 +241,6 @@ function validModel() {
 		name: '一般発売',
 		saleStart: { date: '2026-11-01', time: '12:00' },
 		saleEnd: { date: '2026-11-20', time: '19:00' },
-		price: '3000',
-		quantity: '150',
-		perAccountLimit: '4',
 	}
 }
 
@@ -258,7 +279,7 @@ describe('firstComeSaleOf', () => {
 		const unwindowed = create(TicketSaleSchema, {
 			id: { value: 'nowindow' },
 			method: TicketSaleMethod.FIRST_COME,
-			ticketTypes: [{ eventId: { value: 'e-1' } }],
+			eventIds: [{ value: 'e-1' }],
 		})
 
 		expect(
@@ -337,6 +358,16 @@ describe('first-come sale editor', () => {
 			ja.sale.prerequisite.noStartTime,
 		],
 		[
+			'an event without a TicketStock',
+			{
+				listStocks: vi
+					.fn()
+					.mockResolvedValue({ ticketStocks: [], seatTypes: [] }),
+			},
+			['noStock'],
+			ja.sale.prerequisite.noStock,
+		],
+		[
 			'an Organizer without business details',
 			{
 				getOrganizer: vi.fn().mockResolvedValue(
@@ -369,6 +400,22 @@ describe('first-come sale editor', () => {
 		},
 	)
 
+	it(`@spec ${EDITOR_SPEC} "No seat type stocked"`, async () => {
+		const { fixture, host } = await mount({
+			listStocks: vi
+				.fn()
+				.mockResolvedValue({ ticketStocks: [], seatTypes: [] }),
+		})
+		const callout = host.querySelector('prerequisite-callout')
+		const links = [...(callout?.shadowRoot?.querySelectorAll('a') ?? [])].map(
+			(a) => a.getAttribute('href'),
+		)
+		expect(links).toEqual([SALES_HREF, '/guide.html#sell'])
+		expect(host.textContent).toContain(ja.saleEditor.noStockBody)
+		expect(host.querySelector('action-bar')).toBeNull()
+		await fixture.tearDown()
+	})
+
 	it('blocks the sale of an Organizer that could not be read', async () => {
 		const { fixture, vm } = await mount({
 			getOrganizer: vi.fn().mockResolvedValue(undefined),
@@ -400,15 +447,22 @@ describe('first-come sale editor', () => {
 		await fixture.tearDown()
 	})
 
-	it('starts a new sale named by the console that ends at the event start', async () => {
-		const { fixture, vm } = await mount()
+	it(`@spec ${EDITOR_SPEC} "Blank form"`, async () => {
+		const { fixture, vm, host } = await mount()
 
 		expect(vm.sale).toBeUndefined()
 		expect(vm.model.name).toBe(ja.firstComeEditor.defaultName)
 		expect(vm.model.saleEnd).toEqual({ date: '2026-11-20', time: '19:00' })
-		expect(vm.model.perAccountLimit).toBe('4')
-		expect(vm.stateKey).toBe('')
-		expect(vm.priceHintKey).toBe('')
+		const stocks = [...host.querySelectorAll('.stock')].map((li) =>
+			li.textContent?.replace(/\s+/g, ' ').trim(),
+		)
+		expect(stocks).toEqual([
+			'S席 8,000円 税込 · 300枚',
+			'A席 6,000円 税込 · 700枚',
+		])
+		expect(host.textContent).toContain('1アカウント4枚まで')
+		// No price, quantity or limit to enter.
+		expect(host.querySelectorAll('console-field')).toHaveLength(3)
 		expect(vm.isDirty).toBe(false)
 		await expect(vm.canUnload()).resolves.toBe(true)
 		await fixture.tearDown()
@@ -417,12 +471,14 @@ describe('first-come sale editor', () => {
 	it('shows field errors only after a save is tried, and sends nothing while invalid', async () => {
 		const { fixture, vm, d } = await mount()
 
-		expect(vm.error(vm.errors.price)).toBeNull()
+		expect(vm.error(vm.errors.saleStartDate)).toBeNull()
 		await vm.save()
 
 		expect(d.create).not.toHaveBeenCalled()
 		expect(vm.submitted).toBe(true)
-		expect(vm.error(vm.errors.price)?.key).toBe('firstComeEditor.error.price')
+		expect(vm.error(vm.errors.saleStartDate)?.key).toBe(
+			'firstComeEditor.error.start',
+		)
 		expect(vm.error(undefined)).toBeNull()
 		await fixture.tearDown()
 	})
@@ -470,14 +526,14 @@ describe('first-come sale editor', () => {
 		await vm.save()
 
 		expect(d.create).toHaveBeenCalledWith(
-			expect.objectContaining({
+			{
 				seriesId: 's-1',
-				eventId: 'e-1',
+				name: '一般発売',
 				method: 'firstCome',
-				price: 3000,
-				quantity: 150,
-				perAccountLimit: 4,
-			}),
+				saleStartTime: new Date('2026-11-01T03:00:00Z'),
+				saleEndTime: EVENT_START,
+				eventIds: ['e-1'],
+			},
 			expect.any(AbortSignal),
 		)
 		expect(vm.sale).toBe(created)
@@ -518,30 +574,30 @@ describe('first-come sale editor', () => {
 				...over,
 			})
 
-		it('shows the stored values, state and counts', async () => {
+		it(`@spec ${EDITOR_SPEC} "Nothing else to edit"`, async () => {
 			const { fixture, vm, host } = await mount({
-				listByEvent: vi.fn().mockResolvedValue({
-					ticketSales: [stored({ sold: 12, held: 3 })],
-				}),
+				listByEvent: vi.fn().mockResolvedValue({ ticketSales: [stored()] }),
 			})
 
 			expect(vm.model).toEqual({
 				name: '一般発売',
 				saleStart: { date: '2026-09-20', time: '12:00' },
 				saleEnd: { date: '2026-11-20', time: '19:00' },
-				price: '3000',
-				quantity: '150',
-				perAccountLimit: '4',
 			})
-			expect(vm.stateKey).toBe('sale.firstComeState.onSale')
 			expect(host.textContent).toContain(ja.firstComeEditor.changeTitle)
-			expect([vm.soldCount, vm.heldCount, vm.quantity]).toEqual([12, 3, 150])
-			expect(vm.priceLocked).toBe(true)
-			expect(vm.priceHintKey).toBe('firstComeEditor.priceLocked')
+			// The name is shown, not edited; only the window's dates are fields.
+			expect(host.querySelector('.fixed')?.textContent).toContain('一般発売')
+			const labels = [...host.querySelectorAll('console-field')].map(
+				(f) => CustomElement.for<ConsoleField>(f).viewModel.label,
+			)
+			expect(labels).toEqual([
+				ja.firstComeEditor.startDate,
+				ja.firstComeEditor.endDate,
+			])
 			await fixture.tearDown()
 		})
 
-		it('saves a changed window without touching the ticket type', async () => {
+		it(`@spec ${EDITOR_SPEC} "Sale extended"`, async () => {
 			const moved = stored({ start: new Date('2026-09-25T03:00:00Z') })
 			const { fixture, vm, d } = await mount({
 				listByEvent: vi.fn().mockResolvedValue({ ticketSales: [stored()] }),
@@ -557,90 +613,41 @@ describe('first-come sale editor', () => {
 				EVENT_START,
 				expect.any(AbortSignal),
 			)
-			expect(d.update).not.toHaveBeenCalled()
+			expect(d.create).not.toHaveBeenCalled()
 			expect(vm.sale).toBe(moved)
 			expect(d.show).toHaveBeenCalledWith('firstComeEditor.saved')
-			await fixture.tearDown()
-		})
-
-		it('saves a changed quantity on the ticket type without touching the window', async () => {
-			const sale = stored()
-			const changed = { ...sale.ticketTypes[0], quantity: 200 }
-			const { fixture, vm, d } = await mount({
-				listByEvent: vi.fn().mockResolvedValue({ ticketSales: [sale] }),
-				update: vi.fn().mockResolvedValue(changed),
-			})
-			vm.model.quantity = ' 200 '
-
-			await vm.save()
-
-			expect(d.setWindow).not.toHaveBeenCalled()
-			expect(d.update).toHaveBeenCalledWith(
-				{
-					ticketTypeId: 'tt-fc-1',
-					price: 3000,
-					quantity: 200,
-					perAccountLimit: 4,
-				},
-				expect.any(AbortSignal),
-			)
-			expect(vm.quantity).toBe(200)
 			expect(d.load).toHaveBeenCalledWith(SALES_HREF)
 			await fixture.tearDown()
 		})
 
-		it('after a refusal, re-reads the counts and puts back a price that became fixed', async () => {
-			const before = stored()
-			const after = stored({ sold: 1 })
-			const listByEvent = vi
-				.fn()
-				.mockResolvedValueOnce({ ticketSales: [before] })
-				.mockResolvedValueOnce({ ticketSales: [after] })
+		it('sends nothing when the window did not change', async () => {
 			const { fixture, vm, d } = await mount({
-				listByEvent,
-				update: vi
-					.fn()
-					.mockRejectedValue(
-						new ConnectError('price locked', Code.FailedPrecondition),
-					),
+				listByEvent: vi.fn().mockResolvedValue({ ticketSales: [stored()] }),
 			})
-			vm.model.price = '5000'
 
 			await vm.save()
 
-			expect(vm.saveProblem).toBe('firstComeEditor.rejected')
-			expect(listByEvent).toHaveBeenCalledTimes(2)
-			expect(vm.sale).toBe(after)
-			expect(vm.priceLocked).toBe(true)
-			expect(vm.model.price).toBe('3000')
-			expect(d.showError).not.toHaveBeenCalled()
+			expect(d.setWindow).not.toHaveBeenCalled()
+			expect(d.load).toHaveBeenCalledWith(SALES_HREF)
 			await fixture.tearDown()
 		})
 
-		it('keeps the refusal shown when re-reading the counts fails', async () => {
-			const listByEvent = vi
-				.fn()
-				.mockResolvedValueOnce({ ticketSales: [stored()] })
-				.mockRejectedValueOnce(new ConnectError('down', Code.Unavailable))
-			const { fixture, vm } = await mount({
-				listByEvent,
-				update: vi
+		it('says why a refused window change was not saved', async () => {
+			const { fixture, vm, d } = await mount({
+				listByEvent: vi.fn().mockResolvedValue({ ticketSales: [stored()] }),
+				setWindow: vi
 					.fn()
 					.mockRejectedValue(
-						new ConnectError('refused', Code.FailedPrecondition),
+						new ConnectError('overlap', Code.FailedPrecondition),
 					),
 			})
-			const warn = vi.spyOn(vm['logger'], 'warn')
-			vm.model.price = '5000'
+			vm.model.saleStart = { date: '2026-09-25', time: '12:00' }
 
 			await vm.save()
 
 			expect(vm.saveProblem).toBe('firstComeEditor.rejected')
-			expect(warn).toHaveBeenCalledWith(
-				'Refreshing the sale failed',
-				expect.any(ConnectError),
-			)
-			expect(vm.model.price).toBe('5000')
+			expect(d.showError).not.toHaveBeenCalled()
+			expect(d.load).not.toHaveBeenCalled()
 			await fixture.tearDown()
 		})
 	})

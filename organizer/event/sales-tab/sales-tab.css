@@ -14,7 +14,18 @@
 			align-items: center;
 		}
 
-		.sales {
+		.section-title {
+			font: var(--md-type-title-large);
+			color: var(--md-color-on-surface);
+		}
+
+		.note {
+			color: var(--md-color-on-surface-variant);
+		}
+
+		.sales,
+		.stock-list,
+		.lottery-stocks {
 			display: grid;
 			gap: var(--space-s);
 
@@ -24,8 +35,9 @@
 			list-style: none;
 		}
 
-		/* M3 outlined card: a sale holds several different actions. */
-		.sale {
+		/* M3 outlined card: a sale, or a seat type's stock, holds several actions. */
+		.sale,
+		.stock {
 			display: grid;
 			gap: var(--space-xs);
 
@@ -36,7 +48,8 @@
 			background: var(--md-color-surface);
 		}
 
-		.sale-heading {
+		.sale-heading,
+		.stock-heading {
 			display: flex;
 			flex-wrap: wrap;
 			gap: var(--space-2xs) var(--space-xs);
@@ -44,7 +57,8 @@
 			justify-content: space-between;
 		}
 
-		.sale-name {
+		.sale-name,
+		.stock-name {
 			font: var(--md-type-title-medium);
 			color: var(--md-color-on-surface);
 		}
@@ -71,6 +85,31 @@
 			display: grid;
 			grid-template-columns: repeat(3, minmax(0, 1fr));
 			gap: var(--space-2xs);
+		}
+
+		.lottery-stock {
+			display: grid;
+			gap: var(--space-2xs);
+		}
+
+		.stock-form {
+			display: grid;
+			gap: var(--space-xs);
+		}
+
+		.form-title {
+			font: var(--md-type-title-small);
+			color: var(--md-color-on-surface);
+		}
+
+		.row {
+			display: flex;
+			flex-wrap: wrap;
+			gap: var(--space-xs);
+
+			& > * {
+				flex: 1 1 200px;
+			}
 		}
 
 		.oversubscribed {

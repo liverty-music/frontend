@@ -117,6 +117,18 @@
             error.bind="error(errors.rows[$index].time, submitted)"
           ></console-time-field>
         </div>
+        <console-field
+          type="number"
+          class="limit"
+          component.ref="limitFields[$index]"
+          label.bind="'concertEditor.perAccountLimit' & t"
+          value.bind="row.perAccountLimit"
+          required.bind="row.publishState === PublishState.DRAFT"
+          readonly.bind="row.publishState !== PublishState.DRAFT"
+          hint.bind="(row.publishState === PublishState.DRAFT ? 'concertEditor.perAccountLimitHint' : 'concertEditor.perAccountLimitFixed') & t"
+          error.bind="error(errors.rows[$index].perAccountLimit, submitted)"
+          data-field="limit"
+        ></console-field>
       </section>
       <console-button variant="text" icon="add" click.trigger="addEvent()">${'concertEditor.addDate' & t}</console-button>
     </fieldset>
