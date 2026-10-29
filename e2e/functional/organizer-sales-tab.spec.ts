@@ -623,6 +623,43 @@ test.describe('verification requirement', () => {
 })
 
 test.describe('seat types and quantities', () => {
+	test('a seat type another member stocked meanwhile is told and no longer offered', async ({
+		page,
+	}) => {
+		const stocked: StockSpec[] = []
+		const mocks = rpc([], { stocks: [] })
+		mocks['TicketStockService/ListByEvent'] = () => ({
+			body: stocksOf('e-1103', stocked),
+		})
+		mocks['TicketStockService/Create'] = () => {
+			// Another member's S席 stock was stored first.
+			stocked.push({ id: 'stock-seat-s', seatType: S_SEAT, quantity: 100 })
+			return connectError('already_exists', 'stocked', 409)
+		}
+		await open(page, mocks)
+
+		await stocks(page)
+			.getByLabel(/^席種 /)
+			.selectOption({ label: 'S席（8,000円）' })
+		await stocks(page).getByRole('spinbutton', { name: /^枚数/ }).fill('300')
+		await stocks(page).getByRole('button', { name: '席種を追加' }).click()
+		await confirmDialog(page)
+			.getByRole('button', { name: '席種を追加' })
+			.click()
+
+		await expect(
+			snackbar(page).filter({
+				hasText: 'この席種はすでにこの公演日にあります',
+			}),
+		).toBeVisible()
+		await expect(stock(page, 'stock-seat-s')).toContainText('100枚')
+		await expect(
+			stocks(page)
+				.getByLabel(/^席種 /)
+				.locator('option', { hasText: 'S席' }),
+		).toHaveCount(0)
+	})
+
 	test(`@spec ${SPEC} "Two seat types stocked"`, async ({ page }) => {
 		const stocked: StockSpec[] = []
 		const mocks = rpc([], { stocks: [] })

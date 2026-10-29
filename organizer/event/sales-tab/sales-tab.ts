@@ -312,7 +312,12 @@ export class SalesTab {
 		} catch (err) {
 			this.logger.warn('Stock not added', err)
 			if (err instanceof ConnectError && err.code === Code.AlreadyExists) {
-				this.stockProblem = { key: 'stock.error.alreadyStocked' }
+				// Another member stocked the seat type meanwhile: the refreshed
+				// list no longer offers it, and may leave nothing to add, so the
+				// form is reset and the reason is told by the snackbar.
+				this.stockForm = { seatTypeId: '', quantity: '' }
+				this.stockSubmitted = false
+				this.snackbar.showError('stock.error.alreadyStocked')
 				await this.refreshStocks()
 				return
 			}
