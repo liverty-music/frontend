@@ -97,6 +97,7 @@ test.describe('open a shared event link (signed in)', () => {
 			'input[name="loginName"], input[autocomplete="username"]',
 			username,
 		)
+		// @spec components/infrastructure/fan/web/global/hosted-login "Existing password still signs in"
 		await fillAndSubmit(page, 'input[type="password"]', password)
 
 		await page.waitForURL(new RegExp(`/events/${EVENTS.upcoming}$`), {

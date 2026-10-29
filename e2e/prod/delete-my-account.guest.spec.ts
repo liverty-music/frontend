@@ -1,4 +1,3 @@
-import { randomBytes } from 'node:crypto'
 import { devices, expect, type Page, test } from '@playwright/test'
 import { optOutOfAnalytics } from './onboarding'
 import { fillAndSubmit } from './support'
@@ -14,9 +13,10 @@ import { fillAndSubmit } from './support'
  * ("Ticket for next week", "After the concert") and the order and ticket
  * records kept after deletion are recorded in `docs/ci-coverage-gaps.md`.
  *
- * Starts as a guest (`prod-guest`). The password is generated per run and
- * never written anywhere, and no trace, screenshot or video is kept: they
- * would record it and the account's tokens.
+ * Starts as a guest (`prod-guest`). The account signs up and signs in with a
+ * passkey held by Playwright's virtual authenticator, which exists only for
+ * the run. No trace, screenshot or video is kept: they would record the
+ * account's tokens.
  */
 test.use({ trace: 'off', screenshot: 'off', video: 'off' })
 
@@ -26,11 +26,11 @@ const API_BASE =
 /** The throwaway account of this run, on the prod test account domain. */
 const ACCOUNT = {
 	email: `e2e-delete-account-${Date.now()}@liverty-music.app`,
-	// Meets the hosted login's password policy: upper, lower, digit, symbol.
-	password: `Aa1!${randomBytes(12).toString('hex')}`,
 }
 
-/** The signed-in fan's identity (`sub`) from the app's stored OIDC session. */
+/** The hosted login's address; its passkeys belong to this relying party. */
+const AUTH_HOST = 'auth.liverty-music.app'
+
 /**
  * Whether the account the running test signed up may still exist: set once
  * the sign-up submits, cleared once the deleted-account view shows. The
@@ -39,6 +39,7 @@ const ACCOUNT = {
  */
 let accountMayExist = false
 
+/** The signed-in fan's identity (`sub`) from the app's stored OIDC session. */
 function signedInFan(page: Page): Promise<string | null> {
 	return page.evaluate(() => {
 		const key = Object.keys(localStorage).find((k) =>
@@ -84,8 +85,9 @@ function callAsFan(
 }
 
 /**
- * Sign up from Settings as a guest with a password, and wait until the app
- * has the new account signed in.
+ * Sign up from Settings as a guest with a passkey, and wait until the app has
+ * the new account signed in. The page's context must have the virtual
+ * authenticator installed.
  */
 async function signUp(page: Page): Promise<void> {
 	await page.goto('/settings?lang=ja')
@@ -104,15 +106,15 @@ async function signUp(page: Page): Promise<void> {
 			expect(await input.inputValue()).toBe(value)
 		}).toPass()
 	}
-	await page.getByText('パスワード', { exact: true }).click()
+	// Passkey is the form's first and default choice; once the hosted login
+	// offers no password, it is the only one.
 	await page.getByRole('button', { name: '続行' }).click()
-
-	await page.locator('input[name="confirmPassword"]').waitFor()
-	await page.locator('input[name="password"]').fill(ACCOUNT.password)
-	await page.locator('input[name="confirmPassword"]').fill(ACCOUNT.password)
-	await page.getByRole('button', { name: '続行' }).click()
-
+	// Continuing creates the account; its passkey is registered next.
 	accountMayExist = true
+
+	await page.waitForURL(/\/ui\/v2\/login\/passkey\/set/)
+	await page.getByTestId('submit-button').click()
+
 	// Back in the app once the sign-up callback has run.
 	await page.waitForURL(
 		(u) => !u.hostname.startsWith('auth.') && !u.pathname.startsWith('/auth/'),
@@ -123,7 +125,7 @@ async function signUp(page: Page): Promise<void> {
 
 /**
  * Delete the signed-in account from Settings: the withdrawal screen, its
- * confirmation dialog, the fresh sign-in with the password, then the
+ * confirmation dialog, the fresh sign-in with the passkey, then the
  * deleted-account view.
  */
 async function deleteFromSettings(page: Page): Promise<void> {
@@ -137,9 +139,10 @@ async function deleteFromSettings(page: Page): Promise<void> {
 	await expect(page.getByTestId('delete-account-confirm')).toBeVisible()
 	await page.getByTestId('delete-account-confirm-delete').click()
 
-	// The fresh sign-in asks for the password again, even right after sign-up.
-	await page.waitForURL(/auth\.liverty-music\.app\/ui\/v2\/login\/password/)
-	await fillAndSubmit(page, 'input[type="password"]', ACCOUNT.password)
+	// The fresh sign-in asks for the passkey again, even right after sign-up.
+	// The passkey page requests it on load, and the virtual authenticator
+	// answers.
+	await page.waitForURL(/auth\.liverty-music\.app\/ui\/v2\/login\/passkey/)
 
 	await expect(page.getByTestId('delete-account-deleted')).toBeVisible({
 		timeout: 60_000,
@@ -154,7 +157,8 @@ test.describe('delete my account', () => {
 	test.describe.configure({ mode: 'serial' })
 	let deletedFan = ''
 
-	test.beforeEach(async ({ page }) => {
+	test.beforeEach(async ({ context, page }) => {
+		await context.credentials.install()
 		await optOutOfAnalytics(page)
 	})
 
@@ -179,6 +183,7 @@ test.describe('delete my account', () => {
 	})
 
 	test('a fan with nothing in progress deletes their account and can no longer sign in', async ({
+		context,
 		page,
 		browser,
 		baseURL,
@@ -187,6 +192,8 @@ test.describe('delete my account', () => {
 		test.setTimeout(240_000)
 		await signUp(page)
 		deletedFan = (await signedInFan(page)) ?? ''
+		const passkeys = await context.credentials.get({ rpId: AUTH_HOST })
+		expect(passkeys).toHaveLength(1)
 
 		await deleteFromSettings(page)
 
@@ -194,9 +201,9 @@ test.describe('delete my account', () => {
 		await page.getByTestId('delete-account-to-welcome').click()
 		await expect(page).toHaveURL(/\/welcome/)
 
-		// Signing in with the same credentials no longer reaches an account.
-		// On a fresh device: this browser's hosted login still offers the
-		// deleted account in its account chooser.
+		// Signing in with the same passkey no longer reaches an account. On a
+		// fresh device: this browser's hosted login still offers the deleted
+		// account in its account chooser.
 		const device = await browser.newContext({
 			...devices['Pixel 7'],
 			baseURL,
@@ -204,15 +211,20 @@ test.describe('delete my account', () => {
 			timezoneId: 'Asia/Tokyo',
 		})
 		try {
+			for (const passkey of passkeys) {
+				await device.credentials.create(AUTH_HOST, passkey)
+			}
+			await device.credentials.install()
 			const other = await device.newPage()
 			await optOutOfAnalytics(other)
 			await other.goto('/settings?lang=ja')
 			await other.getByTestId('settings-sign-in').click({ timeout: 30_000 })
 			await other.waitForURL(/auth\.liverty-music\.app/)
 			await fillAndSubmit(other, 'input[name="loginName"]', ACCOUNT.email)
-			await fillAndSubmit(other, 'input[type="password"]', ACCOUNT.password)
-			await expect(other.getByText('認証に失敗しました。')).toBeVisible()
-			await expect(other).toHaveURL(/auth\.liverty-music\.app/)
+			// The hosted login answers an unknown login name with its password
+			// step, so it never asks for the passkey; the account had one, so
+			// it would have.
+			await other.waitForURL(/\/ui\/v2\/login\/password/)
 		} finally {
 			await device.close()
 		}
