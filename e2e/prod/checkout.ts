@@ -1,9 +1,41 @@
-import { expect, type Frame, type Page } from '@playwright/test'
+import { expect, type Frame, type Locator, type Page } from '@playwright/test'
+import type { SaleStock } from './sale'
 
 /**
  * Checkout steps shared by the production purchase specs. They drive the
- * checkout screen the Event page's buy action opens.
+ * checkout screen the Event page's buy action opens for one seat type.
  */
+
+/** The Event page's row of the stock's seat type in the ticket section. */
+export function stockRow(page: Page, stock: SaleStock): Locator {
+	return page.getByTestId('event-stock').filter({
+		has: page
+			.getByTestId('event-stock-name')
+			.getByText(stock.seatTypeName, { exact: true }),
+	})
+}
+
+/**
+ * Open the checkout of the stock from the Event page's action to buy on its
+ * seat type's row. `query` is added to the Event page's address (e.g.
+ * `?ref=…`).
+ */
+export async function openCheckout(
+	page: Page,
+	eventId: string,
+	stock: SaleStock,
+	query = '',
+): Promise<void> {
+	await page.goto(`/events/${eventId}${query}`)
+	await stockRow(page, stock).getByTestId('event-buy').click()
+	await expect(page).toHaveURL(
+		new RegExp(`/events/${eventId}/checkout/${stock.id}$`),
+	)
+	await expect(page.getByTestId('checkout-count')).toBeVisible()
+	await expect(page.getByTestId('checkout-seat-type')).toHaveText(
+		stock.seatTypeName,
+	)
+}
 
 /** Stripe's test card that authorizes without 3D Secure. */
 const TEST_CARD = { number: '4242424242424242', expiry: '12 / 34', cvc: '123' }

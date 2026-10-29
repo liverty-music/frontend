@@ -40,15 +40,28 @@ Keep the ids in `.auth/prod-e2e.env`, one `NAME=value` per line. Load them
 with `set -a && . .auth/prod-e2e.env && set +a`, or pass the file with
 `docker run --env-file`.
 
-The purchase specs open their own first-come sale on their Event. A sale's
-per-account limit counts the tickets the fan already holds for the Event, so
-each run uses up part of it:
+The purchase specs open their own first-come sale on their Event: each run
+adds a fresh SeatType (named `E2E <time>`) to the Event's Series, stocks it for
+the Event and creates a first-come sale on the Event, ending the Event's open
+first-come sale first.
 
-| Spec | Sale | Tickets the test user buys per run | When to create a new Event |
-|---|---|---|---|
-| `buy-tickets-first-come` | 5 tickets, limit 5 | up to 5 | for every run |
-| `attribute-a-purchase-to-a-referral-link` | 5 tickets, limit 5 | 2 | every 2 runs |
-| `resell-a-ticket` | 2 tickets, limit 2 | — | for every run, unless the run ended right after the sale sold out (a rerun picks that sale up) |
+Two rules make a used Event unusable for the next run:
+
+- **One seat type per account and Event.** The test user can hold tickets of
+  only one seat type of an Event, and every run buys a new seat type, so
+  **each run needs a fresh Event** the test user holds no tickets for.
+- **The per-account limit is the Event's.** It counts every ticket the fan
+  holds or applied for at the Event, across every sale and seat type. It is set
+  in the concert editor and **can be changed only while the Event is DRAFT**;
+  once published it is fixed. Events published before the limit existed have
+  4, which is too few for `buy-tickets-first-come`. Set the limit before
+  publishing a fixture Event.
+
+| Spec | Sale | Tickets the test user buys per run | Per-account limit the Event needs | When to create a new Event |
+|---|---|---|---|---|
+| `buy-tickets-first-come` | 5 tickets of 3000 yen | up to 5 | 5 or more | for every run |
+| `attribute-a-purchase-to-a-referral-link` | 5 tickets of 3000 yen | 2 | 2 or more (4 is enough) | for every run |
+| `resell-a-ticket` | 2 tickets of 5000 yen | 2 | 2 or more (4 is enough) | for every run, unless the run ended right after the stock sold out (a rerun picks that stock up) |
 
 ## Sessions
 
@@ -56,7 +69,7 @@ each run uses up part of it:
 |---|---|---|
 | `.auth/storageState.prod.json` | the prod E2E test user | `npm run auth:capture:password:prod` |
 | `.auth/storageState.prod.fan2.json` | the second fan | the same command, with `E2E_USERNAME=<fan email> E2E_STATE_FILE=storageState.prod.fan2.json` |
-| `.auth/storageState.prod.fan3.json` | the third fan | the same command, with `E2E_STATE_FILE=storageState.prod.fan3.json` |
+| `.auth/storageState.prod.fan3.json` | the third fan (unused until buying listed tickets returns with `resell-tickets-by-lottery`) | the same command, with `E2E_STATE_FILE=storageState.prod.fan3.json` |
 | `.auth/storageState.organizer.prod.json` | the e2e-test Organizer's test member (owner role) | see "The test member" |
 
 ### Sessions are written back after use
@@ -136,7 +149,9 @@ For each Series in the table above:
    - 公開 or 限定公開;
    - a venue picked from the map catalog;
    - a date, different for each Series;
-   - a start time.
+   - a start time (the purchase specs end their sale at it);
+   - for a purchase spec's Event, the date's per-account limit from the table
+     above (it cannot be changed after publishing).
 2. 公開する, and confirm.
 3. For the cancelled fixture only: その他の操作 → 公演を中止, and confirm.
 
