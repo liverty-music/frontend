@@ -278,6 +278,9 @@ export class SalesTab {
 		} catch (err) {
 			if (this.abort.signal.aborted) return
 			this.logger.warn('Stocks not re-read', err)
+			this.snackbar.showError('stock.refreshFailed', {
+				retry: () => void this.refreshStocks(),
+			})
 		}
 	}
 

@@ -510,6 +510,7 @@
 		"addConfirmBody": "枚数はあとから変えられません。この公演日のすべての販売が、この枚数から売ります。",
 		"added": "{{name}}を追加しました",
 		"addFailed": "席種を追加できませんでした",
+		"refreshFailed": "席種と枚数を読み込み直せませんでした",
 		"addRefused": "中止した公演日には席種を追加できません。",
 		"deleteConfirmTitle": "{{name}}を削除しますか？",
 		"deleteConfirmBody": "この公演日から、この席種と枚数を削除します。",

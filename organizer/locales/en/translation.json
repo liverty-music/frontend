@@ -510,6 +510,7 @@
 		"addConfirmBody": "The quantity cannot change later. Every sale of this date sells from it.",
 		"added": "{{name}} added",
 		"addFailed": "Could not add the seat type",
+		"refreshFailed": "Could not reload the seat types and quantities",
 		"addRefused": "A cancelled date cannot get seat types.",
 		"deleteConfirmTitle": "Delete {{name}}?",
 		"deleteConfirmBody": "The seat type and its quantity are removed from this date.",
