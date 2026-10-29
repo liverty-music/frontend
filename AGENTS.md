@@ -59,8 +59,25 @@ BSR gen completes, as CI will fail on the missing types.
 
 ## Aurelia 2 Conventions
 
-Aurelia 2 coding conventions (DI, events, lifecycle, routing, templates, logging) are defined
-in the `aurelia-specialist` skill. Read it before writing any component code.
+General Aurelia 2 guidance comes from the `aurelia` skill (web-frontend plugin) and the docs
+(`https://docs.aurelia.io/llms.txt`). This repository's choices on top of it:
+
+- Inject with `resolve(IFoo)` as a property; no `@inject` and no constructor injection.
+- Log through `resolve(ILogger).scopeTo('<ClassName>')`; `console.*` only before the logger
+  exists (bootstrap failure in `main.ts`).
+- A child tells its parent with a DOM event (`dispatchEvent(new CustomEvent(...))`) bound by
+  `.trigger` in the parent template; no `.call` bindings.
+- Components register by convention (matching `.ts` + `.html` pair); `@customElement` only to
+  set a name or an imported template (cf. `src/components/icons/`). Template dependencies use
+  `<import from="...">`.
+- No `any` in `src/` (Biome `noExplicitAny`; tests are exempt).
+- CSS rules live in `stylelint.config.js`, not here: the `@layer` order of `src/styles/main.css`,
+  `@scope` per block, one block per file, `data-*` exceptions, single-property utilities,
+  colour tokens (no hex, `rgb()` or `hsl()`), logical properties, container queries over width
+  media queries, and no `z-index` or `!important` (the `cube/*` rules come from
+  `stylelint-plugin-cube-css/`). Run `npm run lint:css` and read the failing rule's source in
+  `stylelint-plugin-cube-css/lib/rules/` before working around it. Class attributes use CUBE
+  bracket groups: `class="[ block ] [ composition ] [ utilities ]"`.
 
 ### Inline styles (CUBE CSS)
 
