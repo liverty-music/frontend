@@ -26,7 +26,7 @@ export type ResultKind = 'entered' | 'won' | 'lost'
 /**
  * The fan's lottery entry status in one sale for one event
  * (`/events/:id/lottery/:saleId/:stockId/entry`). Reads the fan's entries in
- * the sale with LotteryEntryService.ListByTicketType and the event's stocks
+ * the sale with LotteryEntryService.ListByTicketSale and the event's stocks
  * with TicketSaleService.ListByEvent, and shows the entry for one of this
  * event's stocks (at most one per sale and event, made at Confirm): its seat
  * type, count and state (抽選待ち / 当選 / 落選). The entry may be for another
@@ -67,7 +67,7 @@ export class LotteryEntryStatusRoute implements IRouteViewModel {
 		this.messageKey = ''
 		try {
 			const [entries, tickets] = await Promise.all([
-				this.entryClient.listBySale(this.saleId, signal),
+				this.entryClient.listByTicketSale(this.saleId, signal),
 				this.saleClient.listByEvent(this.eventId, signal),
 			])
 			if (signal.aborted) return

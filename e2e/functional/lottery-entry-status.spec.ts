@@ -9,7 +9,7 @@ test.use({ locale: 'en-US', viewport: { width: 390, height: 844 } })
 
 /**
  * The fan's lottery entry status screen against a mocked
- * LotteryEntryService.ListByTicketType (the fan's entries in a sale, with their
+ * LotteryEntryService.ListByTicketSale (the fan's entries in a sale, with their
  * Orders) and TicketSaleService.ListByEvent (the event's stocks): an Entered
  * entry waits for the draw,
  * Won and Lost show their result, and no state offers an action on the entry
@@ -50,7 +50,7 @@ for (const { state, label, note } of cases) {
 					home: { countryCode: 'JP', level1: 'JP-13' },
 				},
 			},
-			'LotteryEntryService/ListByTicketType': {
+			'LotteryEntryService/ListByTicketSale': {
 				lotteryEntries: [
 					{
 						id: { value: fakeId(`lottery-entry-status-${state}`) },

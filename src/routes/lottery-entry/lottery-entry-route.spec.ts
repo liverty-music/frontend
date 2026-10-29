@@ -115,7 +115,7 @@ const mockSale = { listByEvent: vi.fn() }
 const mockEntry = {
 	authorizeCard: vi.fn(),
 	confirm: vi.fn(),
-	listBySale: vi.fn(),
+	listByTicketSale: vi.fn(),
 }
 const mockHeldSeatTypes = { heldTickets: vi.fn() }
 
@@ -209,7 +209,7 @@ describe('LotteryEntryRoute', () => {
 		mockHeldSeatTypes.heldTickets.mockResolvedValue(null)
 		mockEntry.authorizeCard.mockResolvedValue(CARD_AUTHORIZATION)
 		mockEntry.confirm.mockResolvedValue(entered())
-		mockEntry.listBySale.mockResolvedValue([])
+		mockEntry.listByTicketSale.mockResolvedValue([])
 		mockStripe.createElements.mockResolvedValue({
 			stripe: fakeStripe,
 			elements: fakeElements,
@@ -517,7 +517,7 @@ describe('LotteryEntryRoute', () => {
 			mockEntry.authorizeCard.mockRejectedValue(
 				new ConnectError('entered', Code.FailedPrecondition),
 			)
-			mockEntry.listBySale.mockResolvedValue([entered()])
+			mockEntry.listByTicketSale.mockResolvedValue([entered()])
 			const sut = await toPersonalDetails()
 
 			await sut.toPayment()
@@ -590,13 +590,13 @@ describe('LotteryEntryRoute', () => {
 				new ConnectError('second entry', Code.FailedPrecondition),
 			)
 			// The earlier entry is for A席; this one chose S席.
-			mockEntry.listBySale.mockResolvedValue([
+			mockEntry.listByTicketSale.mockResolvedValue([
 				entered({ id: 'entry-0', ticketStockId: A_STOCK_ID }),
 			])
 
 			await sut.confirmEntry()
 
-			expect(mockEntry.listBySale).toHaveBeenCalledWith(
+			expect(mockEntry.listByTicketSale).toHaveBeenCalledWith(
 				SALE_ID,
 				expect.anything(),
 			)
@@ -634,7 +634,7 @@ describe('LotteryEntryRoute', () => {
 			mockEntry.confirm.mockRejectedValue(
 				new ConnectError('refused', Code.FailedPrecondition),
 			)
-			mockEntry.listBySale.mockResolvedValue([
+			mockEntry.listByTicketSale.mockResolvedValue([
 				entered({ ticketStockId: 'stock-of-another-date' }),
 			])
 
@@ -686,7 +686,7 @@ describe('LotteryEntryRoute', () => {
 			mockEntry.confirm.mockRejectedValue(
 				new ConnectError('refused', Code.FailedPrecondition),
 			)
-			mockEntry.listBySale.mockRejectedValue(new Error('offline'))
+			mockEntry.listByTicketSale.mockRejectedValue(new Error('offline'))
 
 			await sut.confirmEntry()
 
