@@ -292,6 +292,16 @@ describe('CheckoutRoute', () => {
 			expect(sut.countdown).toBe('10:00')
 		})
 
+		it('keeps the stored hold of another stock of the event', async () => {
+			localStorage.setItem(`checkout:${EVENT_ID}`, 'res-1')
+			mockCheckout.get.mockResolvedValue(held({ ticketStockId: 'stock-a' }))
+
+			const sut = await open()
+
+			expect(sut.step).toBe('count')
+			expect(localStorage.getItem(`checkout:${EVENT_ID}`)).toBe('res-1')
+		})
+
 		it('says other fans are checking out when the last tickets are held', async () => {
 			// @spec components/infrastructure/fan/web/route/checkout "Last tickets in other checkouts"
 			mockCheckout.start.mockRejectedValue(connectError(Code.ResourceExhausted))

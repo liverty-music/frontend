@@ -277,13 +277,15 @@ export class CheckoutRoute implements IRouteViewModel {
 		try {
 			const checkout = await this.checkoutClient.get(id, signal)
 			if (signal.aborted) return true
-			if (
-				checkout.status === 'held' &&
-				checkout.ticketStockId === this.stockId
-			) {
-				this.holdWith(checkout)
-				this.step = 'personal-details'
-				return true
+			if (checkout.status === 'held') {
+				if (checkout.ticketStockId === this.stockId) {
+					this.holdWith(checkout)
+					this.step = 'personal-details'
+					return true
+				}
+				// A hold of another stock of the event stays resumable from
+				// its own checkout URL, so the stored id is kept.
+				return false
 			}
 		} catch (err) {
 			if (signal.aborted) return true
