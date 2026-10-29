@@ -4,8 +4,9 @@ import type { Page } from './test'
  * A stand-in for Stripe.js, so a card authorization flow runs without the
  * payment provider: `/config.json` gains a test publishable key, and the
  * Stripe.js script defines a `Stripe` whose Payment Element renders a
- * placeholder and whose `confirmPayment` authorizes the card at once
- * (`requires_capture`). Each Elements group's client secret is recorded on
+ * placeholder, whose card form reads as a VISA ending 4242 (`submit`,
+ * `createConfirmationToken`, as the first-come checkout reads it) and whose
+ * `confirmPayment` authorizes the card at once (`requires_capture`). Each Elements group's client secret is recorded on
  * `window.__stripeStub.clientSecrets`, in order. No traffic leaves the machine.
  */
 export async function stubStripe(page: Page): Promise<void> {
@@ -46,6 +47,9 @@ const STRIPE_JS = `
 				clientSecret = (options && options.clientSecret) || ''
 				stub.clientSecrets.push(clientSecret)
 				return {
+					async submit() {
+						return {}
+					},
 					create() {
 						let host = null
 						return {
@@ -63,10 +67,21 @@ const STRIPE_JS = `
 					},
 				}
 			},
-			async confirmPayment() {
+			async createConfirmationToken() {
+				return {
+					confirmationToken: {
+						id: 'ctoken_e2e',
+						payment_method_preview: {
+							card: { brand: 'visa', last4: '4242' },
+						},
+					},
+				}
+			},
+			async confirmPayment(options) {
+				const secret = (options && options.clientSecret) || clientSecret
 				return {
 					paymentIntent: {
-						id: clientSecret.split('_secret_')[0],
+						id: secret.split('_secret_')[0],
 						status: 'requires_capture',
 					},
 				}

@@ -22,6 +22,8 @@ export type ResaleListingStatus =
 export interface ResaleListing {
 	readonly id: string
 	readonly ticketId: string
+	/** The TicketStock the listed ticket was issued from. */
+	readonly ticketStockId: string
 	/** Face value in yen, 税込. */
 	readonly price: number
 	/** The resale fee in yen: 10% of the price, rounded down. */

@@ -109,6 +109,12 @@
 			}
 		}
 
+		.checkout-seat-type {
+			font-size: var(--step-1);
+			font-weight: 600;
+			color: var(--color-text-primary);
+		}
+
 		.checkout-price {
 			color: var(--color-text-secondary);
 		}

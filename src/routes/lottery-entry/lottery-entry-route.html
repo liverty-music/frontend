@@ -20,7 +20,7 @@
 		<a href="/events/${event.id}" if.bind="event" t="lotteryEntry.backToEvent"></a>
 	</section>
 
-	<!-- The TicketType entered: the sale's name, the event, the price and the limit -->
+	<!-- What is entered: the sale's name, the event, the seat type, its price and the limit -->
 	<section
 		if.bind="sale && event && (step === 'verify-required' || step === 'count' || step === 'personal-details' || step === 'payment' || step === 'submitting')"
 		class="[ lottery-entry-panel ] [ flow ]"
@@ -28,6 +28,7 @@
 	>
 		<p class="lottery-entry-step-title" data-testid="lottery-entry-sale-name">${sale.name}</p>
 		<p class="lottery-entry-lead" data-testid="lottery-entry-event">${event.title}<br />${dateLabel} · ${event.venueName}</p>
+		<p class="lottery-entry-seat-type" data-testid="lottery-entry-seat-type">${seatTypeName}</p>
 		<p class="lottery-entry-lead" data-testid="lottery-entry-price" t="lotteryEntry.price" t-params.bind="{ price: yen(price) }"></p>
 		<p class="lottery-entry-lead" data-testid="lottery-entry-limit" t="lotteryEntry.limit" t-params.bind="{ limit: perAccountLimit }"></p>
 		<p class="lottery-entry-lead" t="lotteryEntry.window" t-params.bind="{ window: windowLabel }"></p>
@@ -126,7 +127,7 @@
 	<!-- Confirm refused the card authorization: no entry, nothing charged -->
 	<section class="[ lottery-entry-panel ] [ flow ]" if.bind="step === 'refused'" data-testid="lottery-entry-refused">
 		<h2 class="lottery-entry-step-title" t="lotteryEntry.refused.title"></h2>
-		<p class="lottery-entry-lead" role="alert" data-testid="lottery-entry-message" t.bind="message.key"></p>
+		<p class="lottery-entry-lead" role="alert" data-testid="lottery-entry-message" t.bind="message.key" t-params.bind="message.params"></p>
 		<p class="lottery-entry-lead" t="lotteryEntry.refused.notCharged"></p>
 		<a href.bind="entryStatusUrl" if.bind="alreadyEntered" class="[ button lottery-entry-action ] [ pressable ]" data-testid="lottery-entry-to-status" t="lotteryEntry.done.toStatus"></a>
 		<button type="button" if.bind="canTryAgain" class="[ button lottery-entry-action ] [ pressable ]" click.trigger="tryAgain()" data-testid="lottery-entry-try-again" t="lotteryEntry.refused.tryAgain"></button>

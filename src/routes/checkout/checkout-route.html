@@ -38,6 +38,7 @@
   <section if.bind="step === 'count'" class="[ checkout-panel ] [ flow ]" data-testid="checkout-count">
     <h2 class="checkout-step-title" t="checkout.count.title"></h2>
     <p if.bind="verificationNoteKey" class="checkout-note" data-testid="checkout-verify-note" t.bind="verificationNoteKey"></p>
+    <p class="checkout-seat-type" data-testid="checkout-seat-type">${seatTypeName}</p>
     <label class="checkout-field">
       <span class="checkout-label" t="checkout.count.label" t-params.bind="{ limit: perAccountLimit }"></span>
       <select value.bind="ticketCount" class="checkout-input" data-testid="checkout-count-select">
@@ -108,12 +109,7 @@
       </dd>
 
       <dt t="checkout.confirm.tickets"></dt>
-      <dd data-testid="checkout-confirm-tickets" t="checkout.confirm.ticketsValue" t-params.bind="{ count: ticketCount, price: yen(price), total: yen(total) }"></dd>
-
-      <template if.bind="isResale">
-        <dt t="checkout.confirm.officialResale"></dt>
-        <dd data-testid="checkout-confirm-official-resale" t="checkout.confirm.officialResaleValue"></dd>
-      </template>
+      <dd data-testid="checkout-confirm-tickets" t="checkout.confirm.ticketsValue" t-params.bind="{ seatType: seatTypeName, count: ticketCount, price: yen(price), total: yen(total) }"></dd>
 
       <dt t="checkout.confirm.payment"></dt>
       <dd data-testid="checkout-confirm-payment">
@@ -125,8 +121,7 @@
       <dd t="checkout.confirm.deliveryValue"></dd>
 
       <dt t="checkout.confirm.salePeriod"></dt>
-      <dd if.bind="isResale" data-testid="checkout-confirm-period" t="checkout.confirm.resaleSalePeriod" t-params.bind="{ deadline: resaleDeadlineLabel }"></dd>
-      <dd else data-testid="checkout-confirm-period">${salePeriodLabel}</dd>
+      <dd data-testid="checkout-confirm-period">${salePeriodLabel}</dd>
 
       <dt t="checkout.confirm.nameOnTickets"></dt>
       <dd data-testid="checkout-confirm-full-name">${fullName}</dd>

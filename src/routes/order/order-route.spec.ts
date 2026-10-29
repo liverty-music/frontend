@@ -108,13 +108,21 @@ describe('OrderRoute', () => {
 			expect(sut.order?.statusKind).toBe('refunded')
 		})
 
-		it('shows loaded with failed statusKind when ORDER_STATUS_FAILED', async () => {
+		it('shows loaded with void statusKind when ORDER_STATUS_VOID', async () => {
 			mockOrderClient.get.mockResolvedValue(
-				makeOrder({ status: OrderStatus.FAILED }),
+				makeOrder({ status: OrderStatus.VOID }),
 			)
 			const sut = await makeSut()
 			expect(sut.step).toBe('loaded')
-			expect(sut.order?.statusKind).toBe('failed')
+			expect(sut.order?.statusKind).toBe('void')
+		})
+
+		it('shows loaded with pending statusKind when ORDER_STATUS_PENDING', async () => {
+			mockOrderClient.get.mockResolvedValue(
+				makeOrder({ status: OrderStatus.PENDING }),
+			)
+			const sut = await makeSut()
+			expect(sut.order?.statusKind).toBe('pending')
 		})
 
 		it('fails safe: UNSPECIFIED/unknown status is NOT rendered as paid', async () => {
@@ -264,12 +272,12 @@ describe('OrderRoute', () => {
 			expect(sut.statusLabel).toBe('返金済み')
 		})
 
-		it('returns 失敗 for failed order', async () => {
+		it('returns 無効 for a void order', async () => {
 			mockOrderClient.get.mockResolvedValue(
-				makeOrder({ status: OrderStatus.FAILED }),
+				makeOrder({ status: OrderStatus.VOID }),
 			)
 			const sut = await makeSut()
-			expect(sut.statusLabel).toBe('失敗')
+			expect(sut.statusLabel).toBe('無効')
 		})
 
 		it('returns 状態不明 for an unknown/UNSPECIFIED status (fail-safe, not 支払済み)', async () => {

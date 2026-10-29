@@ -9,13 +9,17 @@ test.use({ locale: 'en-US', viewport: { width: 390, height: 844 } })
 
 /**
  * The fan's lottery entry status screen against a mocked
- * LotteryEntryService.ListByTicketType: an Entered entry waits for the draw,
+ * LotteryEntryService.ListByTicketType (the fan's entries in a sale, with their
+ * Orders) and TicketSaleService.ListByEvent (the event's stocks): an Entered
+ * entry waits for the draw,
  * Won and Lost show their result, and no state offers an action on the entry
  * (a confirmed entry cannot be withdrawn).
  */
 
 const EVENT_ID = fakeId('lottery-entry-status-event')
-const TICKET_TYPE_ID = fakeId('lottery-entry-status-ticket-type')
+const SALE_ID = fakeId('lottery-entry-status-sale')
+const STOCK_ID = fakeId('lottery-entry-status-stock')
+const SEAT_TYPE_ID = fakeId('lottery-entry-status-seat-type')
 
 const cases = [
 	{
@@ -50,21 +54,49 @@ for (const { state, label, note } of cases) {
 				lotteryEntries: [
 					{
 						id: { value: fakeId(`lottery-entry-status-${state}`) },
-						ticketTypeId: { value: TICKET_TYPE_ID },
-						ticketCount: 2,
+						orderId: { value: fakeId('lottery-entry-status-order') },
+						ticketSaleId: { value: SALE_ID },
 						state,
 					},
 				],
+				orders: [
+					{
+						id: { value: fakeId('lottery-entry-status-order') },
+						ticketStockId: { value: STOCK_ID },
+						ticketCount: 2,
+					},
+				],
+			},
+			'TicketSaleService/ListByEvent': {
+				ticketStocks: [
+					{
+						id: { value: STOCK_ID },
+						eventId: { value: EVENT_ID },
+						seatTypeId: { value: SEAT_TYPE_ID },
+						state: 'TICKET_STOCK_STATE_SOLD_OUT',
+					},
+				],
+				seatTypes: [
+					{
+						id: { value: SEAT_TYPE_ID },
+						name: { value: 'S席' },
+						price: { value: '8000' },
+					},
+				],
+				perAccountLimit: 4,
 			},
 		})
 
-		await page.goto(`/events/${EVENT_ID}/lottery/${TICKET_TYPE_ID}/entry`)
+		await page.goto(`/events/${EVENT_ID}/lottery/${SALE_ID}/${STOCK_ID}/entry`)
 		const entry = page.getByTestId('lottery-entry-status-entry')
 		await expect(entry).toBeVisible({ timeout: 30_000 })
 
 		await expect(entry.locator('output')).toHaveText(label)
 		await expect(entry).toContainText(note)
 		await expect(entry).toContainText('Tickets')
+		await expect(page.getByTestId('lottery-entry-status-seat-type')).toHaveText(
+			'S席',
+		)
 		await expect(entry.getByRole('button')).toHaveCount(0)
 		await expect(page.getByText(/withdraw/i)).toHaveCount(0)
 	})

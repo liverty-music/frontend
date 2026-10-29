@@ -2,6 +2,7 @@ import {
 	type Checkout as ProtoCheckout,
 	CheckoutStatus as ProtoCheckoutStatus,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/checkout_pb.js'
+import type { Order as ProtoOrder } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/order_pb.js'
 import { timestampDate } from '@bufbuild/protobuf/wkt'
 import type { Checkout, CheckoutStatus } from '../../../entities/checkout'
 
@@ -13,12 +14,18 @@ const STATUSES: Record<number, CheckoutStatus> = {
 	[ProtoCheckoutStatus.RELEASED]: 'released',
 }
 
-export function checkoutFrom(proto: ProtoCheckout): Checkout {
+/** Map a checkout with the Order it was created with (stock, count, amount). */
+export function checkoutFrom(
+	proto: ProtoCheckout,
+	order: ProtoOrder | undefined,
+): Checkout {
 	return {
 		id: proto.id?.value ?? '',
-		ticketTypeId: proto.ticketTypeId?.value ?? '',
-		ticketCount: proto.ticketCount,
-		amount: Number(proto.amount),
+		orderId: proto.orderId?.value ?? '',
+		ticketSaleId: proto.ticketSaleId?.value ?? '',
+		ticketStockId: order?.ticketStockId?.value ?? '',
+		ticketCount: order?.ticketCount ?? 0,
+		amount: Number(order?.amount ?? 0),
 		status: STATUSES[proto.status] ?? 'unknown',
 		holdExpireTime: proto.holdExpireTime
 			? timestampDate(proto.holdExpireTime)
@@ -27,6 +34,5 @@ export function checkoutFrom(proto: ProtoCheckout): Checkout {
 		captureTime: proto.captureTime
 			? timestampDate(proto.captureTime)
 			: undefined,
-		resale: proto.resale,
 	}
 }

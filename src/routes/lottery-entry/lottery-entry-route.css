@@ -37,7 +37,8 @@
 			background: var(--color-surface-raised);
 		}
 
-		.lottery-entry-step-title {
+		.lottery-entry-step-title,
+		.lottery-entry-seat-type {
 			font-size: var(--step-1);
 			font-weight: 600;
 			color: var(--color-text-primary);

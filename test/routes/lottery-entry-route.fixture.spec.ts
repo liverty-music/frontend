@@ -10,12 +10,16 @@ import { describe, expect, it, vi } from 'vitest'
 import { IConcertRpcClient } from '../../src/adapter/rpc/client/concert-client'
 import { ILotteryEntryRpcClient } from '../../src/adapter/rpc/client/lottery-entry-client'
 import { ITicketSaleRpcClient } from '../../src/adapter/rpc/client/ticket-sale-client'
-import type { TicketSale } from '../../src/entities/ticket-sale'
+import type {
+	EventTicketSales,
+	TicketSale,
+} from '../../src/entities/ticket-sale'
 import { IAnalyticsService } from '../../src/lib/analytics/analytics-service'
 import en from '../../src/locales/en/translation.json'
 import ja from '../../src/locales/ja/translation.json'
 import { LotteryEntryRoute } from '../../src/routes/lottery-entry/lottery-entry-route'
 import { IErrorBoundaryService } from '../../src/services/error-boundary-service'
+import { IHeldSeatTypeService } from '../../src/services/held-seat-type-service'
 import { IIdentityVerificationService } from '../../src/services/identity-verification-service'
 import { IStripeService } from '../../src/services/stripe-service'
 import { IUserStore } from '../../src/services/user-store'
@@ -23,7 +27,8 @@ import { createMockAnalytics } from '../helpers/mock-analytics'
 import { createMockErrorBoundary } from '../helpers/mock-error-boundary'
 
 const EVENT_ID = 'event-1'
-const TYPE_ID = 'type-1'
+const SALE_ID = 'sale-1'
+const STOCK_ID = 'stock-s'
 
 /** The ファンクラブ先行 lottery of the 3 November event, 8000 yen, limit 4. */
 const presale: TicketSale = {
@@ -33,14 +38,25 @@ const presale: TicketSale = {
 	saleStartTime: new Date(Date.now() - 60 * 60 * 1000),
 	saleEndTime: new Date(Date.now() + 9 * 24 * 60 * 60 * 1000),
 	verificationRequirement: 'none',
-	ticketType: {
-		id: TYPE_ID,
-		eventId: EVENT_ID,
-		price: 8000,
-		perAccountLimit: 4,
-		state: 'ended',
-		lowStock: false,
-	},
+	eventIds: [EVENT_ID],
+}
+
+/** The presale with the event's S席 stock, 8000 yen, and a limit of 4. */
+const tickets: EventTicketSales = {
+	sales: [presale],
+	stocks: [
+		{
+			id: STOCK_ID,
+			eventId: EVENT_ID,
+			seatTypeId: 'seat-s',
+			seatTypeName: 'S席',
+			price: 8000,
+			state: 'available',
+			lowStock: false,
+			resaleOpen: false,
+		},
+	],
+	perAccountLimit: 4,
 }
 
 const concert = {
@@ -59,7 +75,7 @@ const concert = {
 
 /**
  * Renders the real lottery entry template with the real translation bundles
- * and the route loaded for the presale TicketType.
+ * and the route loaded for the presale and its S席 stock.
  */
 async function render(lng: 'ja' | 'en', user?: Record<string, string>) {
 	const fixture = await createFixture(
@@ -80,7 +96,10 @@ async function render(lng: 'ja' | 'en', user?: Record<string, string>) {
 				get: vi.fn().mockResolvedValue(concert),
 			}),
 			Registration.instance(ITicketSaleRpcClient, {
-				listByEvent: vi.fn().mockResolvedValue([presale]),
+				listByEvent: vi.fn().mockResolvedValue(tickets),
+			}),
+			Registration.instance(IHeldSeatTypeService, {
+				heldTickets: vi.fn().mockResolvedValue(null),
 			}),
 			Registration.instance(ILotteryEntryRpcClient, {}),
 			Registration.instance(IStripeService, { isConfigured: true }),
@@ -95,7 +114,7 @@ async function render(lng: 'ja' | 'en', user?: Record<string, string>) {
 	).started
 	const host = fixture.appHost.querySelector('lottery-entry-route') as Element
 	const vm = CustomElement.for<LotteryEntryRoute>(host).viewModel
-	vm.loading({ id: EVENT_ID, ticketTypeId: TYPE_ID })
+	vm.loading({ id: EVENT_ID, saleId: SALE_ID, stockId: STOCK_ID })
 	await vi.waitFor(() => expect(vm.step).toBe('count'))
 	await tasksSettled()
 	return { fixture, vm }
@@ -108,8 +127,8 @@ const phoneError = (host: HTMLElement) =>
 const phoneInput = (host: HTMLElement) =>
 	host.querySelector('input[type="tel"]') as HTMLInputElement
 
-describe('LotteryEntryRoute ticket type (fixture)', () => {
-	it('shows the sale name, the event, the price and offers 1 to 4 tickets', async () => {
+describe('LotteryEntryRoute seat type (fixture)', () => {
+	it('shows the sale name, the event, the seat type, the price and offers 1 to 4 tickets', async () => {
 		// @spec components/infrastructure/fan/web/route/lottery-entry "Presale entry"
 		const { fixture } = await render('ja')
 		const host = fixture.appHost
@@ -120,6 +139,7 @@ describe('LotteryEntryRoute ticket type (fixture)', () => {
 		expect(byTestId(host, 'lottery-entry-event')?.textContent).toContain(
 			'2026年11月3日',
 		)
+		expect(byTestId(host, 'lottery-entry-seat-type')?.textContent).toBe('S席')
 		expect(byTestId(host, 'lottery-entry-price')?.textContent).toBe(
 			'1枚 8,000円（税込）',
 		)

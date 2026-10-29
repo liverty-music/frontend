@@ -27,7 +27,12 @@ export type OrderViewStep = 'loading' | 'notfound' | 'error' | 'loaded'
  *   - `refunded`  — ORDER_STATUS_REFUNDED (event cancelled / refund issued)
  *   - `failed`    — ORDER_STATUS_FAILED (issuance failed, refunded automatically)
  */
-export type OrderStatusKind = 'paid' | 'refunded' | 'failed' | 'unknown'
+export type OrderStatusKind =
+	| 'paid'
+	| 'refunded'
+	| 'pending'
+	| 'void'
+	| 'unknown'
 
 /**
  * Plain view model for the order's payment details. Proto objects are mapped
@@ -179,7 +184,7 @@ export class OrderRoute {
 
 	private orderStatusKind(status: OrderStatus): OrderStatusKind {
 		// Fail SAFE: only an explicit PAID renders as paid. Anything else —
-		// REFUNDED, FAILED, the proto3 zero value ORDER_STATUS_UNSPECIFIED (the
+		// REFUNDED, PENDING, VOID, the proto3 zero value ORDER_STATUS_UNSPECIFIED (the
 		// decode default for an unset/unknown field), or a future backend status —
 		// must NOT render the "支払済み" badge, so an unconfirmed order never looks
 		// paid (mirrors the unverified-degrade convention in identity-verification-mapper).
@@ -188,8 +193,10 @@ export class OrderRoute {
 				return 'paid'
 			case OrderStatus.REFUNDED:
 				return 'refunded'
-			case OrderStatus.FAILED:
-				return 'failed'
+			case OrderStatus.PENDING:
+				return 'pending'
+			case OrderStatus.VOID:
+				return 'void'
 			default:
 				return 'unknown'
 		}
@@ -216,8 +223,10 @@ export class OrderRoute {
 				return '支払済み'
 			case 'refunded':
 				return '返金済み'
-			case 'failed':
-				return '失敗'
+			case 'pending':
+				return '支払い待ち'
+			case 'void':
+				return '無効'
 			case 'unknown':
 				return '状態不明'
 			default:

@@ -9,7 +9,11 @@ import { Code, ConnectError } from '@connectrpc/connect'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ResolvedConcert } from '../../adapter/rpc/client/concert-client'
 import type { Checkout } from '../../entities/checkout'
-import type { TicketSale, TicketType } from '../../entities/ticket-sale'
+import type {
+	EventTicketSales,
+	TicketSale,
+	TicketStock,
+} from '../../entities/ticket-sale'
 import ja from '../../locales/ja/translation.json'
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
@@ -57,11 +61,8 @@ const concert: ResolvedConcert = {
 	artists: [],
 }
 
-/** The event's first-come sale with its TicketType `type-1`. */
-function sale(
-	t: Partial<TicketType> = {},
-	o: Partial<TicketSale> = {},
-): TicketSale {
+/** The event's first-come sale. */
+function sale(o: Partial<TicketSale> = {}): TicketSale {
 	return {
 		id: 'sale-1',
 		name: '一般発売',
@@ -69,30 +70,51 @@ function sale(
 		saleStartTime: jst(1, 10),
 		saleEndTime: jst(20, 18),
 		verificationRequirement: 'none',
-		ticketType: {
-			id: 'type-1',
-			eventId: EVENT_ID,
-			price: 3000,
-			perAccountLimit: 4,
-			state: 'onSale',
-			lowStock: false,
-			resaleOpen: false,
-			resaleAvailable: false,
-			...t,
-		},
+		eventIds: [EVENT_ID],
 		...o,
 	}
+}
+
+/** The event's S席 stock `stock-s`, 3000 yen, Available. */
+function stock(o: Partial<TicketStock> = {}): TicketStock {
+	return {
+		id: 'stock-s',
+		eventId: EVENT_ID,
+		seatTypeId: 'seat-s',
+		seatTypeName: 'S席',
+		price: 3000,
+		state: 'available',
+		lowStock: false,
+		resaleOpen: false,
+		...o,
+	}
+}
+
+const A_SEAT = stock({
+	id: 'stock-a',
+	seatTypeId: 'seat-a',
+	seatTypeName: 'A席',
+	price: 2000,
+})
+
+/** ListByEvent's answer: the sales, the S席 and A席 stocks and a limit of 4. */
+function tickets(
+	sales: TicketSale[] = [sale()],
+	s: Partial<TicketStock> = {},
+): EventTicketSales {
+	return { sales, stocks: [stock(s), A_SEAT], perAccountLimit: 4 }
 }
 
 function held(o: Partial<Checkout> = {}): Checkout {
 	return {
 		id: 'res-1',
-		ticketTypeId: 'type-1',
+		orderId: 'order-1',
+		ticketSaleId: 'sale-1',
+		ticketStockId: 'stock-s',
 		ticketCount: 2,
 		amount: 6000,
 		status: 'held',
 		holdExpireTime: new Date(Date.now() + 15 * 60 * 1000),
-		resale: false,
 		...o,
 	}
 }
@@ -126,6 +148,7 @@ const mockIdentityVerifications = { get: vi.fn() }
 const mockRouter = { load: vi.fn() }
 
 const mockAnalytics = { capture: vi.fn() }
+const mockHeldSeatTypes = { heldTickets: vi.fn() }
 
 vi.mock('aurelia', async (importOriginal) => {
 	const actual = await importOriginal<typeof import('aurelia')>()
@@ -147,6 +170,7 @@ vi.mock('aurelia', async (importOriginal) => {
 				IPwaInstallService: mockPwa,
 				IIdentityVerificationService: mockIdentityVerifications,
 				IRouter: mockRouter,
+				IHeldSeatTypeService: mockHeldSeatTypes,
 			}
 			return map[(token as { friendlyName?: string }).friendlyName ?? ''] ?? {}
 		}),
@@ -160,7 +184,7 @@ const flush = () => new Promise((r) => setTimeout(r, 0))
 
 async function open(): Promise<CheckoutRoute> {
 	const sut = new CheckoutRoute()
-	sut.loading({ id: EVENT_ID })
+	sut.loading({ id: EVENT_ID, stockId: 'stock-s' })
 	await vi.waitFor(() => expect(sut.step).not.toBe('loading'))
 	return sut
 }
@@ -210,7 +234,8 @@ describe('CheckoutRoute', () => {
 		mockStripe.isConfigured = true
 		mockUserStore.current = undefined
 		mockConcert.get.mockResolvedValue(concert)
-		mockSale.listByEvent.mockResolvedValue([sale()])
+		mockSale.listByEvent.mockResolvedValue(tickets())
+		mockHeldSeatTypes.heldTickets.mockResolvedValue(null)
 		mockCheckout.start.mockResolvedValue(held())
 		mockCheckout.authorizeCard.mockResolvedValue('card_authorization_secret_1')
 		mockCheckout.confirm.mockResolvedValue('order-1')
@@ -232,6 +257,8 @@ describe('CheckoutRoute', () => {
 			// @spec components/infrastructure/fan/web/route/checkout "Fan picks two tickets"
 			const sut = await open()
 			sut.ticketCount = 2
+			expect(sut.seatTypeName).toBe('S席')
+			expect(sut.countOptions).toEqual([1, 2, 3, 4])
 			expect(sut.total).toBe(6000)
 			expect(ja_('checkout.total', { total: sut.yen(sut.total) })).toBe(
 				'合計 6,000円（税込）',
@@ -240,7 +267,7 @@ describe('CheckoutRoute', () => {
 			await sut.hold()
 
 			expect(mockCheckout.start).toHaveBeenCalledWith(
-				'type-1',
+				'stock-s',
 				2,
 				undefined,
 				expect.anything(),
@@ -290,8 +317,33 @@ describe('CheckoutRoute', () => {
 				params: { limit: 4 },
 			})
 			expect(ja_('checkout.count.limit', { limit: 4 })).toContain(
-				'すでにお持ちの枚数を含めて',
+				'すでにお持ちの枚数とお申し込み中の枚数を含めて',
 			)
+		})
+
+		it('says the fan holds another seat type of the date', async () => {
+			// @spec components/infrastructure/fan/web/route/checkout "Another seat type held"
+			mockCheckout.start.mockRejectedValue(
+				connectError(Code.FailedPrecondition),
+			)
+			mockHeldSeatTypes.heldTickets.mockResolvedValue({
+				stock: A_SEAT,
+				count: 2,
+			})
+			const sut = await open()
+
+			await sut.hold()
+
+			expect(sut.message).toEqual({
+				key: 'checkout.count.otherSeatType',
+				params: { seatType: 'A席' },
+			})
+			expect(
+				ja_('checkout.count.otherSeatType', { seatType: 'A席' }),
+			).toContain('この日程でお持ちのチケットはA席です')
+			expect(
+				ja_('checkout.count.otherSeatType', { seatType: 'A席' }),
+			).toContain('1日程につき1つの席種')
 		})
 
 		it('re-reads the sale and says it ended, not that the limit was reached', async () => {
@@ -300,11 +352,30 @@ describe('CheckoutRoute', () => {
 				connectError(Code.FailedPrecondition),
 			)
 			const sut = await open()
-			mockSale.listByEvent.mockResolvedValue([sale({ state: 'ended' })])
+			mockSale.listByEvent.mockResolvedValue(
+				tickets([sale({ saleEndTime: new Date(Date.now() - 1000) })]),
+			)
 
 			await sut.hold()
 
+			expect(mockSale.listByEvent).toHaveBeenCalledTimes(2)
 			expect(sut.message?.key).toBe('checkout.count.ended')
+			expect(mockHeldSeatTypes.heldTickets).not.toHaveBeenCalled()
+		})
+
+		it('re-reads the sale and says the seat type sold out, not that the limit was reached', async () => {
+			// @spec components/infrastructure/fan/web/route/checkout "Sale ended before continuing"
+			mockCheckout.start.mockRejectedValue(
+				connectError(Code.FailedPrecondition),
+			)
+			const sut = await open()
+			mockSale.listByEvent.mockResolvedValue(
+				tickets([sale()], { state: 'soldOut' }),
+			)
+
+			await sut.hold()
+
+			expect(sut.message?.key).toBe('checkout.count.soldOut')
 		})
 
 		it('says the concert was cancelled when its sale is gone', async () => {
@@ -312,7 +383,11 @@ describe('CheckoutRoute', () => {
 				connectError(Code.FailedPrecondition),
 			)
 			const sut = await open()
-			mockSale.listByEvent.mockResolvedValue([])
+			mockSale.listByEvent.mockResolvedValue({
+				sales: [],
+				stocks: [],
+				perAccountLimit: null,
+			})
 
 			await sut.hold()
 
@@ -341,7 +416,7 @@ describe('CheckoutRoute', () => {
 
 			const step = (name: string) => [
 				Events.CheckoutStepViewed,
-				{ event_id: EVENT_ID, ticket_type_id: 'type-1', step: name },
+				{ event_id: EVENT_ID, ticket_stock_id: 'stock-s', step: name },
 			]
 			expect(sentEvents()).toEqual([
 				step('count'),
@@ -349,7 +424,7 @@ describe('CheckoutRoute', () => {
 					Events.TicketPurchaseInitiated,
 					{
 						event_id: EVENT_ID,
-						ticket_type_id: 'type-1',
+						ticket_stock_id: 'stock-s',
 						ticket_count: 2,
 						price_bucket: '3000_5999',
 					},
@@ -361,9 +436,9 @@ describe('CheckoutRoute', () => {
 		})
 
 		it(`@spec ${SPEC} "Verification notice instead of a hold"`, async () => {
-			mockSale.listByEvent.mockResolvedValue([
-				sale({}, { verificationRequirement: 'verifiedAny' }),
-			])
+			mockSale.listByEvent.mockResolvedValue(
+				tickets([sale({ verificationRequirement: 'verifiedAny' })]),
+			)
 
 			const sut = await open()
 
@@ -373,7 +448,7 @@ describe('CheckoutRoute', () => {
 					Events.CheckoutStepViewed,
 					{
 						event_id: EVENT_ID,
-						ticket_type_id: 'type-1',
+						ticket_stock_id: 'stock-s',
 						step: 'verify-required',
 					},
 				],
@@ -382,9 +457,9 @@ describe('CheckoutRoute', () => {
 
 		it('sends no purchase start when the hold is refused for the verification', async () => {
 			// @spec components/infrastructure/fan/web/route/checkout "Verification notice instead of a hold"
-			mockSale.listByEvent.mockResolvedValue([
-				sale({}, { verificationRequirement: 'jpkiOnly' }),
-			])
+			mockSale.listByEvent.mockResolvedValue(
+				tickets([sale({ verificationRequirement: 'jpkiOnly' })]),
+			)
 			const activeJpki = {
 				id: 'iv1',
 				userId: 'u1',
@@ -433,9 +508,9 @@ describe('CheckoutRoute', () => {
 		})
 
 		it('gates a fan whose IdentityVerification is by licence on a JPKI-only sale', async () => {
-			mockSale.listByEvent.mockResolvedValue([
-				sale({}, { verificationRequirement: 'jpkiOnly' }),
-			])
+			mockSale.listByEvent.mockResolvedValue(
+				tickets([sale({ verificationRequirement: 'jpkiOnly' })]),
+			)
 			mockIdentityVerifications.get.mockResolvedValue({
 				...activeJpki,
 				method: 'driverLicence',
@@ -448,9 +523,9 @@ describe('CheckoutRoute', () => {
 		})
 
 		it('admits any Active IdentityVerification on a sale that requires any verification', async () => {
-			mockSale.listByEvent.mockResolvedValue([
-				sale({}, { verificationRequirement: 'verifiedAny' }),
-			])
+			mockSale.listByEvent.mockResolvedValue(
+				tickets([sale({ verificationRequirement: 'verifiedAny' })]),
+			)
 			mockIdentityVerifications.get.mockResolvedValue({
 				...activeJpki,
 				method: 'driverLicence',
@@ -463,9 +538,9 @@ describe('CheckoutRoute', () => {
 		})
 
 		it('shows a FailedPrecondition for a fan whose IdentityVerification lapsed as the missing verification, not the limit', async () => {
-			mockSale.listByEvent.mockResolvedValue([
-				sale({}, { verificationRequirement: 'jpkiOnly' }),
-			])
+			mockSale.listByEvent.mockResolvedValue(
+				tickets([sale({ verificationRequirement: 'jpkiOnly' })]),
+			)
 			mockIdentityVerifications.get.mockResolvedValueOnce(activeJpki)
 			const sut = await open()
 			expect(sut.step).toBe('count')
@@ -485,9 +560,9 @@ describe('CheckoutRoute', () => {
 		})
 
 		it('says the limit was reached for a verified fan on a verified sale', async () => {
-			mockSale.listByEvent.mockResolvedValue([
-				sale({}, { verificationRequirement: 'jpkiOnly' }),
-			])
+			mockSale.listByEvent.mockResolvedValue(
+				tickets([sale({ verificationRequirement: 'jpkiOnly' })]),
+			)
 			mockIdentityVerifications.get.mockResolvedValue(activeJpki)
 			mockCheckout.start.mockRejectedValue(
 				connectError(Code.FailedPrecondition),
@@ -500,9 +575,9 @@ describe('CheckoutRoute', () => {
 		})
 
 		it('sends the fan to the Settings screen to verify', async () => {
-			mockSale.listByEvent.mockResolvedValue([
-				sale({}, { verificationRequirement: 'jpkiOnly' }),
-			])
+			mockSale.listByEvent.mockResolvedValue(
+				tickets([sale({ verificationRequirement: 'jpkiOnly' })]),
+			)
 			const sut = await open()
 
 			await sut.goToVerify()
@@ -584,8 +659,20 @@ describe('CheckoutRoute', () => {
 			expect(sut.event?.venueName).toBe('Shibuya WWW')
 			expect(sut.openTimeLabel).toBe('18:00')
 			expect(sut.startTimeLabel).toBe('19:00')
+			expect(sut.seatTypeName).toBe('S席')
 			expect(sut.ticketCount).toBe(2)
 			expect(sut.total).toBe(6000)
+			expect(
+				ja_('checkout.confirm.ticketsValue', {
+					seatType: sut.seatTypeName,
+					count: sut.ticketCount,
+					price: sut.yen(sut.price),
+					total: sut.yen(sut.total),
+				}),
+			).toBe('S席 2枚 × 3,000円 = 合計 6,000円（税込）')
+			expect(ja_('checkout.confirm.cancellationValue', {})).toContain(
+				'この公演でその席種が完売した場合にのみ',
+			)
 			expect(sut.cardLabel).toBe('VISA •••• 4242')
 			expect(sut.salePeriodLabel).toBe(
 				'2026年11月1日(日) 10:00 – 2026年11月20日(金) 18:00',
@@ -600,40 +687,6 @@ describe('CheckoutRoute', () => {
 			expect(
 				ja_('checkout.confirm.placeOrder', { total: sut.yen(sut.total) }),
 			).toBe('6,000円を支払って購入する')
-		})
-
-		it('says a resale checkout sells official resale tickets until admission opens', async () => {
-			// @spec components/infrastructure/fan/web/route/checkout "Resale final confirmation"
-			mockSale.listByEvent.mockResolvedValue([
-				sale({
-					price: 5000,
-					state: 'soldOut',
-					resaleOpen: true,
-					resaleAvailable: true,
-				}),
-			])
-			mockCheckout.start.mockResolvedValue(
-				held({ ticketCount: 1, amount: 5000, resale: true }),
-			)
-			const sut = await toConfirm()
-
-			expect(sut.isResale).toBe(true)
-			expect(sut.total).toBe(5000)
-			// The event starts at 19:00, so resale closes at 16:00 that day.
-			expect(
-				ja_('checkout.confirm.resaleSalePeriod', {
-					deadline: sut.resaleDeadlineLabel,
-				}),
-			).toBe('公式リセールの受付は入場開始時（2026年11月20日(金) 16:00）まで')
-			expect(ja_('checkout.confirm.officialResaleValue', {})).toContain(
-				'券面価格',
-			)
-			expect(ja_('checkout.confirm.officialResaleValue', {})).toContain(
-				'あなたのアカウントとお名前で新しく発行',
-			)
-			expect(
-				ja_('checkout.confirm.placeOrder', { total: sut.yen(sut.total) }),
-			).toBe('5,000円を支払って購入する')
 		})
 
 		it('keeps the hold when the fan goes back to correct the name', async () => {
@@ -778,27 +831,36 @@ describe('CheckoutRoute', () => {
 		})
 
 		it('shows not found when the event has no first-come sale', async () => {
-			mockSale.listByEvent.mockResolvedValue([
-				sale({}, { method: 'lottery', name: 'ファンクラブ先行' }),
-			])
+			mockSale.listByEvent.mockResolvedValue(
+				tickets([sale({ method: 'lottery', name: 'ファンクラブ先行' })]),
+			)
 			const sut = await open()
 			expect(sut.step).toBe('not-found')
 		})
 
-		it('checks out the TicketType of the first-come sale after a lottery presale', async () => {
-			mockSale.listByEvent.mockResolvedValue([
-				sale(
-					{ id: 'presale-type', state: 'ended' },
-					{ id: 'presale', method: 'lottery', saleEndTime: jst(1, 9) },
-				),
-				sale(),
-			])
+		it('shows not found when the event has no such stock', async () => {
+			mockSale.listByEvent.mockResolvedValue({
+				sales: [sale()],
+				stocks: [A_SEAT],
+				perAccountLimit: 4,
+			})
+			const sut = await open()
+			expect(sut.step).toBe('not-found')
+		})
+
+		it('checks out the stock in the first-come sale after a lottery presale', async () => {
+			mockSale.listByEvent.mockResolvedValue(
+				tickets([
+					sale({ id: 'presale', method: 'lottery', saleEndTime: jst(1, 9) }),
+					sale(),
+				]),
+			)
 			const sut = await open()
 
-			expect(sut.sale?.ticketType.id).toBe('type-1')
+			expect(sut.sale?.id).toBe('sale-1')
 			await sut.hold()
 			expect(mockCheckout.start).toHaveBeenCalledWith(
-				'type-1',
+				'stock-s',
 				1,
 				undefined,
 				expect.anything(),
@@ -838,7 +900,7 @@ describe('CheckoutRoute', () => {
 			await holdTwo()
 
 			expect(mockCheckout.start).toHaveBeenCalledWith(
-				'type-1',
+				'stock-s',
 				2,
 				'member-a',
 				expect.anything(),
@@ -851,7 +913,7 @@ describe('CheckoutRoute', () => {
 			await holdTwo()
 
 			expect(mockCheckout.start).toHaveBeenCalledWith(
-				'type-1',
+				'stock-s',
 				2,
 				undefined,
 				expect.anything(),
@@ -864,7 +926,7 @@ describe('CheckoutRoute', () => {
 			await holdTwo()
 
 			expect(mockCheckout.start).toHaveBeenCalledWith(
-				'type-1',
+				'stock-s',
 				2,
 				undefined,
 				expect.anything(),
@@ -876,7 +938,7 @@ describe('CheckoutRoute', () => {
 			await holdTwo()
 
 			expect(mockCheckout.start).toHaveBeenCalledWith(
-				'type-1',
+				'stock-s',
 				2,
 				undefined,
 				expect.anything(),

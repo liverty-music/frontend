@@ -97,11 +97,6 @@
 					transparent
 				);
 			}
-
-			&[data-kind="failed"] {
-				border-color: color-mix(in oklch, var(--color-error) 35%, transparent);
-				background: color-mix(in oklch, var(--color-error) 8%, transparent);
-			}
 		}
 
 		.order-status-banner-label {
@@ -164,7 +159,7 @@
 				}
 			}
 
-			&[data-kind="failed"] {
+			&[data-kind="void"] {
 				border-color: color-mix(in oklch, var(--color-error) 45%, transparent);
 				background: color-mix(in oklch, var(--color-error) 10%, transparent);
 

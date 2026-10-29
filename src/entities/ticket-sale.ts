@@ -13,47 +13,42 @@ export type TicketSaleMethod = 'lottery' | 'firstCome'
 export type VerificationRequirement = 'none' | 'verifiedAny' | 'jpkiOnly'
 
 /**
- * Where a first-come TicketType stands at the time it was read.
+ * Where a TicketStock stands at the time it was read. `unknown` is a state
+ * this app does not know; such a stock is shown but not sold.
  *
- * @source proto/liverty_music/entity/v1/ticket_type.proto — TicketTypeState
+ * @source proto/liverty_music/entity/v1/ticket_stock.proto — TicketStockState
  */
-export type TicketTypeState =
-	| 'notYetOnSale'
-	| 'onSale'
-	| 'allHeld'
-	| 'soldOut'
-	| 'ended'
+export type TicketStockState = 'available' | 'allHeld' | 'soldOut' | 'unknown'
 
 /**
- * What a sale offers for one event, as a fan sees it: never with a count,
- * only its price, limit and, for a first-come sale, its state and whether few
- * tickets are left.
+ * One seat type (席種) of one event, as a fan sees it: its seat type's name
+ * and price, its state and whether its resale is open, never a count. Every
+ * sale of the event sells from the same stock.
  *
- * @source proto/liverty_music/entity/v1/ticket_type.proto — TicketType
+ * @source proto/liverty_music/entity/v1/ticket_stock.proto — TicketStock
+ * @source proto/liverty_music/entity/v1/seat_type.proto — SeatType
  */
-export interface TicketType {
+export interface TicketStock {
 	readonly id: string
 	readonly eventId: string
+	readonly seatTypeId: string
+	/** The seat type's name, e.g. "S席". */
+	readonly seatTypeName: string
 	/** Price of one ticket in yen, 税込 (tax-inclusive). */
 	readonly price: number
-	/** Most tickets one account may hold for the event after this sale. */
-	readonly perAccountLimit: number
-	/** The first-come state; a lottery's TicketType reads `ended` here. */
-	readonly state: TicketTypeState
-	/** True when a first-come TicketType is on sale with few tickets left (残りわずか). */
+	readonly state: TicketStockState
+	/** True when the stock is Available with few tickets left (残りわずか). */
 	readonly lowStock: boolean
 	/**
-	 * True when official resale (公式リセール) of a first-come TicketType is
-	 * open: it sold out and admission has not opened yet.
+	 * True when official resale (公式リセール) of the stock is open: it sold
+	 * out and the resale deadline has not passed.
 	 */
 	readonly resaleOpen: boolean
-	/** True when resale is open and a listed ticket is free to buy. Never a count. */
-	readonly resaleAvailable: boolean
 }
 
 /**
  * One sale (受付) of an event, as the fan boundary returns it: its window and
- * its TicketType for that event.
+ * method. It sells every TicketStock of the events it names.
  *
  * @source proto/liverty_music/entity/v1/ticket_sale.proto — TicketSale
  */
@@ -64,14 +59,41 @@ export interface TicketSale {
 	readonly saleStartTime: Date
 	readonly saleEndTime: Date
 	readonly verificationRequirement: VerificationRequirement
-	/** The sale's TicketType for the event it was read for. */
-	readonly ticketType: TicketType
+	/** The events the sale sells; a tour presale names several dates. */
+	readonly eventIds: readonly string[]
+}
+
+/**
+ * Everything the fan boundary returns for one event's tickets
+ * (TicketSaleService.ListByEvent): its sales ordered by start time, its
+ * TicketStocks shared by every sale, and its per-account limit.
+ */
+export interface EventTicketSales {
+	readonly sales: readonly TicketSale[]
+	readonly stocks: readonly TicketStock[]
+	/**
+	 * Most tickets one account may hold for the event across every sale,
+	 * seat type and resale; null when the event has no sale.
+	 */
+	readonly perAccountLimit: number | null
+}
+
+/** An event with no sale and no stock. */
+export const NO_TICKET_SALES: EventTicketSales = {
+	sales: [],
+	stocks: [],
+	perAccountLimit: null,
 }
 
 /** True while the sale's window is open at `now`. */
 export function isWindowOpen(sale: TicketSale, now: Date): boolean {
 	const t = now.getTime()
 	return sale.saleStartTime.getTime() <= t && t < sale.saleEndTime.getTime()
+}
+
+/** True once the sale's window has closed at `now`. */
+export function hasEnded(sale: TicketSale, now: Date): boolean {
+	return sale.saleEndTime.getTime() <= now.getTime()
 }
 
 /**
@@ -96,18 +118,12 @@ export function currentSale(
 	return ended[0] ?? null
 }
 
-/** True while a fan can start a checkout on the first-come TicketType's stock. */
-export function isBuyable(ticketType: TicketType): boolean {
-	return ticketType.state === 'onSale' || ticketType.state === 'allHeld'
+/** True while a fan can start a checkout on the stock: it is Available. */
+export function isBuyable(stock: TicketStock): boolean {
+	return stock.state === 'available'
 }
 
-/**
- * True when the event page shows the 公式リセール block: the first-come
- * TicketType is sold out or its sale ended, and its resale is open.
- */
-export function showsResale(ticketType: TicketType): boolean {
-	return (
-		(ticketType.state === 'soldOut' || ticketType.state === 'ended') &&
-		ticketType.resaleOpen
-	)
+/** The counts a fan may pick: 1 to the per-account limit (none without one). */
+export function countOptions(perAccountLimit: number | null): number[] {
+	return Array.from({ length: perAccountLimit ?? 0 }, (_, i) => i + 1)
 }

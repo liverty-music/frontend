@@ -13,16 +13,21 @@ export type CheckoutStatus =
 	| 'unknown'
 
 /**
- * One fan's first-come checkout of a TicketType: the tickets it holds for 15
- * minutes and what became of it.
+ * One fan's first-come checkout of a TicketStock: the tickets it holds for 15
+ * minutes and what became of it. The stock, the count and the amount are the
+ * Pending Order's, created with the checkout.
  *
  * @source proto/liverty_music/entity/v1/checkout.proto — Checkout
+ * @source proto/liverty_music/entity/v1/order.proto — Order
  */
 export interface Checkout {
 	readonly id: string
-	readonly ticketTypeId: string
+	readonly orderId: string
+	readonly ticketSaleId: string
+	/** The TicketStock the Order buys from. */
+	readonly ticketStockId: string
 	readonly ticketCount: number
-	/** Total to pay in yen, 税込: the TicketType's price × the count. */
+	/** Total to pay in yen, 税込: the seat type's price × the count. */
 	readonly amount: number
 	readonly status: CheckoutStatus
 	readonly holdExpireTime: Date
@@ -30,9 +35,4 @@ export interface Checkout {
 	readonly commitTime?: Date
 	/** Set when the card was charged. */
 	readonly captureTime?: Date
-	/**
-	 * True for a resale checkout: it holds official resale (公式リセール)
-	 * tickets other fans listed, at face value.
-	 */
-	readonly resale: boolean
 }

@@ -17,11 +17,14 @@ import {
 import { referralCodeForSeries } from '../../adapter/storage/referral-storage'
 import type { Checkout } from '../../entities/checkout'
 import { isVerified } from '../../entities/identity-verification'
-import { resaleDeadline } from '../../entities/resale-listing'
 import {
+	countOptions,
 	currentSale,
-	isBuyable,
+	type EventTicketSales,
+	hasEnded,
+	NO_TICKET_SALES,
 	type TicketSale,
+	type TicketStock,
 	type VerificationRequirement,
 } from '../../entities/ticket-sale'
 import {
@@ -34,6 +37,7 @@ import {
 	type ReportedCheckoutStep,
 } from '../../services/analytics-events'
 import { IErrorBoundaryService } from '../../services/error-boundary-service'
+import { IHeldSeatTypeService } from '../../services/held-seat-type-service'
 import { IIdentityVerificationService } from '../../services/identity-verification-service'
 import { INotificationManager } from '../../services/notification-manager'
 import { IPushService } from '../../services/push-service'
@@ -58,7 +62,8 @@ import {
 /**
  * - `loading`: the event and its sale are read, and a held checkout resumed.
  * - `unavailable`: card payments are not configured in this environment.
- * - `not-found`: the event has no first-come sale (none, or cancelled).
+ * - `not-found`: the event has no first-come sale or no such TicketStock
+ *   (none, or cancelled).
  * - `verify-required`: the sale requires a verification the fan lacks; the
  *   screen offers to verify instead of starting the checkout.
  * - `count` → `personal-details` → `payment` → `confirm`: the checkout's steps.
@@ -92,8 +97,8 @@ export interface CheckoutMessage {
 }
 
 /**
- * The fan's checkout of the TicketType of an event's first-come sale
- * (`/events/:id/checkout`):
+ * The fan's checkout of one TicketStock of an event, in its first-come sale
+ * (`/events/:id/checkout/:stockId`):
  * choose the count and hold the tickets for 15 minutes, confirm the personal
  * details, authorize the card, review the 特商法 final confirmation, and place
  * the order. Reopening the page during the hold resumes the same checkout.
@@ -112,13 +117,18 @@ export class CheckoutRoute implements IRouteViewModel {
 	private readonly identityVerifications = resolve(IIdentityVerificationService)
 	private readonly router = resolve(IRouter)
 	private readonly analytics = resolve(IAnalyticsService)
+	private readonly heldSeatTypes = resolve(IHeldSeatTypeService)
 
 	@observable public step: CheckoutStep = 'loading'
 	public event: EventPageEvent | null = null
 	/** The Organizer's 特商法 business details, for the final confirmation. */
 	public businessDetails: BusinessDetails | null = null
-	/** The event's first-come sale, with its TicketType for the event. */
+	/** The event's first-come sale. */
 	public sale: TicketSale | null = null
+	/** The event's sales, stocks and per-account limit as last read. */
+	public tickets: EventTicketSales = NO_TICKET_SALES
+	/** The TicketStock this checkout buys from: one seat type of the event. */
+	public stock: TicketStock | null = null
 	public checkout: Checkout | null = null
 
 	public ticketCount = 1
@@ -142,6 +152,7 @@ export class CheckoutRoute implements IRouteViewModel {
 	public now = Date.now()
 
 	private eventId = ''
+	private stockId = ''
 	private cardAuthorizationSecret = ''
 	private abortController: AbortController | null = null
 	private timer: ReturnType<typeof setInterval> | null = null
@@ -151,6 +162,7 @@ export class CheckoutRoute implements IRouteViewModel {
 
 	public loading(params: Params): void {
 		this.eventId = params.id ?? ''
+		this.stockId = params.stockId ?? ''
 		// Never hold the view swap on data: start the reads and return.
 		void this.load()
 	}
@@ -177,14 +189,14 @@ export class CheckoutRoute implements IRouteViewModel {
 			return
 		}
 		try {
-			const [concert, sales] = await Promise.all([
+			const [concert, tickets] = await Promise.all([
 				this.concertClient.get(this.eventId, signal),
 				this.saleClient.listByEvent(this.eventId, signal),
 			])
 			if (signal.aborted) return
 			this.event = eventFromConcert(concert)
 			this.businessDetails = businessDetailsFromConcert(concert)
-			this.sale = firstComeSale(sales)
+			this.useTickets(tickets)
 		} catch (err) {
 			if (signal.aborted) return
 			if (ConnectError.from(err).code !== Code.NotFound) {
@@ -196,7 +208,7 @@ export class CheckoutRoute implements IRouteViewModel {
 			this.step = 'not-found'
 			return
 		}
-		if (!this.event || !this.sale || this.event.cancelled) {
+		if (!this.event || !this.sale || !this.stock || this.event.cancelled) {
 			this.step = 'not-found'
 			return
 		}
@@ -211,6 +223,13 @@ export class CheckoutRoute implements IRouteViewModel {
 		}
 		if (signal.aborted) return
 		this.step = 'count'
+	}
+
+	/** Keep a read of the event's sales, with this checkout's sale and stock. */
+	private useTickets(tickets: EventTicketSales): void {
+		this.tickets = tickets
+		this.sale = firstComeSale(tickets.sales)
+		this.stock = tickets.stocks.find((s) => s.id === this.stockId) ?? null
 	}
 
 	/**
@@ -260,7 +279,7 @@ export class CheckoutRoute implements IRouteViewModel {
 			if (signal.aborted) return true
 			if (
 				checkout.status === 'held' &&
-				checkout.ticketTypeId === this.sale?.ticketType.id
+				checkout.ticketStockId === this.stockId
 			) {
 				this.holdWith(checkout)
 				this.step = 'personal-details'
@@ -296,17 +315,24 @@ export class CheckoutRoute implements IRouteViewModel {
 		}
 	}
 
+	/** The event's per-account limit, across every sale and seat type. */
 	public get perAccountLimit(): number {
-		return this.sale?.ticketType.perAccountLimit ?? 1
+		return this.tickets.perAccountLimit ?? 1
 	}
 
-	/** The counts a fan may pick, 1 to the per-account limit. */
+	/** The counts a fan may pick, 1 to the event's per-account limit. */
 	public get countOptions(): number[] {
-		return Array.from({ length: this.perAccountLimit }, (_, i) => i + 1)
+		return countOptions(this.perAccountLimit)
 	}
 
+	/** The seat type's name, e.g. "S席". */
+	public get seatTypeName(): string {
+		return this.stock?.seatTypeName ?? ''
+	}
+
+	/** The seat type's price of one ticket in yen, 税込. */
 	public get price(): number {
-		return this.sale?.ticketType.price ?? 0
+		return this.stock?.price ?? 0
 	}
 
 	/** The total to pay: the held amount once held, else price × count. */
@@ -385,21 +411,6 @@ export class CheckoutRoute implements IRouteViewModel {
 		return `${formatSaleStart(this.sale.saleStartTime, this.lang)} – ${formatSaleStart(this.sale.saleEndTime, this.lang)}`
 	}
 
-	/** True when the held checkout sells 公式リセール (official resale) tickets. */
-	public get isResale(): boolean {
-		return this.checkout?.resale ?? false
-	}
-
-	/**
-	 * When official resale closes: when admission opens, 3 hours before the
-	 * event's start time, in Japan time.
-	 */
-	public get resaleDeadlineLabel(): string {
-		const start = this.event?.startTime
-		if (!start) return ''
-		return formatSaleStart(resaleDeadline(start), this.lang)
-	}
-
 	/** The card as the final confirmation names it, e.g. "VISA •••• 4242". */
 	public get cardLabel(): string {
 		if (!this.card) return ''
@@ -418,13 +429,13 @@ export class CheckoutRoute implements IRouteViewModel {
 
 	/** Hold the chosen count for 15 minutes and continue to the 本人確認 step. */
 	public async hold(): Promise<void> {
-		if (this.busy || !this.sale) return
+		if (this.busy || !this.sale || !this.stock) return
 		this.errorBoundary.addBreadcrumb('action', 'start_checkout')
 		this.busy = true
 		this.message = null
 		try {
 			const checkout = await this.checkoutClient.start(
-				this.sale.ticketType.id,
+				this.stock.id,
 				this.ticketCount,
 				// The referral link's code counts only for the Series it was
 				// kept for (OpenSpec `referral-attribution`, design D7).
@@ -440,9 +451,9 @@ export class CheckoutRoute implements IRouteViewModel {
 			// verification, a limit, a sold-out sale) is not a purchase start.
 			this.analytics.capture(Events.TicketPurchaseInitiated, {
 				event_id: this.eventId,
-				ticket_type_id: checkout.ticketTypeId,
+				ticket_stock_id: this.stock.id,
 				ticket_count: checkout.ticketCount,
-				price_bucket: priceBucket(this.sale.ticketType.price),
+				price_bucket: priceBucket(this.stock.price),
 			})
 			this.step = 'personal-details'
 		} catch (err) {
@@ -455,10 +466,10 @@ export class CheckoutRoute implements IRouteViewModel {
 
 	/** Report each step the fan is shown (not loading or a read failure). */
 	public stepChanged(step: CheckoutStep): void {
-		if (!this.sale || !isReportedStep(step)) return
+		if (!this.sale || !this.stock || !isReportedStep(step)) return
 		this.analytics.capture(Events.CheckoutStepViewed, {
 			event_id: this.eventId,
-			ticket_type_id: this.sale.ticketType.id,
+			ticket_stock_id: this.stock.id,
 			step,
 		})
 	}
@@ -488,34 +499,51 @@ export class CheckoutRoute implements IRouteViewModel {
 			return
 		}
 		if (code === Code.FailedPrecondition || code === Code.InvalidArgument) {
-			// The sale may have ended, sold out (with no resale open) or been
-			// cancelled since the page opened; otherwise the per-account limit
-			// was reached.
-			const saleId = this.sale?.id
-			const sale = await this.saleClient
-				.listByEvent(this.eventId, this.signal)
-				.then((sales) => sales.find((s) => s.id === saleId) ?? null)
-				.catch(() => this.sale)
-			if (!sale) {
-				this.message = { key: 'checkout.count.cancelled' }
-			} else if (!isBuyable(sale.ticketType) && !sale.ticketType.resaleOpen) {
-				this.sale = sale
-				this.message = {
-					key:
-						sale.ticketType.state === 'soldOut'
-							? 'checkout.count.soldOut'
-							: 'checkout.count.ended',
-				}
-			} else {
-				this.message = {
-					key: 'checkout.count.limit',
-					params: { limit: sale.ticketType.perAccountLimit },
-				}
-			}
+			this.message = await this.explainRefusedHold()
 			return
 		}
 		this.logger.error('Start failed', { error: err })
 		this.message = { key: 'checkout.error.retry' }
+	}
+
+	/**
+	 * Start refused the hold: re-read the event's sales and say why. The sale
+	 * may have ended, sold out or been cancelled since the page opened; the
+	 * fan may hold another seat type of the event; otherwise the per-account
+	 * limit was reached.
+	 */
+	private async explainRefusedHold(): Promise<CheckoutMessage> {
+		const saleId = this.sale?.id
+		let tickets: EventTicketSales
+		try {
+			tickets = await this.saleClient.listByEvent(this.eventId, this.signal)
+		} catch (err) {
+			this.logger.warn('Sale re-read after a refused hold failed', {
+				error: err,
+			})
+			tickets = this.tickets
+		}
+		const sale = tickets.sales.find((s) => s.id === saleId) ?? null
+		const stock = tickets.stocks.find((s) => s.id === this.stockId) ?? null
+		if (!sale || !stock) return { key: 'checkout.count.cancelled' }
+		this.useTickets(tickets)
+		if (stock.state === 'soldOut') return { key: 'checkout.count.soldOut' }
+		if (hasEnded(sale, new Date())) return { key: 'checkout.count.ended' }
+		const held = await this.heldSeatTypes.heldTickets(
+			this.eventId,
+			tickets,
+			this.signal,
+		)
+		if (held && held.stock.id !== stock.id) {
+			return {
+				key: 'checkout.count.otherSeatType',
+				params: { seatType: held.stock.seatTypeName },
+			}
+		}
+		return {
+			key: 'checkout.count.limit',
+			params: { limit: this.perAccountLimit },
+		}
 	}
 
 	/** From the verification gate: verification lives on the Settings screen. */

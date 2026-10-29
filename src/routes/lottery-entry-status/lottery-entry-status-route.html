@@ -24,6 +24,10 @@
 		<p class="lottery-entry-status-lead" t.bind="'lotteryEntryStatus.note.' + resultKind"></p>
 
 		<dl class="lottery-entry-status-summary">
+			<div class="lottery-entry-status-summary-row" if.bind="stock">
+				<dt class="lottery-entry-status-summary-key" t="lotteryEntryStatus.seatType"></dt>
+				<dd class="lottery-entry-status-summary-val" data-testid="lottery-entry-status-seat-type">${stock.seatTypeName}</dd>
+			</div>
 			<div class="lottery-entry-status-summary-row">
 				<dt class="lottery-entry-status-summary-key" t="lotteryEntryStatus.count"></dt>
 				<dd class="lottery-entry-status-summary-val" t="lotteryEntryStatus.countValue" t-params.bind="{ count: entry.ticketCount }"></dd>

@@ -23,6 +23,13 @@ export interface WalletTicket {
 	readonly resaleWithoutConsentProhibited: boolean
 	readonly state: TicketState
 	readonly admitTime: Date | null
+	/**
+	 * The TicketStock the ticket was issued from (its Order's); absent until
+	 * read and in older saves.
+	 */
+	readonly ticketStockId?: string
+	/** Its seat type's name, e.g. "S席"; absent until read and in older saves. */
+	readonly seatTypeName?: string
 }
 
 /** One event and the fan's tickets for it. */
@@ -52,11 +59,11 @@ export interface WalletPersonalDetails {
  */
 export type ShownTicketState = TicketState | 'listed' | 'resold'
 
-/** An event's first-come official resale, as the tickets screen reads it. */
-export interface EventResale {
-	/** True while resale is open: the TicketType sold out, admission not open yet. */
+/** A TicketStock's official resale, as the tickets screen reads it. */
+export interface StockResale {
+	/** True while resale is open: the stock sold out, admission not open yet. */
 	readonly open: boolean
-	/** The face value a listing would have, in yen. */
+	/** The face value a listing would have: the seat type's price, in yen. */
 	readonly price: number
 }
 

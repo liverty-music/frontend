@@ -4,6 +4,7 @@ import { ILogger, resolve } from 'aurelia'
 import { admissionQrDataUrl } from '../../../shared/lib/admission-code/qr-svg'
 import { IScreenWakeLock } from '../../adapter/browser/screen-wake-lock'
 import { IConcertRpcClient } from '../../adapter/rpc/client/concert-client'
+import { IOrderRpcClient } from '../../adapter/rpc/client/order-client'
 import { IResaleListingRpcClient } from '../../adapter/rpc/client/resale-listing-client'
 import { ITicketRpcClient } from '../../adapter/rpc/client/ticket-client'
 import { ITicketSaleRpcClient } from '../../adapter/rpc/client/ticket-sale-client'
@@ -27,12 +28,12 @@ import {
 } from '../event/event-page'
 import { AdmissionCodeSession } from './admission-code-session'
 import {
-	type EventResale,
 	enterableTickets,
 	groupByEvent,
 	listingOf,
 	presentedTickets,
 	type ShownTicketState,
+	type StockResale,
 	shownState,
 	type WalletEventGroup,
 	type WalletPersonalDetails,
@@ -88,6 +89,7 @@ export class TicketsRoute {
 	private readonly userStore = resolve(IUserStore)
 	private readonly resaleClient = resolve(IResaleListingRpcClient)
 	private readonly saleClient = resolve(ITicketSaleRpcClient)
+	private readonly orderClient = resolve(IOrderRpcClient)
 
 	// ── List state ───────────────────────────────────────────────────────────
 	public step: TicketsViewStep = 'loading'
@@ -102,8 +104,8 @@ export class TicketsRoute {
 	// ── Official resale (公式リセール) ────────────────────────────────────────
 	/** The fan's listings, newest first (saved with the list for offline use). */
 	public listings: ResaleListing[] = []
-	/** Each event's first-come resale, read online; absent offline. */
-	public resaleByEvent = new Map<string, EventResale>()
+	/** Each TicketStock's resale, keyed by stock id, read online; absent offline. */
+	public resaleByStock = new Map<string, StockResale>()
 	/** The ticket whose listing is being confirmed. */
 	public listingTicket: WalletTicket | null = null
 	public listingGroup: WalletEventGroup | null = null
@@ -180,8 +182,9 @@ export class TicketsRoute {
 		}
 		if (signal.aborted) return
 		this.groups = live
-		await this.readResale(live, signal)
+		const withStocks = await this.readStocks(live, saved, signal)
 		if (signal.aborted) return
+		this.groups = withStocks
 		this.offline = false
 		this.savedAt = null
 		this.savedPersonalDetails = saved?.personalDetails ?? null
@@ -238,25 +241,51 @@ export class TicketsRoute {
 	}
 
 	/**
-	 * Each event's first-come resale: whether it is open and the price a
-	 * listing would have. An event whose sales cannot be read offers nothing.
+	 * Each ticket's TicketStock and seat type, from its Order (OrderService.Get)
+	 * and its event's stocks (TicketSaleService.ListByEvent), and each stock's
+	 * resale: whether it is open and the price a listing would have. A ticket
+	 * whose stock cannot be read keeps the seat type saved for it, if any, and
+	 * offers no listing.
 	 */
-	private async readResale(
+	private async readStocks(
 		groups: readonly WalletEventGroup[],
+		saved: WalletSnapshot | undefined,
 		signal: AbortSignal,
-	): Promise<void> {
-		const byEvent = new Map<string, EventResale>()
-		await Promise.all(
-			groups.map(async (g) => {
+	): Promise<WalletEventGroup[]> {
+		const savedTickets = new Map(
+			(saved?.groups ?? []).flatMap((g) => g.tickets.map((t) => [t.id, t])),
+		)
+		const resale = new Map<string, StockResale>()
+		const orderIds = [
+			...new Set(groups.flatMap((g) => g.tickets.map((t) => t.orderId))),
+		].filter((id) => id)
+		const stockByOrder = new Map<string, string>()
+		const seatTypeByStock = new Map<string, string>()
+		await Promise.all([
+			...orderIds.map(async (id) => {
 				try {
-					const sales = await this.saleClient.listByEvent(g.eventId, signal)
-					const firstCome = sales.filter((s) => s.method === 'firstCome')
-					if (firstCome.length === 0) return
-					const open = firstCome.find((s) => s.ticketType.resaleOpen)
-					byEvent.set(g.eventId, {
-						open: open !== undefined,
-						price: (open ?? firstCome[0]).ticketType.price,
-					})
+					const order = await this.orderClient.get(id, signal)
+					const stockId = order.ticketStockId?.value
+					if (stockId) stockByOrder.set(id, stockId)
+				} catch (err) {
+					if (!signal.aborted) {
+						this.logger.warn('Order read failed', { orderId: id, error: err })
+					}
+				}
+			}),
+			...groups.map(async (g) => {
+				try {
+					const { stocks } = await this.saleClient.listByEvent(
+						g.eventId,
+						signal,
+					)
+					for (const stock of stocks) {
+						seatTypeByStock.set(stock.id, stock.seatTypeName)
+						resale.set(stock.id, {
+							open: stock.resaleOpen,
+							price: stock.price,
+						})
+					}
 				} catch (err) {
 					if (!signal.aborted) {
 						this.logger.warn('Sales read failed', {
@@ -266,8 +295,21 @@ export class TicketsRoute {
 					}
 				}
 			}),
-		)
-		this.resaleByEvent = byEvent
+		])
+		this.resaleByStock = resale
+		return groups.map((g) => ({
+			...g,
+			tickets: g.tickets.map((t) => {
+				const stockId = stockByOrder.get(t.orderId)
+				const seatTypeName = stockId ? seatTypeByStock.get(stockId) : undefined
+				const before = savedTickets.get(t.id)
+				return {
+					...t,
+					ticketStockId: stockId ?? before?.ticketStockId,
+					seatTypeName: seatTypeName ?? before?.seatTypeName,
+				}
+			}),
+		}))
 	}
 
 	private showSnapshot(saved: WalletSnapshot): void {
@@ -472,7 +514,7 @@ export class TicketsRoute {
 
 	// ── Official resale (公式リセール) ────────────────────────────────────────
 
-	// The template passes the state these read (listings, resaleByEvent,
+	// The template passes the state these read (listings, resaleByStock,
 	// offline, resaleMessage) as arguments: a binding to a method call is
 	// re-evaluated only when its arguments change, not when the method reads
 	// another property.
@@ -493,47 +535,51 @@ export class TicketsRoute {
 		return listingOf(ticket, listings)
 	}
 
-	/** Whether the ticket can be listed: 未入場, online, and its event's resale open. */
+	/** Whether the ticket can be listed: 未入場, online, and its stock's resale open. */
 	public offersListing(
-		group: WalletEventGroup,
 		ticket: WalletTicket,
 		listings: readonly ResaleListing[] = this.listings,
-		resaleByEvent: ReadonlyMap<string, EventResale> = this.resaleByEvent,
+		resaleByStock: ReadonlyMap<string, StockResale> = this.resaleByStock,
 		offline: boolean = this.offline,
 	): boolean {
 		return (
 			!offline &&
 			shownState(ticket, listings) === 'not-entered' &&
-			resaleByEvent.get(group.eventId)?.open === true
+			ticket.ticketStockId !== undefined &&
+			resaleByStock.get(ticket.ticketStockId)?.open === true
 		)
 	}
 
 	/**
-	 * Whether to say that official resale opens only when the event sells out:
-	 * online, a first-come event that has not sold out, before admission opens,
-	 * with a ticket that could otherwise be listed.
+	 * Whether to say that official resale opens only when the seat type sells
+	 * out for the event: online, before admission opens, with a 未入場 ticket
+	 * whose stock is read and not open for resale.
 	 */
 	public explainsNoResale(
 		group: WalletEventGroup,
 		listings: readonly ResaleListing[] = this.listings,
-		resaleByEvent: ReadonlyMap<string, EventResale> = this.resaleByEvent,
+		resaleByStock: ReadonlyMap<string, StockResale> = this.resaleByStock,
 		offline: boolean = this.offline,
 	): boolean {
-		const resale = resaleByEvent.get(group.eventId)
 		const start = group.event?.startTime
 		return (
 			!offline &&
-			resale !== undefined &&
-			!resale.open &&
 			start !== undefined &&
 			Date.now() < resaleDeadline(start).getTime() &&
-			group.tickets.some((t) => shownState(t, listings) === 'not-entered')
+			group.tickets.some((t) => {
+				if (shownState(t, listings) !== 'not-entered') return false
+				const resale = t.ticketStockId
+					? resaleByStock.get(t.ticketStockId)
+					: undefined
+				return resale !== undefined && !resale.open
+			})
 		)
 	}
 
-	/** The price a listing of the group's ticket would have, in yen. */
-	public listingPrice(group: WalletEventGroup | null): number {
-		return group ? (this.resaleByEvent.get(group.eventId)?.price ?? 0) : 0
+	/** The price a listing of the ticket would have: its seat type's, in yen. */
+	public listingPrice(ticket: WalletTicket | null): number {
+		const stockId = ticket?.ticketStockId
+		return stockId ? (this.resaleByStock.get(stockId)?.price ?? 0) : 0
 	}
 
 	/** The resale fee of a price: 10%, rounded down to the yen. */
@@ -551,7 +597,7 @@ export class TicketsRoute {
 
 	/** Open the confirmation before listing one ticket. */
 	public askToList(group: WalletEventGroup, ticket: WalletTicket): void {
-		if (!this.offersListing(group, ticket)) return
+		if (!this.offersListing(ticket)) return
 		this.resaleMessage = null
 		this.listingGroup = group
 		this.listingTicket = ticket
@@ -611,12 +657,15 @@ export class TicketsRoute {
 			this.saveSnapshot()
 		} catch (err) {
 			this.logger.warn('Withdraw failed', { listingId: listing.id, error: err })
+			const closed = ConnectError.from(err).code === Code.FailedPrecondition
 			this.resaleMessage = {
 				ticketId: ticket.id,
-				key:
-					ConnectError.from(err).code === Code.FailedPrecondition
-						? 'tickets.resale.beingBought'
-						: 'tickets.resale.failed',
+				key: closed ? 'tickets.resale.withdrawClosed' : 'tickets.resale.failed',
+			}
+			// The listing was sold or listing closed: show it as it is now.
+			if (closed && this.abortController) {
+				await this.readListings(this.abortController.signal)
+				this.saveSnapshot()
 			}
 		} finally {
 			this.resaleBusy = false
