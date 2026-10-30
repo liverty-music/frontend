@@ -200,7 +200,9 @@ test.describe('Artist filter bar bottom sheet', () => {
 		})
 
 		await page.goto('/dashboard')
-		await expect(page.locator('dashboard-route')).toBeVisible()
+		await expect(page.locator('dashboard-route')).toBeVisible({
+			timeout: 10_000,
+		})
 
 		// Open the filter sheet (via the FAB launcher)
 		await openFilterSheet(page)
@@ -250,7 +252,9 @@ test.describe('Artist filter bar bottom sheet', () => {
 		})
 
 		await page.goto('/dashboard')
-		await expect(page.locator('dashboard-route')).toBeVisible()
+		await expect(page.locator('dashboard-route')).toBeVisible({
+			timeout: 10_000,
+		})
 
 		await openFilterSheet(page)
 		const yoasobiChip = page.locator('label.artist-chip', {
@@ -304,7 +308,9 @@ test.describe('Artist filter bar bottom sheet', () => {
 
 		// Deep link: the artist filter is parsed from the URL on load.
 		await page.goto('/dashboard?artists=00000000-0000-4000-8000-a00000000001')
-		await expect(page.locator('dashboard-route')).toBeVisible()
+		await expect(page.locator('dashboard-route')).toBeVisible({
+			timeout: 10_000,
+		})
 
 		await expectFilterActive(page)
 

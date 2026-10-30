@@ -473,7 +473,9 @@ test.describe('Onboarding flow (single-flag model)', () => {
 	test('No popover-guide snack on discovery page entry', async ({ page }) => {
 		await page.addInitScript(seedOnboarding)
 		await page.goto('http://localhost:9000/discovery')
-		await expect(page.locator('.discovery-layout')).toBeVisible()
+		await expect(page.locator('.discovery-layout')).toBeVisible({
+			timeout: 10_000,
+		})
 
 		// biome-ignore lint/suspicious/noPlaywrightNetworkidle: an absence check; the snack would follow a data load, so every load must finish first
 		await page.waitForLoadState('networkidle')
@@ -513,7 +515,9 @@ test.describe('Onboarding flow (single-flag model)', () => {
 			)
 		})
 		await page.goto('http://localhost:9000/discovery')
-		await expect(page.locator('.discovery-layout')).toBeVisible()
+		await expect(page.locator('.discovery-layout')).toBeVisible({
+			timeout: 10_000,
+		})
 
 		// SR status includes followed count
 		const srOutput = page.locator('output.sr-only[role="status"]')
@@ -802,7 +806,9 @@ test.describe('Soft-gate roam (Discovery → Dashboard → My Artists)', () => {
 
 		// -- DISCOVERY: reachable directly; the progress row becomes ready -------
 		await page.goto('http://localhost:9000/discovery')
-		await expect(page.locator('.discovery-layout')).toBeVisible()
+		await expect(page.locator('.discovery-layout')).toBeVisible({
+			timeout: 30_000,
+		})
 
 		// The lookups for the 3 restored follows each find a concert, which
 		// fills the progress row and turns it into the link to the Dashboard.

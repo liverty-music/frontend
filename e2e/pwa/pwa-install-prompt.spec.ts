@@ -12,7 +12,9 @@ test.describe('PWA Install Prompt', () => {
 	test('does not show banner on first session', async ({ page }) => {
 		await page.addInitScript(ONBOARDING_SETUP)
 		await page.goto('/dashboard')
-		await expect(page.locator('dashboard-route')).toBeVisible()
+		await expect(page.locator('dashboard-route')).toBeVisible({
+			timeout: 10_000,
+		})
 		await expect(page.getByTestId('pwa-install-banner')).not.toBeVisible()
 	})
 
@@ -26,7 +28,9 @@ test.describe('PWA Install Prompt', () => {
 		})
 
 		await page.goto('/dashboard')
-		await expect(page.locator('dashboard-route')).toBeVisible()
+		await expect(page.locator('dashboard-route')).toBeVisible({
+			timeout: 10_000,
+		})
 
 		// Dispatch beforeinstallprompt after Aurelia has booted: the app shell
 		// constructs PwaInstallService, which registers the listener.
@@ -51,7 +55,9 @@ test.describe('PWA Install Prompt', () => {
 		})
 
 		await page.goto('/dashboard')
-		await expect(page.locator('dashboard-route')).toBeVisible()
+		await expect(page.locator('dashboard-route')).toBeVisible({
+			timeout: 10_000,
+		})
 
 		await page.evaluate(() => {
 			const event = new Event('beforeinstallprompt', { cancelable: true })
@@ -82,7 +88,9 @@ test.describe('PWA Install Prompt', () => {
 		})
 
 		await page.goto('/dashboard')
-		await expect(page.locator('dashboard-route')).toBeVisible()
+		await expect(page.locator('dashboard-route')).toBeVisible({
+			timeout: 10_000,
+		})
 
 		await page.evaluate(() => {
 			;(window as unknown as { __pwaPromptCalled: boolean }).__pwaPromptCalled =

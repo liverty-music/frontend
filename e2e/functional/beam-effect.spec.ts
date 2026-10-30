@@ -165,14 +165,11 @@ test.describe('beam effect', () => {
 			const scroll = document.querySelector('.concert-scroll') as HTMLElement
 			scroll.scrollTop += 120
 		})
-		// The scroll-driven beams repaint on the next frames; wait for two.
-		// Read the counter before beamState(), which measures the cards itself.
-		await page.evaluate(
-			() =>
-				new Promise((resolve) =>
-					requestAnimationFrame(() => requestAnimationFrame(resolve)),
-				),
-		)
+		// The window in which no card may be measured: a delayed scroll handler
+		// would read within it. Read the counter before beamState(), which
+		// measures the cards itself.
+		// biome-ignore lint/suspicious/noPlaywrightWaitForTimeout: an absence check; a card read that does not happen has no event to wait for
+		await page.waitForTimeout(200)
 		const readsAfter = await page.evaluate(
 			() => (window as unknown as { __cardReads: number }).__cardReads,
 		)
