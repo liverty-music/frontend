@@ -637,6 +637,7 @@ test.describe('data merge on authentication', () => {
 			})
 			.toBeGreaterThan(0)
 		await expect(page.getByRole('status', { name: 'Loading' })).toBeVisible()
+		// biome-ignore lint/suspicious/noPlaywrightWaitForTimeout: checks that the screen stays on the callback over time
 		await page.waitForTimeout(1000)
 		await expect(page).toHaveURL(/\/auth\/callback/)
 		await expect(page.getByRole('status', { name: 'Loading' })).toBeVisible()

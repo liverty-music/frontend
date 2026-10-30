@@ -58,6 +58,8 @@ for (const route of PUBLIC_ROUTES) {
 		})
 
 		await page.goto(route)
+		// Every request the route starts must finish before its console is read.
+		// biome-ignore lint/suspicious/noPlaywrightNetworkidle: the check covers errors from every request the route makes, so it waits for all of them
 		await page.waitForLoadState('networkidle')
 
 		expect(errors, `Console errors on ${route}:\n${errors.join('\n')}`).toEqual(

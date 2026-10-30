@@ -343,7 +343,9 @@ test.describe('timetable date window', () => {
 		expect((await builtKeys(page)).indexOf(left?.key ?? '')).toBeGreaterThan(30)
 
 		await page.locator('.nav-tab[data-nav="discovery"]').click()
-		await page.waitForSelector('discovery-route', { timeout: 10000 })
+		await expect(page.locator('discovery-route')).toBeVisible({
+			timeout: 10000,
+		})
 
 		// Record every frame from the tap on: whether the skeleton or cards are
 		// there, and which date is at the top edge.
@@ -405,7 +407,9 @@ test.describe('timetable date window', () => {
 		await openDashboard(page)
 		await scrollDown(page, 40)
 		await page.locator('.nav-tab[data-nav="discovery"]').click()
-		await page.waitForSelector('discovery-route', { timeout: 10000 })
+		await expect(page.locator('discovery-route')).toBeVisible({
+			timeout: 10000,
+		})
 		await page.locator('.nav-tab[data-nav="home"]').click()
 		await page.locator('dashboard-route [data-live-card]').first().waitFor()
 		await settle(page)

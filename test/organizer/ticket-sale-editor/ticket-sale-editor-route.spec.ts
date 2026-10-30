@@ -302,6 +302,7 @@ describe('first-come sale editor', () => {
 		const err = new ConnectError(SERVER_MESSAGE, Code.FailedPrecondition)
 		const createSale = vi.fn().mockRejectedValue(err)
 		const { fixture, vm, host } = await mount({ create: createSale })
+		// biome-ignore lint/complexity/useLiteralKeys: logger is private; bracket access is the type-checked way to reach it
 		const warn = vi.spyOn(vm['logger'], 'warn')
 
 		vm.model = validModel()

@@ -106,8 +106,9 @@ for (const hype of ['home', 'nearby', 'away'] as const) {
 		await mockRpc(page, hype)
 
 		await page.goto('http://localhost:9000/dashboard')
-		await page.waitForLoadState('networkidle')
-		await page.waitForSelector('[data-live-card]', { timeout: 10000 })
+		await expect(page.locator('[data-live-card]').first()).toBeVisible({
+			timeout: 10000,
+		})
 
 		// Nothing to wait for: the beams follow their concert's scroll position
 		// through a CSS view timeline, so there is no frame loop to settle.

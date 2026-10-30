@@ -154,6 +154,7 @@ describe('event page publish', () => {
 			.mockRejectedValueOnce(err)
 			.mockResolvedValueOnce(undefined)
 		const { vm, snackbar, root, lastMessage, done } = await mount({ publish })
+		// biome-ignore lint/complexity/useLiteralKeys: logger is private; bracket access is the type-checked way to reach it
 		const warn = vi.spyOn(vm['logger'], 'warn')
 		const showError = vi.spyOn(snackbar, 'showError')
 

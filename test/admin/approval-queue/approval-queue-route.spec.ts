@@ -451,6 +451,7 @@ describe('ApprovalQueueRoute', () => {
 			const fixture = await build(client)
 			const vm = routeOf(fixture)
 			// The route's scoped logger writes to the browser console.
+			// biome-ignore lint/complexity/useLiteralKeys: logger is private; bracket access is the type-checked way to reach it
 			const logError = vi.spyOn(vm['logger'], 'error')
 			await fixture.tasksSettled
 

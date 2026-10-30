@@ -643,7 +643,7 @@ export class TicketsRoute {
 	/** Take back the ticket's listing. */
 	public async withdraw(ticket: WalletTicket): Promise<void> {
 		const listing = this.listingOf(ticket)
-		if (!listing || listing.status !== 'listed' || this.resaleBusy) return
+		if (listing?.status !== 'listed' || this.resaleBusy) return
 		this.resaleBusy = true
 		this.resaleMessage = null
 		try {

@@ -108,7 +108,9 @@ describe('console catalog', () => {
 		expect(literalsIn('<input placeholder="例: 渋谷">')).toEqual([
 			'placeholder="例: 渋谷"',
 		])
+		// biome-ignore lint/suspicious/noTemplateCurlyInString: the input is an Aurelia template, whose ${} is template syntax
 		expect(literalsIn("<p>${'common.save' & t} · ${count}</p>")).toEqual([])
+		// biome-ignore lint/suspicious/noTemplateCurlyInString: the input is an Aurelia template, whose ${} is template syntax
 		expect(literalsIn("<p>${'x' & t:{ n: $index + 1 }}</p>")).toEqual([])
 		expect(literalsIn('<span t="common.save"></span>')).toEqual([])
 	})

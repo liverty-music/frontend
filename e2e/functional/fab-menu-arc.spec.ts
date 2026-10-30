@@ -162,7 +162,15 @@ test.describe('the action arc', () => {
 		await openArc(page)
 
 		// A real tap on a tab, and one on the page's own link, reach neither.
-		await page.locator('.nav-tab[data-nav="ticket"]').click({ force: true })
+		// The tap lands at the tab's position, so the arc's backdrop receives it.
+		const tabBox = await page
+			.locator('.nav-tab[data-nav="ticket"]')
+			.boundingBox()
+		if (!tabBox) throw new Error('ticket tab has no box')
+		await page.mouse.click(
+			tabBox.x + tabBox.width / 2,
+			tabBox.y + tabBox.height / 2,
+		)
 		await expect(fab(page)).toHaveAttribute('aria-expanded', 'false')
 		expect(new URL(page.url()).pathname).toBe('/dashboard')
 
@@ -180,6 +188,7 @@ test.describe('the action arc', () => {
 
 	test(`@spec ${CAPABILITY} "Idle glyph is still"`, async ({ page }) => {
 		await openShell(page, '/dashboard')
+		// biome-ignore lint/suspicious/noPlaywrightWaitForTimeout: stillness is checked after a stretch of time, which no event marks
 		await page.waitForTimeout(1000)
 		const running = await page
 			.locator('fab-menu .fab-equalizer')

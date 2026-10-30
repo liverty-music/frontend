@@ -36,7 +36,11 @@ test.describe('post-deploy smoke', () => {
 		page,
 	}) => {
 		const url = new URL('/', SMOKE_BASE_URL).toString()
-		await page.goto(url, { waitUntil: 'networkidle' })
+		await page.goto(url)
+		// Wait for the SPA to render any visible text before reading it.
+		await expect(page.locator('body'))
+			.toHaveText(/\S/, { useInnerText: true, timeout: 15_000 })
+			.catch(() => {})
 
 		const bodyText = (await page.locator('body').innerText()).trim()
 		expect(

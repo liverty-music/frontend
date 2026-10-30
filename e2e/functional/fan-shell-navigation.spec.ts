@@ -171,6 +171,7 @@ test.describe('Settings entry in the page header', () => {
 test.describe('Settings header in Japanese', () => {
 	test.use({ locale: 'ja-JP' })
 
+	// biome-ignore lint/suspicious/noUselessEscapeInString: scripts/check-scenario-coverage.py reads \" as a quote inside the scenario name
 	test(`@spec ${SETTINGS} "Header reads \"Settings\" regardless of active locale"`, async ({
 		page,
 	}) => {

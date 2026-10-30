@@ -90,13 +90,17 @@ test.describe('Page identity follows the displayed route (guest)', () => {
 		page,
 	}) => {
 		await page.goto('http://localhost:9000/discovery')
-		await page.waitForSelector('discovery-route', { timeout: 10_000 })
+		await expect(page.locator('discovery-route')).toBeVisible({
+			timeout: 10_000,
+		})
 
 		await expect(tab(page, 'discovery')).toHaveAttribute('data-active', 'true')
 		await expect(title(page)).toHaveText('Discovery')
 
 		await tab(page, 'home').click()
-		await page.waitForSelector('dashboard-route', { timeout: 10_000 })
+		await expect(page.locator('dashboard-route')).toBeVisible({
+			timeout: 10_000,
+		})
 
 		await expect(tab(page, 'home')).toHaveAttribute('data-active', 'true')
 		await expect(activeTabs(page)).toHaveCount(1)
@@ -108,7 +112,9 @@ test.describe('Page identity follows the displayed route (guest)', () => {
 		await page.goto(
 			'http://localhost:9000/concerts/00000000-0000-4000-8000-c00000000001',
 		)
-		await page.waitForSelector('dashboard-route', { timeout: 10_000 })
+		await expect(page.locator('dashboard-route')).toBeVisible({
+			timeout: 10_000,
+		})
 
 		await expect(tab(page, 'home')).toHaveAttribute('data-active', 'true')
 		await expect(activeTabs(page)).toHaveCount(1)
@@ -121,7 +127,9 @@ test.describe('Page identity follows the displayed route (guest)', () => {
 	}) => {
 		await guardMyArtists(page)
 		await page.goto('http://localhost:9000/settings')
-		await page.waitForSelector('settings-route', { timeout: 10_000 })
+		await expect(page.locator('settings-route')).toBeVisible({
+			timeout: 10_000,
+		})
 		await expect(title(page)).toHaveText('Settings')
 
 		// Record every change to the header and the nav bar from here on, then
@@ -160,6 +168,7 @@ test.describe('Page identity follows the displayed route (guest)', () => {
 		})
 		await tab(page, 'my-artists').click()
 		// Let the refused navigation run its course.
+		// biome-ignore lint/suspicious/noPlaywrightWaitForTimeout: an absence check; a refused navigation has no event to wait for
 		await page.waitForTimeout(500)
 
 		await expect(page.locator('settings-route')).toBeVisible()
@@ -182,7 +191,9 @@ test.describe('Page identity follows the displayed route (guest)', () => {
 				false
 		})
 		await tab(page, 'my-artists').click()
-		await page.waitForSelector('my-artists-route', { timeout: 10_000 })
+		await expect(page.locator('my-artists-route')).toBeVisible({
+			timeout: 10_000,
+		})
 		await expect(title(page)).toHaveText('My Artists')
 		await expect(tab(page, 'my-artists')).toHaveAttribute('data-active', 'true')
 	})
@@ -218,7 +229,9 @@ test.describe('Timetable tab (guest)', () => {
 		)
 		await seedGuest(page)
 		await page.goto('http://localhost:9000/discovery')
-		await page.waitForSelector('discovery-route', { timeout: 10_000 })
+		await expect(page.locator('discovery-route')).toBeVisible({
+			timeout: 10_000,
+		})
 
 		await tab(page, 'home').click()
 		// The dashboard is attached and showing its loading state while the fetch
@@ -312,7 +325,9 @@ test.describe('Timetable tab (guest)', () => {
 		await page.goto('http://localhost:9000/dashboard')
 		await page.locator('[data-live-card]').first().waitFor({ timeout: 10_000 })
 		await page.locator('.nav-tab[data-nav="discovery"]').click()
-		await page.waitForSelector('discovery-route', { timeout: 10_000 })
+		await expect(page.locator('discovery-route')).toBeVisible({
+			timeout: 10_000,
+		})
 
 		// From the tap on, record each frame: the active tab, the header title,
 		// whether the timetable's cards are there, and whether the skeleton is.
@@ -337,7 +352,10 @@ test.describe('Timetable tab (guest)', () => {
 		})
 		await page.locator('.nav-tab[data-nav="home"]').click()
 		await page.locator('dashboard-route [data-live-card]').first().waitFor()
-		await page.waitForTimeout(300)
+		await page.waitForFunction(
+			() =>
+				(window as unknown as { __frames: unknown[] }).__frames.length >= 90,
+		)
 
 		const frames = await page.evaluate(
 			() =>

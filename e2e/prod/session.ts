@@ -83,7 +83,24 @@ export async function organizerToken(browser: Browser): Promise<string> {
 	try {
 		const page = await context.newPage()
 		await page.goto(`${ORGANIZER_CONSOLE}/?org=e2e-test`)
-		await page.waitForLoadState('networkidle')
+		// The console renews the token on load; wait until the stored one is
+		// fresh. A session that no longer signs in never gets there, so fall
+		// through to the check below, which names the fix.
+		await page
+			.waitForFunction(
+				(minMs) => {
+					const key = Object.keys(localStorage).find((k) =>
+						k.startsWith('oidc.user:'),
+					)
+					const value = key ? localStorage.getItem(key) : null
+					if (!value) return false
+					const { expires_at } = JSON.parse(value) as { expires_at: number }
+					return expires_at * 1000 - Date.now() > minMs
+				},
+				5 * 60 * 1000,
+				{ timeout: 30_000 },
+			)
+			.catch(() => {})
 		const user = await page.evaluate(() => {
 			const key = Object.keys(localStorage).find((k) =>
 				k.startsWith('oidc.user:'),
