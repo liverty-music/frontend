@@ -80,6 +80,11 @@ const KNOWN_GAPS: KnownGap[] = [
 			"Signs up and deletes throwaway accounts at production's hosted login; a pull-request build has no identity provider to sign up at.",
 	},
 	{
+		spec: 'e2e/prod/hosted-login-offers-no-password-setup.guest.spec.ts',
+		reason:
+			"Checks the patched Login V2 image that only production runs; a pull-request build has no hosted login.",
+	},
+	{
 		spec: 'e2e/smoke/post-deploy.spec.ts',
 		reason:
 			'Runs against a deployed URL from push-image.yaml (`SMOKE_BASE_URL`), not against a PR build. Covered, but not by pull-request CI.',

@@ -112,6 +112,7 @@ async function signUp(page: Page): Promise<void> {
 	// Continuing creates the account; its passkey is registered next.
 	accountMayExist = true
 
+	// @spec components/infrastructure/fan/web/global/hosted-login "Sign-up offers only a passkey"
 	await page.waitForURL(/\/ui\/v2\/login\/passkey\/set/)
 	await page.getByTestId('submit-button').click()
 
