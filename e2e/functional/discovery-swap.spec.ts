@@ -185,6 +185,7 @@ test.describe('Discovery swap tile', () => {
 				timeout: 10_000,
 			})
 			.toBe(56)
+		// biome-ignore lint/suspicious/noPlaywrightWaitForTimeout: the physics field needs time to settle around the tile before it is sampled
 		await page.waitForTimeout(2500)
 
 		const t = await tileBox(page)
@@ -197,6 +198,7 @@ test.describe('Discovery swap tile', () => {
 			const { bubbles, orb } = await drawn(page)
 			expect(circleHits(orb, t)).toBe(false)
 			expect(bubbles.filter((b) => circleHits(b, t))).toEqual([])
+			// biome-ignore lint/suspicious/noPlaywrightWaitForTimeout: samples the moving field at intervals
 			await page.waitForTimeout(200)
 		}
 

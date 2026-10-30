@@ -63,6 +63,7 @@ test('page-help sheet opens and stays open (not auto-dismissed)', async ({
 	// sheet before the user has interacted.
 	const samples: boolean[] = []
 	for (let i = 0; i < 15; i++) {
+		// biome-ignore lint/suspicious/noPlaywrightWaitForTimeout: samples the popover state at intervals
 		await page.waitForTimeout(100)
 		const isOpen = await popover.evaluate((el) => el.matches(':popover-open'))
 		samples.push(isOpen)

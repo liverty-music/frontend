@@ -464,15 +464,18 @@ test.describe('Onboarding flow (single-flag model)', () => {
 		await page.goto('http://localhost:9000/discovery')
 
 		// Soft gate: the discovery layout renders; the auth hook does not redirect.
-		await page.waitForSelector('.discovery-layout', { timeout: 10_000 })
+		await expect(page.locator('.discovery-layout')).toBeVisible({
+			timeout: 10_000,
+		})
 		await expect(page).toHaveURL(/discovery/)
 	})
 
 	test('No popover-guide snack on discovery page entry', async ({ page }) => {
 		await page.addInitScript(seedOnboarding)
 		await page.goto('http://localhost:9000/discovery')
-		await page.waitForSelector('.discovery-layout')
+		await expect(page.locator('.discovery-layout')).toBeVisible()
 
+		// biome-ignore lint/suspicious/noPlaywrightNetworkidle: an absence check; the snack would follow a data load, so every load must finish first
 		await page.waitForLoadState('networkidle')
 		await expect(page.locator('.snack-item')).toHaveCount(0)
 	})
@@ -510,7 +513,7 @@ test.describe('Onboarding flow (single-flag model)', () => {
 			)
 		})
 		await page.goto('http://localhost:9000/discovery')
-		await page.waitForSelector('.discovery-layout')
+		await expect(page.locator('.discovery-layout')).toBeVisible()
 
 		// SR status includes followed count
 		const srOutput = page.locator('output.sr-only[role="status"]')
@@ -700,7 +703,9 @@ test.describe('Onboarding flow (single-flag model)', () => {
 			)
 		})
 		await page.goto('http://localhost:9000/my-artists')
-		await page.waitForSelector('my-artists-route', { timeout: 10_000 })
+		await expect(page.locator('my-artists-route')).toBeVisible({
+			timeout: 10_000,
+		})
 
 		// Hype dots are visible in the artist table
 		await expect(page.locator('[data-artist-rows]')).toBeVisible({
@@ -797,7 +802,7 @@ test.describe('Soft-gate roam (Discovery → Dashboard → My Artists)', () => {
 
 		// -- DISCOVERY: reachable directly; the progress row becomes ready -------
 		await page.goto('http://localhost:9000/discovery')
-		await page.waitForSelector('.discovery-layout')
+		await expect(page.locator('.discovery-layout')).toBeVisible()
 
 		// The lookups for the 3 restored follows each find a concert, which
 		// fills the progress row and turns it into the link to the Dashboard.

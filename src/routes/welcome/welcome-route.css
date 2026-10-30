@@ -379,7 +379,6 @@
 			}
 
 			to {
-				/* biome-ignore lint/suspicious/noDuplicateCustomProperties: false positive, `from` and `to` are separate keyframe blocks */
 				--brand-sweep: 100%;
 			}
 		}

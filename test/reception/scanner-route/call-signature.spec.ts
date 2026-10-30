@@ -80,7 +80,7 @@ describe('reception call signature input', () => {
 		expect(text).toMatch(/^[A-Za-z0-9_-]+$/)
 		expect(text).toHaveLength(87) // ceil(65 * 4 / 3), no '='
 		const back = Uint8Array.from(
-			atob(text.replace(/-/g, '+').replace(/_/g, '/') + '='),
+			atob(`${text.replace(/-/g, '+').replace(/_/g, '/')}=`),
 			(c) => c.charCodeAt(0),
 		)
 		expect(back).toEqual(key)

@@ -107,7 +107,6 @@ describe('WelcomeRoute — guided demo state machine', () => {
 	it('a card tap before the coach delay cancels the coach-mark', async () => {
 		vi.useFakeTimers()
 		try {
-			// biome-ignore lint/suspicious/noExplicitAny: minimal sheet stub for the test
 			sut.detailSheet = { open: vi.fn() } as any
 			sut.onNotificationTap()
 			await vi.advanceTimersByTimeAsync(380) // exit → timetable, coach timer running
@@ -124,7 +123,6 @@ describe('WelcomeRoute — guided demo state machine', () => {
 
 	it('opens the detail sheet and dismisses the coach on card selection', () => {
 		const open = vi.fn()
-		// biome-ignore lint/suspicious/noExplicitAny: minimal sheet stub for the test
 		sut.detailSheet = { open } as any
 		sut.coachActive = true
 		const event = new CustomEvent('event-selected', {
@@ -207,7 +205,6 @@ describe('WelcomeRoute — no-preview fallback + detach', () => {
 
 	it('aborts the in-flight load on detach', () => {
 		const ac = new AbortController()
-		// biome-ignore lint/suspicious/noExplicitAny: accessing private for test
 		;(sut as any).abortController = ac
 		const spy = vi.spyOn(ac, 'abort')
 		sut.detaching()

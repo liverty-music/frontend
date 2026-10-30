@@ -171,10 +171,7 @@ test.describe('Toast notification: multiple rapid toasts (5.1)', () => {
 		})
 		await mockRpcRoutes(page)
 		await page.goto('http://localhost:9000/dashboard')
-		await page.waitForSelector('snack-bar', {
-			state: 'attached',
-			timeout: 10_000,
-		})
+		await expect(page.locator('snack-bar')).toBeAttached({ timeout: 10_000 })
 	})
 
 	// The snack-bar host is taken out of the shell grid's flow (app-shell.css:
@@ -273,7 +270,7 @@ test.describe('Toast notification: undo toast on My Artists (5.2)', () => {
 		})
 		await mockRpcRoutes(page)
 		await page.goto('http://localhost:9000/my-artists')
-		await page.waitForSelector('.artists-fieldset', {
+		await expect(page.locator('.artists-fieldset')).toBeVisible({
 			timeout: 10_000,
 		})
 	})
@@ -371,10 +368,7 @@ test.describe('Toast notification: appears above dialog (5.3)', () => {
 		test.setTimeout(30_000)
 
 		await page.goto('http://localhost:9000/dashboard')
-		await page.waitForSelector('snack-bar', {
-			state: 'attached',
-			timeout: 10_000,
-		})
+		await expect(page.locator('snack-bar')).toBeAttached({ timeout: 10_000 })
 
 		// Open a dialog programmatically to simulate a modal being open
 		await page.evaluate(() => {
@@ -465,17 +459,14 @@ async function bootSignedIn(
 async function waitSettled(page: Page, selector: string): Promise<void> {
 	await page.waitForFunction((sel) => {
 		const el = document.querySelector(sel)
-		return (
-			el !== null &&
-			el
-				.getAnimations({ subtree: true })
-				.filter(
-					(a) =>
-						a.effect?.getTiming().iterations !== Infinity &&
-						(a as CSSAnimation).animationName !== 'banner-cue',
-				)
-				.every((a) => a.playState !== 'running')
-		)
+		return el
+			?.getAnimations({ subtree: true })
+			.filter(
+				(a) =>
+					a.effect?.getTiming().iterations !== Infinity &&
+					(a as CSSAnimation).animationName !== 'banner-cue',
+			)
+			.every((a) => a.playState !== 'running')
 	}, selector)
 }
 

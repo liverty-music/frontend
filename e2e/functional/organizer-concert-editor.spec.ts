@@ -245,6 +245,7 @@ test.describe('venue search', () => {
 	test(`@spec ${SPEC} "Short Latin text"`, async ({ page }) => {
 		const log = await openEditor(page, `${SERIES}/new`)
 		await venueSearch(row(page, 0)).fill('Zepp')
+		// biome-ignore lint/suspicious/noPlaywrightWaitForTimeout: an absence check; no search may start before the pause ends
 		await page.waitForTimeout(SEARCH_PAUSE_MS)
 		expect(calls(log, 'VenueService/Search')).toHaveLength(0)
 		await expect(venueSearch(row(page, 0))).toHaveAttribute(
@@ -295,6 +296,7 @@ test.describe('venue search', () => {
 		).toBeVisible()
 
 		releaseFirst()
+		// biome-ignore lint/suspicious/noPlaywrightWaitForTimeout: lets the pause end so a stale result would have time to show
 		await page.waitForTimeout(SEARCH_PAUSE_MS)
 		await expect(venue(field).getByRole('option')).toHaveCount(1)
 		await expect(
