@@ -106,8 +106,9 @@ async function signUp(page: Page): Promise<void> {
 			expect(await input.inputValue()).toBe(value)
 		}).toPass()
 	}
-	// Passkey is the form's first and default choice; once the hosted login
-	// offers no password, it is the only one.
+	// @spec components/infrastructure/fan/web/global/hosted-login "Sign-up offers only a passkey"
+	await expect(page.getByText('パスワード', { exact: true })).toHaveCount(0)
+	await expect(page.locator('input[type="password"]')).toHaveCount(0)
 	await page.getByRole('button', { name: '続行' }).click()
 	// Continuing creates the account; its passkey is registered next.
 	accountMayExist = true
