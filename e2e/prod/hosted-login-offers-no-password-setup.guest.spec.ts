@@ -5,8 +5,8 @@ import { fillAndSubmit, testUser } from './support'
 /**
  * The production hosted login offers no way to set a password (patched Login
  * V2, cloud-provisioning `zitadel-login/`). Starts as a guest and creates no
- * account: continuing the sign-up to passkey registration is covered by
- * `delete-my-account`, which deletes the account it signs up.
+ * account: "Sign-up offers only a passkey" is checked by `delete-my-account`,
+ * which continues the sign-up and deletes the account it creates.
  */
 
 const LOGIN = 'https://auth.liverty-music.app/ui/v2/login'
@@ -27,17 +27,6 @@ async function expectNotFound(page: Page): Promise<void> {
 }
 
 test.describe('hosted login offers no password setup', () => {
-	test('sign-up offers only a passkey', async ({ page }) => {
-		// @spec components/infrastructure/fan/web/global/hosted-login "Sign-up offers only a passkey"
-		await openSignUp(page)
-		await page.locator('input[name="email"]').waitFor()
-
-		await expect(page.getByText('パスワード', { exact: true })).toHaveCount(0)
-		await expect(page.getByText('パスキー', { exact: true })).toHaveCount(0)
-		await expect(page.locator('input[type="password"]')).toHaveCount(0)
-		await expect(page.getByRole('button', { name: '続行' })).toBeVisible()
-	})
-
 	test('password pages opened by address are not found', async ({ page }) => {
 		// @spec components/infrastructure/fan/web/global/hosted-login "Password pages opened by address"
 		const { search } = await openSignUp(page)
@@ -67,9 +56,10 @@ test.describe('hosted login offers no password setup', () => {
 
 	test('the password page offers no password reset', async ({ page }) => {
 		// @spec components/infrastructure/fan/web/global/hosted-login "No password reset on the password page"
-		const login = await openSignUp(page)
-		login.pathname = login.pathname.replace(/\/register.*$/, '/loginname')
-		await page.goto(login.toString())
+		await optOutOfAnalytics(page)
+		await page.goto('/settings?lang=ja')
+		await page.getByTestId('settings-sign-in').click({ timeout: 30_000 })
+		await page.waitForURL(/auth\.liverty-music\.app/)
 		await fillAndSubmit(
 			page,
 			'input[name="loginName"], input[autocomplete="username"]',
