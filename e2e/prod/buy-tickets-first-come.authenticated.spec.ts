@@ -12,8 +12,8 @@ import {
 	onlyStock,
 	openFreshSale,
 	organizerStocks,
-	SOLD_OUT,
 	type SaleStock,
+	SOLD_OUT,
 	stockOf,
 } from './sale'
 import {
@@ -213,6 +213,7 @@ test.describe('buy tickets first come (signed in)', () => {
 		await fillPersonalDetails(page)
 		await authorizeCard(page)
 
+		// biome-ignore lint/suspicious/noPlaywrightWaitForTimeout: waits out the real hold time on the production backend
 		await page.waitForTimeout(HOLD_MS + MARGIN_MS)
 		await page.getByTestId('checkout-place-order').click()
 

@@ -86,7 +86,7 @@ test('a concert deep-link opens its sheet on a slow device, and the timetable re
 
 	// Load the app once so the dev server's modules are warm, then slow the CPU.
 	await page.goto('http://localhost:9000/discovery')
-	await page.waitForSelector('discovery-route', { timeout: 20_000 })
+	await expect(page.locator('discovery-route')).toBeVisible({ timeout: 20_000 })
 	const cdp = await context.newCDPSession(page)
 	await cdp.send('Emulation.setCPUThrottlingRate', { rate: 10 })
 

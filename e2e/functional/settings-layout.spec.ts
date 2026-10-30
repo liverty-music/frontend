@@ -43,7 +43,9 @@ test.describe('Settings layout (guest)', () => {
 		await mockRpcRoutes(page)
 
 		await page.goto('/settings')
-		await page.waitForSelector('settings-route', { timeout: 10_000 })
+		await expect(page.locator('settings-route')).toBeVisible({
+			timeout: 10_000,
+		})
 
 		// The page title header is now a single shell-hosted <page-header> above the
 		// viewport in the shell grid (no longer a per-route element). The layout

@@ -2,8 +2,8 @@
 
 ## lint: biome lint + format check + stylelint + typecheck + brand-vocabulary + import-boundaries + route-loading + e2e-coverage (matches CI)
 lint: lint-brand-vocabulary lint-boundaries lint-route-loading lint-e2e-coverage
-	npx biome lint src admin organizer reception shared test
-	npx biome format src admin organizer reception shared test
+	npx biome lint src admin organizer reception shared test e2e
+	npx biome format src admin organizer reception shared test e2e
 	npm run lint:css
 	# Invoke the project's own TypeScript compiler directly. `npx tsc` is
 	# ambiguous: `@aurelia/vite-plugin`'s `plugin-conventions` pulls a transitive
@@ -35,7 +35,7 @@ lint-e2e-coverage:
 
 ## fix: auto-fix formatting and lint issues
 fix:
-	npx biome check --write src test
+	npx biome check --write src admin organizer reception shared test e2e
 
 ## test: unit + scripts projects with coverage (Vitest 4 test.projects layout)
 ## The `storybook` browser project is gated separately in CI (test-storybook).

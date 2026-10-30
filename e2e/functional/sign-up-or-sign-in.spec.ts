@@ -116,6 +116,7 @@ test.describe('starts of sign-up and sign-in are reported', () => {
 		await page.getByTestId('settings-sign-up').click({ timeout: 20_000 })
 		await left
 		// Give a suppressed capture time to have arrived.
+		// biome-ignore lint/suspicious/noPlaywrightWaitForTimeout: an absence check; a suppressed capture has no event to wait for
 		await page.waitForTimeout(1_500)
 
 		expect(named(events, 'auth.started')).toEqual([])

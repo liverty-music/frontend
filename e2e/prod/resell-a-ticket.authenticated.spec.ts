@@ -16,8 +16,8 @@ import {
 import {
 	fanTickets,
 	openFreshSale,
-	SOLD_OUT,
 	type SaleStock,
+	SOLD_OUT,
 	stockOf,
 } from './sale'
 import {

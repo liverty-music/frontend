@@ -314,7 +314,9 @@ function countOf(recorder: CaptureRecorder, name: string): number {
  * across calls so each drives a fresh search rather than a no-op re-render.
  */
 async function triggerArtistSearch(page: Page, query: string): Promise<void> {
-	await page.waitForSelector('.discovery-layout', { timeout: 10_000 })
+	await expect(page.locator('.discovery-layout')).toBeVisible({
+		timeout: 10_000,
+	})
 	await page.locator('.search-input').fill(query)
 }
 
@@ -362,7 +364,9 @@ test.describe
 			// is NOT a step in onboarding. Visiting + acknowledging must navigate on
 			// (to /dashboard) and never gate progression.
 			await page.goto('http://localhost:9000/consent')
-			await page.waitForSelector('.consent-route', { timeout: 10_000 })
+			await expect(page.locator('.consent-route')).toBeVisible({
+				timeout: 10_000,
+			})
 
 			// Acknowledge → router.load('/dashboard'). Progression is never blocked.
 			await page.getByTestId('consent-acknowledge').click()
@@ -411,7 +415,9 @@ test.describe
 			// → ConsentChanged → AnalyticsService.opt_out_capturing(). The first
 			// settings switch is Analytics, the second is Session-replay.
 			await page.goto('http://localhost:9000/settings')
-			await page.waitForSelector('settings-route', { timeout: 10_000 })
+			await expect(page.locator('settings-route')).toBeVisible({
+				timeout: 10_000,
+			})
 			const analyticsSwitch = page.locator('button.settings-switch').first()
 			await expect(analyticsSwitch).toHaveAttribute('aria-checked', 'true')
 			await analyticsSwitch.click()
@@ -422,6 +428,7 @@ test.describe
 			// lifecycle events, which the SDK emits around an opt-state transition
 			// and which are irrelevant to "does product analytics keep capturing".
 			// Drain any in-flight capture first.
+			// biome-ignore lint/suspicious/noPlaywrightWaitForTimeout: lets in-flight captures land before the baseline count
 			await page.waitForTimeout(500)
 			const searchesAfterOptOut = countOf(recorder, 'artist.search')
 
@@ -429,12 +436,15 @@ test.describe
 			await page.goto('http://localhost:9000/discovery')
 			await triggerArtistSearch(page, 'radiohead')
 			// Give a generous window for any (suppressed) capture to have fired.
+			// biome-ignore lint/suspicious/noPlaywrightWaitForTimeout: an absence check; a suppressed capture has no event to wait for
 			await page.waitForTimeout(1500)
 			expect(countOf(recorder, 'artist.search')).toBe(searchesAfterOptOut)
 
 			// Re-enable: opt back in, then a fresh driven search must capture again.
 			await page.goto('http://localhost:9000/settings')
-			await page.waitForSelector('settings-route', { timeout: 10_000 })
+			await expect(page.locator('settings-route')).toBeVisible({
+				timeout: 10_000,
+			})
 			const reSwitch = page.locator('button.settings-switch').first()
 			await expect(reSwitch).toHaveAttribute('aria-checked', 'false')
 			await reSwitch.click()
@@ -459,7 +469,9 @@ test.describe
 			await expectCaptured(recorder, 'artist.search')
 
 			await page.goto('http://localhost:9000/settings')
-			await page.waitForSelector('settings-route', { timeout: 10_000 })
+			await expect(page.locator('settings-route')).toBeVisible({
+				timeout: 10_000,
+			})
 
 			// Toggle Session-replay OFF (the SECOND switch). Per design Decision 12
 			// recording is hard-disabled regardless, and the toggle only touches

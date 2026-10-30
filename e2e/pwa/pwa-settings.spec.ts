@@ -263,9 +263,10 @@ test.describe('Settings Push Notification Toggle', () => {
 
 	test('toggle is present on the settings page', async ({ page }) => {
 		await page.goto('/settings')
-		await page.waitForTimeout(3000)
 
-		await expect(page.locator('text=Push Notifications')).toBeVisible()
+		await expect(page.locator('text=Push Notifications')).toBeVisible({
+			timeout: 10_000,
+		})
 		await expect(page.locator('button[role="switch"]')).toBeVisible()
 	})
 

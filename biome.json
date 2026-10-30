@@ -1,5 +1,5 @@
 {
-	"$schema": "https://biomejs.dev/schemas/2.5.15/schema.json",
+	"$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
 	"vcs": {
 		"enabled": true,
 		"clientKind": "git",
@@ -14,13 +14,16 @@
 	},
 	"linter": {
 		"enabled": true,
+		"domains": {
+			"playwright": "none"
+		},
 		"rules": {
 			"preset": "recommended"
 		}
 	},
 	"overrides": [
 		{
-			"includes": ["test/**/*.ts", "test/**/*.spec.ts", "e2e/**/*.ts"],
+			"includes": ["test/**/*.ts", "src/**/*.spec.ts", "e2e/**/*.ts"],
 			"linter": {
 				"rules": {
 					"style": {
@@ -28,6 +31,38 @@
 					},
 					"suspicious": {
 						"noExplicitAny": "off"
+					}
+				}
+			}
+		},
+		{
+			"includes": ["e2e/**"],
+			"linter": {
+				"domains": {
+					"playwright": "recommended"
+				},
+				"rules": {
+					"correctness": {
+						"noPlaywrightMissingAwait": "error",
+						"usePlaywrightValidDescribeCallback": "error"
+					},
+					"suspicious": {
+						"noPlaywrightForceOption": "error",
+						"noPlaywrightNetworkidle": "error",
+						"noPlaywrightPagePause": "error",
+						"noPlaywrightWaitForNavigation": "error",
+						"noPlaywrightWaitForTimeout": "error"
+					},
+					"complexity": {
+						"noPlaywrightUselessAwait": "error"
+					},
+					"style": {
+						"noPlaywrightElementHandle": "error",
+						"noPlaywrightEval": "error",
+						"noPlaywrightWaitForSelector": "error"
+					},
+					"performance": {
+						"useDomNodeTextContent": "off"
 					}
 				}
 			}
@@ -53,8 +88,7 @@
 	},
 	"css": {
 		"parser": {
-			"cssModules": false,
-			"tailwindDirectives": true
+			"cssModules": false
 		}
 	},
 	"assist": {
