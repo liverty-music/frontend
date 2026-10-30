@@ -1,7 +1,13 @@
+import { context, propagation, trace } from '@opentelemetry/api'
+import {
+	CompositePropagator,
+	W3CBaggagePropagator,
+	W3CTraceContextPropagator,
+} from '@opentelemetry/core'
 import { registerInstrumentations } from '@opentelemetry/instrumentation'
 import { FetchInstrumentation } from '@opentelemetry/instrumentation-fetch'
 import { resourceFromAttributes } from '@opentelemetry/resources'
-import { WebTracerProvider } from '@opentelemetry/sdk-trace-web'
+import { StackContextManager, TracerProvider } from '@opentelemetry/sdk-trace'
 import {
 	ATTR_SERVICE_NAME,
 	ATTR_SERVICE_VERSION,
@@ -14,15 +20,28 @@ import {
  * @param apiBaseUrl - API base URL from runtime AppConfig; used to scope
  *   traceparent propagation to backend requests only.
  */
-export function initOtel(apiBaseUrl: string): WebTracerProvider {
+export function initOtel(apiBaseUrl: string): TracerProvider {
 	const resource = resourceFromAttributes({
 		[ATTR_SERVICE_NAME]: 'liverty-music-frontend',
 		[ATTR_SERVICE_VERSION]: '0.1.0',
 	})
 
-	const provider = new WebTracerProvider({ resource })
+	const provider = new TracerProvider({ resource })
 
-	provider.register()
+	// SDK 3.x removed WebTracerProvider.register(); register the same
+	// globals it used to install (tracer provider, stack context manager,
+	// W3C trace-context + baggage propagators) explicitly, as the 3.x
+	// migration guide prescribes.
+	trace.setGlobalTracerProvider(provider)
+	context.setGlobalContextManager(new StackContextManager().enable())
+	propagation.setGlobalPropagator(
+		new CompositePropagator({
+			propagators: [
+				new W3CTraceContextPropagator(),
+				new W3CBaggagePropagator(),
+			],
+		}),
+	)
 
 	// Auto-instrument fetch requests and propagate traceparent to backend
 	registerInstrumentations({
