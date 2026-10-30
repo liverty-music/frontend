@@ -37,7 +37,7 @@
 		"@aurelia/storybook": "3.0.0",
 		"@aurelia/testing": "2.0.0-rc.2",
 		"@aurelia/vite-plugin": "2.0.0-rc.2",
-		"@axe-core/playwright": "4.13.0",
+		"@axe-core/playwright": "4.14.0",
 		"@biomejs/biome": "2.6.4",
 		"@js-temporal/polyfill": "0.5.1",
 		"@playwright/test": "1.64.1",
