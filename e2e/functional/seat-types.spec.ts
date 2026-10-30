@@ -308,7 +308,7 @@ test(`@spec ${STORY_SPEC} "Second entry into the same sale" — a two-date lotte
 			}
 		},
 		// The fan's entries in the sale so far, each with its Order.
-		'LotteryEntryService/ListByTicketType': () => ({
+		'LotteryEntryService/ListByTicketSale': () => ({
 			body: {
 				lotteryEntries: entries.map((_, i) => ({
 					id: { value: fakeId(`seat-types-entry-${i + 1}`) },

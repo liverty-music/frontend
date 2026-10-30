@@ -105,11 +105,11 @@ export class LotteryEntryRpcClient {
 	 * The fan's entries in the lottery sale, each with its TicketStock and
 	 * count: at most one per event the sale names.
 	 */
-	public async listBySale(
+	public async listByTicketSale(
 		ticketSaleId: string,
 		signal?: AbortSignal,
 	): Promise<LotteryEntry[]> {
-		const resp = await this.client.listByTicketType(
+		const resp = await this.client.listByTicketSale(
 			{ ticketSaleId: { value: ticketSaleId } },
 			{ signal },
 		)

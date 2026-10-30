@@ -601,7 +601,7 @@ export class LotteryEntryRoute implements IRouteViewModel {
 	private async hasEntry(): Promise<boolean> {
 		const stocks = new Set(this.tickets.stocks.map((s) => s.id))
 		try {
-			const entries = await this.entryClient.listBySale(
+			const entries = await this.entryClient.listByTicketSale(
 				this.saleId,
 				this.signal,
 			)

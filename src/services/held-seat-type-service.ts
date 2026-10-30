@@ -44,7 +44,7 @@ const NOTHING: Found = { stockIds: [], count: 0 }
  * - the Orders of their Issued tickets for the event (OrderService.Get, read
  *   from the tickets IPurchasedTicketStore loaded);
  * - their Entered or Won entries in the event's lottery sales
- *   (LotteryEntryService.ListByTicketType, which returns each entry's Order);
+ *   (LotteryEntryService.ListByTicketSale, which returns each entry's Order);
  * - the checkout they hold for the event on this device (CheckoutService.Get).
  *
  * A failed read is logged and leaves that source out: the server refuses a
@@ -121,7 +121,7 @@ export class HeldSeatTypeService {
 		signal: AbortSignal | undefined,
 	): Promise<Found> {
 		try {
-			const entries = (await this.entryClient.listBySale(saleId, signal))
+			const entries = (await this.entryClient.listByTicketSale(saleId, signal))
 				// Only this event's entries: a tour sale names other dates too.
 				.filter((e) => stocks.has(e.ticketStockId))
 			const live = entries.filter(
