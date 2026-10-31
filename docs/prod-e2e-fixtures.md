@@ -158,6 +158,19 @@ For each Series in the table above:
 The Event id is the last path segment of the date's link on the Series page
 (`…/events/<id>`).
 
+> [!WARNING]
+> An Event is one venue, date and start time. A new Series on the same venue,
+> date and start time as an existing one gets that existing Event, not a new
+> one: the old fixture's Event then shows the new Series, and a 限定公開 or
+> cancelled fixture stops being one. If the slot is held by a cancelled Event,
+> publishing fails with `the event's slot is held by a cancelled event`.
+>
+> Before creating a fixture, pick a date no other fixture uses (the table of
+> variables above names them all, and the Series list shows the rest). After
+> creating it, check that its Event id is new: Event ids are time-ordered, so
+> a new Event's id starts like its Series id (`01a18b5e-6d44-79…` for Series
+> `01a18b5e-6d44-79…`), while a reused Event's id is older.
+
 ## Running
 
 Run the specs in the pinned Playwright container, as each purchase spec's
