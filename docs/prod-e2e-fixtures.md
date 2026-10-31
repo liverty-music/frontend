@@ -159,19 +159,15 @@ The Event id is the last path segment of the date's link on the Series page
 (`…/events/<id>`).
 
 > [!WARNING]
-> Give each fixture a date no other Series of the test Artist uses at the same
-> venue and start time. A new Series on such a slot does not get a new Event:
-> it takes over the existing Series' Event, which then shows the new Series and
-> its visibility, so a 限定公開 fixture can become public
-> ([backend#737](https://github.com/liverty-music/backend/issues/737)). A slot
-> held by a cancelled Event cannot be published at all
-> (`the event's slot is held by a cancelled event`).
+> Give each fixture a date no other Series of the test Organizer uses at the
+> same venue and start time. Publishing a date on a slot that another Series'
+> Event or a cancelled Event holds is refused
+> (`the event's slot is held by another series' event`, or
+> `... by a cancelled event`): the console says the venue, date and start time
+> are already used, and the date stays 下書き. Change the fixture's date or
+> start time in the concert editor and publish again.
 >
-> The dates in use are on the Series list in the organizer console. After
-> creating a fixture, check that its Event id is new: Event ids are
-> time-ordered, so a new Event's id starts like its Series id
-> (`01a18b5e-6d44-79…` for Series `01a18b5e-6d44-79…`), while a taken-over
-> Event's id is older.
+> The dates in use are on the Series list in the organizer console.
 
 ## Running
 

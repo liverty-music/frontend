@@ -1,5 +1,6 @@
 import { IRouter, IRouterEvents, type Params, route } from '@aurelia/router'
 import { Visibility } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
+import { Code, ConnectError } from '@connectrpc/connect'
 import { type IDisposable, ILogger, resolve } from 'aurelia'
 import { IAppConfig } from '../../shared/config/app-config'
 import {
@@ -23,6 +24,11 @@ import { ISnackbar } from '../ui/console-snackbar/snackbar'
 import type { ConsoleTab } from '../ui/console-tabs/console-tabs'
 import type { MenuItem } from '../ui/overflow-menu/overflow-menu'
 import { IEventPage } from './event-page'
+
+/** True when the server refused the publish rather than failing to run it. */
+function isRefused(err: unknown): boolean {
+	return err instanceof ConnectError && err.code === Code.FailedPrecondition
+}
 
 /**
  * One event (one date of a concert): its date, venue and publish state, the
@@ -218,9 +224,11 @@ export class EventRoute {
 			this.snackbar.show('event.published')
 		} catch (err) {
 			this.logger.warn('Publish failed', err)
-			this.snackbar.showError('event.publishFailed', {
-				retry: () => void this.publishConfirmed(),
-			})
+			if (isRefused(err)) await this.showRefused()
+			else
+				this.snackbar.showError('event.publishFailed', {
+					retry: () => void this.publishConfirmed(),
+				})
 		} finally {
 			this.publishing = false
 		}
@@ -236,8 +244,18 @@ export class EventRoute {
 			this.snackbar.show('event.published')
 		} catch (err) {
 			this.logger.warn('Publish failed', err)
-			this.snackbar.showError('event.publishFailed')
+			if (isRefused(err)) await this.showRefused()
+			else this.snackbar.showError('event.publishFailed')
 		}
+	}
+
+	/**
+	 * A refused publish (the date's slot is used) fails the same way on every
+	 * retry: say how to fix it, offer no retry, and show the event as it now is.
+	 */
+	private async showRefused(): Promise<void> {
+		this.snackbar.showError('event.publishSlotUsed')
+		await this.page.reload()
 	}
 
 	public async cancel(): Promise<void> {

@@ -371,7 +371,14 @@ export class ConcertRoute {
 			this.snackbar.show('concert.datesPublished', { count: ids.length })
 		} catch (err) {
 			this.logger.warn('Publish failed', err)
-			this.snackbar.showError('event.publishFailed')
+			if (err instanceof ConnectError && err.code === Code.FailedPrecondition) {
+				// A used slot fails the same way on every retry: say how to fix
+				// it and show the dates as they now are.
+				this.snackbar.showError('event.publishSlotUsed')
+				await this.load()
+			} else {
+				this.snackbar.showError('event.publishFailed')
+			}
 		} finally {
 			this.publishing = false
 		}

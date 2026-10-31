@@ -187,6 +187,29 @@ describe('event page publish', () => {
 		await done()
 	})
 
+	it('@spec components/infrastructure/organizer/web/route/event "Publish refused for a used slot"', async () => {
+		const publish = vi
+			.fn()
+			.mockRejectedValue(new ConnectError('slot held', Code.FailedPrecondition))
+		const { vm, d, snackbar, root, done } = await mount({ publish })
+		const showError = vi.spyOn(snackbar, 'showError')
+
+		await vm.publish()
+		await tasksSettled()
+
+		expect(showError).toHaveBeenCalledTimes(1)
+		expect(showError).toHaveBeenCalledWith('event.publishSlotUsed')
+		expect(root.querySelector('.snack-message')?.textContent?.trim()).toBe(
+			'同じ会場・日時の公演日がほかの公演にあるか、中止した公演日があるため公開できませんでした。公演の編集で日付か開始時刻を変えてください',
+		)
+		expect(root.querySelector('.snack-action-btn')).toBeNull()
+		// The page reads the event again and still shows it as a draft.
+		expect(d.list).toHaveBeenCalledTimes(2)
+		expect(vm.badge.labelKey).toBe('publishState.draft')
+		expect(publish).toHaveBeenCalledTimes(1)
+		await done()
+	})
+
 	it('reads its concert and event, and shows them in the header', async () => {
 		const { vm, d, done } = await mount()
 
