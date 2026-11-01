@@ -248,6 +248,7 @@
 		"cancelledNote": "This date is cancelled.",
 		"published": "Published",
 		"publishFailed": "Could not publish",
+		"publishSlotUsed": "Could not publish: another concert already has a date at this venue, date and start time, or a cancelled date is there. Change the date or start time in the concert editor.",
 		"cancelled": "Cancelled",
 		"draftRemoved": "Draft date removed",
 		"cancelFailed": "Could not cancel",
