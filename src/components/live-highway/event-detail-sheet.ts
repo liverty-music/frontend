@@ -1,5 +1,9 @@
-import { bindable, ILogger, resolve } from 'aurelia'
+import { I18N } from '@aurelia/i18n'
+import { bindable, IEventAggregator, ILogger, resolve } from 'aurelia'
+import { SNACK_LONG_MS, Snack } from '../../../shared/ui/snack-bar/snack'
 import { IHistory } from '../../adapter/browser/history'
+import { HYPE_TIERS } from '../../adapter/view/hype-display'
+import { HYPE_ORDER } from '../../entities/concert'
 import {
 	JOURNEY_NAV_ORDER,
 	JOURNEY_STATUS_CONFIG_MAP,
@@ -23,7 +27,22 @@ import {
 	eventGoogleMapsUrl,
 	eventOpenTimeOrFallback,
 } from './event-detail-utils'
-import type { JourneyStatus, LiveEvent } from './live-event'
+import type { HypeLevel, JourneyStatus, LiveEvent } from './live-event'
+
+/**
+ * How long after the calendar link the page must have become hidden to count
+ * as having left the app's view. A browser that opens the calendar without
+ * hiding the page (or without firing `visibilitychange`) shows the snack once
+ * this has passed.
+ */
+export const CALENDAR_RETURN_FALLBACK_MS = 1000
+
+/** Statuses whose save may raise the artist's hype level on the server. */
+const RAISING_STATUSES: ReadonlySet<JourneyStatus> = new Set([
+	'applied',
+	'unpaid',
+	'paid',
+])
 
 export class EventDetailSheet {
 	@bindable public event: LiveEvent | null = null
@@ -76,6 +95,10 @@ export class EventDetailSheet {
 	/** Where a programmatic close returns to; recorded when the sheet opens. */
 	private returnUrl = '/dashboard'
 	private readonly analytics = resolve(IAnalyticsService)
+	private readonly ea = resolve(IEventAggregator)
+	private readonly i18n = resolve(I18N)
+	/** Releases the wait for the fan's return from the calendar, if armed. */
+	private releaseReturnWatch: () => void = () => {}
 
 	// Arrow function to allow `removeEventListener` with the same reference
 	private readonly onPopstate = (): void => {
@@ -180,7 +203,12 @@ export class EventDetailSheet {
 		})
 	}
 
-	/** The fan opened the add-to-calendar link (the link itself navigates). */
+	/**
+	 * The fan opened the add-to-calendar link (the link itself navigates). For a
+	 * signed-in fan with no journey for the event, this starts tracking it as an
+	 * inference at once, before the browser leaves, and shows the undo snack
+	 * when the fan comes back to the app.
+	 */
 	public onCalendarOpened(): void {
 		if (!this.event) return
 		this.analytics.capture(Events.ConcertCalendarAdded, {
@@ -188,6 +216,81 @@ export class EventDetailSheet {
 			artist_id: this.event.artistId,
 			surface: 'detail_sheet',
 		})
+		if (!this.isAuthenticated || this.status !== undefined) return
+		void this.inferTracking(this.event.id)
+	}
+
+	private async inferTracking(eventId: string): Promise<void> {
+		// Watch for the return from the click on, so a calendar that hides the
+		// page before the RPC answers is still seen.
+		const returned = this.waitForReturn()
+		let started: boolean
+		try {
+			started = await this.journeyStore.inferTracking(eventId)
+		} catch (err) {
+			this.releaseReturnWatch()
+			this.logger.warn('Failed to start tracking from the calendar', {
+				error: err,
+			})
+			return
+		}
+		if (!started) {
+			this.releaseReturnWatch()
+			return
+		}
+		await returned
+		this.ea.publish(
+			new Snack(this.i18n.tr('eventDetail.trackingStarted'), 'info', {
+				duration: SNACK_LONG_MS,
+				action: {
+					label: this.i18n.tr('eventDetail.undo'),
+					callback: () => void this.undoTracking(eventId),
+				},
+			}),
+		)
+	}
+
+	/**
+	 * Resolves when the fan comes back to the app after the calendar opened: the
+	 * page became hidden and then visible again, or it did not become hidden
+	 * within {@link CALENDAR_RETURN_FALLBACK_MS} (the calendar opened without
+	 * hiding the app). One wait at a time; `detaching()` releases it.
+	 */
+	private waitForReturn(): Promise<void> {
+		this.releaseReturnWatch()
+		return new Promise((resolve) => {
+			let hidden = document.visibilityState === 'hidden'
+			const done = (): void => {
+				release()
+				resolve()
+			}
+			const onVisibilityChange = (): void => {
+				if (document.visibilityState === 'hidden') hidden = true
+				else if (hidden) done()
+			}
+			const timer = setTimeout(() => {
+				if (!hidden) done()
+			}, CALENDAR_RETURN_FALLBACK_MS)
+			const release = (): void => {
+				clearTimeout(timer)
+				document.removeEventListener('visibilitychange', onVisibilityChange)
+				this.releaseReturnWatch = () => {}
+			}
+			document.addEventListener('visibilitychange', onVisibilityChange)
+			this.releaseReturnWatch = release
+		})
+	}
+
+	/** Undo an inferred Tracking: the journey is removed. */
+	private async undoTracking(eventId: string): Promise<void> {
+		try {
+			await this.journeyStore.delete(eventId)
+		} catch (err) {
+			this.logger.warn('Failed to undo the inferred tracking', { error: err })
+			this.ea.publish(
+				new Snack(this.i18n.tr('eventDetail.undoFailed'), 'error'),
+			)
+		}
 	}
 
 	public open(
@@ -368,8 +471,67 @@ export class EventDetailSheet {
 			await this.journeyStore.setStatus(event.id, status)
 		} catch (err) {
 			this.logger.warn('Failed to set journey status', { error: err })
+			return
 		} finally {
 			this.journeyUpdating = false
+		}
+		if (RAISING_STATUSES.has(status) && !event.matched) {
+			await this.showHypeRaise(event)
+		}
+	}
+
+	/**
+	 * After a saved Applied, Unpaid or Paid for a concert the fan's level did not
+	 * match, the server may have raised the artist's hype level. Re-read it and,
+	 * when it was raised, offer to undo it. The previous level is the one the
+	 * follow store held before the re-read, which came from the follow list too.
+	 */
+	private async showHypeRaise(event: LiveEvent): Promise<void> {
+		const artistId = event.artistId
+		if (!artistId) return
+		const previous: HypeLevel =
+			this.followStore.hypeByArtist.get(artistId) ?? event.hypeLevel
+		let current: HypeLevel | undefined
+		try {
+			current = await this.followStore.rereadHype(artistId)
+		} catch (err) {
+			// The journey is saved; only the snack is lost.
+			this.logger.warn('Failed to re-read the hype level after a journey', {
+				error: err,
+			})
+			return
+		}
+		if (!current || HYPE_ORDER[current] <= HYPE_ORDER[previous]) return
+		this.ea.publish(
+			new Snack(
+				this.i18n.tr('eventDetail.hypeRaised', {
+					name: event.artistName,
+					hype: HYPE_TIERS[current].label,
+				}),
+				'info',
+				{
+					duration: SNACK_LONG_MS,
+					action: {
+						label: this.i18n.tr('eventDetail.undo'),
+						callback: () => void this.undoHypeRaise(artistId, previous),
+					},
+				},
+			),
+		)
+	}
+
+	/** Undo a raise: the previous level is saved as the fan's own choice. */
+	private async undoHypeRaise(
+		artistId: string,
+		previous: HypeLevel,
+	): Promise<void> {
+		try {
+			await this.followStore.setHype(artistId, previous)
+		} catch (err) {
+			this.logger.warn('Failed to undo the hype raise', { error: err })
+			this.ea.publish(
+				new Snack(this.i18n.tr('eventDetail.undoFailed'), 'error'),
+			)
 		}
 	}
 
@@ -389,5 +551,6 @@ export class EventDetailSheet {
 	/** Unconditional cleanup on component detach to prevent listener leaks */
 	public detaching(): void {
 		window.removeEventListener('popstate', this.onPopstate)
+		this.releaseReturnWatch()
 	}
 }

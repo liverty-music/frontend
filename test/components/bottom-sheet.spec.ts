@@ -188,6 +188,31 @@ describe('BottomSheet', () => {
 		})
 	})
 
+	describe('background inert', () => {
+		it('inerts the rest of the page but keeps an element marked data-over-sheets interactive', () => {
+			// body > shell > [main > dialog, snack-bar[data-over-sheets], aside]
+			const shell = document.createElement('div')
+			const main = document.createElement('main')
+			const dialog = document.createElement('dialog')
+			Object.assign(dialog, { showPopover: vi.fn(), hidePopover: vi.fn() })
+			const snackBar = document.createElement('snack-bar')
+			snackBar.setAttribute('data-over-sheets', '')
+			const aside = document.createElement('aside')
+			main.append(dialog)
+			shell.append(main, snackBar, aside)
+			document.body.append(shell)
+			Object.defineProperty(sut, 'popoverEl', { value: dialog, writable: true })
+
+			sut.openChanged(true)
+
+			expect(aside.inert).toBe(true)
+			expect(snackBar.inert).toBeFalsy()
+			sut.detaching()
+			expect(aside.inert).toBe(false)
+			shell.remove()
+		})
+	})
+
 	describe('detaching()', () => {
 		it('hides the popover without emitting sheet-closed', () => {
 			openAndSettle()

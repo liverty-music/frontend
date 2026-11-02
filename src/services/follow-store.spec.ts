@@ -213,6 +213,59 @@ describe('FollowStore', () => {
 		})
 	})
 
+	describe('hype levels after a journey (rereadHype)', () => {
+		it('re-reads the follow list past the session load and returns the level', async () => {
+			mockRpcClient.list.mockResolvedValue([makeFollow('a1')])
+			await sut.ensureLoaded()
+			mockRpcClient.list.mockResolvedValue([makeFollow('a1', 'away')])
+
+			expect(await sut.rereadHype('a1')).toBe('away')
+
+			expect(mockRpcClient.list).toHaveBeenCalledTimes(2)
+			expect(sut.hypeByArtist.get('a1')).toBe('away')
+		})
+
+		it('drops the rendered timetable only when the level changed', async () => {
+			mockRpcClient.list.mockResolvedValue([makeFollow('a1')])
+			await sut.listFollowed()
+
+			await sut.rereadHype('a1')
+			expect(mockConcertStore.invalidateFollowerCache).not.toHaveBeenCalled()
+
+			mockRpcClient.list.mockResolvedValue([makeFollow('a1', 'away')])
+			await sut.rereadHype('a1')
+			expect(mockConcertStore.invalidateFollowerCache).toHaveBeenCalledOnce()
+		})
+
+		it('records a saved level, so an undone raise shows the fan level', async () => {
+			mockRpcClient.list.mockResolvedValue([makeFollow('a1', 'away')])
+			await sut.listFollowed()
+
+			await sut.setHype('a1', 'nearby')
+
+			expect(sut.hypeByArtist.get('a1')).toBe('nearby')
+		})
+
+		it('keeps the level when the save fails', async () => {
+			mockRpcClient.list.mockResolvedValue([makeFollow('a1', 'away')])
+			await sut.listFollowed()
+			mockRpcClient.setHype.mockRejectedValueOnce(new Error('unavailable'))
+
+			await expect(sut.setHype('a1', 'nearby')).rejects.toThrow('unavailable')
+
+			expect(sut.hypeByArtist.get('a1')).toBe('away')
+		})
+
+		it('forgets the levels on sign-out', async () => {
+			mockRpcClient.list.mockResolvedValue([makeFollow('a1', 'away')])
+			await sut.listFollowed()
+
+			sut.clear()
+
+			expect(sut.hypeByArtist.size).toBe(0)
+		})
+	})
+
 	describe('getFollowedArtistMap — always issues RPC (hype data not cached)', () => {
 		// @spec components/infrastructure/fan/web/route/dashboard "Follow state not yet loaded"
 		it('calls FollowService.List RPC when followedArtists is empty', async () => {

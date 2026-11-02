@@ -27,7 +27,9 @@
      to avoid overlap (D7). Single instance guaranteed by app-shell — safe to
      use static ids inside. -->
 <pwa-install-banner if.bind="showNav && auth.isAuthenticated && onboarding.isCompleted && !isPostSignupSurfaceOpen"></pwa-install-banner>
-<snack-bar></snack-bar>
+<!-- Stays interactive while a bottom sheet is open: a snack's action (an undo
+     of what the fan just did in the sheet) shows above the sheet. -->
+<snack-bar data-over-sheets></snack-bar>
 <error-banner></error-banner>
 
 <!-- Global FAB action launcher (top layer). Shown only with the bottom nav,

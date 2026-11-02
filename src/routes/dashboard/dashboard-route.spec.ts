@@ -603,6 +603,66 @@ describe('DashboardRoute', () => {
 		})
 	})
 
+	describe('hype level changes (onHypeChanged)', () => {
+		function onHypeChanged(route: DashboardRoute, levels: Map<string, string>) {
+			;(
+				route as unknown as {
+					onHypeChanged(m: Map<string, string>): void
+				}
+			).onHypeChanged(levels)
+		}
+
+		function awayGroup(): DateGroup {
+			return {
+				...makeGroup('a1'),
+				home: [],
+				away: [
+					{
+						artistId: 'a1',
+						id: 'w-a1',
+						hypeLevel: 'nearby',
+						matched: false,
+					} as never,
+				],
+			}
+		}
+
+		// @spec components/infrastructure/fan/web/global/event-detail-sheet "Applied for a distant concert raises the level"
+		it('re-derives the timetable when a shown artist level changed', () => {
+			sut.dateGroups = [awayGroup()]
+			const refresh = vi
+				.spyOn(
+					sut as unknown as { refreshInBackground(): Promise<void> },
+					'refreshInBackground',
+				)
+				.mockResolvedValue()
+
+			onHypeChanged(sut, new Map([['a1', 'away']]))
+
+			expect(refresh).toHaveBeenCalledOnce()
+		})
+
+		it('does nothing when every shown level is unchanged', () => {
+			sut.dateGroups = [awayGroup()]
+			const refresh = vi
+				.spyOn(
+					sut as unknown as { refreshInBackground(): Promise<void> },
+					'refreshInBackground',
+				)
+				.mockResolvedValue()
+
+			onHypeChanged(
+				sut,
+				new Map([
+					['a1', 'nearby'],
+					['other', 'away'],
+				]),
+			)
+
+			expect(refresh).not.toHaveBeenCalled()
+		})
+	})
+
 	describe('syncFilterUrl', () => {
 		it('replaces URL to /dashboard when both facets are empty', () => {
 			sut.filteredArtistIds = []

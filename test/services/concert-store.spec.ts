@@ -148,6 +148,93 @@ describe('ConcertStore', () => {
 		})
 	})
 
+	describe('toDateGroups (highlights by hype level and lane)', () => {
+		const dateLD = { year: 2026, month: 3, day: 15 }
+		const artist = { id: 'a1', name: 'Band', mbid: '' }
+
+		function concert(id: string) {
+			return {
+				event: {
+					id: { value: id },
+					seriesId: { value: 's1' },
+					localDate: { value: dateLD },
+					venue: { name: { value: 'Venue' } },
+				},
+				artists: [{ id: { value: 'a1' }, name: { value: 'Band' } }],
+				series: { id: { value: 's1' }, title: { value: 'Show' } },
+			}
+		}
+
+		/** One concert of the artist in each lane, matched as the hype level says. */
+		function matchedByLane(hype: 'watch' | 'home' | 'nearby' | 'away') {
+			const [dg] = sut.toDateGroups(
+				[
+					{
+						date: { value: dateLD },
+						home: [concert('c-home')],
+						nearby: [concert('c-nearby')],
+						away: [concert('c-away')],
+					} as never,
+				],
+				new Map([['a1', { artist, hype }]]),
+				new Map(),
+			)
+			return {
+				shown: [...dg.home, ...dg.nearby, ...dg.away].map((c) => c.id),
+				home: dg.home[0].matched,
+				nearby: dg.nearby[0].matched,
+				away: dg.away[0].matched,
+			}
+		}
+
+		// @spec components/infrastructure/fan/web/route/dashboard "Nearby artist with a distant concert"
+		it('highlights a Nearby artist in the home and nearby lanes, not the away lane', () => {
+			expect(matchedByLane('nearby')).toMatchObject({
+				home: true,
+				nearby: true,
+				away: false,
+			})
+		})
+
+		// @spec components/infrastructure/fan/web/route/dashboard "Watch artist"
+		// @spec components/infrastructure/fan/web/global/live-highway "Watch artist always unmatched"
+		// @spec stories/set-hype-for-an-artist "Watch"
+		it('shows a Watch artist concerts in every lane, none highlighted', () => {
+			expect(matchedByLane('watch')).toEqual({
+				shown: ['c-home', 'c-nearby', 'c-away'],
+				home: false,
+				nearby: false,
+				away: false,
+			})
+		})
+
+		// @spec components/infrastructure/fan/web/global/live-highway "Away artist matched on all stages"
+		// @spec stories/set-hype-for-an-artist "Raising the level to Away"
+		it('highlights an Away artist in every lane', () => {
+			expect(matchedByLane('away')).toMatchObject({
+				home: true,
+				nearby: true,
+				away: true,
+			})
+		})
+
+		// @spec components/infrastructure/fan/web/global/live-highway "Home artist matched only on home stage"
+		it('highlights a Home artist in the home lane only', () => {
+			expect(matchedByLane('home')).toMatchObject({
+				home: true,
+				nearby: false,
+				away: false,
+			})
+		})
+
+		// @spec components/infrastructure/fan/web/global/live-highway "Match computation is application-code responsibility"
+		it('exposes the match as data on each concert, computed from hype level and lane', () => {
+			const { home, away } = matchedByLane('home')
+			expect(typeof home).toBe('boolean')
+			expect(typeof away).toBe('boolean')
+		})
+	})
+
 	describe('toDateGroups (badges)', () => {
 		const dateLD = { year: 2026, month: 3, day: 15 }
 		const artist = { id: 'a1', name: 'Band', mbid: '' }
@@ -336,6 +423,7 @@ describe('ConcertStore', () => {
 			expect(mockLoggerWarn).not.toHaveBeenCalled()
 		})
 
+		// @spec components/infrastructure/fan/web/global/live-highway "Artist color source"
 		it("carries the resolved artist's hue, computed once from its name", () => {
 			const group = {
 				date: { value: dateLD },

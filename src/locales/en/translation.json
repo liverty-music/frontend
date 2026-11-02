@@ -150,7 +150,11 @@
 			"lost": "Lost",
 			"unpaid": "Unpaid",
 			"paid": "Paid"
-		}
+		},
+		"trackingStarted": "Ticket status set to Tracking.\nWe will tell you about ticket sales.",
+		"hypeRaised": "{{name}} is now {{hype}}.\nYou will also hear about distant new concerts.",
+		"undo": "Undo",
+		"undoFailed": "Couldn't undo. Please try again."
 	},
 	"dashboard": {
 		"lane": {

@@ -16,6 +16,7 @@ import { StorageKeys } from '../../constants/storage-keys'
 import type { Artist, CountedArtist } from '../../entities/artist'
 import type {
 	Concert,
+	HypeLevel,
 	JourneyStatus,
 	TimetableAnchor,
 } from '../../entities/concert'
@@ -625,6 +626,25 @@ export class DashboardRoute {
 	@watch((vm: DashboardRoute) => vm.userStore.currentLanguage)
 	protected onCurrentLanguageChanged(): void {
 		void this.refreshInBackground()
+	}
+
+	/**
+	 * A followed artist's hype level changed while the timetable is shown (the
+	 * app raised it after a journey saved in the detail sheet, or the fan undid
+	 * that raise): re-derive the timetable so the highlights follow the new
+	 * level through the same matching as a load.
+	 */
+	@watch((vm: DashboardRoute) => vm.followStore.hypeByArtist)
+	protected onHypeChanged(levels: ReadonlyMap<string, HypeLevel>): void {
+		const stale = this.dateGroups.some((group) =>
+			[...group.home, ...group.nearby, ...group.away].some((concert) => {
+				const level = concert.artistId
+					? levels.get(concert.artistId)
+					: undefined
+				return level !== undefined && level !== concert.hypeLevel
+			}),
+		)
+		if (stale) void this.refreshInBackground()
 	}
 
 	@watch((vm: DashboardRoute) => vm.journeyStore.journeyMap)

@@ -306,6 +306,10 @@ export class BottomSheet {
 	 * technology are confined to the sheet while it is open. Walks up from the
 	 * popover, inerting the siblings at each ancestor level — this works even
 	 * though the popover is nested deep in the component tree.
+	 *
+	 * An element marked `data-over-sheets` stays interactive: the app shell's
+	 * snack bar, whose snacks show above an open sheet and whose action (an
+	 * undo of what the fan just did in the sheet) must stay pressable.
 	 */
 	private applyInert(): void {
 		if (!this.popoverEl || typeof document === 'undefined') return
@@ -314,7 +318,12 @@ export class BottomSheet {
 		while (node && node !== body && node.parentElement) {
 			const parent = node.parentElement
 			for (const sib of Array.from(parent.children)) {
-				if (sib !== node && sib instanceof HTMLElement && !sib.inert) {
+				if (
+					sib !== node &&
+					sib instanceof HTMLElement &&
+					!sib.inert &&
+					!sib.hasAttribute('data-over-sheets')
+				) {
 					sib.inert = true
 					this.inerted.push(sib)
 				}

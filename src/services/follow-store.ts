@@ -80,6 +80,14 @@ export class FollowStore {
 	@observable public followedArtists: Artist[] = []
 
 	/**
+	 * The hype level per followed artist, as of the last follow-list read or
+	 * hype save. Replaced (never mutated) on every change so observers fire: the
+	 * Dashboard re-derives its highlights when a level changes, for example after
+	 * the app raised it for a journey or the fan undid that raise.
+	 */
+	@observable public hypeByArtist: ReadonlyMap<string, Hype> = new Map()
+
+	/**
 	 * Guest (unauthenticated) follow queue, hydrated from localStorage on
 	 * construction. Mutated in place (push/splice) so Aurelia array observation
 	 * still sees the change.
@@ -253,7 +261,23 @@ export class FollowStore {
 				)
 		}
 		this.followedArtists = result.map((f) => f.artist)
+		this.hypeByArtist = new Map(result.map((f) => [f.artist.id, f.hype]))
 		return result
+	}
+
+	/**
+	 * Re-read the signed-in fan's follow list (`FollowService.List`, not the
+	 * session load) and return the artist's hype level, or undefined when the
+	 * artist is not followed. Used after a saved journey, when the server may
+	 * have raised the level. A changed level drops the rendered timetable so no
+	 * screen paints the old highlights from cache.
+	 */
+	public async rereadHype(artistId: string): Promise<Hype | undefined> {
+		const before = this.hypeByArtist.get(artistId)
+		const list = await this.listFollowed()
+		const after = list.find((f) => f.artist.id === artistId)?.hype
+		if (after !== before) this.concertStore.invalidateFollowerCache()
+		return after
 	}
 
 	/**
@@ -279,6 +303,7 @@ export class FollowStore {
 			return
 		}
 		await this.rpcClient.setHype(artistId, hype)
+		this.recordHype(artistId, hype)
 		// Hype is rendered from the follower-scoped concert list, so a successful
 		// change must invalidate it (after the RPC succeeds) or the dashboard would
 		// paint the old hype lane from cache for up to the stale window.
@@ -412,7 +437,14 @@ export class FollowStore {
 		this.clearGuestFollows()
 		this.sessionLoad = null
 		this.followedArtists = []
+		this.hypeByArtist = new Map()
 		this.logger.info('Follow state cleared')
+	}
+
+	private recordHype(artistId: string, hype: Hype): void {
+		const next = new Map(this.hypeByArtist)
+		next.set(artistId, hype)
+		this.hypeByArtist = next
 	}
 
 	/**
@@ -462,6 +494,7 @@ export class FollowStore {
 	private setHypeGuest(artistId: string, hype: Hype): void {
 		const entry = this.guestFollowsState.find((f) => f.artist.id === artistId)
 		if (entry) {
+			this.recordHype(artistId, hype)
 			entry.hype = hype
 			// The guest's own choice, also when it equals the default level: the
 			// merge then keeps it as the fan's choice.
