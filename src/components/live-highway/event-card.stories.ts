@@ -89,6 +89,28 @@ export const Unmatched = {
 		// @spec components/infrastructure/fan/web/global/live-highway "Card treatments hold still"
 		await expect(style.animationName).toBe('none')
 		await expect(grain.animationName).toBe('none')
+
+		// @spec components/infrastructure/fan/web/global/live-highway "Artist name centered on the card"
+		// The name is text, centered across the card, and no logo image is shown.
+		await expect(name.textContent?.trim()).toBe('VAUNDY')
+		await expect(article.querySelector('img')).toBeNull()
+		const card = article.getBoundingClientRect()
+		const box = name.getBoundingClientRect()
+		await expect(
+			Math.abs(box.left - card.left - (card.right - box.right)),
+		).toBeLessThanOrEqual(1)
+
+		// @spec components/infrastructure/fan/web/global/live-highway "Unmatched card name at full visibility"
+		const nameStyle = getComputedStyle(name)
+		await expect(nameStyle.opacity).toBe('1')
+		await expect(nameStyle.filter).not.toMatch(/grayscale|brightness/)
+
+		// @spec components/infrastructure/fan/web/global/live-highway "Text fallback versus location label"
+		const label = article.querySelector<HTMLElement>('.location-label')
+		if (!label) throw new Error('location label not rendered')
+		await expect(Number.parseFloat(nameStyle.fontSize)).toBeGreaterThan(
+			Number.parseFloat(getComputedStyle(label).fontSize),
+		)
 	},
 } satisfies Story
 
