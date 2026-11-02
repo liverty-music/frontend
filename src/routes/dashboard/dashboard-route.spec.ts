@@ -641,6 +641,32 @@ describe('DashboardRoute', () => {
 			expect(refresh).toHaveBeenCalledOnce()
 		})
 
+		it('starts no second refresh while one for a hype change runs', async () => {
+			sut.dateGroups = [awayGroup()]
+			let finish!: () => void
+			const refresh = vi
+				.spyOn(
+					sut as unknown as { refreshInBackground(): Promise<void> },
+					'refreshInBackground',
+				)
+				.mockReturnValue(
+					new Promise<void>((resolve) => {
+						finish = resolve
+					}),
+				)
+
+			// The refresh reloads the follow list, which replaces the map again.
+			onHypeChanged(sut, new Map([['a1', 'away']]))
+			onHypeChanged(sut, new Map([['a1', 'away']]))
+			expect(refresh).toHaveBeenCalledOnce()
+
+			finish()
+			await Promise.resolve()
+			await Promise.resolve()
+			onHypeChanged(sut, new Map([['a1', 'away']]))
+			expect(refresh).toHaveBeenCalledTimes(2)
+		})
+
 		it('does nothing when every shown level is unchanged', () => {
 			sut.dateGroups = [awayGroup()]
 			const refresh = vi

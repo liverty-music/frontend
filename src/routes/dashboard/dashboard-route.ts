@@ -644,8 +644,16 @@ export class DashboardRoute {
 				return level !== undefined && level !== concert.hypeLevel
 			}),
 		)
-		if (stale) void this.refreshInBackground()
+		// The refresh reloads the follow list, which replaces this map again
+		// before the fresh timetable lands; one refresh at a time is enough.
+		if (!stale || this.hypeRefresh) return
+		this.hypeRefresh = this.refreshInBackground().finally(() => {
+			this.hypeRefresh = null
+		})
 	}
+
+	/** The background refresh a hype change started, while it runs. */
+	private hypeRefresh: Promise<void> | null = null
 
 	@watch((vm: DashboardRoute) => vm.journeyStore.journeyMap)
 	protected onJourneyMapChanged(map: Map<string, JourneyStatus>): void {

@@ -60,8 +60,17 @@ function concert(overrides: Partial<LiveEvent> = {}): LiveEvent {
 	}
 }
 
-/** A follow store whose re-read answers with the server's level. */
-function fakeFollowStore(initial: Hype, serverLevel: () => Hype) {
+/**
+ * A follow store whose re-read answers with the server's level: `before` until
+ * the journey is saved (the read just before the save), then `serverLevel()`.
+ * `before` defaults to the session's cached level.
+ */
+function fakeFollowStore(
+	initial: Hype,
+	serverLevel: () => Hype,
+	before: Hype = initial,
+) {
+	let reads = 0
 	const store = {
 		followedIds: new Set(['a1']),
 		follow: vi.fn(),
@@ -70,7 +79,8 @@ function fakeFollowStore(initial: Hype, serverLevel: () => Hype) {
 			Hype
 		>,
 		rereadHype: vi.fn(async (artistId: string) => {
-			const level = serverLevel()
+			reads += 1
+			const level = reads === 1 ? before : serverLevel()
 			store.hypeByArtist = new Map([[artistId, level]])
 			return level
 		}),
@@ -229,6 +239,21 @@ describe('adding to the calendar starts tracking', () => {
 		await fixture.stop(true)
 	})
 
+	it('keeps a status the fan saved after the inference when 取り消す is pressed', async () => {
+		const { fixture, sheet, journeyStore, rpc, snacks, calendarLink } =
+			await render()
+		calendarLink().click()
+		await vi.waitFor(() => expect(snacks).toHaveLength(1), { timeout: 3000 })
+		await sheet.setJourneyStatus('applied')
+
+		snacks[0].action?.callback()
+
+		await Promise.resolve()
+		expect(rpc.delete).not.toHaveBeenCalled()
+		expect(journeyStore.statusFor('ev-1')).toBe('applied')
+		await fixture.stop(true)
+	})
+
 	// @spec components/infrastructure/fan/web/global/event-detail-sheet "Fan already has a journey"
 	// @spec stories/track-ticket-journey "Existing journey kept"
 	it('requests nothing and shows no snack when the fan already has a journey', async () => {
@@ -320,6 +345,18 @@ describe('a hype level raised by a journey change is shown with undo', () => {
 			expect(followStore.setHype).toHaveBeenCalledWith('a1', 'nearby'),
 		)
 		expect(followStore.hypeByArtist.get('a1')).toBe('nearby')
+		await fixture.stop(true)
+	})
+
+	it('takes a level set on another device for the fan own, not a raise', async () => {
+		// The session still holds Nearby, but the fan set Away elsewhere.
+		const followStore = fakeFollowStore('nearby', () => 'away', 'away')
+		const { fixture, snacks } = await render({ followStore })
+
+		await fixture.component.sheet.setJourneyStatus('applied')
+
+		expect(snacks).toHaveLength(0)
+		expect(followStore.setHype).not.toHaveBeenCalled()
 		await fixture.stop(true)
 	})
 

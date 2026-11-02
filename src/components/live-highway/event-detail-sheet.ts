@@ -99,6 +99,8 @@ export class EventDetailSheet {
 	private readonly i18n = resolve(I18N)
 	/** Releases the wait for the fan's return from the calendar, if armed. */
 	private releaseReturnWatch: () => void = () => {}
+	/** Events whose Tracking the calendar add inferred and the fan has not changed since. */
+	private readonly inferredEventIds = new Set<string>()
 
 	// Arrow function to allow `removeEventListener` with the same reference
 	private readonly onPopstate = (): void => {
@@ -238,6 +240,7 @@ export class EventDetailSheet {
 			this.releaseReturnWatch()
 			return
 		}
+		this.inferredEventIds.add(eventId)
 		await returned
 		this.ea.publish(
 			new Snack(this.i18n.tr('eventDetail.trackingStarted'), 'info', {
@@ -281,8 +284,17 @@ export class EventDetailSheet {
 		})
 	}
 
-	/** Undo an inferred Tracking: the journey is removed. */
+	/**
+	 * Undo an inferred Tracking: the journey is removed. A status the fan saved
+	 * for the event after the inference is theirs and is kept.
+	 */
 	private async undoTracking(eventId: string): Promise<void> {
+		if (
+			!this.inferredEventIds.has(eventId) ||
+			this.journeyStore.statusFor(eventId) !== 'tracking'
+		)
+			return
+		this.inferredEventIds.delete(eventId)
 		try {
 			await this.journeyStore.delete(eventId)
 		} catch (err) {
@@ -464,6 +476,16 @@ export class EventDetailSheet {
 		// cannot redirect the write to the wrong event after the await.
 		const event = this.event
 		this.journeyUpdating = true
+		// The fan's own status replaces the inferred one, so its undo no longer
+		// applies.
+		this.inferredEventIds.delete(event.id)
+		// The level before the save is read from the server, not the session's
+		// follow list, so a level set on another device is not taken for the
+		// app's raise and its undo never writes back an outdated level.
+		const before =
+			RAISING_STATUSES.has(status) && !event.matched
+				? await this.hypeBeforeSave(event)
+				: undefined
 		try {
 			// Write-through the store (the single source of truth); it updates its
 			// observable map on success, which re-renders this sheet and the
@@ -475,22 +497,38 @@ export class EventDetailSheet {
 		} finally {
 			this.journeyUpdating = false
 		}
-		if (RAISING_STATUSES.has(status) && !event.matched) {
-			await this.showHypeRaise(event)
+		if (before) {
+			await this.showHypeRaise(event, before)
+		}
+	}
+
+	/** The artist's hype level on the server, or undefined when unreadable. */
+	private async hypeBeforeSave(
+		event: LiveEvent,
+	): Promise<HypeLevel | undefined> {
+		if (!event.artistId) return undefined
+		try {
+			return await this.followStore.rereadHype(event.artistId)
+		} catch (err) {
+			this.logger.warn('Failed to read the hype level before a journey', {
+				error: err,
+			})
+			return undefined
 		}
 	}
 
 	/**
 	 * After a saved Applied, Unpaid or Paid for a concert the fan's level did not
 	 * match, the server may have raised the artist's hype level. Re-read it and,
-	 * when it was raised, offer to undo it. The previous level is the one the
-	 * follow store held before the re-read, which came from the follow list too.
+	 * when it was raised, offer to undo it. The previous level was read from the
+	 * server just before the save.
 	 */
-	private async showHypeRaise(event: LiveEvent): Promise<void> {
+	private async showHypeRaise(
+		event: LiveEvent,
+		previous: HypeLevel,
+	): Promise<void> {
 		const artistId = event.artistId
 		if (!artistId) return
-		const previous: HypeLevel =
-			this.followStore.hypeByArtist.get(artistId) ?? event.hypeLevel
 		let current: HypeLevel | undefined
 		try {
 			current = await this.followStore.rereadHype(artistId)
