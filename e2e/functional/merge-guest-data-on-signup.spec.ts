@@ -277,11 +277,13 @@ test.describe('guest data storage', () => {
 		await page.goto('/my-artists')
 		await setHypeOnRow(page, 1, 'away')
 
+		// The changed entry is set by the fan; the untouched legacy Nearby
+		// entry is read as set by default.
 		await expect
 			.poll(() => guestQueue(page))
 			.toEqual([
-				{ artist: A, hype: 'nearby' },
-				{ artist: B, hype: 'away' },
+				{ artist: A, hype: 'nearby', hypeSetBy: 'default' },
+				{ artist: B, hype: 'away', hypeSetBy: 'fan' },
 			])
 	})
 
