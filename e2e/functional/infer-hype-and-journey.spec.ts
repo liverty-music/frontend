@@ -218,7 +218,9 @@ async function closeSheet(page: Page) {
 }
 
 test.describe('calendar add starts tracking', () => {
-	test(`@spec ${TRACK} "Calendar add starts tracking and the fan hears about the sale"`, async ({
+	// The sale notice for a Tracking journey is the backend's (design.md
+	// @spec-manual for this story scenario); this test covers the app's part.
+	test('a calendar add records Tracking, shows the snack on return and undoes it', async ({
 		page,
 	}) => {
 		const server: Server = {

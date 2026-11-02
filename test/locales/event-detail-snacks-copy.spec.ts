@@ -17,7 +17,6 @@ describe('event detail sheet snack copy', () => {
 		}
 	})
 
-	// @spec components/infrastructure/fan/web/global/event-detail-sheet "Calendar add from the sheet"
 	it('reads the tracking snack as the spec words it', () => {
 		expect(ja.eventDetail.trackingStarted.split('\n')).toEqual([
 			'チケット状況を「追跡中」にしました。',
@@ -31,7 +30,6 @@ describe('event detail sheet snack copy', () => {
 		expect(en.eventDetail.undo).toBe('Undo')
 	})
 
-	// @spec components/infrastructure/fan/web/global/event-detail-sheet "Applied for a distant concert raises the level"
 	it('reads the raise snack as the spec words it, with the same placeholders', () => {
 		expect(ja.eventDetail.hypeRaised.split('\n')).toEqual([
 			'{{name}}を {{hype}} にしました。',

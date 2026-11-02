@@ -198,7 +198,6 @@ describe('ConcertStore', () => {
 
 		// @spec components/infrastructure/fan/web/route/dashboard "Watch artist"
 		// @spec components/infrastructure/fan/web/global/live-highway "Watch artist always unmatched"
-		// @spec stories/set-hype-for-an-artist "Watch"
 		it('shows a Watch artist concerts in every lane, none highlighted', () => {
 			expect(matchedByLane('watch')).toEqual({
 				shown: ['c-home', 'c-nearby', 'c-away'],
@@ -209,7 +208,6 @@ describe('ConcertStore', () => {
 		})
 
 		// @spec components/infrastructure/fan/web/global/live-highway "Away artist matched on all stages"
-		// @spec stories/set-hype-for-an-artist "Raising the level to Away"
 		it('highlights an Away artist in every lane', () => {
 			expect(matchedByLane('away')).toMatchObject({
 				home: true,

@@ -627,7 +627,6 @@ describe('DashboardRoute', () => {
 			}
 		}
 
-		// @spec components/infrastructure/fan/web/global/event-detail-sheet "Applied for a distant concert raises the level"
 		it('re-derives the timetable when a shown artist level changed', () => {
 			sut.dateGroups = [awayGroup()]
 			const refresh = vi
