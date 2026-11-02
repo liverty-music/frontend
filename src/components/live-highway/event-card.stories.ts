@@ -68,9 +68,27 @@ export const Unmatched = {
 		const article = canvasElement.querySelector<HTMLElement>('.event-card')
 		if (!article) throw new Error('event-card not rendered')
 		await expect(article.hasAttribute('data-matched')).toBe(false)
-		// Unmatched cards carry a gradient background but no spotlight border/shadow.
 		const style = getComputedStyle(article)
-		await expect(style.backgroundImage).toContain('gradient')
+
+		// @spec components/infrastructure/fan/web/global/live-highway "Unmatched card shows the artist's color without light"
+		// The artist's diagonal gradient behind a faint 1px border …
+		await expect(style.backgroundImage).toContain('linear-gradient')
+		await expect(style.borderTopWidth).toBe('1px')
+		await expect(style.borderTopColor).toBe('oklch(1 0 0 / 0.12)')
+		// … a fine grain at 8% opacity over it …
+		const grain = getComputedStyle(article, '::after')
+		await expect(grain.backgroundImage).toContain('url(')
+		await expect(grain.opacity).toBe('0.08')
+		// … and no light: no glow, no beam, no glowing name.
+		await expect(style.boxShadow).toBe('none')
+		await expect(getComputedStyle(article, '::before').maskImage).toBe('none')
+		const name = article.querySelector<HTMLElement>('.artist-name')
+		if (!name) throw new Error('artist name not rendered')
+		await expect(getComputedStyle(name).textShadow).toBe('none')
+
+		// @spec components/infrastructure/fan/web/global/live-highway "Card treatments hold still"
+		await expect(style.animationName).toBe('none')
+		await expect(grain.animationName).toBe('none')
 	},
 } satisfies Story
 
@@ -87,11 +105,25 @@ export const Matched = {
 		if (!article) throw new Error('event-card not rendered')
 		const style = getComputedStyle(article)
 
+		// @spec components/infrastructure/fan/web/global/live-highway "Matched card is lit like a stage"
 		// Matched marker + neon identity intact.
 		await expect(article.hasAttribute('data-matched')).toBe(true)
-		await expect(style.backgroundImage).toContain('gradient')
+		await expect(style.backgroundImage).toContain('linear-gradient')
 		await expect(style.borderTopWidth).toBe('2px')
 		await expect(style.boxShadow).not.toBe('none')
+		await expect(style.boxShadow).toContain('inset')
+
+		// @spec components/infrastructure/fan/web/global/live-highway "Matched card has a light beam from above"
+		// A narrow cone anchored at the centre of the top edge, fading downward.
+		const beam = getComputedStyle(article, '::before')
+		await expect(beam.backgroundImage).toContain('linear-gradient')
+		await expect(beam.maskImage).toContain('radial-gradient')
+		await expect(beam.maskImage).toContain('at 50% 0%')
+
+		// @spec components/infrastructure/fan/web/global/live-highway "Matched card artist name glows"
+		const name = article.querySelector<HTMLElement>('.artist-name')
+		if (!name) throw new Error('artist name not rendered')
+		await expect(getComputedStyle(name).textShadow).not.toBe('none')
 
 		// The color identity source (--artist-hue, handed to CSS from the
 		// concert's precomputed hue) is present …
@@ -100,9 +132,12 @@ export const Matched = {
 		await expect(style.getPropertyValue('--artist-color').trim()).toBe('')
 
 		// @spec components/infrastructure/fan/web/route/dashboard "Idle timetable does no continuous rendering work"
+		// @spec components/infrastructure/fan/web/global/live-highway "Card treatments hold still"
 		// A card runs no animation at all, so an idle card never schedules
 		// per-frame style recalculation. (The removed `color-drift` animation did.)
 		await expect(style.animationName).toBe('none')
+		await expect(beam.animationName).toBe('none')
+		await expect(getComputedStyle(name).animationName).toBe('none')
 	},
 } satisfies Story
 
