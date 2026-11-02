@@ -15,6 +15,7 @@ import type { Artist } from '../entities/artist'
 import {
 	DEFAULT_HYPE,
 	type FollowedArtist,
+	type GuestFollowedArtist,
 	type Hype,
 	hasFollow,
 } from '../entities/follow'
@@ -51,7 +52,7 @@ export interface IFollowStore extends FollowStore {}
  *
  *       - `GuestMigrationRequested` → migrate the guest follow queue + hype to
  *         the backend with idempotent calls, draining each artist from the guest
- *         queue once it FULLY migrates (Follow + any non-default SetHype → only
+ *         queue once it FULLY migrates (Follow + the SetHype of a level the guest set → only
  *         not-fully-migrated items survive) in a single batched localStorage
  *         write, then write the per-account guest-merge receipt.
  *       - `SignedOut` → clear the guest follow state AND evict the
@@ -83,7 +84,7 @@ export class FollowStore {
 	 * construction. Mutated in place (push/splice) so Aurelia array observation
 	 * still sees the change.
 	 */
-	private readonly guestFollowsState: FollowedArtist[] = loadFollows()
+	private readonly guestFollowsState: GuestFollowedArtist[] = loadFollows()
 	// The signed-in follow list loaded once for this session, shared by the
 	// boot prefetch and Discovery so the list is not fetched twice.
 	private sessionLoad: Promise<FollowedArtist[]> | null = null
@@ -127,7 +128,7 @@ export class FollowStore {
 	 * reconcile task. The array is mutated in place so this is a live reference,
 	 * not a snapshot.
 	 */
-	public get guestFollows(): readonly FollowedArtist[] {
+	public get guestFollows(): readonly GuestFollowedArtist[] {
 		return this.guestFollowsState
 	}
 
@@ -303,17 +304,17 @@ export class FollowStore {
 	}
 
 	/**
-	 * Migrate the guest follow queue + non-default hype to the backend with
-	 * idempotent calls. An item counts as FULLY migrated — and is drained from
-	 * the queue — only when BOTH its `Follow` AND (when hype != DEFAULT) its
-	 * `SetHype` succeed. The leftover queue holds only items that did not fully
+	 * Migrate the guest follow queue + the hype levels the guest set to the
+	 * backend with idempotent calls. An item counts as FULLY migrated — and is
+	 * drained from the queue — only when BOTH its `Follow` AND (when the guest
+	 * set its hype) its `SetHype` succeed. The leftover queue holds only items that did not fully
 	 * migrate, which a later reconcile retries without re-following already-merged
 	 * artists. On full success (every item fully migrated) writes the per-account
 	 * guest-merge receipt.
 	 *
 	 * Why SetHype gates the drain: once the receipt exists no later reconcile
 	 * re-issues SetHype, so draining an item whose Follow succeeded but whose
-	 * SetHype threw would lose a non-default hype forever. Keeping such an item in
+	 * SetHype threw would lose the guest's hype level forever. Keeping such an item in
 	 * the queue (and deferring the receipt) lets reconcile retry it; the backend
 	 * Follow is idempotent, so the retried Follow is a no-op and the SetHype runs
 	 * again.
@@ -358,12 +359,15 @@ export class FollowStore {
 				continue
 			}
 
-			// Merge non-default hype before counting the item as migrated. A
-			// SetHype failure means the item is NOT fully migrated: leave it in
+			// Merge a hype level the guest set (including the default level, so a
+			// chosen Nearby is kept as the fan's choice) before counting the item
+			// as migrated. A level the guest never set is not sent, so it does
+			// not overwrite the account's level for an artist it already follows.
+			// A SetHype failure means the item is NOT fully migrated: leave it in
 			// the queue (do not drain) and defer the receipt so reconcile retries
-			// it — otherwise the non-default hype would be lost forever once the
+			// it — otherwise the guest's level would be lost forever once the
 			// receipt suppresses re-migration.
-			if (follow.hype !== DEFAULT_HYPE) {
+			if (follow.hypeSetBy === 'fan') {
 				try {
 					await this.rpcClient.setHype(id, follow.hype)
 				} catch (err) {
@@ -428,7 +432,11 @@ export class FollowStore {
 	 */
 	private followGuest(artist: Artist): void {
 		if (hasFollow(this.guestFollowsState, artist.id)) return
-		this.guestFollowsState.push({ artist, hype: DEFAULT_HYPE })
+		this.guestFollowsState.push({
+			artist,
+			hype: DEFAULT_HYPE,
+			hypeSetBy: 'default',
+		})
 		this.persistGuestFollows()
 		this.logger.info('Local artist followed', {
 			id: artist.id,
@@ -455,6 +463,9 @@ export class FollowStore {
 		const entry = this.guestFollowsState.find((f) => f.artist.id === artistId)
 		if (entry) {
 			entry.hype = hype
+			// The guest's own choice, also when it equals the default level: the
+			// merge then keeps it as the fan's choice.
+			entry.hypeSetBy = 'fan'
 			this.persistGuestFollows()
 			this.logger.info('Local hype set', { artistId, hype })
 		}

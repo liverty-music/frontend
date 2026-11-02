@@ -1,13 +1,17 @@
-import { DEFAULT_HYPE, type FollowedArtist } from '../../entities/follow'
+import {
+	DEFAULT_HYPE,
+	type FollowedArtist,
+	type GuestFollowedArtist,
+} from '../../entities/follow'
 
 const KEY_FOLLOWED = 'guest.followedArtists'
 const KEY_HOME = 'guest.home'
 
-export function saveFollows(follows: FollowedArtist[]): void {
+export function saveFollows(follows: readonly GuestFollowedArtist[]): void {
 	localStorage.setItem(KEY_FOLLOWED, JSON.stringify(follows))
 }
 
-export function loadFollows(): FollowedArtist[] {
+export function loadFollows(): GuestFollowedArtist[] {
 	const raw = localStorage.getItem(KEY_FOLLOWED)
 	if (!raw) return []
 	try {
@@ -35,11 +39,15 @@ export function loadHome(): string | null {
 }
 
 /**
- * Coerce a stored value to FollowedArtist.
- * Accepts both the new format { artist, hype } and the legacy GuestFollow
- * format { artist, home } — legacy entries fall back to DEFAULT_HYPE.
+ * Coerce a stored value to a guest follow.
+ * Accepts the current format { artist, hype, hypeSetBy }, the earlier
+ * { artist, hype } and the legacy GuestFollow format { artist, home }. A
+ * missing hype falls back to DEFAULT_HYPE. A missing hypeSetBy counts as set by
+ * the fan when the hype differs from DEFAULT_HYPE (a level other than the
+ * starting one can only have been chosen), else as set by default, matching
+ * the server's backfill.
  */
-function toFollowedArtist(val: unknown): FollowedArtist | null {
+function toFollowedArtist(val: unknown): GuestFollowedArtist | null {
 	if (!val || typeof val !== 'object') return null
 	const f = val as Record<string, unknown>
 	if (!f.artist || typeof f.artist !== 'object') return null
@@ -52,5 +60,12 @@ function toFollowedArtist(val: unknown): FollowedArtist | null {
 			? (f.hype as FollowedArtist['hype'])
 			: DEFAULT_HYPE
 
-	return { artist: f.artist as FollowedArtist['artist'], hype }
+	const hypeSetBy =
+		f.hypeSetBy === 'fan' || f.hypeSetBy === 'default'
+			? f.hypeSetBy
+			: hype === DEFAULT_HYPE
+				? 'default'
+				: 'fan'
+
+	return { artist: f.artist as FollowedArtist['artist'], hype, hypeSetBy }
 }

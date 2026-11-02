@@ -5,14 +5,19 @@ import {
 	saveFollows,
 	saveHome,
 } from '../../../src/adapter/storage/guest-storage'
-import { DEFAULT_HYPE, type FollowedArtist } from '../../../src/entities/follow'
+import {
+	DEFAULT_HYPE,
+	type FollowedArtist,
+	type GuestFollowedArtist,
+} from '../../../src/entities/follow'
 
 function makeFollow(
 	id: string,
 	name: string,
 	hype: FollowedArtist['hype'] = DEFAULT_HYPE,
-): FollowedArtist {
-	return { artist: { id, name, mbid: '' }, hype }
+	hypeSetBy: GuestFollowedArtist['hypeSetBy'] = 'default',
+): GuestFollowedArtist {
+	return { artist: { id, name, mbid: '' }, hype, hypeSetBy }
 }
 
 beforeEach(() => {
@@ -53,7 +58,7 @@ describe('saveFollows / loadFollows', () => {
 	})
 
 	it('should preserve fanart data', () => {
-		const follows: FollowedArtist[] = [
+		const follows: GuestFollowedArtist[] = [
 			{
 				artist: {
 					id: 'a1',
@@ -69,6 +74,7 @@ describe('saveFollows / loadFollows', () => {
 					},
 				},
 				hype: 'away',
+				hypeSetBy: 'fan',
 			},
 		]
 		saveFollows(follows)
@@ -119,6 +125,40 @@ describe('saveFollows / loadFollows', () => {
 		expect(result[0].artist.id).toBe('a1')
 	})
 
+	// @spec stories/merge-guest-data-on-signup "Followed artists stored locally with hype"
+	it('round-trips who set each hype level', () => {
+		saveFollows([
+			makeFollow('a1', 'Chosen Nearby', DEFAULT_HYPE, 'fan'),
+			makeFollow('a2', 'Default'),
+		])
+
+		expect(loadFollows().map((f) => [f.hype, f.hypeSetBy])).toEqual([
+			[DEFAULT_HYPE, 'fan'],
+			[DEFAULT_HYPE, 'default'],
+		])
+	})
+
+	// @spec stories/merge-guest-data-on-signup "Legacy data read with hype fallback"
+	it('reads an entry without hypeSetBy as set by the fan when its hype differs from the default, else by default', () => {
+		localStorage.setItem(
+			'guest.followedArtists',
+			JSON.stringify([
+				{ artist: { id: 'a1', name: 'Away' }, hype: 'away' },
+				{ artist: { id: 'a2', name: 'Nearby' }, hype: DEFAULT_HYPE },
+				{ artist: { id: 'a3', name: 'Legacy' }, home: null },
+			]),
+		)
+
+		expect(
+			loadFollows().map((f) => [f.artist.id, f.hype, f.hypeSetBy]),
+		).toEqual([
+			['a1', 'away', 'fan'],
+			['a2', DEFAULT_HYPE, 'default'],
+			['a3', DEFAULT_HYPE, 'default'],
+		])
+	})
+
+	// @spec stories/merge-guest-data-on-signup "Legacy data read with hype fallback"
 	it('should fall back to DEFAULT_HYPE for legacy GuestFollow entries without hype', () => {
 		// Simulate old format: { artist, home } without hype field
 		localStorage.setItem(
