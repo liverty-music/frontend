@@ -491,6 +491,24 @@ describe('UserStore', () => {
 			expect(store.current).toBeUndefined()
 		})
 
+		// @spec stories/sign-up-or-sign-in "Sign out and back in"
+		it('resolves the same account again on the next sign-in', async () => {
+			const rpc = makeRpcClient()
+			rpc.get.mockResolvedValue(stubUser)
+			const { store, emitSignedOut } = build({
+				auth: makeAuthWithProfile(),
+				rpc,
+			})
+			await store.ensureLoaded('ja')
+			emitSignedOut()
+
+			const again = await store.ensureLoaded('ja')
+
+			expect(rpc.get).toHaveBeenCalledTimes(2)
+			expect(rpc.create).not.toHaveBeenCalled()
+			expect(again).toEqual({ user: stubUser, created: false })
+		})
+
 		it('leaves the kept referral code on the device', () => {
 			// A referral link's code is not account data: it stays across
 			// sign-out until it expires (OpenSpec `referral-attribution`, D7).

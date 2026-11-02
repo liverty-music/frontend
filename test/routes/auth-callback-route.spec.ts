@@ -1,17 +1,21 @@
 import { I18N, I18nConfiguration } from '@aurelia/i18n'
-import type { RouteNode } from '@aurelia/router'
+import { IRouter, type RouteNode } from '@aurelia/router'
 import { tasksSettled } from '@aurelia/runtime'
 import { createFixture } from '@aurelia/testing'
+import { Code, ConnectError } from '@connectrpc/connect'
 import {
 	CustomElement,
 	type IContainer,
 	IEventAggregator,
 	Registration,
 } from 'aurelia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ILocalStorage } from '../../src/adapter/storage/local-storage'
+import { BottomSheet } from '../../src/components/bottom-sheet/bottom-sheet'
+import { UserHomeSelector } from '../../src/components/user-home-selector/user-home-selector'
 import { IAppConfig } from '../../src/config/app-config'
 import { StorageKeys } from '../../src/constants/storage-keys'
+import { BusyOnClickCustomAttribute } from '../../src/custom-attributes/busy-on-click'
 import { IAnalyticsService } from '../../src/lib/analytics/analytics-service'
 import en from '../../src/locales/en/translation.json'
 import ja from '../../src/locales/ja/translation.json'
@@ -24,6 +28,7 @@ import { createTestContainer } from '../helpers/create-container'
 import { createMockAppConfig } from '../helpers/mock-app-config'
 import { createMockAuth } from '../helpers/mock-auth'
 import type { createMockI18n } from '../helpers/mock-i18n'
+import { createMockRouter } from '../helpers/mock-router'
 
 /**
  * Build the handleCallback result: the OIDC User. `flow` mirrors the OIDC
@@ -104,12 +109,15 @@ describe('AuthCallbackRoute', () => {
 	}
 
 	let container: IContainer
+	let mockRouter: ReturnType<typeof createMockRouter>
 
 	function setup(guestHome: string | null = null) {
 		mockUserStore = createMockUserStore(guestHome)
 		mockUserService = mockUserStore
 		storage = createMemoryStorage()
+		mockRouter = createMockRouter()
 		container = createTestContainer(
+			Registration.instance(IRouter, mockRouter),
 			Registration.instance(ILocalStorage, storage),
 			Registration.instance(IAuthService, mockAuth as IAuthService),
 			Registration.instance(
@@ -184,6 +192,7 @@ describe('AuthCallbackRoute', () => {
 
 		it('explicitly calls Create with home when guest selected one — sign-up flow + created=true sets postSignupShown flag', async () => {
 			// @spec components/infrastructure/fan/web/global/post-signup-dialog "Sign-up from the landing page"
+			// @spec stories/sign-up-or-sign-in "New fan finishes the tutorial"
 			// @spec stories/complete-onboarding "Completion latches on sign-in or sign-up"
 			mockAuth.handleCallback = vi
 				.fn()
@@ -264,6 +273,81 @@ describe('AuthCallbackRoute', () => {
 				const result = await sut.canLoad({}, {} as RouteNode)
 
 				expect(result).toBe('/tickets')
+			})
+		})
+
+		describe('a new account that needs a home', () => {
+			const homeRequired = () =>
+				new ConnectError('home required', Code.FailedPrecondition)
+
+			function eventPageSignUp() {
+				return {
+					profile: { email: 'new@example.com' },
+					state: {
+						flow: 'signup',
+						origin: 'event-page',
+						returnTo: '/events/ev-1',
+					},
+				}
+			}
+
+			// @spec stories/sign-up-or-sign-in "Sign-up from the event page without a home"
+			it('asks for the home, creates the account with it and returns to the event page', async () => {
+				mockAuth.handleCallback = vi.fn().mockResolvedValue(eventPageSignUp())
+				setup(null)
+				mockUserService.ensureLoaded = vi.fn().mockRejectedValue(homeRequired())
+
+				const result = await sut.canLoad({}, {} as RouteNode)
+
+				// The page renders with the home sheet; nothing is completed yet.
+				expect(result).toBe(true)
+				expect(sut.needsHome).toBe(true)
+				expect(sut.failed).toBe(false)
+				expect(mockOnboarding.finish).not.toHaveBeenCalled()
+				expect(mockEa.publish).not.toHaveBeenCalled()
+
+				await sut.onHomeSelected('JP-13')
+
+				expect(mockUserService.create).toHaveBeenCalledWith(
+					'new@example.com',
+					expect.stringMatching(/^(en|ja)$/),
+					expect.objectContaining({ countryCode: 'JP', level1: 'JP-13' }),
+				)
+				expect(mockEa.publish).toHaveBeenCalledWith(
+					new GuestMigrationRequested('u1'),
+				)
+				expect(mockOnboarding.finish).toHaveBeenCalled()
+				expect(mockRouter.load).toHaveBeenCalledWith('/events/ev-1')
+				expect(sut.needsHome).toBe(false)
+			})
+
+			// @spec stories/sign-up-or-sign-in "Returning fan signs in on a new device"
+			it('does not ask for a home when Create returns the existing account', async () => {
+				mockAuth.handleCallback = vi
+					.fn()
+					.mockResolvedValue(authUser('returning@example.com'))
+				setup(null)
+
+				const result = await sut.canLoad({}, {} as RouteNode)
+
+				expect(sut.needsHome).toBe(false)
+				expect(mockUserService.create).not.toHaveBeenCalled()
+				expect(result).toBe('/dashboard')
+			})
+
+			it('shows the failure copy when Create with the chosen home fails', async () => {
+				mockAuth.handleCallback = vi.fn().mockResolvedValue(eventPageSignUp())
+				setup(null)
+				mockUserService.ensureLoaded = vi.fn().mockRejectedValue(homeRequired())
+				mockUserService.create = vi
+					.fn()
+					.mockRejectedValue(new ConnectError('down', Code.Unavailable))
+
+				await sut.canLoad({}, {} as RouteNode)
+				await sut.onHomeSelected('JP-13')
+
+				expect(sut.failed).toBe(true)
+				expect(mockRouter.load).not.toHaveBeenCalled()
 			})
 		})
 
@@ -530,6 +614,7 @@ describe('AuthCallbackRoute page', () => {
 				Registration.instance(IUserStore, createMockUserStore()),
 				Registration.instance(IOnboardingService, createMockOnboarding()),
 				Registration.instance(IAppConfig, createMockAppConfig()),
+				Registration.instance(IRouter, createMockRouter()),
 				AuthCallbackRoute,
 			)
 			.build().started
@@ -568,6 +653,108 @@ describe('AuthCallbackRoute page', () => {
 			'Return home',
 		)
 		expect(host.textContent).not.toContain('invalid_grant')
+		await fixture.stop(true)
+	})
+})
+
+describe('AuthCallbackRoute home sheet at sign-up', () => {
+	const proto = HTMLElement.prototype as unknown as {
+		showPopover?: () => void
+		hidePopover?: () => void
+	}
+	const originalShow = proto.showPopover
+	const originalHide = proto.hidePopover
+
+	beforeEach(() => {
+		// jsdom has no Popover API; the real bottom sheet only needs the calls.
+		proto.showPopover = vi.fn()
+		proto.hidePopover = vi.fn()
+	})
+
+	afterEach(() => {
+		proto.showPopover = originalShow
+		proto.hidePopover = originalHide
+	})
+
+	async function render() {
+		const auth = createMockAuth({ isAuthenticated: false })
+		auth.handleCallback = vi.fn().mockResolvedValue({
+			profile: { email: 'new@example.com' },
+			state: { flow: 'signup', origin: 'event-page', returnTo: '/events/ev-1' },
+		})
+		const userStore = createMockUserStore()
+		userStore.ensureLoaded = vi
+			.fn()
+			.mockRejectedValue(
+				new ConnectError('home required', Code.FailedPrecondition),
+			)
+		const router = createMockRouter()
+		const fixture = createFixture
+			.html('<auth-callback-route></auth-callback-route>')
+			.deps(
+				I18nConfiguration.customize((options) => {
+					options.initOptions = {
+						lng: 'ja',
+						fallbackLng: 'ja',
+						resources: { ja: { translation: ja }, en: { translation: en } },
+					}
+				}),
+				Registration.instance(IAuthService, auth),
+				Registration.instance(IUserStore, userStore),
+				Registration.instance(IOnboardingService, createMockOnboarding()),
+				Registration.instance(IAppConfig, createMockAppConfig()),
+				Registration.instance(IRouter, router),
+				AuthCallbackRoute,
+				UserHomeSelector,
+				BottomSheet,
+				BusyOnClickCustomAttribute,
+			)
+			.build()
+		await fixture.started
+		const host = fixture.appHost.querySelector('auth-callback-route')
+		if (!host) throw new Error('auth-callback-route did not render')
+		const route = CustomElement.for<AuthCallbackRoute>(host).viewModel
+		await route.canLoad({}, {} as RouteNode)
+		route.attached()
+		await tasksSettled()
+		const selector = route.homeSelector
+		if (!selector) throw new Error('home selector did not render')
+		return { fixture, host, route, selector, userStore, router }
+	}
+
+	// @spec components/infrastructure/fan/web/global/user-home-selector "Dismiss attempts at sign-up"
+	it('stays open on a backdrop tap or ESC and creates no account', async () => {
+		const { fixture, host, selector, userStore } = await render()
+		expect(selector.isOpen).toBe(true)
+
+		host.querySelector<HTMLElement>('.dismiss-zone')?.click()
+		document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+		await tasksSettled()
+
+		expect(selector.isOpen).toBe(true)
+		expect(proto.hidePopover).not.toHaveBeenCalled()
+		expect(userStore.create).not.toHaveBeenCalled()
+		await fixture.stop(true)
+	})
+
+	// @spec components/infrastructure/fan/web/global/user-home-selector "Area selected at sign-up"
+	// @spec stories/sign-up-or-sign-in "Sign-up from the event page without a home"
+	it('closes on an area and creates the account with it', async () => {
+		const { fixture, host, selector, userStore, router } = await render()
+
+		const tokyo = [
+			...host.querySelectorAll<HTMLButtonElement>('.selector-option'),
+		].find((b) => b.textContent?.trim() === '東京')
+		tokyo?.click()
+		await vi.waitFor(() => expect(router.load).toHaveBeenCalled())
+
+		expect(selector.isOpen).toBe(false)
+		expect(userStore.create).toHaveBeenCalledWith(
+			'new@example.com',
+			expect.stringMatching(/^(en|ja)$/),
+			expect.objectContaining({ countryCode: 'JP', level1: 'JP-13' }),
+		)
+		expect(router.load).toHaveBeenCalledWith('/events/ev-1')
 		await fixture.stop(true)
 	})
 })

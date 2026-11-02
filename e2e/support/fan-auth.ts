@@ -1,4 +1,4 @@
-import type { Page, Route } from '@playwright/test'
+import { expect, type Page, type Route } from '@playwright/test'
 import { OIDC_AUTHORITY } from './auth-mocks'
 
 /**
@@ -154,4 +154,27 @@ export async function mockFanRpc(
 /** The calls of one method, in order. */
 export function callsOf(calls: RpcCall[], method: string): RpcCall[] {
 	return calls.filter((c) => c.method === method)
+}
+
+/**
+ * Finish a sign-up that returns to the app's callback. A new account needs a
+ * home area: when the guest never chose one, the callback asks for it in a
+ * sheet that cannot be closed, and this picks `area` (the quick-select label in
+ * the app's language). Resolves once the app has left the callback.
+ */
+export async function chooseHomeAtSignUp(
+	page: Page,
+	area = '東京',
+	timeout = 60_000,
+): Promise<void> {
+	const option = page
+		.locator('auth-callback-route')
+		.getByRole('button', { name: area, exact: true })
+	await expect(async () => {
+		const url = new URL(page.url())
+		if (url.hostname.startsWith('auth.')) throw new Error('still signing in')
+		if (!url.pathname.startsWith('/auth/')) return
+		if (await option.isVisible()) await option.click()
+		throw new Error('still on the sign-in callback')
+	}).toPass({ timeout })
 }
