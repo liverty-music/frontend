@@ -164,12 +164,16 @@ export class AuthCallbackRoute {
 			// A guest who pressed the ticket sale notification button on a
 			// concert's detail sheet asked to track it: now that the account
 			// exists and its guest merge started, save Tracking as the fan's own
-			// choice before returning to that sheet. A failed save leaves the
-			// button unpressed there, with no message.
+			// choice before returning to that sheet. An existing account may
+			// already hold a journey for the event (Paid, say), which is kept. A
+			// failed save leaves the button unpressed there, with no message.
 			const trackEventId = resolveAuthTrackEventId(user)
 			if (trackEventId) {
 				try {
-					await this.journeyStore.setStatus(trackEventId, 'tracking')
+					await this.journeyStore.load()
+					if (this.journeyStore.statusFor(trackEventId) === undefined) {
+						await this.journeyStore.setStatus(trackEventId, 'tracking')
+					}
 				} catch (err) {
 					this.logger.warn('Failed to track the event asked for at sign-up', {
 						error: err,

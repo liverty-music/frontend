@@ -59,11 +59,24 @@ describe('event detail sheet copy', () => {
 
 	// @spec components/infrastructure/fan/web/route/dashboard "Static labels are i18n-keyed"
 	it('embeds no literal text in the sheet template', () => {
-		const text = sheetHtml
-			.replace(/<!--[\s\S]*?-->/g, '')
-			.replace(/<[^>]*>/g, ' ')
-			.replace(/\$\{[^}]*\}/g, ' ')
-		expect(text.trim().split(/\s+/).filter(Boolean)).toEqual([])
+		const template = document.createElement('template')
+		template.innerHTML = sheetHtml
+		const walker = document.createTreeWalker(
+			template.content,
+			NodeFilter.SHOW_TEXT,
+		)
+		const words: string[] = []
+		for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+			// A binding (`${...}`) is data, not literal copy: keep only the text
+			// outside the bindings.
+			const [head, ...rest] = (node.textContent ?? '').split('${')
+			const literal = [
+				head,
+				...rest.map((part) => part.slice(part.indexOf('}') + 1)),
+			].join(' ')
+			words.push(...literal.split(/\s+/).filter(Boolean))
+		}
+		expect(words).toEqual([])
 	})
 
 	// @spec components/infrastructure/fan/web/route/dashboard "Journey status enum values are i18n-keyed"

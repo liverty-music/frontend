@@ -36,8 +36,9 @@ export interface Concert {
 	hypeLevel: HypeLevel
 	matched: boolean
 	/**
-	 * The proximity lane the concert was listed in (distance from the fan's
-	 * home). Absent where no lane applies, such as the All Nearby view.
+	 * The proximity lane the concert was listed in: on the Dashboard the
+	 * distance from the fan's home, in the All Nearby view the distance from
+	 * the browsed area.
 	 */
 	lane?: LaneType
 	/**

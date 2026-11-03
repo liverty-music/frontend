@@ -105,13 +105,21 @@ describe('AuthCallbackRoute', () => {
 	}
 
 	let container: IContainer
-	let journeyStore: { setStatus: ReturnType<typeof vi.fn> }
+	let journeyStore: {
+		load: ReturnType<typeof vi.fn>
+		statusFor: ReturnType<typeof vi.fn>
+		setStatus: ReturnType<typeof vi.fn>
+	}
 
 	function setup(guestHome: string | null = null) {
 		mockUserStore = createMockUserStore(guestHome)
 		mockUserService = mockUserStore
 		storage = createMemoryStorage()
-		journeyStore = { setStatus: vi.fn(async () => {}) }
+		journeyStore = {
+			load: vi.fn(async () => new Map()),
+			statusFor: vi.fn(() => undefined),
+			setStatus: vi.fn(async () => {}),
+		}
 		container = createTestContainer(
 			Registration.instance(ITicketJourneyStore, journeyStore),
 			Registration.instance(ILocalStorage, storage),
@@ -245,6 +253,17 @@ describe('AuthCallbackRoute', () => {
 				// After the account is resolved and the guest merge was requested.
 				expect(mockUserService.ensureLoaded).toHaveBeenCalled()
 				expect(order).toEqual(['merge', 'setStatus'])
+				expect(result).toBe('/concerts/ev-9')
+			})
+
+			it('keeps a journey an existing account already holds for the event', async () => {
+				journeyStore.statusFor.mockReturnValue('paid')
+				mockAuth.handleCallback = vi.fn().mockResolvedValue(notifyUser('ev-9'))
+
+				const result = await sut.canLoad({}, {} as RouteNode)
+
+				expect(journeyStore.load).toHaveBeenCalled()
+				expect(journeyStore.setStatus).not.toHaveBeenCalled()
 				expect(result).toBe('/concerts/ev-9')
 			})
 

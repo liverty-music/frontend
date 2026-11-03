@@ -683,6 +683,32 @@ describe('EventDetailSheet out-of-range notice (fixture)', () => {
 		await fixture.stop(true)
 	})
 
+	it('shows no notice in the All Nearby view, whose lane is the browsed area', async () => {
+		const fixture = await render(event({ lane: 'away', matched: false }), {
+			signedIn: true,
+			hype: 'nearby',
+		})
+		fixture.component.sheet.isAllNearby = true
+		await tasksSettled()
+
+		expect(fixture.appHost.querySelector(notice)).toBeNull()
+		await fixture.component.sheet.widenHype()
+		expect(harness.setHype).not.toHaveBeenCalled()
+		await fixture.stop(true)
+	})
+
+	it("lets a host with its own sign-up prompt show it for a guest's 登録する", async () => {
+		const fixture = await render(event(), { signedIn: false })
+		const prompt = vi.fn()
+		fixture.component.sheet.onSignupRequested = prompt
+
+		fixture.component.sheet.pushAction?.callback()
+
+		expect(prompt).toHaveBeenCalledOnce()
+		expect(harness.signUp).not.toHaveBeenCalled()
+		await fixture.stop(true)
+	})
+
 	// @spec components/infrastructure/fan/web/global/event-detail-sheet "Artist not followed"
 	it('shows no notice for an artist the fan does not follow', async () => {
 		const fixture = await render(event({ lane: undefined, matched: false }), {

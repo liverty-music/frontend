@@ -190,6 +190,32 @@ describe('SnackBar', () => {
 			expect(shown()).toEqual(['other', 'artist-1 second'])
 		})
 
+		// @spec components/infrastructure/fan/web/global/snack-bar "An undo window is kept"
+		it('passes over a snack whose dismissal commits something while another can go', () => {
+			const commit = vi.fn()
+			publish('undo unfollow', {
+				onDismiss: commit,
+				action: { label: '取り消す', callback: () => {} },
+			})
+			publish('one')
+			publish('two')
+			publish('three')
+
+			expect(shown()).toEqual(['undo unfollow', 'two', 'three'])
+			expect(commit).not.toHaveBeenCalled()
+		})
+
+		it('dismisses a committing snack when nothing else can make room', () => {
+			const commits = [vi.fn(), vi.fn(), vi.fn()]
+			for (const [i, onDismiss] of commits.entries()) {
+				publish(`undo ${i}`, { onDismiss })
+			}
+			publish('four')
+
+			expect(shown()).toEqual(['undo 1', 'undo 2', 'four'])
+			expect(commits[0]).toHaveBeenCalledOnce()
+		})
+
 		it('shows every snack without a limit', () => {
 			sut.limit = Number.POSITIVE_INFINITY
 			for (const m of ['1', '2', '3', '4', '5']) publish(m)

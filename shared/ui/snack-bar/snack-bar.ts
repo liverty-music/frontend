@@ -40,9 +40,10 @@ export class SnackBar {
 
 	/**
 	 * The most snacks that dismiss on their own shown at once (the fan app:
-	 * 3). A new one first dismisses the oldest of them; a snack that stays
-	 * until the person acts (the update snack) neither counts nor is
-	 * dismissed. Unlimited by default.
+	 * 3). A new one first dismisses the oldest of them, passing over one whose
+	 * dismissal commits something (`onDismiss`, an undo window) while another
+	 * can go; a snack that stays until the person acts (the update snack)
+	 * neither counts nor is dismissed. Unlimited by default.
 	 */
 	@bindable public limit = Number.POSITIVE_INFINITY
 
@@ -87,8 +88,15 @@ export class SnackBar {
 		const autoDismiss = event.durationMs !== Infinity
 		if (autoDismiss) {
 			const counted = this.visible().filter((shown) => shown.autoDismiss)
-			const excess = counted.length - this.limit + 1
-			for (const oldest of counted.slice(0, Math.max(0, excess))) {
+			let excess = counted.length - this.limit + 1
+			// A snack whose dismissal commits something (an unfollow's undo
+			// window) is dismissed only when nothing else can make room.
+			const evictable = [
+				...counted.filter((shown) => !shown.onDismiss),
+				...counted.filter((shown) => shown.onDismiss),
+			]
+			for (const oldest of evictable) {
+				if (excess-- <= 0) break
 				this.dismiss(oldest)
 			}
 		}

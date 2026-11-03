@@ -543,7 +543,14 @@ export class EventDetailSheet {
 		if (!this.isAuthenticated) {
 			return {
 				label: this.i18n.tr('hypeReach.signUp'),
-				callback: () => this.onSignupRequested?.() ?? this.startSignUp(),
+				callback: () => {
+					// A host with its own sign-up prompt (All Nearby) shows it.
+					if (this.onSignupRequested) {
+						this.onSignupRequested()
+						return
+					}
+					this.startSignUp()
+				},
 			}
 		}
 		if (this.pushState === 'offerable') {
@@ -588,7 +595,9 @@ export class EventDetailSheet {
 	public get outOfRange(): OutOfRangeNotice | null {
 		const event = this.event
 		const lane = event?.lane
-		if (!event || !lane || !event.artistId) return null
+		// In All Nearby the lane is the distance from the browsed area, not
+		// from the fan's home, so it says nothing about what the level pushes.
+		if (!event || !lane || !event.artistId || this.isAllNearby) return null
 		if (!this.followStore.followedIds.has(event.artistId)) return null
 		const home = this.userStore.currentHome ?? undefined
 		const words = (hype: HypeLevel) =>
@@ -633,7 +642,14 @@ export class EventDetailSheet {
 	public async widenHype(): Promise<void> {
 		const event = this.event
 		const lane = event?.lane
-		if (!event || !lane || !event.artistId || this.hypeUpdating) return
+		if (
+			!event ||
+			!lane ||
+			!event.artistId ||
+			this.isAllNearby ||
+			this.hypeUpdating
+		)
+			return
 		const target = LOWEST_MATCHING_HYPE[lane]
 		this.hypeUpdating = true
 		try {
