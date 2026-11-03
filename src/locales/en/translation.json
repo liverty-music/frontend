@@ -1066,6 +1066,8 @@
 			"replaced": "This checkout was replaced by a newer one, for example in another tab.",
 			"goToNewer": "Go to the newer checkout",
 			"authenticationIncomplete": "Your card authentication is not complete. Please finish it and try again.",
+			"notOnSale": "This concert is no longer on sale. Your card was not charged.",
+			"amountMismatch": "The amount held on your card does not match the purchase. Please start again.",
 			"completing": "Your purchase is being completed. Your tickets will appear in the Tickets screen shortly."
 		},
 		"error": {
