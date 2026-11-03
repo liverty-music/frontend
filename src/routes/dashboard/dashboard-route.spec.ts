@@ -1239,6 +1239,8 @@ describe('DashboardRoute', () => {
 			expect(sut.showCelebration).toBe(false)
 
 			await sut.onHomeSelected('JP-13')
+			// The sheet closes once the home is saved; the timetable loads after.
+			await vi.waitFor(() => expect(sut.timetableLoaded).toBe(true))
 
 			expect(mockUserStore.saveHome).toHaveBeenCalledWith('JP-13')
 			expect(sut.showCelebration).toBe(true)
@@ -1267,6 +1269,8 @@ describe('DashboardRoute', () => {
 			)
 
 			await sut.onHomeSelected('JP-13')
+			// The sheet closes once the home is saved; the timetable loads after.
+			await vi.waitFor(() => expect(sut.timetableLoaded).toBe(true))
 
 			expect(mockUserStore.saveHome).toHaveBeenCalledWith('JP-13')
 			expect(sut.showCelebration).toBe(true)
@@ -1411,6 +1415,8 @@ describe('DashboardRoute', () => {
 			// concert list was already fetched in the session (the RPC cache).
 			primeTimetable(12)
 			await sut.onHomeSelected('JP-13')
+			// The sheet closes once the home is saved; the timetable loads after.
+			await vi.waitFor(() => expect(sut.timetableLoaded).toBe(true))
 
 			expect(celebrate).toHaveBeenCalledTimes(1)
 			expect(latch).toHaveBeenCalledTimes(1)
@@ -1559,6 +1565,8 @@ describe('DashboardRoute', () => {
 			expect(mockOnboarding.finish).not.toHaveBeenCalled()
 
 			await sut.onHomeSelected('JP-13')
+			// The sheet closes once the home is saved; the timetable loads after.
+			await vi.waitFor(() => expect(sut.timetableLoaded).toBe(true))
 
 			// celebration still shows (region-less guest sees it before latch)
 			expect(sut.showCelebration).toBe(true)

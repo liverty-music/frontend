@@ -404,6 +404,16 @@ describe('DashboardRoute', () => {
 			expect(loadSpy).toHaveBeenCalledOnce()
 		})
 
+		it('resolves once the home is saved, before the timetable has loaded', async () => {
+			// The selector closes when this resolves, so the sheet never stays
+			// open over the timetable load or the celebration that follows it.
+			vi.spyOn(sut, 'loadData').mockReturnValue(new Promise<void>(() => {}))
+
+			await sut.onHomeSelected('JP-13')
+
+			expect(sut.needsRegion).toBe(false)
+		})
+
 		it('saves the choice through the user store', async () => {
 			vi.spyOn(sut, 'loadData').mockResolvedValue()
 

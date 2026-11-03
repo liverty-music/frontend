@@ -796,10 +796,12 @@ export class DashboardRoute {
 			throw err
 		}
 		this.needsRegion = false
+		// Resolving lets the sheet close now; the timetable then loads behind it.
 		// Timetable becomes real once the region is chosen; loadData() flips
 		// timetableLoaded → timetableLoadedChanged() runs the deferred celebration
-		// + completion-latch decisions. No explicit call needed here.
-		await this.loadData()
+		// + completion-latch decisions, so the celebration shows after the sheet
+		// has closed. No explicit call needed here.
+		void this.loadData()
 	}
 
 	/**
