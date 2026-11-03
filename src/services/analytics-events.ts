@@ -165,6 +165,7 @@ export type GuestFollowsMergedProps = {
 /** Where a push-permission request started. */
 export type PermissionRequestSource =
 	| 'notification_prompt'
+	| 'event_detail_sheet'
 	| 'settings'
 	| 'post_signup_dialog'
 	| 'checkout'

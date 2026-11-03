@@ -21,6 +21,7 @@ import { ILotteryEntryRpcClient } from './adapter/rpc/client/lottery-entry-clien
 import { IPushSubscriptionRpcClient } from './adapter/rpc/client/push-subscription-client'
 import { ITicketJourneyRpcClient } from './adapter/rpc/client/ticket-journey-client'
 import { IUserRpcClient } from './adapter/rpc/client/user-client'
+import { ILocalStorage } from './adapter/storage/local-storage'
 import { AppShell } from './app-shell'
 import { ArtistFilterBar } from './components/artist-filter-bar/artist-filter-bar'
 import { BottomNavBar } from './components/bottom-nav-bar/bottom-nav-bar'
@@ -52,6 +53,7 @@ import {
 	loadAppConfig,
 	validateEnvironmentMatchesHost,
 } from './config/app-config'
+import { StorageKeys } from './constants/storage-keys'
 import { AmbientGlowCustomAttribute } from './custom-attributes/ambient-glow'
 import { BeamVarsCustomAttribute } from './custom-attributes/beam-vars'
 import { BusyOnClickCustomAttribute } from './custom-attributes/busy-on-click'
@@ -202,6 +204,13 @@ async function bootstrap(): Promise<void> {
 	// IndexedDB and removes both on SignedOut; construct it at boot so that
 	// subscription is live even when the tickets screen was never opened.
 	au.register(AppTask.creating(ITicketWallet, () => undefined))
+	// The hype-change push offer no longer counts unanswered offers; remove the
+	// count it left on this device.
+	au.register(
+		AppTask.creating(ILocalStorage, (storage) =>
+			storage.removeItem(StorageKeys.pushOfferDeclines),
+		),
+	)
 	au.register(UserHydrationTask)
 	au.register(IArtistStore)
 	au.register(IArtistBubbleStore)

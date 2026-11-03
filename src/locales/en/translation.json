@@ -190,7 +190,6 @@
 		}
 	},
 	"pushOffer": {
-		"hypeChanged": "{{name}} is now {{hype}}. Get notified of new concerts?",
 		"action": "Turn on",
 		"allowed": "We'll notify you of new concerts. You can turn this off in Settings anytime.",
 		"blocked": "Notifications are blocked. You can change this in your browser settings.",
@@ -1201,5 +1200,16 @@
 			"toWelcome": "Go to the start screen"
 		},
 		"backToSettings": "Back to Settings"
+	},
+	"hypeReach": {
+		"all": "anywhere",
+		"home": "in {{place}}",
+		"nearby": "around {{place}}",
+		"noHome": "your area",
+		"on": "We'll push new {{name}} concerts {{places}} 🔔",
+		"watch": "We won't push new {{name}} concerts",
+		"off": "Get new {{name}} concerts {{places}} by push 🔔",
+		"signUp": "Sign up",
+		"settings": "Settings"
 	}
 }

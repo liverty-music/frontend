@@ -196,7 +196,6 @@ describe('PostSignupDialog', () => {
 
 			expect(d.pushOffer.accept).toHaveBeenCalledWith({
 				source: 'post_signup_dialog',
-				counted: false,
 				inline: true,
 			})
 			expect(d.step()).toBe('install')

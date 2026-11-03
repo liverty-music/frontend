@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 vi.mock('../../adapter/storage/onboarding-storage', () => ({
 	loadHelpSeen: vi.fn(() => false),
 	saveHelpSeen: vi.fn(),
-	clearAllHelpSeen: vi.fn(),
+	clearOnboardingSeenFlags: vi.fn(),
 }))
 
 const fakeOnboarding = {

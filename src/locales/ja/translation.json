@@ -190,7 +190,6 @@
 		}
 	},
 	"pushOffer": {
-		"hypeChanged": "{{name}}を {{hype}} にしました。新着ライブを通知で受け取りますか？",
 		"action": "オンにする",
 		"allowed": "新しいライブを通知します。設定からいつでも止められます",
 		"blocked": "通知はブロックされています。ブラウザの設定から変更できます",
@@ -1201,5 +1200,16 @@
 			"toWelcome": "はじめの画面へ"
 		},
 		"backToSettings": "設定に戻る"
+	},
+	"hypeReach": {
+		"all": "全て",
+		"home": "{{place}}",
+		"nearby": "{{place}}周辺",
+		"noHome": "居住エリア",
+		"on": "{{name}}の{{places}}の新着ライブをプッシュ通知します🔔",
+		"watch": "{{name}}の新着ライブはプッシュ通知しません",
+		"off": "{{name}}の{{places}}の新着ライブをプッシュ通知で受け取ろう🔔",
+		"signUp": "登録する",
+		"settings": "設定"
 	}
 }
