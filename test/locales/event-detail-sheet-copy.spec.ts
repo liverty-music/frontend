@@ -59,23 +59,38 @@ describe('event detail sheet copy', () => {
 
 	// @spec components/infrastructure/fan/web/route/dashboard "Static labels are i18n-keyed"
 	it('embeds no literal text in the sheet template', () => {
+		// The component file is wrapped in <template>, and the row repeats an
+		// inner <template>; a template keeps its children in `.content`, so walk
+		// every one of them.
+		const words: string[] = []
+		const walk = (root: DocumentFragment): void => {
+			const walker = document.createTreeWalker(
+				root,
+				NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT,
+			)
+			for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+				if (node instanceof HTMLTemplateElement) {
+					walk(node.content)
+					continue
+				}
+				if (node.nodeType !== Node.TEXT_NODE) continue
+				// A binding (`${...}`) is data, not literal copy: keep only the
+				// text outside the bindings.
+				const [head, ...rest] = (node.textContent ?? '').split('${')
+				const literal = [
+					head,
+					...rest.map((part) => part.slice(part.indexOf('}') + 1)),
+				].join(' ')
+				words.push(...literal.split(/\s+/).filter(Boolean))
+			}
+		}
 		const template = document.createElement('template')
 		template.innerHTML = sheetHtml
-		const walker = document.createTreeWalker(
-			template.content,
-			NodeFilter.SHOW_TEXT,
-		)
-		const words: string[] = []
-		for (let node = walker.nextNode(); node; node = walker.nextNode()) {
-			// A binding (`${...}`) is data, not literal copy: keep only the text
-			// outside the bindings.
-			const [head, ...rest] = (node.textContent ?? '').split('${')
-			const literal = [
-				head,
-				...rest.map((part) => part.slice(part.indexOf('}') + 1)),
-			].join(' ')
-			words.push(...literal.split(/\s+/).filter(Boolean))
-		}
+		walk(template.content)
+		// The walk reached the sheet's markup.
+		expect(
+			template.content.querySelector('template')?.content.childNodes.length,
+		).toBeGreaterThan(0)
 		expect(words).toEqual([])
 	})
 
