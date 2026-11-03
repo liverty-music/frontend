@@ -10,8 +10,9 @@ const mockAuth = { isAuthenticated: true }
 // Captures the SignedOut handler the store subscribes in its constructor.
 let signedOutHandler: (() => void) | undefined
 const mockEa = {
-	subscribe: vi.fn((_event: unknown, handler: () => void) => {
-		signedOutHandler = handler
+	subscribe: vi.fn((event: { name?: string }, handler: () => void) => {
+		// The store also subscribes HomeChanged; keep only SignedOut here.
+		if (event?.name === 'SignedOut') signedOutHandler = handler
 		return { dispose: vi.fn() }
 	}),
 }

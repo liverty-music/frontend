@@ -7,6 +7,7 @@ import { clearAllHelpSeen } from '../adapter/storage/onboarding-storage'
 import { codeToHome, type User } from '../entities/user'
 import { normalizeToSupportedLanguage } from '../util/change-locale'
 import { IAuthService } from './auth-service'
+import { HomeChanged } from './events/home-changed'
 import { SignedOut } from './events/signed-out'
 
 export const IUserStore = DI.createInterface<IUserStore>('IUserStore', (x) =>
@@ -278,6 +279,7 @@ export class UserStore {
 		} else if (this.current) {
 			this.current = { ...this.current, home }
 		}
+		this.ea.publish(new HomeChanged())
 		return this.current
 	}
 
@@ -332,6 +334,7 @@ export class UserStore {
 	public setGuestHome(code: string): void {
 		this.guestHome = code
 		this.logger.info('Local home set', { home: code })
+		this.ea.publish(new HomeChanged())
 	}
 
 	/**

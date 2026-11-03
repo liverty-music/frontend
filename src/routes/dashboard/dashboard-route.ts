@@ -785,8 +785,9 @@ export class DashboardRoute {
 	public async onHomeSelected(code: string): Promise<void> {
 		this.logger.info('Home area configured', { code })
 		// UserHomeSelector does not persist: the store saves the choice, through
-		// SetHome for a signed-in fan and on the device for a guest. The save
-		// lands before the timetable loads, so the load uses the new home.
+		// SetHome for a signed-in fan and on the device for a guest; a saved home
+		// drops the cached follower lists (HomeChanged), so the load below reads
+		// the lanes for the new home.
 		try {
 			await this.userStore.saveHome(code)
 		} catch (err) {

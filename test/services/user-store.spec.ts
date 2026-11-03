@@ -8,6 +8,7 @@ import { IUserRpcClient } from '../../src/adapter/rpc/client/user-client'
 import type { User } from '../../src/entities/user'
 import { IAuthService } from '../../src/services/auth-service'
 import { SignedOut } from '../../src/services/events/signed-out'
+import { HomeChanged } from '../../src/services/events/home-changed'
 import { IUserStore, UserStore } from '../../src/services/user-store'
 import { createTestContainer } from '../helpers/create-container'
 import { createMockAuth } from '../helpers/mock-auth'
@@ -276,6 +277,21 @@ describe('UserStore', () => {
 			const { store } = build({ auth: makeAuthWithProfile() })
 			store.current = undefined
 			expect(store.needsHome).toBe(false)
+		})
+
+		it('announces a saved home so cached concert lanes are dropped', async () => {
+			const rpc = makeRpcClient()
+			rpc.setHome.mockResolvedValue({
+				...stubUser,
+				home: { countryCode: 'JP', level1: 'JP-13' },
+			})
+			const signedIn = build({ auth: makeAuthWithProfile(), rpc })
+			await signedIn.store.saveHome('JP-13')
+			expect(signedIn.ea.publish).toHaveBeenCalledWith(expect.any(HomeChanged))
+
+			const guest = build({ auth: makeAuth(false) })
+			guest.store.saveHome('JP-27')
+			expect(guest.ea.publish).toHaveBeenCalledWith(expect.any(HomeChanged))
 		})
 
 		it('saves a guest choice on the device without an RPC', async () => {

@@ -22,6 +22,7 @@ import { DEFAULT_HYPE, type Hype } from '../entities/follow'
 import type { GeoLocationInit } from '../entities/user'
 import { IAuthService } from './auth-service'
 import { CachedResource } from './cache/cached-resource'
+import { HomeChanged } from './events/home-changed'
 import { SignedOut } from './events/signed-out'
 import { IUserStore } from './user-store'
 
@@ -90,7 +91,12 @@ export class ConcertStore {
 	constructor() {
 		// Sign-out and account switch: drop every concert list and view state
 		// read for the previous account (design D15 of unify-ticket-sales).
-		resolve(IEventAggregator).subscribe(SignedOut, () => this.clear())
+		const ea = resolve(IEventAggregator)
+		ea.subscribe(SignedOut, () => this.clear())
+		// The server places concerts in lanes by their distance from the home,
+		// and the follower lists are cached by date only: a new home makes them
+		// stale.
+		ea.subscribe(HomeChanged, () => this.invalidateFollowerCache())
 	}
 
 	/** Forget every cached concert list and the dashboard's view state. */
