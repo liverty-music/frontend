@@ -101,6 +101,10 @@ export class EventDetailSheet {
 	private releaseReturnWatch: () => void = () => {}
 	/** Events whose Tracking the calendar add inferred and the fan has not changed since. */
 	private readonly inferredEventIds = new Set<string>()
+	/** Events whose calendar inference is in flight, so a second tap is ignored. */
+	private readonly inferringEventIds = new Set<string>()
+	/** The fan's return the in-flight inferences wait for, shared by all. */
+	private returnWait: Promise<void> | null = null
 
 	// Arrow function to allow `removeEventListener` with the same reference
 	private readonly onPopstate = (): void => {
@@ -219,10 +223,22 @@ export class EventDetailSheet {
 			surface: 'detail_sheet',
 		})
 		if (!this.isAuthenticated || this.status !== undefined) return
+		// A second tap while the first inference is in flight changes nothing:
+		// the first one already waits for the fan's return.
+		if (this.inferringEventIds.has(this.event.id)) return
 		void this.inferTracking(this.event.id)
 	}
 
 	private async inferTracking(eventId: string): Promise<void> {
+		this.inferringEventIds.add(eventId)
+		try {
+			await this.inferTrackingOnce(eventId)
+		} finally {
+			this.inferringEventIds.delete(eventId)
+		}
+	}
+
+	private async inferTrackingOnce(eventId: string): Promise<void> {
 		// Watch for the return from the click on, so a calendar that hides the
 		// page before the RPC answers is still seen.
 		const returned = this.waitForReturn()
@@ -230,16 +246,12 @@ export class EventDetailSheet {
 		try {
 			started = await this.journeyStore.inferTracking(eventId)
 		} catch (err) {
-			this.releaseReturnWatch()
 			this.logger.warn('Failed to start tracking from the calendar', {
 				error: err,
 			})
 			return
 		}
-		if (!started) {
-			this.releaseReturnWatch()
-			return
-		}
+		if (!started) return
 		this.inferredEventIds.add(eventId)
 		await returned
 		this.ea.publish(
@@ -257,31 +269,32 @@ export class EventDetailSheet {
 	 * Resolves when the fan comes back to the app after the calendar opened: the
 	 * page became hidden and then visible again, or it did not become hidden
 	 * within {@link CALENDAR_RETURN_FALLBACK_MS} (the calendar opened without
-	 * hiding the app). One wait at a time; `detaching()` releases it.
+	 * hiding the app). Inferences started while a wait runs share it, so a wait
+	 * is never ended early by a newer one. `detaching()` ends it at once: the
+	 * sheet is gone, so a started inference shows its undo then.
 	 */
 	private waitForReturn(): Promise<void> {
-		this.releaseReturnWatch()
-		return new Promise((resolve) => {
+		if (this.returnWait) return this.returnWait
+		this.returnWait = new Promise((resolve) => {
 			let hidden = document.visibilityState === 'hidden'
-			const done = (): void => {
-				release()
-				resolve()
-			}
 			const onVisibilityChange = (): void => {
 				if (document.visibilityState === 'hidden') hidden = true
-				else if (hidden) done()
+				else if (hidden) finish()
 			}
 			const timer = setTimeout(() => {
-				if (!hidden) done()
+				if (!hidden) finish()
 			}, CALENDAR_RETURN_FALLBACK_MS)
-			const release = (): void => {
+			const finish = (): void => {
 				clearTimeout(timer)
 				document.removeEventListener('visibilitychange', onVisibilityChange)
+				this.returnWait = null
 				this.releaseReturnWatch = () => {}
+				resolve()
 			}
 			document.addEventListener('visibilitychange', onVisibilityChange)
-			this.releaseReturnWatch = release
+			this.releaseReturnWatch = finish
 		})
+		return this.returnWait
 	}
 
 	/**
@@ -551,18 +564,25 @@ export class EventDetailSheet {
 					duration: SNACK_LONG_MS,
 					action: {
 						label: this.i18n.tr('eventDetail.undo'),
-						callback: () => void this.undoHypeRaise(artistId, previous),
+						callback: () =>
+							void this.undoHypeRaise(artistId, previous, current),
 					},
 				},
 			),
 		)
 	}
 
-	/** Undo a raise: the previous level is saved as the fan's own choice. */
+	/**
+	 * Undo a raise: the previous level is saved as the fan's own choice. When
+	 * the level is no longer the raised one (the fan changed it since), the
+	 * fan's newer choice is kept.
+	 */
 	private async undoHypeRaise(
 		artistId: string,
 		previous: HypeLevel,
+		raised: HypeLevel,
 	): Promise<void> {
+		if (this.followStore.hypeByArtist.get(artistId) !== raised) return
 		try {
 			await this.followStore.setHype(artistId, previous)
 		} catch (err) {

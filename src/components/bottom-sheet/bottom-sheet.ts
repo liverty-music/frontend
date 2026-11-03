@@ -245,6 +245,7 @@ export class BottomSheet {
 		if (emit) {
 			this.emitClosed()
 		}
+		this.emitHidden()
 	}
 
 	private hide(): void {
@@ -417,6 +418,15 @@ export class BottomSheet {
 
 	private emitClosed(): void {
 		this.host.dispatchEvent(new CustomEvent('sheet-closed', { bubbles: true }))
+	}
+
+	/**
+	 * The sheet has finished closing, by a dismiss or by the parent: it is
+	 * hidden, its inert is lifted and focus is restored. A parent that opens
+	 * another sheet next waits for this, not for `open` to turn false.
+	 */
+	private emitHidden(): void {
+		this.host.dispatchEvent(new CustomEvent('sheet-hidden', { bubbles: true }))
 	}
 
 	/**

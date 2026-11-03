@@ -28,6 +28,22 @@ vi.mock('../../src/services/auth-service', () => ({
 	IAuthService: mockIAuthService,
 }))
 
+// The home decision and save belong to the user store; every container of
+// this file resolves this stand-in by default.
+const mockUserStore = {
+	needsHome: false,
+	currentHome: 'JP-13' as string | null,
+	saveHome: vi.fn(async (code: string) => {
+		mockUserStore.needsHome = false
+		mockUserStore.currentHome = code
+	}),
+}
+vi.mock('../../src/services/user-store', () => ({
+	IUserStore: DI.createInterface('IUserStore', (x) =>
+		x.instance(mockUserStore),
+	),
+}))
+
 const { MyArtistsRoute } = await import(
 	'../../src/routes/my-artists/my-artists-route'
 )
@@ -59,6 +75,9 @@ describe('MyArtistsRoute', () => {
 	}
 
 	beforeEach(() => {
+		mockUserStore.needsHome = false
+		mockUserStore.currentHome = 'JP-13'
+		mockUserStore.saveHome.mockClear()
 		mockFollowService = {
 			listFollowed: vi
 				.fn()
@@ -189,6 +208,102 @@ describe('MyArtistsRoute', () => {
 			await sut.loading()
 
 			expect(sut.showSignupBanner).toBe(false)
+		})
+	})
+
+	describe('home sheet for a person without a home', () => {
+		function withOnboarding(isOnboarding: boolean) {
+			const container = createTestContainer(
+				Registration.instance(mockIFollowStore, mockFollowService),
+				Registration.instance(mockIRouter, mockRouter),
+				Registration.instance(mockIOnboardingService, {
+					isOnboarding,
+					isCompleted: !isOnboarding,
+					finish: vi.fn(),
+				}),
+				Registration.instance(mockIAuthService, mockAuth),
+				Registration.instance(IPushOfferService, pushOffer),
+			)
+			container.register(MyArtistsRoute)
+			const route = container.get(MyArtistsRoute)
+			const open = vi.fn()
+			route.homeSelector = { open } as never
+			return { route, open, ea: container.get(IEventAggregator) }
+		}
+
+		// @spec components/infrastructure/fan/web/global/user-home-selector "Signed-in fan without a home opens My Artists"
+		it('opens a sheet that closes only on a choice for a signed-in fan, and saves the choice', async () => {
+			mockAuth.isAuthenticated = true
+			mockUserStore.needsHome = true
+			const { route, open } = withOnboarding(false)
+
+			await route.loading()
+			route.attached()
+
+			expect(route.needsHome).toBe(true)
+			expect(open).toHaveBeenCalledOnce()
+			expect(route.homeRequired).toBe(true)
+
+			const openIfFirstVisit = vi.fn()
+			route.pageHelp = { openIfFirstVisit } as never
+
+			await route.onHomeSelected('JP-13')
+
+			expect(mockUserStore.saveHome).toHaveBeenCalledWith('JP-13')
+			expect(route.needsHome).toBe(false)
+			// The first-visit help waits until the home sheet has finished
+			// closing, so the two sheets are never open together.
+			expect(openIfFirstVisit).not.toHaveBeenCalled()
+			route.onHomeSheetHidden()
+			expect(openIfFirstVisit).toHaveBeenCalledOnce()
+		})
+
+		// @spec components/infrastructure/fan/web/global/user-home-selector "Guest after onboarding closes the sheet"
+		it('lets a guest after onboarding close the sheet, and asks again on the next visit', async () => {
+			mockAuth.isAuthenticated = false
+			mockUserStore.needsHome = true
+			const first = withOnboarding(false)
+			await first.route.loading()
+			first.route.attached()
+			expect(first.open).toHaveBeenCalledOnce()
+			expect(first.route.homeRequired).toBe(false)
+
+			const next = withOnboarding(false)
+			await next.route.loading()
+			next.route.attached()
+			expect(next.open).toHaveBeenCalledOnce()
+		})
+
+		it('keeps the sheet closable only on a choice for a guest in onboarding', () => {
+			mockAuth.isAuthenticated = false
+			expect(withOnboarding(true).route.homeRequired).toBe(true)
+		})
+
+		it('does not open the sheet for a person with a home', async () => {
+			const { route, open } = withOnboarding(false)
+			await route.loading()
+			route.attached()
+			expect(route.needsHome).toBe(false)
+			expect(open).not.toHaveBeenCalled()
+		})
+
+		it('keeps the sheet open with an error snack when saving the home fails', async () => {
+			mockAuth.isAuthenticated = true
+			mockUserStore.needsHome = true
+			mockUserStore.saveHome.mockRejectedValueOnce(new Error('unavailable'))
+			const { route, open, ea } = withOnboarding(false)
+			const snacks: Snack[] = []
+			ea.subscribe(Snack, (snack: Snack) => {
+				snacks.push(snack)
+			})
+			await route.loading()
+
+			// Rejecting keeps the selector open on the choice.
+			await expect(route.onHomeSelected('JP-13')).rejects.toThrow('unavailable')
+
+			expect(route.needsHome).toBe(true)
+			expect(open).not.toHaveBeenCalled()
+			expect(snacks.map((x) => x.severity)).toEqual(['error'])
 		})
 	})
 

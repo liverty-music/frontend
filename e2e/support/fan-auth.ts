@@ -157,24 +157,32 @@ export function callsOf(calls: RpcCall[], method: string): RpcCall[] {
 }
 
 /**
- * Finish a sign-up that returns to the app's callback. A new account needs a
- * home area: when the guest never chose one, the callback asks for it in a
- * sheet that cannot be closed, and this picks `area` (the quick-select label in
- * the app's language). Resolves once the app has left the callback.
+ * Finish a sign-up that returns to the app's callback, and choose a home area
+ * when the app asks for one. The callback never asks: it creates the account
+ * and opens the screen the sign-up started from. When that is the Dashboard or
+ * My Artists and the account has no home, the home sheet opens there and this
+ * picks `area` (the quick-select label in the app's language). Resolves once
+ * the app has left the callback and no home sheet is open.
  */
 export async function chooseHomeAtSignUp(
 	page: Page,
 	area = '東京',
 	timeout = 60_000,
 ): Promise<void> {
-	const option = page
-		.locator('auth-callback-route')
-		.getByRole('button', { name: area, exact: true })
+	const sheet = page.locator('user-home-selector .selector-content')
 	await expect(async () => {
 		const url = new URL(page.url())
 		if (url.hostname.startsWith('auth.')) throw new Error('still signing in')
-		if (!url.pathname.startsWith('/auth/')) return
-		if (await option.isVisible()) await option.click()
-		throw new Error('still on the sign-in callback')
+		if (url.pathname.startsWith('/auth/'))
+			throw new Error('still on the sign-in callback')
 	}).toPass({ timeout })
+	// The sheet opens when the route attaches; give it a moment to appear.
+	const asked = await sheet
+		.waitFor({ state: 'visible', timeout: 3_000 })
+		.then(() => true)
+		.catch(() => false)
+	if (asked) {
+		await sheet.getByRole('button', { name: area, exact: true }).click()
+		await expect(sheet).toBeHidden()
+	}
 }

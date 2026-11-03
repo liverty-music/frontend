@@ -8,6 +8,7 @@ import { IUserRpcClient } from '../../src/adapter/rpc/client/user-client'
 import type { User } from '../../src/entities/user'
 import { IAuthService } from '../../src/services/auth-service'
 import { SignedOut } from '../../src/services/events/signed-out'
+import { HomeChanged } from '../../src/services/events/home-changed'
 import { IUserStore, UserStore } from '../../src/services/user-store'
 import { createTestContainer } from '../helpers/create-container'
 import { createMockAuth } from '../helpers/mock-auth'
@@ -241,6 +242,66 @@ describe('UserStore', () => {
 			expect(store.currentHome).toBe('JP-13')
 			// Persisted through the guestHomeChanged write-through.
 			expect(localStorage.getItem(GUEST_HOME_KEY)).toBe('JP-13')
+		})
+	})
+
+	describe('needsHome', () => {
+		it('asks a guest who has not chosen a home, and not one who has', () => {
+			const { store } = build({ auth: makeAuth(false) })
+			expect(store.needsHome).toBe(true)
+			store.setGuestHome('JP-13')
+			expect(store.needsHome).toBe(false)
+		})
+
+		it('keeps asking a signed-in fan until the account has a home', async () => {
+			const rpc = makeRpcClient()
+			rpc.setHome.mockResolvedValue({
+				...stubUser,
+				home: { countryCode: 'JP', level1: 'JP-13' },
+			})
+			const { store } = build({ auth: makeAuthWithProfile(), rpc })
+			store.current = { ...stubUser, home: undefined } as User
+
+			// Leaving the sheet saves nothing, so every later visit asks again.
+			expect(store.needsHome).toBe(true)
+			expect(store.needsHome).toBe(true)
+
+			await store.saveHome('JP-13')
+			expect(rpc.setHome).toHaveBeenCalledWith(
+				expect.objectContaining({ countryCode: 'JP', level1: 'JP-13' }),
+			)
+			expect(store.needsHome).toBe(false)
+		})
+
+		it('does not ask a signed-in fan whose account has not loaded', () => {
+			const { store } = build({ auth: makeAuthWithProfile() })
+			store.current = undefined
+			expect(store.needsHome).toBe(false)
+		})
+
+		it('announces a saved home so cached concert lanes are dropped', async () => {
+			const rpc = makeRpcClient()
+			rpc.setHome.mockResolvedValue({
+				...stubUser,
+				home: { countryCode: 'JP', level1: 'JP-13' },
+			})
+			const signedIn = build({ auth: makeAuthWithProfile(), rpc })
+			await signedIn.store.saveHome('JP-13')
+			expect(signedIn.ea.publish).toHaveBeenCalledWith(expect.any(HomeChanged))
+
+			const guest = build({ auth: makeAuth(false) })
+			guest.store.saveHome('JP-27')
+			expect(guest.ea.publish).toHaveBeenCalledWith(expect.any(HomeChanged))
+		})
+
+		it('saves a guest choice on the device without an RPC', async () => {
+			const rpc = makeRpcClient()
+			const { store } = build({ auth: makeAuth(false), rpc })
+
+			await store.saveHome('JP-27')
+
+			expect(rpc.setHome).not.toHaveBeenCalled()
+			expect(localStorage.getItem(GUEST_HOME_KEY)).toBe('JP-27')
 		})
 	})
 

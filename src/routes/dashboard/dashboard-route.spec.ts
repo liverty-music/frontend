@@ -57,7 +57,15 @@ const mockUserStore = {
 	setGuestHome: vi.fn((code: string) => {
 		mockUserStore.currentHome = code
 	}),
+	get needsHome(): boolean {
+		return !mockUserStore.currentHome
+	},
+	// The store saves through SetHome (signed in) or guest storage (guest).
+	saveHome: vi.fn(async (code: string) => {
+		mockUserStore.currentHome = code
+	}),
 }
+const mockEa = { publish: vi.fn(), subscribe: vi.fn() }
 const mockI18n = { tr: vi.fn((key: string) => key) }
 const mockStorage = {
 	getItem: vi.fn((_key: string): string | null => null),
@@ -93,6 +101,7 @@ vi.mock('aurelia', async (importOriginal) => {
 				IFabMenuService: mockFabMenu,
 				IOnboardingService: mockOnboarding,
 				IUserStore: mockUserStore,
+				IEventAggregator: mockEa,
 				I18N: mockI18n,
 				ILocalStorage: mockStorage,
 			}
@@ -667,6 +676,36 @@ describe('DashboardRoute', () => {
 			expect(refresh).toHaveBeenCalledTimes(2)
 		})
 
+		it('refreshes again when a level changed while the refresh ran', async () => {
+			sut.dateGroups = [awayGroup()]
+			const levels = new Map([['a1', 'away']])
+			;(
+				sut as unknown as {
+					followStore: { hypeByArtist: ReadonlyMap<string, string> }
+				}
+			).followStore = {
+				hypeByArtist: levels,
+			}
+			// The refresh lands a timetable already at Away, but the fan undid
+			// the raise to Nearby after the refresh read the list.
+			const refresh = vi
+				.spyOn(
+					sut as unknown as { refreshInBackground(): Promise<void> },
+					'refreshInBackground',
+				)
+				.mockImplementationOnce(async () => {
+					sut.dateGroups = [awayGroup()].map((g) => ({
+						...g,
+						away: g.away.map((c) => ({ ...c, hypeLevel: 'away' })),
+					})) as never
+					levels.set('a1', 'nearby')
+				})
+				.mockResolvedValue()
+
+			onHypeChanged(sut, levels)
+			await vi.waitFor(() => expect(refresh).toHaveBeenCalledTimes(2))
+		})
+
 		it('does nothing when every shown level is unchanged', () => {
 			sut.dateGroups = [awayGroup()]
 			const refresh = vi
@@ -1200,10 +1239,73 @@ describe('DashboardRoute', () => {
 			expect(sut.showCelebration).toBe(false)
 
 			await sut.onHomeSelected('JP-13')
+			// The sheet closes once the home is saved; the timetable loads after.
+			await vi.waitFor(() => expect(sut.timetableLoaded).toBe(true))
 
-			expect(mockUserStore.setGuestHome).toHaveBeenCalledWith('JP-13')
+			expect(mockUserStore.saveHome).toHaveBeenCalledWith('JP-13')
 			expect(sut.showCelebration).toBe(true)
 			expect(sut.celebrationConfetti).toBe(false)
+		})
+
+		// @spec components/infrastructure/fan/web/global/post-signup-dialog "Region selection still precedes both"
+		it('resolves the home area before the post-signup celebration and dialog', async () => {
+			mockAuth.isAuthenticated = true
+			mockStorage.getItem.mockImplementation((k: string) =>
+				k === 'postSignup.shown' ? 'pending' : null,
+			)
+			// A new account created without a home area until the fan picks one.
+			mockUserStore.currentHome = null
+			primeTimetable(3)
+			sut = new DashboardRoute()
+			await sut.loading()
+			expect(sut.needsRegion).toBe(true)
+			await sut.loadData()
+			sut.attached()
+
+			expect(sut.showCelebration).toBe(false)
+			expect(sut.showPostSignupDialog).toBe(false)
+			expect(mockStorage.removeItem).not.toHaveBeenCalledWith(
+				'postSignup.shown',
+			)
+
+			await sut.onHomeSelected('JP-13')
+			// The sheet closes once the home is saved; the timetable loads after.
+			await vi.waitFor(() => expect(sut.timetableLoaded).toBe(true))
+
+			expect(mockUserStore.saveHome).toHaveBeenCalledWith('JP-13')
+			expect(sut.showCelebration).toBe(true)
+			expect(sut.celebrationConfetti).toBe(true)
+			expect(sut.showPostSignupDialog).toBe(false)
+
+			sut.onCelebrationDismissed()
+			expect(sut.showPostSignupDialog).toBe(true)
+		})
+
+		it('keeps the sheet open and does not celebrate when saving the home fails', async () => {
+			mockAuth.isAuthenticated = true
+			mockStorage.getItem.mockImplementation((k: string) =>
+				k === 'postSignup.shown' ? 'pending' : null,
+			)
+			mockUserStore.currentHome = null
+			mockUserStore.saveHome.mockRejectedValueOnce(new Error('unavailable'))
+			primeTimetable(3)
+			sut = new DashboardRoute()
+			const open = vi.fn()
+			sut.homeSelector = { open } as never
+			sut.needsRegion = true
+
+			// Rejecting keeps the selector open on the choice.
+			await expect(sut.onHomeSelected('JP-13')).rejects.toThrow('unavailable')
+
+			expect(sut.needsRegion).toBe(true)
+			expect(open).not.toHaveBeenCalled()
+			expect(mockEa.publish).toHaveBeenCalledWith(
+				expect.objectContaining({
+					message: 'userHome.saveFailed',
+					severity: 'error',
+				}),
+			)
+			expect(sut.showCelebration).toBe(false)
 		})
 
 		// @spec components/infrastructure/fan/web/global/celebration-overlay "Post-signup full celebration then dialog"
@@ -1313,6 +1415,8 @@ describe('DashboardRoute', () => {
 			// concert list was already fetched in the session (the RPC cache).
 			primeTimetable(12)
 			await sut.onHomeSelected('JP-13')
+			// The sheet closes once the home is saved; the timetable loads after.
+			await vi.waitFor(() => expect(sut.timetableLoaded).toBe(true))
 
 			expect(celebrate).toHaveBeenCalledTimes(1)
 			expect(latch).toHaveBeenCalledTimes(1)
@@ -1461,6 +1565,8 @@ describe('DashboardRoute', () => {
 			expect(mockOnboarding.finish).not.toHaveBeenCalled()
 
 			await sut.onHomeSelected('JP-13')
+			// The sheet closes once the home is saved; the timetable loads after.
+			await vi.waitFor(() => expect(sut.timetableLoaded).toBe(true))
 
 			// celebration still shows (region-less guest sees it before latch)
 			expect(sut.showCelebration).toBe(true)

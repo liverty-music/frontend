@@ -58,4 +58,19 @@ describe(`${CAPABILITY}: auto-open on first page visit`, () => {
 			expect(sut.isOpen).toBe(true)
 		}
 	})
+
+	it('waits while auto-open is held back, then opens once when asked', () => {
+		const sut = new PageHelp()
+		sut.page = 'my-artists'
+		sut.autoOpen = false
+		sut.attached()
+
+		// Held back (another sheet is open first): not opened, not recorded.
+		expect(sut.isOpen).toBe(false)
+		expect(localStorage.getItem('onboarding.helpSeen:my-artists')).toBeNull()
+
+		sut.openIfFirstVisit()
+		expect(sut.isOpen).toBe(true)
+		expect(localStorage.getItem('onboarding.helpSeen:my-artists')).toBe('1')
+	})
 })

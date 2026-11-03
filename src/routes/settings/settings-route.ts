@@ -449,6 +449,9 @@ export class SettingsRoute {
 				await this.userStore.updateHome(codeToHome(code))
 			} catch (err) {
 				this.logger.error('Failed to update home via RPC', err)
+				this.ea.publish(new Snack(this.i18n.tr('userHome.saveFailed'), 'error'))
+				// The selector stays open on the choice so it can be tried again.
+				throw err
 			}
 		} else {
 			this.userStore.setGuestHome(code)

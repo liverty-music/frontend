@@ -156,7 +156,7 @@ describe('BottomSheet', () => {
 			)
 		})
 
-		it('does not emit sheet-closed for a programmatic close', () => {
+		it('does not emit sheet-closed for a programmatic close, only sheet-hidden', () => {
 			openAndSettle()
 			sut.open = true
 
@@ -165,7 +165,10 @@ describe('BottomSheet', () => {
 			sut.updateVisibility(0)
 
 			expect(popover.hidePopover).toHaveBeenCalledOnce()
-			expect(mockHost.dispatchEvent).not.toHaveBeenCalled()
+			expect(mockHost.dispatchEvent).toHaveBeenCalledOnce()
+			expect(mockHost.dispatchEvent).toHaveBeenCalledWith(
+				expect.objectContaining({ type: 'sheet-hidden' }),
+			)
 		})
 	})
 

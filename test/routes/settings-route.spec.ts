@@ -30,12 +30,6 @@ vi.mock('../../src/services/identity-verification-service', () => ({
 	IIdentityVerificationService: mockIIdentityVerificationService,
 }))
 
-vi.mock('../../src/components/user-home-selector/user-home-selector', () => ({
-	UserHomeSelector: {
-		getStoredHome: vi.fn().mockReturnValue(null),
-	},
-}))
-
 const { SettingsRoute } = await import(
 	'../../src/routes/settings/settings-route'
 )
@@ -342,8 +336,11 @@ describe('SettingsRoute', () => {
 			// change rather than positive assertion to avoid coupling to
 			// logger internals).
 			mockUser.current = { id: 'user-uuid-1' }
+			Object.assign(mockUserStore, {
+				updateHome: vi.fn().mockResolvedValue(undefined),
+			})
 			const before = sut.currentHome
-			sut.onHomeSelected('JP-13')
+			void sut.onHomeSelected('JP-13')
 			expect(sut.currentHome).toBe(before)
 		})
 	})
@@ -362,6 +359,18 @@ describe('SettingsRoute', () => {
 			)
 			expect(mockUserStore.setGuestHome).not.toHaveBeenCalled()
 			expect(localStorage.getItem('guest.home')).toBeNull()
+		})
+
+		it('says so and rejects when SetHome fails, so the selector stays open', async () => {
+			mockAuth.isAuthenticated = true
+			const updateHome = vi.fn().mockRejectedValue(new Error('unavailable'))
+			Object.assign(mockUserStore, { updateHome })
+
+			await expect(sut.onHomeSelected('JP-13')).rejects.toThrow('unavailable')
+
+			expect(mockEa.publish).toHaveBeenCalledWith(
+				expect.objectContaining({ severity: 'error' }),
+			)
 		})
 
 		// @spec components/infrastructure/fan/web/global/user-home-selector "Caller owns persistence — guest home save"

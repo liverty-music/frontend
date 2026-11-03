@@ -31,8 +31,11 @@ test('page-help sheet opens and stays open (not auto-dismissed)', async ({
 	// USER opens it. Seeding this makes the run deterministic and starts the
 	// page with the sheet closed. (Key: `saveHelpSeen()` in
 	// `src/adapter/storage/onboarding-storage.ts`.)
+	// A home area is set too: My Artists asks a person without one in a sheet,
+	// which would cover the FAB.
 	await page.addInitScript(() => {
 		localStorage.setItem('onboarding.helpSeen:my-artists', '1')
+		localStorage.setItem('guest.home', 'JP-13')
 	})
 
 	await page.goto('/my-artists')

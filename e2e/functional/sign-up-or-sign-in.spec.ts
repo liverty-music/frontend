@@ -3,7 +3,6 @@ import { concertWire } from '../support/concert-wire'
 import { fakeId } from '../support/fake-id'
 import {
 	callsOf,
-	chooseHomeAtSignUp,
 	connectError,
 	FAN_EMAIL,
 	mockFanRpc,
@@ -132,7 +131,7 @@ test.describe('starts of sign-up and sign-in are reported', () => {
 	})
 })
 
-test.describe('a new account needs a home', () => {
+test.describe('a new account without a home', () => {
 	test.use({ locale: 'ja-JP' })
 	const EVENT_ID = fakeId('signup-home-event')
 	const USER_ID = '00000000-0000-4000-8000-c00000000002'
@@ -165,22 +164,26 @@ test.describe('a new account needs a home', () => {
 		}
 	}
 
+	// @spec components/infrastructure/fan/web/global/user-home-selector "New account without a home opens the Dashboard"
+	// @spec components/infrastructure/fan/web/global/user-home-selector "Event page does not ask"
+	// @spec components/infrastructure/fan/web/global/user-home-selector "Sheet left without a choice"
 	test(`@spec ${STORY} "Sign-up from the event page without a home"`, async ({
 		page,
 	}) => {
-		let created = false
+		let home: Record<string, unknown> | undefined
 		const calls = await mockFanRpc(page, {
 			'ConcertService/Get': concertWire({ concert: concert() }),
 			'ConcertService/ListBySeries': concertWire({ concerts: [concert()] }),
-			// No account for this identity until Create stores one.
+			// No account for this identity until Create stores one; Create
+			// succeeds without a home.
 			'UserService/Get': () =>
-				created ? { body: { user: user() } } : connectError('not_found', 404),
-			// The backend refuses a new identity without a home (design "Every
-			// User has a home"); with one it creates the account.
-			'UserService/Create': (body) => {
-				if (!body.home) return connectError('failed_precondition', 400)
-				created = true
-				return { body: { user: user() } }
+				callsOf(calls, 'UserService/Create').length > 0
+					? { body: { user: user(home) } }
+					: connectError('not_found', 404),
+			'UserService/Create': () => ({ body: { user: user(home) } }),
+			'UserService/SetHome': (body) => {
+				home = body.home as Record<string, unknown>
+				return { body: { user: user(home) } }
 			},
 		})
 		await mockIdentityProvider(page)
@@ -191,34 +194,52 @@ test.describe('a new account needs a home', () => {
 		})
 		await page.getByTestId('event-signup').click()
 
-		// The callback asks for the home in a sheet that cannot be closed.
-		const sheet = page.locator('auth-callback-route .selector-content')
-		await expect(sheet).toBeVisible({ timeout: 20_000 })
-		await page.keyboard.press('Escape')
-		await expect(sheet).toBeVisible()
-		expect(created).toBe(false)
-
-		await chooseHomeAtSignUp(page)
-
-		// The account is created with the chosen home, and the fan is back on the
-		// event page, signed in.
+		// The account is created without a home and the event page opens again,
+		// signed in, with no home sheet.
 		await expect(page).toHaveURL(new RegExp(`/events/${EVENT_ID}$`), {
 			timeout: 20_000,
 		})
 		await expect(page.getByTestId('event-signup')).toHaveCount(0)
-		const creates = callsOf(calls, 'UserService/Create')
-		expect(creates.at(-1)?.body.home).toMatchObject({
+		expect(
+			callsOf(calls, 'UserService/Create').at(-1)?.body.home,
+		).toBeUndefined()
+		const sheet = page.locator('user-home-selector .selector-content')
+		await expect(sheet).toHaveCount(0)
+
+		// The Dashboard asks for the home in a sheet that cannot be closed.
+		await page.goto('/dashboard')
+		await expect(sheet).toBeVisible({ timeout: 20_000 })
+		await page.keyboard.press('Escape')
+		await page.mouse.click(5, 5)
+		await expect(sheet).toBeVisible()
+		expect(callsOf(calls, 'UserService/SetHome')).toHaveLength(0)
+
+		// Leaving without a choice: closing and reopening the app asks again,
+		// still signed in (the app reads the account on start).
+		const getsBefore = callsOf(calls, 'UserService/Get').length
+		await page.reload()
+		await expect(sheet).toBeVisible({ timeout: 20_000 })
+		await expect
+			.poll(() => callsOf(calls, 'UserService/Get').length)
+			.toBeGreaterThan(getsBefore)
+
+		// Choosing 東京 saves JP-13 to the account and closes the sheet.
+		await sheet.getByRole('button', { name: '東京', exact: true }).click()
+		await expect(sheet).toBeHidden()
+		expect(
+			callsOf(calls, 'UserService/SetHome').at(-1)?.body.home,
+		).toMatchObject({
 			countryCode: 'JP',
 			level1: 'JP-13',
 		})
 	})
 
-	function user() {
+	function user(home?: Record<string, unknown>) {
 		return {
 			id: { value: USER_ID },
 			email: { value: FAN_EMAIL },
 			preferredLanguage: 'ja',
-			home: { countryCode: 'JP', level1: 'JP-13' },
+			...(home ? { home } : {}),
 		}
 	}
 })

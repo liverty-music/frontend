@@ -54,6 +54,7 @@
 		"error": "Could not finish creating your account — your connection may be unstable. Wait a moment and try again."
 	},
 	"userHome": {
+		"saveFailed": "Couldn't save your area. Please try again in a moment.",
 		"title": "Select Your Home Area",
 		"description": "HOME STAGE shows lives in the area you select. Where do you live?",
 		"quickSelect": "Quick Select",

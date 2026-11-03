@@ -1,4 +1,5 @@
-import { DI, ILogger, Registration } from 'aurelia'
+import { DI, IEventAggregator, ILogger, Registration } from 'aurelia'
+import { HomeChanged } from '../../src/services/events/home-changed'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { artistHue } from '../../src/adapter/view/artist-color'
 import { createTestContainer } from '../helpers/create-container'
@@ -40,6 +41,7 @@ const { ConcertStore, IConcertStore } = await import(
 describe('ConcertStore', () => {
 	let sut: InstanceType<typeof ConcertStore>
 	let mockLoggerWarn: ReturnType<typeof vi.fn>
+	let ea: IEventAggregator
 
 	beforeEach(() => {
 		vi.clearAllMocks()
@@ -58,6 +60,7 @@ describe('ConcertStore', () => {
 		)
 		container.register(ConcertStore)
 		sut = container.get(IConcertStore)
+		ea = container.get(IEventAggregator)
 		// The mock ILogger's scopeTo returns the same instance (mockReturnThis),
 		// so the scoped logger inside ConcertStore calls the very same
 		// warn spy we grab from the container here.
@@ -68,6 +71,18 @@ describe('ConcertStore', () => {
 
 	afterEach(() => {
 		vi.restoreAllMocks()
+	})
+
+	it('reads the follower lists again after the home changed', async () => {
+		await sut.listFollowed()
+		await sut.listFollowed()
+		expect(mockConcertRpcClient.listFollowed).toHaveBeenCalledOnce()
+
+		// Lanes are placed by distance from the home, so a new home drops them.
+		ea.publish(new HomeChanged())
+		await sut.listFollowed()
+
+		expect(mockConcertRpcClient.listFollowed).toHaveBeenCalledTimes(2)
 	})
 
 	describe('listByArtist', () => {

@@ -80,12 +80,12 @@
   signup-requested.trigger="onSignupRequested()">
 </signup-prompt-banner>
 
-<!-- Home area selector bottom sheet (onboarding / region setup) -->
+<!-- Home area sheet for a person without a home -->
 <user-home-selector
   component.ref="homeSelector"
   current-code.bind="userStore.currentHome"
   on-home-selected.bind="(code) => onHomeSelected(code)"
-  required.bind="isOnboarding"
+  required.bind="homeRequired"
 ></user-home-selector>
 
 <!-- Celebration overlay — two tiers (guest light / post-signup confetti),

@@ -1,6 +1,14 @@
 import { I18N } from '@aurelia/i18n'
 import { IRouter, type Params, type RouteNode } from '@aurelia/router'
-import { ILogger, observable, queueTask, resolve, watch } from 'aurelia'
+import {
+	IEventAggregator,
+	ILogger,
+	observable,
+	queueTask,
+	resolve,
+	watch,
+} from 'aurelia'
+import { Snack } from '../../../shared/ui/snack-bar/snack'
 import { IHistory } from '../../adapter/browser/history'
 import { ILocalStorage } from '../../adapter/storage/local-storage'
 import type { ArtistFilterBar } from '../../components/artist-filter-bar/artist-filter-bar'
@@ -11,7 +19,7 @@ import type {
 	LiveEvent,
 } from '../../components/live-highway/live-event'
 import type { PageHelp } from '../../components/page-help/page-help'
-import { UserHomeSelector } from '../../components/user-home-selector/user-home-selector'
+import type { UserHomeSelector } from '../../components/user-home-selector/user-home-selector'
 import { StorageKeys } from '../../constants/storage-keys'
 import type { Artist, CountedArtist } from '../../entities/artist'
 import type {
@@ -134,6 +142,7 @@ export class DashboardRoute {
 	private readonly onboarding = resolve(IOnboardingService)
 	private readonly promptCoordinator = resolve(IPromptCoordinator)
 	private readonly userStore = resolve(IUserStore)
+	private readonly ea = resolve(IEventAggregator)
 	private readonly storage = resolve(ILocalStorage)
 	private readonly history = resolve(IHistory)
 	private readonly router = resolve(IRouter)
@@ -146,6 +155,14 @@ export class DashboardRoute {
 
 	public get isAuthenticated(): boolean {
 		return this.authService.isAuthenticated
+	}
+
+	/**
+	 * The home sheet closes only on a choice for a signed-in fan and for a guest
+	 * in onboarding; a guest after onboarding may close it.
+	 */
+	public get homeRequired(): boolean {
+		return this.isAuthenticated || this.isOnboarding
 	}
 
 	/**
@@ -375,11 +392,10 @@ export class DashboardRoute {
 			this.fromDate = parsedFrom ?? todayCalendarDate()
 		}
 
-		// Only a guest can be without a home: every account is created with one
-		// (the auth callback asks for it at sign-up), so a signed-in fan never
-		// sees this sheet.
-		this.needsRegion =
-			!this.authService.isAuthenticated && !UserHomeSelector.getStoredHome()
+		// A person without a home area (a guest who has not chosen one, or a
+		// signed-in fan whose account has none) is asked for it here and on My
+		// Artists, every time either screen opens until they choose one.
+		this.needsRegion = this.userStore.needsHome
 
 		// Fire-and-forget. loadData() self-selects the fast path (cache paint +
 		// background refresh) or the cold-load path (spinner + full fetch).
@@ -636,7 +652,23 @@ export class DashboardRoute {
 	 */
 	@watch((vm: DashboardRoute) => vm.followStore.hypeByArtist)
 	protected onHypeChanged(levels: ReadonlyMap<string, HypeLevel>): void {
-		const stale = this.dateGroups.some((group) =>
+		if (!this.isStale(levels) || this.hypeRefresh) return
+		// The refresh reloads the follow list, which replaces this map again
+		// before the fresh timetable lands; one refresh at a time is enough. A
+		// level that changed after the refresh read the list is caught by the
+		// re-check once a fresh timetable lands (a failed refresh lands none, so
+		// it is not retried in a loop).
+		const shown = this.dateGroups
+		this.hypeRefresh = this.refreshInBackground().finally(() => {
+			this.hypeRefresh = null
+			if (this.dateGroups !== shown)
+				this.onHypeChanged(this.followStore.hypeByArtist)
+		})
+	}
+
+	/** Whether a shown concert's hype level differs from `levels`. */
+	private isStale(levels: ReadonlyMap<string, HypeLevel>): boolean {
+		return this.dateGroups.some((group) =>
 			[...group.home, ...group.nearby, ...group.away].some((concert) => {
 				const level = concert.artistId
 					? levels.get(concert.artistId)
@@ -644,12 +676,6 @@ export class DashboardRoute {
 				return level !== undefined && level !== concert.hypeLevel
 			}),
 		)
-		// The refresh reloads the follow list, which replaces this map again
-		// before the fresh timetable lands; one refresh at a time is enough.
-		if (!stale || this.hypeRefresh) return
-		this.hypeRefresh = this.refreshInBackground().finally(() => {
-			this.hypeRefresh = null
-		})
 	}
 
 	/** The background refresh a hype change started, while it runs. */
@@ -758,14 +784,25 @@ export class DashboardRoute {
 
 	public async onHomeSelected(code: string): Promise<void> {
 		this.logger.info('Home area configured', { code })
+		// UserHomeSelector does not persist: the store saves the choice, through
+		// SetHome for a signed-in fan and on the device for a guest; a saved home
+		// drops the cached follower lists (HomeChanged), so the load below reads
+		// the lanes for the new home.
+		try {
+			await this.userStore.saveHome(code)
+		} catch (err) {
+			this.logger.error('Failed to save the home area', { error: err })
+			this.ea.publish(new Snack(this.i18n.tr('userHome.saveFailed'), 'error'))
+			// Still without a home: the sheet stays open on the choice.
+			throw err
+		}
 		this.needsRegion = false
-		// UserHomeSelector does not persist; only a guest reaches this sheet, so
-		// the choice goes to the guest home in localStorage.
-		this.userStore.setGuestHome(code)
+		// Resolving lets the sheet close now; the timetable then loads behind it.
 		// Timetable becomes real once the region is chosen; loadData() flips
 		// timetableLoaded → timetableLoadedChanged() runs the deferred celebration
-		// + completion-latch decisions. No explicit call needed here.
-		await this.loadData()
+		// + completion-latch decisions, so the celebration shows after the sheet
+		// has closed. No explicit call needed here.
+		void this.loadData()
 	}
 
 	/**

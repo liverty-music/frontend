@@ -4,6 +4,7 @@ import { Snack, type SnackHandle } from '../../../shared/ui/snack-bar/snack'
 import { artistColor } from '../../adapter/view/artist-color'
 import { HYPE_TIERS } from '../../adapter/view/hype-display'
 import type { PageHelp } from '../../components/page-help/page-help'
+import type { UserHomeSelector } from '../../components/user-home-selector/user-home-selector'
 import type { FollowedArtist, Hype } from '../../entities/follow'
 import { IAuthService } from '../../services/auth-service'
 import { IErrorBoundaryService } from '../../services/error-boundary-service'
@@ -15,6 +16,7 @@ import {
 import { IFollowStore } from '../../services/follow-store'
 import { IOnboardingService } from '../../services/onboarding-service'
 import { IPushOfferService } from '../../services/push-offer-service'
+import { IUserStore } from '../../services/user-store'
 import { currentLanguage } from '../../util/change-locale'
 
 export interface MyArtist extends FollowedArtist {
@@ -26,6 +28,13 @@ export class MyArtistsRoute {
 	public isLoading = true
 
 	public showSignupBanner = false
+
+	/**
+	 * The person has no home area, so the home sheet is open (or was closed by a
+	 * guest after onboarding). Decided when the route opens, as on the Dashboard.
+	 */
+	public needsHome = false
+	public homeSelector: UserHomeSelector | undefined
 
 	// Edit-mode state: toggles per-row remove controls. @observable so the FAB
 	// context @watch re-registers when edit mode enters/exits (the launcher hides
@@ -53,6 +62,7 @@ export class MyArtistsRoute {
 	private readonly ea = resolve(IEventAggregator)
 	private readonly fabMenu = resolve(IFabMenuService)
 	private readonly pushOffer = resolve(IPushOfferService)
+	public readonly userStore = resolve(IUserStore)
 	private abortController: AbortController | null = null
 
 	/** Help sheet ref; its trigger lives in the FAB launcher. */
@@ -66,6 +76,14 @@ export class MyArtistsRoute {
 
 	public get isAuthenticated(): boolean {
 		return this.authService.isAuthenticated
+	}
+
+	/**
+	 * The home sheet closes only on a choice for a signed-in fan and for a guest
+	 * in onboarding; a guest after onboarding may close it.
+	 */
+	public get homeRequired(): boolean {
+		return this.isAuthenticated || this.isOnboarding
 	}
 
 	/** Get the artist ID string for template bindings. */
@@ -88,6 +106,9 @@ export class MyArtistsRoute {
 		this.isLoading = true
 		// Edit mode is not persisted across navigation — always start fresh.
 		this.editing = false
+		// A person without a home area is asked for it here and on the Dashboard,
+		// every time either screen opens until they choose one.
+		this.needsHome = this.userStore.needsHome
 		void this.loadArtists()
 
 		// Signup banner visible for any guest user on this page (during AND after
@@ -133,6 +154,34 @@ export class MyArtistsRoute {
 	public attached(): void {
 		// @watch does not fire on initial bind, so seed the registration here.
 		this.refreshFabActions()
+		// The sheet is in the DOM only now, so showPopover() works.
+		if (this.needsHome) this.homeSelector?.open()
+	}
+
+	/**
+	 * The person chose a home area in the sheet. The store saves it, through
+	 * SetHome for a signed-in fan and on the device for a guest. When the save
+	 * fails it says so and rejects, so the sheet stays open on the choice.
+	 */
+	public async onHomeSelected(code: string): Promise<void> {
+		try {
+			await this.userStore.saveHome(code)
+		} catch (err) {
+			this.logger.error('Failed to save the home area', { error: err })
+			this.ea.publish(new Snack(this.i18n.tr('userHome.saveFailed'), 'error'))
+			// Still without a home: the sheet stays open on the choice.
+			throw err
+		}
+		this.needsHome = false
+	}
+
+	/**
+	 * The home sheet has finished closing. The first-visit help, held back
+	 * while it was open, opens only now, so the two sheets are never open
+	 * together.
+	 */
+	public onHomeSheetHidden(): void {
+		this.pageHelp?.openIfFirstVisit()
 	}
 
 	/** Edit is available only once there are followed artists to edit. */
