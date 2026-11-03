@@ -50,15 +50,7 @@
 			}
 		}
 
-		/* --- Artist logo (clearLOGO transparent PNG) --- */
-		.artist-logo {
-			inline-size: 100%;
-			max-block-size: 25cqi;
-			object-fit: contain;
-			filter: drop-shadow(0 2px 4px var(--_drop-shadow));
-		}
-
-		/* --- Artist name (text fallback) --- */
+		/* --- Artist name --- */
 		.artist-name {
 			font-family: var(--font-display);
 			/* stylelint-disable-next-line cube/require-token-variables -- container-query clamp cannot be tokenized */
@@ -149,14 +141,7 @@
 			);
 		}
 
-		/* ClearLOGO neon contour glow — triple layer */
-		.event-card[data-matched] .artist-logo {
-			filter: drop-shadow(0 0 6px var(--_spot-bright))
-				drop-shadow(0 0 14px var(--_spot-glow))
-				drop-shadow(0 0 28px var(--_spot-dim));
-		}
-
-		/* Text fallback neon glow — triple layer */
+		/* Artist name neon glow — triple layer */
 		.event-card[data-matched] .artist-name {
 			text-shadow:
 				0 0 6px var(--_spot-bright),

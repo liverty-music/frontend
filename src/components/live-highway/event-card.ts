@@ -1,5 +1,4 @@
 import { bindable, INode, resolve } from 'aurelia'
-import { bestLogoUrl } from '../../entities/artist'
 import {
 	JOURNEY_STATUS_CONFIG_MAP,
 	type JourneyStatusConfig,
@@ -10,13 +9,8 @@ import type { LaneType, LiveEvent } from './live-event'
 export class EventCard {
 	@bindable public event!: LiveEvent
 	@bindable public lane: LaneType = 'home'
-	public logoError = false
 
 	private readonly element = resolve(INode) as HTMLElement
-
-	public get logoUrl(): string | undefined {
-		return bestLogoUrl(this.event.artist)
-	}
 
 	/**
 	 * Canonical label/icon/hue for the concert's journey status, if any. A
@@ -32,14 +26,6 @@ export class EventCard {
 	/** True when the fan holds an Issued ticket for this first-party concert. */
 	public get isPurchased(): boolean {
 		return this.event.isFirstParty && (this.event.purchasedTicketCount ?? 0) > 0
-	}
-
-	public eventChanged(): void {
-		this.logoError = false
-	}
-
-	public onLogoError(): void {
-		this.logoError = true
 	}
 
 	public get formattedDate(): string {
