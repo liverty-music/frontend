@@ -25,6 +25,11 @@ export interface SnackOptions {
 	 * fan app's update snack). No glow under reduced motion.
 	 */
 	attention?: boolean
+	/**
+	 * A sender's key for its own snack: a new snack with the key of a visible
+	 * one takes its place (My Artists keys its hype snack by artist).
+	 */
+	replaceKey?: string
 }
 
 const SEVERITY_ICONS: Readonly<Record<SnackSeverity, string>> = {

@@ -21,7 +21,8 @@ import { SnackBar } from './snack-bar'
 	name: 'snack-demo',
 	template: `
 		<button type="button" click.trigger="fire()">Show snack</button>
-		<snack-bar></snack-bar>
+		<button type="button" click.trigger="fireSelfDismissing()">Show self-dismissing snack</button>
+		<snack-bar limit.bind="limit"></snack-bar>
 	`,
 })
 class SnackDemo {
@@ -31,7 +32,21 @@ class SnackDemo {
 	@bindable public update = false
 	/** Give a plain snack an action with this label. */
 	@bindable public actionLabel = ''
+	/** The snack bar's limit (the fan app: 3). */
+	@bindable public limit = Number.POSITIVE_INFINITY
 	private readonly ea = resolve(IEventAggregator)
+	private count = 0
+
+	/**
+	 * Publish a numbered snack that dismisses on its own, after a minute so
+	 * it outlasts the test.
+	 */
+	public fireSelfDismissing(): void {
+		this.count++
+		this.ea.publish(
+			new Snack(`スナック${this.count}`, 'info', { duration: 60_000 }),
+		)
+	}
 
 	public fire(): void {
 		// duration: Infinity → stays open (no auto-dismiss race in the test).
@@ -240,5 +255,34 @@ export const UpdateAction = {
 			snack.getAnimations({ subtree: true }).map((a) => a.finished),
 		)
 		await expectScreenshot(snack, 'snack-bar-update-action')
+	},
+} satisfies Story
+
+/**
+ * Four snacks that dismiss on their own, published one after another into
+ * the fan app's snack bar (limit 3): the first is dismissed and the newest
+ * three stay stacked.
+ */
+export const FourStacked = {
+	render: () =>
+		defineAureliaStory({
+			template: `<snack-demo limit.bind="3"></snack-demo>`,
+			register: [SnackDemo, SnackBar],
+		}),
+	play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+		const canvas = within(canvasElement)
+		const button = canvas.getByRole('button', {
+			name: 'Show self-dismissing snack',
+		})
+		for (let i = 0; i < 4; i++) await userEvent.click(button)
+
+		// @spec components/infrastructure/fan/web/global/snack-bar "Fourth snack"
+		await waitFor(() =>
+			expect(
+				[...canvasElement.querySelectorAll('.snack-item:popover-open')].map(
+					(el) => el.querySelector('.snack-message')?.textContent?.trim(),
+				),
+			).toEqual(['スナック2', 'スナック3', 'スナック4']),
+		)
 	},
 } satisfies Story
