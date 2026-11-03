@@ -603,6 +603,91 @@ describe('DashboardRoute', () => {
 		})
 	})
 
+	describe('hype level changes (onHypeChanged)', () => {
+		function onHypeChanged(route: DashboardRoute, levels: Map<string, string>) {
+			;(
+				route as unknown as {
+					onHypeChanged(m: Map<string, string>): void
+				}
+			).onHypeChanged(levels)
+		}
+
+		function awayGroup(): DateGroup {
+			return {
+				...makeGroup('a1'),
+				home: [],
+				away: [
+					{
+						artistId: 'a1',
+						id: 'w-a1',
+						hypeLevel: 'nearby',
+						matched: false,
+					} as never,
+				],
+			}
+		}
+
+		it('re-derives the timetable when a shown artist level changed', () => {
+			sut.dateGroups = [awayGroup()]
+			const refresh = vi
+				.spyOn(
+					sut as unknown as { refreshInBackground(): Promise<void> },
+					'refreshInBackground',
+				)
+				.mockResolvedValue()
+
+			onHypeChanged(sut, new Map([['a1', 'away']]))
+
+			expect(refresh).toHaveBeenCalledOnce()
+		})
+
+		it('starts no second refresh while one for a hype change runs', async () => {
+			sut.dateGroups = [awayGroup()]
+			let finish!: () => void
+			const refresh = vi
+				.spyOn(
+					sut as unknown as { refreshInBackground(): Promise<void> },
+					'refreshInBackground',
+				)
+				.mockReturnValue(
+					new Promise<void>((resolve) => {
+						finish = resolve
+					}),
+				)
+
+			// The refresh reloads the follow list, which replaces the map again.
+			onHypeChanged(sut, new Map([['a1', 'away']]))
+			onHypeChanged(sut, new Map([['a1', 'away']]))
+			expect(refresh).toHaveBeenCalledOnce()
+
+			finish()
+			await Promise.resolve()
+			await Promise.resolve()
+			onHypeChanged(sut, new Map([['a1', 'away']]))
+			expect(refresh).toHaveBeenCalledTimes(2)
+		})
+
+		it('does nothing when every shown level is unchanged', () => {
+			sut.dateGroups = [awayGroup()]
+			const refresh = vi
+				.spyOn(
+					sut as unknown as { refreshInBackground(): Promise<void> },
+					'refreshInBackground',
+				)
+				.mockResolvedValue()
+
+			onHypeChanged(
+				sut,
+				new Map([
+					['a1', 'nearby'],
+					['other', 'away'],
+				]),
+			)
+
+			expect(refresh).not.toHaveBeenCalled()
+		})
+	})
+
 	describe('syncFilterUrl', () => {
 		it('replaces URL to /dashboard when both facets are empty', () => {
 			sut.filteredArtistIds = []
@@ -1256,35 +1341,6 @@ describe('DashboardRoute', () => {
 				artists: 5,
 				concerts: 4,
 			})
-		})
-
-		// @spec components/infrastructure/fan/web/global/post-signup-dialog "Region selection still precedes both"
-		it('resolves the home area before the post-signup celebration and sheet', async () => {
-			mockAuth.isAuthenticated = true
-			mockStorage.getItem.mockImplementation((k: string) =>
-				k === 'postSignup.shown' ? 'pending' : null,
-			)
-			// A new account without a home area until the fan picks one.
-			mockUserStore.currentHome = null
-			;(mockUserStore as { updateHome?: unknown }).updateHome = vi.fn(
-				async () => {
-					mockUserStore.currentHome = 'JP-13'
-				},
-			)
-			sut = new DashboardRoute()
-			sut.needsRegion = true
-			await sut.loadData()
-			sut.attached()
-
-			expect(sut.showCelebration).toBe(false)
-			expect(sut.showPostSignupDialog).toBe(false)
-
-			await sut.onHomeSelected('JP-13')
-			expect(sut.showCelebration).toBe(true)
-			expect(sut.showPostSignupDialog).toBe(false)
-
-			sut.onCelebrationDismissed()
-			expect(sut.showPostSignupDialog).toBe(true)
 		})
 
 		it('does not celebrate for an authenticated returning user', async () => {

@@ -12,11 +12,11 @@ import type {
 } from '../../components/live-highway/live-event'
 import type { PageHelp } from '../../components/page-help/page-help'
 import { UserHomeSelector } from '../../components/user-home-selector/user-home-selector'
-import { codeToHome } from '../../constants/iso3166'
 import { StorageKeys } from '../../constants/storage-keys'
 import type { Artist, CountedArtist } from '../../entities/artist'
 import type {
 	Concert,
+	HypeLevel,
 	JourneyStatus,
 	TimetableAnchor,
 } from '../../entities/concert'
@@ -375,11 +375,11 @@ export class DashboardRoute {
 			this.fromDate = parsedFrom ?? todayCalendarDate()
 		}
 
-		if (this.authService.isAuthenticated) {
-			this.needsRegion = !this.userStore.current?.home
-		} else {
-			this.needsRegion = !UserHomeSelector.getStoredHome()
-		}
+		// Only a guest can be without a home: every account is created with one
+		// (the auth callback asks for it at sign-up), so a signed-in fan never
+		// sees this sheet.
+		this.needsRegion =
+			!this.authService.isAuthenticated && !UserHomeSelector.getStoredHome()
 
 		// Fire-and-forget. loadData() self-selects the fast path (cache paint +
 		// background refresh) or the cold-load path (spinner + full fetch).
@@ -628,6 +628,33 @@ export class DashboardRoute {
 		void this.refreshInBackground()
 	}
 
+	/**
+	 * A followed artist's hype level changed while the timetable is shown (the
+	 * app raised it after a journey saved in the detail sheet, or the fan undid
+	 * that raise): re-derive the timetable so the highlights follow the new
+	 * level through the same matching as a load.
+	 */
+	@watch((vm: DashboardRoute) => vm.followStore.hypeByArtist)
+	protected onHypeChanged(levels: ReadonlyMap<string, HypeLevel>): void {
+		const stale = this.dateGroups.some((group) =>
+			[...group.home, ...group.nearby, ...group.away].some((concert) => {
+				const level = concert.artistId
+					? levels.get(concert.artistId)
+					: undefined
+				return level !== undefined && level !== concert.hypeLevel
+			}),
+		)
+		// The refresh reloads the follow list, which replaces this map again
+		// before the fresh timetable lands; one refresh at a time is enough.
+		if (!stale || this.hypeRefresh) return
+		this.hypeRefresh = this.refreshInBackground().finally(() => {
+			this.hypeRefresh = null
+		})
+	}
+
+	/** The background refresh a hype change started, while it runs. */
+	private hypeRefresh: Promise<void> | null = null
+
 	@watch((vm: DashboardRoute) => vm.journeyStore.journeyMap)
 	protected onJourneyMapChanged(map: Map<string, JourneyStatus>): void {
 		for (const group of this.dateGroups) {
@@ -732,18 +759,9 @@ export class DashboardRoute {
 	public async onHomeSelected(code: string): Promise<void> {
 		this.logger.info('Home area configured', { code })
 		this.needsRegion = false
-		// UserHomeSelector no longer persists — the onboarding caller owns it:
-		// authenticated users write through UserService.updateHome, guests to
-		// localStorage.
-		if (this.authService.isAuthenticated) {
-			try {
-				await this.userStore.updateHome(codeToHome(code))
-			} catch (err) {
-				this.logger.error('Failed to update home via RPC', err)
-			}
-		} else {
-			this.userStore.setGuestHome(code)
-		}
+		// UserHomeSelector does not persist; only a guest reaches this sheet, so
+		// the choice goes to the guest home in localStorage.
+		this.userStore.setGuestHome(code)
 		// Timetable becomes real once the region is chosen; loadData() flips
 		// timetableLoaded → timetableLoadedChanged() runs the deferred celebration
 		// + completion-latch decisions. No explicit call needed here.

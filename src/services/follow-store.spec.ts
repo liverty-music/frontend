@@ -5,6 +5,8 @@ import type { Artist } from '../entities/artist'
 import {
 	DEFAULT_HYPE,
 	type FollowedArtist,
+	type GuestFollowedArtist,
+	type GuestHypeSetBy,
 	type Hype,
 } from '../entities/follow'
 import { Events } from '../lib/analytics/analytics-service'
@@ -41,13 +43,14 @@ const mockConcertStore = {
 // FollowStore now hydrates the guest follow queue from the guest-storage adapter
 // on construction (FollowServiceClient is dissolved). Drive it via a mutable
 // seed array that loadFollows returns and saveFollows mirrors back.
-let guestSeed: FollowedArtist[] = []
-const saveFollows = vi.fn((follows: FollowedArtist[]) => {
-	guestSeed = [...follows]
+let guestSeed: GuestFollowedArtist[] = []
+const saveFollows = vi.fn((follows: readonly GuestFollowedArtist[]) => {
+	guestSeed = follows.map((f) => ({ ...f }))
 })
 vi.mock('../adapter/storage/guest-storage', () => ({
-	loadFollows: vi.fn(() => [...guestSeed]),
-	saveFollows: (follows: FollowedArtist[]) => saveFollows(follows),
+	loadFollows: vi.fn(() => guestSeed.map((f) => ({ ...f }))),
+	saveFollows: (follows: readonly GuestFollowedArtist[]) =>
+		saveFollows(follows),
 }))
 
 const lsMap = new Map<string, string>()
@@ -115,12 +118,20 @@ function makeArtist(id: string, name: string): Artist {
 	return { id, name } as Artist
 }
 
-function makeFollow(id: string, hype: Hype = DEFAULT_HYPE): FollowedArtist {
-	return { artist: makeArtist(id, `Artist ${id}`), hype }
+function makeFollow(
+	id: string,
+	hype: Hype = DEFAULT_HYPE,
+	hypeSetBy: GuestHypeSetBy = hype === DEFAULT_HYPE ? 'default' : 'fan',
+): GuestFollowedArtist {
+	return { artist: makeArtist(id, `Artist ${id}`), hype, hypeSetBy }
 }
 
-function makeFollowedArtist(id: string, name: string): FollowedArtist {
-	return { artist: makeArtist(id, name), hype: DEFAULT_HYPE }
+function makeFollowedArtist(id: string, name: string): GuestFollowedArtist {
+	return {
+		artist: makeArtist(id, name),
+		hype: DEFAULT_HYPE,
+		hypeSetBy: 'default',
+	}
 }
 
 describe('FollowStore', () => {
@@ -199,6 +210,59 @@ describe('FollowStore', () => {
 			await expect(sut.unfollow('a1')).rejects.toThrow('network error')
 
 			expect(mockConcertStore.invalidateFollowerCache).not.toHaveBeenCalled()
+		})
+	})
+
+	describe('hype levels after a journey (rereadHype)', () => {
+		it('re-reads the follow list past the session load and returns the level', async () => {
+			mockRpcClient.list.mockResolvedValue([makeFollow('a1')])
+			await sut.ensureLoaded()
+			mockRpcClient.list.mockResolvedValue([makeFollow('a1', 'away')])
+
+			expect(await sut.rereadHype('a1')).toBe('away')
+
+			expect(mockRpcClient.list).toHaveBeenCalledTimes(2)
+			expect(sut.hypeByArtist.get('a1')).toBe('away')
+		})
+
+		it('drops the rendered timetable only when the level changed', async () => {
+			mockRpcClient.list.mockResolvedValue([makeFollow('a1')])
+			await sut.listFollowed()
+
+			await sut.rereadHype('a1')
+			expect(mockConcertStore.invalidateFollowerCache).not.toHaveBeenCalled()
+
+			mockRpcClient.list.mockResolvedValue([makeFollow('a1', 'away')])
+			await sut.rereadHype('a1')
+			expect(mockConcertStore.invalidateFollowerCache).toHaveBeenCalledOnce()
+		})
+
+		it('records a saved level, so an undone raise shows the fan level', async () => {
+			mockRpcClient.list.mockResolvedValue([makeFollow('a1', 'away')])
+			await sut.listFollowed()
+
+			await sut.setHype('a1', 'nearby')
+
+			expect(sut.hypeByArtist.get('a1')).toBe('nearby')
+		})
+
+		it('keeps the level when the save fails', async () => {
+			mockRpcClient.list.mockResolvedValue([makeFollow('a1', 'away')])
+			await sut.listFollowed()
+			mockRpcClient.setHype.mockRejectedValueOnce(new Error('unavailable'))
+
+			await expect(sut.setHype('a1', 'nearby')).rejects.toThrow('unavailable')
+
+			expect(sut.hypeByArtist.get('a1')).toBe('away')
+		})
+
+		it('forgets the levels on sign-out', async () => {
+			mockRpcClient.list.mockResolvedValue([makeFollow('a1', 'away')])
+			await sut.listFollowed()
+
+			sut.clear()
+
+			expect(sut.hypeByArtist.size).toBe(0)
 		})
 	})
 
@@ -405,6 +469,36 @@ describe('FollowStore', () => {
 			expect(sut.guestFollows[0]?.hype).toBe('away')
 			expect(mockRpcClient.setHype).not.toHaveBeenCalled()
 		})
+
+		// @spec stories/merge-guest-data-on-signup "Followed artists stored locally with hype"
+		it('stores a new guest follow at the default level, set by default', async () => {
+			await sut.follow(makeArtist('g1', 'Guest One'))
+
+			expect(guestSeed).toEqual([
+				expect.objectContaining({
+					artist: expect.objectContaining({ id: 'g1' }),
+					hype: DEFAULT_HYPE,
+					hypeSetBy: 'default',
+				}),
+			])
+		})
+
+		// @spec stories/merge-guest-data-on-signup "Hype update stored inline in follow entry"
+		it('marks a guest hype change as set by the fan, also for the default level', async () => {
+			guestSeed = [
+				makeFollowedArtist('g1', 'One'),
+				makeFollowedArtist('g2', 'Two'),
+			]
+			sut = new FollowStore()
+
+			await sut.setHype('g1', 'away')
+			await sut.setHype('g2', DEFAULT_HYPE)
+
+			expect(guestSeed.map((f) => [f.artist.id, f.hype, f.hypeSetBy])).toEqual([
+				['g1', 'away', 'fan'],
+				['g2', DEFAULT_HYPE, 'fan'],
+			])
+		})
 	})
 
 	describe('GuestMigrationRequested → migrate', () => {
@@ -475,6 +569,44 @@ describe('FollowStore', () => {
 			// follow/setHype are guest-internal here, so the only persist on the
 			// migration path is the batched removeGuestFollows.
 			expect(saveFollows).toHaveBeenCalledOnce()
+		})
+
+		// @spec stories/merge-guest-data-on-signup "Guest hype merged from follow entries"
+		// @spec stories/merge-guest-data-on-signup "Guest's chosen Nearby is kept as the fan's choice"
+		it('sends SetHype for every level the guest set, including the default level', async () => {
+			guestSeed = [
+				makeFollow('a1', 'away'),
+				makeFollow('a2', DEFAULT_HYPE, 'fan'),
+				makeFollow('a3'),
+			]
+			sut = new FollowStore()
+
+			await sut.migrateGuestFollows('user-1')
+
+			expect(mockRpcClient.setHype.mock.calls).toEqual([
+				['a1', 'away'],
+				['a2', DEFAULT_HYPE],
+			])
+			// Each SetHype follows that artist's Follow.
+			const order = (fn: ReturnType<typeof vi.fn>, id: string) =>
+				fn.mock.invocationCallOrder[
+					fn.mock.calls.findIndex(([artistId]) => artistId === id)
+				]
+			expect(order(mockRpcClient.setHype, 'a2')).toBeGreaterThan(
+				order(mockRpcClient.follow, 'a2'),
+			)
+			expect(sut.guestFollows).toHaveLength(0)
+		})
+
+		// @spec stories/merge-guest-data-on-signup "Guest follow at the default level does not overwrite the account's level"
+		it('sends no SetHype for a level the guest never set', async () => {
+			guestSeed = [makeFollow('a1')]
+			sut = new FollowStore()
+
+			await sut.migrateGuestFollows('user-1')
+
+			expect(mockRpcClient.follow).toHaveBeenCalledWith('a1')
+			expect(mockRpcClient.setHype).not.toHaveBeenCalled()
 		})
 
 		it('migrates non-default hype only for successfully followed artists', async () => {

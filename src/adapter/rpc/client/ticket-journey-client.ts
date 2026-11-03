@@ -64,6 +64,28 @@ export class TicketJourneyRpcClient {
 		}
 	}
 
+	/**
+	 * Start tracking an event the fan added to their calendar
+	 * (`TicketJourneyService.InferTracking`). Resolves whether the server stored
+	 * Tracking; it stores nothing when the fan already has a journey for it.
+	 */
+	public async inferTracking(
+		eventId: string,
+		signal?: AbortSignal,
+	): Promise<boolean> {
+		this.logger.info('Inferring ticket journey tracking', { eventId })
+		try {
+			const response = await this.client.inferTracking(
+				{ eventId: { value: eventId } },
+				{ signal },
+			)
+			return response.started
+		} catch (err) {
+			this.logger.warn('InferTracking failed', { eventId, error: err })
+			throw err
+		}
+	}
+
 	public async delete(eventId: string, signal?: AbortSignal): Promise<void> {
 		this.logger.info('Deleting ticket journey', { eventId })
 		try {

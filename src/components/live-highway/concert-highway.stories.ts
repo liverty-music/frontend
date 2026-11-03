@@ -314,6 +314,30 @@ export const MotionFollowsSystemPreference = {
 			)
 		}
 
+		// @spec components/infrastructure/fan/web/global/live-highway "Card treatments hold still"
+		// The matched and unmatched treatments never animate, and a matched card
+		// keeps its full light (glow, beam, glowing name) in either preference.
+		for (const card of cards) {
+			await expect(getComputedStyle(card).animationName).toBe('none')
+			await expect(getComputedStyle(card, '::before').animationName).toBe(
+				'none',
+			)
+			await expect(getComputedStyle(card, '::after').animationName).toBe('none')
+		}
+		const matchedCards = cards.filter((card) =>
+			card.hasAttribute('data-matched'),
+		)
+		await expect(matchedCards.length).toBeGreaterThan(0)
+		for (const card of matchedCards) {
+			await expect(getComputedStyle(card).boxShadow).not.toBe('none')
+			await expect(getComputedStyle(card, '::before').maskImage).toContain(
+				'radial-gradient',
+			)
+			const name = card.querySelector<HTMLElement>('.artist-name')
+			if (!name) throw new Error('artist name not rendered')
+			await expect(getComputedStyle(name).textShadow).not.toBe('none')
+		}
+
 		const beams = [
 			...canvasElement.querySelectorAll<HTMLElement>('.laser-beam'),
 		]

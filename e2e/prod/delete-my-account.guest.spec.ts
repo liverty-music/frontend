@@ -1,4 +1,5 @@
 import { devices, expect, type Page, test } from '@playwright/test'
+import { chooseHomeAtSignUp } from '../support/fan-auth'
 import { optOutOfAnalytics } from './onboarding'
 import { fillAndSubmit } from './support'
 
@@ -116,11 +117,9 @@ async function signUp(page: Page): Promise<void> {
 	await page.waitForURL(/\/ui\/v2\/login\/passkey\/set/)
 	await page.getByTestId('submit-button').click()
 
-	// Back in the app once the sign-up callback has run.
-	await page.waitForURL(
-		(u) => !u.hostname.startsWith('auth.') && !u.pathname.startsWith('/auth/'),
-		{ timeout: 60_000 },
-	)
+	// Back in the app once the sign-up callback has run. The guest chose no
+	// home area, so the callback asks for one before it creates the account.
+	await chooseHomeAtSignUp(page)
 	await expect.poll(() => signedInFan(page)).not.toBeNull()
 }
 

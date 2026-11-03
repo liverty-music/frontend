@@ -12,6 +12,7 @@ const mockRpcClient = {
 	list: vi.fn(async (): Promise<Map<string, JourneyStatus>> => new Map()),
 	setStatus: vi.fn(async () => undefined),
 	delete: vi.fn(async () => undefined),
+	inferTracking: vi.fn(async (_eventId: string) => true),
 }
 
 type Handler = (event: unknown) => void
@@ -118,6 +119,34 @@ describe('TicketJourneyStore', () => {
 
 			await expect(sut.delete('e1')).rejects.toThrow('nope')
 			expect(sut.statusFor('e1')).toBe('applied')
+		})
+	})
+
+	describe('inferTracking', () => {
+		it('shows Tracking once the server started tracking', async () => {
+			mockRpcClient.inferTracking.mockResolvedValueOnce(true)
+
+			expect(await sut.inferTracking('e1')).toBe(true)
+
+			expect(mockRpcClient.inferTracking).toHaveBeenCalledWith('e1', undefined)
+			expect(sut.statusFor('e1')).toBe('tracking')
+		})
+
+		it('leaves the map as it is when the server started nothing', async () => {
+			await sut.setStatus('e1', 'applied')
+			mockRpcClient.inferTracking.mockResolvedValueOnce(false)
+
+			expect(await sut.inferTracking('e1')).toBe(false)
+
+			expect(sut.statusFor('e1')).toBe('applied')
+		})
+
+		it('leaves the map as it is when the RPC fails', async () => {
+			mockRpcClient.inferTracking.mockRejectedValueOnce(new Error('down'))
+
+			await expect(sut.inferTracking('e1')).rejects.toThrow('down')
+
+			expect(sut.statusFor('e1')).toBeUndefined()
 		})
 	})
 

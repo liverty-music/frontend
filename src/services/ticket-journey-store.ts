@@ -87,6 +87,25 @@ export class TicketJourneyStore {
 		this.writeGeneration++
 	}
 
+	/**
+	 * Start tracking an event the fan added to their calendar. The server stores
+	 * Tracking only when the fan has no journey for the event; on `started` the
+	 * map shows Tracking, as after a saved status. Resolves `started`.
+	 */
+	public async inferTracking(
+		eventId: string,
+		signal?: AbortSignal,
+	): Promise<boolean> {
+		const started = await this.rpcClient.inferTracking(eventId, signal)
+		if (started) {
+			const next = new Map(this.journeyMap)
+			next.set(eventId, 'tracking')
+			this.journeyMap = next
+			this.writeGeneration++
+		}
+		return started
+	}
+
 	/** Write-through delete: issue the RPC, then drop the entry on success. */
 	public async delete(eventId: string, signal?: AbortSignal): Promise<void> {
 		await this.rpcClient.delete(eventId, signal)

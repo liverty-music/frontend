@@ -25,6 +25,18 @@ export interface FollowedArtist {
 }
 
 /**
+ * Who set a guest's hype level: `default` is the level a new follow starts at,
+ * `fan` is a level the guest chose (even when it equals the default). Carried
+ * into the account at sign-up, so a chosen level counts as the fan's own.
+ */
+export type GuestHypeSetBy = 'default' | 'fan'
+
+/** A guest's follow kept on the device, with who set its hype level. */
+export interface GuestFollowedArtist extends FollowedArtist {
+	hypeSetBy: GuestHypeSetBy
+}
+
+/**
  * Check whether an artist is already in a follow list.
  * Enforces the invariant that a user cannot follow the same artist twice.
  */

@@ -1,5 +1,14 @@
 import { OIDC_AUTHORITY } from '../support/auth-mocks'
-import { mockFanRpc } from '../support/fan-auth'
+import { concertWire } from '../support/concert-wire'
+import { fakeId } from '../support/fake-id'
+import {
+	callsOf,
+	chooseHomeAtSignUp,
+	connectError,
+	FAN_EMAIL,
+	mockFanRpc,
+	mockIdentityProvider,
+} from '../support/fan-auth'
 import {
 	enableAnalytics,
 	named,
@@ -121,4 +130,95 @@ test.describe('starts of sign-up and sign-in are reported', () => {
 
 		expect(named(events, 'auth.started')).toEqual([])
 	})
+})
+
+test.describe('a new account needs a home', () => {
+	test.use({ locale: 'ja-JP' })
+	const EVENT_ID = fakeId('signup-home-event')
+	const USER_ID = '00000000-0000-4000-8000-c00000000002'
+
+	function concert() {
+		const d = new Date()
+		d.setDate(d.getDate() + 30)
+		return {
+			id: { value: EVENT_ID },
+			performers: [
+				{
+					id: { value: fakeId('signup-home-artist') },
+					name: { value: 'The Band' },
+					mbid: { value: '' },
+				},
+			],
+			series: {
+				id: { value: fakeId('signup-home-series') },
+				title: { value: 'Home Tour 2026' },
+				publishState: 'PUBLISH_STATE_PUBLISHED',
+			},
+			localDate: {
+				value: {
+					year: d.getFullYear(),
+					month: d.getMonth() + 1,
+					day: d.getDate(),
+				},
+			},
+			venue: { name: { value: 'Zepp' }, adminArea: { value: 'JP-13' } },
+		}
+	}
+
+	test(`@spec ${STORY} "Sign-up from the event page without a home"`, async ({
+		page,
+	}) => {
+		let created = false
+		const calls = await mockFanRpc(page, {
+			'ConcertService/Get': concertWire({ concert: concert() }),
+			'ConcertService/ListBySeries': concertWire({ concerts: [concert()] }),
+			// No account for this identity until Create stores one.
+			'UserService/Get': () =>
+				created ? { body: { user: user() } } : connectError('not_found', 404),
+			// The backend refuses a new identity without a home (design "Every
+			// User has a home"); with one it creates the account.
+			'UserService/Create': (body) => {
+				if (!body.home) return connectError('failed_precondition', 400)
+				created = true
+				return { body: { user: user() } }
+			},
+		})
+		await mockIdentityProvider(page)
+
+		await page.goto(`/events/${EVENT_ID}`)
+		await expect(page.getByText('Home Tour 2026').first()).toBeVisible({
+			timeout: 20_000,
+		})
+		await page.getByTestId('event-signup').click()
+
+		// The callback asks for the home in a sheet that cannot be closed.
+		const sheet = page.locator('auth-callback-route .selector-content')
+		await expect(sheet).toBeVisible({ timeout: 20_000 })
+		await page.keyboard.press('Escape')
+		await expect(sheet).toBeVisible()
+		expect(created).toBe(false)
+
+		await chooseHomeAtSignUp(page)
+
+		// The account is created with the chosen home, and the fan is back on the
+		// event page, signed in.
+		await expect(page).toHaveURL(new RegExp(`/events/${EVENT_ID}$`), {
+			timeout: 20_000,
+		})
+		await expect(page.getByTestId('event-signup')).toHaveCount(0)
+		const creates = callsOf(calls, 'UserService/Create')
+		expect(creates.at(-1)?.body.home).toMatchObject({
+			countryCode: 'JP',
+			level1: 'JP-13',
+		})
+	})
+
+	function user() {
+		return {
+			id: { value: USER_ID },
+			email: { value: FAN_EMAIL },
+			preferredLanguage: 'ja',
+			home: { countryCode: 'JP', level1: 'JP-13' },
+		}
+	}
 })

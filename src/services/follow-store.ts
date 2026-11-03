@@ -15,6 +15,7 @@ import type { Artist } from '../entities/artist'
 import {
 	DEFAULT_HYPE,
 	type FollowedArtist,
+	type GuestFollowedArtist,
 	type Hype,
 	hasFollow,
 } from '../entities/follow'
@@ -51,7 +52,7 @@ export interface IFollowStore extends FollowStore {}
  *
  *       - `GuestMigrationRequested` → migrate the guest follow queue + hype to
  *         the backend with idempotent calls, draining each artist from the guest
- *         queue once it FULLY migrates (Follow + any non-default SetHype → only
+ *         queue once it FULLY migrates (Follow + the SetHype of a level the guest set → only
  *         not-fully-migrated items survive) in a single batched localStorage
  *         write, then write the per-account guest-merge receipt.
  *       - `SignedOut` → clear the guest follow state AND evict the
@@ -79,11 +80,19 @@ export class FollowStore {
 	@observable public followedArtists: Artist[] = []
 
 	/**
+	 * The hype level per followed artist, as of the last follow-list read or
+	 * hype save. Replaced (never mutated) on every change so observers fire: the
+	 * Dashboard re-derives its highlights when a level changes, for example after
+	 * the app raised it for a journey or the fan undid that raise.
+	 */
+	@observable public hypeByArtist: ReadonlyMap<string, Hype> = new Map()
+
+	/**
 	 * Guest (unauthenticated) follow queue, hydrated from localStorage on
 	 * construction. Mutated in place (push/splice) so Aurelia array observation
 	 * still sees the change.
 	 */
-	private readonly guestFollowsState: FollowedArtist[] = loadFollows()
+	private readonly guestFollowsState: GuestFollowedArtist[] = loadFollows()
 	// The signed-in follow list loaded once for this session, shared by the
 	// boot prefetch and Discovery so the list is not fetched twice.
 	private sessionLoad: Promise<FollowedArtist[]> | null = null
@@ -127,7 +136,7 @@ export class FollowStore {
 	 * reconcile task. The array is mutated in place so this is a live reference,
 	 * not a snapshot.
 	 */
-	public get guestFollows(): readonly FollowedArtist[] {
+	public get guestFollows(): readonly GuestFollowedArtist[] {
 		return this.guestFollowsState
 	}
 
@@ -252,7 +261,23 @@ export class FollowStore {
 				)
 		}
 		this.followedArtists = result.map((f) => f.artist)
+		this.hypeByArtist = new Map(result.map((f) => [f.artist.id, f.hype]))
 		return result
+	}
+
+	/**
+	 * Re-read the signed-in fan's follow list (`FollowService.List`, not the
+	 * session load) and return the artist's hype level, or undefined when the
+	 * artist is not followed. Used after a saved journey, when the server may
+	 * have raised the level. A changed level drops the rendered timetable so no
+	 * screen paints the old highlights from cache.
+	 */
+	public async rereadHype(artistId: string): Promise<Hype | undefined> {
+		const before = this.hypeByArtist.get(artistId)
+		const list = await this.listFollowed()
+		const after = list.find((f) => f.artist.id === artistId)?.hype
+		if (after !== before) this.concertStore.invalidateFollowerCache()
+		return after
 	}
 
 	/**
@@ -278,6 +303,7 @@ export class FollowStore {
 			return
 		}
 		await this.rpcClient.setHype(artistId, hype)
+		this.recordHype(artistId, hype)
 		// Hype is rendered from the follower-scoped concert list, so a successful
 		// change must invalidate it (after the RPC succeeds) or the dashboard would
 		// paint the old hype lane from cache for up to the stale window.
@@ -303,17 +329,17 @@ export class FollowStore {
 	}
 
 	/**
-	 * Migrate the guest follow queue + non-default hype to the backend with
-	 * idempotent calls. An item counts as FULLY migrated — and is drained from
-	 * the queue — only when BOTH its `Follow` AND (when hype != DEFAULT) its
-	 * `SetHype` succeed. The leftover queue holds only items that did not fully
+	 * Migrate the guest follow queue + the hype levels the guest set to the
+	 * backend with idempotent calls. An item counts as FULLY migrated — and is
+	 * drained from the queue — only when BOTH its `Follow` AND (when the guest
+	 * set its hype) its `SetHype` succeed. The leftover queue holds only items that did not fully
 	 * migrate, which a later reconcile retries without re-following already-merged
 	 * artists. On full success (every item fully migrated) writes the per-account
 	 * guest-merge receipt.
 	 *
 	 * Why SetHype gates the drain: once the receipt exists no later reconcile
 	 * re-issues SetHype, so draining an item whose Follow succeeded but whose
-	 * SetHype threw would lose a non-default hype forever. Keeping such an item in
+	 * SetHype threw would lose the guest's hype level forever. Keeping such an item in
 	 * the queue (and deferring the receipt) lets reconcile retry it; the backend
 	 * Follow is idempotent, so the retried Follow is a no-op and the SetHype runs
 	 * again.
@@ -358,12 +384,15 @@ export class FollowStore {
 				continue
 			}
 
-			// Merge non-default hype before counting the item as migrated. A
-			// SetHype failure means the item is NOT fully migrated: leave it in
+			// Merge a hype level the guest set (including the default level, so a
+			// chosen Nearby is kept as the fan's choice) before counting the item
+			// as migrated. A level the guest never set is not sent, so it does
+			// not overwrite the account's level for an artist it already follows.
+			// A SetHype failure means the item is NOT fully migrated: leave it in
 			// the queue (do not drain) and defer the receipt so reconcile retries
-			// it — otherwise the non-default hype would be lost forever once the
+			// it — otherwise the guest's level would be lost forever once the
 			// receipt suppresses re-migration.
-			if (follow.hype !== DEFAULT_HYPE) {
+			if (follow.hypeSetBy === 'fan') {
 				try {
 					await this.rpcClient.setHype(id, follow.hype)
 				} catch (err) {
@@ -408,7 +437,14 @@ export class FollowStore {
 		this.clearGuestFollows()
 		this.sessionLoad = null
 		this.followedArtists = []
+		this.hypeByArtist = new Map()
 		this.logger.info('Follow state cleared')
+	}
+
+	private recordHype(artistId: string, hype: Hype): void {
+		const next = new Map(this.hypeByArtist)
+		next.set(artistId, hype)
+		this.hypeByArtist = next
 	}
 
 	/**
@@ -428,7 +464,11 @@ export class FollowStore {
 	 */
 	private followGuest(artist: Artist): void {
 		if (hasFollow(this.guestFollowsState, artist.id)) return
-		this.guestFollowsState.push({ artist, hype: DEFAULT_HYPE })
+		this.guestFollowsState.push({
+			artist,
+			hype: DEFAULT_HYPE,
+			hypeSetBy: 'default',
+		})
 		this.persistGuestFollows()
 		this.logger.info('Local artist followed', {
 			id: artist.id,
@@ -454,7 +494,11 @@ export class FollowStore {
 	private setHypeGuest(artistId: string, hype: Hype): void {
 		const entry = this.guestFollowsState.find((f) => f.artist.id === artistId)
 		if (entry) {
+			this.recordHype(artistId, hype)
 			entry.hype = hype
+			// The guest's own choice, also when it equals the default level: the
+			// merge then keeps it as the fan's choice.
+			entry.hypeSetBy = 'fan'
 			this.persistGuestFollows()
 			this.logger.info('Local hype set', { artistId, hype })
 		}

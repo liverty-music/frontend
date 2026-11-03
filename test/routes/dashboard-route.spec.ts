@@ -233,13 +233,19 @@ describe('DashboardRoute', () => {
 			expect(sut.needsRegion).toBe(false)
 		})
 
-		it('sets needsRegion=true for authenticated user without home', async () => {
+		// @spec stories/sign-up-or-sign-in "Every sign-in resolves the account with Create"
+		it('never opens the home sheet for a signed-in fan, even one whose account has no home', async () => {
+			// Every account is created with a home (the auth callback asks for it),
+			// so the Dashboard no longer opens a closable home sheet for a fan.
 			mockAuth.isAuthenticated = true
 			mockUser.current = { home: undefined }
+			;(
+				UserHomeSelector.getStoredHome as ReturnType<typeof vi.fn>
+			).mockReturnValue(null)
 
 			await sut.loading()
 
-			expect(sut.needsRegion).toBe(true)
+			expect(sut.needsRegion).toBe(false)
 		})
 
 		it('sets needsRegion=false for authenticated user with home', async () => {
@@ -427,15 +433,6 @@ describe('DashboardRoute', () => {
 			sut.onHomeSelected('JP-13')
 
 			expect(mockUserStore.setGuestHome).toHaveBeenCalledWith('JP-13')
-		})
-
-		it('does not call userStore.setGuestHome for authenticated user', () => {
-			mockAuth.isAuthenticated = true
-			sut = buildSut()
-
-			sut.onHomeSelected('JP-13')
-
-			expect(mockUserStore.setGuestHome).not.toHaveBeenCalled()
 		})
 	})
 
