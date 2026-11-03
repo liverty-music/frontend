@@ -13,7 +13,7 @@ import {
  * onboarding, or the Dashboard All Nearby area selector).
  */
 export class UserHomeSelector {
-	@bindable public onHomeSelected?: (code: string) => void
+	@bindable public onHomeSelected?: (code: string) => void | Promise<void>
 	@bindable public required = false
 	/**
 	 * The currently active ISO 3166-2 code (e.g. `JP-13`), or null when none is
@@ -48,18 +48,28 @@ export class UserHomeSelector {
 		this.selectedRegion = null
 	}
 
-	public selectQuickCity(code: string): void {
-		this.confirmSelection(code)
+	public selectQuickCity(code: string): Promise<void> {
+		return this.confirmSelection(code)
 	}
 
-	public selectPrefecture(code: string): void {
-		this.confirmSelection(code)
+	public selectPrefecture(code: string): Promise<void> {
+		return this.confirmSelection(code)
 	}
 
-	private confirmSelection(code: string): void {
+	/**
+	 * Hand the choice to the caller and close once the caller has handled it.
+	 * When the caller rejects (saving the home failed and it has said so), the
+	 * sheet stays open on the same choice so the person can try again; the
+	 * button shows its busy state meanwhile (`busy-on-click`).
+	 */
+	private async confirmSelection(code: string): Promise<void> {
 		this.logger.info('Home area selected', { code })
+		try {
+			await this.onHomeSelected?.(code)
+		} catch {
+			return
+		}
 		this.isOpen = false
 		this.selectedRegion = null
-		this.onHomeSelected?.(code)
 	}
 }

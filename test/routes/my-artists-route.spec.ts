@@ -279,7 +279,7 @@ describe('MyArtistsRoute', () => {
 			expect(open).not.toHaveBeenCalled()
 		})
 
-		it('asks again with an error snack when saving the home fails', async () => {
+		it('keeps the sheet open with an error snack when saving the home fails', async () => {
 			mockAuth.isAuthenticated = true
 			mockUserStore.needsHome = true
 			mockUserStore.saveHome.mockRejectedValueOnce(new Error('unavailable'))
@@ -290,10 +290,11 @@ describe('MyArtistsRoute', () => {
 			})
 			await route.loading()
 
-			await route.onHomeSelected('JP-13')
+			// Rejecting keeps the selector open on the choice.
+			await expect(route.onHomeSelected('JP-13')).rejects.toThrow('unavailable')
 
 			expect(route.needsHome).toBe(true)
-			expect(open).toHaveBeenCalledOnce()
+			expect(open).not.toHaveBeenCalled()
 			expect(snacks.map((x) => x.severity)).toEqual(['error'])
 		})
 	})

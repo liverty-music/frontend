@@ -160,8 +160,8 @@ export class MyArtistsRoute {
 
 	/**
 	 * The person chose a home area in the sheet. The store saves it, through
-	 * SetHome for a signed-in fan and on the device for a guest; when the save
-	 * fails, the sheet opens again.
+	 * SetHome for a signed-in fan and on the device for a guest. When the save
+	 * fails it says so and rejects, so the sheet stays open on the choice.
 	 */
 	public async onHomeSelected(code: string): Promise<void> {
 		try {
@@ -169,8 +169,8 @@ export class MyArtistsRoute {
 		} catch (err) {
 			this.logger.error('Failed to save the home area', { error: err })
 			this.ea.publish(new Snack(this.i18n.tr('userHome.saveFailed'), 'error'))
-			this.homeSelector?.open()
-			return
+			// Still without a home: the sheet stays open on the choice.
+			throw err
 		}
 		this.needsHome = false
 	}

@@ -75,9 +75,9 @@ describe('UserHomeSelector', () => {
 	})
 
 	describe('prefecture selection', () => {
-		it('should not persist and should close (caller owns persistence)', () => {
+		it('should not persist and should close (caller owns persistence)', async () => {
 			sut.open()
-			sut.selectPrefecture('JP-13')
+			await sut.selectPrefecture('JP-13')
 
 			expect(mockUserStore.setGuestHome).not.toHaveBeenCalled()
 			expect(mockUserStore.updateHome).not.toHaveBeenCalled()
@@ -94,9 +94,9 @@ describe('UserHomeSelector', () => {
 	})
 
 	describe('quick city selection', () => {
-		it('should not persist and should close (caller owns persistence)', () => {
+		it('should not persist and should close (caller owns persistence)', async () => {
 			sut.open()
-			sut.selectQuickCity('JP-13')
+			await sut.selectQuickCity('JP-13')
 
 			expect(mockUserStore.setGuestHome).not.toHaveBeenCalled()
 			expect(mockUserStore.updateHome).not.toHaveBeenCalled()

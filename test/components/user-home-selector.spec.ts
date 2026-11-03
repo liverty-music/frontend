@@ -57,13 +57,38 @@ describe('UserHomeSelector', () => {
 	})
 
 	describe('confirmSelection', () => {
-		it('emits onHomeSelected with the prefecture code and closes', () => {
+		it('emits onHomeSelected with the prefecture code and closes', async () => {
 			sut.open()
-			sut.selectPrefecture('JP-13')
+			await sut.selectPrefecture('JP-13')
 
 			expect(onHomeSelected).toHaveBeenCalledWith('JP-13')
 			expect(sut.isOpen).toBe(false)
 			expect(sut.selectedRegion).toBeNull()
+		})
+
+		it('closes only after the caller handled the choice', async () => {
+			let finish!: () => void
+			onHomeSelected.mockReturnValueOnce(
+				new Promise<void>((resolve) => {
+					finish = resolve
+				}),
+			)
+			sut.open()
+			const done = sut.selectPrefecture('JP-13')
+
+			expect(sut.isOpen).toBe(true)
+			finish()
+			await done
+			expect(sut.isOpen).toBe(false)
+		})
+
+		it('stays open when the caller rejects (saving failed)', async () => {
+			onHomeSelected.mockRejectedValueOnce(new Error('unavailable'))
+			sut.open()
+
+			await sut.selectPrefecture('JP-13')
+
+			expect(sut.isOpen).toBe(true)
 		})
 
 		it('does not write to localStorage (caller owns persistence)', () => {

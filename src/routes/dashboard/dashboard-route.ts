@@ -792,9 +792,8 @@ export class DashboardRoute {
 		} catch (err) {
 			this.logger.error('Failed to save the home area', { error: err })
 			this.ea.publish(new Snack(this.i18n.tr('userHome.saveFailed'), 'error'))
-			// Still without a home: ask again.
-			this.homeSelector?.open()
-			return
+			// Still without a home: the sheet stays open on the choice.
+			throw err
 		}
 		this.needsRegion = false
 		// Timetable becomes real once the region is chosen; loadData() flips

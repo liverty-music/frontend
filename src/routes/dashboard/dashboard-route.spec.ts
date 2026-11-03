@@ -1277,7 +1277,7 @@ describe('DashboardRoute', () => {
 			expect(sut.showPostSignupDialog).toBe(true)
 		})
 
-		it('asks again and does not celebrate when saving the home fails', async () => {
+		it('keeps the sheet open and does not celebrate when saving the home fails', async () => {
 			mockAuth.isAuthenticated = true
 			mockStorage.getItem.mockImplementation((k: string) =>
 				k === 'postSignup.shown' ? 'pending' : null,
@@ -1290,10 +1290,11 @@ describe('DashboardRoute', () => {
 			sut.homeSelector = { open } as never
 			sut.needsRegion = true
 
-			await sut.onHomeSelected('JP-13')
+			// Rejecting keeps the selector open on the choice.
+			await expect(sut.onHomeSelected('JP-13')).rejects.toThrow('unavailable')
 
 			expect(sut.needsRegion).toBe(true)
-			expect(open).toHaveBeenCalledOnce()
+			expect(open).not.toHaveBeenCalled()
 			expect(mockEa.publish).toHaveBeenCalledWith(
 				expect.objectContaining({
 					message: 'userHome.saveFailed',
