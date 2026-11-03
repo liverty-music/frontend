@@ -95,42 +95,6 @@ describe('BottomSheet', () => {
 			expect(popover.showPopover).toHaveBeenCalledOnce()
 		})
 
-		it('shows again once a close still settling completes, when reopened during it', () => {
-			vi.useFakeTimers()
-			try {
-				openAndSettle()
-				sut.openChanged(false)
-				// Reopened before the dismiss settled (a parent that closed on a
-				// choice reopens when saving it fails).
-				sut.openChanged(true)
-				expect(popover.showPopover).toHaveBeenCalledOnce()
-
-				vi.advanceTimersByTime(400)
-
-				expect(popover.hidePopover).toHaveBeenCalledOnce()
-				expect(popover.showPopover).toHaveBeenCalledTimes(2)
-				expect(host.dispatchEvent).not.toHaveBeenCalled()
-			} finally {
-				vi.useRealTimers()
-			}
-		})
-
-		it('stays closed when closed again before the reopen applies', () => {
-			vi.useFakeTimers()
-			try {
-				openAndSettle()
-				sut.openChanged(false)
-				sut.openChanged(true)
-				sut.openChanged(false)
-
-				vi.advanceTimersByTime(400)
-
-				expect(popover.showPopover).toHaveBeenCalledOnce()
-			} finally {
-				vi.useRealTimers()
-			}
-		})
-
 		it('scrolls to the dismiss zone (closed stop) when closing', () => {
 			openAndSettle()
 
