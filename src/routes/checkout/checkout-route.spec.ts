@@ -831,6 +831,63 @@ describe('CheckoutRoute', () => {
 			expect(sut.step).toBe('personal-details')
 			expect(sut.message?.key).toBe('checkout.outcome.authenticationIncomplete')
 		})
+
+		it('says the concert is no longer on sale when it was cancelled during the checkout', async () => {
+			// @spec components/infrastructure/fan/web/route/checkout "Concert cancelled before placing"
+			mockCheckout.confirm.mockRejectedValue(
+				connectError(Code.FailedPrecondition),
+			)
+			mockCheckout.get.mockResolvedValue(held())
+			const sut = await toConfirm()
+			mockConcert.get.mockResolvedValue({
+				...concert,
+				event: create(EventSchema, {
+					...concert.event,
+					publishState: PublishState.CANCELLED,
+				}),
+			})
+
+			await sut.placeOrder()
+
+			expect(sut.step).toBe('outcome')
+			expect(sut.outcome).toBe('not-on-sale')
+			expect(sut.message).toBeNull()
+			expect(ja.checkout.outcome.notOnSale).toContain('請求は行われていません')
+		})
+
+		it('says the concert is no longer on sale when it was unpublished', async () => {
+			mockCheckout.confirm.mockRejectedValue(
+				connectError(Code.FailedPrecondition),
+			)
+			mockCheckout.get.mockResolvedValue(held())
+			const sut = await toConfirm()
+			mockConcert.get.mockRejectedValue(connectError(Code.NotFound))
+
+			await sut.placeOrder()
+
+			expect(sut.outcome).toBe('not-on-sale')
+		})
+
+		it('offers to start again when the card authorization amount does not match', async () => {
+			mockCheckout.confirm.mockRejectedValue(connectError(Code.InvalidArgument))
+			mockCheckout.get.mockResolvedValue(held())
+			const sut = await toConfirm()
+
+			await sut.placeOrder()
+
+			expect(sut.step).toBe('outcome')
+			expect(sut.outcome).toBe('amount-mismatch')
+		})
+
+		it('links to identity verification when the sale needs it', async () => {
+			mockCheckout.confirm.mockRejectedValue(connectError(Code.NotFound))
+			mockCheckout.get.mockResolvedValue(held())
+			const sut = await toConfirm()
+
+			await sut.placeOrder()
+
+			expect(sut.step).toBe('verify-required')
+		})
 	})
 
 	describe('loading', () => {

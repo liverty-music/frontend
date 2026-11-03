@@ -171,6 +171,13 @@
         <p t="checkout.outcome.chargeFailed"></p>
         <button type="button" class="[ button checkout-action ] [ pressable ]" click.trigger="startAgain()" t="checkout.startAgain"></button>
       </template>
+      <template case="not-on-sale">
+        <p t="checkout.outcome.notOnSale"></p>
+      </template>
+      <template case="amount-mismatch">
+        <p t="checkout.outcome.amountMismatch"></p>
+        <button type="button" class="[ button checkout-action ] [ pressable ]" click.trigger="startAgain()" t="checkout.startAgain"></button>
+      </template>
       <template case="replaced">
         <p t="checkout.outcome.replaced"></p>
         <button type="button" class="[ button checkout-action ] [ pressable ]" click.trigger="goToNewerCheckout()" t="checkout.outcome.goToNewer"></button>

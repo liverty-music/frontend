@@ -88,6 +88,8 @@ export type CheckoutOutcome =
 	| 'charge-failed'
 	| 'replaced'
 	| 'authentication-incomplete'
+	| 'not-on-sale'
+	| 'amount-mismatch'
 	| 'completing'
 
 /** An i18n key with its parameters, shown as the step's message. */
@@ -699,22 +701,32 @@ export class CheckoutRoute implements IRouteViewModel {
 		} catch (err) {
 			if (this.signal?.aborted) return
 			this.logger.warn('Placing the order failed', { error: err })
-			await this.explainOrderFailure()
+			await this.explainOrderFailure(err)
 		} finally {
 			this.busy = false
 		}
 	}
 
-	private async explainOrderFailure(): Promise<void> {
+	/**
+	 * Say what became of the checkout whose order could not be placed: its
+	 * status tells most cases; while it is still Held, the cause Place gave.
+	 */
+	private async explainOrderFailure(err: unknown): Promise<void> {
 		if (!this.checkout) return
 		try {
 			const c = await this.checkoutClient.get(this.checkout.id, this.signal)
 			this.checkout = c
 			this.outcome = outcomeOf(c)
-		} catch (err) {
-			this.logger.warn('Reading the checkout failed', { error: err })
+			if (this.outcome === 'authentication-incomplete') {
+				await this.explainHeldRefusal(err)
+			}
+		} catch (readErr) {
+			if (this.signal?.aborted) return
+			this.logger.warn('Reading the checkout failed', { error: readErr })
 			this.outcome = 'completing'
 		}
+		if (this.signal?.aborted) return
+		if (this.step === 'verify-required') return
 		if (this.outcome === 'authentication-incomplete') {
 			// The fan finishes the card authentication and tries again.
 			this.message = { key: 'checkout.outcome.authenticationIncomplete' }
@@ -727,6 +739,44 @@ export class CheckoutRoute implements IRouteViewModel {
 			this.stopCountdown()
 		}
 		this.step = 'outcome'
+	}
+
+	/**
+	 * Place refused a Held checkout: an amount that does not match is
+	 * InvalidArgument and a missing IdentityVerification NotFound; a
+	 * FailedPrecondition is the concert no longer on sale when a re-read of
+	 * the event says so, and otherwise the unfinished card authentication.
+	 */
+	private async explainHeldRefusal(err: unknown): Promise<void> {
+		const code = ConnectError.from(err).code
+		if (code === Code.InvalidArgument) {
+			this.outcome = 'amount-mismatch'
+			return
+		}
+		if (code === Code.NotFound) {
+			this.message = null
+			this.step = 'verify-required'
+			return
+		}
+		if (!(await this.isOnSale())) {
+			this.outcome = 'not-on-sale'
+		}
+	}
+
+	/**
+	 * True unless a re-read of the event finds it gone or cancelled. A failed
+	 * read keeps the fan on the card step, which the server checks again.
+	 */
+	private async isOnSale(): Promise<boolean> {
+		try {
+			const concert = await this.concertClient.get(this.eventId, this.signal)
+			const event = eventFromConcert(concert)
+			return !!event && !event.cancelled
+		} catch (err) {
+			if (ConnectError.from(err).code === Code.NotFound) return false
+			this.logger.warn('Re-reading the event failed', { error: err })
+			return true
+		}
 	}
 
 	/**
