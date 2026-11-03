@@ -77,7 +77,6 @@ describe('onboarding-storage', () => {
 			expect(localStorage.getItem('onboarding.hypeSnackSeen:away')).toBe('1')
 		})
 
-		// @spec components/infrastructure/fan/web/global/page-help "Hype snack flags cleared at sign-up"
 		it('clears the hype snack flags with the help-seen flags', () => {
 			saveHypeSnackSeen('away')
 			saveHypeSnackSeen('watch')

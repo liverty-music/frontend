@@ -231,7 +231,6 @@ describe('AuthCallbackRoute', () => {
 				}
 			}
 
-			// @spec components/infrastructure/fan/web/global/event-detail-sheet "Back after sign-up"
 			it('tracks the event as the fan own choice and returns to its detail sheet', async () => {
 				const order: string[] = []
 				journeyStore.setStatus.mockImplementation(async () => {

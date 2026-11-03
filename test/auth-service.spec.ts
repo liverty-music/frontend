@@ -295,7 +295,6 @@ describe('AuthService', () => {
 		})
 	})
 
-	// @spec components/infrastructure/fan/web/global/event-detail-sheet "Guest presses the button"
 	it('signUp from the ticket sale notification button carries the event to track', async () => {
 		await sut.signUp({ returnTo: '/concerts/ev-1', trackEventId: 'ev-1' })
 		expect(userManagerMock.signinRedirect).toHaveBeenCalledWith({

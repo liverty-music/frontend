@@ -733,7 +733,6 @@ describe('MyArtistsRoute', () => {
 			expect(snacks[2].action?.label).toBe('オンにする')
 		})
 
-		// @spec components/infrastructure/fan/web/global/notification-prompt "Fan denies"
 		it('asks the browser at once when the fan presses the offer', async () => {
 			route.onHypeInput(artist('Vaundy'), 'nearby')
 			await vi.waitFor(() => expect(snacks).toHaveLength(1))
@@ -794,6 +793,29 @@ describe('MyArtistsRoute', () => {
 			expect(pushOffer.pushState).not.toHaveBeenCalled()
 			snacks[0].action?.callback()
 			expect(mockAuth.signUp).toHaveBeenCalledTimes(1)
+		})
+
+		// @spec components/infrastructure/fan/web/global/page-help "Hype snack flags cleared at sign-up"
+		it('shows the snack for a level again once sign-up cleared the onboarding flags', async () => {
+			const { saveHypeSnackSeen, clearOnboardingSeenFlags } = await import(
+				'../../src/adapter/storage/onboarding-storage'
+			)
+			mockAuth.isAuthenticated = false
+			saveHypeSnackSeen('away')
+			route.onHypeInput(artist('ヨルシカ'), 'away')
+			expect(snacks).toHaveLength(0)
+
+			// Sign-up completes: the callback's UserStore.clearGuest() clears them.
+			clearOnboardingSeenFlags()
+			mockAuth.isAuthenticated = true
+			pushOffer.pushState.mockResolvedValue('on')
+			route.onHypeInput(artist('YOASOBI'), 'away')
+
+			await vi.waitFor(() =>
+				expect(texts()).toEqual([
+					'YOASOBIの全ての新着ライブをプッシュ通知します🔔',
+				]),
+			)
 		})
 
 		it('shows a guest no snack for Watch', () => {

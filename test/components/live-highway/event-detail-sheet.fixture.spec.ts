@@ -505,7 +505,7 @@ describe('EventDetailSheet push line (fixture)', () => {
 
 	// @spec components/infrastructure/fan/web/global/event-detail-sheet "Tracking with push off"
 	// @spec components/infrastructure/fan/web/global/notification-prompt "Offer in the ticket section"
-	// @spec components/infrastructure/fan/web/global/notification-prompt "After several unanswered offers"
+	// @spec components/infrastructure/fan/web/global/notification-prompt "Fan allows from the event detail sheet"
 	it('offers push beside the line when push is off', async () => {
 		const fixture = await render(event(), {
 			signedIn: true,

@@ -17,7 +17,6 @@ describe('event detail sheet snack copy', () => {
 		}
 	})
 
-	// @spec components/infrastructure/fan/web/global/event-detail-sheet "Calendar add from the sheet"
 	it('reads the tracking snack as the spec words it', () => {
 		expect(ja.eventDetail.trackingStarted).toBe(
 			'🔔 チケット販売の通知を受け取ります',

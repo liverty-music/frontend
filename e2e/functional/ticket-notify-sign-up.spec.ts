@@ -233,6 +233,7 @@ test.describe('guests see no statuses', () => {
 })
 
 test.describe('a guest request for ticket sale notifications survives sign-up', () => {
+	// @spec components/infrastructure/fan/web/global/event-detail-sheet "Back after sign-up"
 	test(`@spec ${TRACK} "Guest signs up from the notification button"`, async ({
 		page,
 	}) => {
