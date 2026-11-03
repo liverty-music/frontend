@@ -30,6 +30,9 @@ export class UserHomeSelector {
 
 	private readonly logger = resolve(ILogger).scopeTo('UserHomeSelector')
 
+	/** A choice is being handed to the caller (saving the home). */
+	private saving = false
+
 	public open(): void {
 		this.selectedRegion = null
 		this.isOpen = true
@@ -63,11 +66,17 @@ export class UserHomeSelector {
 	 * button shows its busy state meanwhile (`busy-on-click`).
 	 */
 	private async confirmSelection(code: string): Promise<void> {
+		// One choice at a time: a tap on another area while the caller is still
+		// saving the first is ignored, so the saves cannot race.
+		if (this.saving) return
+		this.saving = true
 		this.logger.info('Home area selected', { code })
 		try {
 			await this.onHomeSelected?.(code)
 		} catch {
 			return
+		} finally {
+			this.saving = false
 		}
 		this.isOpen = false
 		this.selectedRegion = null

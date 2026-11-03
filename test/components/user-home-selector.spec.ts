@@ -82,6 +82,23 @@ describe('UserHomeSelector', () => {
 			expect(sut.isOpen).toBe(false)
 		})
 
+		it('ignores another choice while the first is still being saved', async () => {
+			let finish!: () => void
+			onHomeSelected.mockReturnValueOnce(
+				new Promise<void>((resolve) => {
+					finish = resolve
+				}),
+			)
+			sut.open()
+			const first = sut.selectPrefecture('JP-13')
+			await sut.selectPrefecture('JP-27')
+
+			expect(onHomeSelected).toHaveBeenCalledExactlyOnceWith('JP-13')
+			finish()
+			await first
+			expect(sut.isOpen).toBe(false)
+		})
+
 		it('stays open when the caller rejects (saving failed)', async () => {
 			onHomeSelected.mockRejectedValueOnce(new Error('unavailable'))
 			sut.open()
