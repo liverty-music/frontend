@@ -41,6 +41,12 @@ export class BottomSheet {
 
 	// True while a close is in flight (scroll-to-closed underway).
 	private dismissing = false
+	/**
+	 * `open` turned true again while a dismiss was still settling (a parent
+	 * that closes on a choice and reopens when saving it fails). The sheet
+	 * shows again as soon as that close completes, instead of ignoring it.
+	 */
+	private reopenAfterClose = false
 
 	// Distinguishes a programmatic close (parent toggled `open`) — which does NOT
 	// emit `sheet-closed` — from a user dismiss (swipe / tap / ESC / Android back)
@@ -78,6 +84,7 @@ export class BottomSheet {
 			this.show()
 		} else {
 			// Parent toggled `open` off → programmatic close.
+			this.reopenAfterClose = false
 			this.startDismiss(true)
 		}
 	}
@@ -158,6 +165,10 @@ export class BottomSheet {
 
 	/** Show the popover and set up focus-trap, background inert, and observers. */
 	private show(): void {
+		if (this.showing && this.dismissing) {
+			this.reopenAfterClose = true
+			return
+		}
 		if (!this.popoverEl || this.showing) return
 		try {
 			this.settled = false
@@ -239,6 +250,11 @@ export class BottomSheet {
 		this.hide()
 		this.tracker.closed(this)
 		this.restoreFocus()
+		if (this.reopenAfterClose) {
+			this.reopenAfterClose = false
+			this.show()
+			return
+		}
 		if (this.open) {
 			this.open = false
 		}
