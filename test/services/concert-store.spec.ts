@@ -325,8 +325,6 @@ describe('ConcertStore', () => {
 		it('attaches the fanart of the followed artist, looked up by artist ID, to each LiveEvent', () => {
 			const dateLD = { year: 2026, month: 3, day: 15 }
 			const fanart = {
-				hdMusicLogo: 'https://assets.fanart.tv/hd-logo.png',
-				musicLogo: 'https://assets.fanart.tv/logo.png',
 				artistBackground: 'https://assets.fanart.tv/background.jpg',
 				artistThumb: 'https://assets.fanart.tv/thumb.jpg',
 			}

@@ -1,5 +1,5 @@
-export type { Artist, ArtistFanart, LogoColorProfile } from './artist'
-export { bestBackgroundUrl, bestLogoUrl } from './artist'
+export type { Artist, ArtistFanart } from './artist'
+export { bestBackgroundUrl } from './artist'
 export type {
 	Concert,
 	DateGroup,

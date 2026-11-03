@@ -5,7 +5,7 @@ import { expect, type Page, test } from '../support/test'
  * E2E tests for artist image UI integration.
  *
  * Verifies:
- * - 5.1: Event cards show logo image for artists with fanart, text for others
+ * - 5.1: Event cards show the artist name as text, with or without fanart
  * - 5.2: Detail sheet shows hero image when backgroundUrl exists
  * - 5.3: Grid tiles show thumbnail background when available, gradient when not
  *
@@ -15,8 +15,6 @@ import { expect, type Page, test } from '../support/test'
 
 // Use data: URLs to bypass CSP (img-src 'self' data: blob:).
 // 1x1 transparent PNGs with distinct colors for test identification.
-const FANART_LOGO_URL =
-	'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=='
 const FANART_BG_URL =
 	'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPj/HwADBwIAMCbHYQAAAABJRU5ErkJggg=='
 const FANART_THUMB_URL =
@@ -28,7 +26,7 @@ tomorrow.setDate(tomorrow.getDate() + 1)
 /** FollowService.List response with mixed fanart data:
  *  - artist 1 (YOASOBI): has all fanart images
  *  - artist 2 (Vaundy): has no fanart
- *  - artist 3 (Ado): has only music_logo (no hd_music_logo)
+ *  - artist 3 (Ado): has only artist_thumb (no artist_background)
  */
 function listFollowedResponse() {
 	return {
@@ -39,7 +37,6 @@ function listFollowedResponse() {
 					name: { value: 'YOASOBI' },
 					mbid: { value: '00000000-0000-4000-8000-b00000000001' },
 					fanart: {
-						hdMusicLogo: { value: FANART_LOGO_URL },
 						artistBackground: { value: FANART_BG_URL },
 						artistThumb: { value: FANART_THUMB_URL },
 					},
@@ -60,7 +57,7 @@ function listFollowedResponse() {
 					name: { value: 'Ado' },
 					mbid: { value: '00000000-0000-4000-8000-b00000000003' },
 					fanart: {
-						musicLogo: { value: FANART_LOGO_URL },
+						artistThumb: { value: FANART_THUMB_URL },
 					},
 				},
 				hype: 3, // NEARBY
@@ -257,10 +254,10 @@ function seedAuthenticatedState() {
 }
 
 // ---------------------------------------------------------------------------
-// 5.1: Event Card Logo Display
+// 5.1: Event Card Artist Name
 // ---------------------------------------------------------------------------
 
-test.describe('Event card logo display', () => {
+test.describe('Event card artist name', () => {
 	test.beforeEach(async ({ page }) => {
 		await mockRpcRoutes(page)
 		await mockLastFmApi(page)
@@ -274,10 +271,6 @@ test.describe('Event card logo display', () => {
 		// Wait for event cards to render
 		const cards = page.locator('[data-live-card]')
 		await expect(cards.first()).toBeVisible({ timeout: 15_000 })
-
-		// All cards use text — no logo images anywhere
-		const logoImgs = page.locator('img.artist-logo')
-		await expect(logoImgs).toHaveCount(0)
 
 		// YOASOBI card shows text name
 		const yoasobiCard = cards
@@ -299,10 +292,6 @@ test.describe('Event card logo display', () => {
 			.first()
 		await expect(vaundyCard).toBeVisible({ timeout: 5_000 })
 		await expect(vaundyCard.locator('.artist-name')).toHaveText('Vaundy')
-
-		// No logo image for any card
-		const logoImg = vaundyCard.locator('img.artist-logo')
-		await expect(logoImg).toHaveCount(0)
 	})
 })
 

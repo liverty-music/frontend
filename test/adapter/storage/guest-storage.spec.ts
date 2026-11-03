@@ -65,12 +65,8 @@ describe('saveFollows / loadFollows', () => {
 					name: 'Artist',
 					mbid: 'mb1',
 					fanart: {
-						hdMusicLogo: 'hd.png',
-						logoColorProfile: {
-							dominantHue: 120,
-							dominantLightness: 0.5,
-							isChromatic: true,
-						},
+						artistBackground: 'bg.png',
+						artistThumb: 'thumb.png',
 					},
 				},
 				hype: 'away',
@@ -79,8 +75,8 @@ describe('saveFollows / loadFollows', () => {
 		]
 		saveFollows(follows)
 		const result = loadFollows()
-		expect(result[0].artist.fanart?.hdMusicLogo).toBe('hd.png')
-		expect(result[0].artist.fanart?.logoColorProfile?.dominantHue).toBe(120)
+		expect(result[0].artist.fanart?.artistBackground).toBe('bg.png')
+		expect(result[0].artist.fanart?.artistThumb).toBe('thumb.png')
 	})
 
 	it('should return empty array when localStorage is empty', () => {
