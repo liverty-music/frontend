@@ -239,13 +239,22 @@ describe('adding to the calendar starts tracking', () => {
 		await fixture.stop(true)
 	})
 
-	it('still offers the undo when the calendar link is tapped twice', async () => {
-		const { fixture, snacks, calendarLink } = await render()
+	it('offers the undo after the return when the calendar link is tapped twice', async () => {
+		const { fixture, sheet, rpc, snacks, calendarLink } = await render()
 		calendarLink().click()
 		calendarLink().click()
+		// The calendar hides the app while the fan is away.
+		setVisibility('hidden')
+		await vi.waitFor(() => expect(sheet.status).toBe('tracking'))
 
-		// The first tap started tracking; the second found the journey.
-		await vi.waitFor(() => expect(snacks).toHaveLength(1), { timeout: 3000 })
+		// One inference; the second tap changed nothing, and no snack shows
+		// while the fan is still in the calendar.
+		expect(rpc.inferTracking).toHaveBeenCalledOnce()
+		await new Promise((r) => setTimeout(r, 1200))
+		expect(snacks).toEqual([])
+
+		setVisibility('visible')
+		await vi.waitFor(() => expect(snacks).toHaveLength(1))
 		expect(snacks[0].action?.label).toBe('取り消す')
 		await fixture.stop(true)
 	})
