@@ -173,7 +173,14 @@ export class MyArtistsRoute {
 			throw err
 		}
 		this.needsHome = false
-		// The first-visit help was held back while the home sheet was open.
+	}
+
+	/**
+	 * The home sheet has finished closing. The first-visit help, held back
+	 * while it was open, opens only now, so the two sheets are never open
+	 * together.
+	 */
+	public onHomeSheetHidden(): void {
 		this.pageHelp?.openIfFirstVisit()
 	}
 

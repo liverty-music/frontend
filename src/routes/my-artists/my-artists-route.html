@@ -124,4 +124,5 @@
   current-code.bind="userStore.currentHome"
   on-home-selected.bind="(code) => onHomeSelected(code)"
   required.bind="homeRequired"
+  sheet-hidden.trigger="onHomeSheetHidden()"
 ></user-home-selector>

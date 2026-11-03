@@ -251,8 +251,10 @@ describe('MyArtistsRoute', () => {
 
 			expect(mockUserStore.saveHome).toHaveBeenCalledWith('JP-13')
 			expect(route.needsHome).toBe(false)
-			// The first-visit help, held back while the home sheet was open,
-			// opens only now.
+			// The first-visit help waits until the home sheet has finished
+			// closing, so the two sheets are never open together.
+			expect(openIfFirstVisit).not.toHaveBeenCalled()
+			route.onHomeSheetHidden()
 			expect(openIfFirstVisit).toHaveBeenCalledOnce()
 		})
 
