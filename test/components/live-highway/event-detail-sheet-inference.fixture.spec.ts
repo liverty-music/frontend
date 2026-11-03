@@ -239,6 +239,17 @@ describe('adding to the calendar starts tracking', () => {
 		await fixture.stop(true)
 	})
 
+	it('still offers the undo when the calendar link is tapped twice', async () => {
+		const { fixture, snacks, calendarLink } = await render()
+		calendarLink().click()
+		calendarLink().click()
+
+		// The first tap started tracking; the second found the journey.
+		await vi.waitFor(() => expect(snacks).toHaveLength(1), { timeout: 3000 })
+		expect(snacks[0].action?.label).toBe('取り消す')
+		await fixture.stop(true)
+	})
+
 	it('keeps a status the fan saved after the inference when 取り消す is pressed', async () => {
 		const { fixture, sheet, journeyStore, rpc, snacks, calendarLink } =
 			await render()
@@ -345,6 +356,22 @@ describe('a hype level raised by a journey change is shown with undo', () => {
 			expect(followStore.setHype).toHaveBeenCalledWith('a1', 'nearby'),
 		)
 		expect(followStore.hypeByArtist.get('a1')).toBe('nearby')
+		await fixture.stop(true)
+	})
+
+	it('keeps a level the fan picked after the raise when 取り消す is pressed', async () => {
+		const followStore = fakeFollowStore('nearby', () => 'away')
+		const { fixture, snacks } = await render({ followStore })
+		await fixture.component.sheet.setJourneyStatus('applied')
+		// The fan picks Home on My Artists while the snack is still shown.
+		await followStore.setHype('a1', 'home')
+		followStore.setHype.mockClear()
+
+		snacks[0].action?.callback()
+
+		await Promise.resolve()
+		expect(followStore.setHype).not.toHaveBeenCalled()
+		expect(followStore.hypeByArtist.get('a1')).toBe('home')
 		await fixture.stop(true)
 	})
 

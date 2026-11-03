@@ -10,6 +10,7 @@ import { IEventAggregator, ILogger, resolve } from 'aurelia'
 import { ILocalStorage } from '../../adapter/storage/local-storage'
 import type { UserHomeSelector } from '../../components/user-home-selector/user-home-selector'
 import { codeToHome } from '../../constants/iso3166'
+import { Snack } from '../../../shared/ui/snack-bar/snack'
 import { StorageKeys } from '../../constants/storage-keys'
 import { IAnalyticsService } from '../../lib/analytics/analytics-service'
 import {
@@ -120,17 +121,33 @@ export class AuthCallbackRoute {
 	public async onHomeSelected(code: string): Promise<void> {
 		const user = this.pendingUser
 		if (!user) return
-		this.needsHome = false
+		let provision: ProvisionResult
 		try {
-			const provision = await this.userStore.create(
+			provision = await this.userStore.create(
 				user.profile.email ?? '',
 				normalizeToSupportedLanguage(this.i18n.getLocale()),
 				codeToHome(code),
 			)
-			this.pendingUser = undefined
+		} catch (err) {
+			// The person is signed in but has no account yet: keep the sheet so
+			// they can choose again, instead of leaving them on an error page
+			// with no way to create the account.
+			this.logger.error('Creating the account with the chosen home failed', err)
+			this.ea.publish(
+				new Snack(this.i18n.tr('authCallback.createFailed'), 'error'),
+			)
+			this.homeSelector?.open()
+			return
+		}
+		this.needsHome = false
+		this.pendingUser = undefined
+		try {
 			await this.router.load(await this.completeSignIn(user, provision))
 		} catch (err) {
-			this.logger.error('Creating the account with the chosen home failed', err)
+			this.logger.error(
+				'Finishing the sign-in after creating the account failed',
+				err,
+			)
 			this.authService.takeReturnTo()
 			this.failed = true
 		}

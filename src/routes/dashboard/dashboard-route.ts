@@ -636,7 +636,23 @@ export class DashboardRoute {
 	 */
 	@watch((vm: DashboardRoute) => vm.followStore.hypeByArtist)
 	protected onHypeChanged(levels: ReadonlyMap<string, HypeLevel>): void {
-		const stale = this.dateGroups.some((group) =>
+		if (!this.isStale(levels) || this.hypeRefresh) return
+		// The refresh reloads the follow list, which replaces this map again
+		// before the fresh timetable lands; one refresh at a time is enough. A
+		// level that changed after the refresh read the list is caught by the
+		// re-check once a fresh timetable lands (a failed refresh lands none, so
+		// it is not retried in a loop).
+		const shown = this.dateGroups
+		this.hypeRefresh = this.refreshInBackground().finally(() => {
+			this.hypeRefresh = null
+			if (this.dateGroups !== shown)
+				this.onHypeChanged(this.followStore.hypeByArtist)
+		})
+	}
+
+	/** Whether a shown concert's hype level differs from `levels`. */
+	private isStale(levels: ReadonlyMap<string, HypeLevel>): boolean {
+		return this.dateGroups.some((group) =>
 			[...group.home, ...group.nearby, ...group.away].some((concert) => {
 				const level = concert.artistId
 					? levels.get(concert.artistId)
@@ -644,12 +660,6 @@ export class DashboardRoute {
 				return level !== undefined && level !== concert.hypeLevel
 			}),
 		)
-		// The refresh reloads the follow list, which replaces this map again
-		// before the fresh timetable lands; one refresh at a time is enough.
-		if (!stale || this.hypeRefresh) return
-		this.hypeRefresh = this.refreshInBackground().finally(() => {
-			this.hypeRefresh = null
-		})
 	}
 
 	/** The background refresh a hype change started, while it runs. */

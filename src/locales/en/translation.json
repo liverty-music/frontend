@@ -1091,7 +1091,8 @@
 	"authCallback": {
 		"verifying": "Verifying sign-in…",
 		"failed": "Could not sign in. Return home and try again.",
-		"home": "Return home"
+		"home": "Return home",
+		"createFailed": "We couldn't create your account. Please choose your area again."
 	},
 	"payment": {
 		"error": {

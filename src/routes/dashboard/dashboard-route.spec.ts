@@ -667,6 +667,36 @@ describe('DashboardRoute', () => {
 			expect(refresh).toHaveBeenCalledTimes(2)
 		})
 
+		it('refreshes again when a level changed while the refresh ran', async () => {
+			sut.dateGroups = [awayGroup()]
+			const levels = new Map([['a1', 'away']])
+			;(
+				sut as unknown as {
+					followStore: { hypeByArtist: ReadonlyMap<string, string> }
+				}
+			).followStore = {
+				hypeByArtist: levels,
+			}
+			// The refresh lands a timetable already at Away, but the fan undid
+			// the raise to Nearby after the refresh read the list.
+			const refresh = vi
+				.spyOn(
+					sut as unknown as { refreshInBackground(): Promise<void> },
+					'refreshInBackground',
+				)
+				.mockImplementationOnce(async () => {
+					sut.dateGroups = [awayGroup()].map((g) => ({
+						...g,
+						away: g.away.map((c) => ({ ...c, hypeLevel: 'away' })),
+					})) as never
+					levels.set('a1', 'nearby')
+				})
+				.mockResolvedValue()
+
+			onHypeChanged(sut, levels)
+			await vi.waitFor(() => expect(refresh).toHaveBeenCalledTimes(2))
+		})
+
 		it('does nothing when every shown level is unchanged', () => {
 			sut.dateGroups = [awayGroup()]
 			const refresh = vi

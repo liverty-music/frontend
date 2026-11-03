@@ -335,19 +335,36 @@ describe('AuthCallbackRoute', () => {
 				expect(result).toBe('/dashboard')
 			})
 
-			it('shows the failure copy when Create with the chosen home fails', async () => {
+			it('keeps the home sheet open and says so when Create with the chosen home fails', async () => {
 				mockAuth.handleCallback = vi.fn().mockResolvedValue(eventPageSignUp())
 				setup(null)
 				mockUserService.ensureLoaded = vi.fn().mockRejectedValue(homeRequired())
 				mockUserService.create = vi
 					.fn()
-					.mockRejectedValue(new ConnectError('down', Code.Unavailable))
+					.mockRejectedValueOnce(new ConnectError('down', Code.Unavailable))
+					.mockResolvedValueOnce({ user: { id: 'u1' }, created: true })
+				const open = vi.fn()
+				;(sut as unknown as { homeSelector: { open(): void } }).homeSelector = {
+					open,
+				}
 
 				await sut.canLoad({}, {} as RouteNode)
 				await sut.onHomeSelected('JP-13')
 
-				expect(sut.failed).toBe(true)
+				// Still signed in without an account: the sheet stays so the person
+				// can choose again, and is not sent to the error page.
+				expect(sut.failed).toBe(false)
+				expect(sut.needsHome).toBe(true)
+				expect(open).toHaveBeenCalledOnce()
+				expect(mockEa.publish).toHaveBeenCalledWith(
+					expect.objectContaining({ severity: 'error' }),
+				)
 				expect(mockRouter.load).not.toHaveBeenCalled()
+
+				// A second choice creates the account and continues.
+				await sut.onHomeSelected('JP-13')
+				expect(mockUserService.create).toHaveBeenCalledTimes(2)
+				expect(sut.needsHome).toBe(false)
 			})
 		})
 
