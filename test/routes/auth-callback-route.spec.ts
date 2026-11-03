@@ -19,6 +19,7 @@ import { AuthCallbackRoute } from '../../src/routes/auth-callback/auth-callback-
 import { IAuthService } from '../../src/services/auth-service'
 import { GuestMigrationRequested } from '../../src/services/events/guest-migration-requested'
 import { IOnboardingService } from '../../src/services/onboarding-service'
+import { ITicketJourneyStore } from '../../src/services/ticket-journey-store'
 import { IUserStore } from '../../src/services/user-store'
 import { createTestContainer } from '../helpers/create-container'
 import { createMockAppConfig } from '../helpers/mock-app-config'
@@ -104,12 +105,23 @@ describe('AuthCallbackRoute', () => {
 	}
 
 	let container: IContainer
+	let journeyStore: {
+		load: ReturnType<typeof vi.fn>
+		statusFor: ReturnType<typeof vi.fn>
+		setStatus: ReturnType<typeof vi.fn>
+	}
 
 	function setup(guestHome: string | null = null) {
 		mockUserStore = createMockUserStore(guestHome)
 		mockUserService = mockUserStore
 		storage = createMemoryStorage()
+		journeyStore = {
+			load: vi.fn(async () => new Map()),
+			statusFor: vi.fn(() => undefined),
+			setStatus: vi.fn(async () => {}),
+		}
 		container = createTestContainer(
+			Registration.instance(ITicketJourneyStore, journeyStore),
 			Registration.instance(ILocalStorage, storage),
 			Registration.instance(IAuthService, mockAuth as IAuthService),
 			Registration.instance(
@@ -184,7 +196,7 @@ describe('AuthCallbackRoute', () => {
 
 		it('explicitly calls Create with home when guest selected one — sign-up flow + created=true sets postSignupShown flag', async () => {
 			// @spec components/infrastructure/fan/web/global/post-signup-dialog "Sign-up from the landing page"
-			// @spec stories/sign-up-or-sign-in "New fan finishes the tutorial"
+			// @spec stories/sign-up-or-sign-in "New fan signs up after choosing a home"
 			// @spec stories/complete-onboarding "Completion latches on sign-in or sign-up"
 			mockAuth.handleCallback = vi
 				.fn()
@@ -215,6 +227,68 @@ describe('AuthCallbackRoute', () => {
 			expect(storage.getItem('postSignup.shown')).toBe('pending')
 		})
 
+		describe('sign-up started by the ticket sale notification button', () => {
+			function notifyUser(eventId: string) {
+				return {
+					profile: { email: 'new@example.com' },
+					state: {
+						flow: 'signup',
+						returnTo: `/concerts/${eventId}`,
+						trackEventId: eventId,
+					},
+				}
+			}
+
+			it('tracks the event as the fan own choice and returns to its detail sheet', async () => {
+				const order: string[] = []
+				journeyStore.setStatus.mockImplementation(async () => {
+					order.push('setStatus')
+				})
+				mockEa.publish.mockImplementation(() => order.push('merge'))
+				mockAuth.handleCallback = vi.fn().mockResolvedValue(notifyUser('ev-9'))
+
+				const result = await sut.canLoad({}, {} as RouteNode)
+
+				expect(journeyStore.setStatus).toHaveBeenCalledWith('ev-9', 'tracking')
+				// After the account is resolved and the guest merge was requested.
+				expect(mockUserService.ensureLoaded).toHaveBeenCalled()
+				expect(order).toEqual(['merge', 'setStatus'])
+				expect(result).toBe('/concerts/ev-9')
+			})
+
+			it('keeps a journey an existing account already holds for the event', async () => {
+				journeyStore.statusFor.mockReturnValue('paid')
+				mockAuth.handleCallback = vi.fn().mockResolvedValue(notifyUser('ev-9'))
+
+				const result = await sut.canLoad({}, {} as RouteNode)
+
+				expect(journeyStore.load).toHaveBeenCalled()
+				expect(journeyStore.setStatus).not.toHaveBeenCalled()
+				expect(result).toBe('/concerts/ev-9')
+			})
+
+			it('still returns to the sheet when the save fails', async () => {
+				journeyStore.setStatus.mockRejectedValue(new Error('rpc'))
+				mockAuth.handleCallback = vi.fn().mockResolvedValue(notifyUser('ev-9'))
+
+				const result = await sut.canLoad({}, {} as RouteNode)
+
+				expect(result).toBe('/concerts/ev-9')
+				expect(sut.failed).toBe(false)
+			})
+
+			it('tracks nothing on a sign-up that did not ask for it', async () => {
+				mockAuth.handleCallback = vi.fn().mockResolvedValue({
+					profile: { email: 'new@example.com' },
+					state: { flow: 'signup' },
+				})
+
+				await sut.canLoad({}, {} as RouteNode)
+
+				expect(journeyStore.setStatus).not.toHaveBeenCalled()
+			})
+		})
+
 		describe('sign-up started on an Event page', () => {
 			function eventPageUser(returnTo: string) {
 				return {
@@ -225,6 +299,7 @@ describe('AuthCallbackRoute', () => {
 
 			it('returns to the event page with onboarding complete and follows migrated, without arming the post-signup surfaces', async () => {
 				// @spec components/infrastructure/fan/web/route/event "Guest signs up to buy"
+				// @spec stories/sign-up-or-sign-in "Sign-up from the event page without a home"
 				// @spec components/infrastructure/fan/web/global/post-signup-dialog "Guest signs up while buying"
 				mockAuth.handleCallback = vi
 					.fn()

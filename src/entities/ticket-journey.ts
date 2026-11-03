@@ -9,9 +9,6 @@ import type { JourneyStatus } from './concert'
  * consumer (detail sheet, future timeline, tests) derives from the same graph.
  */
 
-/** Display state of a single journey node relative to the current status. */
-export type JourneyNodeState = 'completed' | 'current' | 'future'
-
 /** Presentation metadata for a single journey status. */
 export interface JourneyStatusConfig {
 	status: JourneyStatus
@@ -34,7 +31,7 @@ export const JOURNEY_STATUS_CONFIG: readonly JourneyStatusConfig[] = [
 	{
 		status: 'tracking',
 		labelKey: 'eventDetail.journeyStatus.tracking',
-		icon: '👀',
+		icon: '🔔',
 		hueToken: '--journey-hue-tracking',
 	},
 	{
@@ -71,10 +68,7 @@ export const JOURNEY_STATUS_CONFIG_MAP: Record<
 	JOURNEY_STATUS_CONFIG.map((config) => [config.status, config]),
 ) as Record<JourneyStatus, JourneyStatusConfig>
 
-/**
- * Linear focus/navigation order across the branching graph, used for keyboard
- * arrow navigation of the journey radiogroup (DOM order: process then outcome).
- */
+/** Every journey status once, in journey order (process, then outcome). */
 export const JOURNEY_NAV_ORDER: readonly JourneyStatus[] = [
 	'tracking',
 	'applied',
@@ -86,25 +80,6 @@ export const JOURNEY_NAV_ORDER: readonly JourneyStatus[] = [
 /** Type guard: whether an arbitrary string is a valid journey status. */
 export function isJourneyStatus(value: string): value is JourneyStatus {
 	return (JOURNEY_NAV_ORDER as readonly string[]).includes(value)
-}
-
-/** Nodes already passed for each status, per the journey DAG. */
-const COMPLETED_BY: Record<JourneyStatus, readonly JourneyStatus[]> = {
-	tracking: [],
-	applied: ['tracking'],
-	lost: ['tracking', 'applied'],
-	unpaid: ['tracking', 'applied'],
-	paid: ['tracking', 'applied', 'unpaid'],
-}
-
-/** Resolve a node's display state relative to the current status. */
-export function journeyNodeState(
-	node: JourneyStatus,
-	current: JourneyStatus | undefined,
-): JourneyNodeState {
-	if (node === current) return 'current'
-	if (current && COMPLETED_BY[current].includes(node)) return 'completed'
-	return 'future'
 }
 
 /**

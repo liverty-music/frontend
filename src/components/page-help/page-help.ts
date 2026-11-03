@@ -1,6 +1,6 @@
 import { bindable, resolve } from 'aurelia'
 import {
-	clearAllHelpSeen,
+	clearOnboardingSeenFlags,
 	loadHelpSeen,
 	saveHelpSeen,
 } from '../../adapter/storage/onboarding-storage'
@@ -53,6 +53,6 @@ export class PageHelp {
 	}
 
 	public static clearHelpSeen(): void {
-		clearAllHelpSeen()
+		clearOnboardingSeenFlags()
 	}
 }

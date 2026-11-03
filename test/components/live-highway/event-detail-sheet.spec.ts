@@ -1,3 +1,4 @@
+import { IRouter } from '@aurelia/router'
 import { Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { IHistory } from '../../../src/adapter/browser/history'
@@ -8,7 +9,9 @@ import {
 	IAnalyticsService,
 } from '../../../src/lib/analytics/analytics-service'
 import { IAuthService } from '../../../src/services/auth-service'
+import { IPushOfferService } from '../../../src/services/push-offer-service'
 import { ITicketJourneyStore } from '../../../src/services/ticket-journey-store'
+import { IUserStore } from '../../../src/services/user-store'
 import { createTestContainer } from '../../helpers/create-container'
 import { createMockHistory } from '../../helpers/mock-history'
 
@@ -54,12 +57,6 @@ describe('EventDetailSheet', () => {
 		delete: ReturnType<typeof vi.fn>
 	}
 
-	/** Seed the store status for the fixed event id used by makeEvent ('c1'). */
-	function setStoreStatus(status: JourneyStatus | undefined): void {
-		journeyState.clear()
-		if (status) journeyState.set('c1', status)
-	}
-
 	beforeEach(() => {
 		// Opened from the dashboard; closing returns to the address it opened on.
 		window.history.replaceState(null, '', '/dashboard')
@@ -88,6 +85,11 @@ describe('EventDetailSheet', () => {
 			Registration.instance(IHistory, mockHistory),
 			Registration.instance(IAnalyticsService, mockAnalytics),
 			Registration.instance(ITicketJourneyStore, mockJourneyStore),
+			Registration.instance(IPushOfferService, {
+				pushState: vi.fn(async () => 'on'),
+			}),
+			Registration.instance(IUserStore, { currentHome: 'JP-13' }),
+			Registration.instance(IRouter, { load: vi.fn() }),
 		)
 		container.register(EventDetailSheet)
 		sut = container.get(EventDetailSheet)
@@ -282,185 +284,6 @@ describe('EventDetailSheet', () => {
 			window.dispatchEvent(new PopStateEvent('popstate'))
 
 			expect(closeSpy).not.toHaveBeenCalled()
-		})
-	})
-
-	describe('journey view-model', () => {
-		it('marks passed states completed, current solid, future outlined (paid)', () => {
-			setStoreStatus('paid')
-			sut.event = makeEvent()
-
-			expect(sut.nodeStates).toEqual({
-				tracking: 'completed',
-				applied: 'completed',
-				unpaid: 'completed',
-				paid: 'current',
-				lost: 'future',
-			})
-		})
-
-		it('treats outcome as future while applied (result pending)', () => {
-			setStoreStatus('applied')
-			sut.event = makeEvent()
-
-			expect(sut.nodeStates).toEqual({
-				tracking: 'completed',
-				applied: 'current',
-				lost: 'future',
-				unpaid: 'future',
-				paid: 'future',
-			})
-			expect(sut.outcomePending).toBe(true)
-		})
-
-		it('keeps outcome pending for tracking and undefined', () => {
-			setStoreStatus('tracking')
-			sut.event = makeEvent()
-			expect(sut.outcomePending).toBe(true)
-
-			setStoreStatus(undefined)
-			sut.event = makeEvent()
-			expect(sut.outcomePending).toBe(true)
-		})
-
-		it('clears outcome pending once a result is recorded', () => {
-			for (const status of ['lost', 'unpaid', 'paid'] as const) {
-				setStoreStatus(status)
-				sut.event = makeEvent()
-				expect(sut.outcomePending).toBe(false)
-			}
-		})
-
-		it('dims the win route when a loss is recorded', () => {
-			setStoreStatus('lost')
-			sut.event = makeEvent()
-
-			expect(sut.successDimmed).toBe(true)
-			expect(sut.failureDimmed).toBe(false)
-			expect(sut.nodeStates.lost).toBe('current')
-		})
-
-		it('dims the loss route when a win is recorded', () => {
-			for (const status of ['unpaid', 'paid'] as const) {
-				setStoreStatus(status)
-				sut.event = makeEvent()
-				expect(sut.failureDimmed).toBe(true)
-				expect(sut.successDimmed).toBe(false)
-			}
-		})
-
-		it('exposes exactly one current node per status', () => {
-			for (const status of [
-				'tracking',
-				'applied',
-				'lost',
-				'unpaid',
-				'paid',
-			] as const) {
-				setStoreStatus(status)
-				sut.event = makeEvent()
-				const current = Object.values(sut.nodeStates).filter(
-					(s) => s === 'current',
-				)
-				expect(current).toHaveLength(1)
-			}
-		})
-	})
-
-	describe('journey radiogroup keyboard navigation', () => {
-		// Build a KeyboardEvent stub whose currentTarget mimics the radiogroup
-		// element: querySelector returns a focusable node we can assert on.
-		function makeKeydown(key: string) {
-			const focused = { focus: vi.fn() }
-			const group = { querySelector: vi.fn(() => focused) }
-			const event = {
-				key,
-				preventDefault: vi.fn(),
-				currentTarget: group,
-			} as unknown as KeyboardEvent
-			return { event, group, focused }
-		}
-
-		it('gives the selected status the only tab stop (roving tabindex)', () => {
-			setStoreStatus('paid')
-			sut.event = makeEvent()
-			expect(sut.journeyTabindex('paid')).toBe(0)
-			expect(sut.journeyTabindex('tracking')).toBe(-1)
-			expect(sut.journeyTabindex('lost')).toBe(-1)
-		})
-
-		it('makes the first node the tab stop when nothing is selected', () => {
-			setStoreStatus(undefined)
-			sut.event = makeEvent()
-			expect(sut.journeyTabindex('tracking')).toBe(0)
-			expect(sut.journeyTabindex('applied')).toBe(-1)
-		})
-
-		it('ArrowRight selects the next node and moves focus to it', async () => {
-			setStoreStatus('tracking')
-			sut.event = makeEvent()
-			const { event, group, focused } = makeKeydown('ArrowRight')
-
-			await sut.onJourneyKeydown(event)
-
-			expect(event.preventDefault).toHaveBeenCalled()
-			expect(mockJourneyStore.setStatus).toHaveBeenCalledWith('c1', 'applied')
-			expect(group.querySelector).toHaveBeenCalledWith(
-				'[data-journey-status="applied"]',
-			)
-			expect(focused.focus).toHaveBeenCalled()
-		})
-
-		it('ArrowLeft from the first node is a no-op (clamped, not wrapped)', async () => {
-			setStoreStatus('tracking')
-			sut.event = makeEvent()
-
-			await sut.onJourneyKeydown(makeKeydown('ArrowLeft').event)
-
-			expect(mockJourneyStore.setStatus).not.toHaveBeenCalled()
-		})
-
-		it('ArrowRight from paid does not cross to lost (mutually exclusive outcomes)', async () => {
-			setStoreStatus('paid')
-			sut.event = makeEvent()
-
-			await sut.onJourneyKeydown(makeKeydown('ArrowRight').event)
-
-			expect(mockJourneyStore.setStatus).not.toHaveBeenCalled()
-		})
-
-		it('ArrowLeft from lost does not cross to paid (mutually exclusive outcomes)', async () => {
-			setStoreStatus('lost')
-			sut.event = makeEvent()
-
-			await sut.onJourneyKeydown(makeKeydown('ArrowLeft').event)
-
-			expect(mockJourneyStore.setStatus).not.toHaveBeenCalled()
-		})
-
-		it('Home and End jump to the first and last nodes', async () => {
-			setStoreStatus('unpaid')
-			sut.event = makeEvent()
-
-			await sut.onJourneyKeydown(makeKeydown('Home').event)
-			expect(mockJourneyStore.setStatus).toHaveBeenLastCalledWith(
-				'c1',
-				'tracking',
-			)
-
-			await sut.onJourneyKeydown(makeKeydown('End').event)
-			expect(mockJourneyStore.setStatus).toHaveBeenLastCalledWith('c1', 'lost')
-		})
-
-		it('ignores non-navigation keys', async () => {
-			setStoreStatus('tracking')
-			sut.event = makeEvent()
-			const { event } = makeKeydown('a')
-
-			await sut.onJourneyKeydown(event)
-
-			expect(event.preventDefault).not.toHaveBeenCalled()
-			expect(mockJourneyStore.setStatus).not.toHaveBeenCalled()
 		})
 	})
 

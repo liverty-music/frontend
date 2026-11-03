@@ -149,6 +149,15 @@ describe('ArtistFilterBar', () => {
 		})
 	})
 
+	// @spec components/infrastructure/fan/web/route/dashboard "Same status looks the same everywhere"
+	it('shows the bell from the canonical map on the Tracking chip', () => {
+		expect(sut.processStatuses[0]).toMatchObject({
+			status: 'tracking',
+			icon: '🔔',
+			labelKey: 'eventDetail.journeyStatus.tracking',
+		})
+	})
+
 	describe('date facet', () => {
 		const past = { year: 2020, month: 1, day: 1 }
 

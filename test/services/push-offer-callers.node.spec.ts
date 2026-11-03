@@ -17,7 +17,7 @@ function sources(dir: string): string[] {
 
 describe('where push is offered', () => {
 	// @spec components/infrastructure/fan/web/global/notification-prompt "No offer on other screens"
-	it('only My Artists and the post-signup sheet use the push offer', () => {
+	it('only My Artists, the event detail sheet and the post-signup sheet use the push offer', () => {
 		const callers = sources(SRC)
 			.filter((file) => /push-offer-service/.test(readFileSync(file, 'utf8')))
 			.map((file) => relative(SRC, file))
@@ -25,6 +25,7 @@ describe('where push is offered', () => {
 			.sort()
 
 		expect(callers).toEqual([
+			'components/live-highway/event-detail-sheet.ts',
 			'components/post-signup-dialog/post-signup-dialog.ts',
 			'routes/my-artists/my-artists-route.ts',
 		])

@@ -1,6 +1,7 @@
 export const StorageKeys = {
-	// Hype-change push offers left unanswered or declined on this browser; the
-	// offer stops at 3 (see PushOfferService).
+	// Retired: the count of unanswered hype-change push offers, when the offer
+	// stopped at 3. The offer has no limit now; main.ts removes the key on
+	// startup.
 	pushOfferDeclines: 'push.offerDeclines',
 	pwaInstalled: 'pwa.installed',
 	postSignupShown: 'postSignup.shown',

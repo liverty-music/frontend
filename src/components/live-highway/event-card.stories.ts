@@ -176,6 +176,22 @@ export const MatchedWithJourneyBadge = {
 	},
 } satisfies Story
 
+/** Card of a tracked concert: the Tracking badge is the bell. */
+export const TrackingJourneyBadge = {
+	render: () =>
+		cardStory(
+			makeEvent({ matched: true, journeyStatus: 'tracking' as JourneyStatus }),
+			'home',
+		),
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement)
+		// @spec components/infrastructure/fan/web/route/dashboard "Same status looks the same everywhere"
+		// @spec components/infrastructure/fan/web/route/dashboard "Icon-only rendering retains an accessible name"
+		const badge = canvas.getByRole('img', { name: '追跡中' })
+		await expect(badge).toHaveTextContent('🔔')
+	},
+} satisfies Story
+
 /** First-party card the fan has bought tickets for: the purchased badge. */
 export const FirstPartyPurchased = {
 	render: () =>

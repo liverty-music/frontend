@@ -133,18 +133,33 @@
 		"ariaLabel": "ライブ詳細",
 		"openStart": "開場 {{open}} / 開演 {{start}}",
 		"openInGoogleMaps": "Google Maps で開く",
+		"ticketSection": "チケット",
+		"notify": {
+			"start": "🔔 チケット販売の通知を受け取る",
+			"next": "🔔 次のチケット販売の通知を受け取る",
+			"active": "🔔 チケット販売の通知を受け取り中 ✓"
+		},
+		"pushLine": {
+			"none": "販売開始と抽選の締め切りをプッシュ通知で受け取れます",
+			"trackingOn": "販売開始と抽選の締め切りをプッシュ通知します🔔",
+			"trackingOff": "販売開始と抽選の締め切りをプッシュ通知で受け取ろう🔔",
+			"appliedOn": "発表日がわかる抽選は、結果発表の日にプッシュ通知します🔔",
+			"appliedOff": "発表日がわかる抽選は、結果発表の日のプッシュ通知を受け取ろう🔔",
+			"unpaid": "期限までに入金を済ませましょう",
+			"guest": "アカウントを作ると、販売開始をプッシュ通知で受け取れます"
+		},
+		"outOfRange": {
+			"current": "今は<strong class=\"reach-words\">{{places}}</strong>の新着ライブだけプッシュ通知対象です",
+			"none": "今は新着ライブをプッシュ通知していません",
+			"widen": "{{places}}の新着ライブを受け取る",
+			"widenAlso": "{{places}}の新着ライブも受け取る",
+			"savedOn": "<strong class=\"reach-words\">{{places}}</strong>の新着ライブをプッシュ通知します🔔",
+			"savedOff": "<strong class=\"reach-words\">{{places}}</strong>の新着ライブをプッシュ通知で受け取ろう🔔",
+			"failed": "変更できませんでした。もう一度お試しください。"
+		},
 		"ticketStatus": "チケット状況",
-		"stopTracking": "追跡を停止",
-		"viewOfficialInfo": "公式情報を見る",
+		"viewOfficialInfo": "公式サイトでチケットを見る",
 		"addToCalendar": "カレンダーに追加",
-		"journeyPhase": {
-			"process": "申込フロー",
-			"outcome": "結果",
-			"pending": "結果待ち"
-		},
-		"journeyRoute": {
-			"won": "当選"
-		},
 		"journeyStatus": {
 			"tracking": "追跡中",
 			"applied": "申込済み",
@@ -152,8 +167,7 @@
 			"unpaid": "当選・未入金",
 			"paid": "入金済み"
 		},
-		"trackingStarted": "チケット状況を「追跡中」にしました。\n販売の情報をお知らせします。",
-		"hypeRaised": "{{name}}を {{hype}} にしました。\n遠方の新着ライブも通知します。",
+		"trackingStarted": "🔔 チケット販売の通知を受け取ります",
 		"undo": "取り消す",
 		"undoFailed": "取り消せませんでした。もう一度お試しください。"
 	},
@@ -190,7 +204,6 @@
 		}
 	},
 	"pushOffer": {
-		"hypeChanged": "{{name}}を {{hype}} にしました。新着ライブを通知で受け取りますか？",
 		"action": "オンにする",
 		"allowed": "新しいライブを通知します。設定からいつでも止められます",
 		"blocked": "通知はブロックされています。ブラウザの設定から変更できます",
@@ -1201,5 +1214,16 @@
 			"toWelcome": "はじめの画面へ"
 		},
 		"backToSettings": "設定に戻る"
+	},
+	"hypeReach": {
+		"all": "全て",
+		"home": "{{place}}",
+		"nearby": "{{place}}周辺",
+		"noHome": "居住エリア",
+		"on": "{{name}}の{{places}}の新着ライブをプッシュ通知します🔔",
+		"watch": "{{name}}の新着ライブはプッシュ通知しません",
+		"off": "{{name}}の{{places}}の新着ライブをプッシュ通知で受け取ろう🔔",
+		"signUp": "登録する",
+		"settings": "設定"
 	}
 }

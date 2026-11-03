@@ -10,6 +10,9 @@ interface SnackItem {
 	action?: SnackAction
 	attention: boolean
 	onDismiss?: () => void
+	replaceKey?: string
+	/** Whether the snack dismisses on its own (a finite duration). */
+	autoDismiss: boolean
 	dismissed: boolean
 	dismissTimer: ReturnType<typeof setTimeout> | null
 }
@@ -34,6 +37,15 @@ export class SnackBar {
 	 * false (the fan app), snacks stack.
 	 */
 	@bindable public replace = false
+
+	/**
+	 * The most snacks that dismiss on their own shown at once (the fan app:
+	 * 3). A new one first dismisses the oldest of them, passing over one whose
+	 * dismissal commits something (`onDismiss`, an undo window) while another
+	 * can go; a snack that stays until the person acts (the update snack)
+	 * neither counts nor is dismissed. Unlimited by default.
+	 */
+	@bindable public limit = Number.POSITIVE_INFINITY
 
 	/** Shows a close button on every snack (the console's M3 snackbar). */
 	@bindable public dismissible = false
@@ -67,6 +79,27 @@ export class SnackBar {
 		if (this.replace) {
 			for (const shown of [...this.snacks]) this.dismiss(shown)
 		}
+		const replaceKey = event.options?.replaceKey
+		if (replaceKey !== undefined) {
+			for (const shown of this.visible()) {
+				if (shown.replaceKey === replaceKey) this.dismiss(shown)
+			}
+		}
+		const autoDismiss = event.durationMs !== Infinity
+		if (autoDismiss) {
+			const counted = this.visible().filter((shown) => shown.autoDismiss)
+			let excess = counted.length - this.limit + 1
+			// A snack whose dismissal commits something (an unfollow's undo
+			// window) is dismissed only when nothing else can make room.
+			const evictable = [
+				...counted.filter((shown) => !shown.onDismiss),
+				...counted.filter((shown) => shown.onDismiss),
+			]
+			for (const oldest of evictable) {
+				if (excess-- <= 0) break
+				this.dismiss(oldest)
+			}
+		}
 
 		const id = this.nextId++
 		const snack: SnackItem = {
@@ -78,6 +111,8 @@ export class SnackBar {
 			action: event.action,
 			attention: event.options?.attention ?? false,
 			onDismiss: event.options?.onDismiss,
+			replaceKey,
+			autoDismiss,
 			dismissed: false,
 			dismissTimer: null,
 		}
@@ -98,12 +133,17 @@ export class SnackBar {
 
 		// Auto-dismiss. Skip when duration is Infinity: setTimeout(fn, Infinity)
 		// coerces to setTimeout(fn, 0) (ToInt32 overflow) and dismisses immediately.
-		if (event.durationMs !== Infinity) {
+		if (autoDismiss) {
 			snack.dismissTimer = setTimeout(() => {
 				snack.dismissTimer = null
 				this.dismiss(snack)
 			}, event.durationMs)
 		}
+	}
+
+	/** The snacks shown and not yet dismissed, oldest first. */
+	private visible(): SnackItem[] {
+		return this.snacks.filter((shown) => !shown.dismissed)
 	}
 
 	private dismiss(snack: SnackItem): void {

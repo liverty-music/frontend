@@ -14,5 +14,6 @@ export {
 	resolveAuthFlow,
 	resolveAuthOrigin,
 	resolveAuthReturnTo,
+	resolveAuthTrackEventId,
 	type SignUpOptions,
 } from '../../shared/services/auth-service'

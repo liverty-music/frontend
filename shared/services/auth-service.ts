@@ -119,6 +119,12 @@ export interface AuthFlowState {
 	 * return-to TTL (e.g. waiting for an email verification code).
 	 */
 	returnTo?: string
+	/**
+	 * Event to track once the account exists: a guest pressed the ticket sale
+	 * notification button on its detail sheet. Lives only for this one
+	 * authorization request, so an abandoned sign-up tracks nothing later.
+	 */
+	trackEventId?: string
 }
 
 /** Surfaces that start a sign-up with their own follow-up. */
@@ -129,6 +135,8 @@ export interface SignUpOptions {
 	/** In-app path (starting with a single `/`) to return to after sign-up. */
 	returnTo?: string
 	origin?: AuthFlowOrigin
+	/** See {@link AuthFlowState.trackEventId}. */
+	trackEventId?: string
 	/** Language the hosted login should show; see {@link SignInOptions.uiLocales}. */
 	uiLocales?: string
 	/** Where the start came from; see {@link SignInOptions.source}. */
@@ -165,6 +173,12 @@ export interface SignInOptions {
  */
 export function resolveAuthFlow(user: User): AuthFlowState['flow'] {
 	return (user.state as AuthFlowState | undefined)?.flow
+}
+
+/** Read the event to track after sign-up off a resolved OIDC user, if any. */
+export function resolveAuthTrackEventId(user: User): string | undefined {
+	const id = (user.state as AuthFlowState | undefined)?.trackEventId
+	return typeof id === 'string' && id !== '' ? id : undefined
 }
 
 /** Read the sign-up origin marker off a resolved OIDC user, if any. */
@@ -485,6 +499,7 @@ export class AuthService {
 		const state: AuthFlowState = { flow: 'signup' }
 		if (options.origin) state.origin = options.origin
 		if (isInAppPath(options.returnTo)) state.returnTo = options.returnTo
+		if (options.trackEventId) state.trackEventId = options.trackEventId
 		this.ea.publish(new AuthStarted('sign_up', options.source))
 		await this.userManager.signinRedirect({
 			prompt: 'create',

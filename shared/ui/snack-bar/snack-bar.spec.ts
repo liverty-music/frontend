@@ -147,6 +147,83 @@ describe('SnackBar', () => {
 		})
 	})
 
+	describe('limit', () => {
+		const shown = () =>
+			sut.snacks.filter((s) => !s.dismissed).map((s) => s.message)
+		const publish = (
+			message: string,
+			options?: ConstructorParameters<typeof Snack>[2],
+		) => subscribeHandler?.(new Snack(message, 'info', options))
+
+		beforeEach(() => {
+			sut.limit = 3
+			sut.attaching()
+		})
+
+		// @spec components/infrastructure/fan/web/global/snack-bar "Fourth snack"
+		it('dismisses the oldest of three snacks when a fourth arrives', () => {
+			publish('one')
+			publish('two')
+			publish('three')
+			publish('four')
+
+			expect(shown()).toEqual(['two', 'three', 'four'])
+		})
+
+		// @spec components/infrastructure/fan/web/global/snack-bar "Update snack stays"
+		it('keeps a snack that stays until the fan acts, and does not count it', () => {
+			publish('update', { duration: Number.POSITIVE_INFINITY })
+			publish('one')
+			publish('two')
+			publish('three')
+			publish('four')
+
+			expect(shown()).toEqual(['update', 'two', 'three', 'four'])
+		})
+
+		// @spec components/infrastructure/fan/web/global/snack-bar "Replacing an earlier snack"
+		it('replaces the visible snack with the same key', () => {
+			publish('other')
+			publish('artist-1 first', { replaceKey: 'hype:artist-1' })
+			publish('artist-1 second', { replaceKey: 'hype:artist-1' })
+
+			expect(shown()).toEqual(['other', 'artist-1 second'])
+		})
+
+		// @spec components/infrastructure/fan/web/global/snack-bar "An undo window is kept"
+		it('passes over a snack whose dismissal commits something while another can go', () => {
+			const commit = vi.fn()
+			publish('undo unfollow', {
+				onDismiss: commit,
+				action: { label: '取り消す', callback: () => {} },
+			})
+			publish('one')
+			publish('two')
+			publish('three')
+
+			expect(shown()).toEqual(['undo unfollow', 'two', 'three'])
+			expect(commit).not.toHaveBeenCalled()
+		})
+
+		it('dismisses a committing snack when nothing else can make room', () => {
+			const commits = [vi.fn(), vi.fn(), vi.fn()]
+			for (const [i, onDismiss] of commits.entries()) {
+				publish(`undo ${i}`, { onDismiss })
+			}
+			publish('four')
+
+			expect(shown()).toEqual(['undo 1', 'undo 2', 'four'])
+			expect(commits[0]).toHaveBeenCalledOnce()
+		})
+
+		it('shows every snack without a limit', () => {
+			sut.limit = Number.POSITIVE_INFINITY
+			for (const m of ['1', '2', '3', '4', '5']) publish(m)
+
+			expect(shown()).toHaveLength(5)
+		})
+	})
+
 	describe('duration', () => {
 		/** Advance to just before `ms` and to `ms`, reporting dismissed state. */
 		function dismissedAround(ms: number): [boolean, boolean] {

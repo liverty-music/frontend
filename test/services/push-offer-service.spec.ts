@@ -1,9 +1,7 @@
 import { IEventAggregator, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Snack } from '../../shared/ui/snack-bar/snack'
-import { ILocalStorage } from '../../src/adapter/storage/local-storage'
 import { IAnalyticsService } from '../../src/lib/analytics/analytics-service'
-import { IAuthService } from '../../src/services/auth-service'
 import { INotificationManager } from '../../src/services/notification-manager'
 import {
 	IPushOfferService,
@@ -11,7 +9,6 @@ import {
 } from '../../src/services/push-offer-service'
 import { IPushService } from '../../src/services/push-service'
 import { createTestContainer } from '../helpers/create-container'
-import { createMockLocalStorage } from '../helpers/mock-local-storage'
 
 /** Browser globals that make push available, removed after each test. */
 function givePushSupport(): void {
@@ -30,22 +27,22 @@ function removePushSupport(): void {
 }
 
 describe('PushOfferService', () => {
-	let auth: { isAuthenticated: boolean }
 	let notifications: { permission: NotificationPermission }
-	let push: { create: ReturnType<typeof vi.fn> }
-	let storage: ReturnType<typeof createMockLocalStorage>
+	let push: {
+		create: ReturnType<typeof vi.fn>
+		getBrowserSubscription: ReturnType<typeof vi.fn>
+	}
 	let snacks: Snack[]
 	/** The answer the browser prompt gives when `create()` asks for permission. */
 	let answer: NotificationPermission
+	/** Whether this browser holds a push subscription. */
+	let registered: boolean
 
-	/** A new app launch on the same browser (storage survives). */
-	function launch(): PushOfferService {
+	function create(): PushOfferService {
 		snacks = []
 		const container = createTestContainer(
-			Registration.instance(IAuthService, auth),
 			Registration.instance(INotificationManager, notifications),
 			Registration.instance(IPushService, push),
-			Registration.instance(ILocalStorage, storage),
 			Registration.instance(IEventAggregator, {
 				publish: (e: unknown) => {
 					if (e instanceof Snack) snacks.push(e)
@@ -56,177 +53,152 @@ describe('PushOfferService', () => {
 		return container.get(IPushOfferService)
 	}
 
-	/** Show the offer and close the snack without pressing its action. */
-	function leaveUnanswered(sut: PushOfferService): void {
-		sut.offer('offer')
-		snacks.at(-1)?.options?.onDismiss?.()
-	}
-
-	/** Show the offer and press its action. */
-	async function press(sut: PushOfferService): Promise<void> {
-		sut.offer('offer')
-		const snack = snacks.at(-1)
-		snack?.options?.action?.callback()
-		snack?.options?.onDismiss?.()
-		await vi.waitFor(() => expect(push.create).toHaveBeenCalled())
-		await Promise.resolve()
-	}
-
 	beforeEach(() => {
 		givePushSupport()
-		auth = { isAuthenticated: true }
 		notifications = { permission: 'default' }
 		answer = 'granted'
+		registered = false
 		push = {
 			create: vi.fn(async () => {
-				notifications.permission = answer
-				return answer === 'granted' ? 'endpoint' : null
+				// The browser asks only while the permission is undecided.
+				if (notifications.permission === 'default') {
+					notifications.permission = answer
+				}
+				if (notifications.permission !== 'granted') return null
+				registered = true
+				return 'endpoint'
 			}),
+			getBrowserSubscription: vi.fn(async () =>
+				registered ? { endpoint: 'endpoint', p256dh: 'p', auth: 'a' } : null,
+			),
 		}
-		storage = createMockLocalStorage()
 	})
 
 	afterEach(() => {
 		removePushSupport()
 	})
 
-	describe('eligibility', () => {
-		it('offers to a signed-in fan with an undecided permission', () => {
-			expect(launch().shouldOffer()).toBe(true)
-		})
-
-		// @spec components/infrastructure/fan/web/global/notification-prompt "Guest"
-		it('never offers to a guest', () => {
-			auth.isAuthenticated = false
-			expect(launch().shouldOffer()).toBe(false)
+	describe('pushState', () => {
+		it('is offerable while the permission is undecided', async () => {
+			await expect(create().pushState()).resolves.toBe('offerable')
 		})
 
 		// @spec components/infrastructure/fan/web/global/notification-prompt "Permission already granted"
-		it('does not offer once the browser allows notifications', () => {
+		it('is on when notifications are allowed and this browser is registered', async () => {
 			notifications.permission = 'granted'
-			expect(launch().shouldOffer()).toBe(false)
+			registered = true
+
+			await expect(create().pushState()).resolves.toBe('on')
+		})
+
+		// @spec components/infrastructure/fan/web/global/notification-prompt "Permission granted but this browser not registered"
+		it('is offerable when allowed but not registered, and the offer registers without a prompt', async () => {
+			notifications.permission = 'granted'
+			const sut = create()
+
+			await expect(sut.pushState()).resolves.toBe('offerable')
+			await sut.accept({ source: 'notification_prompt' })
+
+			expect(push.create).toHaveBeenCalledWith('notification_prompt')
+			await expect(sut.pushState()).resolves.toBe('on')
 		})
 
 		// @spec components/infrastructure/fan/web/global/notification-prompt "Permission blocked"
-		it('does not offer once the browser blocked notifications', () => {
+		it('links to Settings once the browser blocked notifications', async () => {
 			notifications.permission = 'denied'
-			expect(launch().shouldOffer()).toBe(false)
+
+			await expect(create().pushState()).resolves.toBe('settings')
 		})
 
 		// @spec components/infrastructure/fan/web/global/notification-prompt "iOS Safari without the app on the home screen"
-		it('does not offer where the browser exposes no Notification API', () => {
+		it('links to Settings where the browser exposes no Notification API', async () => {
 			// iOS Safari outside a home-screen app has no Notification API.
 			delete (globalThis as Record<string, unknown>).Notification
-			expect(launch().shouldOffer()).toBe(false)
+
+			await expect(create().pushState()).resolves.toBe('settings')
+		})
+
+		it('is offerable when the subscription cannot be read', async () => {
+			notifications.permission = 'granted'
+			push.getBrowserSubscription.mockRejectedValueOnce(
+				new Error('Service Worker ready timed out'),
+			)
+
+			await expect(create().pushState()).resolves.toBe('offerable')
 		})
 
 		// @spec components/infrastructure/fan/web/global/notification-prompt "No browser prompt on launch"
-		it('neither asks the browser nor shows an offer on launch', () => {
-			launch()
+		it('neither asks the browser nor shows a snack on its own', async () => {
+			await create().pushState()
+
 			expect(push.create).not.toHaveBeenCalled()
 			expect(snacks).toHaveLength(0)
 		})
 	})
 
-	describe('limits', () => {
-		// @spec components/infrastructure/fan/web/global/notification-prompt "Once per session"
-		it('offers at most once per launch', () => {
-			const sut = launch()
-			sut.offer('offer')
-
-			expect(sut.shouldOffer()).toBe(false)
-		})
-
-		// @spec components/infrastructure/fan/web/global/notification-prompt "Next session"
-		it('offers again on the next launch after one unanswered offer', () => {
-			leaveUnanswered(launch())
-
-			expect(launch().shouldOffer()).toBe(true)
-		})
-
-		// @spec components/infrastructure/fan/web/global/notification-prompt "Third unanswered offer stops it"
-		it('stops for good after 3 unanswered or declined offers', async () => {
-			leaveUnanswered(launch())
-			leaveUnanswered(launch())
+	describe('no limit on the in-context offers', () => {
+		// @spec components/infrastructure/fan/web/global/notification-prompt "Every hype change with push off"
+		// @spec components/infrastructure/fan/web/global/notification-prompt "After several unanswered offers"
+		it('stays offerable after any number of unanswered offers', async () => {
 			answer = 'default'
-			await press(launch())
-			expect(storage.getItem('push.offerDeclines')).toBe('3')
-			notifications.permission = 'default'
-
-			expect(launch().shouldOffer()).toBe(false)
-		})
-
-		it('does not count a pressed offer as unanswered', async () => {
-			await press(launch())
-			expect(storage.getItem('push.offerDeclines')).toBeNull()
+			const sut = create()
+			for (let i = 0; i < 5; i++) {
+				await sut.accept({ source: 'notification_prompt' })
+				await expect(sut.pushState()).resolves.toBe('offerable')
+			}
 		})
 	})
 
-	describe('pressing the action', () => {
+	describe('accept', () => {
 		// @spec components/infrastructure/fan/web/global/notification-prompt "Pressing the offer action shows the browser prompt"
-		// @spec components/infrastructure/fan/web/global/notification-prompt "Fan denies"
 		it('asks the browser at once, within the press', () => {
-			const sut = launch()
-			sut.offer('offer')
-
-			snacks[0].options?.action?.callback()
+			void create().accept({ source: 'event_detail_sheet' })
 
 			// Synchronously inside the press handler, so the prompt follows the
-			// gesture; the answer is reported as started by the notification prompt.
+			// gesture; the answer is reported with where the request started.
 			expect(push.create).toHaveBeenCalledTimes(1)
-			expect(push.create).toHaveBeenCalledWith('notification_prompt')
-		})
-
-		it('offers with the 「オンにする」 action for 10 seconds', () => {
-			const sut = launch()
-			sut.offer(
-				'ヨルシカを Away にしました。新着ライブを通知で受け取りますか？',
-			)
-
-			expect(snacks[0].message).toBe(
-				'ヨルシカを Away にしました。新着ライブを通知で受け取りますか？',
-			)
-			expect(snacks[0].action?.label).toBe('pushOffer.action')
-			expect(snacks[0].durationMs).toBe(10_000)
+			expect(push.create).toHaveBeenCalledWith('event_detail_sheet')
 		})
 
 		// @spec components/infrastructure/fan/web/global/notification-prompt "Fan allows"
 		it('registers push and confirms when the fan allows', async () => {
-			await press(launch())
+			const sut = create()
+			await expect(sut.accept({ source: 'notification_prompt' })).resolves.toBe(
+				'granted',
+			)
 
-			expect(push.create).toHaveBeenCalledTimes(1)
 			expect(snacks.at(-1)?.message).toBe('pushOffer.allowed')
+			await expect(sut.pushState()).resolves.toBe('on')
 		})
 
 		// @spec components/infrastructure/fan/web/global/notification-prompt "Fan blocks"
-		it('says notifications are blocked and stops offering', async () => {
+		it('says notifications are blocked and offers no more', async () => {
 			answer = 'denied'
-			const sut = launch()
-			await press(sut)
+			const sut = create()
+			await sut.accept({ source: 'notification_prompt' })
 
 			expect(snacks.at(-1)?.message).toBe('pushOffer.blocked')
-			expect(launch().shouldOffer()).toBe(false)
+			await expect(sut.pushState()).resolves.toBe('settings')
 		})
 
 		// @spec components/infrastructure/fan/web/global/notification-prompt "Fan closes the prompt"
-		it('shows nothing and counts one unanswered offer when the prompt is closed', async () => {
+		it('shows nothing when the prompt is closed', async () => {
 			answer = 'default'
-			await press(launch())
+			await create().accept({ source: 'notification_prompt' })
 
-			expect(snacks).toHaveLength(1) // the offer itself
-			expect(storage.getItem('push.offerDeclines')).toBe('1')
+			expect(snacks).toHaveLength(0)
 		})
 
-		it('does not count a prompt closed from the post-signup sheet', async () => {
-			answer = 'default'
-			await launch().accept({ source: 'post_signup_dialog', counted: false })
+		it('leaves a block or failure to an inline caller', async () => {
+			answer = 'denied'
+			await create().accept({ source: 'post_signup_dialog', inline: true })
 
-			expect(storage.getItem('push.offerDeclines')).toBeNull()
+			expect(snacks).toHaveLength(0)
 		})
 
 		it('says it failed when registering push fails', async () => {
 			push.create.mockRejectedValueOnce(new Error('rpc'))
-			await launch().accept({ source: 'notification_prompt', counted: true })
+			await create().accept({ source: 'notification_prompt' })
 
 			expect(snacks.at(-1)?.message).toBe('pushOffer.failed')
 			expect(snacks.at(-1)?.severity).toBe('error')

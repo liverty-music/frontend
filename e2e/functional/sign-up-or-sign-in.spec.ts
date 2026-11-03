@@ -4,6 +4,7 @@ import { fakeId } from '../support/fake-id'
 import {
 	callsOf,
 	connectError,
+	FAN_CLIENT_ID,
 	FAN_EMAIL,
 	mockFanRpc,
 	mockIdentityProvider,
@@ -242,4 +243,206 @@ test.describe('a new account without a home', () => {
 			...(home ? { home } : {}),
 		}
 	}
+})
+
+test.describe('sign-up and sign-in start only where the person chooses', () => {
+	test.use({ locale: 'ja-JP' })
+	const USER_ID = '00000000-0000-4000-8000-c00000000004'
+	const EVENT_ID = fakeId('choose-event')
+	const ARTIST = { id: fakeId('choose-artist'), name: 'The Band', mbid: '' }
+
+	const user = {
+		id: { value: USER_ID },
+		email: { value: FAN_EMAIL },
+		preferredLanguage: 'ja',
+		home: { countryCode: 'JP', level1: 'JP-13' },
+	}
+
+	function concert() {
+		const d = new Date()
+		d.setDate(d.getDate() + 30)
+		return {
+			id: { value: EVENT_ID },
+			performers: [
+				{
+					id: { value: ARTIST.id },
+					name: { value: ARTIST.name },
+					mbid: { value: '' },
+				},
+			],
+			series: {
+				id: { value: fakeId('choose-series') },
+				title: { value: 'Choose Tour 2026' },
+				publishState: 'PUBLISH_STATE_PUBLISHED',
+			},
+			localDate: {
+				value: {
+					year: d.getFullYear(),
+					month: d.getMonth() + 1,
+					day: d.getDate(),
+				},
+			},
+			venue: { name: { value: 'Zepp' }, adminArea: { value: 'JP-13' } },
+		}
+	}
+
+	/** A guest who follows The Band and chose 東京, once per test. */
+	async function seedFollowingGuest(page: Page): Promise<void> {
+		await seedGuest(page, {
+			'onboarding.celebrationShown': '1',
+			'onboarding.helpSeen:dashboard': '1',
+			'pwa.installed': 'true',
+			'guest.followedArtists': JSON.stringify([
+				{ artist: ARTIST, hype: 'nearby' },
+			]),
+		})
+	}
+
+	/** No account until Create stores one; Create answers `create`. */
+	async function mockAccount(
+		page: Page,
+		create: () => ReturnType<typeof connectError> | { body: unknown },
+	) {
+		const calls = await mockFanRpc(page, {
+			'ConcertService/Get': concertWire({ concert: concert() }),
+			'ConcertService/ListBySeries': concertWire({ concerts: [concert()] }),
+			'UserService/Get': () =>
+				callsOf(calls, 'UserService/Create').length > 0
+					? { body: { user } }
+					: connectError('not_found', 404),
+			'UserService/Create': () => create() as { body: Record<string, unknown> },
+		})
+		await mockIdentityProvider(page)
+		return calls
+	}
+
+	test(`@spec ${STORY} "Initiate Login from Landing Page"`, async ({
+		page,
+	}) => {
+		await mockFanRpc(page)
+		const authorize = new Promise<URL>((resolve) => {
+			void page.route(`${OIDC_AUTHORITY}/oauth/v2/authorize**`, (route) => {
+				resolve(new URL(route.request().url()))
+				return route.fulfill({ contentType: 'text/html', body: '<p>login</p>' })
+			})
+		})
+		await page.goto('/welcome')
+
+		await page.getByTestId('welcome-login').first().click({ timeout: 20_000 })
+
+		const url = await authorize
+		expect(url.searchParams.get('client_id')).toBe(FAN_CLIENT_ID)
+		expect(url.searchParams.get('code_challenge')).toBeTruthy()
+		expect(url.searchParams.get('code_challenge_method')).toBe('S256')
+	})
+
+	test(`@spec ${STORY} "Sign-up from the Dashboard banner"`, async ({
+		page,
+	}) => {
+		await seedFollowingGuest(page)
+		const calls = await mockAccount(page, () => ({ body: { user } }))
+		await page.goto('/dashboard')
+
+		await page.locator('.signup-banner-action').click({ timeout: 20_000 })
+
+		await expect
+			.poll(() => callsOf(calls, 'UserService/Create').length, {
+				timeout: 30_000,
+			})
+			.toBe(1)
+		await page.waitForURL((url) => url.pathname === '/dashboard', {
+			timeout: 30_000,
+		})
+		await expect(page.locator('.signup-banner-action')).toHaveCount(0)
+	})
+
+	test(`@spec ${STORY} "Sign-up from an event page returns to it"`, async ({
+		page,
+	}) => {
+		await seedFollowingGuest(page)
+		const calls = await mockAccount(page, () => ({ body: { user } }))
+		await page.goto(`/events/${EVENT_ID}`)
+		await expect(page.getByText('Choose Tour 2026').first()).toBeVisible({
+			timeout: 20_000,
+		})
+
+		await page.getByTestId('event-signup').click()
+
+		await expect(page).toHaveURL(new RegExp(`/events/${EVENT_ID}$`), {
+			timeout: 30_000,
+		})
+		await expect(page.getByTestId('event-signup')).toHaveCount(0)
+		expect(callsOf(calls, 'UserService/Create')).toHaveLength(1)
+	})
+
+	test(`@spec ${STORY} "No forced sign-up"`, async ({ page }) => {
+		await seedFollowingGuest(page)
+		await mockFanRpc(page, {
+			'ConcertService/ListByArtists': concertWire({ groups: [] }),
+		})
+		let authorized = false
+		await page.route(`${OIDC_AUTHORITY}/oauth/v2/authorize**`, (route) => {
+			authorized = true
+			return route.fulfill({ contentType: 'text/html', body: '<p>login</p>' })
+		})
+
+		await page.goto('/dashboard')
+		await expect(page.locator('.signup-banner-action')).toBeVisible({
+			timeout: 20_000,
+		})
+		// biome-ignore lint/suspicious/noPlaywrightWaitForTimeout: an absence check; a forced sign-up has no event to wait for
+		await page.waitForTimeout(1_500)
+
+		expect(authorized).toBe(false)
+		expect(new URL(page.url()).pathname).toBe('/dashboard')
+		await expect(page.locator('dialog:modal')).toHaveCount(0)
+	})
+
+	test(`@spec ${STORY} "Registration Callback API Failure"`, async ({
+		page,
+	}) => {
+		await seedFollowingGuest(page)
+		const calls = await mockAccount(page, () =>
+			connectError('already_exists', 409),
+		)
+		await page.goto('/dashboard')
+
+		await page.locator('.signup-banner-action').click({ timeout: 20_000 })
+
+		// The authentication completes and the app opens, signed in.
+		await page.waitForURL((url) => !url.pathname.startsWith('/auth/'), {
+			timeout: 30_000,
+		})
+		await expect(
+			page.getByText('サインインできませんでした', { exact: false }),
+		).toHaveCount(0)
+		expect(callsOf(calls, 'UserService/Create').length).toBeGreaterThan(0)
+		await page.goto('/settings')
+		await expect(
+			page.getByRole('button', { name: 'サインアウト' }),
+		).toBeVisible({
+			timeout: 20_000,
+		})
+	})
+
+	test(`@spec ${STORY} "Registration Callback for an already registered identity"`, async ({
+		page,
+	}) => {
+		await seedFollowingGuest(page)
+		// Create returns the existing account (with its home) unchanged.
+		const calls = await mockAccount(page, () => ({ body: { user } }))
+		await page.goto('/dashboard')
+
+		await page.locator('.signup-banner-action').click({ timeout: 20_000 })
+
+		await page.waitForURL((url) => url.pathname === '/dashboard', {
+			timeout: 30_000,
+		})
+		expect(callsOf(calls, 'UserService/Create')).toHaveLength(1)
+		// The app continues as for a new account: no home sheet, signed in.
+		await expect(
+			page.locator('user-home-selector .selector-content'),
+		).toBeHidden()
+		await expect(page.locator('.signup-banner-action')).toHaveCount(0)
+	})
 })

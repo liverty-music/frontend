@@ -1,9 +1,11 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import {
-	clearAllHelpSeen,
+	clearOnboardingSeenFlags,
 	loadHelpSeen,
+	loadHypeSnackSeen,
 	loadOnboardingComplete,
 	saveHelpSeen,
+	saveHypeSnackSeen,
 	saveOnboardingComplete,
 } from '../../../src/adapter/storage/onboarding-storage'
 
@@ -41,7 +43,7 @@ describe('onboarding-storage', () => {
 			localStorage.setItem('onboarding.celebrationShown', '1')
 			saveHelpSeen('discovery')
 
-			clearAllHelpSeen()
+			clearOnboardingSeenFlags()
 
 			expect(localStorage.getItem('onboarding.helpSeen:tickets')).toBeNull()
 			expect(localStorage.getItem('onboarding.helpSeen:discovery')).toBeNull()
@@ -58,11 +60,35 @@ describe('onboarding-storage', () => {
 			saveHelpSeen('dashboard')
 			saveHelpSeen('my-artists')
 
-			clearAllHelpSeen()
+			clearOnboardingSeenFlags()
 
 			expect(loadHelpSeen('discovery')).toBe(false)
 			expect(loadHelpSeen('dashboard')).toBe(false)
 			expect(loadHelpSeen('my-artists')).toBe(false)
+		})
+	})
+
+	describe('hype snack flags', () => {
+		it('records and reads a flag per level', () => {
+			expect(loadHypeSnackSeen('away')).toBe(false)
+			saveHypeSnackSeen('away')
+			expect(loadHypeSnackSeen('away')).toBe(true)
+			expect(loadHypeSnackSeen('home')).toBe(false)
+			expect(localStorage.getItem('onboarding.hypeSnackSeen:away')).toBe('1')
+		})
+
+		it('clears the hype snack flags with the help-seen flags', () => {
+			saveHypeSnackSeen('away')
+			saveHypeSnackSeen('watch')
+			saveHelpSeen('my-artists')
+			localStorage.setItem('onboarding.celebrationShown', '1')
+
+			clearOnboardingSeenFlags()
+
+			expect(loadHypeSnackSeen('away')).toBe(false)
+			expect(loadHypeSnackSeen('watch')).toBe(false)
+			expect(loadHelpSeen('my-artists')).toBe(false)
+			expect(localStorage.getItem('onboarding.celebrationShown')).toBe('1')
 		})
 	})
 })

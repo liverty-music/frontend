@@ -117,7 +117,6 @@ export class PostSignupDialog {
 	public async onEnableNotifications(): Promise<void> {
 		const outcome = await this.pushOffer.accept({
 			source: 'post_signup_dialog',
-			counted: false,
 			inline: true,
 		})
 		if (outcome === 'denied') {

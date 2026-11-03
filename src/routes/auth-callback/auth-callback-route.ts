@@ -10,9 +10,11 @@ import {
 	resolveAuthFlow,
 	resolveAuthOrigin,
 	resolveAuthReturnTo,
+	resolveAuthTrackEventId,
 } from '../../services/auth-service'
 import { GuestMigrationRequested } from '../../services/events/guest-migration-requested'
 import { IOnboardingService } from '../../services/onboarding-service'
+import { ITicketJourneyStore } from '../../services/ticket-journey-store'
 import { IUserStore, type ProvisionResult } from '../../services/user-store'
 import {
 	isSupportedLanguage,
@@ -43,6 +45,7 @@ export class AuthCallbackRoute {
 	private readonly storage = resolve(ILocalStorage)
 	private readonly logger = resolve(ILogger).scopeTo('AuthCallbackRoute')
 	private readonly analytics = resolve(IAnalyticsService)
+	private readonly journeyStore = resolve(ITicketJourneyStore)
 
 	public async canLoad(
 		_params: Params,
@@ -156,6 +159,27 @@ export class AuthCallbackRoute {
 			const fromEventPage = resolveAuthOrigin(user) === 'event-page'
 			if (isSignUpFlow && created && !fromEventPage) {
 				this.storage.setItem(StorageKeys.postSignupShown, 'pending')
+			}
+
+			// A guest who pressed the ticket sale notification button on a
+			// concert's detail sheet asked to track it: now that the account
+			// exists and its guest merge started, save Tracking as the fan's own
+			// choice before returning to that sheet. An existing account may
+			// already hold a journey for the event (Paid, say), which is kept. A
+			// failed save leaves the button unpressed there, with no message.
+			const trackEventId = resolveAuthTrackEventId(user)
+			if (trackEventId) {
+				try {
+					await this.journeyStore.load()
+					if (this.journeyStore.statusFor(trackEventId) === undefined) {
+						await this.journeyStore.setStatus(trackEventId, 'tracking')
+					}
+				} catch (err) {
+					this.logger.warn('Failed to track the event asked for at sign-up', {
+						error: err,
+						eventId: trackEventId,
+					})
+				}
 			}
 
 			// After an involuntary re-auth, return to where the user was;

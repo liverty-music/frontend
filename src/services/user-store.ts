@@ -3,7 +3,7 @@ import { Code, ConnectError } from '@connectrpc/connect'
 import { DI, IEventAggregator, ILogger, observable, resolve } from 'aurelia'
 import { IUserRpcClient } from '../adapter/rpc/client/user-client'
 import { loadHome, saveHome } from '../adapter/storage/guest-storage'
-import { clearAllHelpSeen } from '../adapter/storage/onboarding-storage'
+import { clearOnboardingSeenFlags } from '../adapter/storage/onboarding-storage'
 import { codeToHome, type User } from '../entities/user'
 import { normalizeToSupportedLanguage } from '../util/change-locale'
 import { IAuthService } from './auth-service'
@@ -338,7 +338,8 @@ export class UserStore {
 	}
 
 	/**
-	 * Reset the guest home slice plus the per-page help-seen flags. Used by the
+	 * Reset the guest home slice plus the per-page help-seen flags and the
+	 * per-level hype snack flags. Used by the
 	 * welcome route's guest reset before sign-in and by the auth callback's
 	 * onboarding hand-off once sign-up (or sign-in) completes. Tapping
 	 * [Get Started] does not call it.
@@ -349,7 +350,7 @@ export class UserStore {
 	 */
 	public clearGuest(): void {
 		this.guestHome = null
-		clearAllHelpSeen()
+		clearOnboardingSeenFlags()
 		this.logger.info('Local home preferences cleared')
 	}
 

@@ -1,16 +1,17 @@
 import { I18N } from '@aurelia/i18n'
+import { IRouter } from '@aurelia/router'
 import { bindable, IEventAggregator, ILogger, resolve } from 'aurelia'
-import { SNACK_LONG_MS, Snack } from '../../../shared/ui/snack-bar/snack'
-import { IHistory } from '../../adapter/browser/history'
-import { HYPE_TIERS } from '../../adapter/view/hype-display'
-import { HYPE_ORDER } from '../../entities/concert'
 import {
-	JOURNEY_NAV_ORDER,
+	SNACK_LONG_MS,
+	Snack,
+	type SnackAction,
+} from '../../../shared/ui/snack-bar/snack'
+import { IHistory } from '../../adapter/browser/history'
+import { hypeReachWords } from '../../adapter/view/hype-display'
+import { HYPE_ORDER, isHypeMatched } from '../../entities/concert'
+import {
 	JOURNEY_STATUS_CONFIG_MAP,
-	type JourneyNodeState,
-	type JourneyOutcome,
-	journeyNodeState,
-	journeyOutcome,
+	type JourneyStatusConfig,
 } from '../../entities/ticket-journey'
 import {
 	Events,
@@ -20,14 +21,25 @@ import type { EventSource } from '../../services/analytics-events'
 import { IAuthService } from '../../services/auth-service'
 import { IErrorBoundaryService } from '../../services/error-boundary-service'
 import { IFollowStore } from '../../services/follow-store'
+import {
+	IPushOfferService,
+	type PushState,
+} from '../../services/push-offer-service'
 import { ITicketJourneyStore } from '../../services/ticket-journey-store'
+import { IUserStore } from '../../services/user-store'
+import { currentLanguage } from '../../util/change-locale'
 import {
 	eventBackgroundUrl,
 	eventCalendarUrl,
 	eventGoogleMapsUrl,
 	eventOpenTimeOrFallback,
 } from './event-detail-utils'
-import type { HypeLevel, JourneyStatus, LiveEvent } from './live-event'
+import type {
+	HypeLevel,
+	JourneyStatus,
+	LaneType,
+	LiveEvent,
+} from './live-event'
 
 /**
  * How long after the calendar link the page must have become hidden to count
@@ -36,6 +48,40 @@ import type { HypeLevel, JourneyStatus, LiveEvent } from './live-event'
  * this has passed.
  */
 export const CALENDAR_RETURN_FALLBACK_MS = 1000
+
+/** The statuses of the row under the notification button, in journey order. */
+const ROW_STATUSES: readonly JourneyStatus[] = [
+	'applied',
+	'unpaid',
+	'paid',
+	'lost',
+]
+
+/** The lowest hype level that matches a concert in each lane. */
+const LOWEST_MATCHING_HYPE: Readonly<Record<LaneType, HypeLevel>> = {
+	home: 'home',
+	nearby: 'nearby',
+	away: 'away',
+}
+
+/** The push line under the ticket section's controls. */
+export interface PushLine {
+	key: string
+	/** Whether the line carries the push offer (or 「設定」) as its action. */
+	offer: boolean
+}
+
+/** The out-of-range notice: what the level pushes now, or after widening. */
+export interface OutOfRangeNotice {
+	/** Place words of the current level; null for Watch. */
+	currentPlaces: string | null
+	/** Label of the button that sets the lowest matching level. */
+	actionLabel: string
+	/** Set once the widened level is saved. */
+	saved: boolean
+	savedKey: string
+	savedPlaces: string | null
+}
 
 /** Statuses whose save may raise the artist's hype level on the server. */
 const RAISING_STATUSES: ReadonlySet<JourneyStatus> = new Set([
@@ -82,15 +128,26 @@ export class EventDetailSheet {
 	public isOpen = false
 	public journeyUpdating = false
 	public followUpdating = false
+	public hypeUpdating = false
 
-	/** Canonical label/icon/hue per status, sourced once for every node. */
-	public readonly journeyConfig = JOURNEY_STATUS_CONFIG_MAP
+	/** What push means for this browser; read each time the sheet opens. */
+	public pushState: PushState | null = null
+
+	/** The four statuses of the row, with their canonical label, icon and hue. */
+	public readonly rowStatuses: readonly JourneyStatusConfig[] =
+		ROW_STATUSES.map((status) => JOURNEY_STATUS_CONFIG_MAP[status])
+
+	/** The event whose out-of-range level the fan widened, and to what. */
+	private widened: { eventId: string; hype: HypeLevel } | null = null
 
 	private readonly logger = resolve(ILogger).scopeTo('EventDetailSheet')
 	private readonly errorBoundary = resolve(IErrorBoundaryService)
 	private readonly journeyStore = resolve(ITicketJourneyStore)
 	private readonly authService = resolve(IAuthService)
 	private readonly followStore = resolve(IFollowStore)
+	private readonly pushOffer = resolve(IPushOfferService)
+	private readonly userStore = resolve(IUserStore)
+	private readonly router = resolve(IRouter)
 	private readonly history = resolve(IHistory)
 	/** Where a programmatic close returns to; recorded when the sheet opens. */
 	private returnUrl = '/dashboard'
@@ -116,6 +173,15 @@ export class EventDetailSheet {
 
 	public get isAuthenticated(): boolean {
 		return this.authService.isAuthenticated
+	}
+
+	public attaching(): void {
+		void this.refreshPushState()
+	}
+
+	/** Each concert shown reads the push state afresh: it changes in Settings. */
+	public eventChanged(): void {
+		void this.refreshPushState()
 	}
 
 	/** Whether the current event's artist is already in the follow set. */
@@ -325,6 +391,7 @@ export class EventDetailSheet {
 	): void {
 		this.event = event
 		this.isAllNearby = isAllNearby
+		if (this.widened?.eventId !== event.id) this.widened = null
 		const alreadyOpen = this.isOpen
 		this.isOpen = true
 
@@ -383,100 +450,219 @@ export class EventDetailSheet {
 		this.close()
 	}
 
+	/** The notification button is hidden once tickets are paid. */
+	public get showNotifyButton(): boolean {
+		return this.status !== 'paid'
+	}
+
+	public get notifyLabelKey(): string {
+		if (this.status === 'tracking') return 'eventDetail.notify.active'
+		if (this.status === 'lost') return 'eventDetail.notify.next'
+		return 'eventDetail.notify.start'
+	}
+
 	/**
-	 * Per-status display state derived from the single stored `journeyStatus`,
-	 * using the fixed journey DAG: tracking → applied → { lost | unpaid → paid }.
-	 * `current` is the selected node, `completed` the nodes already passed on its
-	 * path, `future` the not-yet-reached nodes. Mutual exclusivity of the win/lose
-	 * routes is handled at the route-container level (see successDimmed/failureDimmed).
+	 * The notification button's style: selected while tracking, the section's
+	 * primary button with no status or after losing, secondary otherwise.
 	 */
-	public get nodeStates(): Record<JourneyStatus, JourneyNodeState> {
-		const current = this.status
-		return {
-			tracking: journeyNodeState('tracking', current),
-			applied: journeyNodeState('applied', current),
-			lost: journeyNodeState('lost', current),
-			unpaid: journeyNodeState('unpaid', current),
-			paid: journeyNodeState('paid', current),
+	public get notifyEmphasis(): 'selected' | 'primary' | 'secondary' {
+		const status = this.status
+		if (status === 'tracking') return 'selected'
+		if (status === undefined || status === 'lost') return 'primary'
+		return 'secondary'
+	}
+
+	/** The shared button's outlined variant marks the secondary style. */
+	public get notifyVariant(): 'outlined' | undefined {
+		return this.notifyEmphasis === 'secondary' ? 'outlined' : undefined
+	}
+
+	/**
+	 * A guest's press starts sign-up and tracks the event once the account
+	 * exists; a fan's press starts tracking, or stops it while tracking.
+	 */
+	public onNotifyPressed(): void {
+		if (!this.isAuthenticated) {
+			this.startTrackingSignUp()
+			return
 		}
+		if (this.status === 'tracking') void this.removeJourney()
+		else void this.setJourneyStatus('tracking')
 	}
 
-	/**
-	 * Roving tabindex for the journey radiogroup: exactly one node is a tab stop
-	 * (the selected status, or the first node when nothing is selected yet).
-	 */
-	public journeyTabindex(status: JourneyStatus): number {
-		const active = this.status ?? JOURNEY_NAV_ORDER[0]
-		return status === active ? 0 : -1
+	/** Pressing an unselected status sets it; pressing the selected one clears it. */
+	public onStatusPressed(status: JourneyStatus): void {
+		if (this.status === status) void this.removeJourney()
+		else void this.setJourneyStatus(status)
 	}
 
-	/**
-	 * ARIA radio keyboard pattern: arrow keys (and Home/End) move focus along the
-	 * journey graph and select the focused node. Selection follows focus, matching
-	 * the WAI-ARIA radiogroup contract that screen readers announce.
-	 */
-	public async onJourneyKeydown(event: KeyboardEvent): Promise<void> {
-		const order = JOURNEY_NAV_ORDER
-		const current = this.status ?? order[0]
-		let index = order.indexOf(current)
-		switch (event.key) {
-			case 'ArrowRight':
-			case 'ArrowDown':
-				index = Math.min(index + 1, order.length - 1)
-				break
-			case 'ArrowLeft':
-			case 'ArrowUp':
-				index = Math.max(index - 1, 0)
-				break
-			case 'Home':
-				index = 0
-				break
-			case 'End':
-				index = order.length - 1
-				break
+	private startTrackingSignUp(): void {
+		const event = this.event
+		if (!event) return
+		this.errorBoundary.addBreadcrumb('action', 'start_sign_up')
+		void this.authService.signUp({
+			uiLocales: currentLanguage(this.i18n),
+			source: 'ticket_notify',
+			returnTo: `/concerts/${event.id}`,
+			trackEventId: event.id,
+		})
+	}
+
+	/** The line saying what the current status brings by push. */
+	public get pushLine(): PushLine | null {
+		if (!this.isAuthenticated) {
+			return { key: 'eventDetail.pushLine.guest', offer: false }
+		}
+		const on = this.pushState === 'on'
+		switch (this.status) {
+			case undefined:
+				return { key: 'eventDetail.pushLine.none', offer: false }
+			case 'tracking':
+				if (this.pushState === null) return null
+				return on
+					? { key: 'eventDetail.pushLine.trackingOn', offer: false }
+					: { key: 'eventDetail.pushLine.trackingOff', offer: true }
+			case 'applied':
+				if (this.pushState === null) return null
+				return on
+					? { key: 'eventDetail.pushLine.appliedOn', offer: false }
+					: { key: 'eventDetail.pushLine.appliedOff', offer: true }
+			case 'unpaid':
+				return { key: 'eventDetail.pushLine.unpaid', offer: false }
 			default:
-				return
+				return null
 		}
-		event.preventDefault()
-		// Capture the group element before awaiting — `currentTarget` is nulled
-		// once the event finishes dispatching.
-		const group = event.currentTarget as HTMLElement
-		const next = order[index]
-		// No-op if clamped to the same position as the current effective status.
-		if (next === current) return
-		// Block navigation between mutually exclusive outcome branches: a user on
-		// the win route must not accidentally overwrite 'paid' with 'lost' (or vice
-		// versa) via a single arrow keypress.
-		const outcome = this.outcome
-		if (outcome === 'won' && next === 'lost') return
-		if (outcome === 'lost' && (next === 'unpaid' || next === 'paid')) return
-		await this.setJourneyStatus(next)
-		// Move focus only after the status update settles, so the target button
-		// (briefly disabled while updating) is focusable again.
-		group.querySelector<HTMLElement>(`[data-journey-status="${next}"]`)?.focus()
 	}
 
 	/**
-	 * Single classification of the win/lose fork; the gating and per-route
-	 * dimming below all derive from it so the rule lives in one place.
+	 * The action that turns push on where it is off: the push offer, 「設定」
+	 * where the browser blocked or cannot receive push, or 「登録する」 for a
+	 * guest. None while push is on.
 	 */
-	public get outcome(): JourneyOutcome {
-		return journeyOutcome(this.status)
+	public get pushAction(): SnackAction | null {
+		if (!this.isAuthenticated) {
+			return {
+				label: this.i18n.tr('hypeReach.signUp'),
+				callback: () => {
+					// A host with its own sign-up prompt (All Nearby) shows it.
+					if (this.onSignupRequested) {
+						this.onSignupRequested()
+						return
+					}
+					this.startSignUp()
+				},
+			}
+		}
+		if (this.pushState === 'offerable') {
+			return {
+				label: this.i18n.tr('pushOffer.action'),
+				callback: () => {
+					// Called within the press, so the browser prompt follows it.
+					void this.pushOffer
+						.accept({ source: 'event_detail_sheet' })
+						.then(() => this.refreshPushState())
+				},
+			}
+		}
+		if (this.pushState === 'settings') {
+			return {
+				label: this.i18n.tr('hypeReach.settings'),
+				callback: () => {
+					this.close()
+					void this.router.load('settings')
+				},
+			}
+		}
+		return null
 	}
 
-	/** The outcome phase is shown dimmed ("結果待ち") until a result is reached. */
-	public get outcomePending(): boolean {
-		return this.outcome === 'pending'
+	private startSignUp(): void {
+		this.errorBoundary.addBreadcrumb('action', 'start_sign_up')
+		void this.authService.signUp({
+			uiLocales: currentLanguage(this.i18n),
+			source: 'ticket_notify',
+		})
 	}
 
-	/** Win route is dimmed once the mutually-exclusive loss is recorded. */
-	public get successDimmed(): boolean {
-		return this.outcome === 'lost'
+	private async refreshPushState(): Promise<void> {
+		this.pushState = await this.pushOffer.pushState()
 	}
 
-	/** Loss route is dimmed once the mutually-exclusive win is recorded. */
-	public get failureDimmed(): boolean {
-		return this.outcome === 'won'
+	/**
+	 * The notice shown when the fan follows the concert's artist at a level
+	 * that does not match the concert, or the line after the fan widened it.
+	 */
+	public get outOfRange(): OutOfRangeNotice | null {
+		const event = this.event
+		const lane = event?.lane
+		// In All Nearby the lane is the distance from the browsed area, not
+		// from the fan's home, so it says nothing about what the level pushes.
+		if (!event || !lane || !event.artistId || this.isAllNearby) return null
+		if (!this.followStore.followedIds.has(event.artistId)) return null
+		const home = this.userStore.currentHome ?? undefined
+		const words = (hype: HypeLevel) =>
+			hypeReachWords(hype, home, (key, options) => this.i18n.tr(key, options))
+		const target = LOWEST_MATCHING_HYPE[lane]
+		const widened = this.widened?.eventId === event.id ? this.widened : null
+		if (widened) {
+			const on = this.isAuthenticated && this.pushState === 'on'
+			return {
+				currentPlaces: null,
+				actionLabel: '',
+				saved: true,
+				savedKey: on
+					? 'eventDetail.outOfRange.savedOn'
+					: 'eventDetail.outOfRange.savedOff',
+				savedPlaces: words(widened.hype),
+			}
+		}
+		const hype = this.followStore.hypeByArtist.get(event.artistId)
+		if (!hype || isHypeMatched(hype, lane)) return null
+		// 「も」 when the new level still pushes what the current one does.
+		const also = hype !== 'watch' && target !== 'away'
+		return {
+			currentPlaces: words(hype),
+			actionLabel: this.i18n.tr(
+				also
+					? 'eventDetail.outOfRange.widenAlso'
+					: 'eventDetail.outOfRange.widen',
+				{ places: words(target) },
+			),
+			saved: false,
+			savedKey: '',
+			savedPlaces: null,
+		}
+	}
+
+	/**
+	 * Set the artist's hype level to the lowest level that matches the
+	 * concert, as the fan's own choice. The Dashboard highlight follows from
+	 * the follow store. A failed save keeps the notice and says so.
+	 */
+	public async widenHype(): Promise<void> {
+		const event = this.event
+		const lane = event?.lane
+		if (
+			!event ||
+			!lane ||
+			!event.artistId ||
+			this.isAllNearby ||
+			this.hypeUpdating
+		)
+			return
+		const target = LOWEST_MATCHING_HYPE[lane]
+		this.hypeUpdating = true
+		try {
+			await this.followStore.setHype(event.artistId, target)
+			this.widened = { eventId: event.id, hype: target }
+		} catch (err) {
+			this.logger.warn('Failed to widen the hype level', { error: err })
+			this.ea.publish(
+				new Snack(this.i18n.tr('eventDetail.outOfRange.failed'), 'error'),
+			)
+		} finally {
+			this.hypeUpdating = false
+		}
 	}
 
 	public get openTimeOrFallback(): string {
@@ -553,11 +739,19 @@ export class EventDetailSheet {
 			return
 		}
 		if (!current || HYPE_ORDER[current] <= HYPE_ORDER[previous]) return
+		// The words of the My Artists hype snack, with 「取り消す」 in place of
+		// the push offer.
+		const raised = current
+		const pushOn = (await this.pushOffer.pushState()) === 'on'
 		this.ea.publish(
 			new Snack(
-				this.i18n.tr('eventDetail.hypeRaised', {
+				this.i18n.tr(pushOn ? 'hypeReach.on' : 'hypeReach.off', {
 					name: event.artistName,
-					hype: HYPE_TIERS[current].label,
+					places: hypeReachWords(
+						raised,
+						this.userStore.currentHome ?? undefined,
+						(key, options) => this.i18n.tr(key, options),
+					),
 				}),
 				'info',
 				{

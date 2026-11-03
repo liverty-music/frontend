@@ -1,8 +1,13 @@
 import { I18N } from '@aurelia/i18n'
+import { IRouter } from '@aurelia/router'
 import { IEventAggregator, ILogger, observable, resolve, watch } from 'aurelia'
 import { Snack, type SnackHandle } from '../../../shared/ui/snack-bar/snack'
+import {
+	loadHypeSnackSeen,
+	saveHypeSnackSeen,
+} from '../../adapter/storage/onboarding-storage'
 import { artistColor } from '../../adapter/view/artist-color'
-import { HYPE_TIERS } from '../../adapter/view/hype-display'
+import { HYPE_TIERS, hypeReachWords } from '../../adapter/view/hype-display'
 import type { PageHelp } from '../../components/page-help/page-help'
 import type { UserHomeSelector } from '../../components/user-home-selector/user-home-selector'
 import type { FollowedArtist, Hype } from '../../entities/follow'
@@ -62,6 +67,7 @@ export class MyArtistsRoute {
 	private readonly ea = resolve(IEventAggregator)
 	private readonly fabMenu = resolve(IFabMenuService)
 	private readonly pushOffer = resolve(IPushOfferService)
+	private readonly router = resolve(IRouter)
 	public readonly userStore = resolve(IUserStore)
 	private abortController: AbortController | null = null
 
@@ -402,6 +408,7 @@ export class MyArtistsRoute {
 		if (!this.isAuthenticated) {
 			this.prevHypes.set(artistId, hype)
 			void this.followStore.setHype(artistId, hype)
+			this.showGuestHypeSnack(artist, hype)
 			return
 		}
 
@@ -412,7 +419,7 @@ export class MyArtistsRoute {
 			.setHype(artistId, hype)
 			.then(() => {
 				this.logger.info('Hype level updated', { artistId, hype })
-				this.offerPush(artist, hype)
+				void this.showHypeSnack(artist, hype)
 			})
 			.catch((firstErr) => {
 				this.logger.warn('Hype level update failed, retrying', {
@@ -426,7 +433,7 @@ export class MyArtistsRoute {
 							artistId,
 							hype,
 						})
-						this.offerPush(artist, hype)
+						void this.showHypeSnack(artist, hype)
 					})
 					.catch((retryErr) => {
 						this.logger.error('Failed to update hype level after retry', {
@@ -440,15 +447,85 @@ export class MyArtistsRoute {
 	}
 
 	/**
-	 * A saved hype change shows the fan wants to hear about this artist: offer
-	 * push notifications, within the offer's eligibility and limits.
+	 * After a saved hype change, say which new concerts of the artist reach
+	 * the fan by push. With push on, a level's snack shows only the first time
+	 * the fan picks it on this device. With push off it shows on every change
+	 * except Watch, and its action offers push, or opens Settings where the
+	 * browser blocked or cannot receive it. A newer snack for the same artist
+	 * replaces the earlier one.
 	 */
-	private offerPush(artist: MyArtist, hype: Hype): void {
-		if (!this.pushOffer.shouldOffer()) return
-		this.pushOffer.offer(
-			this.i18n.tr('pushOffer.hypeChanged', {
-				name: artist.artist.name,
-				hype: HYPE_TIERS[hype].label,
+	private async showHypeSnack(artist: MyArtist, hype: Hype): Promise<void> {
+		const state = await this.pushOffer.pushState()
+		if (state === 'on') {
+			if (loadHypeSnackSeen(hype)) return
+			saveHypeSnackSeen(hype)
+			const message =
+				hype === 'watch'
+					? this.i18n.tr('hypeReach.watch', { name: artist.artist.name })
+					: this.hypeSnackText('hypeReach.on', artist, hype)
+			this.publishHypeSnack(artist, message)
+			return
+		}
+		if (hype === 'watch') return
+		const action =
+			state === 'offerable'
+				? {
+						label: this.i18n.tr('pushOffer.action'),
+						callback: () => {
+							void this.pushOffer.accept({ source: 'notification_prompt' })
+						},
+					}
+				: {
+						label: this.i18n.tr('hypeReach.settings'),
+						callback: () => {
+							void this.router.load('settings')
+						},
+					}
+		this.publishHypeSnack(
+			artist,
+			this.hypeSnackText('hypeReach.off', artist, hype),
+			action,
+		)
+	}
+
+	/**
+	 * A guest's hype change: the first pick of a level other than Watch on
+	 * this device invites the guest to sign up to receive push.
+	 */
+	private showGuestHypeSnack(artist: MyArtist, hype: Hype): void {
+		if (hype === 'watch' || loadHypeSnackSeen(hype)) return
+		saveHypeSnackSeen(hype)
+		this.publishHypeSnack(
+			artist,
+			this.hypeSnackText('hypeReach.off', artist, hype),
+			{
+				label: this.i18n.tr('hypeReach.signUp'),
+				callback: () => this.onSignupRequested(),
+			},
+		)
+	}
+
+	private hypeSnackText(key: string, artist: MyArtist, hype: Hype): string {
+		return this.i18n.tr(key, {
+			name: artist.artist.name,
+			places: hypeReachWords(
+				hype,
+				this.userStore.currentHome ?? undefined,
+				(k, o) => this.i18n.tr(k, o),
+			),
+		})
+	}
+
+	private publishHypeSnack(
+		artist: MyArtist,
+		message: string,
+		action?: { label: string; callback: () => void },
+	): void {
+		this.ea.publish(
+			new Snack(message, 'info', {
+				icon: 'bell',
+				replaceKey: `hype:${artist.artist.id}`,
+				...(action && { action }),
 			}),
 		)
 	}
