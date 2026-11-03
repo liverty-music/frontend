@@ -727,6 +727,12 @@ export class CheckoutRoute implements IRouteViewModel {
 		}
 		if (this.signal?.aborted) return
 		if (this.step === 'verify-required') return
+		if (this.outcome === null) {
+			// An unexpected failure of a Held checkout: the fan tries again
+			// from the confirmation, with the card they entered.
+			this.message = { key: 'checkout.error.retry' }
+			return
+		}
 		if (this.outcome === 'authentication-incomplete') {
 			// The fan finishes the card authentication and tries again.
 			this.message = { key: 'checkout.outcome.authenticationIncomplete' }
@@ -746,9 +752,19 @@ export class CheckoutRoute implements IRouteViewModel {
 	 * InvalidArgument and a missing IdentityVerification NotFound; a
 	 * FailedPrecondition is the concert no longer on sale when a re-read of
 	 * the event says so, and otherwise the unfinished card authentication.
+	 * Any other code is logged and leaves no outcome.
 	 */
 	private async explainHeldRefusal(err: unknown): Promise<void> {
 		const code = ConnectError.from(err).code
+		if (
+			code !== Code.InvalidArgument &&
+			code !== Code.NotFound &&
+			code !== Code.FailedPrecondition
+		) {
+			this.logger.error('Confirm failed', { error: err })
+			this.outcome = null
+			return
+		}
 		if (code === Code.InvalidArgument) {
 			this.outcome = 'amount-mismatch'
 			return

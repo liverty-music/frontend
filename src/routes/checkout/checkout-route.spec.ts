@@ -879,6 +879,18 @@ describe('CheckoutRoute', () => {
 			expect(sut.outcome).toBe('amount-mismatch')
 		})
 
+		it('keeps the confirmation and offers a retry on an unexpected failure', async () => {
+			mockCheckout.confirm.mockRejectedValue(connectError(Code.Internal))
+			mockCheckout.get.mockResolvedValue(held())
+			const sut = await toConfirm()
+
+			await sut.placeOrder()
+
+			expect(sut.step).toBe('confirm')
+			expect(sut.outcome).toBeNull()
+			expect(sut.message?.key).toBe('checkout.error.retry')
+		})
+
 		it('links to identity verification when the sale needs it', async () => {
 			mockCheckout.confirm.mockRejectedValue(connectError(Code.NotFound))
 			mockCheckout.get.mockResolvedValue(held())
