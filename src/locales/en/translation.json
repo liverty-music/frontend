@@ -133,18 +133,33 @@
 		"ariaLabel": "Event details",
 		"openStart": "Open {{open}} / Start {{start}}",
 		"openInGoogleMaps": "Open in Google Maps",
+		"ticketSection": "Tickets",
+		"notify": {
+			"start": "🔔 Get ticket sale notifications",
+			"next": "🔔 Get notified of the next ticket sale",
+			"active": "🔔 Getting ticket sale notifications ✓"
+		},
+		"pushLine": {
+			"none": "Get the sale opening and the lottery deadline by push.",
+			"trackingOn": "We'll push the sale opening and the lottery deadline 🔔",
+			"trackingOff": "Get the sale opening and the lottery deadline by push 🔔",
+			"appliedOn": "For a lottery with a known results day, we'll push on that day 🔔",
+			"appliedOff": "For a lottery with a known results day, get a push on that day 🔔",
+			"unpaid": "Pay before the deadline.",
+			"guest": "Create an account to get ticket sale notifications."
+		},
+		"outOfRange": {
+			"current": "Right now only new concerts <strong class=\"reach-words\">{{places}}</strong> are pushed",
+			"none": "Right now no new concerts are pushed",
+			"widen": "Get new concerts {{places}}",
+			"widenAlso": "Also get new concerts {{places}}",
+			"savedOn": "We'll push new concerts <strong class=\"reach-words\">{{places}}</strong> 🔔",
+			"savedOff": "Get new concerts <strong class=\"reach-words\">{{places}}</strong> by push 🔔",
+			"failed": "Couldn't change it. Please try again."
+		},
 		"ticketStatus": "Ticket Status",
-		"stopTracking": "Stop tracking",
-		"viewOfficialInfo": "View Official Info",
+		"viewOfficialInfo": "See tickets on the official site",
 		"addToCalendar": "Add to Calendar",
-		"journeyPhase": {
-			"process": "Application",
-			"outcome": "Result",
-			"pending": "Pending"
-		},
-		"journeyRoute": {
-			"won": "Won"
-		},
 		"journeyStatus": {
 			"tracking": "Tracking",
 			"applied": "Applied",
@@ -152,8 +167,7 @@
 			"unpaid": "Unpaid",
 			"paid": "Paid"
 		},
-		"trackingStarted": "Ticket status set to Tracking.\nWe will tell you about ticket sales.",
-		"hypeRaised": "{{name}} is now {{hype}}.\nYou will also hear about distant new concerts.",
+		"trackingStarted": "🔔 You will get ticket sale notifications.",
 		"undo": "Undo",
 		"undoFailed": "Couldn't undo. Please try again."
 	},

@@ -412,6 +412,7 @@ export class ConcertStore {
 					this.userStore.currentLanguage,
 				)
 				if (!event) return []
+				event.lane = lane
 				const eventId = c.event.id?.value
 				if (eventId) {
 					// A first-party concert shows what the fan bought, not the

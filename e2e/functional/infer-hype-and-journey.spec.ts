@@ -247,13 +247,13 @@ test.describe('calendar add starts tracking', () => {
 		// The fan comes back to the app.
 		await calendar.close()
 		await page.bringToFront()
-		const tracking = snack(page, 'チケット状況を「追跡中」にしました。')
+		const tracking = snack(page, '🔔 チケット販売の通知を受け取ります')
 		await expect(tracking).toBeVisible()
-		await expect(tracking).toContainText('販売の情報をお知らせします。')
 		// The sheet and the Dashboard card show Tracking.
-		await expect(
-			sheet(page).locator('[data-journey-status="tracking"]'),
-		).toHaveAttribute('aria-checked', 'true')
+		await expect(sheet(page).getByTestId('journey-notify-btn')).toHaveAttribute(
+			'aria-pressed',
+			'true',
+		)
 		await expect(
 			cardOf(page, 'Home Show Hall').getByTestId('journey-badge'),
 		).toHaveAttribute('data-journey-status', 'tracking')
@@ -263,9 +263,10 @@ test.describe('calendar add starts tracking', () => {
 		await expect
 			.poll(() => callsOf(calls, 'TicketJourneyService/Delete').length)
 			.toBe(1)
-		await expect(
-			sheet(page).locator('[data-journey-status="tracking"]'),
-		).toHaveAttribute('aria-checked', 'false')
+		await expect(sheet(page).getByTestId('journey-notify-btn')).toHaveAttribute(
+			'aria-pressed',
+			'false',
+		)
 		await expect(
 			cardOf(page, 'Home Show Hall').getByTestId('journey-badge'),
 		).toHaveCount(0)
@@ -293,8 +294,8 @@ test.describe('calendar add starts tracking', () => {
 		expect(callsOf(calls, 'TicketJourneyService/InferTracking')).toEqual([])
 		await expect(page.locator('snack-bar .snack-item')).toHaveCount(0)
 		await expect(
-			sheet(page).locator('[data-journey-status="paid"]'),
-		).toHaveAttribute('aria-checked', 'true')
+			sheet(page).locator('.journey-row [data-journey-status="paid"]'),
+		).toHaveAttribute('aria-pressed', 'true')
 	})
 
 	test(`@spec ${TRACK} "Opening a new-concert push changes no journey"`, async ({
@@ -337,11 +338,12 @@ test.describe('a journey for a distant concert raises the hype level', () => {
 		await expect(away).not.toHaveAttribute('data-matched', /.*/)
 
 		await openSheet(page, 'Away Show 2 Hall')
-		await sheet(page).locator('[data-journey-status="applied"]').click()
+		await sheet(page)
+			.locator('.journey-row [data-journey-status="applied"]')
+			.click()
 
-		const raised = snack(page, `${ARTIST.name}を Away にしました。`)
+		const raised = snack(page, `${ARTIST.name}の全ての新着ライブを`)
 		await expect(raised).toBeVisible()
-		await expect(raised).toContainText('遠方の新着ライブも通知します。')
 		await closeSheet(page)
 		// The Dashboard highlights the away concert at the new level.
 		await expect(cardOf(page, 'Away Show 2 Hall')).toHaveAttribute(
@@ -370,8 +372,10 @@ test.describe('a journey for a distant concert raises the hype level', () => {
 		await page.goto('/dashboard')
 
 		await openSheet(page, 'Away Show 2 Hall')
-		await sheet(page).locator('[data-journey-status="applied"]').click()
-		const raised = snack(page, `${ARTIST.name}を Away にしました。`)
+		await sheet(page)
+			.locator('.journey-row [data-journey-status="applied"]')
+			.click()
+		const raised = snack(page, `${ARTIST.name}の全ての新着ライブを`)
 		await raised.getByRole('button', { name: '取り消す' }).click()
 
 		// The previous level is saved as the fan's own choice.
@@ -388,13 +392,15 @@ test.describe('a journey for a distant concert raises the hype level', () => {
 
 		// A later Applied for another distant concert leaves it at Nearby.
 		await openSheet(page, 'Away Show 3 Hall')
-		await sheet(page).locator('[data-journey-status="applied"]').click()
+		await sheet(page)
+			.locator('.journey-row [data-journey-status="applied"]')
+			.click()
 		await expect(
-			sheet(page).locator('[data-journey-status="applied"]'),
-		).toHaveAttribute('aria-checked', 'true')
+			sheet(page).locator('.journey-row [data-journey-status="applied"]'),
+		).toHaveAttribute('aria-pressed', 'true')
 		// biome-ignore lint/suspicious/noPlaywrightWaitForTimeout: an absence check; the raise snack would follow the re-read at once
 		await page.waitForTimeout(1_500)
-		await expect(snack(page, 'にしました。')).toHaveCount(0)
+		await expect(snack(page, '新着ライブを')).toHaveCount(0)
 		expect(server.hype).toBe('HYPE_TYPE_NEARBY')
 	})
 
@@ -412,15 +418,21 @@ test.describe('a journey for a distant concert raises the hype level', () => {
 		await page.goto('/dashboard')
 
 		await openSheet(page, 'Away Show 2 Hall')
-		await sheet(page).locator('[data-journey-status="applied"]').click()
-		await sheet(page).locator('[data-journey-status="unpaid"]').click()
-		await sheet(page).locator('[data-journey-status="paid"]').click()
+		await sheet(page)
+			.locator('.journey-row [data-journey-status="applied"]')
+			.click()
+		await sheet(page)
+			.locator('.journey-row [data-journey-status="unpaid"]')
+			.click()
+		await sheet(page)
+			.locator('.journey-row [data-journey-status="paid"]')
+			.click()
 		await expect(
-			sheet(page).locator('[data-journey-status="paid"]'),
-		).toHaveAttribute('aria-checked', 'true')
+			sheet(page).locator('.journey-row [data-journey-status="paid"]'),
+		).toHaveAttribute('aria-pressed', 'true')
 		// biome-ignore lint/suspicious/noPlaywrightWaitForTimeout: an absence check; the raise snack would follow the re-read at once
 		await page.waitForTimeout(1_500)
-		await expect(snack(page, 'にしました。')).toHaveCount(0)
+		await expect(snack(page, '新着ライブを')).toHaveCount(0)
 
 		await page.goto('/my-artists')
 		const row = page.locator('.artist-row', { hasText: ARTIST.name })

@@ -58,6 +58,21 @@ describe('NotificationManager.requestPermission', () => {
 		])
 	})
 
+	it('reports a granted answer from the event detail sheet', async () => {
+		// @spec components/infrastructure/fan/web/global/notification-prompt "Fan allows from the event detail sheet"
+		stubNotification('default', 'granted')
+		const sut = create()
+
+		await sut.requestPermission('event_detail_sheet')
+
+		expect(analytics.capture.mock.calls).toEqual([
+			[
+				Events.NotificationPermissionResult,
+				{ answer: 'granted', source: 'event_detail_sheet' },
+			],
+		])
+	})
+
 	it('reports a request closed without an answer as dismissed', async () => {
 		stubNotification('default', 'default')
 		const sut = create()

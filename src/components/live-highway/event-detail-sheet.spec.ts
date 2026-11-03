@@ -10,6 +10,10 @@ const mockLogger = {
 const mockAuth = { isAuthenticated: true }
 const mockHistory = { pushState: vi.fn(), replaceState: vi.fn() }
 const mockAnalytics = { capture: vi.fn() }
+const mockPushOffer = {
+	pushState: vi.fn(async () => 'on'),
+	accept: vi.fn(async () => 'granted'),
+}
 
 // A store mock backed by a real map so `statusFor` reflects write-through writes,
 // exactly like the single-source-of-truth store.
@@ -37,6 +41,7 @@ vi.mock('aurelia', async (importOriginal) => {
 				ITicketJourneyStore: mockJourneyStore,
 				IHistory: mockHistory,
 				IAnalyticsService: mockAnalytics,
+				IPushOfferService: mockPushOffer,
 			}
 			const tokenAny = token as { friendlyName?: string }
 			return map[tokenAny.friendlyName ?? ''] ?? {}

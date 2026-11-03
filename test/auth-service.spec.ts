@@ -14,6 +14,7 @@ import {
 	IAuthService,
 	resolveAuthFlow,
 	resolveAuthReturnTo,
+	resolveAuthTrackEventId,
 } from '../src/services/auth-service'
 import { AuthStarted } from '../src/services/events/auth-started'
 import { createTestContainer } from './helpers/create-container'
@@ -291,6 +292,19 @@ describe('AuthService', () => {
 		expect(userManagerMock.signinRedirect).toHaveBeenCalledWith({
 			prompt: 'create',
 			state: { flow: 'signup', origin: 'event-page', returnTo: '/events/ev-1' },
+		})
+	})
+
+	// @spec components/infrastructure/fan/web/global/event-detail-sheet "Guest presses the button"
+	it('signUp from the ticket sale notification button carries the event to track', async () => {
+		await sut.signUp({ returnTo: '/concerts/ev-1', trackEventId: 'ev-1' })
+		expect(userManagerMock.signinRedirect).toHaveBeenCalledWith({
+			prompt: 'create',
+			state: {
+				flow: 'signup',
+				returnTo: '/concerts/ev-1',
+				trackEventId: 'ev-1',
+			},
 		})
 	})
 
@@ -722,4 +736,16 @@ describe('resolveAuthReturnTo', () => {
 			expect(resolveAuthReturnTo(user)).toBeUndefined()
 		},
 	)
+})
+
+describe('resolveAuthTrackEventId', () => {
+	it('returns the event a guest asked to track', () => {
+		const user = { state: { trackEventId: 'ev-1' } } as unknown as User
+		expect(resolveAuthTrackEventId(user)).toBe('ev-1')
+	})
+
+	it.each([undefined, '', 42])('ignores %s', (trackEventId) => {
+		const user = { state: { trackEventId } } as unknown as User
+		expect(resolveAuthTrackEventId(user)).toBeUndefined()
+	})
 })

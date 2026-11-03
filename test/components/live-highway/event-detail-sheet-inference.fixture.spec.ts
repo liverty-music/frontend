@@ -1,4 +1,5 @@
 import { I18nConfiguration } from '@aurelia/i18n'
+import { IRouter } from '@aurelia/router'
 import { tasksSettled } from '@aurelia/runtime'
 import { createFixture } from '@aurelia/testing'
 import { CustomElement, IEventAggregator, Registration } from 'aurelia'
@@ -16,9 +17,14 @@ import ja from '../../../src/locales/ja/translation.json'
 import { IAuthService } from '../../../src/services/auth-service'
 import { IFollowStore } from '../../../src/services/follow-store'
 import {
+	IPushOfferService,
+	type PushState,
+} from '../../../src/services/push-offer-service'
+import {
 	ITicketJourneyStore,
 	TicketJourneyStore,
 } from '../../../src/services/ticket-journey-store'
+import { IUserStore } from '../../../src/services/user-store'
 import { DateValueConverter } from '../../../src/value-converters/date'
 import { createMockAuth } from '../../helpers/mock-auth'
 import { createMockHistory } from '../../helpers/mock-history'
@@ -31,6 +37,9 @@ import { createMockHistory } from '../../helpers/mock-history'
  * client, so the sheet and the Dashboard read the same map; the follow store is
  * a fake that answers the re-read the way the server would.
  */
+/** What push means for this browser in the test; 'on' unless a test says. */
+let pushState: PushState = 'on'
+
 const BottomSheetStub = CustomElement.define(
 	{
 		name: 'bottom-sheet',
@@ -140,6 +149,12 @@ async function render({
 			Registration.instance(ITicketJourneyRpcClient, rpc),
 			Registration.singleton(ITicketJourneyStore, TicketJourneyStore),
 			Registration.instance(IAnalyticsService, { capture: vi.fn() }),
+			Registration.instance(IPushOfferService, {
+				pushState: vi.fn(async () => pushState),
+				accept: vi.fn(),
+			}),
+			Registration.instance(IUserStore, { currentHome: 'JP-13' }),
+			Registration.instance(IRouter, { load: vi.fn() }),
 		],
 	).started
 	const journeyStore = fixture.container.get(ITicketJourneyStore)
@@ -150,11 +165,9 @@ async function render({
 		.subscribe(Snack, (snack: Snack) => snacks.push(snack))
 	await tasksSettled()
 	const calendarLink = () => {
-		const link = [
-			...fixture.appHost.querySelectorAll<HTMLAnchorElement>(
-				'.sheet-actions a',
-			),
-		].find((a) => a.textContent?.includes('カレンダーに追加'))
+		const link = fixture.appHost.querySelector<HTMLAnchorElement>(
+			'[data-testid="add-to-calendar"]',
+		)
 		if (!link) throw new Error('no calendar link')
 		// jsdom would try to navigate the new tab; the sheet's listener runs first.
 		link.addEventListener('click', (e) => e.preventDefault())
@@ -204,9 +217,14 @@ describe('adding to the calendar starts tracking', () => {
 		setVisibility('visible')
 		await vi.waitFor(() => expect(snacks).toHaveLength(1))
 		const [snack] = snacks
-		expect(snack.message).toBe(
-			'チケット状況を「追跡中」にしました。\n販売の情報をお知らせします。',
-		)
+		expect(snack.message).toBe('🔔 チケット販売の通知を受け取ります')
+		// The sheet reads the new status on its notification button.
+		await tasksSettled()
+		expect(
+			fixture.appHost
+				.querySelector('[data-testid="journey-notify-btn"]')
+				?.textContent?.trim(),
+		).toBe('🔔 チケット販売の通知を受け取り中 ✓')
 		expect(snack.action?.label).toBe('取り消す')
 		expect(snack.durationMs).toBe(10_000)
 		await fixture.stop(true)
@@ -344,12 +362,28 @@ describe('a hype level raised by a journey change is shown with undo', () => {
 		expect(snacks).toHaveLength(1)
 		const [snack] = snacks
 		expect(snack.message).toBe(
-			'ヨルシカを Away にしました。\n遠方の新着ライブも通知します。',
+			'ヨルシカの全ての新着ライブをプッシュ通知します🔔',
 		)
 		expect(snack.action?.label).toBe('取り消す')
 		expect(snack.durationMs).toBe(10_000)
 		// The new level is in the follow store the Dashboard re-derives from.
 		expect(followStore.hypeByArtist.get('a1')).toBe('away')
+		await fixture.stop(true)
+	})
+
+	it('invites the fan to receive push in the raise snack when push is off', async () => {
+		pushState = 'offerable'
+		const followStore = fakeFollowStore('nearby', () => 'away')
+		const { fixture, snacks } = await render({ followStore })
+
+		await fixture.component.sheet.setJourneyStatus('applied')
+
+		expect(snacks.map((snack) => snack.message)).toEqual([
+			'ヨルシカの全ての新着ライブをプッシュ通知で受け取ろう🔔',
+		])
+		// 「取り消す」 takes the place of the push offer.
+		expect(snacks[0].action?.label).toBe('取り消す')
+		pushState = 'on'
 		await fixture.stop(true)
 	})
 

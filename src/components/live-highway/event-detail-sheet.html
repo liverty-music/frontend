@@ -32,7 +32,7 @@
 
       <!-- Event details -->
       <section class="sheet-details">
-        <!-- Date & Time -->
+        <!-- Date & Time, with the add-to-calendar link -->
         <div class="detail-row">
           <span class="detail-icon"><svg-icon name="calendar" size="md"></svg-icon></span>
           <div>
@@ -42,6 +42,15 @@
               t="eventDetail.openStart"
               t-params.bind="{ open: openTimeOrFallback, start: event.startTime }"
             ></p>
+            <a
+              href.bind="calendarUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="detail-link"
+              data-testid="add-to-calendar"
+              click.trigger="onCalendarOpened()"
+              t="eventDetail.addToCalendar"
+            ></a>
           </div>
         </div>
 
@@ -62,133 +71,108 @@
         </div>
       </section>
 
-      <!-- Ticket journey status -->
-      <section if.bind="isAuthenticated" class="sheet-journey" data-testid="sheet-journey">
-        <h3 id="journey-status-heading" class="journey-heading" t="eventDetail.ticketStatus"></h3>
+      <!-- Out-of-range notice: the fan's hype level does not match the concert -->
+      <section if.bind="outOfRange" class="sheet-out-of-range" data-testid="out-of-range">
+        <p if.bind="!outOfRange.saved" class="out-of-range-text">
+          <span if.bind="outOfRange.currentPlaces" t="[html]eventDetail.outOfRange.current" t-params.bind="{ places: outOfRange.currentPlaces }"></span>
+          <span else t="eventDetail.outOfRange.none"></span>
+        </p>
+        <button
+          if.bind="!outOfRange.saved"
+          type="button"
+          class="[ button out-of-range-action ] [ pressable ]"
+          data-variant="outlined"
+          disabled.bind="hypeUpdating"
+          click.trigger="widenHype()"
+        >${outOfRange.actionLabel}</button>
+        <p if.bind="outOfRange.saved" class="out-of-range-text" t.bind="'[html]' + outOfRange.savedKey" t-params.bind="{ places: outOfRange.savedPlaces }"></p>
+        <button
+          if.bind="outOfRange.saved && pushAction"
+          type="button"
+          class="[ button push-action ] [ pressable ]"
+          data-variant="outlined"
+          click.trigger="pushAction.callback()"
+        >${pushAction.label}</button>
+      </section>
 
-        <div
-          class="journey"
-          role="radiogroup"
-          aria-labelledby="journey-status-heading"
-          aria-busy.bind="journeyUpdating"
-          keydown.trigger="onJourneyKeydown($event)"
-        >
-          <!-- (1) Application process: tracking -> applied -->
-          <div class="journey-phase">
-            <p class="journey-phase-label" t="eventDetail.journeyPhase.process"></p>
-            <div class="journey-process">
-              <button
-                class="journey-node"
-                role="radio"
-                data-testid="journey-btn"
-                data-journey-status="tracking"
-                data-state.bind="nodeStates.tracking"
-                aria-checked.bind="status === 'tracking'"
-                tabindex.bind="journeyTabindex('tracking')"
-                disabled.bind="journeyUpdating"
-                click.trigger="setJourneyStatus('tracking')"
-              >
-                <span class="journey-node-cue" aria-hidden="true">${journeyConfig.tracking.icon}</span>
-                <span class="journey-node-label" t.bind="journeyConfig.tracking.labelKey"></span>
-              </button>
-              <span class="journey-arrow" aria-hidden="true"></span>
-              <button
-                class="journey-node"
-                role="radio"
-                data-testid="journey-btn"
-                data-journey-status="applied"
-                data-state.bind="nodeStates.applied"
-                aria-checked.bind="status === 'applied'"
-                tabindex.bind="journeyTabindex('applied')"
-                disabled.bind="journeyUpdating"
-                click.trigger="setJourneyStatus('applied')"
-              >
-                <span class="journey-node-cue" aria-hidden="true">${journeyConfig.applied.icon}</span>
-                <span class="journey-node-label" t.bind="journeyConfig.applied.labelKey"></span>
-              </button>
-            </div>
-          </div>
+      <!-- Optional inline hint (landing page only). A real coach-mark overlay
+           can't point into this top-layer dialog, so the guidance rides inline,
+           right above the actions it describes. -->
+      <p if.bind="actionsHint" class="sheet-actions-hint" role="note">
+        <svg-icon name="info" size="md"></svg-icon>
+        <span>${actionsHint}</span>
+      </p>
 
-          <!-- (2) Outcome: success route (top) and failure route (below) -->
-          <div class="journey-phase" data-pending.bind="outcomePending || undefined">
-            <p class="journey-phase-label">
-              <span t="eventDetail.journeyPhase.outcome"></span>
-              <span
-                if.bind="outcomePending"
-                class="journey-pending-tag"
-                t="eventDetail.journeyPhase.pending"
-              ></span>
-            </p>
-
-            <div class="journey-outcome">
-              <!-- Win route: 当選 -> unpaid -> paid -->
-              <div
-                class="journey-route journey-route-success"
-                data-dimmed.bind="successDimmed || undefined"
-              >
-                <p class="journey-route-label" t="eventDetail.journeyRoute.won"></p>
-                <button
-                  class="journey-node"
-                  role="radio"
-                  data-testid="journey-btn"
-                  data-journey-status="unpaid"
-                  data-state.bind="nodeStates.unpaid"
-                  aria-checked.bind="status === 'unpaid'"
-                  tabindex.bind="journeyTabindex('unpaid')"
-                  disabled.bind="journeyUpdating"
-                  click.trigger="setJourneyStatus('unpaid')"
-                >
-                  <span class="journey-node-cue" aria-hidden="true">${journeyConfig.unpaid.icon}</span>
-                  <span class="journey-node-label" t.bind="journeyConfig.unpaid.labelKey"></span>
-                </button>
-                <span class="journey-arrow" aria-hidden="true"></span>
-                <button
-                  class="journey-node"
-                  role="radio"
-                  data-testid="journey-btn"
-                  data-journey-status="paid"
-                  data-state.bind="nodeStates.paid"
-                  aria-checked.bind="status === 'paid'"
-                  tabindex.bind="journeyTabindex('paid')"
-                  disabled.bind="journeyUpdating"
-                  click.trigger="setJourneyStatus('paid')"
-                >
-                  <span class="journey-node-cue" aria-hidden="true">${journeyConfig.paid.icon}</span>
-                  <span class="journey-node-label" t.bind="journeyConfig.paid.labelKey"></span>
-                </button>
-              </div>
-
-              <!-- Lose route: lost -->
-              <div
-                class="journey-route journey-route-failure"
-                data-dimmed.bind="failureDimmed || undefined"
-              >
-                <button
-                  class="journey-node"
-                  role="radio"
-                  data-testid="journey-btn"
-                  data-journey-status="lost"
-                  data-state.bind="nodeStates.lost"
-                  aria-checked.bind="status === 'lost'"
-                  tabindex.bind="journeyTabindex('lost')"
-                  disabled.bind="journeyUpdating"
-                  click.trigger="setJourneyStatus('lost')"
-                >
-                  <span class="journey-node-cue" aria-hidden="true">${journeyConfig.lost.icon}</span>
-                  <span class="journey-node-label" t.bind="journeyConfig.lost.labelKey"></span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+      <!-- Ticket section: the notification button, the other four statuses,
+           the push line and the official site button -->
+      <section class="sheet-tickets" data-testid="sheet-journey" aria-labelledby="ticket-section-heading">
+        <h3 id="ticket-section-heading" class="journey-heading" t="eventDetail.ticketSection"></h3>
 
         <button
-          if.bind="status"
-          class="[ button journey-remove ] [ pressable ]" data-variant="outlined" data-testid="journey-remove-btn"
+          if.bind="showNotifyButton"
+          type="button"
+          class="[ button journey-notify ] [ pressable ]"
+          data-testid="journey-notify-btn"
+          data-journey-status="tracking"
+          data-emphasis.bind="notifyEmphasis"
+          data-variant.bind="notifyVariant"
+          aria-pressed.bind="status === 'tracking' ? 'true' : 'false'"
           disabled.bind="journeyUpdating"
-          click.trigger="removeJourney()"
-          t="eventDetail.stopTracking"
+          click.trigger="onNotifyPressed()"
+          t.bind="notifyLabelKey"
         ></button>
+
+        <div
+          if.bind="isAuthenticated"
+          class="journey-row"
+          role="group"
+          aria-labelledby="ticket-section-heading"
+          aria-busy.bind="journeyUpdating"
+        >
+          <template repeat.for="config of rowStatuses">
+            <span if.bind="config.status === 'lost'" class="journey-separator" aria-hidden="true"></span>
+            <button
+              type="button"
+              class="journey-node"
+              data-testid="journey-btn"
+              data-journey-status.bind="config.status"
+              aria-pressed.bind="status === config.status ? 'true' : 'false'"
+              disabled.bind="journeyUpdating"
+              click.trigger="onStatusPressed(config.status)"
+            >
+              <span class="journey-node-cue" aria-hidden="true">${config.icon}</span>
+              <span class="journey-node-label" t.bind="config.labelKey"></span>
+            </button>
+            <span
+              if.bind="config.status === 'applied' || config.status === 'unpaid'"
+              class="journey-arrow"
+              aria-hidden="true"
+            ></span>
+          </template>
+        </div>
+
+        <p if.bind="pushLine" class="push-line" data-testid="push-line">
+          <span t.bind="pushLine.key"></span>
+          <button
+            if.bind="pushLine.offer && pushAction"
+            type="button"
+            class="[ button push-action ] [ pressable ]"
+            data-variant="outlined"
+            click.trigger="pushAction.callback()"
+          >${pushAction.label}</button>
+        </p>
+
+        <a
+          href.bind="event.sourceUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="[ button official-site ] [ pressable ]"
+          data-variant="outlined"
+          click.trigger="onSourceOpened()"
+        >
+          <svg-icon name="link" size="md"></svg-icon>
+          <span t="eventDetail.viewOfficialInfo"></span>
+        </a>
       </section>
 
       <!-- Follow CTA — All Nearby context only. Converts a discovered concert
@@ -211,38 +195,6 @@
         ></p>
       </section>
 
-      <!-- Optional inline hint (landing page only). A real coach-mark overlay
-           can't point into this top-layer dialog, so the guidance rides inline,
-           right above the actions it describes. -->
-      <p if.bind="actionsHint" class="sheet-actions-hint" role="note">
-        <svg-icon name="info" size="md"></svg-icon>
-        <span>${actionsHint}</span>
-      </p>
-
-      <!-- Action buttons -->
-      <footer class="sheet-actions">
-        <a
-          href.bind="event.sourceUrl"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="[ button ] [ pressable ]"
-          click.trigger="onSourceOpened()"
-        >
-          <svg-icon name="link" size="md"></svg-icon>
-          <span t="eventDetail.viewOfficialInfo"></span>
-        </a>
-        <a
-          href.bind="calendarUrl"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="[ button ] [ pressable ]"
-          data-variant="outlined"
-          click.trigger="onCalendarOpened()"
-        >
-          <svg-icon name="calendar" size="md"></svg-icon>
-          <span t="eventDetail.addToCalendar"></span>
-        </a>
-      </footer>
     </div>
   </bottom-sheet>
 </template>

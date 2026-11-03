@@ -36,6 +36,11 @@ export interface Concert {
 	hypeLevel: HypeLevel
 	matched: boolean
 	/**
+	 * The proximity lane the concert was listed in (distance from the fan's
+	 * home). Absent where no lane applies, such as the All Nearby view.
+	 */
+	lane?: LaneType
+	/**
 	 * The artist's colour identity as an OKLCH hue (0–359), derived from the
 	 * artist name. Computed once when the concert is built, so a card hands it
 	 * to CSS as data instead of hashing the name while it renders.

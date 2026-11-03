@@ -100,107 +100,81 @@
 			}
 		}
 
-		/* Ticket journey status controls */
-		.sheet-journey {
+		/* Out-of-range notice: what the fan's hype level pushes, under the venue */
+		.sheet-out-of-range {
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-2xs);
+
+			margin-block-start: var(--space-s);
+			padding: var(--space-xs) var(--space-s);
+			border: 1px solid var(--_border-light);
+			border-radius: var(--radius-card);
+		}
+
+		.out-of-range-text {
+			font-size: var(--step--1);
+			color: var(--color-text-secondary);
+			text-wrap: pretty;
+			word-break: auto-phrase;
+		}
+
+		/* The place words, larger and highlighted */
+		.reach-words {
+			font-size: var(--step-1);
+			font-weight: 700;
+			color: var(--color-brand-accent);
+		}
+
+		/* Ticket section: notification button, status row, push line, official site */
+		.sheet-tickets {
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-xs);
+
 			margin-block-start: var(--space-s);
 			padding-block-start: var(--space-s);
 			border-block-start: 1px solid var(--_border-light);
 		}
 
 		.journey-heading {
-			margin-block-end: var(--space-2xs);
 			font-size: var(--step--1);
 			font-weight: 500;
 			color: var(--color-text-secondary);
 		}
 
-		.journey {
-			display: flex;
-			flex-direction: column;
-			gap: var(--space-xs);
+		.journey-notify {
+			inline-size: 100%;
+			min-block-size: 2.75rem; /* 44px tap target */
 		}
 
-		.journey-phase {
-			display: flex;
-			flex-direction: column;
-			gap: var(--space-3xs);
+		/* Tracking: the selected style, the canonical Tracking hue filled */
+		.journey-notify[data-emphasis="selected"] {
+			--_node-fill: oklch(52% 0.14 var(--journey-hue-tracking));
+			--_node-on: oklch(98% 0.02 var(--journey-hue-tracking));
+
+			border-color: var(--_node-fill);
+			color: var(--_node-on);
+			background: var(--_node-fill);
 		}
 
-		.journey-phase-label {
-			display: flex;
-			gap: var(--space-2xs);
-			align-items: baseline;
-
-			font-size: var(--step--2);
-			color: var(--color-text-muted);
-			text-transform: uppercase;
-			letter-spacing: 0.05em;
-		}
-
-		.journey-pending-tag {
-			font-size: var(--step--2);
-			color: var(--color-text-muted);
-			text-transform: none;
-			letter-spacing: normal;
-
-			opacity: 0.85;
-		}
-
-		.journey-process {
-			display: flex;
-			gap: var(--space-3xs);
-			align-items: stretch;
-		}
-
-		/* Outcome routes sit side by side in one horizontal row so the control
-		   stays compact; wraps on very narrow viewports instead of overflowing. */
-		.journey-outcome {
+		/* The four other statuses in journey order; 落選 after a separator.
+		   Wraps on a narrow screen instead of overflowing. */
+		.journey-row {
 			display: flex;
 			flex-wrap: wrap;
-			gap: var(--space-2xs);
-			align-items: center;
-		}
-
-		/* Outcome phase is de-emphasized until a result is reached */
-		.journey-phase[data-pending] .journey-outcome {
-			opacity: 0.55;
-		}
-
-		/* Card chrome dropped (D2): each route is a horizontal node row, and the
-		   win/lose routes are told apart by the divider below plus the dimming and
-		   per-status hue rather than a bordered card. */
-		.journey-route {
-			display: flex;
-			flex: 1 1 auto;
 			gap: var(--space-3xs);
 			align-items: center;
 		}
 
-		/* The win route holds two nodes, so it takes the larger share of the row. */
-		.journey-route-success {
-			flex-grow: 2;
-		}
-
-		/* Lightweight separator between the win and lose routes (D2). */
-		.journey-route + .journey-route {
-			padding-inline-start: var(--space-2xs);
+		.journey-separator {
+			align-self: stretch;
+			margin-inline: var(--space-3xs);
 			border-inline-start: 1px solid var(--_border-light);
-		}
-
-		/* Mutually exclusive routes: the unchosen route is dimmed */
-		.journey-route[data-dimmed] {
-			opacity: 0.4;
-		}
-
-		/* Redundant in the compact row: the node labels (e.g. "当選・未入金") are
-		   self-describing, so the per-route header label is hidden. */
-		.journey-route-label {
-			display: none;
 		}
 
 		.journey-arrow {
 			align-self: center;
-			margin-inline: var(--space-2xs);
 			font-size: var(--step-0);
 			color: var(--color-text-muted);
 
@@ -209,7 +183,7 @@
 			}
 		}
 
-		/* Node: contrast comes from fill (current) vs outline (others) */
+		/* Node: contrast comes from fill (pressed) vs outline (others) */
 		.journey-node {
 			display: inline-flex;
 			flex: 1 1 auto;
@@ -217,6 +191,7 @@
 			align-items: center;
 			justify-content: center;
 
+			min-inline-size: 2.75rem;
 			min-block-size: 2.75rem; /* 44px tap target */
 			padding-block: var(--space-3xs);
 			padding-inline: var(--space-2xs);
@@ -226,8 +201,6 @@
 			font-size: var(--step--1);
 			font-weight: 500;
 			color: var(--color-text-secondary);
-			text-transform: uppercase;
-			letter-spacing: 0.03em;
 
 			transition:
 				border-color 150ms ease-out,
@@ -244,30 +217,19 @@
 			}
 		}
 
-		/* Hover affordance applies to every still-selectable node except the
-		   current one, so it never overrides the current node's solid fill while
-		   keeping feedback on the re-selectable completed nodes. */
-		.journey-node:not([data-state="current"]):hover:not(:disabled) {
+		.journey-node[aria-pressed="false"]:hover:not(:disabled) {
 			border-color: var(--_border-light-hover);
 			color: var(--color-text-primary);
 			background: var(--_bg-hover);
 		}
 
-		/* Holds the status's canonical emoji icon; node state (future / completed /
-		   current) is conveyed by the fill, border, and colour treatment below. */
 		.journey-node-cue {
 			font-size: var(--step-0);
 			line-height: var(--leading-none);
 		}
 
-		/* Completed: low-emphasis outline */
-		.journey-node[data-state="completed"] {
-			border-color: var(--_node-faint);
-			color: var(--color-text-muted);
-		}
-
-		/* Current: the single solid-filled node */
-		.journey-node[data-state="current"] {
+		/* Pressed: the single solid-filled status */
+		.journey-node[aria-pressed="true"] {
 			border-color: var(--_node-fill);
 			font-weight: 700;
 			color: var(--_node-on);
@@ -280,29 +242,38 @@
 		.journey-node[data-journey-status="applied"] {
 			--_node-fill: oklch(52% 0.14 var(--journey-hue-tracking));
 			--_node-on: oklch(98% 0.02 var(--journey-hue-tracking));
-			--_node-faint: oklch(62% 0.08 var(--journey-hue-tracking) / 45%);
 		}
 
 		.journey-node[data-journey-status="unpaid"] {
 			--_node-fill: oklch(72% 0.16 var(--journey-hue-unpaid));
 			--_node-on: oklch(25% 0.05 var(--journey-hue-unpaid));
-			--_node-faint: oklch(72% 0.1 var(--journey-hue-unpaid) / 45%);
 		}
 
 		.journey-node[data-journey-status="paid"] {
 			--_node-fill: oklch(52% 0.15 var(--journey-hue-paid));
 			--_node-on: oklch(98% 0.02 var(--journey-hue-paid));
-			--_node-faint: oklch(62% 0.09 var(--journey-hue-paid) / 45%);
 		}
 
 		.journey-node[data-journey-status="lost"] {
 			--_node-fill: oklch(52% 0.16 var(--journey-hue-lost));
 			--_node-on: oklch(98% 0.02 var(--journey-hue-lost));
-			--_node-faint: oklch(58% 0.09 var(--journey-hue-lost) / 45%);
 		}
 
-		.journey-remove {
-			margin-block-start: var(--space-2xs);
+		/* What the current status brings by push, with the offer beside it */
+		.push-line {
+			display: flex;
+			flex-wrap: wrap;
+			gap: var(--space-2xs);
+			align-items: center;
+
+			font-size: var(--step--1);
+			color: var(--color-text-secondary);
+			text-wrap: pretty;
+			word-break: auto-phrase;
+		}
+
+		.official-site {
+			inline-size: 100%;
 		}
 
 		/* Follow CTA (All Nearby context) */
@@ -353,14 +324,6 @@
 			background: oklch(from var(--color-brand-accent) l c h / 10%);
 
 			animation: fade-slide-up 400ms 200ms ease-out both;
-		}
-
-		/* Action buttons */
-		.sheet-actions {
-			display: flex;
-			flex-direction: column;
-			gap: var(--space-2xs);
-			margin-block-start: var(--space-s);
 		}
 
 		@media (prefers-reduced-motion: reduce) {

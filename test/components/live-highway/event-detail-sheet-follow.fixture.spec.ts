@@ -1,4 +1,5 @@
 import { I18nConfiguration } from '@aurelia/i18n'
+import { IRouter } from '@aurelia/router'
 import { tasksSettled } from '@aurelia/runtime'
 import { createFixture } from '@aurelia/testing'
 import { CustomElement, Registration } from 'aurelia'
@@ -12,7 +13,12 @@ import { IAnalyticsService } from '../../../src/lib/analytics/analytics-service'
 import { IAuthService } from '../../../src/services/auth-service'
 import { IErrorBoundaryService } from '../../../src/services/error-boundary-service'
 import { IFollowStore } from '../../../src/services/follow-store'
+import {
+	IPushOfferService,
+	type PushState,
+} from '../../../src/services/push-offer-service'
 import { ITicketJourneyStore } from '../../../src/services/ticket-journey-store'
+import { IUserStore } from '../../../src/services/user-store'
 import { DateValueConverter } from '../../../src/value-converters/date'
 import { createMockAuth } from '../../helpers/mock-auth'
 import { createMockErrorBoundary } from '../../helpers/mock-error-boundary'
@@ -23,6 +29,9 @@ import { createMockHistory } from '../../helpers/mock-history'
  * sheet is a pass-through stub (jsdom has no Popover API); its own behaviour is
  * covered by the bottom-sheet specs.
  */
+/** What push means for this browser in the test; 'on' unless a test says. */
+const pushState: PushState = 'on'
+
 const BottomSheetStub = CustomElement.define(
 	{
 		name: 'bottom-sheet',
@@ -104,6 +113,12 @@ async function render(ev: LiveEvent, isAllNearby: boolean, o: Options = {}) {
 				statusFor: () => undefined,
 			}),
 			Registration.instance(IAnalyticsService, { capture: vi.fn() }),
+			Registration.instance(IPushOfferService, {
+				pushState: vi.fn(async () => pushState),
+				accept: vi.fn(),
+			}),
+			Registration.instance(IUserStore, { currentHome: 'JP-13' }),
+			Registration.instance(IRouter, { load: vi.fn() }),
 		],
 	).started
 	// The All Nearby view on Discovery opens the sheet with the follow action;

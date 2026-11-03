@@ -5,9 +5,9 @@ import ja from '../../src/locales/ja/translation.json'
 /**
  * The event detail sheet's two inference snacks (a calendar add started
  * tracking; a journey raised the hype level) and their undo, in both locales.
- * Each message is two lines, split by a newline.
+ * The raise snack reads the words of the My Artists hype snack (`hypeReach.*`).
  */
-const KEYS = ['trackingStarted', 'hypeRaised', 'undo', 'undoFailed'] as const
+const KEYS = ['trackingStarted', 'undo', 'undoFailed'] as const
 
 describe('event detail sheet snack copy', () => {
 	it('has every key in both locales', () => {
@@ -17,27 +17,28 @@ describe('event detail sheet snack copy', () => {
 		}
 	})
 
+	// @spec components/infrastructure/fan/web/global/event-detail-sheet "Calendar add from the sheet"
 	it('reads the tracking snack as the spec words it', () => {
-		expect(ja.eventDetail.trackingStarted.split('\n')).toEqual([
-			'チケット状況を「追跡中」にしました。',
-			'販売の情報をお知らせします。',
-		])
-		expect(en.eventDetail.trackingStarted.split('\n')).toEqual([
-			'Ticket status set to Tracking.',
-			'We will tell you about ticket sales.',
-		])
+		expect(ja.eventDetail.trackingStarted).toBe(
+			'🔔 チケット販売の通知を受け取ります',
+		)
+		expect(en.eventDetail.trackingStarted).toBe(
+			'🔔 You will get ticket sale notifications.',
+		)
 		expect(ja.eventDetail.undo).toBe('取り消す')
 		expect(en.eventDetail.undo).toBe('Undo')
 	})
 
-	it('reads the raise snack as the spec words it, with the same placeholders', () => {
-		expect(ja.eventDetail.hypeRaised.split('\n')).toEqual([
-			'{{name}}を {{hype}} にしました。',
-			'遠方の新着ライブも通知します。',
-		])
-		expect(en.eventDetail.hypeRaised.split('\n')).toEqual([
-			'{{name}} is now {{hype}}.',
-			'You will also hear about distant new concerts.',
-		])
+	it('reads the raise snack with the hype snack words and the same placeholders', () => {
+		expect(ja.hypeReach.on).toBe(
+			'{{name}}の{{places}}の新着ライブをプッシュ通知します🔔',
+		)
+		expect(ja.hypeReach.off).toBe(
+			'{{name}}の{{places}}の新着ライブをプッシュ通知で受け取ろう🔔',
+		)
+		for (const key of ['on', 'off'] as const) {
+			expect(en.hypeReach[key]).toContain('{{name}}')
+			expect(en.hypeReach[key]).toContain('{{places}}')
+		}
 	})
 })
