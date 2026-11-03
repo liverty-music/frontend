@@ -244,10 +244,16 @@ describe('MyArtistsRoute', () => {
 			expect(open).toHaveBeenCalledOnce()
 			expect(route.homeRequired).toBe(true)
 
+			const openIfFirstVisit = vi.fn()
+			route.pageHelp = { openIfFirstVisit } as never
+
 			await route.onHomeSelected('JP-13')
 
 			expect(mockUserStore.saveHome).toHaveBeenCalledWith('JP-13')
 			expect(route.needsHome).toBe(false)
+			// The first-visit help, held back while the home sheet was open,
+			// opens only now.
+			expect(openIfFirstVisit).toHaveBeenCalledOnce()
 		})
 
 		// @spec components/infrastructure/fan/web/global/user-home-selector "Guest after onboarding closes the sheet"

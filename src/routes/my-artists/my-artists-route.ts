@@ -173,6 +173,8 @@ export class MyArtistsRoute {
 			throw err
 		}
 		this.needsHome = false
+		// The first-visit help was held back while the home sheet was open.
+		this.pageHelp?.openIfFirstVisit()
 	}
 
 	/** Edit is available only once there are followed artists to edit. */

@@ -16,12 +16,24 @@ const AUTO_OPEN_PAGES: ReadonlySet<PageHelpPage> = new Set([
 
 export class PageHelp {
 	@bindable public page: PageHelpPage = 'discovery'
+	/**
+	 * False defers the first-visit auto-open: the page shows another sheet
+	 * first (My Artists asks for the home area) and calls {@link
+	 * openIfFirstVisit} once that sheet is done, so two sheets never open at
+	 * once.
+	 */
+	@bindable public autoOpen = true
 
 	public isOpen = false
 
 	private readonly onboarding = resolve(IOnboardingService)
 
 	public attached(): void {
+		if (this.autoOpen) this.openIfFirstVisit()
+	}
+
+	/** Open the help on a first visit to an auto-open page during onboarding. */
+	public openIfFirstVisit(): void {
 		if (
 			AUTO_OPEN_PAGES.has(this.page) &&
 			this.onboarding.isOnboarding &&

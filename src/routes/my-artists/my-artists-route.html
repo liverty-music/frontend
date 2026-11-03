@@ -6,7 +6,8 @@
 
 <!-- Help sheet + edit toggle both live in the FAB launcher now; page-help
      renders sheet-only and is opened via its ref. -->
-<page-help component.ref="pageHelp" page="my-artists"></page-help>
+<!-- The help waits for the home sheet: two sheets never open at once. -->
+<page-help component.ref="pageHelp" page="my-artists" auto-open.bind="!needsHome"></page-help>
 
 <main>
   <!-- Loading state: content-shaped skeleton rows (replaces the centered
