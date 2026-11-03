@@ -166,6 +166,7 @@ test.describe('a new account without a home', () => {
 
 	// @spec components/infrastructure/fan/web/global/user-home-selector "New account without a home opens the Dashboard"
 	// @spec components/infrastructure/fan/web/global/user-home-selector "Event page does not ask"
+	// @spec components/infrastructure/fan/web/global/user-home-selector "Sheet left without a choice"
 	test(`@spec ${STORY} "Sign-up from the event page without a home"`, async ({
 		page,
 	}) => {
@@ -212,6 +213,15 @@ test.describe('a new account without a home', () => {
 		await page.mouse.click(5, 5)
 		await expect(sheet).toBeVisible()
 		expect(callsOf(calls, 'UserService/SetHome')).toHaveLength(0)
+
+		// Leaving without a choice: closing and reopening the app asks again,
+		// still signed in (the app reads the account on start).
+		const getsBefore = callsOf(calls, 'UserService/Get').length
+		await page.reload()
+		await expect(sheet).toBeVisible({ timeout: 20_000 })
+		await expect
+			.poll(() => callsOf(calls, 'UserService/Get').length)
+			.toBeGreaterThan(getsBefore)
 
 		// Choosing 東京 saves JP-13 to the account and closes the sheet.
 		await sheet.getByRole('button', { name: '東京', exact: true }).click()

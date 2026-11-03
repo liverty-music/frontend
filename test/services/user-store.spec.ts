@@ -252,7 +252,6 @@ describe('UserStore', () => {
 			expect(store.needsHome).toBe(false)
 		})
 
-		// @spec components/infrastructure/fan/web/global/user-home-selector "Sheet left without a choice"
 		it('keeps asking a signed-in fan until the account has a home', async () => {
 			const rpc = makeRpcClient()
 			rpc.setHome.mockResolvedValue({
