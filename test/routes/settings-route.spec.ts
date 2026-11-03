@@ -30,12 +30,6 @@ vi.mock('../../src/services/identity-verification-service', () => ({
 	IIdentityVerificationService: mockIIdentityVerificationService,
 }))
 
-vi.mock('../../src/components/user-home-selector/user-home-selector', () => ({
-	UserHomeSelector: {
-		getStoredHome: vi.fn().mockReturnValue(null),
-	},
-}))
-
 const { SettingsRoute } = await import(
 	'../../src/routes/settings/settings-route'
 )

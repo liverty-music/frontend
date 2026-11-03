@@ -87,15 +87,4 @@ describe('UserHomeSelector', () => {
 			expect(sut.currentCode).toBe('JP-27')
 		})
 	})
-
-	describe('getStoredHome', () => {
-		it('returns null when no home stored', () => {
-			expect(UserHomeSelector.getStoredHome()).toBeNull()
-		})
-
-		it('returns stored home', () => {
-			localStorage.setItem('guest.home', 'JP-27')
-			expect(UserHomeSelector.getStoredHome()).toBe('JP-27')
-		})
-	})
 })

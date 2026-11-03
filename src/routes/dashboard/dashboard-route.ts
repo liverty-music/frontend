@@ -1,6 +1,14 @@
 import { I18N } from '@aurelia/i18n'
 import { IRouter, type Params, type RouteNode } from '@aurelia/router'
-import { ILogger, observable, queueTask, resolve, watch } from 'aurelia'
+import {
+	IEventAggregator,
+	ILogger,
+	observable,
+	queueTask,
+	resolve,
+	watch,
+} from 'aurelia'
+import { Snack } from '../../../shared/ui/snack-bar/snack'
 import { IHistory } from '../../adapter/browser/history'
 import { ILocalStorage } from '../../adapter/storage/local-storage'
 import type { ArtistFilterBar } from '../../components/artist-filter-bar/artist-filter-bar'
@@ -11,7 +19,7 @@ import type {
 	LiveEvent,
 } from '../../components/live-highway/live-event'
 import type { PageHelp } from '../../components/page-help/page-help'
-import { UserHomeSelector } from '../../components/user-home-selector/user-home-selector'
+import type { UserHomeSelector } from '../../components/user-home-selector/user-home-selector'
 import { StorageKeys } from '../../constants/storage-keys'
 import type { Artist, CountedArtist } from '../../entities/artist'
 import type {
@@ -134,6 +142,7 @@ export class DashboardRoute {
 	private readonly onboarding = resolve(IOnboardingService)
 	private readonly promptCoordinator = resolve(IPromptCoordinator)
 	private readonly userStore = resolve(IUserStore)
+	private readonly ea = resolve(IEventAggregator)
 	private readonly storage = resolve(ILocalStorage)
 	private readonly history = resolve(IHistory)
 	private readonly router = resolve(IRouter)
@@ -146,6 +155,14 @@ export class DashboardRoute {
 
 	public get isAuthenticated(): boolean {
 		return this.authService.isAuthenticated
+	}
+
+	/**
+	 * The home sheet closes only on a choice for a signed-in fan and for a guest
+	 * in onboarding; a guest after onboarding may close it.
+	 */
+	public get homeRequired(): boolean {
+		return this.isAuthenticated || this.isOnboarding
 	}
 
 	/**
@@ -375,11 +392,10 @@ export class DashboardRoute {
 			this.fromDate = parsedFrom ?? todayCalendarDate()
 		}
 
-		// Only a guest can be without a home: every account is created with one
-		// (the auth callback asks for it at sign-up), so a signed-in fan never
-		// sees this sheet.
-		this.needsRegion =
-			!this.authService.isAuthenticated && !UserHomeSelector.getStoredHome()
+		// A person without a home area (a guest who has not chosen one, or a
+		// signed-in fan whose account has none) is asked for it here and on My
+		// Artists, every time either screen opens until they choose one.
+		this.needsRegion = this.userStore.needsHome
 
 		// Fire-and-forget. loadData() self-selects the fast path (cache paint +
 		// background refresh) or the cold-load path (spinner + full fetch).
@@ -768,10 +784,19 @@ export class DashboardRoute {
 
 	public async onHomeSelected(code: string): Promise<void> {
 		this.logger.info('Home area configured', { code })
+		// UserHomeSelector does not persist: the store saves the choice, through
+		// SetHome for a signed-in fan and on the device for a guest. The save
+		// lands before the timetable loads, so the load uses the new home.
+		try {
+			await this.userStore.saveHome(code)
+		} catch (err) {
+			this.logger.error('Failed to save the home area', { error: err })
+			this.ea.publish(new Snack(this.i18n.tr('userHome.saveFailed'), 'error'))
+			// Still without a home: ask again.
+			this.homeSelector?.open()
+			return
+		}
 		this.needsRegion = false
-		// UserHomeSelector does not persist; only a guest reaches this sheet, so
-		// the choice goes to the guest home in localStorage.
-		this.userStore.setGuestHome(code)
 		// Timetable becomes real once the region is chosen; loadData() flips
 		// timetableLoaded → timetableLoadedChanged() runs the deferred celebration
 		// + completion-latch decisions. No explicit call needed here.

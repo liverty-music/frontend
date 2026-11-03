@@ -112,17 +112,6 @@ describe('UserHomeSelector', () => {
 		})
 	})
 
-	describe('getStoredHome', () => {
-		it('should return null when no home is stored', () => {
-			expect(UserHomeSelector.getStoredHome()).toBeNull()
-		})
-
-		it('should return stored home', () => {
-			localStorage.setItem('guest.home', 'JP-23')
-			expect(UserHomeSelector.getStoredHome()).toBe('JP-23')
-		})
-	})
-
 	describe('regions data', () => {
 		it('should have 8 regions', () => {
 			expect(sut.regions).toHaveLength(8)

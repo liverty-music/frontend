@@ -49,17 +49,9 @@ vi.mock('../../src/adapter/storage/local-storage', () => ({
 vi.mock('../../src/adapter/browser/history', () => ({
 	IHistory: mockIHistory,
 }))
-vi.mock('../../src/components/user-home-selector/user-home-selector', () => ({
-	UserHomeSelector: {
-		getStoredHome: vi.fn().mockReturnValue(null),
-	},
-}))
 
 const { DashboardRoute } = await import(
 	'../../src/routes/dashboard/dashboard-route'
-)
-const { UserHomeSelector } = await import(
-	'../../src/components/user-home-selector/user-home-selector'
 )
 
 // ---- Factory helpers ----
@@ -134,15 +126,15 @@ function makeResumeRevalidator() {
 	}
 }
 
-// UserStore is the single owner of the User entity (authenticated `current`,
-// read for the needsRegion check) AND the guest home write path (setGuestHome)
-// the dashboard calls for unauthenticated users.
+// UserStore owns the home decision (`needsHome`, for guests and signed-in
+// fans alike) and its save (`saveHome`: SetHome or guest storage).
 function makeUserStore() {
 	return {
 		current: undefined as { home: unknown } | undefined,
 		guestHome: null as string | null,
 		currentHome: null as string | null,
-		setGuestHome: vi.fn(),
+		needsHome: true,
+		saveHome: vi.fn().mockResolvedValue(undefined),
 	}
 }
 
@@ -198,9 +190,6 @@ describe('DashboardRoute', () => {
 		mockUser = mockUserStore
 		mockStorage = createMockLocalStorage()
 		mockHistory = createMockHistory()
-		;(
-			UserHomeSelector.getStoredHome as ReturnType<typeof vi.fn>
-		).mockReturnValue(null)
 
 		sut = buildSut()
 	})
@@ -213,48 +202,36 @@ describe('DashboardRoute', () => {
 	// ---- loading() ----
 
 	describe('loading', () => {
-		it('sets needsRegion=true for unauthenticated user without stored home', async () => {
-			;(
-				UserHomeSelector.getStoredHome as ReturnType<typeof vi.fn>
-			).mockReturnValue(null)
+		it('asks a person without a home, guest or signed in', async () => {
+			for (const isAuthenticated of [false, true]) {
+				mockAuth.isAuthenticated = isAuthenticated
+				mockUserStore.needsHome = true
+				sut = buildSut()
 
-			await sut.loading()
+				await sut.loading()
 
-			expect(sut.needsRegion).toBe(true)
+				expect(sut.needsRegion).toBe(true)
+			}
 		})
 
-		it('sets needsRegion=false for unauthenticated user with stored home', async () => {
-			;(
-				UserHomeSelector.getStoredHome as ReturnType<typeof vi.fn>
-			).mockReturnValue('JP-13')
+		it('does not ask a person with a home', async () => {
+			mockUserStore.needsHome = false
 
 			await sut.loading()
 
 			expect(sut.needsRegion).toBe(false)
 		})
 
-		// @spec stories/sign-up-or-sign-in "Every sign-in resolves the account with Create"
-		it('never opens the home sheet for a signed-in fan, even one whose account has no home', async () => {
-			// Every account is created with a home (the auth callback asks for it),
-			// so the Dashboard no longer opens a closable home sheet for a fan.
+		it('keeps the sheet open until a choice for a signed-in fan and a guest in onboarding only', () => {
 			mockAuth.isAuthenticated = true
-			mockUser.current = { home: undefined }
-			;(
-				UserHomeSelector.getStoredHome as ReturnType<typeof vi.fn>
-			).mockReturnValue(null)
+			expect(buildSut().homeRequired).toBe(true)
 
-			await sut.loading()
+			mockAuth.isAuthenticated = false
+			mockOnboarding = makeOnboarding(true)
+			expect(buildSut().homeRequired).toBe(true)
 
-			expect(sut.needsRegion).toBe(false)
-		})
-
-		it('sets needsRegion=false for authenticated user with home', async () => {
-			mockAuth.isAuthenticated = true
-			mockUser.current = { home: { countryCode: 'JP', level1: 'JP-13' } }
-
-			await sut.loading()
-
-			expect(sut.needsRegion).toBe(false)
+			mockOnboarding = makeOnboarding(false)
+			expect(buildSut().homeRequired).toBe(false)
 		})
 
 		it('sets showSignupBanner for unauthenticated completed-onboarding user', async () => {
@@ -277,6 +254,7 @@ describe('DashboardRoute', () => {
 		it('is non-blocking: resolves before the data fetch settles, isLoading true at attach', async () => {
 			mockAuth.isAuthenticated = true
 			mockUser.current = { home: { countryCode: 'JP', level1: 'JP-13' } }
+			mockUserStore.needsHome = false
 			// Fetch never resolves → the timetable would stay a spinner.
 			mockConcert.listFollowed.mockReturnValue(new Promise(() => {}))
 			sut = buildSut()
@@ -416,23 +394,22 @@ describe('DashboardRoute', () => {
 	// ---- onHomeSelected() ----
 
 	describe('onHomeSelected', () => {
-		it('sets needsRegion=false and triggers loadData', () => {
+		it('sets needsRegion=false and triggers loadData once the home is saved', async () => {
 			sut.needsRegion = true
 			const loadSpy = vi.spyOn(sut, 'loadData').mockResolvedValue()
 
-			sut.onHomeSelected('JP-13')
+			await sut.onHomeSelected('JP-13')
 
 			expect(sut.needsRegion).toBe(false)
 			expect(loadSpy).toHaveBeenCalledOnce()
 		})
 
-		it('calls userStore.setGuestHome for unauthenticated user', () => {
-			mockAuth.isAuthenticated = false
-			sut = buildSut()
+		it('saves the choice through the user store', async () => {
+			vi.spyOn(sut, 'loadData').mockResolvedValue()
 
-			sut.onHomeSelected('JP-13')
+			await sut.onHomeSelected('JP-13')
 
-			expect(mockUserStore.setGuestHome).toHaveBeenCalledWith('JP-13')
+			expect(mockUserStore.saveHome).toHaveBeenCalledWith('JP-13')
 		})
 	})
 

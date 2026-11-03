@@ -4,7 +4,7 @@ import { DI, IEventAggregator, ILogger, observable, resolve } from 'aurelia'
 import { IUserRpcClient } from '../adapter/rpc/client/user-client'
 import { loadHome, saveHome } from '../adapter/storage/guest-storage'
 import { clearAllHelpSeen } from '../adapter/storage/onboarding-storage'
-import type { User } from '../entities/user'
+import { codeToHome, type User } from '../entities/user'
 import { normalizeToSupportedLanguage } from '../util/change-locale'
 import { IAuthService } from './auth-service'
 import { SignedOut } from './events/signed-out'
@@ -134,6 +134,32 @@ export class UserStore {
 			return this.current?.home?.level1 ?? null
 		}
 		return this.guestHome
+	}
+
+	/**
+	 * Whether the person has no home area, so the Dashboard and My Artists ask
+	 * for one: a guest who has not chosen one, or a signed-in fan whose account
+	 * has none. A signed-in fan whose account has not loaded is not asked; the
+	 * missing account is not a missing home.
+	 */
+	public get needsHome(): boolean {
+		if (this.auth.isAuthenticated) {
+			return this.current !== undefined && !this.current.home?.level1
+		}
+		return !this.guestHome
+	}
+
+	/**
+	 * Save the home area the person chose (ISO 3166-2 level1 code): through
+	 * `UserService.SetHome` for a signed-in fan, on the device for a guest.
+	 * Rejects when SetHome fails, so the caller can ask again.
+	 */
+	public async saveHome(code: string): Promise<void> {
+		if (this.auth.isAuthenticated) {
+			await this.updateHome(codeToHome(code))
+			return
+		}
+		this.setGuestHome(code)
 	}
 
 	/**

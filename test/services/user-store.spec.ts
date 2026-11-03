@@ -244,6 +244,52 @@ describe('UserStore', () => {
 		})
 	})
 
+	describe('needsHome', () => {
+		it('asks a guest who has not chosen a home, and not one who has', () => {
+			const { store } = build({ auth: makeAuth(false) })
+			expect(store.needsHome).toBe(true)
+			store.setGuestHome('JP-13')
+			expect(store.needsHome).toBe(false)
+		})
+
+		// @spec components/infrastructure/fan/web/global/user-home-selector "Sheet left without a choice"
+		it('keeps asking a signed-in fan until the account has a home', async () => {
+			const rpc = makeRpcClient()
+			rpc.setHome.mockResolvedValue({
+				...stubUser,
+				home: { countryCode: 'JP', level1: 'JP-13' },
+			})
+			const { store } = build({ auth: makeAuthWithProfile(), rpc })
+			store.current = { ...stubUser, home: undefined } as User
+
+			// Leaving the sheet saves nothing, so every later visit asks again.
+			expect(store.needsHome).toBe(true)
+			expect(store.needsHome).toBe(true)
+
+			await store.saveHome('JP-13')
+			expect(rpc.setHome).toHaveBeenCalledWith(
+				expect.objectContaining({ countryCode: 'JP', level1: 'JP-13' }),
+			)
+			expect(store.needsHome).toBe(false)
+		})
+
+		it('does not ask a signed-in fan whose account has not loaded', () => {
+			const { store } = build({ auth: makeAuthWithProfile() })
+			store.current = undefined
+			expect(store.needsHome).toBe(false)
+		})
+
+		it('saves a guest choice on the device without an RPC', async () => {
+			const rpc = makeRpcClient()
+			const { store } = build({ auth: makeAuth(false), rpc })
+
+			await store.saveHome('JP-27')
+
+			expect(rpc.setHome).not.toHaveBeenCalled()
+			expect(localStorage.getItem(GUEST_HOME_KEY)).toBe('JP-27')
+		})
+	})
+
 	// Round-trip against the REAL guest-storage key for the home slice, plus the
 	// single-source locale contract: the store never writes a `guest.language`
 	// key and clearGuest never touches the detector's 'language' cache.

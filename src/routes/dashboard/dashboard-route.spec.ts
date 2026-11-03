@@ -57,7 +57,15 @@ const mockUserStore = {
 	setGuestHome: vi.fn((code: string) => {
 		mockUserStore.currentHome = code
 	}),
+	get needsHome(): boolean {
+		return !mockUserStore.currentHome
+	},
+	// The store saves through SetHome (signed in) or guest storage (guest).
+	saveHome: vi.fn(async (code: string) => {
+		mockUserStore.currentHome = code
+	}),
 }
+const mockEa = { publish: vi.fn(), subscribe: vi.fn() }
 const mockI18n = { tr: vi.fn((key: string) => key) }
 const mockStorage = {
 	getItem: vi.fn((_key: string): string | null => null),
@@ -93,6 +101,7 @@ vi.mock('aurelia', async (importOriginal) => {
 				IFabMenuService: mockFabMenu,
 				IOnboardingService: mockOnboarding,
 				IUserStore: mockUserStore,
+				IEventAggregator: mockEa,
 				I18N: mockI18n,
 				ILocalStorage: mockStorage,
 			}
@@ -1231,9 +1240,67 @@ describe('DashboardRoute', () => {
 
 			await sut.onHomeSelected('JP-13')
 
-			expect(mockUserStore.setGuestHome).toHaveBeenCalledWith('JP-13')
+			expect(mockUserStore.saveHome).toHaveBeenCalledWith('JP-13')
 			expect(sut.showCelebration).toBe(true)
 			expect(sut.celebrationConfetti).toBe(false)
+		})
+
+		// @spec components/infrastructure/fan/web/global/post-signup-dialog "Region selection still precedes both"
+		it('resolves the home area before the post-signup celebration and dialog', async () => {
+			mockAuth.isAuthenticated = true
+			mockStorage.getItem.mockImplementation((k: string) =>
+				k === 'postSignup.shown' ? 'pending' : null,
+			)
+			// A new account created without a home area until the fan picks one.
+			mockUserStore.currentHome = null
+			primeTimetable(3)
+			sut = new DashboardRoute()
+			await sut.loading()
+			expect(sut.needsRegion).toBe(true)
+			await sut.loadData()
+			sut.attached()
+
+			expect(sut.showCelebration).toBe(false)
+			expect(sut.showPostSignupDialog).toBe(false)
+			expect(mockStorage.removeItem).not.toHaveBeenCalledWith(
+				'postSignup.shown',
+			)
+
+			await sut.onHomeSelected('JP-13')
+
+			expect(mockUserStore.saveHome).toHaveBeenCalledWith('JP-13')
+			expect(sut.showCelebration).toBe(true)
+			expect(sut.celebrationConfetti).toBe(true)
+			expect(sut.showPostSignupDialog).toBe(false)
+
+			sut.onCelebrationDismissed()
+			expect(sut.showPostSignupDialog).toBe(true)
+		})
+
+		it('asks again and does not celebrate when saving the home fails', async () => {
+			mockAuth.isAuthenticated = true
+			mockStorage.getItem.mockImplementation((k: string) =>
+				k === 'postSignup.shown' ? 'pending' : null,
+			)
+			mockUserStore.currentHome = null
+			mockUserStore.saveHome.mockRejectedValueOnce(new Error('unavailable'))
+			primeTimetable(3)
+			sut = new DashboardRoute()
+			const open = vi.fn()
+			sut.homeSelector = { open } as never
+			sut.needsRegion = true
+
+			await sut.onHomeSelected('JP-13')
+
+			expect(sut.needsRegion).toBe(true)
+			expect(open).toHaveBeenCalledOnce()
+			expect(mockEa.publish).toHaveBeenCalledWith(
+				expect.objectContaining({
+					message: 'userHome.saveFailed',
+					severity: 'error',
+				}),
+			)
+			expect(sut.showCelebration).toBe(false)
 		})
 
 		// @spec components/infrastructure/fan/web/global/celebration-overlay "Post-signup full celebration then dialog"

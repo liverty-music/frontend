@@ -30,10 +30,6 @@ export class UserHomeSelector {
 
 	private readonly logger = resolve(ILogger).scopeTo('UserHomeSelector')
 
-	public static getStoredHome(): string | null {
-		return localStorage.getItem('guest.home')
-	}
-
 	public open(): void {
 		this.selectedRegion = null
 		this.isOpen = true

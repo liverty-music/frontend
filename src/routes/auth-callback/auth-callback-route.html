@@ -6,12 +6,3 @@
   <section if.bind="failed" class="callback-error" role="alert" t="authCallback.failed"></section>
   <a if.bind="failed" load="/" class="callback-home-link" t="authCallback.home"></a>
 </main>
-
-<!-- A new account needs a home: the sheet cannot be closed until an area is
-     chosen, and the account is created with it. -->
-<user-home-selector
-  if.bind="needsHome"
-  component.ref="homeSelector"
-  required.bind="true"
-  on-home-selected.bind="(code) => onHomeSelected(code)"
-></user-home-selector>
