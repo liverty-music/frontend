@@ -464,13 +464,13 @@
 			"refundAmount": "Refund",
 			"yen": "¥{{amount}} (tax included)",
 			"termRefund": "When another fan buys it, the refund goes to the card you paid with.",
-			"termDeadline": "Listing closes when admission opens ({{deadline}}).",
+			"termDeadline": "Listing closes at the resale deadline ({{deadline}}).",
 			"termNotGuaranteed": "A sale is not guaranteed. An unsold ticket stays valid for entry.",
 			"termWithdraw": "You can withdraw the listing until it is sold or listing closes.",
 			"termInvalid": "A ticket that sells is no longer valid for entry.",
 			"confirm": "List 1 ticket",
 			"cancel": "Cancel",
-			"listedNote": "Listed for official resale until admission opens ({{deadline}}).",
+			"listedNote": "Listed for official resale until the resale deadline ({{deadline}}).",
 			"withdraw": "Withdraw the listing",
 			"withdrawClosed": "This ticket was already sold or listing has closed, so the listing cannot be withdrawn.",
 			"cannotList": "This ticket cannot be listed: official resale has closed or the ticket is no longer valid.",
@@ -608,7 +608,7 @@
 		"lastUpdatedLabel": "Last updated",
 		"terms": {
 			"title": "Terms of Service",
-			"lastUpdated": "October 29, 2026",
+			"lastUpdated": "November 5, 2026",
 			"intro": "These Terms of Service (the \"Terms\") govern your use of the application \"Liverty Music\" (the \"Service\") provided by pannpers.dev (\"we\" or \"us\"). By using the Service, you are deemed to have agreed to these Terms.",
 			"sections": [
 				{
@@ -656,9 +656,10 @@
 					"body": [
 						"The organizer consents to the transfer of tickets only through official resale on the Service at face value. Resale by any other means is prohibited.",
 						"Official resale opens for a seat type of a concert only when that seat type sells out. A seat type that does not sell out has no official resale, and if you can no longer attend there is no refund unless the concert is cancelled.",
-						"Listing closes when admission to the concert opens, 3 hours before the start time. A ticket that has not been bought by then stays yours and remains valid for entry.",
-						"You can withdraw a listing until it is bought or listing closes. A sale of a listed ticket is not guaranteed.",
-						"When a listed ticket is bought, it becomes invalid and a new ticket is issued to the user who bought it. You are refunded the face value minus a resale fee of 10% to the card you paid with.",
+						"Official resale tickets are not sold first come, first served: they are allocated by a draw every day at 12:00 Japan time. On the day of the concert, the draw at 12:00 or 3 hours before the start time, whichever is earlier, is the last draw and the resale deadline. The tickets of one application are allocated all together or not at all. The total of an application is held on your card from when you apply until the application wins, expires, loses or is withdrawn; it is charged only if you win, and the hold is released otherwise.",
+						"You can withdraw an application while it waits for a draw. An application whose hold on your card would expire before it could be charged ends, and you can apply again. If the card of a winning application cannot be charged, the win is cancelled.",
+						"Listing closes at the resale deadline. A ticket that has not been allocated by then stays yours and remains valid for entry. You can withdraw a listing until a draw allocates it. A sale of a listed ticket is not guaranteed.",
+						"When a listed ticket is allocated and the winning user is charged, it becomes invalid and a new ticket is issued to the winning user. You are refunded the face value minus a resale fee of 10% to the card you paid with.",
 						"If the concert is cancelled after an official resale is completed, the resale fee is not refunded."
 					]
 				},
@@ -911,6 +912,117 @@
 		},
 		"phoneInvalid": "Enter a valid phone number (e.g. 090-1234-5678 or +81 90 1234 5678)."
 	},
+	"resaleEntry": {
+		"title": "Apply for official resale",
+		"loading": "Loading…",
+		"unavailable": "Payments are not available in this environment right now. Please try again later.",
+		"notFound": "This seat type has no official resale.",
+		"closed": "Official resale of this seat type is not open.",
+		"backToEvent": "Back to the event page",
+		"back": "Back",
+		"officialResale": "Official resale",
+		"price": "¥{{price}} per ticket (tax included, face value)",
+		"how": {
+			"draws": "Tickets are allocated by a draw every day at 12:00. On the event's day, the last draw is at 12:00 or 3 hours before the start, whichever is earlier.",
+			"allOrNothing": "The tickets you apply for are allocated all together or not at all.",
+			"chargedOnWin": "Your card is charged only if you win."
+		},
+		"nextDraw": "Next draw: {{time}}",
+		"toEntries": "See your applications",
+		"applied": {
+			"title": "You have applied",
+			"body": "You have applied for {{count}} tickets for this event. You can apply only once per event."
+		},
+		"otherSeatType": "The tickets you hold or applied for at this event are {{seatType}}. One account can hold only one seat type per event.",
+		"phoneInvalid": "Enter a valid phone number (e.g. 090-1234-5678, +81 90 1234 5678).",
+		"total": "Charged if you win: ¥{{total}} in total (tax included)",
+		"count": {
+			"title": "Choose the number of tickets",
+			"label": "Tickets (1–{{max}})",
+			"continue": "Continue to your details",
+			"limit": "You can hold up to {{limit}} tickets for this event per account, including the tickets you hold and have applied for."
+		},
+		"personalDetails": {
+			"title": "Your details",
+			"note": "Your name and phone number are saved on your account and shown on your tickets.",
+			"name": "Full name",
+			"phone": "Phone number",
+			"continue": "Continue to the final confirmation"
+		},
+		"confirm": {
+			"title": "Final confirmation",
+			"tickets": "Tickets",
+			"ticketsWhat": "Official resale tickets that fans who cannot attend have listed, sold at face value.",
+			"event": "Event",
+			"amount": "Seat type, tickets and amount",
+			"amountValue": "{{seatType}} {{count}} × ¥{{price}} = ¥{{total}} charged if you win (tax included)",
+			"payment": "Payment",
+			"paymentValue": "Credit card. ¥{{total}} is held on your card when you apply and charged only if you win. A hold that is not charged is released.",
+			"draws": "Draws and deadline",
+			"drawsValue": "A draw runs every day at 12:00. On the event's day, the last draw is at 12:00 or 3 hours before the start, whichever is earlier. Resale for this event closes at {{deadline}} (the last draw).",
+			"allocation": "Allocation",
+			"allocationValue": "The tickets you apply for are allocated all together or not at all.",
+			"delivery": "Getting your tickets",
+			"deliveryValue": "After you win, your tickets are in the app's Tickets screen.",
+			"withdrawal": "Withdrawing",
+			"withdrawalValue": "You can withdraw your application while it waits for a draw.",
+			"cancellation": "Cancellation and refunds",
+			"cancellationValue": "After you win, the purchase cannot be cancelled or refunded unless the event is cancelled. No cooling-off period applies.",
+			"resale": "Resale",
+			"resaleValue": "Resale of tickets without the organizer's consent is prohibited. Tickets are issued to your own account and name.",
+			"businessDetails": "Seller",
+			"representative": "Representative",
+			"changeCount": "Change the number of tickets",
+			"changePersonalDetails": "Change your name or phone number",
+			"apply": "Apply (¥{{total}} if you win)",
+			"submitting": "Processing…"
+		},
+		"done": {
+			"title": "You have applied",
+			"body": "You applied for {{count}} {{seatType}} resale tickets. Your card is charged only if you win."
+		},
+		"error": {
+			"retry": "Something went wrong. Please try again.",
+			"payment": "Could not prepare the payment. Please try again later.",
+			"confirm": "Could not apply. Please try again (the hold on your card is kept)."
+		},
+		"refused": {
+			"title": "Your application was not completed",
+			"notCharged": "Your card will not be charged for this application.",
+			"other": "This card could not be used for the application. You can try again with another card.",
+			"tryAgain": "Apply again"
+		}
+	},
+	"resaleEntries": {
+		"title": "Official resale applications",
+		"loading": "Loading…",
+		"error": "Could not load your applications.",
+		"retry": "Reload",
+		"empty": "You have no official resale applications.",
+		"seat": "{{seatType}} × {{count}}",
+		"state": {
+			"entered": "Waiting for the draw",
+			"won": "Won",
+			"lost": "Not won",
+			"lapsed": "Expired",
+			"withdrawn": "Withdrawn",
+			"unknown": "Unknown"
+		},
+		"note": {
+			"lapsed": "The hold on your card expired before a ticket was found, so the application ended. Nothing was charged.",
+			"withdrawn": "You withdrew the application. Nothing was charged."
+		},
+		"toTickets": "See your tickets",
+		"applyAgain": "Apply again",
+		"withdraw": {
+			"action": "Withdraw the application",
+			"confirm": "Withdrawing ends this application and nothing is charged. Withdraw it?",
+			"keep": "Keep it",
+			"do": "Withdraw",
+			"decided": "A draw has already decided this application.",
+			"failed": "Could not withdraw it. Please try again."
+		}
+	},
 	"lotteryEntryStatus": {
 		"title": "Your lottery entry",
 		"loading": "Loading…",
@@ -994,7 +1106,10 @@
 			},
 			"resale": {
 				"title": "Official resale",
-				"listing": "Fans who can no longer attend can list their tickets from the Tickets screen."
+				"listing": "Fans who can no longer attend can list their tickets from the Tickets screen.",
+				"draw": "Tickets that fans who cannot attend have listed are allocated at face value by a daily draw.",
+				"apply": "Apply for official resale",
+				"applied": "Applied"
 			},
 			"limit": "Up to {{limit}} tickets per account across all sales",
 			"held": "Your tickets for this date are {{seatType}}. One account holds tickets of one seat type per date."

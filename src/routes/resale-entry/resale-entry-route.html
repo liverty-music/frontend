@@ -1,0 +1,191 @@
+<template class="[ resale-entry-route ] [ flow ]">
+	<header class="resale-entry-header">
+		<h1 class="resale-entry-title" t="resaleEntry.title"></h1>
+	</header>
+
+	<p if.bind="step === 'loading'" class="resale-entry-lead" role="status" t="resaleEntry.loading"></p>
+
+	<!-- Stripe not configured for this environment: fail closed. -->
+	<section class="resale-entry-panel" if.bind="step === 'unavailable'" data-testid="resale-entry-unavailable">
+		<p class="resale-entry-lead" t="resaleEntry.unavailable"></p>
+	</section>
+
+	<section class="[ resale-entry-panel ] [ flow ]" if.bind="step === 'not-found'" data-testid="resale-entry-not-found">
+		<p class="resale-entry-lead" t="resaleEntry.notFound"></p>
+		<a href="/events/${event.id}" if.bind="event" t="resaleEntry.backToEvent"></a>
+	</section>
+
+	<!-- What is applied for: the event, the seat type, its price and how resale works -->
+	<section
+		if.bind="event && stock && step !== 'loading' && step !== 'not-found' && step !== 'unavailable' && step !== 'done'"
+		class="[ resale-entry-panel ] [ flow ]"
+		data-testid="resale-entry-summary"
+	>
+		<p class="resale-entry-step-title" t="resaleEntry.officialResale"></p>
+		<p class="resale-entry-lead" data-testid="resale-entry-event">${event.title}<br />${dateLabel} · ${event.venueName}</p>
+		<p class="resale-entry-seat-type" data-testid="resale-entry-seat-type">${seatTypeName}</p>
+		<p class="resale-entry-lead" data-testid="resale-entry-price" t="resaleEntry.price" t-params.bind="{ price: yen(price) }"></p>
+		<ul class="resale-entry-terms-list" data-testid="resale-entry-how">
+			<li t="resaleEntry.how.draws"></li>
+			<li t="resaleEntry.how.allOrNothing"></li>
+			<li t="resaleEntry.how.chargedOnWin"></li>
+		</ul>
+	</section>
+
+	<section class="[ resale-entry-panel ] [ flow ]" if.bind="step === 'closed'" data-testid="resale-entry-closed">
+		<p class="resale-entry-lead" t="resaleEntry.closed"></p>
+		<a href="/events/${event.id}" if.bind="event" t="resaleEntry.backToEvent"></a>
+	</section>
+
+	<!-- The fan's entry already waits for a draw: no second application -->
+	<section class="[ resale-entry-panel ] [ flow ]" if.bind="step === 'applied'" data-testid="resale-entry-applied">
+		<h2 class="resale-entry-step-title" t="resaleEntry.applied.title"></h2>
+		<p class="resale-entry-lead" data-testid="resale-entry-applied-count" t="resaleEntry.applied.body" t-params.bind="{ count: entry.ticketCount }"></p>
+		<p if.bind="nextDrawLabel" class="resale-entry-lead" data-testid="resale-entry-next-draw" t="resaleEntry.nextDraw" t-params.bind="{ time: nextDrawLabel }"></p>
+		<a href="/resale-entries" class="[ button resale-entry-action ] [ pressable ]" data-testid="resale-entry-to-entries" t="resaleEntry.toEntries"></a>
+	</section>
+
+	<!-- One seat type per account and event -->
+	<section class="[ resale-entry-panel ] [ flow ]" if.bind="step === 'other-seat-type'" data-testid="resale-entry-other-seat-type">
+		<p class="resale-entry-lead" t="resaleEntry.otherSeatType" t-params.bind="{ seatType: otherSeatTypeName }"></p>
+		<a href="/events/${event.id}" if.bind="event" t="resaleEntry.backToEvent"></a>
+	</section>
+
+	<section class="[ resale-entry-panel ] [ flow ]" if.bind="step === 'limit'" data-testid="resale-entry-limit">
+		<p class="resale-entry-lead" t="resaleEntry.count.limit" t-params.bind="{ limit: perAccountLimit }"></p>
+		<a href="/events/${event.id}" if.bind="event" t="resaleEntry.backToEvent"></a>
+	</section>
+
+	<!-- Step 1: ticket count -->
+	<section class="[ resale-entry-panel ] [ flow ]" if.bind="step === 'count'" data-testid="resale-entry-count">
+		<h2 class="resale-entry-step-title" t="resaleEntry.count.title"></h2>
+		<label class="resale-entry-field">
+			<span class="resale-entry-label" t="resaleEntry.count.label" t-params.bind="{ max: countOptions.length }"></span>
+			<select value.bind="ticketCount" class="resale-entry-input" data-testid="resale-entry-count-select">
+				<option repeat.for="n of countOptions" model.bind="n">${n}</option>
+			</select>
+		</label>
+		<p class="resale-entry-total" data-testid="resale-entry-total" t="resaleEntry.total" t-params.bind="{ total: yen(total) }"></p>
+		<p class="resale-entry-error" if.bind="message" role="alert" data-testid="resale-entry-message" t.bind="message.key" t-params.bind="message.params"></p>
+		<button type="button" class="[ button resale-entry-action ] [ pressable ]" click.trigger="toPersonalDetails()" disabled.bind="busy" data-testid="resale-entry-to-personal-details" t="resaleEntry.count.continue"></button>
+	</section>
+
+	<!-- Step 2: 本人確認 -->
+	<section class="[ resale-entry-panel ] [ flow ]" if.bind="step === 'personal-details'" data-testid="resale-entry-personal-details">
+		<h2 class="resale-entry-step-title" t="resaleEntry.personalDetails.title"></h2>
+		<p class="resale-entry-lead" t="resaleEntry.personalDetails.note"></p>
+		<label class="resale-entry-field">
+			<span class="resale-entry-label" t="resaleEntry.personalDetails.name"></span>
+			<input type="text" autocomplete="name" value.bind="fullName" class="resale-entry-input" data-testid="resale-entry-name" />
+		</label>
+		<label class="resale-entry-field">
+			<span class="resale-entry-label" t="resaleEntry.personalDetails.phone"></span>
+			<input
+				type="tel"
+				autocomplete="tel"
+				inputmode="tel"
+				value.bind="phoneNumber"
+				aria-invalid.bind="isPhoneInvalid"
+				aria-describedby.bind="isPhoneInvalid ? 'resale-entry-phone-error' : null"
+				class="resale-entry-input"
+				data-testid="resale-entry-phone"
+			/>
+		</label>
+		<p id="resale-entry-phone-error" class="resale-entry-error" if.bind="isPhoneInvalid" t="resaleEntry.phoneInvalid"></p>
+		<p class="resale-entry-error" if.bind="message" role="alert" data-testid="resale-entry-message" t.bind="message.key" t-params.bind="message.params"></p>
+		<div class="[ resale-entry-actions ] [ cluster ]">
+			<button type="button" class="[ button ] [ pressable ]" data-variant="outlined" click.trigger="backToCount()" t="resaleEntry.back"></button>
+			<button type="button" class="[ button resale-entry-action ] [ pressable ]" click.trigger="toPayment()" disabled.bind="!isPersonalDetailsValid || busy" data-testid="resale-entry-to-payment" t="resaleEntry.personalDetails.continue"></button>
+		</div>
+	</section>
+
+	<!-- Step 3: 特商法 final confirmation + card; applying authorizes the card -->
+	<section class="[ resale-entry-panel ] [ flow ]" if.bind="step === 'payment' || step === 'submitting'" data-testid="resale-entry-payment">
+		<h2 class="resale-entry-step-title" t="resaleEntry.confirm.title"></h2>
+		<dl class="resale-entry-confirm" data-testid="resale-entry-confirm">
+			<dt t="resaleEntry.confirm.tickets"></dt>
+			<dd data-testid="resale-entry-confirm-what" t="resaleEntry.confirm.ticketsWhat"></dd>
+
+			<dt t="resaleEntry.confirm.event"></dt>
+			<dd data-testid="resale-entry-confirm-event">
+				${event.title}<br />${dateLabel}<br />${event.venueName}
+				<template if.bind="openTimeLabel || startTimeLabel">
+					<br /><span if.bind="openTimeLabel"><span t="eventPage.open"></span> ${openTimeLabel}</span>
+					<span if.bind="startTimeLabel"><span t="eventPage.start"></span> ${startTimeLabel}</span>
+				</template>
+			</dd>
+
+			<dt t="resaleEntry.confirm.amount"></dt>
+			<dd data-testid="resale-entry-confirm-amount" t="resaleEntry.confirm.amountValue" t-params.bind="{ seatType: seatTypeName, count: ticketCount, price: yen(price), total: yen(total) }"></dd>
+
+			<dt t="resaleEntry.confirm.payment"></dt>
+			<dd data-testid="resale-entry-confirm-payment" t="resaleEntry.confirm.paymentValue" t-params.bind="{ total: yen(total) }"></dd>
+
+			<dt t="resaleEntry.confirm.draws"></dt>
+			<dd data-testid="resale-entry-confirm-draws" t="resaleEntry.confirm.drawsValue" t-params.bind="{ deadline: deadlineLabel }"></dd>
+
+			<dt t="resaleEntry.confirm.allocation"></dt>
+			<dd data-testid="resale-entry-confirm-allocation" t="resaleEntry.confirm.allocationValue"></dd>
+
+			<dt t="resaleEntry.confirm.delivery"></dt>
+			<dd data-testid="resale-entry-confirm-delivery" t="resaleEntry.confirm.deliveryValue"></dd>
+
+			<dt t="resaleEntry.confirm.withdrawal"></dt>
+			<dd data-testid="resale-entry-confirm-withdrawal" t="resaleEntry.confirm.withdrawalValue"></dd>
+
+			<dt t="resaleEntry.confirm.cancellation"></dt>
+			<dd data-testid="resale-entry-confirm-cancellation" t="resaleEntry.confirm.cancellationValue"></dd>
+
+			<dt t="resaleEntry.confirm.resale"></dt>
+			<dd data-testid="resale-entry-confirm-resale" t="resaleEntry.confirm.resaleValue"></dd>
+
+			<dt t="resaleEntry.confirm.businessDetails"></dt>
+			<dd data-testid="resale-entry-confirm-business-details">
+				<template if.bind="businessDetails">
+					${businessDetails.legalName}<br />
+					<span t="resaleEntry.confirm.representative"></span> ${businessDetails.representativeName}<br />
+					${businessDetails.businessAddress}<br />
+					${businessDetails.businessPhoneNumber}<br />
+					${businessDetails.contactEmail}
+				</template>
+			</dd>
+		</dl>
+
+		<div if.bind="!cardConfirmed" class="[ resale-entry-actions ] [ cluster ]">
+			<button type="button" class="[ button ] [ pressable ]" data-variant="outlined" click.trigger="backToCount()" disabled.bind="step === 'submitting'" data-testid="resale-entry-change-count" t="resaleEntry.confirm.changeCount"></button>
+			<button type="button" class="[ button ] [ pressable ]" data-variant="outlined" click.trigger="backToPersonalDetails()" disabled.bind="step === 'submitting'" data-testid="resale-entry-change-personal-details" t="resaleEntry.confirm.changePersonalDetails"></button>
+		</div>
+
+		<!-- Stripe Payment Element mounts here. -->
+		<div class="resale-entry-payment-element" ref="paymentElementHost"></div>
+
+		<p class="resale-entry-error" if.bind="cardError" role="alert" data-testid="resale-entry-card-error" t.bind="cardError"></p>
+		<p class="resale-entry-error" if.bind="message" role="alert" data-testid="resale-entry-message" t.bind="message.key" t-params.bind="message.params"></p>
+		<button
+			type="button"
+			class="[ button resale-entry-action ] [ pressable ]"
+			click.trigger="apply()"
+			disabled.bind="step === 'submitting'"
+			data-testid="resale-entry-apply"
+			t.bind="step === 'submitting' ? 'resaleEntry.confirm.submitting' : 'resaleEntry.confirm.apply'"
+			t-params.bind="{ total: yen(total) }"
+		></button>
+	</section>
+
+	<!-- The application was refused: no entry, nothing charged -->
+	<section class="[ resale-entry-panel ] [ flow ]" if.bind="step === 'refused'" data-testid="resale-entry-refused">
+		<h2 class="resale-entry-step-title" t="resaleEntry.refused.title"></h2>
+		<p class="resale-entry-lead" role="alert" data-testid="resale-entry-message" t.bind="message.key" t-params.bind="message.params"></p>
+		<p class="resale-entry-lead" t="resaleEntry.refused.notCharged"></p>
+		<button type="button" class="[ button resale-entry-action ] [ pressable ]" click.trigger="tryAgain()" data-testid="resale-entry-try-again" t="resaleEntry.refused.tryAgain"></button>
+		<a href="/events/${event.id}" if.bind="event" t="resaleEntry.backToEvent"></a>
+	</section>
+
+	<!-- The entry was made (Confirm succeeded) -->
+	<section class="[ resale-entry-panel ] [ flow ]" if.bind="step === 'done'" data-testid="resale-entry-done">
+		<h2 class="resale-entry-step-title" t="resaleEntry.done.title"></h2>
+		<p class="resale-entry-lead" t="resaleEntry.done.body" t-params.bind="{ seatType: seatTypeName, count: entry.ticketCount }"></p>
+		<p if.bind="nextDrawLabel" class="resale-entry-lead" data-testid="resale-entry-next-draw" t="resaleEntry.nextDraw" t-params.bind="{ time: nextDrawLabel }"></p>
+		<a href="/resale-entries" class="[ button resale-entry-action ] [ pressable ]" data-testid="resale-entry-to-entries" t="resaleEntry.toEntries"></a>
+	</section>
+</template>

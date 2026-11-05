@@ -178,6 +178,22 @@ const routeTable = [
 		title: 'My Lottery Entry',
 		data: { titleKey: 'lotteryEntryStatus.title', section: 'dashboard' },
 	},
+	// The application for official resale tickets of one sold-out TicketStock
+	// (seat type) of an Event, opened from the Event page's ticket section.
+	// Signed-in fans only; a guest is sent through sign-up from the Event page.
+	{
+		path: 'events/:id/resale/:stockId',
+		component: import('./routes/resale-entry/resale-entry-route'),
+		title: 'Official Resale Entry',
+		data: { titleKey: 'resaleEntry.title', section: 'dashboard' },
+	},
+	// The fan's resale entries and their states; the resale emails link here.
+	{
+		path: 'resale-entries',
+		component: import('./routes/resale-entries/resale-entries-route'),
+		title: 'My Resale Entries',
+		data: { titleKey: 'resaleEntries.title', section: 'dashboard' },
+	},
 	// My Tickets (roadmap ⑤, task 5.1). Authenticated by default — tickets are
 	// account-bound covered tickets issued from captured lottery wins (④).
 	// Wired into the bottom nav bar as the Tickets tab.

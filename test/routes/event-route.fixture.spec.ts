@@ -14,10 +14,12 @@ import {
 	concertResolver,
 	IConcertRpcClient,
 } from '../../src/adapter/rpc/client/concert-client'
+import { IResaleEntryRpcClient } from '../../src/adapter/rpc/client/resale-entry-client'
 import { ITicketSaleRpcClient } from '../../src/adapter/rpc/client/ticket-sale-client'
 import { EventDateTabs } from '../../src/components/event-date-tabs/event-date-tabs'
 import { SvgIcon } from '../../src/components/svg-icon/svg-icon'
 import type { Artist } from '../../src/entities/artist'
+import type { ResaleEntry } from '../../src/entities/resale-entry'
 import {
 	type EventTicketSales,
 	NO_TICKET_SALES,
@@ -120,6 +122,9 @@ describe('EventRoute (fixture)', () => {
 				Registration.instance(IHeldSeatTypeService, {
 					heldTickets: vi.fn().mockResolvedValue(null),
 				}),
+				Registration.instance(IResaleEntryRpcClient, {
+					list: vi.fn().mockResolvedValue({ entries: [], stocks: new Map() }),
+				}),
 			],
 		).started
 
@@ -181,6 +186,7 @@ async function renderSales(
 	tickets: EventTicketSales,
 	authenticated: boolean,
 	held: HeldTickets | null = null,
+	resaleEntries: ResaleEntry[] = [],
 ) {
 	const concert = fixtureConcert()
 	const fixture = await createFixture(
@@ -218,6 +224,11 @@ async function renderSales(
 			Registration.instance(IHeldSeatTypeService, {
 				heldTickets: vi.fn().mockResolvedValue(held),
 			}),
+			Registration.instance(IResaleEntryRpcClient, {
+				list: vi
+					.fn()
+					.mockResolvedValue({ entries: resaleEntries, stocks: new Map() }),
+			}),
 		],
 	).started
 	const route = fixture.component.route
@@ -226,6 +237,9 @@ async function renderSales(
 		expect(route.tickets.sales).toHaveLength(tickets.sales.length),
 	)
 	if (held) await vi.waitFor(() => expect(route.heldStock).not.toBeNull())
+	if (resaleEntries.some((e) => e.state === 'entered')) {
+		await vi.waitFor(() => expect(route.resaleApplied).toBe(true))
+	}
 	await tasksSettled()
 	return fixture
 }
@@ -378,6 +392,70 @@ describe('EventRoute ticket section (fixture)', () => {
 		)
 		expect(testid(s, 'event-buy')).toBeNull()
 		expect(s.textContent).not.toMatch(/\d+枚/)
+		await fixture.stop(true)
+	})
+
+	it('offers a guest the action to apply for official resale, with no count', async () => {
+		// @spec components/infrastructure/fan/web/route/event "Sold out, resale open"
+		const fixture = await renderSales(
+			tickets([onSale()], [stock({ state: 'soldOut', resaleOpen: true })]),
+			false,
+		)
+		const s = rowOf(fixture.appHost, 'S席')
+
+		expect(testid(s, 'event-resale')?.textContent).toContain('公式リセール')
+		expect(testid(s, 'event-resale-draw')?.textContent).toContain(
+			'毎日の抽選で定価で割り当てます',
+		)
+		expect(testid(s, 'event-resale-apply')?.textContent).toBe(
+			'公式リセールに申し込む',
+		)
+		expect(s.textContent).not.toMatch(/\d+枚/)
+		expect(s.textContent).not.toMatch(/\d+人/)
+		await fixture.stop(true)
+	})
+
+	it('opens the resale entry screen from the resale action for a signed-in fan', async () => {
+		// @spec components/infrastructure/fan/web/route/event "Sold out, resale open"
+		const fixture = await renderSales(
+			tickets([onSale()], [stock({ state: 'soldOut', resaleOpen: true })]),
+			true,
+		)
+		const apply = testid(
+			rowOf(fixture.appHost, 'S席'),
+			'event-resale-apply',
+		) as HTMLAnchorElement
+		expect(apply.getAttribute('href')).toBe(
+			`/events/${EVENT_ID}/resale/stock-s`,
+		)
+		await fixture.stop(true)
+	})
+
+	it('shows 申し込み済み when the fan has a resale entry waiting for a draw', async () => {
+		// @spec components/infrastructure/fan/web/route/event "Already applied"
+		const fixture = await renderSales(
+			tickets([onSale()], [stock({ state: 'soldOut', resaleOpen: true })]),
+			true,
+			null,
+			[
+				{
+					id: 'entry-1',
+					orderId: 'order-1',
+					ticketStockId: 'stock-s',
+					ticketCount: 2,
+					state: 'entered',
+					createTime: new Date(),
+				},
+			],
+		)
+		const s = rowOf(fixture.appHost, 'S席')
+
+		const applied = testid(s, 'event-resale-applied') as HTMLAnchorElement
+		expect(applied.textContent).toBe('申し込み済み')
+		expect(applied.getAttribute('href')).toBe(
+			`/events/${EVENT_ID}/resale/stock-s`,
+		)
+		expect(testid(s, 'event-resale-apply')).toBeNull()
 		await fixture.stop(true)
 	})
 

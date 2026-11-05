@@ -4,6 +4,7 @@ import { Code, ConnectError } from '@connectrpc/connect'
 import { IEventAggregator, ILogger, resolve } from 'aurelia'
 import { Snack } from '../../../shared/ui/snack-bar/snack'
 import { IConcertRpcClient } from '../../adapter/rpc/client/concert-client'
+import { IResaleEntryRpcClient } from '../../adapter/rpc/client/resale-entry-client'
 import { ITicketSaleRpcClient } from '../../adapter/rpc/client/ticket-sale-client'
 import {
 	normalizeReferralCode,
@@ -69,6 +70,8 @@ export interface StockRow {
 	readonly offered: boolean
 	/** Where the action to buy or to enter leads a signed-in fan. */
 	readonly actionUrl: string
+	/** Where the official resale action leads a signed-in fan. */
+	readonly resaleUrl: string
 }
 
 /**
@@ -83,6 +86,7 @@ export class EventRoute implements IRouteViewModel {
 	private readonly ea = resolve(IEventAggregator)
 	private readonly concertClient = resolve(IConcertRpcClient)
 	private readonly ticketSaleClient = resolve(ITicketSaleRpcClient)
+	private readonly resaleEntryClient = resolve(IResaleEntryRpcClient)
 	private readonly authService = resolve(IAuthService)
 	private readonly followStore = resolve(IFollowStore)
 	private readonly purchasedTickets = resolve(IPurchasedTicketStore)
@@ -101,6 +105,11 @@ export class EventRoute implements IRouteViewModel {
 	 * for at this event, or null.
 	 */
 	public heldStock: TicketStock | null = null
+	/**
+	 * True when the signed-in fan has a resale entry for this event that
+	 * waits for a draw: the resale action then reads 申し込み済み.
+	 */
+	public resaleApplied = false
 	/** The current time, read when the sales arrive. */
 	public now = new Date()
 	public followUpdatingId = ''
@@ -142,6 +151,7 @@ export class EventRoute implements IRouteViewModel {
 		this.seriesEvents = []
 		this.tickets = NO_TICKET_SALES
 		this.heldStock = null
+		this.resaleApplied = false
 		this.followsLoaded = false
 		try {
 			const proto = await this.concertClient.get(this.eventId, signal)
@@ -174,6 +184,7 @@ export class EventRoute implements IRouteViewModel {
 		void this.loadFollowed(signal)
 		const purchased = this.loadPurchasedTickets(signal)
 		void this.loadHeldSeatType(sale, purchased, signal)
+		void this.loadResaleApplied(sale, signal)
 	}
 
 	/**
@@ -281,6 +292,31 @@ export class EventRoute implements IRouteViewModel {
 		if (!signal.aborted) this.heldStock = held?.stock ?? null
 	}
 
+	/**
+	 * Once the sales are read, find whether the signed-in fan has a resale
+	 * entry waiting for a draw for one of the event's stocks.
+	 */
+	private async loadResaleApplied(
+		sale: Promise<void>,
+		signal: AbortSignal,
+	): Promise<void> {
+		try {
+			await Promise.all([sale, this.authService.ready])
+			if (signal.aborted || !this.authService.isAuthenticated) return
+			if (!this.tickets.stocks.some((s) => s.resaleOpen)) return
+			const stocks = new Set(this.tickets.stocks.map((s) => s.id))
+			const { entries } = await this.resaleEntryClient.list(signal)
+			if (signal.aborted) return
+			this.resaleApplied = entries.some(
+				(e) => e.state === 'entered' && stocks.has(e.ticketStockId),
+			)
+		} catch (err) {
+			if (signal.aborted) return
+			// The action still opens the resale screen, which shows the entry.
+			this.logger.warn('Resale entries read failed', { error: err })
+		}
+	}
+
 	public retry(): void {
 		void this.load()
 	}
@@ -382,6 +418,7 @@ export class EventRoute implements IRouteViewModel {
 				sale.method === 'lottery'
 					? `/events/${event.id}/lottery/${sale.id}/${stock.id}`
 					: `/events/${event.id}/checkout/${stock.id}`,
+			resaleUrl: `/events/${event.id}/resale/${stock.id}`,
 		}))
 	}
 

@@ -3,8 +3,8 @@ import { stripUrl } from './strip-own-url-query'
 
 /**
  * Route elements of the screens that are never recorded: the checkout, the
- * lottery entry and its status, the identity check and Settings (with its
- * passkeys screen). Blocking a route element replaces the whole screen with
+ * lottery entry and its status, the resale entry, the identity check and
+ * Settings (with its passkeys screen). Blocking a route element replaces the whole screen with
  * an empty box, so nothing of it is recorded even before recording stops on
  * its address ({@link isUnrecordedPath}).
  */
@@ -12,6 +12,7 @@ export const UNRECORDED_SCREENS = [
 	'checkout-route',
 	'lottery-entry-route',
 	'lottery-entry-status-route',
+	'resale-entry-route',
 	'verify-callback-route',
 	'settings-route',
 	'passkeys-route',
@@ -78,6 +79,7 @@ export function sessionRecordingOptions(
 const UNRECORDED_PATHS: readonly RegExp[] = [
 	/^\/events\/[^/]+\/checkout(\/[^/]+)?\/?$/,
 	/^\/events\/[^/]+\/lottery\//,
+	/^\/events\/[^/]+\/resale\//,
 	/^\/verify\//,
 	/^\/settings(\/|$)/,
 ]
