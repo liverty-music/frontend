@@ -2,6 +2,7 @@ import { DI, ILogger, resolve } from 'aurelia'
 import { ICheckoutRpcClient } from '../adapter/rpc/client/checkout-client'
 import { ILotteryEntryRpcClient } from '../adapter/rpc/client/lottery-entry-client'
 import { IOrderRpcClient } from '../adapter/rpc/client/order-client'
+import { IResaleEntryRpcClient } from '../adapter/rpc/client/resale-entry-client'
 import { loadCheckoutId } from '../adapter/storage/checkout-storage'
 import type { EventTicketSales, TicketStock } from '../entities/ticket-sale'
 import { IAuthService } from './auth-service'
@@ -19,8 +20,8 @@ export interface HeldTickets {
 	/** The stock of the one seat type the fan holds or applied for. */
 	readonly stock: TicketStock
 	/**
-	 * The tickets they hold or applied for: Issued tickets, Entered entries
-	 * and the checkout held on this device. A Won entry counts through its
+	 * The tickets they hold or applied for: Issued tickets, Entered lottery
+	 * and resale entries and the checkout held on this device. A Won entry counts through its
 	 * tickets once they are issued.
 	 */
 	readonly count: number
@@ -45,6 +46,8 @@ const NOTHING: Found = { stockIds: [], count: 0 }
  *   from the tickets IPurchasedTicketStore loaded);
  * - their Entered or Won entries in the event's lottery sales
  *   (LotteryEntryService.ListByTicketSale, which returns each entry's Order);
+ * - their Entered or Won resale entries for the event's stocks
+ *   (ResaleEntryService.List);
  * - the checkout they hold for the event on this device (CheckoutService.Get).
  *
  * A failed read is logged and leaves that source out: the server refuses a
@@ -58,6 +61,7 @@ export class HeldSeatTypeService {
 	private readonly orderClient = resolve(IOrderRpcClient)
 	private readonly entryClient = resolve(ILotteryEntryRpcClient)
 	private readonly checkoutClient = resolve(ICheckoutRpcClient)
+	private readonly resaleEntryClient = resolve(IResaleEntryRpcClient)
 
 	/**
 	 * What the fan holds or applied for at `eventId`, or null when nothing
@@ -79,6 +83,7 @@ export class HeldSeatTypeService {
 			...tickets.sales
 				.filter((s) => s.method === 'lottery')
 				.map((s) => this.fromEntries(s.id, stocks, signal)),
+			this.fromResaleEntries(stocks, signal),
 			this.fromCheckout(eventId, signal),
 		])
 		for (const f of found) {
@@ -136,6 +141,31 @@ export class HeldSeatTypeService {
 		} catch (err) {
 			if (!signal?.aborted) {
 				this.logger.warn('Lottery entries read failed', { saleId, error: err })
+			}
+			return NOTHING
+		}
+	}
+
+	private async fromResaleEntries(
+		stocks: ReadonlyMap<string, TicketStock>,
+		signal: AbortSignal | undefined,
+	): Promise<Found> {
+		try {
+			const { entries } = await this.resaleEntryClient.list(signal)
+			const live = entries.filter(
+				(e) =>
+					stocks.has(e.ticketStockId) &&
+					(e.state === 'entered' || e.state === 'won'),
+			)
+			return {
+				stockIds: live.map((e) => e.ticketStockId),
+				count: live
+					.filter((e) => e.state === 'entered')
+					.reduce((sum, e) => sum + e.ticketCount, 0),
+			}
+		} catch (err) {
+			if (!signal?.aborted) {
+				this.logger.warn('Resale entries read failed', { error: err })
 			}
 			return NOTHING
 		}

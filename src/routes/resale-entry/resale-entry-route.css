@@ -1,0 +1,179 @@
+@layer block {
+	@scope (resale-entry-route) {
+		:scope {
+			--flow-space: var(--space-m);
+
+			overflow-y: auto;
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-m);
+
+			block-size: 100%;
+			padding-block: var(--space-l);
+			padding-inline: var(--space-m);
+
+			background: var(--color-surface-base);
+		}
+
+		.resale-entry-title {
+			font-family: var(--font-display);
+			font-size: var(--step-2);
+			font-weight: normal;
+			line-height: var(--leading-snug);
+			color: var(--color-text-primary);
+			text-wrap: balance;
+		}
+
+		.resale-entry-panel {
+			--flow-space: var(--space-m);
+
+			inline-size: 100%;
+			max-inline-size: 36rem;
+			margin-inline: auto;
+			padding: var(--space-m);
+			border: 1px solid var(--color-border-subtle);
+			border-radius: var(--radius-card);
+
+			background: var(--color-surface-raised);
+		}
+
+		.resale-entry-step-title,
+		.resale-entry-seat-type {
+			font-size: var(--step-1);
+			font-weight: 600;
+			color: var(--color-text-primary);
+		}
+
+		.resale-entry-lead {
+			font-size: var(--step--1);
+			line-height: var(--leading-relaxed);
+			color: var(--color-text-secondary);
+			text-wrap: pretty;
+		}
+
+		.resale-entry-field {
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-2xs);
+		}
+
+		.resale-entry-label {
+			font-size: var(--step--1);
+			font-weight: 600;
+			color: var(--color-text-primary);
+		}
+
+		.resale-entry-input {
+			inline-size: 100%;
+			min-block-size: 48px;
+			padding-block: var(--space-2xs);
+			padding-inline: var(--space-s);
+			border: 1px solid var(--color-border-subtle);
+			border-radius: var(--radius-button);
+
+			font-size: var(--step-0);
+			color: var(--color-text-primary);
+
+			background: var(--color-surface-base);
+
+			&:focus-visible {
+				border-color: var(--color-brand-primary);
+				outline: 2px solid
+					color-mix(in oklch, var(--color-brand-primary) 40%, transparent);
+				outline-offset: 1px;
+			}
+		}
+
+		.resale-entry-total {
+			font-size: var(--step-0);
+			color: var(--color-text-primary);
+
+			& strong {
+				font-size: var(--step-1);
+			}
+		}
+
+		.resale-entry-terms {
+			--flow-space: var(--space-s);
+
+			padding: var(--space-s);
+			border: 1px solid
+				color-mix(in oklch, var(--color-brand-primary) 25%, transparent);
+			border-radius: var(--radius-card);
+
+			font-size: var(--step--1);
+			line-height: var(--leading-relaxed);
+			color: var(--color-text-secondary);
+
+			background: color-mix(
+				in oklch,
+				var(--color-brand-primary) 6%,
+				transparent
+			);
+		}
+
+		.resale-entry-terms-lead {
+			color: var(--color-text-primary);
+			text-wrap: pretty;
+		}
+
+		.resale-entry-terms-list {
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-2xs);
+
+			padding-inline-start: var(--space-m);
+
+			list-style: disc;
+
+			& strong {
+				color: var(--color-text-primary);
+			}
+		}
+
+		.resale-entry-terms-brands {
+			text-wrap: pretty;
+
+			& strong {
+				color: var(--color-text-primary);
+			}
+		}
+
+		.resale-entry-confirm {
+			display: grid;
+			gap: var(--space-2xs) var(--space-s);
+
+			font-size: var(--step--1);
+			line-height: var(--leading-relaxed);
+			color: var(--color-text-primary);
+
+			& dt {
+				font-weight: 600;
+			}
+
+			& dd {
+				margin-block-end: var(--space-xs);
+				color: var(--color-text-secondary);
+			}
+		}
+
+		.resale-entry-payment-element {
+			min-block-size: 3rem;
+			padding-block: var(--space-2xs);
+		}
+
+		.resale-entry-error {
+			font-size: var(--step--1);
+			color: var(--color-error);
+		}
+
+		.resale-entry-actions {
+			--cluster-gap: var(--space-s);
+		}
+
+		/* Layout only; the look comes from the shared `button` block. */
+		.resale-entry-action {
+			inline-size: 100%;
+		}
+	}
+}

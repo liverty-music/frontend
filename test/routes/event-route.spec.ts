@@ -14,6 +14,7 @@ import {
 	IConcertRpcClient,
 	type ResolvedConcert,
 } from '../../src/adapter/rpc/client/concert-client'
+import { IResaleEntryRpcClient } from '../../src/adapter/rpc/client/resale-entry-client'
 import { ITicketSaleRpcClient } from '../../src/adapter/rpc/client/ticket-sale-client'
 import type { Artist } from '../../src/entities/artist'
 import {
@@ -151,6 +152,9 @@ describe('EventRoute', () => {
 			Registration.instance(IUserStore, userStore),
 			Registration.instance(ITicketSaleRpcClient, ticketSaleClient),
 			Registration.instance(IHeldSeatTypeService, heldSeatTypes),
+			Registration.instance(IResaleEntryRpcClient, {
+				list: vi.fn().mockResolvedValue({ entries: [], stocks: new Map() }),
+			}),
 			Registration.instance(IAnalyticsService, analytics),
 		)
 		container.register(EventRoute)

@@ -182,6 +182,12 @@
             <div if.bind="row.stock.resaleOpen" class="[ event-resale ] [ flow ]" data-testid="event-resale">
               <p class="event-sale-name" t="eventPage.tickets.resale.title"></p>
               <p data-testid="event-resale-listing" t="eventPage.tickets.resale.listing"></p>
+              <p data-testid="event-resale-draw" t="eventPage.tickets.resale.draw"></p>
+              <template if.bind="!isGuest">
+                <a if.bind="resaleApplied" href.bind="row.resaleUrl" class="[ button ] [ pressable ]" data-variant="outlined" data-testid="event-resale-applied" t="eventPage.tickets.resale.applied"></a>
+                <a else href.bind="row.resaleUrl" class="[ button ] [ pressable ]" data-testid="event-resale-apply" t="eventPage.tickets.resale.apply"></a>
+              </template>
+              <button else type="button" class="[ button ] [ pressable ]" click.trigger="signUp()" data-testid="event-resale-apply" t="eventPage.tickets.resale.apply"></button>
             </div>
           </li>
         </ul>
