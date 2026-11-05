@@ -6,7 +6,6 @@ import { InlineError } from './inline-error'
 const meta = {
 	title: 'Components/InlineError',
 	component: InlineError,
-	tags: ['test', 'autodocs'],
 	argTypes: {
 		message: {
 			control: 'text',

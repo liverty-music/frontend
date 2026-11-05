@@ -10,7 +10,6 @@ import { StatTile } from './stat-tile'
 const meta = {
 	title: 'Console/StatTile',
 	component: StatTile,
-	tags: ['test', 'autodocs'],
 	parameters: consoleStoryParameters,
 	argTypes: {
 		label: { control: 'text' },

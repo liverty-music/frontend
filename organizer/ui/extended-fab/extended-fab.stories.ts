@@ -11,7 +11,6 @@ import { ExtendedFab } from './extended-fab'
 const meta = {
 	title: 'Console/ExtendedFab',
 	component: ExtendedFab,
-	tags: ['test', 'autodocs'],
 	parameters: consoleStoryParameters,
 	argTypes: {
 		icon: { control: 'text' },

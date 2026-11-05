@@ -10,7 +10,6 @@ import { CONSOLE_ICON_NAMES, ConsoleIcon } from './console-icon'
 const meta = {
 	title: 'Console/ConsoleIcon',
 	component: ConsoleIcon,
-	tags: ['test', 'autodocs'],
 	parameters: consoleStoryParameters,
 	argTypes: {
 		name: { control: 'select', options: CONSOLE_ICON_NAMES },

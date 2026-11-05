@@ -19,7 +19,6 @@ import { ConfirmDialog } from './confirm-dialog'
 const meta = {
 	title: 'Console/ConfirmDialog',
 	component: ConfirmDialog,
-	tags: ['test', 'autodocs'],
 	parameters: consoleStoryParameters,
 	argTypes: {
 		headingKey: { control: 'text', description: 'Catalog key of the title.' },

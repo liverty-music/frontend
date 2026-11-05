@@ -16,7 +16,6 @@ import { type MenuItem, OverflowMenu } from './overflow-menu'
 const meta = {
 	title: 'Console/OverflowMenu',
 	component: OverflowMenu,
-	tags: ['test', 'autodocs'],
 	parameters: consoleStoryParameters,
 	argTypes: {
 		labelKey: {

@@ -9,7 +9,6 @@ import { CircularProgress } from './circular-progress'
 const meta = {
 	title: 'Shared/CircularProgress',
 	component: CircularProgress,
-	tags: ['test', 'autodocs'],
 	argTypes: {
 		size: {
 			control: 'select',

@@ -16,7 +16,6 @@ import { SettingsStatusRow } from './settings-status-row'
 const meta = {
 	title: 'Components/SettingsStatusRow',
 	component: SettingsStatusRow,
-	tags: ['test', 'autodocs'],
 	argTypes: {
 		icon: { control: 'text' },
 		label: { control: 'text' },

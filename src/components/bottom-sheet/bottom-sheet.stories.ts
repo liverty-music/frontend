@@ -9,7 +9,6 @@ import { BottomSheet } from './bottom-sheet'
 const meta = {
 	title: 'Components/BottomSheet',
 	component: BottomSheet,
-	tags: ['test', 'autodocs'],
 	argTypes: {
 		open: { control: 'boolean', description: 'Shows/dismisses the sheet.' },
 		dismissable: {

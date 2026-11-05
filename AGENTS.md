@@ -103,7 +103,9 @@ a controller to every element it sits on.
 
 Story **only presentational custom elements under `src/components/`** — components whose render is a
 pure function of their `@bindable` inputs. Story files are colocated: `src/components/<name>/<name>.stories.ts`
-(CSF3, `satisfies Meta<typeof X>` / `StoryObj<typeof meta>`), tagged `['test', 'autodocs']`.
+(CSF3, `satisfies Meta<typeof X>` / `StoryObj<typeof meta>`). Do not tag them `test` or `autodocs`: Storybook
+applies `test` to every story, and `.storybook/preview.ts` applies `autodocs`. Tag a story only to change how
+it runs, such as `reduced-motion`.
 
 - Enumerate each visually distinct state as a named story; expose `@bindable`s as `argTypes` controls.
   **This is a contract, not a nicety**: adding a new visual state (a new `@bindable` that selects

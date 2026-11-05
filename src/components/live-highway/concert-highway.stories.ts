@@ -186,7 +186,6 @@ async function assertLanesAlignWithStageHeader(
 const meta = {
 	title: 'LiveHighway/ConcertHighway',
 	component: ConcertHighway,
-	tags: ['test', 'autodocs'],
 } satisfies Meta<typeof ConcertHighway>
 
 export default meta

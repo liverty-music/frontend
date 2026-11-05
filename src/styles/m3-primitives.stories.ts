@@ -27,7 +27,6 @@ import {
  */
 const meta = {
 	title: 'Foundations/M3 Primitives',
-	tags: ['test', 'autodocs'],
 } satisfies Meta
 
 export default meta

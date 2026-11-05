@@ -17,7 +17,6 @@ import { ConsoleField } from './console-field'
 const meta = {
 	title: 'Console/ConsoleField',
 	component: ConsoleField,
-	tags: ['test', 'autodocs'],
 	parameters: consoleStoryParameters,
 	argTypes: {
 		type: {

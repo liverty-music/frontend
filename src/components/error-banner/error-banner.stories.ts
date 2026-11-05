@@ -45,7 +45,6 @@ function mockWindow() {
 const meta = {
 	title: 'Components/ErrorBanner',
 	component: ErrorBanner,
-	tags: ['test', 'autodocs'],
 } satisfies Meta<typeof ErrorBanner>
 
 export default meta

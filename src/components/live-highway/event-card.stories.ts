@@ -47,7 +47,6 @@ function cardStory(event: Concert, lane: LaneType = 'home') {
 const meta = {
 	title: 'LiveHighway/EventCard',
 	component: EventCard,
-	tags: ['test', 'autodocs'],
 	argTypes: {
 		lane: {
 			control: 'select',

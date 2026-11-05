@@ -69,7 +69,6 @@ class SnackDemo {
 const meta = {
 	title: 'Shared/SnackBar',
 	component: SnackBar,
-	tags: ['test', 'autodocs'],
 } satisfies Meta<typeof SnackBar>
 
 export default meta

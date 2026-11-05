@@ -10,7 +10,6 @@ import { type EventDateTab, EventDateTabs } from './event-date-tabs'
 const meta = {
 	title: 'Components/EventDateTabs',
 	component: EventDateTabs,
-	tags: ['test', 'autodocs'],
 	argTypes: {
 		label: { control: 'text', description: 'Accessible name of the tabs.' },
 		cancelledLabel: {

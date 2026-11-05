@@ -11,7 +11,6 @@ import { SettingsLinkRow } from './settings-link-row'
 const meta = {
 	title: 'Components/SettingsLinkRow',
 	component: SettingsLinkRow,
-	tags: ['test', 'autodocs'],
 	argTypes: {
 		icon: {
 			control: 'text',

@@ -56,7 +56,6 @@ function story(setup: Setup) {
 const meta = {
 	title: 'Components/PostSignupDialog',
 	component: PostSignupDialog,
-	tags: ['test', 'autodocs'],
 	// A phone; switch the viewport to see other sizes.
 	globals: { viewport: { value: 'mobile1', isRotated: false } },
 	// Shown as the app shows it: Japanese text under `lang="ja"`, which the

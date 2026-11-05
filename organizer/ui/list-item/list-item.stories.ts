@@ -10,7 +10,6 @@ import { ListItem } from './list-item'
 const meta = {
 	title: 'Console/ListItem',
 	component: ListItem,
-	tags: ['test', 'autodocs'],
 	parameters: consoleStoryParameters,
 	argTypes: {
 		href: {

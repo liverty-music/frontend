@@ -10,7 +10,6 @@ import { IconButton } from './icon-button'
 const meta = {
 	title: 'Console/IconButton',
 	component: IconButton,
-	tags: ['test', 'autodocs'],
 	parameters: consoleStoryParameters,
 	argTypes: {
 		icon: { control: 'text' },

@@ -80,7 +80,6 @@ const EMPTY = `
 const meta = {
 	title: 'Components/CelebrationOverlay',
 	component: CelebrationOverlay,
-	tags: ['test', 'autodocs'],
 	argTypes: {
 		tier: {
 			control: 'inline-radio',

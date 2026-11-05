@@ -15,7 +15,6 @@ import { expectScreenshot } from '../../.storybook/screenshot'
  */
 const meta = {
 	title: 'Foundations/Button',
-	tags: ['test', 'autodocs'],
 } satisfies Meta
 
 export default meta

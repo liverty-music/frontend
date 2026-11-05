@@ -11,7 +11,6 @@ import { PageHelp } from './page-help'
 const meta = {
 	title: 'Components/PageHelp',
 	component: PageHelp,
-	tags: ['test', 'autodocs'],
 } satisfies Meta<typeof PageHelp>
 
 export default meta

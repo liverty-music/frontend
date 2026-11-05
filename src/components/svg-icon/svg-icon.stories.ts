@@ -29,7 +29,6 @@ const ICON_NAMES = [
 const meta = {
 	title: 'Components/SvgIcon',
 	component: SvgIcon,
-	tags: ['test', 'autodocs'],
 	argTypes: {
 		name: {
 			control: 'select',

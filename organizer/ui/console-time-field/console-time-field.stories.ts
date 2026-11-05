@@ -18,7 +18,6 @@ import { HOURS, MINUTES } from './time-of-day'
 const meta = {
 	title: 'Console/ConsoleTimeField',
 	component: ConsoleTimeField,
-	tags: ['test', 'autodocs'],
 	parameters: consoleStoryParameters,
 	argTypes: {
 		label: { control: 'text' },
