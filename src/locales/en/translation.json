@@ -248,7 +248,8 @@
 			"discoverButton": "Discover Artists"
 		},
 		"table": {
-			"artistCol": "Artist"
+			"artistCol": "Artist",
+			"removeCol": "Remove"
 		},
 		"signupBanner": {
 			"message": "Save your follows!"

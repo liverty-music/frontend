@@ -19,3 +19,14 @@ export async function expectScreenshot(
 	const { expect } = await import('vitest')
 	await expect.element(element).toMatchScreenshot(name)
 }
+
+/**
+ * The pixels the page shows where `element` is, as a base64 PNG, including
+ * anything drawn over it (a view transition's snapshots, the top layer). Only
+ * while Vitest runs the story; `null` in the Storybook UI.
+ */
+export async function capturePixels(element: Element): Promise<string | null> {
+	if (import.meta.env.MODE !== 'test') return null
+	const { page } = await import('vitest/browser')
+	return page.screenshot({ element, save: false })
+}

@@ -248,7 +248,8 @@
 			"discoverButton": "アーティストを探す"
 		},
 		"table": {
-			"artistCol": "アーティスト"
+			"artistCol": "アーティスト",
+			"removeCol": "削除"
 		},
 		"signupBanner": {
 			"message": "フォロー履歴を保存しよう！"

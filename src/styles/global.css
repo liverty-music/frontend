@@ -160,6 +160,18 @@
 			transform: rotateY(-90deg);
 		}
 	}
+
+	/* My Artists: the rows' groups nest inside the list's group, which clips
+	   them like the list's scroll box does, so rows scrolled under the header
+	   stay hidden while one row animates out. Nested groups (CSS View
+	   Transitions 2, Chrome 140+) are newer than both linters' lists. */
+	/* stylelint-disable selector-pseudo-element-no-unknown */
+
+	/* biome-ignore lint/correctness/noUnknownPseudoElement: see above */
+	::view-transition-group-children(artist-rows) {
+		overflow: clip;
+	}
+	/* stylelint-enable selector-pseudo-element-no-unknown */
 	/* stylelint-enable cube/prefer-where-in-reset */
 
 	/* A named snapshot paints above the root one, and the FAB overlaps the
