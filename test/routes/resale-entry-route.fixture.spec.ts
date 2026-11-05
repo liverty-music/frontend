@@ -310,6 +310,23 @@ describe('ResaleEntryRoute 特商法 final confirmation (fixture)', () => {
 		await fixture.stop(true)
 	})
 
+	it('authorizes the card for the details the fan changed from the final confirmation', async () => {
+		// @spec components/infrastructure/fan/web/route/resale-entry "Final confirmation shown"
+		const { fixture, vm, client } = await render()
+		await toConfirmation(vm)
+
+		vm.backToPersonalDetails()
+		vm.fullName = '山田 太郎'
+		vm.paymentElementHost = document.createElement('div')
+		await vm.toPayment()
+		await vm.apply()
+
+		expect(client.authorizeCard).toHaveBeenCalledTimes(2)
+		expect(client.authorizeCard.mock.calls[1][2]).toBe('山田 太郎')
+		expect(vm.step).toBe('done')
+		await fixture.stop(true)
+	})
+
 	it('authorizes no card and makes no entry until the fan taps the action', async () => {
 		// @spec components/infrastructure/fan/web/route/resale-entry "Nothing is applied before the action"
 		const { fixture, vm, client, stripe } = await render()

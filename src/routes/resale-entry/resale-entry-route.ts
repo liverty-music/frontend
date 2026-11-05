@@ -134,9 +134,8 @@ export class ResaleEntryRoute implements IRouteViewModel {
 
 	private eventId = ''
 	private stockId = ''
-	private cardAuthorization:
-		| (ResaleCardAuthorization & { readonly ticketCount: number })
-		| null = null
+	/** The card authorization AuthorizeCard opened; Confirm names it. */
+	private cardAuthorization: ResaleCardAuthorization | null = null
 	private abortController: AbortController | null = null
 	private stripeHandles: { stripe: Stripe; elements: StripeElements } | null =
 		null
@@ -357,28 +356,19 @@ export class ResaleEntryRoute implements IRouteViewModel {
 	 * Save the name and phone number and open a card authorization for the
 	 * chosen count (ResaleEntryService.AuthorizeCard), then show the final
 	 * confirmation with the card form bound to its secret. Nothing is held on
-	 * the card until the fan applies.
+	 * the card until the fan applies, so coming back here after changing the
+	 * count or the details opens a new one for what the fan chose now.
 	 */
 	public async toPayment(): Promise<void> {
 		if (!this.isPersonalDetailsValid || this.busy || !this.stock) return
-		if (
-			this.cardAuthorization?.ticketCount === this.ticketCount &&
-			this.stripeHandles
-		) {
-			this.message = null
-			this.step = 'payment'
-			queueMicrotask(() => this.mountPaymentElement())
-			return
-		}
 		this.busy = true
 		this.message = null
 		try {
 			const fullName = this.fullName.trim()
 			const phoneNumber = this.phoneE164 ?? ''
-			const ticketCount = this.ticketCount
 			const cardAuthorization = await this.entryClient.authorizeCard(
 				this.stock.id,
-				ticketCount,
+				this.ticketCount,
 				fullName,
 				phoneNumber,
 				// The referral link's code counts only for the Series it was
@@ -387,7 +377,7 @@ export class ResaleEntryRoute implements IRouteViewModel {
 				this.signal,
 			)
 			this.forgetCard()
-			this.cardAuthorization = { ...cardAuthorization, ticketCount }
+			this.cardAuthorization = cardAuthorization
 			const user = this.userStore.current
 			if (user) this.userStore.current = { ...user, fullName, phoneNumber }
 			this.stripeHandles = await this.stripe.createElements(
@@ -418,9 +408,6 @@ export class ResaleEntryRoute implements IRouteViewModel {
 		if (this.signal?.aborted) return
 		if (!this.stripeHandles || !this.paymentElementHost) return
 		if (this.paymentElementHost.childElementCount > 0) return
-		// Back from the card step re-renders its host: mount the one Payment
-		// Element of the Elements group again.
-		this.paymentElement?.destroy()
 		this.paymentElement = this.stripeHandles.elements.create('payment')
 		this.paymentElement.mount(this.paymentElementHost)
 	}
