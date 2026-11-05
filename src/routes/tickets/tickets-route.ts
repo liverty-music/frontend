@@ -552,7 +552,7 @@ export class TicketsRoute {
 
 	/**
 	 * Whether to say that official resale opens only when the seat type sells
-	 * out for the event: online, before admission opens, with a 未入場 ticket
+	 * out for the event: online, before the resale deadline, with a 未入場 ticket
 	 * whose stock is read and not open for resale.
 	 */
 	public explainsNoResale(
@@ -587,7 +587,7 @@ export class TicketsRoute {
 		return Math.floor((price * RESALE_FEE_PERCENT) / 100)
 	}
 
-	/** When listing closes for the group's event: when admission opens. */
+	/** When listing closes for the group's event: the resale deadline. */
 	public listingDeadlineLabel(group: WalletEventGroup | null): string {
 		const start = group?.event?.startTime
 		return start

@@ -878,9 +878,10 @@ describe('TicketsRoute', () => {
 			expect(sut.yen(price)).toBe('5,000')
 			expect(sut.yen(sut.listingFee(price))).toBe('500')
 			expect(sut.yen(price - sut.listingFee(price))).toBe('4,500')
-			// The event starts at 18:30, so listing closes at 15:30 that day.
+			// The event starts at 18:30, so listing closes at the 12:00 draw
+			// that day, earlier than 3 hours before the start.
 			expect(sut.listingDeadlineLabel(sut.listingGroup)).toBe(
-				'2026年11月20日(金) 15:30',
+				'2026年11月20日(金) 12:00',
 			)
 			expect(ja.tickets.resale.termRefund).toContain('購入時のカード')
 			expect(ja.tickets.resale.termNotGuaranteed).toContain('保証はありません')
