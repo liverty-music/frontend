@@ -984,7 +984,9 @@
 		"error": {
 			"retry": "Something went wrong. Please try again.",
 			"payment": "Could not prepare the payment. Please try again later.",
-			"confirm": "Could not apply. Please try again (the hold on your card is kept)."
+			"confirm": "Could not apply. Please try again (the hold on your card is kept).",
+			"load": "Could not load this page. Check your connection and try again.",
+			"reload": "Reload"
 		},
 		"refused": {
 			"title": "Your application was not completed",

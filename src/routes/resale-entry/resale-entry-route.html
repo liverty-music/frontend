@@ -15,9 +15,14 @@
 		<a href="/events/${event.id}" if.bind="event" t="resaleEntry.backToEvent"></a>
 	</section>
 
+	<section class="[ resale-entry-panel ] [ flow ]" if.bind="step === 'error'" data-testid="resale-entry-error">
+		<p class="resale-entry-lead" role="alert" t="resaleEntry.error.load"></p>
+		<button type="button" class="[ button resale-entry-action ] [ pressable ]" click.trigger="load()" data-testid="resale-entry-retry" t="resaleEntry.error.reload"></button>
+	</section>
+
 	<!-- What is applied for: the event, the seat type, its price and how resale works -->
 	<section
-		if.bind="event && stock && step !== 'loading' && step !== 'not-found' && step !== 'unavailable' && step !== 'done'"
+		if.bind="event && stock && step !== 'loading' && step !== 'not-found' && step !== 'error' && step !== 'unavailable' && step !== 'done'"
 		class="[ resale-entry-panel ] [ flow ]"
 		data-testid="resale-entry-summary"
 	>

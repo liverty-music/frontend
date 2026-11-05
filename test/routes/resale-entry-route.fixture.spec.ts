@@ -5,6 +5,7 @@ import { EventSchema } from '@buf/liverty-music_schema.bufbuild_es/liverty_music
 import { SeriesSchema } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
 import { create } from '@bufbuild/protobuf'
 import { timestampFromDate } from '@bufbuild/protobuf/wkt'
+import { Code, ConnectError } from '@connectrpc/connect'
 import { CustomElement, Registration } from 'aurelia'
 import { describe, expect, it, vi } from 'vitest'
 import { IConcertRpcClient } from '../../src/adapter/rpc/client/concert-client'
@@ -100,6 +101,8 @@ function entry(o: Partial<ResaleEntry> = {}): ResaleEntry {
 interface Setup {
 	readonly held?: HeldTickets | null
 	readonly entries?: ResaleEntry[]
+	/** ConcertService.Get's answer; the event by default. */
+	readonly concertGet?: ReturnType<typeof vi.fn>
 }
 
 /** Renders the real template with the ja bundle, loaded for S席. */
@@ -137,7 +140,7 @@ async function render(setup: Setup = {}) {
 				}
 			}),
 			Registration.instance(IConcertRpcClient, {
-				get: vi.fn().mockResolvedValue(concert),
+				get: setup.concertGet ?? vi.fn().mockResolvedValue(concert),
 			}),
 			Registration.instance(ITicketSaleRpcClient, {
 				listByEvent: vi.fn().mockResolvedValue(tickets),
@@ -361,6 +364,33 @@ describe('ResaleEntryRoute 特商法 final confirmation (fixture)', () => {
 
 		expect(stripe.confirmCardAuthorization).toHaveBeenCalledTimes(1)
 		expect(client.confirm).toHaveBeenCalledTimes(1)
+		await fixture.stop(true)
+	})
+})
+
+describe('ResaleEntryRoute read failure (fixture)', () => {
+	it('offers a retry when the read fails for a reason other than NotFound', async () => {
+		const get = vi
+			.fn()
+			.mockRejectedValueOnce(new ConnectError('down', Code.Unavailable))
+			.mockResolvedValue(concert)
+		const { fixture, vm } = await render({ concertGet: get })
+
+		expect(vm.step).toBe('error')
+		;(
+			byTestId(fixture.appHost, 'resale-entry-retry') as HTMLButtonElement
+		).click()
+		await vi.waitFor(() => expect(vm.step).toBe('count'))
+		await fixture.stop(true)
+	})
+
+	it('says the resale is not found when the event is NotFound', async () => {
+		const { fixture, vm } = await render({
+			concertGet: vi
+				.fn()
+				.mockRejectedValue(new ConnectError('gone', Code.NotFound)),
+		})
+		expect(vm.step).toBe('not-found')
 		await fixture.stop(true)
 	})
 })

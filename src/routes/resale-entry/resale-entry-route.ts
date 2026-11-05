@@ -44,6 +44,7 @@ import {
  * - `loading`: the event, its stocks and the fan's entries are read.
  * - `unavailable`: card payments are not configured in this environment.
  * - `not-found`: the event has no such TicketStock.
+ * - `error`: the read failed for another reason; a retry is offered.
  * - `closed`: the stock's resale is not open.
  * - `applied`: the fan already has an entry waiting for a draw at the event.
  * - `other-seat-type`: the fan holds or applied for another seat type.
@@ -59,6 +60,7 @@ export type ResaleEntryStep =
 	| 'loading'
 	| 'unavailable'
 	| 'not-found'
+	| 'error'
 	| 'closed'
 	| 'applied'
 	| 'other-seat-type'
@@ -180,13 +182,15 @@ export class ResaleEntryRoute implements IRouteViewModel {
 			this.stock = tickets.stocks.find((s) => s.id === this.stockId) ?? null
 		} catch (err) {
 			if (signal.aborted) return
-			if (ConnectError.from(err).code !== Code.NotFound) {
-				this.logger.warn('Resale entry read failed', {
-					eventId: this.eventId,
-					error: err,
-				})
+			if (ConnectError.from(err).code === Code.NotFound) {
+				this.step = 'not-found'
+				return
 			}
-			this.step = 'not-found'
+			this.logger.warn('Resale entry read failed', {
+				eventId: this.eventId,
+				error: err,
+			})
+			this.step = 'error'
 			return
 		}
 		if (!this.event || !this.stock || this.event.cancelled) {
