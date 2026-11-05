@@ -228,7 +228,7 @@ describe('Settings language and home area (fixture)', () => {
 		// The page text follows the new locale, the row included.
 		expect(r.languageRow()).toBe('English')
 		expect(r.host.querySelector('.settings-section-title')?.textContent).toBe(
-			en.settings.preferences,
+			en.settings.account,
 		)
 		expect(r.userStore.currentLanguage).toBe('en')
 		// Saved on this device too, so the Welcome page after a sign-out opens
@@ -296,8 +296,9 @@ describe('Settings language and home area (fixture)', () => {
 			'en',
 		)
 		expect(r.i18n.getLocale()).toBe('en')
+		// A guest's first section is 通知とサウンド (the hero comes before it).
 		expect(r.host.querySelector('.settings-section-title')?.textContent).toBe(
-			en.settings.preferences,
+			en.settings.sections.notificationsSound,
 		)
 		expect(r.rpc.setPreferredLanguage).not.toHaveBeenCalled()
 		await r.fixture.stop(true)

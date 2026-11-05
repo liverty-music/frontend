@@ -24,6 +24,8 @@ const ICON_NAMES = [
 	'map-pin',
 	'lock',
 	'shield-check',
+	'chart',
+	'pointer',
 ] as const
 
 const meta = {
@@ -59,6 +61,21 @@ export const Default = {
 
 export const Ticket = {
 	args: { name: 'ticket' },
+} satisfies Story
+
+// The two consent toggles of Settings each have an icon no other row shows.
+export const Chart = {
+	args: { name: 'chart' },
+	play: async ({ canvasElement }) => {
+		await expect(canvasElement.querySelector('svg')).toBeTruthy()
+	},
+} satisfies Story
+
+export const Pointer = {
+	args: { name: 'pointer' },
+	play: async ({ canvasElement }) => {
+		await expect(canvasElement.querySelector('svg')).toBeTruthy()
+	},
 } satisfies Story
 
 export const Warning = {

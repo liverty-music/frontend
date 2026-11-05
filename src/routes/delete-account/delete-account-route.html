@@ -1,3 +1,5 @@
+<import from="../../components/confirm-dialog/confirm-dialog"></import>
+
 <!-- The page title is owned by the shell-hosted <page-header> (data.titleKey). -->
 <main class="[ delete-account ] [ stack ]">
   <!-- After deletion: the session is gone; only the way to Welcome remains. -->
@@ -50,7 +52,7 @@
       </ul>
       <button
         type="button"
-        click.trigger="askDelete()"
+        busy-on-click.bind="() => askDelete()"
         aria-haspopup="dialog"
         class="[ button ] [ pressable ]"
         data-variant="danger"
@@ -62,31 +64,15 @@
     <a href="/settings" t="deleteAccount.backToSettings" class="delete-account-link"></a>
   </template>
 
-  <!-- Confirmation. Modal: the platform traps focus and closes on Escape. -->
-  <dialog ref="confirmDialog" class="delete-account-dialog" aria-labelledby="delete-account-confirm-title" data-testid="delete-account-confirm">
-    <div class="[ delete-account-dialog-body ] [ stack ]">
-      <h2 id="delete-account-confirm-title" t="deleteAccount.confirm.title" class="delete-account-heading"></h2>
-      <p t="deleteAccount.confirm.body" class="delete-account-text"></p>
-      <div class="[ delete-account-dialog-actions ] [ cluster ]">
-        <button
-          ref="confirmCancel"
-          type="button"
-          autofocus
-          click.trigger="cancelDelete()"
-          class="[ button ] [ pressable ]"
-          data-variant="outlined"
-          t="deleteAccount.confirm.cancel"
-          data-testid="delete-account-confirm-cancel"
-        ></button>
-        <button
-          type="button"
-          busy-on-click.bind="() => confirmDelete()"
-          class="[ button ] [ pressable ]"
-          data-variant="danger"
-          t="deleteAccount.confirm.delete"
-          data-testid="delete-account-confirm-delete"
-        ></button>
-      </div>
-    </div>
-  </dialog>
+  <!-- Confirmation. Modal: the platform traps focus and closes on Escape;
+       Cancel takes focus first. -->
+  <confirm-dialog
+    component.ref="confirmDialog"
+    heading.bind="'deleteAccount.confirm.title' | t"
+    body.bind="'deleteAccount.confirm.body' | t"
+    confirm-label.bind="'deleteAccount.confirm.delete' | t"
+    tone="danger"
+    test-id="delete-account-confirm"
+    confirm-test-id="delete-account-confirm-delete"
+  ></confirm-dialog>
 </main>

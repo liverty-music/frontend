@@ -1,4 +1,5 @@
-import { ISignaler, resolve } from 'aurelia'
+import { IRouterEvents } from '@aurelia/router'
+import { type IDisposable, ISignaler, resolve } from 'aurelia'
 import {
 	FAB_MENU_SIGNAL,
 	type FabAction,
@@ -21,6 +22,8 @@ import {
 export class FabMenu {
 	public readonly fabMenu = resolve(IFabMenuService)
 	private readonly signaler = resolve(ISignaler)
+	private readonly routerEvents = resolve(IRouterEvents)
+	private navigationSub: IDisposable | null = null
 
 	public isOpen = false
 
@@ -40,9 +43,18 @@ export class FabMenu {
 		} catch {
 			// Already shown.
 		}
+		// The launcher stays mounted between the tab pages (each ends with the
+		// Settings item), so a route change collapses an open arc here rather
+		// than by tearing the launcher down.
+		this.navigationSub = this.routerEvents.subscribe(
+			'au:router:navigation-start',
+			() => this.collapse(),
+		)
 	}
 
 	public detaching(): void {
+		this.navigationSub?.dispose()
+		this.navigationSub = null
 		// The panel's `toggle` event is dispatched asynchronously, after the
 		// `toggle.trigger` binding is gone, and the shell's `if.bind` reuses this
 		// view model on the next route with actions. Collapse the state here so
@@ -87,6 +99,17 @@ export class FabMenu {
 		} else {
 			// Esc / light-dismiss / FAB re-tap → return focus to the FAB.
 			this.fabButton.focus()
+		}
+	}
+
+	/** Close an open arc without pulling focus back to the FAB. */
+	private collapse(): void {
+		if (!this.isOpen) return
+		this.suppressRefocus = true
+		try {
+			this.panel.hidePopover()
+		} catch {
+			this.suppressRefocus = false
 		}
 	}
 

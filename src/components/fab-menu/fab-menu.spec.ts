@@ -2,6 +2,21 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const fakeFabMenu = { actions: [] as unknown[], handed: 'right' }
 const fakeSignaler = { dispatchSignal: vi.fn() }
+/** Router events stand-in: `navigate()` publishes a navigation start. */
+const routerListeners: Array<() => void> = []
+const fakeRouterEvents = {
+	subscribe: vi.fn((_event: string, listener: () => void) => {
+		routerListeners.push(listener)
+		return {
+			dispose: () => {
+				routerListeners.splice(routerListeners.indexOf(listener), 1)
+			},
+		}
+	}),
+	navigate: () => {
+		for (const l of [...routerListeners]) l()
+	},
+}
 
 vi.mock('aurelia', async (importOriginal) => {
 	const actual = await importOriginal<typeof import('aurelia')>()
@@ -9,7 +24,9 @@ vi.mock('aurelia', async (importOriginal) => {
 		...actual,
 		resolve: vi.fn((token: unknown) => {
 			const name = (token as { friendlyName?: string })?.friendlyName
-			return name === 'ISignaler' ? fakeSignaler : fakeFabMenu
+			if (name === 'ISignaler') return fakeSignaler
+			if (name === 'IRouterEvents') return fakeRouterEvents
+			return fakeFabMenu
 		}),
 	}
 })
@@ -39,6 +56,7 @@ describe('FabMenu', () => {
 
 	beforeEach(() => {
 		vi.clearAllMocks()
+		routerListeners.length = 0
 		sut = new FabMenu()
 		firstItem = { focus: vi.fn() }
 		fabButton = { focus: vi.fn() }
@@ -83,6 +101,33 @@ describe('FabMenu', () => {
 			sut.attached()
 
 			expect(sut.isOpen).toBe(false)
+		})
+	})
+
+	describe('navigation', () => {
+		// @spec components/infrastructure/fan/web/global/fab-menu "Moving between two routes that both contribute actions"
+		it('collapses an open arc when a navigation starts, without pulling focus back', () => {
+			Object.assign(fabButton, { hidePopover: vi.fn(), showPopover: vi.fn() })
+			sut.attached()
+			sut.onPanelToggle({ newState: 'open' } as ToggleEvent)
+			fabButton.focus.mockClear()
+
+			fakeRouterEvents.navigate()
+			expect(panel.hidePopover).toHaveBeenCalledOnce()
+			sut.onPanelToggle({ newState: 'closed' } as ToggleEvent)
+			expect(sut.isOpen).toBe(false)
+			expect(fabButton.focus).not.toHaveBeenCalled()
+
+			// The subscription ends with the launcher.
+			sut.detaching()
+			expect(routerListeners).toHaveLength(0)
+		})
+
+		it('leaves a closed arc alone', () => {
+			sut.attached()
+			fakeRouterEvents.navigate()
+			expect(panel.hidePopover).not.toHaveBeenCalled()
+			sut.detaching()
 		})
 	})
 

@@ -324,7 +324,10 @@
 		"lockedGeneric": "Unlocks once you've found some artists"
 	},
 	"settings": {
-		"preferences": "Preferences",
+		"sections": {
+			"notificationsSound": "Notifications & sound",
+			"displayControls": "Display & controls"
+		},
 		"myHomeArea": "My Home Area",
 		"notSet": "Not set",
 		"pushNotifications": "Push Notifications",
@@ -333,10 +336,11 @@
 		"soundEffectsHint": "On iOS, sound effects follow the device mute switch.",
 		"soundVolume": "Volume",
 		"language": "Language",
-		"about": "About",
+		"about": "About this app",
 		"termsOfService": "Terms of Service",
 		"privacyPolicy": "Privacy Policy",
 		"ossLicenses": "OSS Licenses",
+		"contact": "Contact",
 		"account": "Account",
 		"personalDetails": {
 			"title": "Name on your tickets",
@@ -347,7 +351,12 @@
 			"phoneInvalid": "Enter a valid phone number (e.g. 090-1234-5678).",
 			"save": "Save",
 			"saved": "Saved your ticket name.",
-			"saveError": "Couldn't save your ticket name. Please wait a moment and try again."
+			"saveError": "Couldn't save your ticket name. Please wait a moment and try again.",
+			"confirm": {
+				"title": "Change the name on your tickets?",
+				"body": "The tickets you hold will also show this name.",
+				"confirm": "Change"
+			}
 		},
 		"identityVerification": {
 			"label": "Identity verification",
@@ -356,8 +365,8 @@
 			"methodPrefix": "via",
 			"methodJpki": "My Number Card (JPKI)",
 			"methodDriverLicence": "Driver's licence",
-			"dedupeStrong": "strong dedupe",
-			"dedupeWeak": "weaker dedupe",
+			"dedupeStrong": "One account per person, firmly confirmed",
+			"dedupeWeak": "One account per person, lightly confirmed",
 			"verifyCta": "Verify identity"
 		},
 		"signIn": "Sign in",
@@ -370,17 +379,25 @@
 		"resendError": "Couldn't send the verification email — your connection may be unstable. Wait a moment and try again.",
 		"resendRateLimited": "Too many requests. Please try again later.",
 		"signOut": "Sign Out",
+		"signOutConfirm": {
+			"title": "Sign out?",
+			"body": "Next time, you will sign in again with your passkey.",
+			"confirm": "Sign out"
+		},
 		"signOutError": "Sign-out failed. Please try again.",
 		"deleteAccount": "Delete account",
 		"languageChangeError": "Couldn't save the language change. Wait a moment and try again.",
 		"notificationError": "Couldn't turn on notifications. Wait a moment and try again.",
 		"analytics": {
-			"sectionTitle": "Privacy & Analytics",
-			"toggleLabel": "Analytics",
-			"toggleDescription": "On by default. We use usage data — sent to PostHog Cloud EU — to find where people get stuck and improve the app. Your name, email address and sensitive information are not sent. When something goes wrong in the app, we also send what failed and the steps just before it. Turn this off to stop all analytics and error reports.",
-			"sessionReplayLabel": "Session replay",
-			"sessionReplayDescription": "On by default. Records anonymised screen interactions so we can see where the interface confuses people. Turning this off stops recording only — your other analytics and account stay unaffected.",
-			"privacyPolicyLink": "Read our Privacy Policy"
+			"sectionTitle": "Help improve the service",
+			"intro": "Liverty Music grows with the people who use it. How you use the app is the best clue to what we update next.",
+			"toggleLabel": "Share usage",
+			"toggleDescription": "We use it to find where people get lost and where errors happen, and fix them. Your name, email address and phone number are not sent. Turn this off to stop sending usage and error information.",
+			"sessionReplayLabel": "Share screen interaction logs",
+			"sessionReplayDescription": "Records taps and scrolls with what you type and the text on screen hidden. We use it to find confusing buttons and steps. Turning this off does not affect any other setting.",
+			"policyNotePrefix": "Our ",
+			"policyNoteLink": "Privacy Policy",
+			"policyNoteSuffix": " explains in detail how we handle your data."
 		},
 		"guestHero": {
 			"heading": "Sign in for the full experience",
@@ -848,7 +865,8 @@
 		"filter": "Filter concerts",
 		"help": "Help",
 		"leftHanded": "Left-handed mode",
-		"leftHandedDesc": "Open the action menu toward your left hand"
+		"leftHandedDesc": "Open the action menu toward your left hand",
+		"settings": "Settings"
 	},
 	"lotteryEntry": {
 		"title": "Enter the ticket lottery",
@@ -1342,5 +1360,8 @@
 		"off": "Get new {{name}} concerts {{places}} by push 🔔",
 		"signUp": "Sign up",
 		"settings": "Settings"
+	},
+	"confirmDialog": {
+		"cancel": "Cancel"
 	}
 }

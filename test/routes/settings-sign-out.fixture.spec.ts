@@ -141,10 +141,10 @@ describe('Sign-out from the settings screen (fixture)', () => {
 		await journeys.load()
 
 		const fixture = await builder.started
-		const name = fixture.appHost.querySelector<HTMLInputElement>(
-			'[data-testid="settings-full-name"]',
+		const name = fixture.appHost.querySelector(
+			'[data-testid="settings-personal-details-row"]',
 		)
-		expect(name?.value).toBe('山田 花子')
+		expect(name?.textContent).toContain('山田 花子')
 
 		const signOut =
 			fixture.appHost.querySelector<HTMLButtonElement>('.settings-sign-out')
@@ -168,6 +168,15 @@ describe('Sign-out from the settings screen (fixture)', () => {
 		)
 
 		signOut?.click()
+		await new Promise((r) => setTimeout(r, 0))
+		await tasksSettled()
+		// Nothing happens until the fan confirms.
+		expect(auth.signOut).not.toHaveBeenCalled()
+		fixture.appHost
+			.querySelector<HTMLButtonElement>(
+				'[data-testid="settings-sign-out-confirm-confirm"]',
+			)
+			?.click()
 		await new Promise((r) => setTimeout(r, 0))
 		await tasksSettled()
 

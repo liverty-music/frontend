@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { StorageKeys } from '../constants/storage-keys'
-import { type FabAction, FabMenuService } from './fab-menu-service'
+import {
+	type FabAction,
+	FabMenuService,
+	settingsAction,
+} from './fab-menu-service'
 
 function action(id: string, kind: FabAction['kind'] = 'command'): FabAction {
 	return { id, labelKey: `label.${id}`, icon: id, kind, invoke: () => {} }
@@ -66,6 +70,77 @@ describe('FabMenuService', () => {
 			disposeA()
 			sut.register({}, [action('b')])
 			expect(sut.actions.map((x) => x.id)).toEqual(['b'])
+		})
+	})
+
+	describe('trailing item', () => {
+		it('comes after every route set', () => {
+			sut.setTrailing(settingsAction(() => {}))
+			sut.register({ n: 1 }, [action('a')])
+			sut.register({ n: 2 }, [action('b')])
+			expect(sut.actions.map((x) => x.id)).toEqual(['a', 'b', 'settings'])
+		})
+
+		it('stays last when a route re-registers its set', () => {
+			const owner = {}
+			sut.register(owner, [action('a')])
+			sut.setTrailing(settingsAction(() => {}))
+			sut.register(owner, [action('a'), action('b')])
+			expect(sut.actions.map((x) => x.id)).toEqual(['a', 'b', 'settings'])
+		})
+
+		it('is the only item when no route contributes one', () => {
+			sut.setTrailing(settingsAction(() => {}))
+			expect(sut.actions.map((x) => x.id)).toEqual(['settings'])
+		})
+
+		it('is removed when cleared', () => {
+			sut.register({}, [action('a')])
+			sut.setTrailing(settingsAction(() => {}))
+			sut.setTrailing(null)
+			expect(sut.actions.map((x) => x.id)).toEqual(['a'])
+		})
+
+		it('settingsAction is a labelled command with the settings icon', () => {
+			const invoke = () => {}
+			expect(settingsAction(invoke)).toEqual({
+				id: 'settings',
+				labelKey: 'fabMenu.settings',
+				icon: 'settings',
+				kind: 'command',
+				invoke,
+			})
+		})
+	})
+
+	describe('hide', () => {
+		it('empties actions, and its disposer restores them', () => {
+			// @spec components/infrastructure/fan/web/global/fab-menu "FAB hidden while the route hides the launcher"
+			const owner = {}
+			sut.register(owner, [action('a')])
+			sut.setTrailing(settingsAction(() => {}))
+			const show = sut.hide(owner)
+			expect(sut.actions).toEqual([])
+			show()
+			expect(sut.actions.map((x) => x.id)).toEqual(['a', 'settings'])
+		})
+
+		it('keeps the launcher hidden while a route re-registers its set', () => {
+			const owner = {}
+			sut.hide(owner)
+			sut.register(owner, [action('a')])
+			expect(sut.actions).toEqual([])
+		})
+
+		it('disposer is idempotent', () => {
+			const show = sut.hide({})
+			const other = sut.hide({})
+			show()
+			show()
+			expect(sut.actions).toEqual([])
+			other()
+			sut.register({}, [action('a')])
+			expect(sut.actions.map((x) => x.id)).toEqual(['a'])
 		})
 	})
 

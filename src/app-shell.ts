@@ -5,11 +5,11 @@ import {
 	type RouteNode,
 	route,
 } from '@aurelia/router'
-import { type IDisposable, ILogger, resolve } from 'aurelia'
+import { type IDisposable, ILogger, resolve, watch } from 'aurelia'
 import { IAuthService } from './services/auth-service'
 import { IBottomSheetTracker } from './services/bottom-sheet-tracker'
 import { IErrorBoundaryService } from './services/error-boundary-service'
-import { IFabMenuService } from './services/fab-menu-service'
+import { IFabMenuService, settingsAction } from './services/fab-menu-service'
 import { IOnboardingService } from './services/onboarding-service'
 import { IPromptCoordinator } from './services/prompt-coordinator'
 import { IPwaInstallService } from './services/pwa-install-service'
@@ -205,8 +205,8 @@ const routeTable = [
 		// Uses the existing 'ticket' icon (svg-icon.html case="ticket").
 		data: { titleKey: 'nav.tickets', icon: 'ticket', labelKey: 'nav.tickets' },
 	},
-	// Settings is not a tab: it opens from the gear in the page header of the
-	// four tab pages (`isTabRoute`), and highlights no tab.
+	// Settings is not a tab: it opens from the last item of the FAB launcher on
+	// the four tab pages (`isTabRoute`), and highlights no tab.
 	{
 		path: 'settings',
 		component: import('./routes/settings/settings-route'),
@@ -294,6 +294,10 @@ export class AppShell {
 	// Global FAB action launcher registry. The shell owns the single launcher
 	// instance and gates its visibility on `showNav && actions.length`.
 	public readonly fabMenu = resolve(IFabMenuService)
+	// The launcher's last item on the tab pages: the only way into Settings.
+	private readonly settingsItem = settingsAction(() => {
+		void this.router.load('settings')
+	})
 	// Open bottom sheets, app-wide: the FAB steps aside while any is open.
 	public readonly sheets = resolve(IBottomSheetTracker)
 	private readonly errorBoundary = resolve(IErrorBoundaryService)
@@ -333,10 +337,19 @@ export class AppShell {
 
 	/**
 	 * Whether the displayed route is one of the bottom-nav tabs (`nav: true`).
-	 * The header shows the Settings gear only there.
+	 * The FAB launcher ends with the Settings item only there.
 	 */
 	public get isTabRoute(): boolean {
 		return this.currentRoute.parameterInformation[0]?.config?.nav === true
+	}
+
+	@watch((vm: AppShell) => vm.isTabRoute)
+	protected isTabRouteChanged(): void {
+		this.applySettingsItem()
+	}
+
+	private applySettingsItem(): void {
+		this.fabMenu.setTrailing(this.isTabRoute ? this.settingsItem : null)
 	}
 
 	// Updated on every navigation-end via route data `chrome: false`.
@@ -344,6 +357,7 @@ export class AppShell {
 	public showNav = true
 
 	public binding(): void {
+		this.applySettingsItem()
 		this.subscriptions.push(
 			this.routerEvents.subscribe('au:router:navigation-error', (event) => {
 				this.logger.error('Navigation error', { event })
@@ -369,5 +383,6 @@ export class AppShell {
 			sub.dispose()
 		}
 		this.subscriptions.length = 0
+		this.fabMenu.setTrailing(null)
 	}
 }

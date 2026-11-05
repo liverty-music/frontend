@@ -41,9 +41,9 @@ export class MyArtistsRoute {
 	public needsHome = false
 	public homeSelector: UserHomeSelector | undefined
 
-	// Edit-mode state: toggles per-row remove controls. @observable so the FAB
-	// context @watch re-registers when edit mode enters/exits (the launcher hides
-	// while editing; exit is via the in-list Done bar).
+	// Edit-mode state: toggles per-row remove controls. @observable so
+	// `editingChanged` hides the launcher while editing (exit is via the in-list
+	// Done bar).
 	@observable public editing = false
 
 	// Hype state tracking
@@ -75,6 +75,8 @@ export class MyArtistsRoute {
 	public pageHelp: PageHelp | undefined
 	/** Disposer for this route's contributed FAB actions. */
 	private fabDisposer: (() => void) | null = null
+	// Shows the launcher again; held while edit mode hides it.
+	private showLauncher: (() => void) | null = null
 
 	public get isOnboarding(): boolean {
 		return this.onboarding.isOnboarding
@@ -199,11 +201,10 @@ export class MyArtistsRoute {
 	 * This route's FAB actions. Edit lives in the launcher — not the top-right
 	 * header "dead zone" this feature exists to eliminate. It is a COMMAND (not a
 	 * toggle): tapping it enters edit mode and closes the launcher so the user
-	 * lands directly on the un-dimmed, editable list. While editing, the launcher
-	 * contributes nothing (the FAB hides); exit is via the in-list Done bar.
+	 * lands directly on the un-dimmed, editable list. While editing, the route
+	 * hides the launcher (`editingChanged`); exit is via the in-list Done bar.
 	 */
 	private buildFabActions(): FabAction[] {
-		if (this.editing) return []
 		// The first action sits closest to the FAB on the thumb arc.
 		const actions: FabAction[] = []
 		if (this.canEdit) {
@@ -220,14 +221,27 @@ export class MyArtistsRoute {
 	}
 
 	/**
-	 * Re-register whenever edit mode or edit-availability changes, so the launcher
-	 * hides on entering edit and the edit item appears/drops with the list — one
-	 * declarative trigger rather than scattered manual refresh calls (mirrors the
-	 * dashboard's context @watch).
+	 * Re-register whenever edit-availability changes, so the edit item appears
+	 * and drops with the list — one declarative trigger rather than scattered
+	 * manual refresh calls (mirrors the dashboard's context @watch).
 	 */
-	@watch((vm: MyArtistsRoute) => `${vm.editing}|${vm.canEdit}`)
+	@watch((vm: MyArtistsRoute) => vm.canEdit)
 	protected onFabContextChanged(): void {
 		this.refreshFabActions()
+	}
+
+	/**
+	 * Edit mode hides the whole launcher, the Settings item of the tab pages
+	 * included, and shows it again when edit mode ends: on Done, when the last
+	 * artist is removed, and on leaving the page (`detaching`).
+	 */
+	public editingChanged(editing: boolean): void {
+		if (editing) {
+			this.showLauncher ??= this.fabMenu.hide(this)
+		} else {
+			this.showLauncher?.()
+			this.showLauncher = null
+		}
 	}
 
 	private refreshFabActions(): void {
@@ -269,8 +283,8 @@ export class MyArtistsRoute {
 			this.artists.splice(index, 1)
 			this.undoArtist = artist
 			this.undoIndex = index
-			// Auto-exit edit mode when the last artist is removed (the FAB context
-			// @watch re-registers the launcher off the `editing` change).
+			// Auto-exit edit mode when the last artist is removed
+			// (`editingChanged` shows the launcher again).
 			if (this.artists.length === 0) {
 				this.editing = false
 			}

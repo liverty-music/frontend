@@ -4,6 +4,7 @@ import { Code, ConnectError } from '@connectrpc/connect'
 import { IEventAggregator, ILogger, resolve, watch } from 'aurelia'
 import { Snack } from '../../../shared/ui/snack-bar/snack'
 import { ILocalStorage } from '../../adapter/storage/local-storage'
+import type { ConfirmDialog } from '../../components/confirm-dialog/confirm-dialog'
 import type { UserHomeSelector } from '../../components/user-home-selector/user-home-selector'
 import { IAppConfig } from '../../config/app-config'
 import { codeToHome, translationKey } from '../../constants/iso3166'
@@ -78,6 +79,10 @@ export class SettingsRoute {
 
 	public resendSuccess = false
 
+	/** Bound via `component.ref`: the confirmations asked before acting. */
+	public signOutConfirm?: ConfirmDialog
+	public personalDetailsConfirm?: ConfirmDialog
+
 	/**
 	 * The name and phone number shown on the fan's tickets, as typed in the
 	 * form. Seeded from the saved User; the phone in the domestic form the fan
@@ -89,6 +94,10 @@ export class SettingsRoute {
 	public personalDetailsSubmitted = false
 	/** The form values last seeded from the saved User. */
 	private personalDetailsSeed = { fullName: '', phoneNumber: '' }
+	/** Whether the bottom sheet holding the name and phone form is open. */
+	public personalDetailsOpen = false
+	/** The new name and phone number, then what changes, for the confirmation. */
+	public personalDetailsConfirmBody = ''
 
 	/**
 	 * Whether the running platform is iOS/iPadOS. Used to gate the
@@ -191,6 +200,12 @@ export class SettingsRoute {
 		return this.userStore.current
 	}
 
+	/** The saved phone number in the domestic form, for the row; or empty. */
+	public get savedPhoneDisplay(): string {
+		const phone = this.savedUser?.phoneNumber
+		return phone ? toDomesticDisplay(phone) : ''
+	}
+
 	/** The phone number as E.164, or null when it is not a valid number. */
 	private get phoneE164(): string | null {
 		return toE164(this.phoneNumber)
@@ -247,8 +262,16 @@ export class SettingsRoute {
 		this.personalDetailsSubmitted = false
 	}
 
+	/** Open the sheet with the form filled from the saved User. */
+	public openPersonalDetails(): void {
+		// Re-seeded on every open, so a cancelled edit never shows up again.
+		this.seedPersonalDetails()
+		this.personalDetailsOpen = true
+	}
+
 	/**
-	 * Save the changed name, phone number or both with `UserService.Update`.
+	 * Save the changed name, phone number or both with `UserService.Update`,
+	 * once the fan confirms: the tickets they hold show the new name too.
 	 * Only the changed fields are sent; the phone number is sent as E.164.
 	 */
 	public async savePersonalDetails(): Promise<void> {
@@ -270,6 +293,13 @@ export class SettingsRoute {
 			return
 		}
 
+		// Cancel keeps the sheet open with what the fan typed.
+		this.personalDetailsConfirmBody = this.describeNewPersonalDetails(
+			fullName || (saved?.fullName ?? ''),
+			phoneNumber ?? saved?.phoneNumber ?? '',
+		)
+		if (!(await this.personalDetailsConfirm?.ask())) return
+
 		try {
 			await this.userStore.updatePersonalDetails(details)
 		} catch (err) {
@@ -282,10 +312,22 @@ export class SettingsRoute {
 			)
 			return
 		}
+		this.personalDetailsOpen = false
 		this.seedPersonalDetails()
 		this.ea.publish(
 			new Snack(this.i18n.tr('settings.personalDetails.saved'), 'info'),
 		)
+	}
+
+	/** "<name> / <phone>" on a line of its own, then what the change does. */
+	private describeNewPersonalDetails(
+		fullName: string,
+		phoneE164: string,
+	): string {
+		const values = [fullName, phoneE164 ? toDomesticDisplay(phoneE164) : '']
+			.filter((v) => v !== '')
+			.join(' / ')
+		return `${values}\n${this.i18n.tr('settings.personalDetails.confirm.body')}`
 	}
 
 	public binding(): void {
@@ -653,7 +695,9 @@ export class SettingsRoute {
 		})
 	}
 
+	/** Sign out once the fan confirms; Cancel or Escape keeps them signed in. */
 	public async signOut(): Promise<void> {
+		if (!(await this.signOutConfirm?.ask())) return
 		try {
 			// AuthService publishes SignedOut before the redirect; every store
 			// (UserStore included) clears its own state on it.

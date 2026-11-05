@@ -1,18 +1,17 @@
-/* "Name on your tickets" form: the User's full name and phone number. Split out
-   of settings-route.css so each file holds a single @scope block (per
-   cube/one-block-per-file). Scoped to `settings-route` because the markup lives
-   in the settings-route template. */
+/* "Name on your tickets" form: the User's full name and phone number, in the
+   bottom sheet its Settings row opens. Split out of settings-route.css so each
+   file holds a single @scope block (per cube/one-block-per-file). Scoped to
+   `settings-route` because the markup lives in the settings-route template
+   (light-DOM projection into the sheet keeps it a descendant). */
 @layer block {
 	@scope (settings-route) {
-		/* The card surface of the other sections, holding a stacked form instead
-		   of a subgrid of rows. `[ stack ]` supplies the rhythm between fields. */
+		/* The sheet is the surface; `[ stack ]` supplies the rhythm between
+		   fields. Gutters match the language selector's. */
 		.settings-personal-details {
 			--stack-gap: var(--space-xs);
 
-			padding: var(--space-s);
-			border: 1px solid color-mix(in oklch, var(--color-white) 10%, transparent);
-			border-radius: var(--radius-card);
-			background: var(--color-surface-raised);
+			padding-block-end: var(--space-l);
+			padding-inline: var(--space-m);
 		}
 
 		.settings-personal-details-note {

@@ -2,6 +2,7 @@
 <import from="./identity-verification.css"></import>
 <import from="./personal-details.css"></import>
 <import from="../../components/settings-list/settings-list.css"></import>
+<import from="../../components/confirm-dialog/confirm-dialog"></import>
 
 <!-- The page title ("Settings") is owned by the shell-hosted <page-header>,
      driven from the route's data.titleKey. -->
@@ -22,231 +23,18 @@
     <a href="/passkey-recovery" t="settings.guestHero.cantSignIn" class="settings-guest-hero-help" data-testid="settings-cant-sign-in"></a>
   </section>
 
-  <!-- PREFERENCES Section.
-       The card is a `role="list"` of settings; each row is wrapped in a
+  <!-- The sections follow a fixed order: Account, Name on your tickets,
+       Notifications and sound, Display and controls, Help improve the
+       service, About, then Sign Out and Delete account.
+       Each card is a `role="list"` of settings; each row is wrapped in a
        `<li class="settings-list-item">` (display:contents) so the row stays a
        subgrid item spanning the card's `icon | content | control` columns while
        SR users hear a bounded "list, N items". Row separators are CSS borders,
        not `<hr>`s (which an `<ul>` may not contain and SR announces as noise). -->
-  <section>
-    <h2 t="settings.preferences" class="settings-section-title"></h2>
-    <ul class="settings-card" role="list">
-      <!-- My Home Area -->
-      <li class="settings-list-item">
-        <settings-link-row
-          icon="map-pin"
-          label.bind="'settings.myHomeArea' | t"
-          value.bind="currentHomeKey | t"
-          test-id="settings-first-row"
-          action.bind="() => openHomeSelector()"
-        ></settings-link-row>
-      </li>
 
-      <!-- Language -->
-      <li class="settings-list-item">
-        <settings-link-row
-          icon="globe"
-          label.bind="'settings.language' | t"
-          value.bind="'languages.' + currentLocale | t"
-          action.bind="() => openLanguageSelector()"
-        ></settings-link-row>
-      </li>
-
-      <!-- Push Notifications (whole row is the switch). Without the VAPID key
-           the row is unavailable and its description says why.
-           Authenticated-only: a push subscription is persisted as a backend
-           `push_subscriptions` row of the signed-in User, so before account creation
-           (onboarding / guest) there is nothing to register and the toggle
-           would no-op — hidden entirely, matching the ACCOUNT section below. -->
-      <li if.bind="auth.isAuthenticated" class="settings-list-item">
-        <settings-switch-row
-          icon="bell"
-          label.bind="'settings.pushNotifications' | t"
-          description.bind="(vapidAvailable ? '' : 'settings.notAvailable') | t"
-          description-id="push-na-hint"
-          checked.bind="notificationsEnabled"
-          unavailable.bind="!vapidAvailable"
-          action.bind="() => toggleNotifications()"
-        ></settings-switch-row>
-      </li>
-
-      <!-- Sound Effects (whole row is the switch) -->
-      <li class="settings-list-item">
-        <settings-switch-row
-          icon="music"
-          label.bind="'settings.soundEffects' | t"
-          description.bind="(isIOS ? 'settings.soundEffectsHint' : '') | t"
-          description-id="sound-ios-hint"
-          checked.bind="soundEnabled"
-          action.bind="() => toggleSound()"
-        ></settings-switch-row>
-      </li>
-
-      <!-- Sound volume: a sub-row of Sound Effects, so no divider above it. -->
-      <li if.bind="soundEnabled" class="[ settings-list-item ] [ settings-list-subitem ]">
-        <div class="settings-row settings-volume-row">
-          <label for="se-volume" t="settings.soundVolume" class="settings-row-label"></label>
-          <input
-            id="se-volume"
-            type="range"
-            min="0"
-            max="100"
-            step="5"
-            value-as-number.bind="soundVolume"
-            input.trigger="onSoundVolumeInput()"
-            change.trigger="onSoundVolumePersist()"
-            class="settings-volume-slider"
-          >
-        </div>
-      </li>
-
-      <!-- Left-handed mode: mirrors the FAB's action arc to open toward the left
-           hand. Persisted via the storage adapter (fab-menu spec). -->
-      <li class="settings-list-item">
-        <settings-switch-row
-          icon="swap"
-          label.bind="'settings.leftHanded' | t"
-          description.bind="'settings.leftHandedDesc' | t"
-          description-id="left-handed-desc"
-          checked.bind="fabMenu.isLeftHanded"
-          action.bind="() => fabMenu.toggleHanded()"
-        ></settings-switch-row>
-      </li>
-    </ul>
-  </section>
-
-  <!-- PRIVACY & ANALYTICS Section -->
-  <section>
-    <h2 t="settings.analytics.sectionTitle" class="settings-section-title"></h2>
-    <ul class="settings-card" role="list">
-      <!-- Analytics consent: the label opens its description; the switch is
-           a separate control. -->
-      <li class="settings-list-item">
-        <settings-consent-row
-          icon="info"
-          label.bind="'settings.analytics.toggleLabel' | t"
-          description.bind="'settings.analytics.toggleDescription' | t"
-          checked.bind="consent.analytics"
-          action.bind="() => handleAnalyticsToggle()"
-        ></settings-consent-row>
-      </li>
-
-      <!-- Session-replay opt-out. Independent of Analytics: turning this off
-           stops session recording only — catalogue events and the identified
-           profile continue. Defaults ON. -->
-      <li class="settings-list-item">
-        <settings-consent-row
-          icon="lock"
-          label.bind="'settings.analytics.sessionReplayLabel' | t"
-          description.bind="'settings.analytics.sessionReplayDescription' | t"
-          checked.bind="consent.sessionReplay"
-          action.bind="() => handleSessionReplayToggle()"
-        ></settings-consent-row>
-      </li>
-
-      <!-- Privacy-policy link for both opt-out toggles. The policy names
-           the analytics processor (PostHog / Klant Solutions B.V.) and the
-           cross-border purpose; the toggles above are the always-available
-           opt-out controls. Navigates in-app via the same openLegal handler
-           as the ABOUT-section Privacy Policy row. -->
-      <li class="settings-list-item">
-        <settings-link-row
-          icon="info"
-          label.bind="'settings.analytics.privacyPolicyLink' | t"
-          action.bind="() => openLegal('/legal/privacy')"
-        ></settings-link-row>
-      </li>
-    </ul>
-  </section>
-
-  <!-- ABOUT Section. Iconless rows: the label still lands in the content
-       column, so it lines up with the icon rows' labels above. -->
-  <section>
-    <h2 t="settings.about" class="settings-section-title"></h2>
-    <ul class="settings-card" role="list">
-      <!-- Terms of Service. Navigates via the VM's root router (openLegal), not
-           a load/href attribute — see SettingsRoute.openLegal for why. -->
-      <li class="settings-list-item">
-        <settings-link-row label.bind="'settings.termsOfService' | t" action.bind="() => openLegal('/legal/terms')"></settings-link-row>
-      </li>
-
-      <!-- Privacy Policy -->
-      <li class="settings-list-item">
-        <settings-link-row label.bind="'settings.privacyPolicy' | t" action.bind="() => openLegal('/legal/privacy')"></settings-link-row>
-      </li>
-
-      <!-- OSS Licenses -->
-      <li class="settings-list-item">
-        <settings-link-row label.bind="'settings.ossLicenses' | t" action.bind="() => openLegal('/legal/licenses')"></settings-link-row>
-      </li>
-
-      <!-- App version. Read-only display; tapping copies the version string
-           to the clipboard as a support affordance. -->
-      <li class="settings-list-item">
-        <settings-link-row
-          label.bind="'settings.version' | t"
-          value.bind="releaseVersion"
-          chevron.bind="false"
-          action.bind="() => copyVersion()"
-        ></settings-link-row>
-      </li>
-    </ul>
-  </section>
-
-  <!-- NAME ON YOUR TICKETS Section. Authenticated-only: the full name and
-       phone number saved on the User, shown on the face of the fan's tickets
-       and prefilled at lottery entry and checkout. Saved with
-       UserService.Update; the phone is typed in the domestic form and sent as
-       E.164. `novalidate`: the VM validates on submit and shows the errors
-       below each field, tied to it with aria-describedby. -->
-  <section if.bind="auth.isAuthenticated" aria-labelledby="personal-details-title">
-    <h2 id="personal-details-title" t="settings.personalDetails.title" class="settings-section-title"></h2>
-    <form
-      class="[ settings-personal-details ] [ stack ]"
-      submit.trigger="savePersonalDetails()"
-      novalidate
-      data-testid="settings-personal-details"
-    >
-      <p id="personal-details-note" t="settings.personalDetails.note" class="settings-personal-details-note"></p>
-      <label class="settings-field">
-        <span t="settings.personalDetails.name" class="settings-field-label"></span>
-        <input
-          type="text"
-          autocomplete="name"
-          value.bind="fullName"
-          aria-invalid.bind="nameInvalid"
-          aria-describedby="personal-details-note settings-name-error"
-          class="settings-field-input"
-          data-testid="settings-full-name"
-        />
-      </label>
-      <p id="settings-name-error" if.bind="nameInvalid" t="settings.personalDetails.nameRequired" class="settings-field-error"></p>
-      <label class="settings-field">
-        <span t="settings.personalDetails.phone" class="settings-field-label"></span>
-        <input
-          type="tel"
-          inputmode="tel"
-          autocomplete="tel-national"
-          value.bind="phoneNumber"
-          aria-invalid.bind="phoneInvalid"
-          aria-describedby="personal-details-note settings-phone-error"
-          class="settings-field-input"
-          data-testid="settings-phone-number"
-        />
-      </label>
-      <p id="settings-phone-error" if.bind="phoneInvalid" t="settings.personalDetails.phoneInvalid" class="settings-field-error"></p>
-      <button
-        type="submit"
-        disabled.bind="!personalDetailsChanged"
-        t="settings.personalDetails.save"
-        class="[ button settings-personal-details-save ] [ pressable ]"
-        data-testid="settings-personal-details-save"
-      ></button>
-    </form>
-  </section>
-
-  <!-- ACCOUNT Section. Authenticated-only: the guest sign-in / sign-up entry
-       lives in the top hero, so this section is hidden entirely for guests. -->
+  <!-- ACCOUNT Section, first for a signed-in fan. Authenticated-only: the
+       guest sign-in / sign-up entry lives in the top hero, so this section is
+       hidden entirely for guests. -->
   <section if.bind="auth.isAuthenticated">
     <h2 t="settings.account" class="settings-section-title"></h2>
 
@@ -327,17 +115,236 @@
     </ul>
   </section>
 
-  <!-- Sign Out stands in a group of its own below ACCOUNT, separated by the
-       scroll stack's gap (--space-m, at least 24px), so a tap meant for an
-       account row (Passkeys) never signs the fan out. -->
+  <!-- NAME ON YOUR TICKETS Section. Authenticated-only: the full name and
+       phone number saved on the User, shown on the face of the fan's tickets
+       and prefilled at lottery entry and checkout. One row shows them; tapping
+       it opens the form in a bottom sheet (below). -->
+  <section if.bind="auth.isAuthenticated" aria-labelledby="personal-details-title">
+    <h2 id="personal-details-title" t="settings.personalDetails.title" class="settings-section-title"></h2>
+    <ul class="settings-card" role="list">
+      <!-- The saved name, or 「未設定」 while none is saved. -->
+      <li class="settings-list-item">
+        <settings-link-row
+          if.bind="savedUser.fullName"
+          icon="ticket"
+          label.bind="savedUser.fullName"
+          value.bind="savedPhoneDisplay"
+          test-id="settings-personal-details-row"
+          action.bind="() => openPersonalDetails()"
+        ></settings-link-row>
+        <settings-link-row
+          else
+          icon="ticket"
+          label.bind="'settings.notSet' | t"
+          value.bind="savedPhoneDisplay"
+          test-id="settings-personal-details-row"
+          action.bind="() => openPersonalDetails()"
+        ></settings-link-row>
+      </li>
+    </ul>
+    <p t="settings.personalDetails.note" class="settings-section-note"></p>
+  </section>
+
+  <!-- NOTIFICATIONS AND SOUND Section. -->
+  <section>
+    <h2 t="settings.sections.notificationsSound" class="settings-section-title"></h2>
+    <ul class="settings-card" role="list">
+      <!-- Push Notifications (whole row is the switch). Without the VAPID key
+           the row is unavailable and its description says why.
+           Authenticated-only: a push subscription is persisted as a backend
+           `push_subscriptions` row of the signed-in User, so before account creation
+           (onboarding / guest) there is nothing to register and the toggle
+           would no-op — hidden entirely, matching the ACCOUNT section. -->
+      <li if.bind="auth.isAuthenticated" class="settings-list-item">
+        <settings-switch-row
+          icon="bell"
+          label.bind="'settings.pushNotifications' | t"
+          description.bind="(vapidAvailable ? '' : 'settings.notAvailable') | t"
+          description-id="push-na-hint"
+          checked.bind="notificationsEnabled"
+          unavailable.bind="!vapidAvailable"
+          action.bind="() => toggleNotifications()"
+        ></settings-switch-row>
+      </li>
+
+      <!-- Sound Effects (whole row is the switch) -->
+      <li class="settings-list-item">
+        <settings-switch-row
+          icon="music"
+          label.bind="'settings.soundEffects' | t"
+          description.bind="(isIOS ? 'settings.soundEffectsHint' : '') | t"
+          description-id="sound-ios-hint"
+          checked.bind="soundEnabled"
+          action.bind="() => toggleSound()"
+        ></settings-switch-row>
+      </li>
+
+      <!-- Sound volume: a sub-row of Sound Effects, so no divider above it. -->
+      <li if.bind="soundEnabled" class="[ settings-list-item ] [ settings-list-subitem ]">
+        <div class="settings-row settings-volume-row">
+          <label for="se-volume" t="settings.soundVolume" class="settings-row-label"></label>
+          <input
+            id="se-volume"
+            type="range"
+            min="0"
+            max="100"
+            step="5"
+            value-as-number.bind="soundVolume"
+            input.trigger="onSoundVolumeInput()"
+            change.trigger="onSoundVolumePersist()"
+            class="settings-volume-slider"
+          >
+        </div>
+      </li>
+    </ul>
+  </section>
+
+  <!-- DISPLAY AND CONTROLS Section. -->
+  <section>
+    <h2 t="settings.sections.displayControls" class="settings-section-title"></h2>
+    <ul class="settings-card" role="list">
+      <!-- My Home Area -->
+      <li class="settings-list-item">
+        <settings-link-row
+          icon="map-pin"
+          label.bind="'settings.myHomeArea' | t"
+          value.bind="currentHomeKey | t"
+          action.bind="() => openHomeSelector()"
+        ></settings-link-row>
+      </li>
+
+      <!-- Language -->
+      <li class="settings-list-item">
+        <settings-link-row
+          icon="globe"
+          label.bind="'settings.language' | t"
+          value.bind="'languages.' + currentLocale | t"
+          action.bind="() => openLanguageSelector()"
+        ></settings-link-row>
+      </li>
+
+      <!-- Left-handed mode: mirrors the FAB's action arc to open toward the left
+           hand. Persisted via the storage adapter (fab-menu spec). -->
+      <li class="settings-list-item">
+        <settings-switch-row
+          icon="swap"
+          label.bind="'settings.leftHanded' | t"
+          description.bind="'settings.leftHandedDesc' | t"
+          description-id="left-handed-desc"
+          checked.bind="fabMenu.isLeftHanded"
+          action.bind="() => fabMenu.toggleHanded()"
+        ></settings-switch-row>
+      </li>
+    </ul>
+  </section>
+
+  <!-- HELP IMPROVE THE SERVICE Section: the analytics opt-out toggles. -->
+  <section aria-labelledby="analytics-title">
+    <h2 id="analytics-title" t="settings.analytics.sectionTitle" class="settings-section-title"></h2>
+    <p t="settings.analytics.intro" class="settings-section-intro"></p>
+    <ul class="settings-card" role="list">
+      <!-- Analytics consent: the label opens its description; the switch is
+           a separate control. -->
+      <li class="settings-list-item">
+        <settings-consent-row
+          icon="chart"
+          label.bind="'settings.analytics.toggleLabel' | t"
+          description.bind="'settings.analytics.toggleDescription' | t"
+          checked.bind="consent.analytics"
+          action.bind="() => handleAnalyticsToggle()"
+        ></settings-consent-row>
+      </li>
+
+      <!-- Session-replay opt-out. Independent of Analytics: turning this off
+           stops session recording only — catalogue events and the identified
+           profile continue. Defaults ON. -->
+      <li class="settings-list-item">
+        <settings-consent-row
+          icon="pointer"
+          label.bind="'settings.analytics.sessionReplayLabel' | t"
+          description.bind="'settings.analytics.sessionReplayDescription' | t"
+          checked.bind="consent.sessionReplay"
+          action.bind="() => handleSessionReplayToggle()"
+        ></settings-consent-row>
+      </li>
+    </ul>
+    <!-- One sentence links the Privacy Policy, which names the analytics
+         processor and the cross-border purpose; the About section holds the
+         only Privacy Policy row. The router's href attribute loads the
+         absolute path from the root, like openLegal does for the rows. -->
+    <p class="settings-section-note" data-testid="settings-analytics-policy-note">
+      <span t="settings.analytics.policyNotePrefix"></span><a
+        href="/legal/privacy"
+        t="settings.analytics.policyNoteLink"
+        class="settings-inline-link"
+        data-testid="settings-analytics-policy-link"
+      ></a><span t="settings.analytics.policyNoteSuffix"></span>
+    </p>
+  </section>
+
+  <!-- ABOUT Section. Iconless rows: the label still lands in the content
+       column, so it lines up with the icon rows' labels above. -->
+  <section>
+    <h2 t="settings.about" class="settings-section-title"></h2>
+    <ul class="settings-card" role="list">
+      <!-- Terms of Service. Navigates via the VM's root router (openLegal), not
+           a load/href attribute — see SettingsRoute.openLegal for why. -->
+      <li class="settings-list-item">
+        <settings-link-row label.bind="'settings.termsOfService' | t" action.bind="() => openLegal('/legal/terms')"></settings-link-row>
+      </li>
+
+      <!-- Privacy Policy: the only Privacy Policy row on the page. -->
+      <li class="settings-list-item">
+        <settings-link-row label.bind="'settings.privacyPolicy' | t" test-id="settings-privacy-policy" action.bind="() => openLegal('/legal/privacy')"></settings-link-row>
+      </li>
+
+      <!-- OSS Licenses -->
+      <li class="settings-list-item">
+        <settings-link-row label.bind="'settings.ossLicenses' | t" action.bind="() => openLegal('/legal/licenses')"></settings-link-row>
+      </li>
+
+      <!-- Contact: a mailto link, so the device's mail app opens a new message
+           to the support address. -->
+      <li class="settings-list-item">
+        <a href="mailto:${supportEmail}" class="settings-row" data-testid="settings-contact">
+          <span t="settings.contact" class="settings-row-label"></span>
+          <span class="settings-row-end">
+            <svg-icon name="chevron-right" class="settings-chevron"></svg-icon>
+          </span>
+        </a>
+      </li>
+
+      <!-- App version. Read-only display; tapping copies the version string
+           to the clipboard as a support affordance. -->
+      <li class="settings-list-item">
+        <settings-link-row
+          label.bind="'settings.version' | t"
+          value.bind="releaseVersion"
+          chevron.bind="false"
+          action.bind="() => copyVersion()"
+        ></settings-link-row>
+      </li>
+    </ul>
+  </section>
+
+  <!-- Sign Out stands in a group of its own below ABOUT, separated by the
+       scroll stack's gap (--space-m, at least 24px), so a tap meant for
+       another row never signs the fan out. It asks first. -->
   <section if.bind="auth.isAuthenticated" aria-label.bind="'settings.signOut' | t" data-testid="settings-sign-out-group">
     <ul class="settings-card" role="list">
       <li class="settings-list-item">
-        <button busy-on-click.bind="() => signOut()" class="settings-row settings-sign-out">
+        <button busy-on-click.bind="() => signOut()" aria-haspopup="dialog" class="settings-row settings-sign-out">
           <span t="settings.signOut" class="settings-sign-out-text"></span>
         </button>
       </li>
     </ul>
+    <confirm-dialog
+      component.ref="signOutConfirm"
+      heading.bind="'settings.signOutConfirm.title' | t"
+      body.bind="'settings.signOutConfirm.body' | t"
+      confirm-label.bind="'settings.signOutConfirm.confirm' | t"
+      test-id="settings-sign-out-confirm"
+    ></confirm-dialog>
   </section>
 
   <!-- Delete account stands in a group of its own below Sign Out, separated
@@ -357,6 +364,70 @@
   </section>
   </div>
 </main>
+
+<!-- Name on your tickets: the form, in a bottom sheet opened from its row.
+     Saved with UserService.Update after a confirmation; the phone is typed in
+     the domestic form and sent as E.164. `novalidate`: the VM validates on
+     submit and shows the errors below each field, tied to it with
+     aria-describedby. The confirmation sits inside the sheet, so the sheet
+     does not make it inert; showModal() puts it in the top layer above the
+     sheet. -->
+<bottom-sheet
+  open.bind="personalDetailsOpen"
+  sheet-closed.trigger="personalDetailsOpen = false"
+  aria-label.bind="'settings.personalDetails.title' | t"
+>
+  <form
+    class="[ settings-personal-details ] [ stack ]"
+    submit.trigger="savePersonalDetails()"
+    novalidate
+    data-testid="settings-personal-details"
+  >
+    <h2 t="settings.personalDetails.title" class="selector-title"></h2>
+    <p id="personal-details-note" t="settings.personalDetails.note" class="settings-personal-details-note"></p>
+    <label class="settings-field">
+      <span t="settings.personalDetails.name" class="settings-field-label"></span>
+      <input
+        type="text"
+        autocomplete="name"
+        value.bind="fullName"
+        aria-invalid.bind="nameInvalid"
+        aria-describedby="personal-details-note settings-name-error"
+        class="settings-field-input"
+        data-testid="settings-full-name"
+      />
+    </label>
+    <p id="settings-name-error" if.bind="nameInvalid" t="settings.personalDetails.nameRequired" class="settings-field-error"></p>
+    <label class="settings-field">
+      <span t="settings.personalDetails.phone" class="settings-field-label"></span>
+      <input
+        type="tel"
+        inputmode="tel"
+        autocomplete="tel-national"
+        value.bind="phoneNumber"
+        aria-invalid.bind="phoneInvalid"
+        aria-describedby="personal-details-note settings-phone-error"
+        class="settings-field-input"
+        data-testid="settings-phone-number"
+      />
+    </label>
+    <p id="settings-phone-error" if.bind="phoneInvalid" t="settings.personalDetails.phoneInvalid" class="settings-field-error"></p>
+    <button
+      type="submit"
+      disabled.bind="!personalDetailsChanged"
+      t="settings.personalDetails.save"
+      class="[ button settings-personal-details-save ] [ pressable ]"
+      data-testid="settings-personal-details-save"
+    ></button>
+  </form>
+  <confirm-dialog
+    component.ref="personalDetailsConfirm"
+    heading.bind="'settings.personalDetails.confirm.title' | t"
+    body.bind="personalDetailsConfirmBody"
+    confirm-label.bind="'settings.personalDetails.confirm.confirm' | t"
+    test-id="settings-personal-details-confirm"
+  ></confirm-dialog>
+</bottom-sheet>
 
 <!-- Home Area Selector Bottom Sheet -->
 <user-home-selector

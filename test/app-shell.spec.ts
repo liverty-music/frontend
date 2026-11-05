@@ -393,6 +393,44 @@ describe('app-shell', () => {
 
 	describe('FAB', () => {
 		const fab = () => host().querySelector('fab-menu')
+		const itemIds = () =>
+			fixture.container.get(IFabMenuService).actions.map((a) => a.id)
+
+		// @spec components/infrastructure/fan/web/global/fab-menu "Settings is the only item on Tickets"
+		it('ends the launcher with Settings on every tab page, so Tickets shows the FAB', async () => {
+			for (const tab of ['dashboard', 'discovery', 'my-artists', 'tickets']) {
+				await go(tab)
+				expect(itemIds().at(-1)).toBe('settings')
+			}
+			// Tickets contributes no action of its own.
+			expect(itemIds()).toEqual(['settings'])
+			expect(fab()).not.toBeNull()
+		})
+
+		// @spec components/infrastructure/fan/web/global/fab-menu "No Settings item outside the tabs"
+		it.each(['settings', 'events/event-1', 'orders/order-1'])(
+			'offers no Settings item on %s',
+			async (path) => {
+				await go('dashboard')
+				expect(itemIds()).toContain('settings')
+				await go(path)
+				expect(itemIds()).not.toContain('settings')
+				// @spec components/infrastructure/fan/web/global/fab-menu "FAB hidden when no actions are contributed"
+				expect(fab()).toBeNull()
+			},
+		)
+
+		// @spec components/infrastructure/fan/web/global/fab-menu "Choosing Settings"
+		it('displays Settings when the Settings item is chosen', async () => {
+			await go('tickets')
+			const item = fixture.container
+				.get(IFabMenuService)
+				.actions.find((a) => a.id === 'settings')
+			item?.invoke()
+			await new Promise((r) => setTimeout(r, 0))
+			await tasksSettled()
+			expect(displayedRoute()).toBe('settings-route')
+		})
 
 		// @spec components/infrastructure/fan/web/global/fab-menu "FAB hidden while a bottom sheet is open"
 		it('is not shown while any bottom sheet is open and returns when it closes', async () => {

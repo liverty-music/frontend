@@ -211,6 +211,10 @@ test.describe('guests see no statuses', () => {
 
 		await page.goto('/settings')
 		await page.getByRole('button', { name: 'サインアウト' }).click()
+		await page
+			.getByRole('dialog', { name: 'サインアウトしますか？' })
+			.getByRole('button', { name: 'サインアウト' })
+			.click()
 		await page.waitForURL((url) => url.pathname === '/welcome')
 
 		// The next visitor in the same browser: a guest following the artist.
