@@ -120,11 +120,13 @@ pure function of their `@bindable` inputs. Story files are colocated: `src/compo
   and render-checked. Do NOT `toMatchScreenshot` an animated element (e.g. `.skeleton` shimmer) — the
   baseline is non-deterministic; assert DOM/a11y instead.
 - Add `play` functions (`storybook/test`: `expect`/`within`/`userEvent`) for interaction assertions.
-- a11y (axe) runs on every story and **fails** on violations (`.storybook/story-annotations.ts` sets
-  `a11y.test: 'error'`; wired in `.storybook/vitest.setup.ts`).
+- a11y (axe) runs on every story and **fails** on violations (`.storybook/preview.ts` sets
+  `a11y.test: 'error'`).
 - Shared config (i18n, global `svg-icon`/`bottom-sheet` registration, a11y param) lives in
-  `.storybook/story-annotations.ts` — parameters inside `definePreview` do NOT propagate through
-  `setProjectAnnotations`, so that module is composed as a plain trailing annotation in the setup file.
+  `definePreview(...)` in `.storybook/preview.ts`. `@storybook/addon-vitest` applies that file, with the
+  framework's and the addons' previews, to every story it runs. `.storybook/vitest.setup.ts` must not apply
+  project annotations itself: the addon skips its own provisioning when a setup file in `.storybook/`
+  contains the word `setProjectAnnotations` (even in a comment), and Storybook 11 rejects the call.
 - For DI/child-bound components use `defineAureliaStory({ template, props, register, items })` — e.g.
   register an `IErrorBoundaryService`/`I18N` mock via `items`, or drive an EA-published component from a host.
 
