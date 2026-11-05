@@ -11,7 +11,6 @@ import { StatePlaceholder } from './state-placeholder'
 const meta = {
 	title: 'Components/StatePlaceholder',
 	component: StatePlaceholder,
-	tags: ['test', 'autodocs'],
 	argTypes: {
 		icon: {
 			control: 'text',

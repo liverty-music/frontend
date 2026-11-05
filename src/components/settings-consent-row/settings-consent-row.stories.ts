@@ -12,7 +12,6 @@ import { SettingsConsentRow } from './settings-consent-row'
 const meta = {
 	title: 'Components/SettingsConsentRow',
 	component: SettingsConsentRow,
-	tags: ['test', 'autodocs'],
 	argTypes: {
 		icon: { control: 'text' },
 		label: { control: 'text' },

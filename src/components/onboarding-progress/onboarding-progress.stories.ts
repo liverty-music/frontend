@@ -9,7 +9,6 @@ import { OnboardingProgress } from './onboarding-progress'
 const meta = {
 	title: 'Components/OnboardingProgress',
 	component: OnboardingProgress,
-	tags: ['test', 'autodocs'],
 	argTypes: {
 		value: {
 			control: { type: 'range', min: 0, max: 1, step: 0.01 },

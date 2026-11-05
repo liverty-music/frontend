@@ -11,7 +11,6 @@ import { ConsoleTabs } from './console-tabs'
 const meta = {
 	title: 'Console/ConsoleTabs',
 	component: ConsoleTabs,
-	tags: ['test', 'autodocs'],
 	parameters: consoleStoryParameters,
 	argTypes: {
 		active: { control: 'select', options: ['sales', 'reception'] },

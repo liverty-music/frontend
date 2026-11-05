@@ -14,7 +14,6 @@ import { type DataColumn, DataList, type DataRow } from './data-list'
 const meta = {
 	title: 'Console/DataList',
 	component: DataList,
-	tags: ['test', 'autodocs'],
 	parameters: consoleStoryParameters,
 } satisfies Meta<typeof DataList>
 

@@ -20,7 +20,6 @@ import { SEARCH_DELAY_MS, VenueField, type VenuePick } from './venue-field'
 const meta = {
 	title: 'Console/VenueField',
 	component: VenueField,
-	tags: ['test', 'autodocs'],
 	parameters: consoleStoryParameters,
 	argTypes: {
 		label: { control: 'text' },

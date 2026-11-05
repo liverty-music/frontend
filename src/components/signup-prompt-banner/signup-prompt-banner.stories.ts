@@ -18,7 +18,6 @@ import { SignupPromptBanner } from './signup-prompt-banner'
 const meta = {
 	title: 'Components/SignupPromptBanner',
 	component: SignupPromptBanner,
-	tags: ['test', 'autodocs'],
 	argTypes: {
 		message: { control: 'text' },
 		visible: { control: 'boolean' },

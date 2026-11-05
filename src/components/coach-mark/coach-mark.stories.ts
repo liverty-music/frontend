@@ -11,7 +11,6 @@ const MESSAGE = 'カードをタップして、チケットや会場をチェッ
 const meta = {
 	title: 'Components/CoachMark',
 	component: CoachMark,
-	tags: ['test', 'autodocs'],
 	argTypes: {
 		message: { control: 'text', description: 'Coaching tip copy.' },
 		active: {

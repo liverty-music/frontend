@@ -97,6 +97,7 @@ const storybookProjectFor = ({
 				'src/**/*.{ts,js,html}',
 				'admin/**/*.{ts,js,html}',
 				'organizer/**/*.{ts,js,html}',
+				'reception/**/*.{ts,js,html}',
 				'shared/**/*.{ts,js,html}',
 			],
 		}),

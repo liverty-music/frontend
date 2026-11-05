@@ -11,7 +11,6 @@ import { PrerequisiteCallout } from './prerequisite-callout'
 const meta = {
 	title: 'Console/PrerequisiteCallout',
 	component: PrerequisiteCallout,
-	tags: ['test', 'autodocs'],
 	parameters: consoleStoryParameters,
 	argTypes: {
 		heading: { control: 'text' },

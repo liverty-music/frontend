@@ -9,7 +9,6 @@ import { Toast } from './toast'
 const meta = {
 	title: 'Components/Toast',
 	component: Toast,
-	tags: ['test', 'autodocs'],
 	argTypes: {
 		open: {
 			control: 'boolean',

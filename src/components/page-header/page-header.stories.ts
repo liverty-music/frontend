@@ -10,7 +10,6 @@ import { PageHeader } from './page-header'
 const meta = {
 	title: 'Components/PageHeader',
 	component: PageHeader,
-	tags: ['test', 'autodocs'],
 	argTypes: {
 		titleKey: {
 			control: 'text',

@@ -10,7 +10,6 @@ import { DescriptionList } from './description-list'
 const meta = {
 	title: 'Console/DescriptionList',
 	component: DescriptionList,
-	tags: ['test', 'autodocs'],
 	parameters: consoleStoryParameters,
 } satisfies Meta<typeof DescriptionList>
 

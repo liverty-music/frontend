@@ -9,7 +9,6 @@ import { SuccessMark } from './success-mark'
 const meta = {
 	title: 'Components/SuccessMark',
 	component: SuccessMark,
-	tags: ['test', 'autodocs'],
 } satisfies Meta<typeof SuccessMark>
 
 export default meta

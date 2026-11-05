@@ -10,7 +10,6 @@ import { StatusBadge } from './status-badge'
 const meta = {
 	title: 'Console/StatusBadge',
 	component: StatusBadge,
-	tags: ['test', 'autodocs'],
 	parameters: consoleStoryParameters,
 	argTypes: {
 		tone: {

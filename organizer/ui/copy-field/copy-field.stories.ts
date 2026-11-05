@@ -11,7 +11,6 @@ import { CopyField } from './copy-field'
 const meta = {
 	title: 'Console/CopyField',
 	component: CopyField,
-	tags: ['test', 'autodocs'],
 	parameters: consoleStoryParameters,
 	argTypes: {
 		label: { control: 'text' },

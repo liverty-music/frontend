@@ -12,7 +12,6 @@ import { SettingsSwitchRow } from './settings-switch-row'
 const meta = {
 	title: 'Components/SettingsSwitchRow',
 	component: SettingsSwitchRow,
-	tags: ['test', 'autodocs'],
 	argTypes: {
 		icon: { control: 'text' },
 		label: { control: 'text' },

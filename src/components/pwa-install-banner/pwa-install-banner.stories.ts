@@ -34,7 +34,6 @@ function mockPwaInstall(shouldShowInstallBanner = true) {
 const meta = {
 	title: 'Components/PwaInstallBanner',
 	component: PwaInstallBanner,
-	tags: ['test', 'autodocs'],
 } satisfies Meta<typeof PwaInstallBanner>
 
 export default meta

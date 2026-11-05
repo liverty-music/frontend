@@ -12,7 +12,6 @@ import {
 const meta = {
 	title: 'Components/DiscoverySwapButton',
 	component: DiscoverySwapButton,
-	tags: ['test', 'autodocs'],
 	argTypes: {
 		view: {
 			control: { type: 'inline-radio' },

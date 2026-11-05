@@ -11,7 +11,6 @@ import { CopyButton } from './copy-button'
 const meta = {
 	title: 'Console/CopyButton',
 	component: CopyButton,
-	tags: ['test', 'autodocs'],
 	parameters: consoleStoryParameters,
 	argTypes: {
 		label: { control: 'text', description: 'What is copied: 受付1.' },

@@ -15,7 +15,6 @@ import { ActionBar } from './action-bar'
 const meta = {
 	title: 'Console/ActionBar',
 	component: ActionBar,
-	tags: ['test', 'autodocs'],
 	parameters: consoleStoryParameters,
 } satisfies Meta<typeof ActionBar>
 

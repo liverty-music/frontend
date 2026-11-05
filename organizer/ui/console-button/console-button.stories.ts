@@ -19,7 +19,6 @@ import { ConsoleButton } from './console-button'
 const meta = {
 	title: 'Console/ConsoleButton',
 	component: ConsoleButton,
-	tags: ['test', 'autodocs'],
 	parameters: consoleStoryParameters,
 	argTypes: {
 		variant: {

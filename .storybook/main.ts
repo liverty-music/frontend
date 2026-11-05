@@ -2,9 +2,13 @@ import { defineMain } from '@aurelia/storybook/node'
 
 export default defineMain({
 	stories: [
+		// Every source root of the app build (vite.config.ts), so a story under
+		// any of them is shown here and run by the storybook Vitest projects.
 		'../src/**/*.stories.@(ts|tsx|js|jsx|mdx)',
-		'../shared/**/*.stories.@(ts|tsx|js|jsx|mdx)',
+		'../admin/**/*.stories.@(ts|tsx|js|jsx|mdx)',
 		'../organizer/**/*.stories.@(ts|tsx|js|jsx|mdx)',
+		'../reception/**/*.stories.@(ts|tsx|js|jsx|mdx)',
+		'../shared/**/*.stories.@(ts|tsx|js|jsx|mdx)',
 	],
 	addons: [
 		'@storybook/addon-a11y',

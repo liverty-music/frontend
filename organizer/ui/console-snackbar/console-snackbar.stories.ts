@@ -14,7 +14,6 @@ import { ISnackbar } from './snackbar'
 const meta = {
 	title: 'Console/ConsoleSnackbar',
 	component: ConsoleSnackbar,
-	tags: ['test', 'autodocs'],
 	parameters: consoleStoryParameters,
 } satisfies Meta<typeof ConsoleSnackbar>
 

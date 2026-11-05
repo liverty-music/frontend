@@ -10,7 +10,7 @@ import { LinearProgress } from './linear-progress'
 const meta = {
 	title: 'Console/LinearProgress',
 	component: LinearProgress,
-	tags: ['test', 'autodocs', 'reduced-motion'],
+	tags: ['reduced-motion'],
 	parameters: consoleStoryParameters,
 	argTypes: { label: { control: 'text' } },
 	args: { label: '読み込み中' },
