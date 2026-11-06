@@ -124,6 +124,7 @@ export const SaveSucceeded = {
 		const shownFor = performance.now() - shownAt
 		await expect(shownFor).toBeGreaterThan(3500)
 		await expect(shownFor).toBeLessThan(5500)
+		await snacksGone(canvasElement)
 	},
 } satisfies Story
 
