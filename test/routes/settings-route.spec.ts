@@ -631,6 +631,7 @@ describe('SettingsRoute', () => {
 		})
 
 		it('handleSessionReplayToggle writes through independently of analytics', () => {
+			// @spec components/infrastructure/fan/web/route/settings "User disables session replay but keeps event analytics"
 			expect(sut.consent.sessionReplay).toBe(true)
 			sut.handleSessionReplayToggle()
 			expect(sut.consent.sessionReplay).toBe(false)

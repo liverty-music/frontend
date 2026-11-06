@@ -1,4 +1,7 @@
+import { box, nav } from '../support/fan-shell'
 import { expect, type Page, test } from '../support/test'
+
+const SETTINGS = 'components/infrastructure/fan/web/route/settings'
 
 /**
  * CI layout-regression guard for the fix-settings-layout change.
@@ -70,5 +73,56 @@ test.describe('Settings layout (guest)', () => {
 		expect(scrollBox.y).toBeGreaterThanOrEqual(
 			headerBox.y + headerBox.height - 1,
 		)
+	})
+
+	test(`@spec ${SETTINGS} "Section list scrolls within the content area"`, async ({
+		page,
+	}) => {
+		await mockRpcRoutes(page)
+		await page.goto('/settings')
+		const scroll = page.getByTestId('settings-scroll')
+		await expect(scroll).toBeVisible({ timeout: 10_000 })
+		await expect(nav(page)).toBeVisible()
+		expect(
+			await scroll.evaluate((el) => el.scrollHeight > el.clientHeight),
+		).toBe(true)
+		const header = await box(page.locator('page-header'))
+		const bar = await box(nav(page))
+
+		await scroll.evaluate((el) => el.scrollTo(0, el.scrollHeight))
+		await expect
+			.poll(() => scroll.evaluate((el) => el.scrollTop))
+			.toBeGreaterThan(0)
+
+		// The list moved; the page, its header and the bar did not.
+		expect(
+			await page.evaluate(() => document.scrollingElement?.scrollTop),
+		).toBe(0)
+		expect(await box(page.locator('page-header'))).toEqual(header)
+		expect(await box(nav(page))).toEqual(bar)
+	})
+
+	test(`@spec ${SETTINGS} "Content track item can shrink"`, async ({
+		page,
+	}) => {
+		await mockRpcRoutes(page)
+		await page.goto('/settings')
+		const scroll = page.getByTestId('settings-scroll')
+		await expect(scroll).toBeVisible({ timeout: 10_000 })
+		const main = page.locator('settings-route > main')
+		expect(await main.evaluate((el) => getComputedStyle(el).minBlockSize)).toBe(
+			'0px',
+		)
+		expect(await scroll.evaluate((el) => getComputedStyle(el).overflowY)).toBe(
+			'auto',
+		)
+		// The grid item stays inside the route box instead of growing to the
+		// content's full height.
+		const route = await box(page.locator('settings-route'))
+		const item = await box(main)
+		expect(item.height).toBeLessThanOrEqual(route.height + 1)
+		expect(
+			await scroll.evaluate((el) => el.scrollHeight > el.clientHeight),
+		).toBe(true)
 	})
 })

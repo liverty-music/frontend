@@ -1,7 +1,7 @@
 import { OIDC_AUTHORITY } from '../support/auth-mocks'
 import { callsOf, FAN_EMAIL, FAN_SUB, mockFanRpc } from '../support/fan-auth'
-import { box, openShell, seedSignedInFan } from '../support/fan-shell'
-import { expect, type Page, test } from '../support/test'
+import { box, openShell, seedSignedInFan, tapTab } from '../support/fan-shell'
+import { expect, type Locator, type Page, test } from '../support/test'
 
 // The first page load compiles the app on the dev server; allow for it.
 test.describe.configure({ timeout: 60_000 })
@@ -83,6 +83,10 @@ async function openAsGuest(page: Page): Promise<void> {
 	await expect(page.locator('settings-route')).toBeVisible()
 }
 
+/** The computed background colour of an element. */
+const background = (el: Locator) =>
+	el.evaluate((node) => getComputedStyle(node).backgroundColor)
+
 /** Whether the centre of `selector` is topped by that element (nothing over it). */
 async function onTop(page: Page, selector: string): Promise<boolean> {
 	return page.locator(selector).evaluate((el) => {
@@ -132,6 +136,56 @@ test.describe('section order', () => {
 			0,
 		)
 	})
+
+	test(`@spec ${SETTINGS} "Guest sees a prominent sign-in hero at the top"`, async ({
+		page,
+	}) => {
+		await openAsGuest(page)
+		const hero = page.locator('settings-route .settings-guest-hero')
+		const signIn = page.getByTestId('settings-sign-in')
+		const signUp = page.getByTestId('settings-sign-up')
+		// Above the preferences.
+		const firstTitle = page.locator('settings-route .settings-section-title')
+		expect((await box(hero)).y).toBeLessThan((await box(firstTitle.first())).y)
+		// Brand-tinted, unlike the plain list cards, with a filled primary
+		// action and an outlined secondary one.
+		expect(await background(hero)).not.toBe(
+			await background(page.locator('settings-route .settings-card').first()),
+		)
+		await expect(signIn).toHaveText('ログイン')
+		await expect(signUp).toHaveText('新規登録')
+		await expect(signUp).toHaveAttribute('data-variant', 'outlined')
+		await expect(signIn).not.toHaveAttribute('data-variant', /./)
+		expect(await background(signIn)).not.toBe(await background(signUp))
+		// No account rows: no email address, badge or resend control.
+		await expect(
+			page.locator('settings-route section', {
+				has: page.locator('h2', { hasText: 'アカウント' }),
+			}),
+		).toHaveCount(0)
+		await expect(page.getByText(FAN_EMAIL)).toHaveCount(0)
+	})
+
+	for (const [testId, signUp] of [
+		['settings-sign-in', false],
+		['settings-sign-up', true],
+	] as const) {
+		test(`@spec ${SETTINGS} "Guest sees a prominent sign-in hero at the top" (${testId} starts the OIDC flow)`, async ({
+			page,
+		}) => {
+			await openAsGuest(page)
+			const authorize = page.waitForRequest((req) =>
+				req.url().startsWith(`${OIDC_AUTHORITY}/oauth/v2/authorize`),
+			)
+			await page.route(`${OIDC_AUTHORITY}/oauth/v2/authorize**`, (route) =>
+				route.fulfill({ status: 200, contentType: 'text/html', body: '' }),
+			)
+			await page.getByTestId(testId).click()
+			const url = new URL((await authorize).url())
+			// Only sign-up asks the identity provider for its sign-up form.
+			expect(url.searchParams.get('prompt') === 'create').toBe(signUp)
+		})
+	}
 
 	test(`@spec ${SETTINGS} "First preferences row is visible on load"`, async ({
 		page,
@@ -236,6 +290,24 @@ test.describe('consent wording', () => {
 		for (const s of await switches.all()) {
 			await expect(s).toHaveAttribute('aria-checked', 'true')
 		}
+	})
+
+	test(`@spec ${SETTINGS} "Settings opt-out persists for a purpose granted at signup"`, async ({
+		page,
+	}) => {
+		// Both purposes are granted by default from sign-up on.
+		await openAsFan(page)
+		const analytics = () => consent(page).getByRole('switch').first()
+		const replay = () => consent(page).getByRole('switch').nth(1)
+		await expect(analytics()).toHaveAttribute('aria-checked', 'true')
+		await analytics().click()
+		await expect(analytics()).toHaveAttribute('aria-checked', 'false')
+
+		// The withdrawal is persisted: a fresh load shows it.
+		await page.reload()
+		await expect(page.locator('settings-route')).toBeVisible()
+		await expect(analytics()).toHaveAttribute('aria-checked', 'false')
+		await expect(replay()).toHaveAttribute('aria-checked', 'true')
 	})
 
 	test(`@spec ${SETTINGS} "No anonymity claim"`, async ({ page }) => {
@@ -447,4 +519,24 @@ test(`@spec ${GUEST_STORY} "Guest navigates to Settings after dashboard"`, async
 	await page.locator('fab-menu .fab-item[data-action-id="settings"]').click()
 	await page.waitForURL((url) => url.pathname === '/settings')
 	await expect(page.getByTestId('settings-sign-in')).toBeVisible()
+})
+
+test(`@spec ${GUEST_STORY} "Guest navigates to Tickets after dashboard"`, async ({
+	page,
+}) => {
+	await page.addInitScript(() => {
+		localStorage.setItem('onboardingComplete', 'true')
+		localStorage.setItem('onboarding.celebrationShown', '1')
+		localStorage.setItem('pwa.installed', 'true')
+		localStorage.setItem('guest.home', 'JP-13')
+		localStorage.setItem('language', 'ja')
+	})
+	await mockFanRpc(page)
+	await openShell(page, '/dashboard')
+	await tapTab(page, 'ticket')
+	await page.waitForURL((url) => url.pathname === '/tickets')
+	// The Tickets screen's own empty state, not a redirect.
+	await expect(page.locator('tickets-route')).toBeVisible()
+	await expect(page.getByText('まだチケットがありません')).toBeVisible()
+	expect(new URL(page.url()).pathname).toBe('/tickets')
 })

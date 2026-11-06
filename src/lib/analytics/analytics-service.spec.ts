@@ -903,6 +903,7 @@ describe('AnalyticsService', () => {
 		})
 
 		it(`@spec ${SPEC} "Session replay off"`, async () => {
+			// @spec components/infrastructure/fan/web/route/settings "User disables session replay but keeps event analytics"
 			const sut = new AnalyticsService()
 			await sut._waitForInitForTests()
 			posthogStub.set_config.mockReset()
