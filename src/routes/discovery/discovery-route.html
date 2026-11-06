@@ -111,6 +111,7 @@
     <!-- All Nearby view: in place of the search bar, the genre chips and the
          bubbles, which keep their size underneath (the field is not rebuilt). -->
     <nearby-concerts
+      component.ref="nearbyConcerts"
       if.bind="view === 'nearby'"
       class="nearby-view"
       visit.bind="nearbyVisit"

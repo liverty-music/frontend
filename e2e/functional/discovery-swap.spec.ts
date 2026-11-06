@@ -6,6 +6,7 @@ import {
 	centre,
 	fab,
 	intersects,
+	openNearbyFilters,
 	publishSnack,
 	seedSignedInFan,
 	settle,
@@ -234,11 +235,22 @@ test.describe('Discovery swap tile', () => {
 		const view = page.locator('nearby-concerts')
 		await expect(view).toBeVisible()
 		await expect(page).toHaveURL(/\/discovery\?view=nearby$/)
-		await expect(view.getByTestId('nearby-area-chip')).toContainText('福岡県')
-		await expect(view.getByTestId('nearby-date-chip')).toContainText('7日以内')
 		await expect(view.locator('[data-live-card]').first()).toBeVisible({
 			timeout: 15_000,
 		})
+
+		// @spec components/infrastructure/fan/web/route/discovery "Stage header under the page header"
+		// No filter row between them, as on the dashboard.
+		const header = await box(page.locator('page-header header').first())
+		const stage = await box(view.locator('.stage-header').first())
+		expect(stage.y).toBeCloseTo(header.y + header.height, 0)
+
+		// @spec components/infrastructure/fan/web/route/discovery "Filter item opens the filter sheet"
+		const rows = await openNearbyFilters(page)
+		await expect(rows.area).toContainText('福岡県')
+		await expect(rows.period).toContainText('7日以内')
+		await page.keyboard.press('Escape')
+		await expect(rows.area).toBeHidden()
 		await expect(tile(page)).toHaveAccessibleName('アーティスト')
 		await expect(page.locator('.search-bar')).toBeHidden()
 
@@ -356,9 +368,10 @@ test.describe('Discovery swap tile', () => {
 		await expect(sheet).toHaveCount(0)
 		await expect(page).toHaveURL(/\/discovery\?view=nearby$/)
 		await expect(view).toBeVisible()
-		await expect(view.getByTestId('nearby-area-chip')).toContainText('福岡県')
-		await expect(view.getByTestId('nearby-date-chip')).toContainText('7日以内')
 		expect(await scroll.evaluate((s) => s.scrollTop)).toBe(scrolled)
+		const rows = await openNearbyFilters(page)
+		await expect(rows.area).toContainText('福岡県')
+		await expect(rows.period).toContainText('7日以内')
 	})
 
 	test(`@spec ${CAPABILITY} "Link to the All Nearby view"`, async ({

@@ -15,7 +15,10 @@ import {
 	loadDiscoveryView,
 	saveDiscoveryView,
 } from '../../adapter/storage/discovery-view-storage'
-import { NearbyVisit } from '../../components/all-nearby/nearby-concerts'
+import {
+	type NearbyConcerts,
+	NearbyVisit,
+} from '../../components/all-nearby/nearby-concerts'
 import { preloadPhysics } from '../../components/dna-orb/bubble-physics'
 import type { DnaOrbCanvas } from '../../components/dna-orb/dna-orb-canvas'
 import type { RevealMark } from '../../components/dna-orb/reveal-marks'
@@ -31,10 +34,15 @@ import { IArtistStore } from '../../services/artist-store'
 import { IAuthService } from '../../services/auth-service'
 import { IConcertStore } from '../../services/concert-store'
 import { IErrorBoundaryService } from '../../services/error-boundary-service'
-import { helpAction, IFabMenuService } from '../../services/fab-menu-service'
+import {
+	type FabAction,
+	helpAction,
+	IFabMenuService,
+} from '../../services/fab-menu-service'
 import { IFollowStore } from '../../services/follow-store'
 import { IOnboardingService } from '../../services/onboarding-service'
 import { IResumeRevalidator } from '../../services/resume-revalidator'
+import { IUserStore } from '../../services/user-store'
 import { currentLanguage } from '../../util/change-locale'
 import { GenreFilterController } from './genre-filter-controller'
 import { detectRevealEntry, RevealTiming } from './reveal-timing'
@@ -52,6 +60,7 @@ export class DiscoveryRoute {
 	public readonly fabMenu = resolve(IFabMenuService)
 	private readonly history = resolve(IHistory)
 	private readonly authService = resolve(IAuthService)
+	private readonly userStore = resolve(IUserStore)
 	private readonly errorBoundary = resolve(IErrorBoundaryService)
 	private readonly logger = resolve(ILogger).scopeTo('DiscoveryRoute')
 	public readonly i18n = resolve(I18N)
@@ -68,9 +77,11 @@ export class DiscoveryRoute {
 	/**
 	 * The All Nearby view's area, date range and results for this visit, so
 	 * switching to the bubbles and back finds them unchanged. A new visit (a new
-	 * route instance) starts empty.
+	 * route instance) starts from the filter kept on the device.
 	 */
 	public readonly nearbyVisit = new NearbyVisit()
+	/** The All Nearby view while it is shown; its filters open from the launcher. */
+	public nearbyConcerts: NearbyConcerts | undefined
 
 	/** True while a swap's View Transition runs (names the layout for it). */
 	public revealing = false
@@ -294,10 +305,30 @@ export class DiscoveryRoute {
 			this.writeViewAddress()
 		}
 		this.resumeRevalidator.register(this.revalidate)
-		// Contribute the help action to the FAB launcher (this page has help).
-		this.fabDisposer = this.fabMenu.register(this, [
-			helpAction(() => this.pageHelp?.open()),
-		])
+		this.refreshFabActions()
+	}
+
+	/**
+	 * This route's launcher actions for the view on screen: the All Nearby
+	 * filter (closest to the FAB) and help, or help alone on the bubbles. A
+	 * re-register replaces the previous set, so a view switch never leaves a
+	 * stale or duplicated item.
+	 */
+	private refreshFabActions(): void {
+		const actions: FabAction[] = []
+		if (this.view === 'nearby') {
+			actions.push({
+				id: 'filter',
+				labelKey: 'fabMenu.filter',
+				icon: 'filter',
+				kind: 'command',
+				isOn: () => this.nearbyVisit.isFiltered(this.userStore.currentHome),
+				invoke: () => this.nearbyConcerts?.openFilters(),
+			})
+		}
+		actions.push(helpAction(() => this.pageHelp?.open()))
+		this.fabDisposer?.()
+		this.fabDisposer = this.fabMenu.register(this, actions)
 	}
 
 	public detaching(): void {
@@ -386,6 +417,8 @@ export class DiscoveryRoute {
 	 * document is hidden.
 	 */
 	protected viewChanged(view: DiscoveryView): void {
+		// Before attach the launcher is seeded by attached().
+		if (this.fabDisposer) this.refreshFabActions()
 		if (view === 'nearby') {
 			this.dnaOrbCanvas?.pause()
 		} else if (this.bubblesShown && !document.hidden) {

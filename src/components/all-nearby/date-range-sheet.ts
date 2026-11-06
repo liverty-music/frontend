@@ -16,12 +16,17 @@ import {
 /**
  * The `range-changed` event payload. Carries the resolved {@link CalendarDate}
  * pair the All Nearby view feeds to `listByLocation`, plus the display `label`
- * the date chip renders (a preset name when a preset is active, else a
+ * the filter sheet's period row shows (a preset name when a preset is active, else a
  * localized range). Emitting the label alongside the range keeps the chip's
  * copy in sync with the sheet's selection without the view re-deriving it.
  */
 export interface RangeChangedDetail extends DateRange {
 	label: string
+	/**
+	 * What the fan applied: the preset they tapped, or null for a custom
+	 * range. Absent on the initial emission, which applies nothing new.
+	 */
+	applied?: DatePresetId | null
 }
 
 /**
@@ -90,7 +95,7 @@ export class DateRangeSheet {
 		if (!range) return
 		this.appliedRange = range
 		this.seedDrafts(range)
-		this.emit(range)
+		this.emit(range, preset)
 		this.isOpen = false
 	}
 
@@ -172,7 +177,7 @@ export class DateRangeSheet {
 		const draft = this.draftRange
 		if (!draft || !this.isDraftValid) return
 		this.appliedRange = draft
-		this.emit(draft)
+		this.emit(draft, null)
 		this.isOpen = false
 	}
 
@@ -209,10 +214,14 @@ export class DateRangeSheet {
 		return formatRangeLabel(range)
 	}
 
-	private emit(range: DateRange): void {
+	private emit(range: DateRange, applied?: DatePresetId | null): void {
 		this.element.dispatchEvent(
 			new CustomEvent<RangeChangedDetail>('range-changed', {
-				detail: { ...range, label: this.labelFor(range) },
+				detail: {
+					...range,
+					label: this.labelFor(range),
+					...(applied !== undefined && { applied }),
+				},
 				bubbles: true,
 			}),
 		)

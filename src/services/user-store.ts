@@ -3,6 +3,7 @@ import { Code, ConnectError } from '@connectrpc/connect'
 import { DI, IEventAggregator, ILogger, observable, resolve } from 'aurelia'
 import { IUserRpcClient } from '../adapter/rpc/client/user-client'
 import { loadHome, saveHome } from '../adapter/storage/guest-storage'
+import { clearNearbyFilter } from '../adapter/storage/nearby-filter-storage'
 import { clearOnboardingSeenFlags } from '../adapter/storage/onboarding-storage'
 import { codeToHome, type User } from '../entities/user'
 import { normalizeToSupportedLanguage } from '../util/change-locale'
@@ -111,7 +112,12 @@ export class UserStore {
 	constructor() {
 		// Sign-out and account switch: forget the previous account's User so no
 		// later read or write can act on it (design D15 of unify-ticket-sales).
-		this.ea.subscribe(SignedOut, () => this.clear())
+		// The All Nearby filter kept on the device goes too, so the next person
+		// on this device does not inherit the area and period.
+		this.ea.subscribe(SignedOut, () => {
+			this.clear()
+			clearNearbyFilter()
+		})
 		// The i18n subsystem publishes `{ oldLocale, newLocale }` on this EA
 		// channel after every successful setLocale. Mirroring it into an
 		// @observable is what makes `currentLanguage` re-evaluate for the
@@ -338,8 +344,8 @@ export class UserStore {
 	}
 
 	/**
-	 * Reset the guest home slice plus the per-page help-seen flags and the
-	 * per-level hype snack flags. Used by the
+	 * Reset the guest home slice, the per-page help-seen flags, the per-level
+	 * hype snack flags and the kept All Nearby filter. Used by the
 	 * welcome route's guest reset before sign-in and by the auth callback's
 	 * onboarding hand-off once sign-up (or sign-in) completes. Tapping
 	 * [Get Started] does not call it.
@@ -351,6 +357,7 @@ export class UserStore {
 	public clearGuest(): void {
 		this.guestHome = null
 		clearOnboardingSeenFlags()
+		clearNearbyFilter()
 		this.logger.info('Local home preferences cleared')
 	}
 

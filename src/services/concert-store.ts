@@ -230,15 +230,17 @@ export class ConcertStore {
 	 * Convert All Nearby ProximityGroup[] into DateGroup[], resolving each card's
 	 * artist identity from the concert's OWN artists.
 	 *
-	 * The follower/artist paths resolve performers against the user's followed-artist
-	 * map; in All Nearby the concerts belong to arbitrary catalog artists the user
-	 * does not follow, so that map is empty and every card would render a blank
-	 * artist name (only the location showed). Building the map from the proto
-	 * performers themselves makes the headliner name render. No hype/journey context
-	 * applies here, so hype defaults and the journey map is empty.
+	 * The concerts belong to arbitrary catalog artists, mostly ones the fan does
+	 * not follow, so the artist map is built from the proto performers (their
+	 * names render). Matching follows the dashboard: a followed artist carries
+	 * the fan's hype level (`hypeByArtist`, from `FollowService.List` or the
+	 * guest's device), and any other performer gets `watch`, which no lane
+	 * matches. The journey map shows the dashboard's journey badges.
 	 */
 	public toDateGroupsForLocation(
 		groups: ProximityGroup[],
+		hypeByArtist: ReadonlyMap<string, Hype> = new Map(),
+		journeyMap: Map<string, JourneyStatus> = new Map(),
 		purchasedMap: Map<string, number> = new Map(),
 	): DateGroup[] {
 		const artistMap = new Map<string, { artist: Artist; hype: Hype }>()
@@ -253,12 +255,12 @@ export class ConcertStore {
 							name: p.name?.value ?? '',
 							mbid: p.mbid?.value ?? '',
 						},
-						hype: DEFAULT_HYPE,
+						hype: hypeByArtist.get(id) ?? 'watch',
 					})
 				}
 			}
 		}
-		return this.toDateGroups(groups, artistMap, new Map(), purchasedMap)
+		return this.toDateGroups(groups, artistMap, journeyMap, purchasedMap)
 	}
 
 	/**

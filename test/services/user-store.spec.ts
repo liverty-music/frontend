@@ -334,6 +334,31 @@ describe('UserStore', () => {
 			// no store-owned key for clearGuest to touch.
 			expect(localStorage.getItem(DETECTOR_LANGUAGE_KEY)).toBe('en')
 		})
+
+		// @spec components/infrastructure/fan/web/route/discovery "Signing in, signing up or signing out clears the kept filter"
+		it('clearGuest() (before sign-in, after sign-up) forgets the All Nearby filter', () => {
+			localStorage.setItem(
+				'discovery.nearbyFilter',
+				JSON.stringify({ areaCode: 'JP-27', datePreset: 'weekend' }),
+			)
+			const { store } = build({ auth: makeAuth(false) })
+
+			store.clearGuest()
+
+			expect(localStorage.getItem('discovery.nearbyFilter')).toBeNull()
+		})
+
+		it('sign-out forgets the All Nearby filter', () => {
+			localStorage.setItem(
+				'discovery.nearbyFilter',
+				JSON.stringify({ areaCode: 'JP-27', datePreset: null }),
+			)
+			const { emitSignedOut } = build({ auth: makeAuth(true) })
+
+			emitSignedOut()
+
+			expect(localStorage.getItem('discovery.nearbyFilter')).toBeNull()
+		})
 	})
 
 	// These exercise the auth-bootstrap chain that runs on every authed boot and
