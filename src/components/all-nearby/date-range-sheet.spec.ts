@@ -75,7 +75,7 @@ describe('DateRangeSheet', () => {
 		expect(emitted.at(-1)).toEqual({ ...sut.initialRange, label: '今週末' })
 	})
 
-	// @spec components/infrastructure/fan/web/route/discovery "Date chip opens the range sheet in one tap"
+	// @spec components/infrastructure/fan/web/route/discovery "Period row opens the range sheet in one tap"
 	// @spec components/infrastructure/fan/web/route/discovery "Available quick presets"
 	it('opens with exactly three quick presets and the editable start and end fields', () => {
 		sut.bound()
@@ -102,13 +102,14 @@ describe('DateRangeSheet', () => {
 			from: { year: 2026, month: 8, day: 15 },
 			to: { year: 2026, month: 8, day: 16 },
 			label: '今週末',
+			applied: 'weekend',
 		})
 		sut.selectPreset('month')
 		expect(emitted.at(-1)?.label).toBe('30日以内')
 	})
 
 	// @spec components/infrastructure/fan/web/route/discovery "Custom range is edited then applied"
-	// @spec components/infrastructure/fan/web/route/discovery "Date chip shows a localized range"
+	// @spec components/infrastructure/fan/web/route/discovery "Period row shows a localized range"
 	it('keeps the sheet open while the dates are edited, then applies them with a localized label', () => {
 		sut.bound()
 		sut.open()
@@ -124,6 +125,8 @@ describe('DateRangeSheet', () => {
 			from: { year: 2026, month: 8, day: 12 },
 			to: { year: 2026, month: 8, day: 20 },
 			label: '8/12〜8/20',
+			// A custom range applies no preset, so none is kept.
+			applied: null,
 		})
 	})
 

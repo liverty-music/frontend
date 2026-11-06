@@ -56,6 +56,8 @@ export class MyArtistsRoute {
 
 	// Hype tier references
 	public readonly hypeLevels: Hype[] = ['watch', 'home', 'nearby', 'away']
+	/** Each level's label, the accessible name of its radio button. */
+	public readonly hypeTiers = HYPE_TIERS
 
 	private readonly logger = resolve(ILogger).scopeTo('MyArtistsRoute')
 	private readonly errorBoundary = resolve(IErrorBoundaryService)

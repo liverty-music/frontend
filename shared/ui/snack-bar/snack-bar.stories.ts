@@ -11,18 +11,28 @@ import {
 	resolveColor,
 	WCAG_AA,
 } from '../../../.storybook/contrast'
+import {
+	pressAndHold,
+	releasePointer,
+	swipeSideways,
+} from '../../../.storybook/gestures'
 import { expectScreenshot } from '../../../.storybook/screenshot'
 import { Snack, type SnackSeverity } from './snack'
 import { SnackBar } from './snack-bar'
 
+/** What the snacks' callbacks did, for the stories to assert. */
+const record = { dismissals: 0, actions: 0 }
+
 // SnackBar is driven by `Snack` events on the IEventAggregator, not by
-// bindables, so a tiny host publishes one on demand to exercise it in isolation.
+// bindables, so a tiny host publishes them on demand to exercise it in isolation.
 @customElement({
 	name: 'snack-demo',
 	template: `
 		<button type="button" click.trigger="fire()">Show snack</button>
-		<button type="button" click.trigger="fireSelfDismissing()">Show self-dismissing snack</button>
-		<snack-bar limit.bind="limit"></snack-bar>
+		<button type="button" click.trigger="fireFour()">Show four snacks</button>
+		<button type="button" click.trigger="fireTimed()">Show a 4-second snack</button>
+		<button type="button" click.trigger="dismissLast()">Dismiss</button>
+		<snack-bar></snack-bar>
 	`,
 })
 class SnackDemo {
@@ -32,37 +42,46 @@ class SnackDemo {
 	@bindable public update = false
 	/** Give a plain snack an action with this label. */
 	@bindable public actionLabel = ''
-	/** The snack bar's limit (the fan app: 3). */
-	@bindable public limit = Number.POSITIVE_INFINITY
 	private readonly ea = resolve(IEventAggregator)
-	private count = 0
+	private last: Snack | null = null
 
-	/**
-	 * Publish a numbered snack that dismisses on its own, after a minute so
-	 * it outlasts the test.
-	 */
-	public fireSelfDismissing(): void {
-		this.count++
-		this.ea.publish(
-			new Snack(`スナック${this.count}`, 'info', { duration: 60_000 }),
-		)
-	}
-
+	/** Publish a snack that stays until it is dismissed (no timer race). */
 	public fire(): void {
-		// duration: Infinity → stays open (no auto-dismiss race in the test).
-		this.ea.publish(
+		this.publish(
 			new Snack(this.message, this.severity, {
 				duration: Number.POSITIVE_INFINITY,
+				onDismiss: () => record.dismissals++,
 				...(this.actionLabel && {
 					action: { label: this.actionLabel, callback: () => {} },
 				}),
 				...(this.update && {
 					icon: null,
 					attention: true,
-					action: { label: '更新', callback: () => {} },
+					action: { label: '更新', callback: () => record.actions++ },
 				}),
 			}),
 		)
+	}
+
+	/** Publish four short snacks at once, numbered in publishing order. */
+	public fireFour(): void {
+		for (let i = 1; i <= 4; i++) {
+			this.publish(new Snack(`スナック${i}`, 'info', { duration: 400 }))
+		}
+	}
+
+	/** Publish a snack with the short (4 s) Material 3 duration. */
+	public fireTimed(): void {
+		this.publish(new Snack('パスキーを追加しました。', 'info'))
+	}
+
+	public dismissLast(): void {
+		this.last?.handle?.dismiss()
+	}
+
+	private publish(snack: Snack): void {
+		this.last = snack
+		this.ea.publish(snack)
 	}
 }
 
@@ -74,29 +93,48 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
+/** The open snack's popover and the surface the fan sees inside it. */
+async function openSnack(canvasElement: HTMLElement) {
+	return waitFor(() => {
+		const item = canvasElement.querySelector<HTMLElement>(
+			'.snack-item:popover-open',
+		)
+		const surface = item?.querySelector<HTMLElement>('.snack-surface')
+		if (!item || !surface) throw new Error('no open snack')
+		return { item, surface }
+	})
+}
+
+/** Waits until the snack's entry motion has ended. */
+async function settled(item: HTMLElement): Promise<void> {
+	await Promise.all(item.getAnimations().map((a) => a.finished))
+}
+
 /**
  * Colours along the snack's container gradient, both ends included. A CSS
  * gradient interpolates in oklab by default, so `color-mix(in oklab, …)` gives
  * the colour painted at each point. axe reports text over a gradient as
  * incomplete, so contrast is measured here instead.
  */
-function gradientSamples(snack: HTMLElement): string[] {
-	const style = getComputedStyle(snack)
+function gradientSamples(surface: HTMLElement): string[] {
+	const style = getComputedStyle(surface)
 	const from = style.getPropertyValue('--_bg-from').trim()
 	const to = style.getPropertyValue('--_bg-to').trim()
 	// Every 5%: between two hues the oklab blend loses chroma and can dip
 	// below both ends, so the ends alone do not bound the ratio.
 	return Array.from({ length: 21 }, (_, i) =>
-		resolveColor(snack, `color-mix(in oklab, ${from}, ${to} ${i * 5}%)`),
+		resolveColor(surface, `color-mix(in oklab, ${from}, ${to} ${i * 5}%)`),
 	)
 }
 
 /** Asserts the snack's message reaches 4.5:1 along the whole gradient. */
-async function expectMessageContrast(snack: HTMLElement): Promise<void> {
-	const message = snack.querySelector<HTMLElement>('.snack-message')
+async function expectMessageContrast(surface: HTMLElement): Promise<void> {
+	const message = surface.querySelector<HTMLElement>('.snack-message')
 	if (!message) throw new Error('no message')
 	const text = getComputedStyle(message).color
-	for (const stop of gradientSamples(snack)) {
+	for (const stop of gradientSamples(surface)) {
 		await expect(
 			contrast(composite(stop, text), composite(stop)),
 		).toBeGreaterThanOrEqual(WCAG_AA)
@@ -108,10 +146,10 @@ async function expectMessageContrast(snack: HTMLElement): Promise<void> {
  * over every point of the gradient.
  */
 async function expectActionContrast(action: HTMLElement): Promise<void> {
-	const snack = action.closest<HTMLElement>('.snack-item')
-	if (!snack) throw new Error('no snack')
+	const surface = action.closest<HTMLElement>('.snack-surface')
+	if (!surface) throw new Error('no snack')
 	const { color, backgroundColor } = getComputedStyle(action)
-	for (const stop of gradientSamples(snack)) {
+	for (const stop of gradientSamples(surface)) {
 		const fill = composite(stop, backgroundColor)
 		const label = composite(stop, backgroundColor, color)
 		await expect(contrast(label, fill)).toBeGreaterThanOrEqual(WCAG_AA)
@@ -136,23 +174,22 @@ function snackStory(props: {
 			await waitFor(() =>
 				expect(canvas.getByText(props.message)).toBeInTheDocument(),
 			)
-			const snack = canvasElement.querySelector<HTMLElement>('.snack-item')
-			if (!snack) throw new Error('no snack')
+			const { item, surface } = await openSnack(canvasElement)
 			// @spec components/infrastructure/fan/web/global/snack-bar "Snack severity visual variants"
-			await expect(snack.getAttribute('data-severity')).toBe(props.severity)
-			await expect(getComputedStyle(snack).backgroundImage).toContain(
+			await expect(item.getAttribute('data-severity')).toBe(props.severity)
+			await expect(getComputedStyle(surface).backgroundImage).toContain(
 				'linear-gradient',
 			)
 			// @spec components/infrastructure/fan/web/global/snack-bar "Message contrast on every severity"
-			await expectMessageContrast(snack)
+			await expectMessageContrast(surface)
 			// @spec components/infrastructure/fan/web/global/snack-bar "Action contrast on every severity"
 			await expectActionContrast(
 				canvas.getByRole('button', { name: props.actionLabel }),
 			)
 			// @spec components/infrastructure/fan/web/global/snack-bar "Accessibility"
-			await expect(snack.getAttribute('role')).toBe('status')
-			await expect(snack.matches(':popover-open')).toBe(true)
-			await expect(snack.matches(':modal')).toBe(false)
+			await expect(item.getAttribute('role')).toBe('status')
+			await expect(item.getAttribute('popover')).toBe('manual')
+			await expect(item.matches(':modal')).toBe(false)
 		},
 	} satisfies Story
 }
@@ -229,9 +266,9 @@ export const UpdateAction = {
 
 		// @spec components/infrastructure/fan/web/global/snack-bar "Message contrast on every severity"
 		// @spec components/infrastructure/fan/web/global/snack-bar "Action contrast on every severity"
-		const updateSnack = action.closest<HTMLElement>('.snack-item')
-		if (!updateSnack) throw new Error('no snack')
-		await expectMessageContrast(updateSnack)
+		const surface = action.closest<HTMLElement>('.snack-surface')
+		if (!surface) throw new Error('no snack')
+		await expectMessageContrast(surface)
 		await expectActionContrast(action)
 
 		// @spec components/infrastructure/fan/web/global/snack-bar "No leading icon"
@@ -246,42 +283,205 @@ export const UpdateAction = {
 
 		// After the glow (or with none), both projects render the same still
 		// frame.
-		const snack = canvasElement.querySelector<HTMLElement>(
-			'.snack-item:popover-open',
-		)
-		if (!snack) throw new Error('snack is not open')
+		const { item } = await openSnack(canvasElement)
 		await Promise.all(
-			snack.getAnimations({ subtree: true }).map((a) => a.finished),
+			item.getAnimations({ subtree: true }).map((a) => a.finished),
 		)
-		await expectScreenshot(snack, 'snack-bar-update-action')
+		await expectScreenshot(item, 'snack-bar-update-action')
+	},
+} satisfies Story
+
+const demo =
+	(props: Record<string, unknown> = {}) =>
+	() =>
+		defineAureliaStory({
+			template: `<snack-demo message.bind="message" update.bind="update"></snack-demo>`,
+			props: { message: 'チケットを保存しました', update: false, ...props },
+			register: [SnackDemo, SnackBar],
+		})
+
+/**
+ * Four snacks published at once appear one at a time, in the order they were
+ * published, each after the one before it has gone.
+ */
+export const Queue = {
+	render: demo(),
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement)
+		const seen: string[] = []
+		let most = 0
+		let sampling = true
+		const sample = () => {
+			const items = canvasElement.querySelectorAll('.snack-item')
+			most = Math.max(most, items.length)
+			const message = items[0]?.querySelector('.snack-message')?.textContent
+			if (message && seen.at(-1) !== message.trim()) seen.push(message.trim())
+			if (sampling) requestAnimationFrame(sample)
+		}
+		sample()
+		await userEvent.click(
+			canvas.getByRole('button', { name: 'Show four snacks' }),
+		)
+		await waitFor(
+			() =>
+				expect(seen).toEqual([
+					'スナック1',
+					'スナック2',
+					'スナック3',
+					'スナック4',
+				]),
+			{ timeout: 8000 },
+		)
+		await waitFor(
+			() => expect(canvasElement.querySelector('.snack-item')).toBeNull(),
+			{ timeout: 3000 },
+		)
+		sampling = false
+
+		// @spec components/infrastructure/fan/web/global/snack-bar "Waiting snacks keep their order"
+		// @spec components/infrastructure/fan/web/global/snack-bar "A second snack waits"
+		// At no frame were two snacks in the document, shown or leaving.
+		await expect(most).toBe(1)
 	},
 } satisfies Story
 
 /**
- * Four snacks that dismiss on their own, published one after another into
- * the fan app's snack bar (limit 3): the first is dismissed and the newest
- * three stay stacked.
+ * A dismissed snack sinks and fades out before it leaves the document; with
+ * motion reduced it goes at once.
  */
-export const FourStacked = {
-	render: () =>
-		defineAureliaStory({
-			template: `<snack-demo limit.bind="3"></snack-demo>`,
-			register: [SnackDemo, SnackBar],
-		}),
-	play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+export const ExitMotion = {
+	tags: ['reduced-motion'],
+	render: demo(),
+	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement)
-		const button = canvas.getByRole('button', {
-			name: 'Show self-dismissing snack',
-		})
-		for (let i = 0; i < 4; i++) await userEvent.click(button)
+		await userEvent.click(canvas.getByRole('button', { name: 'Show snack' }))
+		const { item } = await openSnack(canvasElement)
+		await settled(item)
+		await userEvent.click(canvas.getByRole('button', { name: 'Dismiss' }))
 
-		// @spec components/infrastructure/fan/web/global/snack-bar "Fourth snack"
+		if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+			// @spec components/infrastructure/fan/web/global/snack-bar "Reduced motion preference"
+			await waitFor(() => expect(item.isConnected).toBe(false), {
+				timeout: 100,
+			})
+			return
+		}
+		// @spec components/infrastructure/fan/web/global/snack-bar "DOM cleanup after exit transition"
+		await sleep(100)
+		await expect(item.isConnected).toBe(true)
+		await expect(Number(getComputedStyle(item).opacity)).toBeLessThan(1)
+		await waitFor(() => expect(item.isConnected).toBe(false), {
+			timeout: 1000,
+		})
+	},
+} satisfies Story
+
+/**
+ * A swipe past half the snack's width carries it away and dismisses it once;
+ * with motion reduced it goes without an exit motion.
+ */
+export const SwipePastHalf = {
+	tags: ['reduced-motion'],
+	render: demo(),
+	play: async ({ canvasElement }) => {
+		record.dismissals = 0
+		const canvas = within(canvasElement)
+		await userEvent.click(canvas.getByRole('button', { name: 'Show snack' }))
+		const { item, surface } = await openSnack(canvasElement)
+		await settled(item)
+		const before = surface.getBoundingClientRect()
+
+		const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches
+		if (!(await swipeSideways('.snack-surface', -0.7 * before.width))) return
+
+		if (!reduced) {
+			// @spec components/infrastructure/fan/web/global/snack-bar "Swipe past the dismiss point"
+			// It leaves to the left, the way it was swiped.
+			await expect(surface.getBoundingClientRect().left).toBeLessThan(
+				before.left - before.width / 2,
+			)
+		} else {
+			// @spec components/infrastructure/fan/web/global/snack-bar "Swipe under reduced motion"
+			await expect(item.getAnimations()).toHaveLength(0)
+		}
+		await waitFor(() => expect(item.isConnected).toBe(false), {
+			timeout: 1000,
+		})
+		await expect(record.dismissals).toBe(1)
+	},
+} satisfies Story
+
+/** A swipe shorter than half the width lets the snack return to its place. */
+export const ShortSwipe = {
+	render: demo(),
+	play: async ({ canvasElement }) => {
+		record.dismissals = 0
+		const canvas = within(canvasElement)
+		await userEvent.click(canvas.getByRole('button', { name: 'Show snack' }))
+		const { item, surface } = await openSnack(canvasElement)
+		await settled(item)
+		const before = surface.getBoundingClientRect()
+
+		if (!(await swipeSideways('.snack-surface', -0.3 * before.width))) return
+
+		// @spec components/infrastructure/fan/web/global/snack-bar "Short swipe"
 		await waitFor(() =>
 			expect(
-				[...canvasElement.querySelectorAll('.snack-item:popover-open')].map(
-					(el) => el.querySelector('.snack-message')?.textContent?.trim(),
-				),
-			).toEqual(['スナック2', 'スナック3', 'スナック4']),
+				Math.abs(surface.getBoundingClientRect().left - before.left),
+			).toBeLessThan(1),
 		)
+		await sleep(300)
+		await expect(item.matches(':popover-open')).toBe(true)
+		await expect(record.dismissals).toBe(0)
+	},
+} satisfies Story
+
+/**
+ * A 4-second snack held after 3 seconds for 5 seconds stays, and goes 1
+ * second after it is released.
+ */
+export const HoldPausesTimer = {
+	render: demo(),
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement)
+		await userEvent.click(
+			canvas.getByRole('button', { name: 'Show a 4-second snack' }),
+		)
+		const { item } = await openSnack(canvasElement)
+		await sleep(3000)
+		if (!(await pressAndHold('.snack-surface'))) return
+		await sleep(5000)
+
+		// @spec components/infrastructure/fan/web/global/snack-bar "Holding pauses the timer"
+		await expect(item.matches(':popover-open')).toBe(true)
+		await releasePointer()
+		await sleep(800)
+		await expect(item.matches(':popover-open')).toBe(true)
+		await waitFor(() => expect(item.matches(':popover-open')).toBe(false), {
+			timeout: 500,
+		})
+	},
+} satisfies Story
+
+/** The update snack, swiped away, is dismissed and the update not applied. */
+export const SwipeUpdateSnack = {
+	render: demo({ message: '新しいバージョンがあります', update: true }),
+	play: async ({ canvasElement }) => {
+		record.dismissals = 0
+		record.actions = 0
+		const canvas = within(canvasElement)
+		await userEvent.click(canvas.getByRole('button', { name: 'Show snack' }))
+		const { item, surface } = await openSnack(canvasElement)
+		await settled(item)
+		const width = surface.getBoundingClientRect().width
+
+		if (!(await swipeSideways('.snack-surface', 0.7 * width))) return
+
+		// @spec components/infrastructure/fan/web/global/snack-bar "Swipe on a snack that stays until the fan acts"
+		await waitFor(() => expect(item.isConnected).toBe(false), {
+			timeout: 1500,
+		})
+		await expect(record.dismissals).toBe(1)
+		await expect(record.actions).toBe(0)
 	},
 } satisfies Story

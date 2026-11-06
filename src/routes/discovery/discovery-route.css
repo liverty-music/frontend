@@ -89,7 +89,7 @@
 		.discovery-layout {
 			/* The FAB sits in the navigation bar's notch and rises into the
 			   bubble field; keep the orb and the bubbles' floor above it. */
-			--orb-floor: calc(var(--fab-notch-radius) + var(--space-2xs));
+			--orb-floor: var(--discovery-floor);
 
 			/* The largest radius the orb grows to (stage-effects.ts MAX_RADIUS,
 			   or NARROW_MAX_RADIUS on a canvas narrower than 390px). */

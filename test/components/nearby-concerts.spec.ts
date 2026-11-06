@@ -8,6 +8,8 @@ const mockIAuthService = DI.createInterface('IAuthService')
 const mockIConcertStore = DI.createInterface('IConcertStore')
 const mockIPurchasedTicketStore = DI.createInterface('IPurchasedTicketStore')
 const mockIUserStore = DI.createInterface('IUserStore')
+const mockIFollowStore = DI.createInterface('IFollowStore')
+const mockITicketJourneyStore = DI.createInterface('ITicketJourneyStore')
 
 vi.mock('../../src/services/auth-service', () => ({
 	IAuthService: mockIAuthService,
@@ -21,9 +23,21 @@ vi.mock('../../src/services/purchased-ticket-store', () => ({
 vi.mock('../../src/services/user-store', () => ({
 	IUserStore: mockIUserStore,
 }))
+vi.mock('../../src/services/follow-store', () => ({
+	IFollowStore: mockIFollowStore,
+}))
+vi.mock('../../src/services/ticket-journey-store', () => ({
+	ITicketJourneyStore: mockITicketJourneyStore,
+}))
 
 const { NearbyConcerts, NearbyVisit } = await import(
 	'../../src/components/all-nearby/nearby-concerts'
+)
+const { resolvePreset } = await import(
+	'../../src/components/all-nearby/date-presets'
+)
+const { loadNearbyFilter } = await import(
+	'../../src/adapter/storage/nearby-filter-storage'
 )
 const { default: template } = await import(
 	'../../src/components/all-nearby/nearby-concerts.html?raw'
@@ -39,9 +53,13 @@ const WEEKEND = {
 	to: { year: 2026, month: 11, day: 1 },
 }
 
-function rangeEvent(range: Range, label: string) {
+function rangeEvent(
+	range: Range,
+	label: string,
+	applied?: 'weekend' | 'week' | 'month' | null,
+) {
 	return new CustomEvent('range-changed', {
-		detail: { ...range, label },
+		detail: { ...range, label, ...(applied !== undefined && { applied }) },
 	}) as unknown as Parameters<
 		InstanceType<typeof NearbyConcerts>['onRangeChanged']
 	>[0]
@@ -76,6 +94,11 @@ describe('NearbyConcerts', () => {
 		setGuestHome: ReturnType<typeof vi.fn>
 	}
 	let mockRouter: ReturnType<typeof createMockRouter>
+	let mockFollow: { hypeByArtist: Map<string, string> }
+	let mockJourney: {
+		journeyMap: Map<string, string>
+		load: ReturnType<typeof vi.fn>
+	}
 
 	function build(visit = new NearbyVisit()) {
 		const container = createTestContainer(
@@ -84,6 +107,8 @@ describe('NearbyConcerts', () => {
 			Registration.instance(mockIPurchasedTicketStore, mockPurchased),
 			Registration.instance(mockIUserStore, mockUserStore),
 			Registration.instance(IRouter, mockRouter),
+			Registration.instance(mockIFollowStore, mockFollow),
+			Registration.instance(mockITicketJourneyStore, mockJourney),
 		)
 		container.register(NearbyConcerts)
 		const sut = container.get(NearbyConcerts)
@@ -91,6 +116,7 @@ describe('NearbyConcerts', () => {
 		sut.areaSelector = { open: vi.fn() } as never
 		sut.dateSheet = { open: vi.fn() } as never
 		sut.detailSheet = { open: vi.fn() } as never
+		sut.filterSheet = { open: vi.fn() } as never
 		return sut
 	}
 
@@ -108,6 +134,11 @@ describe('NearbyConcerts', () => {
 			setGuestHome: vi.fn(),
 		}
 		mockRouter = createMockRouter()
+		mockFollow = { hypeByArtist: new Map([['a1', 'home']]) }
+		mockJourney = {
+			journeyMap: new Map(),
+			load: vi.fn().mockResolvedValue(new Map()),
+		}
 		localStorage.clear()
 	})
 
@@ -125,8 +156,12 @@ describe('NearbyConcerts', () => {
 			expect(mockConcert.listByLocation).toHaveBeenCalledTimes(1)
 			expect(mockConcert.toDateGroupsForLocation).toHaveBeenCalledWith(
 				[{ key: 'proximity' }],
+				mockFollow.hypeByArtist,
+				mockJourney.journeyMap,
 				mockPurchased.countByEvent,
 			)
+			// The server's groups are kept, so the cards can be re-derived.
+			expect([...visit.cache.values()]).toEqual([[{ key: 'proximity' }]])
 			first.detaching()
 
 			// Switching to the artist bubbles and back re-creates the view; the
@@ -134,7 +169,7 @@ describe('NearbyConcerts', () => {
 			const again = build(visit)
 			again.onRangeChanged(rangeEvent(visit.range as Range, '7日以内'))
 			await again.load()
-			expect(again.dateGroups).toBe(first.dateGroups)
+			expect(again.dateGroups).toEqual(first.dateGroups)
 			expect(mockConcert.listByLocation).toHaveBeenCalledTimes(1)
 		})
 
@@ -217,10 +252,12 @@ describe('NearbyConcerts', () => {
 		})
 
 		// @spec components/infrastructure/fan/web/route/discovery "Area override via UserHomeSelector"
-		// @spec components/infrastructure/fan/web/global/user-home-selector "Caller owns persistence — session-only override"
-		it('opens the area selector from the chip and keeps the choice in the visit only', async () => {
+		// @spec components/infrastructure/fan/web/global/user-home-selector "Caller owns persistence — All Nearby area override"
+		it('opens the area selector from the area row and keeps the choice as the override', async () => {
 			const sut = build()
-			sut.openAreaSelector()
+			sut.onFilterRowChosen(
+				new CustomEvent('filter-row-chosen', { detail: 'area' }) as never,
+			)
 			expect(sut.areaSelector?.open).toHaveBeenCalledOnce()
 
 			sut.onRangeChanged(rangeEvent(WEEK, '7日以内'))
@@ -239,22 +276,33 @@ describe('NearbyConcerts', () => {
 			expect(mockUserStore.updateHome).not.toHaveBeenCalled()
 			expect(mockUserStore.setGuestHome).not.toHaveBeenCalled()
 			expect(localStorage.getItem('guest.home')).toBeNull()
-
-			// The chip opens the shared selector.
-			const chip = parsedTemplate().querySelector(
-				'[data-testid="nearby-area-chip"]',
-			)
-			expect(chip?.getAttribute('click.trigger')).toBe('openAreaSelector()')
 		})
 
-		// @spec components/infrastructure/fan/web/route/discovery "Area override is session-scoped"
-		it("starts a new visit on the fan's home area again", () => {
-			const visit = new NearbyVisit()
-			build(visit).onAreaSelected('JP-27')
+		// @spec components/infrastructure/fan/web/route/discovery "Area override is kept on the device"
+		it('starts the next visit on the kept override, without touching the home area', () => {
+			mockUserStore.currentHome = 'JP-13'
+			build().onAreaSelected('JP-27')
+
 			// Leaving Discovery or reloading creates a new route, with a new visit.
 			const next = build(new NearbyVisit())
-			expect(next.effectiveAreaCode).toBe('JP-40')
-			expect(next.selectedAreaName).toBe('福岡県')
+			expect(next.effectiveAreaCode).toBe('JP-27')
+			expect(next.selectedAreaName).toBe('大阪府')
+			expect(mockUserStore.currentHome).toBe('JP-13')
+			expect(mockUserStore.updateHome).not.toHaveBeenCalled()
+		})
+
+		// @spec components/infrastructure/fan/web/route/discovery "Choosing the home area clears the override"
+		it('follows the home area again once the fan chooses it', () => {
+			mockUserStore.currentHome = 'JP-13'
+			const sut = build()
+			sut.onAreaSelected('JP-27')
+			sut.onAreaSelected('JP-13')
+
+			expect(sut.visit.areaCode).toBeNull()
+			expect(loadNearbyFilter().areaCode).toBeNull()
+			// The fan later moves to 神奈川県.
+			mockUserStore.currentHome = 'JP-14'
+			expect(build(new NearbyVisit()).effectiveAreaCode).toBe('JP-14')
 		})
 
 		// @spec components/infrastructure/fan/web/route/discovery "Area override for unauthenticated user"
@@ -279,41 +327,97 @@ describe('NearbyConcerts', () => {
 			)
 			expect(mockUserStore.setGuestHome).not.toHaveBeenCalled()
 			expect(localStorage.getItem('guest.home')).toBeNull()
+			// Kept on the device as the override, not as the guest home.
+			expect(loadNearbyFilter().areaCode).toBe('JP-40')
 		})
 	})
 
-	describe('filter bar', () => {
-		// @spec components/infrastructure/fan/web/route/discovery "Filter bar is a single row of two chips"
+	describe('kept period', () => {
+		const SPEC = 'components/infrastructure/fan/web/route/discovery'
+
+		it(`@spec ${SPEC} "A preset is kept for the next visit"`, () => {
+			build().onRangeChanged(rangeEvent(WEEKEND, '今週末', 'weekend'))
+
+			// A new visit computes the preset from the new day's date.
+			const next = new NearbyVisit()
+			expect(next.datePreset).toBe('weekend')
+			expect(next.range).toEqual(resolvePreset('weekend'))
+		})
+
+		it(`@spec ${SPEC} "A custom range is not kept"`, () => {
+			const sut = build()
+			sut.onRangeChanged(rangeEvent(WEEKEND, '今週末', 'weekend'))
+			sut.onRangeChanged(rangeEvent(WEEK, '8/12〜8/20', null))
+
+			expect(sut.visit.datePreset).toBeNull()
+			const next = new NearbyVisit()
+			expect(next.datePreset).toBe('week')
+			expect(next.range).toEqual(resolvePreset('week'))
+		})
+
+		it(`@spec ${SPEC} "The device keeps nothing"`, () => {
+			vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+				throw new DOMException('denied', 'SecurityError')
+			})
+			const next = new NearbyVisit()
+			expect(next.datePreset).toBe('week')
+			expect(next.areaCode).toBeNull()
+		})
+
+		it('keeps nothing new for the range the sheet emits on bind', () => {
+			build().onRangeChanged(rangeEvent(WEEK, '7日以内'))
+			expect(localStorage.getItem('discovery.nearbyFilter')).toBeNull()
+		})
+	})
+
+	describe('filter sheet', () => {
 		// @spec components/infrastructure/fan/web/route/discovery "Timetable height is unaffected by filter interaction"
-		it('is one row of two chips that each open a bottom sheet, never an inline panel', () => {
+		it('puts no filter control above the timetable; every filter surface is a sheet', () => {
 			const doc = parsedTemplate()
-			const bar = doc.querySelector('.nearby-filters')
-			const chips = bar?.querySelectorAll(':scope > button.filter-chip')
-			expect(chips).toHaveLength(2)
-			expect(bar?.children).toHaveLength(2)
-			expect(
-				[...(chips ?? [])].map((c) => c.getAttribute('click.trigger')),
-			).toEqual(['openAreaSelector()', 'openDateSheet()'])
-			// Both opened surfaces are bottom sheets outside the layout flow.
+			expect(doc.querySelector('.nearby-filters')).toBeNull()
+			expect(doc.querySelector('[data-testid="nearby-area-chip"]')).toBeNull()
+			// The timetable is the first element the view lays out.
+			const laidOut = [...doc.body.children].filter(
+				(el) => el.tagName !== 'IMPORT',
+			)
+			expect(laidOut[0].tagName).toBe('CONCERT-HIGHWAY')
+			// The filter surfaces are bottom sheets, outside the layout flow.
+			expect(doc.querySelector('nearby-filter-sheet')).not.toBeNull()
 			expect(doc.querySelector('user-home-selector')).not.toBeNull()
 			expect(doc.querySelector('date-range-sheet')).not.toBeNull()
 		})
 
-		// @spec components/infrastructure/fan/web/route/discovery "Date chip opens the range sheet in one tap"
-		it('opens the date-range sheet from the date chip', () => {
+		// @spec components/infrastructure/fan/web/route/discovery "Filter item opens the filter sheet"
+		it('opens the filter sheet for the launcher, with the area and the period', () => {
 			const sut = build()
-			sut.openDateSheet()
+			sut.onRangeChanged(rangeEvent(WEEK, '7日以内'))
+			sut.openFilters()
+			expect(sut.filterSheet?.open).toHaveBeenCalledOnce()
+			expect(sut.selectedAreaName).toBe('福岡県')
+			expect(sut.periodLabel).toBe('7日以内')
+			const sheet = parsedTemplate().querySelector('nearby-filter-sheet')
+			expect(sheet?.getAttribute('area-name.bind')).toBe('selectedAreaName')
+			expect(sheet?.getAttribute('period-label.bind')).toBe('periodLabel')
+		})
+
+		// @spec components/infrastructure/fan/web/route/discovery "Period row opens the range sheet in one tap"
+		it('opens the date-range sheet for the period row', () => {
+			const sut = build()
+			sut.onFilterRowChosen(
+				new CustomEvent('filter-row-chosen', { detail: 'period' }) as never,
+			)
 			expect(sut.dateSheet?.open).toHaveBeenCalledOnce()
+			expect(sut.areaSelector?.open).not.toHaveBeenCalled()
 		})
 
 		// @spec components/infrastructure/fan/web/route/discovery "Preset shows its name"
-		// @spec components/infrastructure/fan/web/route/discovery "Date chip shows a localized range"
-		it('shows the label the date-range sheet supplies', () => {
+		// @spec components/infrastructure/fan/web/route/discovery "Period row shows a localized range"
+		it('shows the label the date-range sheet supplies on the period row', () => {
 			const sut = build()
 			sut.onRangeChanged(rangeEvent(WEEKEND, '今週末'))
-			expect(sut.dateChipLabel).toBe('今週末')
+			expect(sut.periodLabel).toBe('今週末')
 			sut.onRangeChanged(rangeEvent(WEEK, '8/12〜8/20'))
-			expect(sut.dateChipLabel).toBe('8/12〜8/20')
+			expect(sut.periodLabel).toBe('8/12〜8/20')
 		})
 	})
 
@@ -332,7 +436,7 @@ describe('NearbyConcerts', () => {
 		})
 
 		// @spec components/infrastructure/fan/web/route/discovery "Empty state"
-		it('says nothing was found and suggests another period or area, with the chips still above', async () => {
+		it('says nothing was found and suggests another period or area', async () => {
 			mockConcert.listByLocation.mockResolvedValue([])
 			mockConcert.toDateGroupsForLocation.mockReturnValue([])
 			const sut = build()
@@ -353,11 +457,8 @@ describe('NearbyConcerts', () => {
 					n.getAttribute('t'),
 				),
 			).toEqual(['allNearby.empty.title', 'allNearby.empty.subtitle'])
-			// No link away from the view: the chips are the way forward.
+			// No link away from the view: the launcher's filter is the way forward.
 			expect(empty?.querySelector('a')).toBeNull()
-			expect(
-				doc.querySelector('.nearby-filters')?.hasAttribute('if.bind'),
-			).toBe(false)
 		})
 
 		// @spec components/infrastructure/fan/web/route/discovery "First-party concert opens its event page"
@@ -394,6 +495,60 @@ describe('NearbyConcerts', () => {
 			expect(sut.visit.range).toEqual(WEEKEND)
 			expect(sut.dateGroups).toBe(groups)
 			expect(mockConcert.listByLocation).toHaveBeenCalledTimes(2)
+		})
+	})
+
+	describe('matched state and journeys', () => {
+		const SPEC = 'components/infrastructure/fan/web/route/discovery'
+
+		it(`@spec ${SPEC} "Journey badge shown"`, async () => {
+			mockJourney.journeyMap = new Map([['ev-1', 'tracking']])
+			const sut = build()
+			// A visit straight to /discovery?view=nearby loads the journeys.
+			sut.attached()
+			expect(mockJourney.load).toHaveBeenCalledOnce()
+			sut.onRangeChanged(rangeEvent(WEEK, '7日以内'))
+			await vi.waitFor(() => expect(sut.dateGroups).toHaveLength(1))
+			expect(mockConcert.toDateGroupsForLocation).toHaveBeenLastCalledWith(
+				[{ key: 'proximity' }],
+				mockFollow.hypeByArtist,
+				mockJourney.journeyMap,
+				mockPurchased.countByEvent,
+			)
+		})
+
+		it(`@spec ${SPEC} "Journey or hype changed in the detail sheet"`, async () => {
+			const sut = build()
+			sut.onRangeChanged(rangeEvent(WEEK, '7日以内'))
+			await vi.waitFor(() => expect(sut.dateGroups).toHaveLength(1))
+			mockConcert.toDateGroupsForLocation.mockReturnValue([
+				{ dateKey: 'rederived' },
+			])
+
+			// The fan sets a journey in the detail sheet …
+			mockJourney.journeyMap = new Map([['ev-1', 'tracking']])
+			// @ts-expect-error -- the @watch callback, as Aurelia calls it
+			sut.onFanStateChanged()
+			expect(sut.dateGroups).toEqual([{ dateKey: 'rederived' }])
+			expect(mockConcert.toDateGroupsForLocation).toHaveBeenLastCalledWith(
+				[{ key: 'proximity' }],
+				mockFollow.hypeByArtist,
+				mockJourney.journeyMap,
+				mockPurchased.countByEvent,
+			)
+
+			// … or changes a followed artist's level elsewhere.
+			mockFollow.hypeByArtist = new Map([['a1', 'away']])
+			// @ts-expect-error -- the @watch callback, as Aurelia calls it
+			sut.onFanStateChanged()
+			expect(mockConcert.toDateGroupsForLocation).toHaveBeenLastCalledWith(
+				[{ key: 'proximity' }],
+				mockFollow.hypeByArtist,
+				mockJourney.journeyMap,
+				mockPurchased.countByEvent,
+			)
+			// Re-derived without a request.
+			expect(mockConcert.listByLocation).toHaveBeenCalledTimes(1)
 		})
 	})
 

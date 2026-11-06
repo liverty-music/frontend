@@ -1,22 +1,6 @@
 <import from="./nearby-concerts.css"></import>
 <import from="./date-range-sheet"></import>
-
-<!-- Filters: a fixed-height row of exactly two chips, area and date. Neither
-     expands inline, so the timetable's height never changes; each opens a
-     bottom sheet. -->
-<div class="[ nearby-filters ] [ cluster ]" role="group" t="[aria-label]allNearby.filterBar.label">
-  <button type="button" class="filter-chip" data-testid="nearby-area-chip" click.trigger="openAreaSelector()">
-    <svg-icon name="map-pin" size="sm"></svg-icon>
-    <span if.bind="selectedAreaName" class="chip-label">${selectedAreaName}</span>
-    <span else class="chip-label chip-label-empty" t="allNearby.area.choose"></span>
-    <svg-icon name="chevron-right" size="xs" class="chip-caret"></svg-icon>
-  </button>
-  <button type="button" class="filter-chip" data-testid="nearby-date-chip" click.trigger="openDateSheet()">
-    <svg-icon name="calendar" size="sm"></svg-icon>
-    <span class="chip-label">${dateChipLabel}</span>
-    <svg-icon name="chevron-right" size="xs" class="chip-caret"></svg-icon>
-  </button>
-</div>
+<import from="./nearby-filter-sheet"></import>
 
 <!-- Venue on every card; the AWAY lane is left out (two lanes). First in the
      content cell, so the states below paint over it and take the tap. -->
@@ -37,8 +21,8 @@
   retry-action.bind="() => load()"
 ></inline-error>
 
-<!-- Empty: nothing for this area and period. The chips above stay, so the
-     suggestion (a longer period, another area) is one tap away. -->
+<!-- Empty: nothing for this area and period. The filter stays one tap away
+     in the action launcher, for a longer period or another area. -->
 <state-placeholder
   if.bind="!isLoading && !loadError && dateGroups.length === 0"
   icon="clock"
@@ -54,15 +38,25 @@
   on-signup-requested.bind="() => onFollowSignupRequested()"
 ></event-detail-sheet>
 
-<!-- Area override for this visit; never saved to the account or the device. -->
+<!-- The filters, opened from the action launcher's filter item: one sheet with
+     the area and period rows, each opening its own selector once it closes. -->
+<nearby-filter-sheet
+  component.ref="filterSheet"
+  area-name.bind="selectedAreaName"
+  period-label.bind="periodLabel"
+  filter-row-chosen.trigger="onFilterRowChosen($event)"
+></nearby-filter-sheet>
+
+<!-- The area override, kept on the device; never saved to the account or as
+     the guest home. -->
 <user-home-selector
   component.ref="areaSelector"
   current-code.bind="effectiveAreaCode"
   on-home-selected.bind="(code) => onAreaSelected(code)"
 ></user-home-selector>
 
-<!-- Emits its range on bind (seeding the chip and the first load), starting
-     from the visit's range when the fan comes back to this view. -->
+<!-- Emits its range on bind (seeding the period and the first load), starting
+     from the visit's range: the kept preset, or the range of this visit. -->
 <date-range-sheet
   component.ref="dateSheet"
   initial-range.bind="visit.range"

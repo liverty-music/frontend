@@ -60,19 +60,18 @@
 		}
 
 		/* ── Fieldset reset ── */
+
+		/* The fieldset only sizes the table; the table body is the one scroll
+		   container, so the header never scrolls and no row is drawn over it. */
 		.artists-fieldset {
-			overflow-y: auto;
+			display: flex;
 			flex: 1;
+			flex-direction: column;
 
 			min-block-size: 0;
 			margin: 0;
 			padding: 0;
 			border: none;
-		}
-
-		/* Reserve scroll space so the last row clears the fixed Done bar. */
-		.artists-fieldset[data-editing="true"] {
-			padding-block-end: var(--space-2xl);
 		}
 
 		/* ── Edit-mode Done bar (fixed above the bottom nav) ── */
@@ -94,40 +93,62 @@
 			background: var(--color-surface-raised);
 		}
 
-		/* ── Table ── */
+		/* ── Table ──
+		   A two-row grid: the header row, then the body, which alone scrolls.
+		   Header, body and every row share the table's five columns through
+		   subgrid, so each header label sits over its column of dots. */
 		.artists-table {
-			border-spacing: 0 var(--space-3xs);
-			border-collapse: separate;
+			display: grid;
+			grid-template-columns: auto repeat(4, minmax(44px, 1fr));
+			grid-template-rows: auto minmax(0, 1fr);
+			flex: 1;
 
-			inline-size: 100%;
-			padding-block: var(--space-2xs);
+			min-block-size: 0;
+			padding-block-start: var(--space-2xs);
 			padding-inline: var(--space-xs);
 		}
 
-		/* ── Sticky thead ── */
-		thead {
-			isolation: isolate;
-			position: sticky;
-			inset-block-start: 0;
+		thead,
+		tbody,
+		tr {
+			display: grid;
+			grid-column: 1 / -1;
+			grid-template-columns: subgrid;
+		}
+
+		/* The list is a view-transition group that holds the rows' groups and
+		   clips them (global.css), so a row animating out is drawn only inside
+		   the list, never over the header. */
+		tbody {
+			overflow: hidden auto;
+			row-gap: var(--space-3xs);
+			align-content: start;
+
+			padding-block: var(--space-3xs) var(--space-2xs);
+
+			view-transition-name: artist-rows;
+		}
+
+		/* Reserve scroll space so the last row clears the fixed Done bar. */
+		.artists-fieldset[data-editing="true"] tbody {
+			padding-block-end: var(--space-2xl);
 		}
 
 		.artists-thead-row th {
 			padding-block: var(--space-xs);
-			background: var(--color-surface-base);
-			backdrop-filter: blur(8px);
 		}
 
 		.hype-col-header {
-			display: table-cell;
-
-			min-inline-size: 44px;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
 
 			/* Compact-only exception: dense hype table headers (see tokens.css). */
 			font-size: var(--step--2);
 			font-weight: normal;
 			color: var(--color-text-muted);
 			text-align: center;
-			vertical-align: middle;
 
 			& small {
 				display: block;
@@ -138,6 +159,8 @@
 		/* ── Artist row ── */
 		.artist-row {
 			view-transition-name: var(--_vt-name);
+
+			view-transition-group: nearest;
 
 			& td,
 			& th {
@@ -160,7 +183,8 @@
 
 		/* ── Artist name cell ── */
 		.artist-name-cell {
-			display: table-cell;
+			display: flex;
+			align-items: center;
 
 			min-inline-size: 0;
 			max-inline-size: 10rem;
@@ -169,16 +193,9 @@
 
 			text-align: start;
 			white-space: nowrap;
-			vertical-align: middle;
-		}
-
-		.artist-name-cell > * {
-			display: inline;
-			vertical-align: middle;
 		}
 
 		.artist-row-indicator {
-			display: inline-block;
 			flex-shrink: 0;
 
 			inline-size: 8px;
@@ -193,25 +210,21 @@
 
 		.artist-row-name {
 			overflow: hidden;
-			display: inline-block;
 
 			min-inline-size: 0;
-			max-inline-size: calc(100% - 8px - var(--space-xs));
 
 			font-size: var(--step--1);
 			font-weight: 500;
 			color: var(--color-text-primary);
 			text-overflow: ellipsis;
 			white-space: nowrap;
-			vertical-align: middle;
 		}
 
 		/* ── Hype td cells ── */
 		.hype-col {
-			min-inline-size: 44px;
+			display: grid;
+			align-items: center;
 			padding: 0;
-			text-align: center;
-			vertical-align: middle;
 
 			/* Track line: drawn on the first hype-col; spans dot-center to dot-center */
 			&:first-of-type > .hype-label::before {
@@ -317,9 +330,12 @@
 		/* In edit mode this cell replaces all hype columns, so the row uses the
 		   same structure as normal mode — no layout shift, no height change. */
 		.artist-remove-col {
+			display: flex;
+			grid-column: 2 / -1;
+			align-items: center;
+			justify-content: flex-end;
+
 			padding-inline: var(--space-2xs);
-			text-align: end;
-			vertical-align: middle;
 		}
 
 		.artist-remove-btn {

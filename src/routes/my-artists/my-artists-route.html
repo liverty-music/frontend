@@ -33,9 +33,10 @@
   <fieldset if.bind="!isLoading && artists.length > 0" class="artists-fieldset" data-editing.bind="editing">
     <legend class="[ visually-hidden ]" t="nav.myArtists"></legend>
     <table class="artists-table">
-      <thead>
+      <thead data-hype-header>
         <tr class="artists-thead-row">
-          <th scope="col" class="[ visually-hidden ]" t="myArtists.table.artistCol"></th>
+          <!-- The cell stays in the grid (its column), only its name is hidden. -->
+          <th scope="col"><span class="[ visually-hidden ]" t="myArtists.table.artistCol"></span></th>
           <!-- Hype tier headers hidden in edit mode; remove column takes their place. -->
           <template if.bind="!editing">
             <!-- Hype tier labels are Layer B brand expressions (per brand-vocabulary spec):
@@ -46,7 +47,7 @@
             <th scope="col" class="hype-col-header">🔥🔥🔥<small>Away</small></th>
           </template>
           <!-- Remove column header: only visible in edit mode. -->
-          <th if.bind="editing" scope="col" aria-label="Remove"></th>
+          <th if.bind="editing" scope="col"><span class="[ visually-hidden ]" t="myArtists.table.removeCol"></span></th>
         </tr>
       </thead>
       <tbody data-artist-rows>
@@ -72,6 +73,7 @@
                   model.bind="level"
                   change.trigger="onHypeInput(artist, level)"
                 >
+                <span class="[ visually-hidden ]">${hypeTiers[level].label}</span>
                 <span
                   class="hype-dot"
                   data-active.bind="level === artist.hype"

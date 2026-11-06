@@ -13,6 +13,10 @@ import {
 } from '../../src/lib/analytics/analytics-service'
 import { resetRevealEntryForTests } from '../../src/routes/discovery/reveal-timing'
 import { IErrorBoundaryService } from '../../src/services/error-boundary-service'
+import {
+	type FabAction,
+	IFabMenuService,
+} from '../../src/services/fab-menu-service'
 import { createTestContainer } from '../helpers/create-container'
 import { createMockAppConfig } from '../helpers/mock-app-config'
 import { createMockErrorBoundary } from '../helpers/mock-error-boundary'
@@ -32,6 +36,7 @@ const mockIConcertStore = DI.createInterface('IConcertStore')
 const mockIRouter = DI.createInterface('IRouter')
 const mockIOnboardingService = DI.createInterface('IOnboardingService')
 const mockIAuthService = DI.createInterface('IAuthService')
+const mockIUserStore = DI.createInterface('IUserStore')
 
 // The real module (other code imports its IRouterEvents) with IRouter
 // swapped; the getter defers the read past this hoisted factory.
@@ -58,6 +63,9 @@ vi.mock('../../src/services/onboarding-service', () => ({
 	IOnboardingService: mockIOnboardingService,
 }))
 
+vi.mock('../../src/services/user-store', () => ({
+	IUserStore: mockIUserStore,
+}))
 vi.mock('../../src/services/auth-service', () => ({
 	IAuthService: mockIAuthService,
 }))
@@ -117,8 +125,18 @@ describe('DiscoveryRoute', () => {
 		reset: ReturnType<typeof vi.fn>
 		getFeatureFlag: ReturnType<typeof vi.fn>
 	}
+	/** The launcher: the actions the route registered last. */
+	let mockFab: {
+		actions: FabAction[]
+		register: ReturnType<typeof vi.fn>
+		handed: string
+	}
+	let mockUserStore: { currentHome: string | null }
+
 	function buildSut() {
 		const container = createTestContainer(
+			Registration.instance(IFabMenuService, mockFab),
+			Registration.instance(mockIUserStore, mockUserStore),
 			Registration.instance(mockIArtistStore, mockArtistClient),
 			Registration.instance(mockIFollowStore, mockFollowClient),
 			Registration.instance(mockIConcertStore, mockConcert),
@@ -150,6 +168,15 @@ describe('DiscoveryRoute', () => {
 		localStorage.clear()
 		mockHistory = createMockHistory()
 		mockAuth = { isAuthenticated: false, signUp: vi.fn() }
+		mockFab = {
+			actions: [],
+			handed: 'right',
+			register: vi.fn((_owner: object, actions: FabAction[]) => {
+				mockFab.actions = actions
+				return () => {}
+			}),
+		}
+		mockUserStore = { currentHome: 'JP-13' }
 
 		mockArtistClient = createMockArtistServiceClient()
 		mockFollowClient = createMockFollowStore()
@@ -1064,6 +1091,7 @@ describe('DiscoveryRoute', () => {
 					Registration.instance(mockIRouter, mockRouter),
 					Registration.instance(mockIOnboardingService, mockOnboarding),
 					Registration.instance(mockIAuthService, mockAuth),
+					Registration.instance(mockIUserStore, mockUserStore),
 					Registration.instance(IAnalyticsService, mockAnalytics),
 					Registration.instance(I18N, createMockI18n()),
 					Registration.instance(IAppConfig, createMockAppConfig()),
@@ -1401,6 +1429,75 @@ describe('DiscoveryRoute', () => {
 			sut.onRevealMark(revealMark('all-names', 300))
 
 			expect(mockAnalytics.capture).not.toHaveBeenCalled()
+		})
+	})
+
+	describe('launcher actions per view', () => {
+		const SPEC = 'components/infrastructure/fan/web/global/fab-menu'
+		const routeTo = (query = '') =>
+			({ queryParams: new URLSearchParams(query) }) as never
+		const ids = () => mockFab.actions.map((a) => a.id)
+
+		it(`@spec ${SPEC} "Discovery contributes its actions per view"`, () => {
+			sut.loading(undefined, routeTo('view=nearby'))
+			sut.attached()
+			// The filter first: closest to the FAB.
+			expect(ids()).toEqual(['filter', 'help'])
+			sut.detaching()
+
+			const bubbles = buildSut()
+			bubbles.loading(undefined, routeTo())
+			bubbles.attached()
+			expect(ids()).toEqual(['help'])
+			bubbles.detaching()
+		})
+
+		it(`@spec ${SPEC} "Switching Discovery's view replaces its actions"`, () => {
+			sut.loading(undefined, routeTo('view=nearby'))
+			sut.attached()
+			sut.switchView()
+			// @ts-expect-error -- the @observable change callback, as Aurelia calls it
+			sut.viewChanged('artists')
+			expect(ids()).toEqual(['help'])
+			sut.switchView()
+			// @ts-expect-error -- the @observable change callback, as Aurelia calls it
+			sut.viewChanged('nearby')
+			expect(ids()).toEqual(['filter', 'help'])
+			// Each switch replaces the set registered by the same owner.
+			for (const call of mockFab.register.mock.calls) {
+				expect(call[0]).toBe(sut)
+			}
+			sut.detaching()
+		})
+
+		it('opens the All Nearby filter sheet from the filter item', () => {
+			sut.loading(undefined, routeTo('view=nearby'))
+			sut.attached()
+			const openFilters = vi.fn()
+			sut.nearbyConcerts = { openFilters } as never
+			mockFab.actions[0].invoke()
+			expect(openFilters).toHaveBeenCalledOnce()
+			sut.detaching()
+		})
+
+		it(`@spec components/infrastructure/fan/web/route/discovery "Filter item shows its active state"`, () => {
+			sut.loading(undefined, routeTo('view=nearby'))
+			sut.attached()
+			const isOn = () => mockFab.actions[0].isOn?.()
+			// The fan's home area and 7日以内: default.
+			expect(isOn()).toBe(false)
+			sut.nearbyVisit.datePreset = 'weekend'
+			expect(isOn()).toBe(true)
+			sut.nearbyVisit.datePreset = 'week'
+			sut.nearbyVisit.areaCode = 'JP-27'
+			expect(isOn()).toBe(true)
+			// An override equal to the home area reads as the default.
+			sut.nearbyVisit.areaCode = 'JP-13'
+			expect(isOn()).toBe(false)
+			// A custom range is not the default period.
+			sut.nearbyVisit.datePreset = null
+			expect(isOn()).toBe(true)
+			sut.detaching()
 		})
 	})
 

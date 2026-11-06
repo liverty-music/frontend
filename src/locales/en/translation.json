@@ -248,7 +248,8 @@
 			"discoverButton": "Discover Artists"
 		},
 		"table": {
-			"artistCol": "Artist"
+			"artistCol": "Artist",
+			"removeCol": "Remove"
 		},
 		"signupBanner": {
 			"message": "Save your follows!"
@@ -825,8 +826,10 @@
 		}
 	},
 	"allNearby": {
-		"filterBar": {
-			"label": "Filter by area and dates"
+		"filter": {
+			"title": "Area and period",
+			"area": "Area",
+			"period": "Period"
 		},
 		"area": {
 			"choose": "Choose an area"

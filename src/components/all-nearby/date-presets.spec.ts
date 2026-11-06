@@ -124,7 +124,7 @@ describe('formatRangeLabel', () => {
 		expect(formatRangeLabel({ from: day, to: day })).toBe('8/12')
 	})
 
-	// @spec components/infrastructure/fan/web/route/discovery "Date chip shows a localized range"
+	// @spec components/infrastructure/fan/web/route/discovery "Period row shows a localized range"
 	it('joins two localized days with a wave dash for a multi-day range', () => {
 		expect(
 			formatRangeLabel({

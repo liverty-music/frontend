@@ -230,35 +230,45 @@ export class ConcertStore {
 	 * Convert All Nearby ProximityGroup[] into DateGroup[], resolving each card's
 	 * artist identity from the concert's OWN artists.
 	 *
-	 * The follower/artist paths resolve performers against the user's followed-artist
-	 * map; in All Nearby the concerts belong to arbitrary catalog artists the user
-	 * does not follow, so that map is empty and every card would render a blank
-	 * artist name (only the location showed). Building the map from the proto
-	 * performers themselves makes the headliner name render. No hype/journey context
-	 * applies here, so hype defaults and the journey map is empty.
+	 * Matching follows the dashboard: a card resolves to the first performer
+	 * the fan follows, carrying the fan's hype level (`hypeByArtist`, from
+	 * `FollowService.List` or the guest's device). The concerts belong to
+	 * arbitrary catalog artists, mostly not followed, so a bill on which the
+	 * fan follows nobody falls back to its first performer at `watch`, which no
+	 * lane matches, and its name renders. The journey map shows the
+	 * dashboard's journey badges.
 	 */
 	public toDateGroupsForLocation(
 		groups: ProximityGroup[],
+		hypeByArtist: ReadonlyMap<string, Hype> = new Map(),
+		journeyMap: Map<string, JourneyStatus> = new Map(),
 		purchasedMap: Map<string, number> = new Map(),
 	): DateGroup[] {
-		const artistMap = new Map<string, { artist: Artist; hype: Hype }>()
+		const followed = new Map<string, { artist: Artist; hype: Hype }>()
+		const everyone = new Map<string, { artist: Artist; hype: Hype }>()
 		for (const g of groups) {
 			for (const c of [...g.home, ...g.nearby, ...g.away]) {
 				for (const p of c.artists) {
 					const id = p.id?.value
-					if (!id || artistMap.has(id)) continue
-					artistMap.set(id, {
-						artist: {
-							id,
-							name: p.name?.value ?? '',
-							mbid: p.mbid?.value ?? '',
-						},
-						hype: DEFAULT_HYPE,
-					})
+					if (!id || everyone.has(id)) continue
+					const artist = {
+						id,
+						name: p.name?.value ?? '',
+						mbid: p.mbid?.value ?? '',
+					}
+					everyone.set(id, { artist, hype: 'watch' })
+					const hype = hypeByArtist.get(id)
+					if (hype) followed.set(id, { artist, hype })
 				}
 			}
 		}
-		return this.toDateGroups(groups, artistMap, new Map(), purchasedMap)
+		return this.toDateGroups(
+			groups,
+			followed,
+			journeyMap,
+			purchasedMap,
+			everyone,
+		)
 	}
 
 	/**
@@ -270,6 +280,8 @@ export class ConcertStore {
 		artistMap: Map<string, { artist: Artist; hype: Hype }>,
 		journeyMap: Map<string, JourneyStatus> = new Map(),
 		purchasedMap: Map<string, number> = new Map(),
+		/** Performers to fall back on when no performer is in `artistMap`. */
+		fallbackMap?: Map<string, { artist: Artist; hype: Hype }>,
 	): DateGroup[] {
 		let lastMonthKey = ''
 		return groups.map((g) => {
@@ -278,6 +290,7 @@ export class ConcertStore {
 				artistMap,
 				journeyMap,
 				purchasedMap,
+				fallbackMap,
 			)
 			const monthKey = group.dateKey.slice(0, 7) // "2026-07"
 			const isFirstOfMonth = monthKey !== '' && monthKey !== lastMonthKey
@@ -301,6 +314,7 @@ export class ConcertStore {
 		artistMap: Map<string, { artist: Artist; hype: Hype }>,
 		journeyMap: Map<string, JourneyStatus>,
 		purchasedMap: Map<string, number>,
+		fallbackMap?: Map<string, { artist: Artist; hype: Hype }>,
 	): DateGroup {
 		// Same zero-component guard concertFrom applies to per-concert
 		// dates — a proto3-defaulted ProximityGroup.date with any zero
@@ -383,6 +397,12 @@ export class ConcertStore {
 						entry = candidateEntry
 						break
 					}
+				}
+				if (!entry && fallbackMap) {
+					// Nobody on the bill is in the map (All Nearby: nobody
+					// followed): the first listed performer names the card.
+					const first = c.artists.find((p) => p.id?.value)?.id?.value
+					entry = first ? fallbackMap.get(first) : undefined
 				}
 				if (!entry) {
 					// Skip blank ids — a `''` entry is indistinguishable

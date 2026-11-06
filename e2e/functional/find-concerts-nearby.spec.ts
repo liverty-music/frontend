@@ -7,6 +7,7 @@ import {
 	mockFanRpc,
 	type RpcCall,
 } from '../support/fan-auth'
+import { openNearbyFilters } from '../support/fan-shell'
 import { expect, type Page, test } from '../support/test'
 
 /**
@@ -188,11 +189,8 @@ test(`@spec ${STORY} "A weekend near home"`, async ({ page }) => {
 	const calls = await openApp(page)
 	await openNearby(page)
 
-	await view(page).getByTestId('nearby-date-chip').click()
+	await (await openNearbyFilters(page)).period.click()
 	await page.getByRole('button', { name: '今週末' }).click()
-	await expect(view(page).getByTestId('nearby-date-chip')).toContainText(
-		'今週末',
-	)
 
 	// Asked for this weekend around the fan's home area.
 	const weekend = thisWeekend()
@@ -231,9 +229,6 @@ test(`@spec ${STORY} "No home area yet"`, async ({ page }) => {
 	await expect(view(page)).toBeVisible({ timeout: 30_000 })
 
 	// The area selector asks first; nothing is listed before an area is chosen.
-	await expect(view(page).getByTestId('nearby-area-chip')).toContainText(
-		'エリアを選ぶ',
-	)
 	await expect(
 		view(page)
 			.locator(

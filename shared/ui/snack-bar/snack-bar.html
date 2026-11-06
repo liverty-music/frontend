@@ -1,38 +1,24 @@
 <import from="./snack-bar.css"></import>
+<import from="./snack-item"></import>
 
-<aside ref="containerElement" class="[ snack-stack ]">
-  <output
-    repeat.for="snack of snacks; key.bind: snack.id"
-    data-snack-id.bind="snack.id"
+<!-- One snack is shown at a time; the others wait in the view-model. The
+     `message` and `action` slots pass through to the item, so an app that
+     projects them receives the shown snack as `$host.snack`. -->
+<aside class="[ snack-stack ]">
+  <snack-item
+    repeat.for="snack of snacks"
+    snack.bind="snack"
+    leaving.bind="leaving"
+    icons.bind="icons"
+    dismissible.bind="dismissible"
+    close-label.bind="closeLabel"
     popover="manual"
     role="status"
     class="snack-item"
     data-severity.bind="snack.severity"
-    toggle.trigger="onToggle($event, snack)"
+    snack-exited.trigger="onExited(snack)"
   >
-    <svg-icon if.bind="icons && snack.icon" name.bind="snack.icon" class="snack-icon" data-icon.bind="snack.icon"></svg-icon>
-    <span class="snack-message"><au-slot name="message" expose.bind="{ snack }">${snack.message}</au-slot></span>
-    <!-- The fan app styles the action with its shared button (on-container,
-         on the coloured snack); the organizer console, which has no shared
-         button, styles `.snack-action-btn` itself. -->
-    <button
-      if.bind="snack.action"
-      type="button"
-      click.trigger="onAction(snack)"
-      class="[ snack-action-btn button ] [ pressable ]"
-      data-variant="on-container"
-      data-attention.bind="snack.attention || null"
-    ><au-slot name="action" expose.bind="{ snack }">${snack.action.label}</au-slot></button>
-    <button
-      if.bind="dismissible"
-      type="button"
-      click.trigger="onClose(snack)"
-      class="snack-close-btn"
-      aria-label.bind="closeLabel"
-    >
-      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-        <path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path>
-      </svg>
-    </button>
-  </output>
+    <template au-slot="message"><au-slot name="message" expose.bind="{ snack }">${snack.message}</au-slot></template>
+    <template au-slot="action"><au-slot name="action" expose.bind="{ snack }">${snack.action.label}</au-slot></template>
+  </snack-item>
 </aside>

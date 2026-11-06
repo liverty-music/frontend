@@ -1,7 +1,7 @@
 import { DI, IEventAggregator, ILogger, Registration } from 'aurelia'
-import { HomeChanged } from '../../src/services/events/home-changed'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { artistHue } from '../../src/adapter/view/artist-color'
+import { HomeChanged } from '../../src/services/events/home-changed'
 import { createTestContainer } from '../helpers/create-container'
 import { createMockAuth } from '../helpers/mock-auth'
 
@@ -245,6 +245,120 @@ describe('ConcertStore', () => {
 			const { home, away } = matchedByLane('home')
 			expect(typeof home).toBe('boolean')
 			expect(typeof away).toBe('boolean')
+		})
+	})
+
+	describe('toDateGroupsForLocation (All Nearby matching and journeys)', () => {
+		const SPEC = 'components/infrastructure/fan/web/route/discovery'
+		const dateLD = { year: 2026, month: 3, day: 15 }
+
+		function concert(id: string, artistId: string) {
+			return {
+				event: {
+					id: { value: id },
+					seriesId: { value: 's1' },
+					localDate: { value: dateLD },
+					venue: { name: { value: 'Venue' } },
+				},
+				artists: [{ id: { value: artistId }, name: { value: artistId } }],
+				series: { id: { value: 's1' }, title: { value: 'Show' } },
+			}
+		}
+
+		/** One concert of `artistId` in the HOME lane and one in the NEARBY lane. */
+		function lanes(
+			artistId: string,
+			hypeByArtist: ReadonlyMap<string, 'watch' | 'home' | 'nearby' | 'away'>,
+			journeyMap = new Map<string, 'tracking'>(),
+		) {
+			const [dg] = sut.toDateGroupsForLocation(
+				[
+					{
+						date: { value: dateLD },
+						home: [concert('c-home', artistId)],
+						nearby: [concert('c-nearby', artistId)],
+						away: [],
+					} as never,
+				],
+				hypeByArtist,
+				journeyMap,
+			)
+			return { home: dg.home[0], nearby: dg.nearby[0] }
+		}
+
+		it(`@spec ${SPEC} "Followed artist matched by hype and lane"`, () => {
+			const { home, nearby } = lanes('a1', new Map([['a1', 'home']]))
+			expect(home.matched).toBe(true)
+			expect(nearby.matched).toBe(false)
+			expect(home.artistName).toBe('a1')
+		})
+
+		it(`@spec ${SPEC} "Artist the fan does not follow is never matched"`, () => {
+			const { home, nearby } = lanes('stranger', new Map([['a1', 'away']]))
+			expect(home.matched).toBe(false)
+			expect(nearby.matched).toBe(false)
+		})
+
+		it(`@spec ${SPEC} "Guest with no follows"`, () => {
+			const { home, nearby } = lanes('a1', new Map())
+			expect(home.matched).toBe(false)
+			expect(nearby.matched).toBe(false)
+		})
+
+		it('resolves a shared bill to the performer the fan follows, not the first listed', () => {
+			const bill = {
+				...concert('c-home', 'headliner'),
+				artists: [
+					{ id: { value: 'headliner' }, name: { value: 'Headliner' } },
+					{ id: { value: 'support' }, name: { value: 'Support' } },
+				],
+			}
+			const [dg] = sut.toDateGroupsForLocation(
+				[
+					{
+						date: { value: dateLD },
+						home: [bill],
+						nearby: [],
+						away: [],
+					} as never,
+				],
+				new Map([['support', 'home' as const]]),
+			)
+			expect(dg.home[0].artistName).toBe('Support')
+			expect(dg.home[0].matched).toBe(true)
+		})
+
+		it('names a bill nobody on which is followed after its first performer', () => {
+			const bill = {
+				...concert('c-home', 'headliner'),
+				artists: [
+					{ id: { value: 'headliner' }, name: { value: 'Headliner' } },
+					{ id: { value: 'support' }, name: { value: 'Support' } },
+				],
+			}
+			const [dg] = sut.toDateGroupsForLocation(
+				[
+					{
+						date: { value: dateLD },
+						home: [bill],
+						nearby: [],
+						away: [],
+					} as never,
+				],
+				new Map(),
+			)
+			expect(dg.home[0].artistName).toBe('Headliner')
+			expect(dg.home[0].matched).toBe(false)
+		})
+
+		it('stamps the journey status from the journey map', () => {
+			const { home, nearby } = lanes(
+				'a1',
+				new Map(),
+				new Map([['c-home', 'tracking' as const]]),
+			)
+			expect(home.journeyStatus).toBe('tracking')
+			expect(nearby.journeyStatus).toBeUndefined()
 		})
 	})
 

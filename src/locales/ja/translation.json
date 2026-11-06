@@ -248,7 +248,8 @@
 			"discoverButton": "アーティストを探す"
 		},
 		"table": {
-			"artistCol": "アーティスト"
+			"artistCol": "アーティスト",
+			"removeCol": "削除"
 		},
 		"signupBanner": {
 			"message": "フォロー履歴を保存しよう！"
@@ -825,8 +826,10 @@
 		}
 	},
 	"allNearby": {
-		"filterBar": {
-			"label": "エリアと期間を絞り込む"
+		"filter": {
+			"title": "エリアと期間",
+			"area": "エリア",
+			"period": "期間"
 		},
 		"area": {
 			"choose": "エリアを選ぶ"

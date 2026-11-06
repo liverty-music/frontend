@@ -1,28 +1,22 @@
 import { bindable, type IDisposable, IEventAggregator, resolve } from 'aurelia'
-import { Snack, type SnackAction, type SnackSeverity } from './snack'
-
-interface SnackItem {
-	id: number
-	message: string
-	params?: Readonly<Record<string, unknown>>
-	severity: SnackSeverity
-	icon: string
-	action?: SnackAction
-	attention: boolean
-	onDismiss?: () => void
-	replaceKey?: string
-	/** Whether the snack dismisses on its own (a finite duration). */
-	autoDismiss: boolean
-	dismissed: boolean
-	dismissTimer: ReturnType<typeof setTimeout> | null
-}
+import { Snack } from './snack'
 
 /**
  * Shows `Snack` events published on the IEventAggregator at the bottom of the
- * window. Shared by the fan app and the organizer console. Each snack carries
- * its own duration (`SnackOptions.duration`, `Infinity` to stay until
- * dismissed); without one it follows the Material 3 durations
- * (`Snack.durationMs`).
+ * window, one at a time, as Material 3 says ("Only one snackbar may be
+ * displayed at a time"). Shared by the fan app and the organizer console.
+ *
+ * A snack published while another is shown waits, and waiting snacks appear
+ * in the order they were published, each after the one before it has finished
+ * its exit motion. A snack with the `replaceKey` of a shown snack dismisses it
+ * and appears next; one with the key of a waiting snack takes its place in the
+ * wait. A snack that stays until the person acts (`duration: Infinity`, the
+ * fan app's update snack) gives way to any other: it leaves without being
+ * dismissed and is shown again once nothing else is shown or waiting.
+ *
+ * Each snack carries its own duration (`SnackOptions.duration`); without one
+ * it follows the Material 3 durations (`Snack.durationMs`). The shown snack's
+ * timer, motion and swipe belong to its `<snack-item>`.
  *
  * The message and the action label show as given. An app that publishes
  * catalog keys instead projects `message` and `action` slots, which receive
@@ -32,20 +26,10 @@ export class SnackBar {
 	private readonly ea = resolve(IEventAggregator)
 
 	/**
-	 * When true, a new snack dismisses the ones shown, so only one is visible
-	 * at a time (the Material 3 behavior the organizer console uses). When
-	 * false (the fan app), snacks stack.
+	 * When true, a new snack dismisses the shown one and every waiting one, so
+	 * the newest message is the next one shown (the organizer console).
 	 */
 	@bindable public replace = false
-
-	/**
-	 * The most snacks that dismiss on their own shown at once (the fan app:
-	 * 3). A new one first dismisses the oldest of them, passing over one whose
-	 * dismissal commits something (`onDismiss`, an undo window) while another
-	 * can go; a snack that stays until the person acts (the update snack)
-	 * neither counts nor is dismissed. Unlimited by default.
-	 */
-	@bindable public limit = Number.POSITIVE_INFINITY
 
 	/** Shows a close button on every snack (the console's M3 snackbar). */
 	@bindable public dismissible = false
@@ -56,139 +40,141 @@ export class SnackBar {
 	/** Shows the severity icon before the message (the fan app). */
 	@bindable public icons = true
 
-	public snacks: SnackItem[] = []
-	private containerElement!: HTMLElement
-	private nextId = 0
+	/** The shown snack, as a list of zero or one for the template. */
+	public snacks: Snack[] = []
+	/** The shown snack is leaving: dismissed, or giving way to another. */
+	public leaving = false
+
+	/** Snacks waiting to be shown, oldest first. */
+	private queue: Snack[] = []
+	/** A snack that stays until the person acts, set aside for the others. */
+	private parked: Snack | null = null
+	/** Snacks whose dismissal has been handled (`onDismiss` called). */
+	private readonly settled = new WeakSet<Snack>()
 	private subscription!: IDisposable
 
+	public get shown(): Snack | null {
+		return this.snacks[0] ?? null
+	}
+
 	public attaching(): void {
-		this.subscription = this.ea.subscribe(Snack, (event) => this.show(event))
+		this.subscription = this.ea.subscribe(Snack, (event) => this.publish(event))
 	}
 
 	public detaching(): void {
-		for (const snack of this.snacks) {
-			if (snack.dismissTimer !== null) {
-				clearTimeout(snack.dismissTimer)
-				snack.dismissTimer = null
-			}
-		}
 		this.subscription.dispose()
 	}
 
-	private show(event: Snack): void {
+	/** The shown snack's item has finished its exit motion. */
+	public onExited(snack: Snack): void {
+		if (snack !== this.shown) return
+		this.snacks = []
+		this.leaving = false
+		this.showNext()
+	}
+
+	private publish(event: Snack): void {
+		event.handle = { dismiss: () => this.dismiss(event) }
+
 		if (this.replace) {
-			for (const shown of [...this.snacks]) this.dismiss(shown)
-		}
-		const replaceKey = event.options?.replaceKey
-		if (replaceKey !== undefined) {
-			for (const shown of this.visible()) {
-				if (shown.replaceKey === replaceKey) this.dismiss(shown)
-			}
-		}
-		const autoDismiss = event.durationMs !== Infinity
-		if (autoDismiss) {
-			const counted = this.visible().filter((shown) => shown.autoDismiss)
-			let excess = counted.length - this.limit + 1
-			// A snack whose dismissal commits something (an unfollow's undo
-			// window) is dismissed only when nothing else can make room.
-			const evictable = [
-				...counted.filter((shown) => !shown.onDismiss),
-				...counted.filter((shown) => shown.onDismiss),
-			]
-			for (const oldest of evictable) {
-				if (excess-- <= 0) break
-				this.dismiss(oldest)
-			}
-		}
-
-		const id = this.nextId++
-		const snack: SnackItem = {
-			id,
-			message: event.message,
-			params: event.options?.params,
-			severity: event.severity,
-			icon: event.icon,
-			action: event.action,
-			attention: event.options?.attention ?? false,
-			onDismiss: event.options?.onDismiss,
-			replaceKey,
-			autoDismiss,
-			dismissed: false,
-			dismissTimer: null,
-		}
-		this.snacks.push(snack)
-
-		// Populate handle so callers can programmatically dismiss
-		event.handle = {
-			dismiss: () => this.dismiss(snack),
-		}
-
-		// Wait for Aurelia to flush the repeat.for DOM insertion, then show popover
-		queueMicrotask(() => {
-			const el = this.containerElement.querySelector<HTMLElement>(
-				`[data-snack-id="${id}"]`,
-			)
-			el?.showPopover()
-		})
-
-		// Auto-dismiss. Skip when duration is Infinity: setTimeout(fn, Infinity)
-		// coerces to setTimeout(fn, 0) (ToInt32 overflow) and dismisses immediately.
-		if (autoDismiss) {
-			snack.dismissTimer = setTimeout(() => {
-				snack.dismissTimer = null
-				this.dismiss(snack)
-			}, event.durationMs)
-		}
-	}
-
-	/** The snacks shown and not yet dismissed, oldest first. */
-	private visible(): SnackItem[] {
-		return this.snacks.filter((shown) => !shown.dismissed)
-	}
-
-	private dismiss(snack: SnackItem): void {
-		if (snack.dismissed) return
-		snack.dismissed = true
-
-		if (snack.dismissTimer !== null) {
-			clearTimeout(snack.dismissTimer)
-			snack.dismissTimer = null
-		}
-
-		snack.onDismiss?.()
-
-		const el = this.containerElement.querySelector<HTMLElement>(
-			`[data-snack-id="${snack.id}"]`,
-		)
-		if (el) {
-			try {
-				el.hidePopover()
-			} catch {
-				// Already hidden — remove directly
-				this.removeSnack(snack)
-			}
+			for (const waiting of this.queue) this.settle(waiting)
+			this.queue = [event]
+			if (this.shown) this.dismiss(this.shown)
 		} else {
-			this.removeSnack(snack)
+			this.enqueue(event)
 		}
+		this.giveWay()
+		this.showNext()
 	}
 
-	private removeSnack(snack: SnackItem): void {
-		const idx = this.snacks.indexOf(snack)
-		if (idx !== -1) this.snacks.splice(idx, 1)
-	}
-
-	public onToggle(event: ToggleEvent, snack: SnackItem): void {
-		if (event.newState === 'closed') {
-			this.removeSnack(snack)
+	private enqueue(event: Snack): void {
+		const key = event.replaceKey
+		if (key === undefined) {
+			this.queue.push(event)
+			return
 		}
+		// A waiting snack with the key is replaced where it waits. This comes
+		// first: while a replaced shown snack plays its exit, its successor
+		// already waits at the head and is the one to replace.
+		const waiting = this.queue.findIndex((queued) => queued.replaceKey === key)
+		if (waiting !== -1) {
+			const replaced = this.queue[waiting]
+			this.queue[waiting] = event
+			this.settle(replaced)
+			return
+		}
+		if (this.shown?.replaceKey === key) {
+			// It takes the shown snack's place: next, before any waiting one.
+			this.queue.unshift(event)
+			this.dismiss(this.shown)
+			return
+		}
+		this.queue.push(event)
 	}
 
-	public onAction(snack: SnackItem): void {
-		snack.action?.callback()
-		this.dismiss(snack)
+	/**
+	 * A shown snack that stays until the person acts leaves for a waiting one,
+	 * without being dismissed, and waits to be shown again.
+	 */
+	private giveWay(): void {
+		const shown = this.shown
+		if (
+			shown === null ||
+			this.leaving ||
+			this.queue.length === 0 ||
+			this.parked !== null ||
+			Number.isFinite(shown.durationMs)
+		) {
+			return
+		}
+		this.parked = shown
+		this.leaving = true
 	}
 
-	public onClose(snack: SnackItem): void {
-		this.dismiss(snack)
+	private showNext(): void {
+		if (this.shown) return
+		let next = this.queue.shift()
+		// A snack that stays until the person acts waits aside while others
+		// wait behind it, instead of appearing only to give way at once.
+		while (
+			next &&
+			!Number.isFinite(next.durationMs) &&
+			this.queue.length > 0 &&
+			this.parked === null
+		) {
+			this.parked = next
+			next = this.queue.shift()
+		}
+		if (!next && this.parked) {
+			next = this.parked
+			this.parked = null
+		}
+		if (!next) return
+		this.snacks = [next]
+		this.giveWay()
+	}
+
+	private dismiss(snack: Snack): void {
+		if (this.settled.has(snack)) return
+		this.settle(snack)
+		const waiting = this.queue.indexOf(snack)
+		if (waiting !== -1) {
+			this.queue.splice(waiting, 1)
+			return
+		}
+		// A parked snack is either waiting aside or still leaving; either way
+		// it must not come back.
+		if (snack === this.parked) {
+			this.parked = null
+			return
+		}
+		if (snack === this.shown) this.leaving = true
+	}
+
+	/** Calls a snack's `onDismiss` once, whichever path dismissed it. */
+	private settle(snack: Snack): void {
+		if (this.settled.has(snack)) return
+		this.settled.add(snack)
+		snack.options?.onDismiss?.()
 	}
 }

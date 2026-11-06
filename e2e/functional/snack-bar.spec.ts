@@ -177,53 +177,38 @@ test.describe('Toast notification: multiple rapid toasts (5.1)', () => {
 	// The snack-bar host is taken out of the shell grid's flow (app-shell.css:
 	// fixed, zero height, overflow hidden); its toasts still show in the top layer.
 	// @spec components/infrastructure/fan/web/global/app-shell "Overlay elements remain functional"
-	test('3 rapid toasts appear as popover-open, then auto-dismiss without zombies', async ({
+	test('3 rapid toasts appear one at a time, then auto-dismiss without zombies', async ({
 		page,
 	}) => {
 		test.setTimeout(30_000)
 
-		// Publish 3 toasts rapidly with short duration for test speed
 		for (let i = 1; i <= 3; i++) {
-			await publishToastDirect(page, `Toast ${i}`, 'info', 2000)
+			await publishToastDirect(page, `Toast ${i}`, 'info', 1000)
 		}
 
-		// All 3 should be visible as popovers in the Top Layer
-		const toasts = page.locator('.snack-item:popover-open')
-		await expect(toasts).toHaveCount(3, { timeout: 3000 })
-
-		// Verify each toast has opacity and is visible
-		for (let i = 0; i < 3; i++) {
-			await expect(toasts.nth(i)).toBeVisible()
+		// One at a time, in the order they were published.
+		const toasts = page.locator('.snack-item')
+		for (let i = 1; i <= 3; i++) {
+			await expect(page.locator('.snack-item:popover-open')).toHaveText(
+				`Toast ${i}`,
+				{ timeout: 3000 },
+			)
+			await expect(toasts).toHaveCount(1)
 		}
 
-		// Wait for auto-dismiss via web-first assertion
-		const remaining = page.locator('.snack-item')
-		await expect(remaining).toHaveCount(0, { timeout: 5000 })
+		await expect(toasts).toHaveCount(0, { timeout: 5000 })
 	})
 
 	// @spec components/infrastructure/fan/web/global/snack-bar "Multiple simultaneous snacks"
-	test('multiple toasts are rendered inside the snack-stack container', async ({
-		page,
-	}) => {
-		await publishToastDirect(page, 'First toast', 'info', 5000)
-		await publishToastDirect(page, 'Second toast', 'warning', 5000)
+	test('a second toast waits until the first has gone', async ({ page }) => {
+		await publishToastDirect(page, 'First toast', 'info', 1500)
+		await publishToastDirect(page, 'Second toast', 'warning', 1500)
 
-		const toasts = page.locator('.snack-item:popover-open')
-		await expect(toasts).toHaveCount(2, { timeout: 3000 })
-
-		// Both toasts are visible
-		await expect(toasts.nth(0)).toBeVisible()
-		await expect(toasts.nth(1)).toBeVisible()
-
-		// Toasts are children of the .snack-stack container
-		const stackCount = await page.locator('.snack-stack .snack-item').count()
-		expect(stackCount).toBe(2)
-		// Stacked in a flex-column container.
-		const stack = await page
-			.locator('.snack-stack')
-			.evaluate((el) => getComputedStyle(el))
-		expect(stack.display).toBe('flex')
-		expect(stack.flexDirection).toContain('column')
+		const open = page.locator('.snack-item:popover-open')
+		await expect(open).toHaveText('First toast', { timeout: 3000 })
+		await expect(page.locator('.snack-stack .snack-item')).toHaveCount(1)
+		await expect(open).toHaveText('Second toast', { timeout: 5000 })
+		await expect(page.locator('.snack-stack .snack-item')).toHaveCount(1)
 	})
 })
 

@@ -145,3 +145,18 @@ export async function publishSnack(
 		{ message, durationMs },
 	)
 }
+
+/**
+ * Open the All Nearby filter sheet from the launcher's filter item, and return
+ * its area and period rows.
+ */
+export async function openNearbyFilters(
+	page: Page,
+): Promise<{ area: Locator; period: Locator }> {
+	await fab(page).click()
+	await page.locator('fab-menu .fab-item[data-action-id="filter"]').click()
+	const area = page.getByTestId('nearby-area-row')
+	const period = page.getByTestId('nearby-period-row')
+	await area.waitFor({ state: 'visible' })
+	return { area, period }
+}

@@ -101,8 +101,9 @@ a controller to every element it sits on.
 
 ### Story-authoring scope
 
-Story **only presentational custom elements under `src/components/`** — components whose render is a
-pure function of their `@bindable` inputs. Story files are colocated: `src/components/<name>/<name>.stories.ts`
+Story presentational custom elements under `src/components/` — components whose render is a pure
+function of their `@bindable` inputs — and, where a route's own layout needs checking, route components (see
+"Route stories" below). Story files are colocated: `src/components/<name>/<name>.stories.ts`
 (CSF3, `satisfies Meta<typeof X>` / `StoryObj<typeof meta>`). Do not tag them `test` or `autodocs`: Storybook
 applies `test` to every story, and `.storybook/preview.ts` applies `autodocs`. Tag a story only to change how
 it runs, such as `reduced-motion`.
@@ -132,8 +133,13 @@ it runs, such as `reduced-motion`.
 - For DI/child-bound components use `defineAureliaStory({ template, props, register, items })` — e.g.
   register an `IErrorBoundaryService`/`I18N` mock via `items`, or drive an EA-published component from a host.
 
-**Do NOT story**: route/page components, `dna-orb` (canvas/Matter.js), or anything requiring live
-RPC/auth/canvas context. The previous route-targeted story was removed.
+**Route stories**: a route component may have stories when every store and RPC client it resolves is
+registered as a fake through `defineAureliaStory({ items })`, so nothing reaches the network. A full page
+is a connected component, and rendering one needs its data and modules mocked (Storybook, "Build pages
+with Storybook"). Use one when the defect lives in the route's own layout (its scroll container, what
+sits above what), which a component story does not render; cf. `src/routes/my-artists/my-artists-route.stories.ts`.
+
+**Do NOT story**: `dna-orb` (canvas/Matter.js), or anything that needs live RPC, auth or canvas context.
 
 ### Visual regression
 

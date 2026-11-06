@@ -12,6 +12,7 @@ import {
 	parkPointer,
 	pressAndHold,
 	releasePointer,
+	swipeSideways,
 } from './.storybook/pointer-commands'
 import viteConfig from './vite.config'
 
@@ -148,7 +149,7 @@ const storybookProjectFor = ({
 				reducedMotion ? { contextOptions: { reducedMotion: 'reduce' } } : {},
 			),
 			instances: [{ browser: 'chromium' }],
-			commands: { parkPointer, pressAndHold, releasePointer },
+			commands: { parkPointer, pressAndHold, releasePointer, swipeSideways },
 			// One comparison for every visual baseline. pixelmatch's default
 			// per-pixel colour threshold (0.1) let the filled button's change
 			// from 65% to 57% lightness pass unnoticed; 0.05 catches it and

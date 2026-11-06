@@ -26,8 +26,8 @@ export interface SnackOptions {
 	 */
 	attention?: boolean
 	/**
-	 * A sender's key for its own snack: a new snack with the key of a visible
-	 * one takes its place (My Artists keys its hype snack by artist).
+	 * A sender's key for its own snack: a new snack with the key of a shown or
+	 * waiting one takes its place (My Artists keys its hype snack by artist).
 	 */
 	replaceKey?: string
 }
@@ -81,6 +81,21 @@ export class Snack {
 
 	public get action(): SnackAction | undefined {
 		return this.options?.action
+	}
+
+	/** Values for a message the showing app translates (`SnackOptions.params`). */
+	public get params(): Readonly<Record<string, unknown>> | undefined {
+		return this.options?.params
+	}
+
+	/** Whether the action glows when the snack appears. */
+	public get attention(): boolean {
+		return this.options?.attention ?? false
+	}
+
+	/** The sender's key for its own snack (`SnackOptions.replaceKey`). */
+	public get replaceKey(): string | undefined {
+		return this.options?.replaceKey
 	}
 
 	/** The leading icon: the snack's own, the severity's, or '' for none. */
