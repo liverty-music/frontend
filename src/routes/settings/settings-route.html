@@ -333,7 +333,14 @@
   <section if.bind="auth.isAuthenticated" aria-label.bind="'settings.signOut' | t" data-testid="settings-sign-out-group">
     <ul class="settings-card" role="list">
       <li class="settings-list-item">
-        <button busy-on-click.bind="() => signOut()" aria-haspopup="dialog" class="settings-row settings-sign-out">
+        <!-- Busy only once the fan has confirmed, not while they decide. -->
+        <button
+          click.trigger="signOut()"
+          aria-haspopup="dialog"
+          data-busy.bind="signingOut || null"
+          aria-busy.bind="signingOut || null"
+          class="settings-row settings-sign-out"
+        >
           <span t="settings.signOut" class="settings-sign-out-text"></span>
         </button>
       </li>

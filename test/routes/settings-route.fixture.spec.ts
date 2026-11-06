@@ -532,8 +532,22 @@ describe('SettingsRoute sign-out confirmation (fixture)', () => {
 		expect(r.dialog.textContent).toContain(ja.settings.signOutConfirm.body)
 		expect(document.activeElement).toBe(r.q('settings-sign-out-confirm-cancel'))
 		expect(r.auth.signOut).not.toHaveBeenCalled()
+		// Nothing is in progress while the fan decides.
+		const button = r.host.querySelector('.settings-sign-out')
+		expect(button?.hasAttribute('data-busy')).toBe(false)
 
+		let finish: () => void = () => {}
+		r.auth.signOut.mockImplementationOnce(
+			() =>
+				new Promise<void>((resolve) => {
+					finish = resolve
+				}),
+		)
 		r.q<HTMLButtonElement>('settings-sign-out-confirm-confirm').click()
+		await settle()
+		// Busy from the confirmation until the sign-out returns.
+		expect(button?.hasAttribute('data-busy')).toBe(true)
+		finish()
 		await settle()
 		expect(r.auth.signOut).toHaveBeenCalledTimes(1)
 		await r.fixture.stop(true)

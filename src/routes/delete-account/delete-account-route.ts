@@ -143,12 +143,18 @@ export class DeleteAccountRoute {
 	/**
 	 * Ask in the confirmation dialog (its Cancel control takes focus); once
 	 * confirmed, sign in again, and the callback brings the fan back here.
+	 * The delete control shows no busy state while the fan decides: nothing
+	 * has started until they confirm.
 	 */
 	public async askDelete(): Promise<void> {
 		if (!this.canDelete) return
 		const confirmed = (await this.confirmDialog?.ask()) ?? false
 		if (!confirmed || !this.canDelete) return
-		await this.signInAgain()
+		try {
+			await this.signInAgain()
+		} catch (err) {
+			this.logger.warn('Failed to start the fresh sign-in', { error: err })
+		}
 	}
 
 	/** Retry of a failed deletion: the proof was dropped, so sign in again. */

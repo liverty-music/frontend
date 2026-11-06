@@ -695,9 +695,14 @@ export class SettingsRoute {
 		})
 	}
 
+	/** True from the fan's confirmation until the sign-out call returns. */
+	public signingOut = false
+
 	/** Sign out once the fan confirms; Cancel or Escape keeps them signed in. */
 	public async signOut(): Promise<void> {
+		if (this.signingOut) return
 		if (!(await this.signOutConfirm?.ask())) return
+		this.signingOut = true
 		try {
 			// AuthService publishes SignedOut before the redirect; every store
 			// (UserStore included) clears its own state on it.
@@ -705,6 +710,8 @@ export class SettingsRoute {
 		} catch (err) {
 			this.logger.error('Sign-out failed', { error: err })
 			this.ea.publish(new Snack(this.i18n.tr('settings.signOutError'), 'error'))
+		} finally {
+			this.signingOut = false
 		}
 	}
 }
