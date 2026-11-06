@@ -19,7 +19,9 @@ import {
 import { IFollowStore } from '../../services/follow-store'
 import { IPurchasedTicketStore } from '../../services/purchased-ticket-store'
 import { ITicketJourneyStore } from '../../services/ticket-journey-store'
+import { IUserHydration } from '../../services/user-hydration-task'
 import { IUserStore } from '../../services/user-store'
+import { currentLanguage } from '../../util/change-locale'
 import type { EventDetailSheet } from '../live-highway/event-detail-sheet'
 import type { DateGroup, LiveEvent } from '../live-highway/live-event'
 import type { UserHomeSelector } from '../user-home-selector/user-home-selector'
@@ -123,6 +125,7 @@ export class NearbyConcerts {
 	private readonly purchasedTickets = resolve(IPurchasedTicketStore)
 	private readonly router = resolve(IRouter)
 	public readonly userStore = resolve(IUserStore)
+	private readonly userHydration = resolve(IUserHydration)
 
 	public get isAuthenticated(): boolean {
 		return this.authService.isAuthenticated
@@ -217,10 +220,47 @@ export class NearbyConcerts {
 		const range = this.visit.range
 		if (!range) return
 
-		const geo = this.resolveGeoLocation()
+		// One controller per load, made before any wait, so a newer load or
+		// leaving the view (detaching) stops this one wherever it is.
+		this.abortController?.abort()
+		this.abortController = new AbortController()
+		const signal = this.abortController.signal
+
+		let geo = this.resolveGeoLocation()
 		if (!geo) {
-			// No area yet (a guest without a home): ask for one before any
-			// location-less request.
+			// The app opens Discovery without waiting for the signed-in fan's
+			// account, so the home area may not be known yet: wait for it
+			// rather than ask a fan who has one for an area. Settled at once
+			// after boot, and not waited for when the area is already known.
+			this.isLoading = true
+			this.loadError = null
+			await this.userHydration.ready
+			if (signal.aborted) return
+			geo = this.resolveGeoLocation()
+		}
+		if (!geo && !this.userStore.needsHome) {
+			// Signed in, but the account did not load (the boot hydration
+			// failed): a missing account is not a missing home, so load it
+			// again, and show a retryable error if that fails too.
+			try {
+				await this.userStore.ensureLoaded(currentLanguage(this.i18n))
+			} catch (err) {
+				if (signal.aborted) return
+				this.logger.error('Failed to load the account for All Nearby', {
+					error: err,
+				})
+				this.isLoading = false
+				this.dateGroups = []
+				this.loadError = err
+				return
+			}
+			if (signal.aborted) return
+			geo = this.resolveGeoLocation()
+		}
+		if (!geo) {
+			// No area at all (a guest or fan without a home): ask for one
+			// before any location-less request.
+			this.isLoading = false
 			this.dateGroups = []
 			this.loadError = null
 			this.openAreaSelector()
@@ -230,17 +270,12 @@ export class NearbyConcerts {
 		const key = rangeCacheKey(geo.adminArea, range.from, range.to)
 		const cached = this.visit.cache.get(key)
 		if (cached) {
-			this.abortController?.abort()
 			this.isLoading = false
 			this.shownGroups = cached
 			this.derive()
 			this.loadError = null
 			return
 		}
-
-		this.abortController?.abort()
-		this.abortController = new AbortController()
-		const signal = this.abortController.signal
 
 		this.isLoading = true
 		this.loadError = null

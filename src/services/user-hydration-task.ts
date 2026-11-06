@@ -184,10 +184,11 @@ export function opensOnDiscovery(pathname: string): boolean {
 
 /**
  * Hydrates the user at boot and returns what the first render waits for:
- * the hydration, except when the app opens on Discovery. Discovery reads
- * nothing of the user, and waiting held its first bubbles back by a
- * `UserService.Get` round trip. Routes that do read the user wait for
- * `IUserHydration.ready` in the auth hook.
+ * the hydration, except when the app opens on Discovery. The bubbles read
+ * nothing of the user, and waiting held them back by a `UserService.Get`
+ * round trip; Discovery's All Nearby view, which reads the home area, waits
+ * for `IUserHydration.ready` itself. Routes that read the user wait for it in
+ * the auth hook.
  */
 export function startUserHydration(
 	container: IContainer,
