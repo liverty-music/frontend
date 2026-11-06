@@ -21,6 +21,7 @@ import { IPurchasedTicketStore } from '../../services/purchased-ticket-store'
 import { ITicketJourneyStore } from '../../services/ticket-journey-store'
 import { IUserHydration } from '../../services/user-hydration-task'
 import { IUserStore } from '../../services/user-store'
+import { currentLanguage } from '../../util/change-locale'
 import type { EventDetailSheet } from '../live-highway/event-detail-sheet'
 import type { DateGroup, LiveEvent } from '../live-highway/live-event'
 import type { UserHomeSelector } from '../user-home-selector/user-home-selector'
@@ -234,6 +235,25 @@ export class NearbyConcerts {
 			this.isLoading = true
 			this.loadError = null
 			await this.userHydration.ready
+			if (signal.aborted) return
+			geo = this.resolveGeoLocation()
+		}
+		if (!geo && !this.userStore.needsHome) {
+			// Signed in, but the account did not load (the boot hydration
+			// failed): a missing account is not a missing home, so load it
+			// again, and show a retryable error if that fails too.
+			try {
+				await this.userStore.ensureLoaded(currentLanguage(this.i18n))
+			} catch (err) {
+				if (signal.aborted) return
+				this.logger.error('Failed to load the account for All Nearby', {
+					error: err,
+				})
+				this.isLoading = false
+				this.dateGroups = []
+				this.loadError = err
+				return
+			}
 			if (signal.aborted) return
 			geo = this.resolveGeoLocation()
 		}

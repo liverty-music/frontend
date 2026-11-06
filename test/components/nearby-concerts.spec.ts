@@ -92,6 +92,8 @@ describe('NearbyConcerts', () => {
 	let mockPurchased: { countByEvent: Map<string, number> }
 	let mockUserStore: {
 		currentHome: string | null
+		needsHome: boolean
+		ensureLoaded: ReturnType<typeof vi.fn>
 		currentLanguage: string
 		updateHome: ReturnType<typeof vi.fn>
 		setGuestHome: ReturnType<typeof vi.fn>
@@ -134,6 +136,8 @@ describe('NearbyConcerts', () => {
 		mockPurchased = { countByEvent: new Map() }
 		mockUserStore = {
 			currentHome: 'JP-40',
+			needsHome: false,
+			ensureLoaded: vi.fn().mockResolvedValue({}),
 			currentLanguage: 'ja',
 			updateHome: vi.fn(),
 			setGuestHome: vi.fn(),
@@ -317,6 +321,7 @@ describe('NearbyConcerts', () => {
 		it('asks a guest without a home area to choose one before listing anything', async () => {
 			mockAuth.isAuthenticated = false
 			mockUserStore.currentHome = null
+			mockUserStore.needsHome = true
 			const sut = build()
 
 			expect(sut.selectedAreaName).toBe('')
@@ -376,6 +381,46 @@ describe('NearbyConcerts', () => {
 			expect(sut.areaSelector?.open).not.toHaveBeenCalled()
 		})
 
+		it('loads the account again when it did not load, instead of asking for an area', async () => {
+			mockUserStore.currentHome = null
+			mockUserStore.ensureLoaded.mockImplementation(async () => {
+				mockUserStore.currentHome = 'JP-13'
+			})
+			const sut = build()
+			sut.onRangeChanged(rangeEvent(WEEK, '7日以内'))
+			await vi.waitFor(() =>
+				expect(mockConcert.listByLocation).toHaveBeenCalledWith(
+					expect.objectContaining({ adminArea: 'JP-13' }),
+					WEEK.from,
+					WEEK.to,
+					expect.any(AbortSignal),
+				),
+			)
+			expect(sut.areaSelector?.open).not.toHaveBeenCalled()
+		})
+
+		it('shows a retryable error when the account cannot be loaded', async () => {
+			mockUserStore.currentHome = null
+			mockUserStore.ensureLoaded.mockRejectedValue(new Error('down'))
+			const sut = build()
+			sut.onRangeChanged(rangeEvent(WEEK, '7日以内'))
+			await vi.waitFor(() => expect(sut.loadError).not.toBeNull())
+			expect(sut.isLoading).toBe(false)
+			expect(sut.areaSelector?.open).not.toHaveBeenCalled()
+
+			// Retry once the account loads.
+			mockUserStore.ensureLoaded.mockImplementation(async () => {
+				mockUserStore.currentHome = 'JP-13'
+			})
+			await sut.load()
+			expect(mockConcert.listByLocation).toHaveBeenCalledWith(
+				expect.objectContaining({ adminArea: 'JP-13' }),
+				WEEK.from,
+				WEEK.to,
+				expect.any(AbortSignal),
+			)
+		})
+
 		it('shows the loading state, not the empty one, while it waits', async () => {
 			pendingHydration()
 			mockUserStore.currentHome = null
@@ -416,6 +461,7 @@ describe('NearbyConcerts', () => {
 		it('asks a fan whose account has no home area for one', async () => {
 			const settle = pendingHydration()
 			mockUserStore.currentHome = null
+			mockUserStore.needsHome = true
 			const sut = build()
 			sut.onRangeChanged(rangeEvent(WEEK, '7日以内'))
 			settle()
