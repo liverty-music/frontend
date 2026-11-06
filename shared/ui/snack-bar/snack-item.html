@@ -14,8 +14,6 @@
     ref="surface"
     class="snack-surface"
     pointerdown.trigger="onPointerDown()"
-    pointerup.trigger="onPointerUp()"
-    pointercancel.trigger="onPointerUp()"
   >
     <svg-icon if.bind="icons && snack.icon" name.bind="snack.icon" class="snack-icon" data-icon.bind="snack.icon"></svg-icon>
     <span class="snack-message"><au-slot name="message">${snack.message}</au-slot></span>

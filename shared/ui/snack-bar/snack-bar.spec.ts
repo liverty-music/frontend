@@ -138,6 +138,16 @@ describe('SnackBar', () => {
 			expect(showOrder()).toEqual(['artist-1 second', 'other'])
 		})
 
+		it('replaces the successor of a shown snack that is still leaving', () => {
+			publish('artist-1 first', { replaceKey: 'hype:artist-1' })
+			publish('artist-1 second', { replaceKey: 'hype:artist-1' })
+			// The first is still playing its exit when a third arrives.
+			publish('artist-1 third', { replaceKey: 'hype:artist-1' })
+			exit()
+
+			expect(showOrder()).toEqual(['artist-1 third'])
+		})
+
 		it('replaces a waiting snack where it waits', () => {
 			const dropped = vi.fn()
 			publish('shown')
@@ -226,6 +236,19 @@ describe('SnackBar', () => {
 			publish('two')
 
 			expect(showOrder()).toEqual(['one', 'two', '新しいバージョンがあります'])
+		})
+
+		it('waits aside, without appearing, when it reaches the head with others behind it', () => {
+			publish('shown')
+			update()
+			publish('behind')
+			sut.shown?.handle?.dismiss()
+			exit()
+
+			// Never shown between the two: it is aside until the wait is empty.
+			expect(sut.shown?.message).toBe('behind')
+			expect(sut.leaving).toBe(false)
+			expect(showOrder()).toEqual(['behind', '新しいバージョンがあります'])
 		})
 
 		it('does not come back once dismissed while aside', () => {

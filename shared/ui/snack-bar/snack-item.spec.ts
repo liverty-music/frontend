@@ -106,8 +106,18 @@ describe('SnackItem', () => {
 			sut.onPointerDown()
 			vi.advanceTimersByTime(5000)
 			expect(dismiss).not.toHaveBeenCalled()
-			sut.onPointerUp()
+			window.dispatchEvent(new Event('pointerup'))
 			expect(dismissedAround(1000)).toEqual([false, true])
+		})
+
+		it('resumes when the pointer is released off the snack', () => {
+			show('パスキーを追加しました。')
+			sut.onPointerDown()
+			vi.advanceTimersByTime(10_000)
+			expect(dismiss).not.toHaveBeenCalled()
+			// Released elsewhere on the page.
+			window.dispatchEvent(new Event('pointerup'))
+			expect(dismissedAround(4000)).toEqual([false, true])
 		})
 
 		it('keeps the timer paused while a swipe scrolls after the touch was taken over', () => {
@@ -115,7 +125,7 @@ describe('SnackItem', () => {
 			sut.onPointerDown()
 			sut.onScroll()
 			// The browser takes a touch over for scrolling with pointercancel.
-			sut.onPointerUp()
+			window.dispatchEvent(new Event('pointercancel'))
 			vi.advanceTimersByTime(10_000)
 			expect(dismiss).not.toHaveBeenCalled()
 			sut.onScrollEnd()

@@ -89,23 +89,27 @@ export class SnackBar {
 
 	private enqueue(event: Snack): void {
 		const key = event.replaceKey
-		if (key !== undefined && this.shown?.replaceKey === key) {
+		if (key === undefined) {
+			this.queue.push(event)
+			return
+		}
+		// A waiting snack with the key is replaced where it waits. This comes
+		// first: while a replaced shown snack plays its exit, its successor
+		// already waits at the head and is the one to replace.
+		const waiting = this.queue.findIndex((queued) => queued.replaceKey === key)
+		if (waiting !== -1) {
+			const replaced = this.queue[waiting]
+			this.queue[waiting] = event
+			this.settle(replaced)
+			return
+		}
+		if (this.shown?.replaceKey === key) {
 			// It takes the shown snack's place: next, before any waiting one.
 			this.queue.unshift(event)
 			this.dismiss(this.shown)
 			return
 		}
-		const waiting =
-			key === undefined
-				? -1
-				: this.queue.findIndex((queued) => queued.replaceKey === key)
-		if (waiting === -1) {
-			this.queue.push(event)
-			return
-		}
-		const replaced = this.queue[waiting]
-		this.queue[waiting] = event
-		this.settle(replaced)
+		this.queue.push(event)
 	}
 
 	/**
@@ -130,6 +134,17 @@ export class SnackBar {
 	private showNext(): void {
 		if (this.shown) return
 		let next = this.queue.shift()
+		// A snack that stays until the person acts waits aside while others
+		// wait behind it, instead of appearing only to give way at once.
+		while (
+			next &&
+			!Number.isFinite(next.durationMs) &&
+			this.queue.length > 0 &&
+			this.parked === null
+		) {
+			this.parked = next
+			next = this.queue.shift()
+		}
 		if (!next && this.parked) {
 			next = this.parked
 			this.parked = null

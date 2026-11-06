@@ -57,6 +57,8 @@ export class SnackItem {
 	}
 
 	public detaching(): void {
+		window.removeEventListener('pointerup', this.onRelease)
+		window.removeEventListener('pointercancel', this.onRelease)
 		this.stopTimer()
 		this.observer?.disconnect()
 		this.observer = null
@@ -81,6 +83,18 @@ export class SnackItem {
 		this.interacted = true
 		this.held = true
 		this.pause()
+		// A mouse released off the snack sends its pointerup elsewhere, which
+		// would leave the timer paused for good; the release is heard on the
+		// window instead. (Capturing the pointer would retarget the click away
+		// from the snack's buttons.)
+		window.addEventListener('pointerup', this.onRelease)
+		window.addEventListener('pointercancel', this.onRelease)
+	}
+
+	private readonly onRelease = (): void => {
+		window.removeEventListener('pointerup', this.onRelease)
+		window.removeEventListener('pointercancel', this.onRelease)
+		this.onPointerUp()
 	}
 
 	public onPointerUp(): void {
