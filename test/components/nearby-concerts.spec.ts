@@ -33,6 +33,9 @@ vi.mock('../../src/services/ticket-journey-store', () => ({
 const { NearbyConcerts, NearbyVisit } = await import(
 	'../../src/components/all-nearby/nearby-concerts'
 )
+const { IUserHydration } = await import(
+	'../../src/services/user-hydration-task'
+)
 const { resolvePreset } = await import(
 	'../../src/components/all-nearby/date-presets'
 )
@@ -95,6 +98,7 @@ describe('NearbyConcerts', () => {
 	}
 	let mockRouter: ReturnType<typeof createMockRouter>
 	let mockFollow: { hypeByArtist: Map<string, string> }
+	let mockHydration: { ready: Promise<void> }
 	let mockJourney: {
 		journeyMap: Map<string, string>
 		load: ReturnType<typeof vi.fn>
@@ -109,6 +113,7 @@ describe('NearbyConcerts', () => {
 			Registration.instance(IRouter, mockRouter),
 			Registration.instance(mockIFollowStore, mockFollow),
 			Registration.instance(mockITicketJourneyStore, mockJourney),
+			Registration.instance(IUserHydration, mockHydration),
 		)
 		container.register(NearbyConcerts)
 		const sut = container.get(NearbyConcerts)
@@ -135,6 +140,7 @@ describe('NearbyConcerts', () => {
 		}
 		mockRouter = createMockRouter()
 		mockFollow = { hypeByArtist: new Map([['a1', 'home']]) }
+		mockHydration = { ready: Promise.resolve() }
 		mockJourney = {
 			journeyMap: new Map(),
 			load: vi.fn().mockResolvedValue(new Map()),
@@ -214,7 +220,9 @@ describe('NearbyConcerts', () => {
 			)
 			const sut = build()
 			sut.onRangeChanged(rangeEvent(WEEK, '7日以内'))
+			await vi.waitFor(() => expect(signals).toHaveLength(1))
 			sut.onAreaSelected('JP-43')
+			await vi.waitFor(() => expect(signals).toHaveLength(2))
 			expect(signals[0].aborted).toBe(true)
 			expect(signals[1].aborted).toBe(false)
 			sut.detaching()
@@ -313,7 +321,9 @@ describe('NearbyConcerts', () => {
 
 			expect(sut.selectedAreaName).toBe('')
 			sut.onRangeChanged(rangeEvent(WEEK, '7日以内'))
-			expect(sut.areaSelector?.open).toHaveBeenCalledOnce()
+			await vi.waitFor(() =>
+				expect(sut.areaSelector?.open).toHaveBeenCalledOnce(),
+			)
 			expect(mockConcert.listByLocation).not.toHaveBeenCalled()
 
 			sut.onAreaSelected('JP-40')
@@ -329,6 +339,90 @@ describe('NearbyConcerts', () => {
 			expect(localStorage.getItem('guest.home')).toBeNull()
 			// Kept on the device as the override, not as the guest home.
 			expect(loadNearbyFilter().areaCode).toBe('JP-40')
+		})
+	})
+
+	describe("before the fan's account has arrived", () => {
+		/** A boot-time hydration the test settles itself. */
+		function pendingHydration(): () => void {
+			let settle = () => {}
+			mockHydration.ready = new Promise((resolve) => {
+				settle = resolve
+			})
+			return settle
+		}
+
+		it('waits for the account and lists around its home area', async () => {
+			const settle = pendingHydration()
+			mockUserStore.currentHome = null
+			const sut = build()
+			sut.onRangeChanged(rangeEvent(WEEK, '7日以内'))
+			await Promise.resolve()
+
+			// No area is asked of a fan who has one.
+			expect(sut.areaSelector?.open).not.toHaveBeenCalled()
+			expect(mockConcert.listByLocation).not.toHaveBeenCalled()
+
+			mockUserStore.currentHome = 'JP-13'
+			settle()
+			await vi.waitFor(() =>
+				expect(mockConcert.listByLocation).toHaveBeenCalledWith(
+					expect.objectContaining({ adminArea: 'JP-13' }),
+					WEEK.from,
+					WEEK.to,
+					expect.any(AbortSignal),
+				),
+			)
+			expect(sut.areaSelector?.open).not.toHaveBeenCalled()
+		})
+
+		it('shows the loading state, not the empty one, while it waits', async () => {
+			pendingHydration()
+			mockUserStore.currentHome = null
+			const sut = build()
+			sut.onRangeChanged(rangeEvent(WEEK, '7日以内'))
+			expect(sut.isLoading).toBe(true)
+		})
+
+		it('does nothing more once the view has gone while it waited', async () => {
+			const settle = pendingHydration()
+			mockUserStore.currentHome = null
+			const sut = build()
+			sut.onRangeChanged(rangeEvent(WEEK, '7日以内'))
+			sut.detaching()
+			settle()
+			await new Promise((r) => setTimeout(r, 0))
+			expect(sut.areaSelector?.open).not.toHaveBeenCalled()
+			expect(mockConcert.listByLocation).not.toHaveBeenCalled()
+		})
+
+		it('does not wait when the area is already known on the device', async () => {
+			pendingHydration()
+			mockUserStore.currentHome = null
+			const sut = build(
+				new NearbyVisit({ areaCode: 'JP-27', datePreset: null }),
+			)
+			sut.onRangeChanged(rangeEvent(WEEK, '7日以内'))
+			await vi.waitFor(() =>
+				expect(mockConcert.listByLocation).toHaveBeenCalledWith(
+					expect.objectContaining({ adminArea: 'JP-27' }),
+					WEEK.from,
+					WEEK.to,
+					expect.any(AbortSignal),
+				),
+			)
+		})
+
+		it('asks a fan whose account has no home area for one', async () => {
+			const settle = pendingHydration()
+			mockUserStore.currentHome = null
+			const sut = build()
+			sut.onRangeChanged(rangeEvent(WEEK, '7日以内'))
+			settle()
+			await vi.waitFor(() =>
+				expect(sut.areaSelector?.open).toHaveBeenCalledOnce(),
+			)
+			expect(mockConcert.listByLocation).not.toHaveBeenCalled()
 		})
 	})
 
