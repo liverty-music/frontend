@@ -65,6 +65,7 @@ function items(count: number) {
 				fab.actions = actions
 				return () => {}
 			},
+			hide: () => () => {},
 		}),
 		Registration.instance(IPushOfferService, {
 			pushState: async () => 'on',
