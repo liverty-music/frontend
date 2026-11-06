@@ -55,7 +55,9 @@ test(`@spec ${CAPABILITY} "FAB hidden when no actions are contributed"`, async (
 	page,
 }) => {
 	await seedSignedInFan(page)
-	await openShell(page, '/tickets')
+	// Settings is outside the four tabs and contributes no action (Tickets
+	// shows the FAB with its Settings item).
+	await openShell(page, '/settings')
 
 	await expect(page.locator('fab-menu')).toHaveCount(0)
 	await expect(nav(page)).toHaveAttribute('data-notch', 'false')

@@ -1,0 +1,39 @@
+<import from="./confirm-dialog.css"></import>
+
+<!-- Modal: showModal() puts it in the top layer, above any open bottom sheet,
+     traps focus and closes on Escape. The body fills the dialog, so a click
+     whose target is the dialog itself is a click on the backdrop. -->
+<dialog
+  ref="dialog"
+  class="confirm-dialog"
+  aria-labelledby.bind="headingId"
+  aria-describedby.bind="bodyId"
+  data-testid.bind="testId"
+  close.trigger="onClose()"
+  click.trigger="onClick($event)"
+  keydown.trigger="onKeydown($event)"
+>
+  <div class="[ confirm-dialog-body ] [ stack ]">
+    <h2 id.bind="headingId" class="confirm-dialog-heading">${heading}</h2>
+    <p id.bind="bodyId" class="confirm-dialog-text">${body}</p>
+    <div class="[ confirm-dialog-actions ] [ cluster ]">
+      <button
+        ref="cancelButton"
+        type="button"
+        autofocus
+        click.trigger="cancel()"
+        class="[ button ] [ pressable ]"
+        data-variant="outlined"
+        t="confirmDialog.cancel"
+        data-testid.bind="cancelTestId"
+      ></button>
+      <button
+        type="button"
+        click.trigger="confirm()"
+        class="[ button ] [ pressable ]"
+        data-variant.bind="confirmVariant"
+        data-testid.bind="confirmButtonTestId"
+      >${confirmLabel}</button>
+    </div>
+  </div>
+</dialog>

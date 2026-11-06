@@ -3,6 +3,7 @@ import type { NavigationInstruction } from '@aurelia/router'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { ILogger, resolve } from 'aurelia'
 import { IUserRpcClient } from '../../adapter/rpc/client/user-client'
+import type { ConfirmDialog } from '../../components/confirm-dialog/confirm-dialog'
 import type {
 	DeletionBlocker,
 	DeletionBlockerKind,
@@ -69,9 +70,8 @@ export class DeleteAccountRoute {
 	public blockers: ListedBlocker[] = []
 	public deletionState: DeletionState = 'idle'
 
-	/** Bound via `ref` to the confirmation dialog and its Cancel control. */
-	public confirmDialog?: HTMLDialogElement
-	public confirmCancel?: HTMLButtonElement
+	/** Bound via `component.ref` to the confirmation dialog. */
+	public confirmDialog?: ConfirmDialog
 
 	/** The delete control is offered only when nothing blocks deletion. */
 	public get canDelete(): boolean {
@@ -110,7 +110,6 @@ export class DeleteAccountRoute {
 
 	public detaching(): void {
 		window.removeEventListener('pageshow', this.onPageShow)
-		this.closeDialog()
 	}
 
 	public unloading(): void {
@@ -141,29 +140,21 @@ export class DeleteAccountRoute {
 		}
 	}
 
-	/** Open the confirmation dialog; its Cancel control takes focus. */
-	public askDelete(): void {
+	/**
+	 * Ask in the confirmation dialog (its Cancel control takes focus); once
+	 * confirmed, sign in again, and the callback brings the fan back here.
+	 * The delete control shows no busy state while the fan decides: nothing
+	 * has started until they confirm.
+	 */
+	public async askDelete(): Promise<void> {
 		if (!this.canDelete) return
-		// Guarded: jsdom does not implement showModal.
+		const confirmed = (await this.confirmDialog?.ask()) ?? false
+		if (!confirmed || !this.canDelete) return
 		try {
-			this.confirmDialog?.showModal()
-		} catch {
-			/* non-interactive environment */
+			await this.signInAgain()
+		} catch (err) {
+			this.logger.warn('Failed to start the fresh sign-in', { error: err })
 		}
-		// The action cannot be undone, so the safe choice takes focus first
-		// (WAI-ARIA APG dialog pattern).
-		this.confirmCancel?.focus()
-	}
-
-	public cancelDelete(): void {
-		this.closeDialog()
-	}
-
-	/** Confirmed: sign in again, then the callback brings the fan back here. */
-	public async confirmDelete(): Promise<void> {
-		this.closeDialog()
-		if (!this.canDelete) return
-		await this.signInAgain()
 	}
 
 	/** Retry of a failed deletion: the proof was dropped, so sign in again. */
@@ -213,14 +204,6 @@ export class DeleteAccountRoute {
 		}
 		this.analytics.reset()
 		this.deletionState = 'deleted'
-	}
-
-	private closeDialog(): void {
-		try {
-			if (this.confirmDialog?.open) this.confirmDialog.close()
-		} catch {
-			/* non-interactive environment */
-		}
 	}
 }
 

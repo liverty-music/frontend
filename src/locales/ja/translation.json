@@ -324,7 +324,10 @@
 		"lockedGeneric": "アーティストを見つけたら開放されます"
 	},
 	"settings": {
-		"preferences": "環境設定",
+		"sections": {
+			"notificationsSound": "通知とサウンド",
+			"displayControls": "表示と操作"
+		},
 		"myHomeArea": "ホームエリア",
 		"notSet": "未設定",
 		"pushNotifications": "プッシュ通知",
@@ -333,10 +336,11 @@
 		"soundEffectsHint": "iOS では効果音は端末のマナーモードに従います。",
 		"soundVolume": "音量",
 		"language": "言語",
-		"about": "情報",
+		"about": "このアプリについて",
 		"termsOfService": "利用規約",
 		"privacyPolicy": "プライバシーポリシー",
 		"ossLicenses": "OSSライセンス",
+		"contact": "お問い合わせ",
 		"account": "アカウント",
 		"personalDetails": {
 			"title": "チケットの名義",
@@ -347,7 +351,12 @@
 			"phoneInvalid": "電話番号を正しく入力してください（例：090-1234-5678）。",
 			"save": "保存",
 			"saved": "名義を保存しました。",
-			"saveError": "名義を保存できませんでした。少し時間を置いてもう一度お試しください。"
+			"saveError": "名義を保存できませんでした。少し時間を置いてもう一度お試しください。",
+			"confirm": {
+				"title": "名義を変更しますか？",
+				"body": "保有中のチケットの券面もこの名義に変わります。",
+				"confirm": "変更する"
+			}
 		},
 		"identityVerification": {
 			"label": "本人確認",
@@ -356,8 +365,8 @@
 			"methodPrefix": "方法:",
 			"methodJpki": "マイナンバーカード (JPKI)",
 			"methodDriverLicence": "運転免許証",
-			"dedupeStrong": "強い重複排除",
-			"dedupeWeak": "弱い重複排除",
+			"dedupeStrong": "1人1アカウントを確実に確認済み",
+			"dedupeWeak": "1人1アカウントを簡易的に確認済み",
 			"verifyCta": "本人確認する"
 		},
 		"signIn": "ログイン",
@@ -370,17 +379,25 @@
 		"resendError": "確認メールを送信できませんでした。ネットワークが不安定なようです。少し時間を置いてもう一度お試しください。",
 		"resendRateLimited": "リクエストが多すぎます。しばらくしてからお試しください。",
 		"signOut": "サインアウト",
+		"signOutConfirm": {
+			"title": "サインアウトしますか？",
+			"body": "次に使うときは、パスキーでもう一度ログインします。",
+			"confirm": "サインアウト"
+		},
 		"signOutError": "サインアウトに失敗しました。もう一度お試しください。",
 		"deleteAccount": "アカウントを削除",
 		"languageChangeError": "言語の変更を保存できませんでした。少し時間を置いてもう一度お試しください。",
 		"notificationError": "通知をオンにできませんでした。少し時間を置いてもう一度お試しください。",
 		"analytics": {
-			"sectionTitle": "プライバシーと分析",
-			"toggleLabel": "分析",
-			"toggleDescription": "初期設定でオン。利用データ（PostHog Cloud EU に送信）を使い、どこで迷いやすいかを把握してアプリを改善します。名前やメールアドレス、要配慮情報は送信しません。アプリで不具合が起きたときは、その内容と直前の操作も送信します。オフにするとすべての分析とエラー情報の送信が停止します。",
-			"sessionReplayLabel": "セッションリプレイ",
-			"sessionReplayDescription": "初期設定でオン。匿名化された画面操作を記録し、インターフェースのわかりにくい箇所を把握します。オフにしても記録が止まるだけで、他の分析やアカウントには影響しません。",
-			"privacyPolicyLink": "プライバシーポリシーを読む"
+			"sectionTitle": "サービス改善の協力",
+			"intro": "Liverty Music はユーザーの皆さんと共に進化していきます。あなたの使い方が、次のアップデートを決める一番の手がかりになります。",
+			"toggleLabel": "利用状況を共有する",
+			"toggleDescription": "どの画面で迷ったか、どこでエラーが起きたかを知って、改善に役立てます。名前・メールアドレス・電話番号などは送りません。オフにすると、利用状況とエラーの情報を送らなくなります。",
+			"sessionReplayLabel": "画面操作ログを共有する",
+			"sessionReplayDescription": "タップやスクロールの流れを、入力内容や画面の文字を伏せて記録します。わかりにくいボタンや迷いやすい手順を見つけるために使います。オフにしても、他の設定には影響しません。",
+			"policyNotePrefix": "データの扱いは",
+			"policyNoteLink": "プライバシーポリシー",
+			"policyNoteSuffix": "で詳しく説明しています。"
 		},
 		"guestHero": {
 			"heading": "ログインして、もっと便利に",
@@ -848,7 +865,8 @@
 		"filter": "コンサート一覧の絞り込み",
 		"help": "ヘルプ",
 		"leftHanded": "左利きモード",
-		"leftHandedDesc": "アクションメニューを左手側に開きます"
+		"leftHandedDesc": "アクションメニューを左手側に開きます",
+		"settings": "設定"
 	},
 	"lotteryEntry": {
 		"title": "チケット抽選に申し込む",
@@ -1342,5 +1360,8 @@
 		"off": "{{name}}の{{places}}の新着ライブをプッシュ通知で受け取ろう🔔",
 		"signUp": "登録する",
 		"settings": "設定"
+	},
+	"confirmDialog": {
+		"cancel": "キャンセル"
 	}
 }

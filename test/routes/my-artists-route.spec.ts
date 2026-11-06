@@ -859,7 +859,11 @@ describe('MyArtistsRoute', () => {
 	})
 
 	describe('Edit in the action launcher', () => {
-		let fab: { register: ReturnType<typeof vi.fn> }
+		let fab: {
+			register: ReturnType<typeof vi.fn>
+			hide: ReturnType<typeof vi.fn>
+		}
+		let showLauncher: ReturnType<typeof vi.fn>
 		let route: InstanceType<typeof MyArtistsRoute>
 
 		/** The ids of the actions the route last contributed to the launcher. */
@@ -872,7 +876,8 @@ describe('MyArtistsRoute', () => {
 			const { IFabMenuService } = await import(
 				'../../src/services/fab-menu-service'
 			)
-			fab = { register: vi.fn(() => vi.fn()) }
+			showLauncher = vi.fn()
+			fab = { register: vi.fn(() => vi.fn()), hide: vi.fn(() => showLauncher) }
 			const container = createTestContainer(
 				Registration.instance(mockIFollowStore, mockFollowService),
 				Registration.instance(mockIRouter, mockRouter),
@@ -902,9 +907,10 @@ describe('MyArtistsRoute', () => {
 
 		// @spec components/infrastructure/fan/web/route/my-artists "Edit offered in the action launcher"
 		// @spec components/infrastructure/fan/web/route/my-artists "Entering edit mode reveals remove controls"
-		it('offers Edit next to Help; Edit enters edit mode and the launcher steps aside', async () => {
+		it('offers Edit next to Help; Edit enters edit mode and hides the launcher', async () => {
 			await route.loadArtists()
 			route.attached()
+			// The shell appends Settings after these (test/app-shell.spec.ts).
 			expect(actions()).toEqual(['edit', 'help'])
 
 			const edit = (
@@ -914,12 +920,11 @@ describe('MyArtistsRoute', () => {
 				}[]
 			).find((a) => a.id === 'edit')
 			edit?.invoke()
-			;(
-				route as unknown as { onFabContextChanged(): void }
-			).onFabContextChanged()
 
 			expect(route.editing).toBe(true)
-			expect(actions()).toEqual([])
+			// The whole launcher is hidden, the Settings item included.
+			expect(fab.hide).toHaveBeenCalledWith(route)
+			expect(showLauncher).not.toHaveBeenCalled()
 		})
 
 		// @spec components/infrastructure/fan/web/route/my-artists "Leaving edit mode hides remove controls"
@@ -928,12 +933,29 @@ describe('MyArtistsRoute', () => {
 			route.editing = true
 
 			route.toggleEditing()
-			;(
-				route as unknown as { onFabContextChanged(): void }
-			).onFabContextChanged()
 
 			expect(route.editing).toBe(false)
-			expect(actions()).toEqual(['edit', 'help'])
+			expect(showLauncher).toHaveBeenCalledTimes(1)
+		})
+
+		// @spec components/infrastructure/fan/web/route/my-artists "Edit mode exits when the last artist is removed"
+		it('brings the launcher back when the last artist is removed', async () => {
+			await route.loadArtists()
+			route.editing = true
+			for (let i = route.artists.length - 1; i >= 0; i--) {
+				route.unfollowArtist(route.artists[i])
+			}
+			expect(route.editing).toBe(false)
+			expect(showLauncher).toHaveBeenCalledTimes(1)
+		})
+
+		// @spec components/infrastructure/fan/web/route/my-artists "Edit mode is not persisted across navigation"
+		it('brings the launcher back when the fan leaves the page in edit mode', async () => {
+			await route.loadArtists()
+			route.editing = true
+			route.detaching()
+			expect(showLauncher).toHaveBeenCalledTimes(1)
+			expect(fab.hide).toHaveBeenCalledTimes(1)
 		})
 	})
 

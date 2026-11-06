@@ -27,7 +27,8 @@ test.use({ viewport: { width: 390, height: 844 } })
  */
 
 const CAPABILITY = 'components/infrastructure/fan/web/global/fab-menu'
-const DASHBOARD_ACTIONS = ['beam', 'filter', 'help']
+// The dashboard's own actions, then the Settings item of the tab pages.
+const DASHBOARD_ACTIONS = ['beam', 'filter', 'help', 'settings']
 
 const glyph = (page: Page) => page.locator('fab-menu .fab-glyph')
 const opacity = (page: Page, selector: string) =>
@@ -574,7 +575,8 @@ test.describe('collapsed after navigation', () => {
 
 		await clickTabBehindScrim(page, 'ticket')
 		await page.waitForURL('**/tickets')
-		await expect(page.locator('fab-menu')).toHaveCount(0)
+		// Tickets shows the FAB too (its Settings item), collapsed.
+		await expectCollapsed(page)
 		await tapTab(page, 'home')
 		await page.waitForURL('**/dashboard')
 

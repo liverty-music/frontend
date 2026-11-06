@@ -288,6 +288,17 @@ describe('Withdrawal screen (fixture)', () => {
 		expect(app.users.delete).not.toHaveBeenCalled()
 	})
 
+	it('shows no busy state on the delete control while the fan decides', async () => {
+		const app = setup(async () => [])
+		const screen = await app.open()
+		screen.q<HTMLButtonElement>('delete-account-delete')?.click()
+		await settle()
+		expect(screen.dialog()?.hasAttribute('open')).toBe(true)
+		expect(screen.q('delete-account-delete')?.hasAttribute('data-busy')).toBe(
+			false,
+		)
+	})
+
 	it('closes the dialog on Cancel without asking for a sign-in or deleting', async () => {
 		const app = setup(async () => [])
 		const screen = await app.open()

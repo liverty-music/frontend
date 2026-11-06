@@ -493,9 +493,22 @@ describe('SettingsRoute', () => {
 	})
 
 	describe('signOut', () => {
-		it('calls auth signOut, whose SignedOut event clears the stores', async () => {
+		const answer = (confirmed: boolean) =>
+			({ ask: vi.fn(async () => confirmed) }) as unknown as NonNullable<
+				SettingsRoute['signOutConfirm']
+			>
+
+		it('calls auth signOut once confirmed, whose SignedOut event clears the stores', async () => {
+			sut.signOutConfirm = answer(true)
 			await sut.signOut()
 			expect(mockAuth.signOut).toHaveBeenCalledOnce()
+		})
+
+		// @spec components/infrastructure/fan/web/route/settings "Sign out cancelled"
+		it('does nothing when the fan cancels the confirmation', async () => {
+			sut.signOutConfirm = answer(false)
+			await sut.signOut()
+			expect(mockAuth.signOut).not.toHaveBeenCalled()
 		})
 	})
 

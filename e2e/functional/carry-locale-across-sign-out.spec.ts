@@ -87,6 +87,11 @@ test.describe('the language survives leaving the session', () => {
 		await expect(signOut).toBeVisible()
 
 		await signOut.click()
+		// Sign out asks first; confirming signs the fan out.
+		await page
+			.getByRole('dialog', { name: 'サインアウトしますか？' })
+			.getByRole('button', { name: 'サインアウト' })
+			.click()
 
 		await page.waitForURL((url) => url.pathname === '/welcome')
 		await expectWelcomeInJapanese(page)

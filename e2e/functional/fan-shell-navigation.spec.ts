@@ -1,6 +1,7 @@
 import {
 	box,
 	fab,
+	fabItems,
 	nav,
 	openShell,
 	seedSignedInFan,
@@ -16,12 +17,12 @@ test.use({ viewport: { width: 390, height: 844 } })
 
 /**
  * The fan app's bottom navigation (four tabs around the FAB's centre slot) and
- * the Settings entry in the page header. Runs on Chromium (`functional`) and
- * WebKit (`webkit-shell`).
+ * the Settings item that ends the FAB launcher on the tab pages. Runs on
+ * Chromium (`functional`) and WebKit (`webkit-shell`).
  */
 
 const NAV = 'components/infrastructure/fan/web/global/bottom-nav-bar'
-const HEADER = 'components/infrastructure/fan/web/global/page-header'
+const FAB = 'components/infrastructure/fan/web/global/fab-menu'
 const SETTINGS = 'components/infrastructure/fan/web/route/settings'
 
 const TAB_ICONS = ['home', 'discovery', 'my-artists', 'ticket']
@@ -42,7 +43,25 @@ const maskOf = (page: Page) =>
 		return mask
 	})
 
-const gear = (page: Page) => page.getByTestId('page-header-settings')
+const itemIds = (page: Page) =>
+	fabItems(page).evaluateAll((els) =>
+		els.map((el) => el.getAttribute('data-action-id')),
+	)
+
+/** Open the launcher and wait until its items are laid out. */
+async function openLauncher(page: Page): Promise<void> {
+	await fab(page).click()
+	await expect(fab(page)).toHaveAttribute('aria-expanded', 'true')
+	await settle(page, 'fab-menu')
+}
+
+/** Open Settings the way a fan does: the last item of the launcher. */
+async function openSettingsFromLauncher(page: Page): Promise<void> {
+	await openLauncher(page)
+	await page.locator('fab-menu .fab-item[data-action-id="settings"]').click()
+	await page.waitForURL('**/settings')
+	await expect(page.locator('settings-route')).toBeVisible()
+}
 
 test.beforeEach(async ({ page }) => {
 	await seedSignedInFan(page)
@@ -76,8 +95,15 @@ test.describe('bottom navigation', () => {
 		expect(await maskOf(page)).toContain('radial-gradient')
 	})
 
-	test(`@spec ${NAV} "Route without FAB actions"`, async ({ page }) => {
+	test(`@spec ${NAV} "Tickets shows the FAB"`, async ({ page }) => {
 		await openShell(page, '/tickets')
+		await expect(fab(page)).toBeVisible()
+		await expect(nav(page)).toHaveAttribute('data-notch', 'true')
+		expect(await maskOf(page)).toContain('radial-gradient')
+	})
+
+	test(`@spec ${NAV} "Route without FAB actions"`, async ({ page }) => {
+		await openShell(page, '/settings')
 
 		await expect(page.locator('fab-menu')).toHaveCount(0)
 		await expect(nav(page)).toHaveAttribute('data-notch', 'false')
@@ -95,17 +121,16 @@ test.describe('bottom navigation', () => {
 			els.map((el) => el.getBoundingClientRect().x),
 		)
 
-		await tapTab(page, 'ticket')
-		await page.waitForURL('**/tickets')
+		await openSettingsFromLauncher(page)
 		await expect(page.locator('fab-menu')).toHaveCount(0)
-		// Read the boxes at rest, after the tapped tab's press scale.
+		// Read the boxes at rest.
 		await page.mouse.move(0, 0)
 		await settle(page, 'bottom-nav-bar')
-		const onTickets = await tabs(page).evaluateAll((els) =>
+		const onSettings = await tabs(page).evaluateAll((els) =>
 			els.map((el) => el.getBoundingClientRect().x),
 		)
 
-		expect(onTickets).toEqual(onDashboard)
+		expect(onSettings).toEqual(onDashboard)
 	})
 
 	test(`@spec ${NAV} "Tab route displayed"`, async ({ page }) => {
@@ -130,41 +155,96 @@ test.describe('bottom navigation', () => {
 	})
 })
 
-test.describe('Settings entry in the page header', () => {
-	test(`@spec ${HEADER} "Gear on a tab page"`, async ({ page }) => {
+test.describe('Settings item in the launcher', () => {
+	test(`@spec ${FAB} "Settings is the last item on the dashboard"`, async ({
+		page,
+	}) => {
 		await openShell(page, '/dashboard')
+		await openLauncher(page)
+		// From the FAB outward.
+		expect(await itemIds(page)).toEqual(['beam', 'filter', 'help', 'settings'])
+		await expect(
+			page.locator('fab-menu .fab-item[data-action-id="settings"]'),
+		).toHaveText(/Settings/)
+	})
+
+	test(`@spec ${FAB} "Settings is the only item on Tickets"`, async ({
+		page,
+	}) => {
+		await openShell(page, '/tickets')
+		await expect(fab(page)).toBeVisible()
+		await openLauncher(page)
+		expect(await itemIds(page)).toEqual(['settings'])
+	})
+
+	test(`@spec ${FAB} "Choosing Settings"`, async ({ page }) => {
 		for (const icon of TAB_ICONS) {
-			await tapTab(page, icon)
-			await page.waitForURL(`**${TAB_PATHS[icon]}`)
-			await expect(
-				page.locator('page-header').getByRole('link', { name: 'Settings' }),
-			).toBeVisible()
-			// At the header's trailing end.
-			const header = await box(page.locator('page-header header'))
-			const g = await box(gear(page))
-			expect(header.x + header.width - (g.x + g.width)).toBeLessThan(24)
+			await openShell(page, TAB_PATHS[icon])
+			await openSettingsFromLauncher(page)
+			// The launcher closed; Settings offers none.
+			await expect(page.locator('fab-menu')).toHaveCount(0)
 		}
-
-		await gear(page).click()
-		await page.waitForURL('**/settings')
-		await expect(page.locator('settings-route')).toBeVisible()
+		// No tab page shows a Settings gear in the header any more.
+		await expect(page.locator('page-header a')).toHaveCount(0)
 	})
 
-	test(`@spec ${HEADER} "No gear on Settings"`, async ({ page }) => {
+	test(`@spec ${FAB} "No Settings item outside the tabs"`, async ({ page }) => {
+		for (const path of [
+			'/settings',
+			'/events/00000000-0000-4000-8000-0e0000000001',
+			'/orders/00000000-0000-4000-8000-0d0000000001',
+		]) {
+			await openShell(page, path)
+			await expect(
+				page.locator('fab-menu .fab-item[data-action-id="settings"]'),
+			).toHaveCount(0)
+		}
+	})
+
+	test(`@spec ${FAB} "FAB hidden when no actions are contributed"`, async ({
+		page,
+	}) => {
 		await openShell(page, '/settings')
-		await expect(page.locator('page-header h1')).toHaveText('Settings')
-		await expect(gear(page)).toHaveCount(0)
+		await expect(page.locator('fab-menu')).toHaveCount(0)
+		await expect(nav(page)).toHaveAttribute('data-notch', 'false')
 	})
 
-	test(`@spec ${HEADER} "No gear outside the tabs"`, async ({ page }) => {
-		// An order detail shows a header of its own, without the gear.
-		await openShell(page, '/orders/00000000-0000-4000-8000-0d0000000001')
-		await expect(page.locator('page-header h1')).toBeVisible()
-		await expect(gear(page)).toHaveCount(0)
+	test(`@spec ${FAB} "FAB hidden while the route hides the launcher"`, async ({
+		page,
+	}) => {
+		await page.route(
+			(url) => url.pathname.includes('FollowService/List'),
+			(route) =>
+				route.fulfill({
+					status: 200,
+					contentType: 'application/json',
+					body: JSON.stringify({
+						artists: [
+							{
+								artist: {
+									id: { value: '00000000-0000-4000-8000-a10000000001' },
+									name: { value: 'YOASOBI' },
+								},
+								hype: 1,
+							},
+						],
+					}),
+				}),
+		)
+		await page.context().addInitScript(() => {
+			localStorage.setItem('onboarding.helpSeen:my-artists', '1')
+		})
+		await openShell(page, '/my-artists')
+		await expect(page.locator('.artist-row').first()).toBeVisible()
+		await openLauncher(page)
+		expect(await itemIds(page)).toEqual(['edit', 'help', 'settings'])
 
-		// The Event page shows no shell header at all.
-		await openShell(page, '/events/00000000-0000-4000-8000-0e0000000001')
-		await expect(gear(page)).toHaveCount(0)
+		await page.locator('fab-menu .fab-item[data-action-id="edit"]').click()
+		await expect(page.locator('.artist-remove-btn').first()).toBeVisible()
+		await expect(page.locator('fab-menu')).toHaveCount(0)
+
+		await page.getByRole('button', { name: 'Done' }).click()
+		await expect(fab(page)).toBeVisible()
 	})
 })
 

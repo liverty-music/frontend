@@ -56,6 +56,21 @@ export function helpAction(invoke: () => void): FabAction {
 	}
 }
 
+/**
+ * Factory for the Settings item the shell appends to the launcher on the four
+ * tab pages, as the item farthest from the FAB (see
+ * {@link FabMenuService.setTrailing}). `invoke` displays the Settings route.
+ */
+export function settingsAction(invoke: () => void): FabAction {
+	return {
+		id: 'settings',
+		labelKey: 'fabMenu.settings',
+		icon: 'settings',
+		kind: 'command',
+		invoke,
+	}
+}
+
 export const IFabMenuService = DI.createInterface<IFabMenuService>(
 	'IFabMenuService',
 	(x) => x.singleton(FabMenuService),
@@ -90,6 +105,19 @@ export class FabMenuService {
 	private readonly byOwner = new Map<object, FabAction[]>()
 
 	/**
+	 * The shell-owned item after every route set (Settings on the tab pages),
+	 * or null. Kept apart from `byOwner` so a route re-registering its set can
+	 * never move it off the end.
+	 */
+	private trailing: FabAction | null = null
+
+	/**
+	 * Owners currently hiding the launcher (My Artists in edit mode). While any
+	 * is present `actions` is empty, so the FAB and the nav-bar notch go away.
+	 */
+	private readonly hiders = new Set<object>()
+
+	/**
 	 * Contribute `actions` for `owner`, returning a disposer. Calling `register`
 	 * again for the same owner replaces its previous set. The disposer removes
 	 * the owner's set and is idempotent — routes push it onto their
@@ -101,6 +129,29 @@ export class FabMenuService {
 		this.rebuild()
 		return () => {
 			if (this.byOwner.delete(owner)) {
+				this.rebuild()
+			}
+		}
+	}
+
+	/**
+	 * Set or clear the item that always comes last, after every route's set.
+	 * The shell sets the Settings item on the tab pages and clears it elsewhere.
+	 */
+	public setTrailing(action: FabAction | null): void {
+		this.trailing = action
+		this.rebuild()
+	}
+
+	/**
+	 * Hide the launcher for `owner` until the returned disposer is called. The
+	 * disposer is idempotent; the launcher shows again once no owner hides it.
+	 */
+	public hide(owner: object): () => void {
+		this.hiders.add(owner)
+		this.rebuild()
+		return () => {
+			if (this.hiders.delete(owner)) {
 				this.rebuild()
 			}
 		}
@@ -123,10 +174,15 @@ export class FabMenuService {
 	}
 
 	private rebuild(): void {
+		if (this.hiders.size > 0) {
+			this.actions = []
+			return
+		}
 		const next: FabAction[] = []
 		for (const set of this.byOwner.values()) {
 			next.push(...set)
 		}
+		if (this.trailing) next.push(this.trailing)
 		this.actions = next
 	}
 }
