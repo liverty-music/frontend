@@ -374,14 +374,20 @@ export class BottomSheet {
 		}
 	}
 
-	/** Wrap Tab focus within the popover (a popover has no native focus trap). */
+	/**
+	 * Wrap Tab focus within the popover (a popover has no native focus trap).
+	 * Only rendered controls count: a control in a hidden subtree (a closed
+	 * `<dialog>` in the sheet, such as a confirm-dialog) matches the selector
+	 * but cannot take focus, and as the first or last candidate it would
+	 * break the wrap.
+	 */
 	private trapTab(e: KeyboardEvent): void {
 		if (!this.popoverEl) return
 		const focusable = Array.from(
 			this.popoverEl.querySelectorAll<HTMLElement>(
 				'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
 			),
-		)
+		).filter((el) => el.checkVisibility?.() ?? true)
 		if (focusable.length === 0) {
 			e.preventDefault()
 			this.focusSheet()

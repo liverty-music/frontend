@@ -296,6 +296,63 @@ describe('BottomSheet', () => {
 		})
 	})
 
+	describe('Tab focus trap', () => {
+		const fireKeydown = (s: BottomSheet, e: KeyboardEvent): void => {
+			;(s as unknown as { onKeydown: (e: KeyboardEvent) => void }).onKeydown(e)
+		}
+		const control = (visible: boolean) => ({
+			focus: vi.fn(),
+			checkVisibility: () => visible,
+		})
+		const tab = (shiftKey: boolean) =>
+			({
+				key: 'Tab',
+				shiftKey,
+				preventDefault: vi.fn(),
+			}) as unknown as KeyboardEvent
+
+		// A sheet holding a form (first field, Save) and, after it, the buttons
+		// of a closed confirmation dialog, which are not rendered.
+		function withControls() {
+			const first = control(true)
+			const save = control(true)
+			const hiddenCancel = control(false)
+			const hiddenConfirm = control(false)
+			popover.querySelectorAll.mockReturnValue([
+				first,
+				save,
+				hiddenCancel,
+				hiddenConfirm,
+			] as unknown as NodeListOf<HTMLElement>)
+			return { first, save, hiddenConfirm }
+		}
+
+		it('wraps Shift+Tab from the first control to the last rendered one', () => {
+			openAndSettle()
+			const { first, save, hiddenConfirm } = withControls()
+			vi.spyOn(document, 'activeElement', 'get').mockReturnValue(
+				first as unknown as Element,
+			)
+			const e = tab(true)
+			fireKeydown(sut, e)
+			expect(e.preventDefault).toHaveBeenCalled()
+			expect(save.focus).toHaveBeenCalled()
+			expect(hiddenConfirm.focus).not.toHaveBeenCalled()
+		})
+
+		it('wraps Tab from the last rendered control to the first', () => {
+			openAndSettle()
+			const { first, save } = withControls()
+			vi.spyOn(document, 'activeElement', 'get').mockReturnValue(
+				save as unknown as Element,
+			)
+			const e = tab(false)
+			fireKeydown(sut, e)
+			expect(e.preventDefault).toHaveBeenCalled()
+			expect(first.focus).toHaveBeenCalled()
+		})
+	})
+
 	describe('detaching lifecycle', () => {
 		it('hides the popover without emitting sheet-closed', () => {
 			openAndSettle()

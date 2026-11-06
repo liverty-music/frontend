@@ -310,6 +310,22 @@ test.describe('name on your tickets', () => {
 		expect(callsOf(calls, 'UserService/Update')).toHaveLength(0)
 	})
 
+	test('keeps Tab and Shift+Tab inside the sheet while the confirmation is closed', async ({
+		page,
+	}) => {
+		await openAsFan(page, { fullName: '山田 花子' })
+		await row(page).click()
+		const name = page.getByTestId('settings-full-name')
+		const phone = page.getByTestId('settings-phone-number')
+		await name.focus()
+		// Save is disabled for an unchanged form, so the phone field is the
+		// last control; the closed dialog's buttons must not count.
+		await page.keyboard.press('Shift+Tab')
+		await expect(phone).toBeFocused()
+		await page.keyboard.press('Tab')
+		await expect(name).toBeFocused()
+	})
+
 	for (const how of ['Cancel', 'Escape'] as const) {
 		test(`@spec ${SETTINGS} "Fan cancels the confirmation" (${how})`, async ({
 			page,
