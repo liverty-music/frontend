@@ -4,6 +4,7 @@ import { Code, ConnectError } from '@connectrpc/connect'
 import { DI, IEventAggregator, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { StorageKeys } from '../../src/constants/storage-keys'
+import { ConsentChanged } from '../../src/lib/consent/consent-changed'
 import { createTestContainer } from '../helpers/create-container'
 
 const mockIAuthService = DI.createInterface('IAuthService')
@@ -631,12 +632,24 @@ describe('SettingsRoute', () => {
 		})
 
 		it('handleSessionReplayToggle writes through independently of analytics', () => {
-			// @spec components/infrastructure/fan/web/route/settings "User disables session replay but keeps event analytics"
 			expect(sut.consent.sessionReplay).toBe(true)
 			sut.handleSessionReplayToggle()
 			expect(sut.consent.sessionReplay).toBe(false)
 			// Analytics is unaffected by toggling session replay.
 			expect(sut.consent.analytics).toBe(true)
+		})
+
+		it('turning Session replay off tells the analytics service, with Analytics still on', () => {
+			// @spec components/infrastructure/fan/web/route/settings "User disables session replay but keeps event analytics"
+			// The Settings half: the toggle publishes the new consent. What the
+			// analytics service does with it (recording stops, events and the
+			// identity stay) is checked in analytics-service.spec.ts.
+			sut.handleSessionReplayToggle()
+
+			expect(mockEa.publish).toHaveBeenCalledOnce()
+			const [event] = mockEa.publish.mock.calls[0]
+			expect(event).toBeInstanceOf(ConsentChanged)
+			expect(event.state).toEqual({ analytics: true, sessionReplay: false })
 		})
 	})
 
