@@ -192,14 +192,23 @@
 		--fab-sunk: 1;
 	}
 
-	/* While a snack bar is open, the room it takes above the route area: its
-	   gap above the navigation bar (or a bottom banner) and a snack whose
-	   message runs to two lines (68px at 375px wide; a one-line snack with
-	   its action button is 53px). Content that floats over the route's bottom
-	   edge (the Discovery swap tile) keeps clear of it from the first frame,
-	   with no measuring script. */
-	:where(:root:has(.snack-item:popover-open)) {
-		--snack-stack-height: calc(var(--space-s) + 4.5rem);
+	/* While Discovery shows its swap tile, the distance from the window's
+	   bottom edge to the tile's top edge: the navigation bar, the safe area,
+	   a visible banner (the route area ends above it), the floor the tile
+	   stands on and the tile. The snack bar sits above it instead of above
+	   the bar, so the tile, a control floating over the route's bottom edge,
+	   never moves for a snack. Hidden in search mode, the tile publishes
+	   nothing. */
+	:where(
+		:root:has(.discovery-layout:not([data-search-mode="true"]) .swap-tile-slot)
+	) {
+		--bottom-floating-clearance: calc(
+			var(--bottom-nav-height) +
+			env(safe-area-inset-bottom, 0px) +
+			var(--bottom-banner-height, 0px) +
+			var(--discovery-floor) +
+			var(--swap-tile-size)
+		);
 	}
 
 	/* While a bottom banner shows, its height is published for the route area

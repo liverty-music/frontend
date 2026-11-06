@@ -7,6 +7,7 @@ import {
 	fab,
 	intersects,
 	publishSnack,
+	seedSignedInFan,
 	settle,
 } from '../support/fan-shell'
 import { expect, type Page, test } from '../support/test'
@@ -111,6 +112,18 @@ async function openDiscovery(
 	)
 	await page.goto(path)
 	await page.locator('discovery-route').waitFor({ timeout: 60_000 })
+}
+
+/** A spacing token's length at this viewport, in px. */
+function spacePx(page: Page, token: string): Promise<number> {
+	return page.evaluate((token) => {
+		const probe = document.createElement('div')
+		probe.style.blockSize = `var(${token})`
+		document.body.append(probe)
+		const px = probe.getBoundingClientRect().height
+		probe.remove()
+		return px
+	}, token)
 }
 
 const tile = (page: Page) => page.getByTestId('discovery-swap')
@@ -246,18 +259,12 @@ test.describe('Discovery swap tile', () => {
 		expect(c.x).toBeLessThanOrEqual(115)
 	})
 
+	// @spec components/infrastructure/fan/web/global/snack-bar "A floating control stays in place"
 	test(`@spec ${CAPABILITY} "A snack bar is open"`, async ({ page }) => {
 		await openDiscovery(page)
 		await expect(tile(page)).toBeVisible()
+		await settle(page, 'discovery-route')
 		const before = await tileBox(page)
-		const floor = await page.locator('.bubble-area').evaluate((area) => {
-			const r = area.getBoundingClientRect()
-			const orbFloor = Number.parseFloat(
-				getComputedStyle(area).getPropertyValue('--orb-floor'),
-			)
-			// The bubbles' floor: 130px above the orb floor (bubble-physics.ts).
-			return r.bottom - orbFloor - 130
-		})
 
 		await publishSnack(
 			page,
@@ -266,23 +273,49 @@ test.describe('Discovery swap tile', () => {
 		)
 		const snack = page.locator('.snack-item:popover-open')
 		await expect(snack).toBeVisible()
-		await settle(page, 'discovery-route')
 		await settle(page, 'snack-bar')
 
-		const lifted = await tileBox(page)
+		// The snack sits one space-3xs step above the tile; the tile stays.
+		const after = await tileBox(page)
 		const s = await box(snack)
-		expect(lifted.y).toBeLessThan(before.y)
-		expect(intersects(lifted, s)).toBe(false)
-		expect(lifted.y + lifted.height).toBeLessThanOrEqual(s.y)
-		expect(lifted.y).toBeGreaterThanOrEqual(floor)
+		expect(after.y).toBeCloseTo(before.y, 0)
+		expect(after.x).toBeCloseTo(before.x, 0)
+		expect(after.y - (s.y + s.height)).toBeCloseTo(
+			await spacePx(page, '--space-3xs'),
+			0,
+		)
+		expect(intersects(after, s)).toBe(false)
 
-		// Still tappable while lifted.
+		// Still tappable under the open snack bar.
 		await tile(page).click()
 		await expect(page.locator('nearby-concerts')).toBeVisible()
+	})
 
-		await expect(snack).toHaveCount(0, { timeout: 10_000 })
+	test(`@spec components/infrastructure/fan/web/global/snack-bar "A banner and a floating control are both visible"`, async ({
+		page,
+	}) => {
+		await seedSignedInFan(page, { installBanner: true })
+		await page.goto('/discovery')
+		const banner = page.locator('.pwa-banner')
+		await expect(banner).toBeVisible({ timeout: 60_000 })
+		await expect(tile(page)).toBeVisible()
 		await settle(page, 'discovery-route')
-		expect((await tileBox(page)).y).toBeCloseTo(before.y, 0)
+		const before = await tileBox(page)
+
+		await publishSnack(page, 'BAND 1をフォローしました', 4000)
+		const snack = page.locator('.snack-item:popover-open')
+		await expect(snack).toBeVisible()
+		await settle(page, 'snack-bar')
+
+		const after = await tileBox(page)
+		const s = await box(snack)
+		expect(after.y).toBeCloseTo(before.y, 0)
+		expect(after.y - (s.y + s.height)).toBeCloseTo(
+			await spacePx(page, '--space-3xs'),
+			0,
+		)
+		expect(intersects(after, s)).toBe(false)
+		expect(intersects(await box(banner), s)).toBe(false)
 	})
 
 	test(`@spec ${CAPABILITY} "The FAB menu is open"`, async ({ page }) => {

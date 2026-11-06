@@ -27,61 +27,51 @@
 			   persistent bottom banner shows) lifts the snack above that banner
 			   so it never covers its CTA; a hidden banner publishes no height. The fan app's FAB stays sunk
 			   in the navigation bar meanwhile, so the snack clears it too. */
-			--_inset-end: calc(
+			--_above-nav: calc(
 				var(--bottom-nav-height) +
 				env(safe-area-inset-bottom, 0px) +
 				var(--bottom-banner-height, 0px) +
 				var(--space-s)
 			);
+
+			/* A control floating over the route's bottom edge (the fan app's
+			   Discovery swap tile) publishes --bottom-floating-clearance, the
+			   distance from the window's bottom to its top edge, and the snack
+			   sits one step above it instead, so the control never moves (M3:
+			   snackbars are nudged up, other components are not animated with
+			   them). Unset, this is invalid and the fallback applies. */
+			--_above-floating: calc(
+				var(--bottom-floating-clearance) +
+				var(--space-3xs)
+			);
+			--_inset-end: var(--_above-floating, var(--_above-nav));
 		}
 
+		/* Holds the shown snack's item; the item itself is a top-layer
+		   popover with its own offset. */
 		.snack-stack {
 			pointer-events: none;
-
 			position: fixed;
-			inset-block-end: var(--_inset-end);
-			inset-inline: 0;
-
-			display: flex;
-			flex-direction: column-reverse;
-			gap: var(--space-3xs);
-			align-items: center;
 		}
 
-		/* Brand-gradient container (M3 Expressive keeps the brand identity),
-		   carrying the M3 structural traits: bottom placement, extra-small (4dp)
-		   shape, a single constrained-width row with side margins (not
-		   full-bleed), a text-button action, and up-from-bottom motion. Each
-		   item is a top-layer `popover` (detached from .snack-stack when open)
-		   so it carries its own offset. */
+		/* The popover: where the snack sits and how it rises and sinks.
+		   Transparent itself; the snack the fan sees is `.snack-surface`. */
 		.snack-item {
-			pointer-events: auto;
+			pointer-events: none;
 
 			inset-block: auto var(--_inset-end);
 			inset-inline: 0;
 			transform: translateY(1rem);
 
-			display: flex;
-			gap: var(--space-2xs);
-			align-items: center;
+			overflow: visible;
 
 			inline-size: min(100% - 2 * var(--space-s), 40rem);
 			margin-inline: auto;
-			padding-block: var(--space-2xs);
-			padding-inline: var(--space-s);
+			padding: 0;
 			border: none;
-			border-radius: var(--md-shape-extra-small);
-
-			font-family: var(--snack-bar-font-family, var(--font-display));
-			font-weight: var(--snack-bar-font-weight, 600);
-			color: var(--snack-bar-on-container, var(--color-white));
 
 			opacity: 0;
-			background: var(
-				--snack-bar-container,
-				linear-gradient(to right, var(--_bg-from), var(--_bg-to))
-			);
-			box-shadow: var(--snack-bar-shadow, var(--shadow-card-glow));
+			background: none;
 
 			transition:
 				transform var(--md-sys-motion-duration-medium2)
@@ -100,6 +90,59 @@
 					opacity: 0;
 				}
 			}
+		}
+
+		/* A sideways swipe: the surface rests between two empty gutters as wide
+		   as the snack, and mandatory snapping carries a release past half its
+		   width into a gutter (which dismisses it, snack-item.ts) or back.
+		   The scroller reaches --_shadow-room past the snack on every side so
+		   the surface's shadow is not clipped, and lets taps through there. */
+		.snack-swipe {
+			--_shadow-room: var(--space-m);
+
+			pointer-events: none;
+			scrollbar-width: none;
+			scroll-snap-type: x mandatory;
+
+			overflow: auto hidden;
+			overscroll-behavior-x: contain;
+			display: grid;
+			grid-auto-columns: 100%;
+			grid-auto-flow: column;
+
+			margin: calc(-1 * var(--_shadow-room));
+			padding: var(--_shadow-room);
+		}
+
+		.snack-gutter {
+			scroll-snap-align: center;
+		}
+
+		/* Brand-gradient container (M3 Expressive keeps the brand identity),
+		   carrying the M3 structural traits: bottom placement, extra-small (4dp)
+		   shape, a single constrained-width row with side margins (not
+		   full-bleed), a text-button action, and up-from-bottom motion. */
+		.snack-surface {
+			pointer-events: auto;
+			scroll-snap-align: center;
+
+			display: flex;
+			gap: var(--space-2xs);
+			align-items: center;
+
+			padding-block: var(--space-2xs);
+			padding-inline: var(--space-s);
+			border-radius: var(--md-shape-extra-small);
+
+			font-family: var(--snack-bar-font-family, var(--font-display));
+			font-weight: var(--snack-bar-font-weight, 600);
+			color: var(--snack-bar-on-container, var(--color-white));
+
+			background: var(
+				--snack-bar-container,
+				linear-gradient(to right, var(--_bg-from), var(--_bg-to))
+			);
+			box-shadow: var(--snack-bar-shadow, var(--shadow-card-glow));
 		}
 
 		/* Severity recolors the container gradient (info keeps the brand hues). */

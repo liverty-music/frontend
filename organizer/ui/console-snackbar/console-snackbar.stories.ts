@@ -37,6 +37,15 @@ function snackbarOf(root: HTMLElement): ISnackbar {
 	return CustomElement.for(host).container.get(ISnackbar)
 }
 
+/**
+ * Waits until no snack is left in the document. A closed snack stays while it
+ * sinks and fades out, and the page is checked only after that: mid fade, its
+ * colors blend.
+ */
+async function snacksGone(root: HTMLElement): Promise<void> {
+	await waitFor(() => expect(deepQueryAll(root, '.snack-item')).toHaveLength(0))
+}
+
 /** The snacks currently open (popovers shown). */
 function openSnacks(root: HTMLElement): HTMLElement[] {
 	return deepQueryAll(root, '.snack-item').filter((el) =>
@@ -141,6 +150,7 @@ export const SaveFailed = {
 		// Closed only by the member.
 		await userEvent.click(within(snack).getByRole('button', { name: '閉じる' }))
 		await waitFor(() => expect(openSnacks(canvasElement)).toHaveLength(0))
+		await snacksGone(canvasElement)
 	},
 } satisfies Story
 
@@ -164,6 +174,7 @@ export const MemberRetries = {
 
 		await expect(retries).toBe(1)
 		await waitFor(() => expect(openSnacks(canvasElement)).toHaveLength(0))
+		await snacksGone(canvasElement)
 	},
 } satisfies Story
 

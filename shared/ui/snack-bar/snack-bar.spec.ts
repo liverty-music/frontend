@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const fakeSubscription = { dispose: vi.fn() }
 let subscribeHandler: ((e: unknown) => void) | undefined
@@ -18,354 +18,240 @@ vi.mock('aurelia', async (importOriginal) => {
 	}
 })
 
-import { Snack } from './snack'
+import { Snack, type SnackOptions } from './snack'
 import { SnackBar } from './snack-bar'
+
+const SPEC = 'components/infrastructure/fan/web/global/snack-bar'
 
 describe('SnackBar', () => {
 	let sut: SnackBar
 
+	/** Publish a snack as a sender does, through the event aggregator. */
+	function publish(message: string, options?: SnackOptions): Snack {
+		const snack = new Snack(message, 'info', options)
+		subscribeHandler?.(snack)
+		return snack
+	}
+
+	/** The shown snack's item reports that its exit motion has ended. */
+	function exit(): void {
+		const shown = sut.shown
+		if (shown) sut.onExited(shown)
+	}
+
+	/** The messages in the order they are shown, each after the last exits. */
+	function showOrder(): string[] {
+		const order: string[] = []
+		while (sut.shown) {
+			order.push(sut.shown.message)
+			sut.shown.handle?.dismiss()
+			exit()
+		}
+		return order
+	}
+
 	beforeEach(() => {
-		vi.useFakeTimers()
 		subscribeHandler = undefined
 		vi.clearAllMocks()
 		sut = new SnackBar()
-		Object.defineProperty(sut, 'containerElement', {
-			value: {
-				querySelector: vi.fn(() => ({
-					showPopover: vi.fn(),
-					hidePopover: vi.fn(),
-				})),
-			},
-			writable: true,
-		})
+		sut.attaching()
 	})
 
-	afterEach(() => {
-		vi.useRealTimers()
-		vi.restoreAllMocks()
-	})
-
-	describe('attaching', () => {
-		it('subscribes to Snack events', () => {
-			sut.attaching()
-
+	describe('lifecycle', () => {
+		it('subscribes to Snack events while attached', () => {
 			expect(fakeEa.subscribe).toHaveBeenCalledWith(Snack, expect.any(Function))
-		})
-	})
-
-	describe('detaching', () => {
-		it('disposes subscription', () => {
-			sut.attaching()
 			sut.detaching()
-
 			expect(fakeSubscription.dispose).toHaveBeenCalledOnce()
 		})
 	})
 
-	describe('show', () => {
-		// @spec components/infrastructure/fan/web/global/snack-bar "Snack display on event publish"
-		it('adds snack to the list on event', () => {
-			sut.attaching()
-			subscribeHandler?.(new Snack('Hello', 'info', { duration: 3000 }))
-			// Flush microtask for showPopover
-			vi.advanceTimersByTime(0)
+	// @spec components/infrastructure/fan/web/global/snack-bar "Snack display on event publish"
+	it('shows a published snack at once when none is shown', () => {
+		const snack = publish('Hello')
 
-			expect(sut.snacks).toHaveLength(1)
-			expect(sut.snacks[0].message).toBe('Hello')
-		})
-
-		it('assigns sequential IDs', () => {
-			sut.attaching()
-			subscribeHandler?.(new Snack('first', 'info', { duration: 3000 }))
-			subscribeHandler?.(new Snack('second', 'info', { duration: 3000 }))
-
-			expect(sut.snacks[0].id).toBe(0)
-			expect(sut.snacks[1].id).toBe(1)
-		})
+		expect(sut.snacks).toEqual([snack])
+		expect(sut.leaving).toBe(false)
 	})
 
-	describe('icon', () => {
-		it('shows the severity icon by default', () => {
-			sut.attaching()
-			subscribeHandler?.(new Snack('Saved', 'warning', { duration: 3000 }))
+	describe('one at a time', () => {
+		it(`@spec ${SPEC} "A second snack waits"`, () => {
+			publish('first')
+			publish('second')
 
-			expect(sut.snacks[0].icon).toBe('warning')
+			// Only the first is shown; the second waits.
+			expect(sut.snacks.map((s) => s.message)).toEqual(['first'])
+			sut.shown?.handle?.dismiss()
+			// Dismissed, it stays shown while its exit motion plays.
+			expect(sut.snacks.map((s) => s.message)).toEqual(['first'])
+			expect(sut.leaving).toBe(true)
+			exit()
+			expect(sut.snacks.map((s) => s.message)).toEqual(['second'])
+			expect(sut.leaving).toBe(false)
 		})
 
-		it('shows a custom icon instead of the severity icon', () => {
-			sut.attaching()
-			subscribeHandler?.(
-				new Snack('Update available', 'info', {
-					duration: 3000,
-					icon: 'rotate-ccw',
-				}),
-			)
-
-			expect(sut.snacks[0].icon).toBe('rotate-ccw')
-		})
-
-		// @spec components/infrastructure/fan/web/global/snack-bar "No leading icon"
-		it('shows no icon when the snack asks for none', () => {
-			sut.attaching()
-			subscribeHandler?.(
-				new Snack('Update available', 'info', { duration: 3000, icon: null }),
-			)
-
-			expect(sut.snacks[0].icon).toBe('')
-		})
-
-		it('carries the attention flag to the shown snack', () => {
-			sut.attaching()
-			subscribeHandler?.(new Snack('Plain', 'info', { duration: 3000 }))
-			subscribeHandler?.(
-				new Snack('Update', 'info', { duration: 3000, attention: true }),
-			)
-
-			expect(sut.snacks.map((s) => s.attention)).toEqual([false, true])
-		})
-	})
-
-	describe('replace', () => {
-		it('stacks snacks by default', () => {
-			sut.attaching()
-			subscribeHandler?.(new Snack('first'))
-			subscribeHandler?.(new Snack('second'))
-
-			expect(sut.snacks.map((s) => s.dismissed)).toEqual([false, false])
-		})
-
-		it('dismisses the shown snack when a new one arrives', () => {
-			const onDismiss = vi.fn()
-			sut.replace = true
-			sut.attaching()
-			subscribeHandler?.(new Snack('saved', 'info', { onDismiss }))
-			subscribeHandler?.(new Snack('copied'))
-
-			expect(onDismiss).toHaveBeenCalledOnce()
-			expect(sut.snacks.filter((s) => !s.dismissed)).toHaveLength(1)
-			expect(sut.snacks.find((s) => !s.dismissed)?.message).toBe('copied')
-		})
-	})
-
-	describe('limit', () => {
-		const shown = () =>
-			sut.snacks.filter((s) => !s.dismissed).map((s) => s.message)
-		const publish = (
-			message: string,
-			options?: ConstructorParameters<typeof Snack>[2],
-		) => subscribeHandler?.(new Snack(message, 'info', options))
-
-		beforeEach(() => {
-			sut.limit = 3
-			sut.attaching()
-		})
-
-		// @spec components/infrastructure/fan/web/global/snack-bar "Fourth snack"
-		it('dismisses the oldest of three snacks when a fourth arrives', () => {
-			publish('one')
-			publish('two')
-			publish('three')
-			publish('four')
-
-			expect(shown()).toEqual(['two', 'three', 'four'])
-		})
-
-		// @spec components/infrastructure/fan/web/global/snack-bar "Update snack stays"
-		it('keeps a snack that stays until the fan acts, and does not count it', () => {
-			publish('update', { duration: Number.POSITIVE_INFINITY })
-			publish('one')
-			publish('two')
-			publish('three')
-			publish('four')
-
-			expect(shown()).toEqual(['update', 'two', 'three', 'four'])
-		})
-
-		// @spec components/infrastructure/fan/web/global/snack-bar "Replacing an earlier snack"
-		it('replaces the visible snack with the same key', () => {
-			publish('other')
-			publish('artist-1 first', { replaceKey: 'hype:artist-1' })
-			publish('artist-1 second', { replaceKey: 'hype:artist-1' })
-
-			expect(shown()).toEqual(['other', 'artist-1 second'])
-		})
-
-		// @spec components/infrastructure/fan/web/global/snack-bar "An undo window is kept"
-		it('passes over a snack whose dismissal commits something while another can go', () => {
-			const commit = vi.fn()
-			publish('undo unfollow', {
-				onDismiss: commit,
-				action: { label: '取り消す', callback: () => {} },
-			})
+		it(`@spec ${SPEC} "Waiting snacks keep their order"`, () => {
 			publish('one')
 			publish('two')
 			publish('three')
 
-			expect(shown()).toEqual(['undo unfollow', 'two', 'three'])
-			expect(commit).not.toHaveBeenCalled()
+			expect(showOrder()).toEqual(['one', 'two', 'three'])
 		})
 
-		it('dismisses a committing snack when nothing else can make room', () => {
-			const commits = [vi.fn(), vi.fn(), vi.fn()]
-			for (const [i, onDismiss] of commits.entries()) {
-				publish(`undo ${i}`, { onDismiss })
-			}
-			publish('four')
-
-			expect(shown()).toEqual(['undo 1', 'undo 2', 'four'])
-			expect(commits[0]).toHaveBeenCalledOnce()
-		})
-
-		it('shows every snack without a limit', () => {
-			sut.limit = Number.POSITIVE_INFINITY
+		// @spec components/infrastructure/fan/web/global/snack-bar "Multiple simultaneous snacks"
+		it('never shows two snacks, however many are published', () => {
 			for (const m of ['1', '2', '3', '4', '5']) publish(m)
 
-			expect(shown()).toHaveLength(5)
+			expect(sut.snacks).toHaveLength(1)
+			expect(showOrder()).toEqual(['1', '2', '3', '4', '5'])
+		})
+
+		it(`@spec ${SPEC} "An undo window is kept"`, () => {
+			const commit = vi.fn()
+			publish('YOASOBIのフォローを解除しました', {
+				onDismiss: commit,
+				action: { label: '元に戻す', callback: () => {} },
+			})
+			publish('Vaundy: Home', { replaceKey: 'hype:vaundy' })
+
+			// The undo snack stays, with its action, until its own time ends.
+			expect(sut.shown?.message).toBe('YOASOBIのフォローを解除しました')
+			expect(sut.shown?.durationMs).toBe(10_000)
+			expect(commit).not.toHaveBeenCalled()
+			expect(showOrder()).toEqual([
+				'YOASOBIのフォローを解除しました',
+				'Vaundy: Home',
+			])
+			expect(commit).toHaveBeenCalledOnce()
 		})
 	})
 
-	describe('duration', () => {
-		/** Advance to just before `ms` and to `ms`, reporting dismissed state. */
-		function dismissedAround(ms: number): [boolean, boolean] {
-			vi.advanceTimersByTime(ms - 1)
-			const before = sut.snacks[0].dismissed
-			vi.advanceTimersByTime(1)
-			return [before, sut.snacks[0].dismissed]
-		}
+	describe('replaceKey', () => {
+		it(`@spec ${SPEC} "Replacing an earlier snack"`, () => {
+			const earlier = publish('artist-1 first', { replaceKey: 'hype:artist-1' })
+			publish('other')
+			publish('artist-1 second', { replaceKey: 'hype:artist-1' })
 
-		// @spec components/infrastructure/fan/web/global/snack-bar "Auto-dismiss after duration"
-		// @spec components/infrastructure/fan/web/global/snack-bar "Short message"
-		it('dismisses a short message without an action after 4 s', () => {
-			sut.attaching()
-			const message = 'パスキーを追加しました。'
-			expect([...message]).toHaveLength(12)
-			subscribeHandler?.(new Snack(message))
-			expect(dismissedAround(4000)).toEqual([false, true])
+			// The shown one is dismissed, and the new one comes next.
+			expect(sut.shown).toBe(earlier)
+			expect(sut.leaving).toBe(true)
+			exit()
+			expect(showOrder()).toEqual(['artist-1 second', 'other'])
 		})
 
-		it('keeps the short duration up to 30 characters', () => {
-			sut.attaching()
-			subscribeHandler?.(new Snack('あ'.repeat(30)))
-			expect(dismissedAround(4000)).toEqual([false, true])
-		})
+		it('replaces a waiting snack where it waits', () => {
+			const dropped = vi.fn()
+			publish('shown')
+			publish('artist-1 first', {
+				replaceKey: 'hype:artist-1',
+				onDismiss: dropped,
+			})
+			publish('other')
+			publish('artist-1 second', { replaceKey: 'hype:artist-1' })
 
-		// @spec components/infrastructure/fan/web/global/snack-bar "Long message"
-		it('dismisses a message longer than 30 characters after 10 s', () => {
-			sut.attaching()
-			const message = 'あ'.repeat(50)
-			subscribeHandler?.(new Snack(message))
-			expect(dismissedAround(10000)).toEqual([false, true])
-		})
-
-		it('counts characters as shown, not UTF-16 units', () => {
-			// 30 emoji are 60 UTF-16 units but 30 characters.
-			sut.attaching()
-			subscribeHandler?.(new Snack('🎫'.repeat(30)))
-			expect(dismissedAround(4000)).toEqual([false, true])
-		})
-
-		it('keeps a snack with an action for 10 s', () => {
-			sut.attaching()
-			subscribeHandler?.(
-				new Snack('Undo?', 'info', {
-					action: { label: 'Undo', callback: vi.fn() },
-				}),
-			)
-			expect(dismissedAround(10000)).toEqual([false, true])
-		})
-
-		// @spec components/infrastructure/fan/web/global/snack-bar "Snack with its own duration"
-		it("keeps a snack's own duration", () => {
-			sut.attaching()
-			subscribeHandler?.(
-				new Snack('long '.repeat(20), 'info', { duration: 2000 }),
-			)
-			subscribeHandler?.(
-				new Snack('Update available', 'info', {
-					duration: Number.POSITIVE_INFINITY,
-					action: { label: 'Reload', callback: vi.fn() },
-				}),
-			)
-			vi.advanceTimersByTime(2000)
-			expect(sut.snacks.map((s) => s.dismissed)).toEqual([true, false])
-			vi.advanceTimersByTime(60000)
-			expect(sut.snacks[1].dismissed).toBe(false)
-		})
-
-		it('uses the duration of each snack', () => {
-			sut.attaching()
-			subscribeHandler?.(new Snack('short', 'info', { duration: 4000 }))
-			subscribeHandler?.(new Snack('long', 'info', { duration: 10000 }))
-			subscribeHandler?.(
-				new Snack('retry', 'error', { duration: Number.POSITIVE_INFINITY }),
-			)
-
-			vi.advanceTimersByTime(4000)
-			expect(sut.snacks.map((s) => s.dismissed)).toEqual([true, false, false])
-			vi.advanceTimersByTime(6000)
-			expect(sut.snacks.map((s) => s.dismissed)).toEqual([true, true, false])
-			vi.advanceTimersByTime(60000)
-			expect(sut.snacks[2].dismissed).toBe(false)
-		})
-	})
-
-	describe('onAction', () => {
-		// @spec components/infrastructure/fan/web/global/snack-bar "Snack action button"
-		it('calls action callback and dismisses', () => {
-			const actionCallback = vi.fn()
-			sut.attaching()
-			subscribeHandler?.(
-				new Snack('undo', 'info', {
-					duration: 5000,
-					action: { label: 'Undo', callback: actionCallback },
-				}),
-			)
-
-			sut.onAction(sut.snacks[0])
-
-			expect(actionCallback).toHaveBeenCalledOnce()
-			expect(sut.snacks[0].dismissed).toBe(true)
+			expect(dropped).toHaveBeenCalledOnce()
+			expect(showOrder()).toEqual(['shown', 'artist-1 second', 'other'])
 		})
 	})
 
 	describe('handle', () => {
 		// @spec components/infrastructure/fan/web/global/snack-bar "Programmatic dismiss via handle"
-		it('dismisses at once, clears the timer and calls onDismiss once', () => {
+		it('makes a shown snack leave and calls onDismiss once', () => {
 			const onDismiss = vi.fn()
-			const hidePopover = vi.fn()
-			Object.defineProperty(sut, 'containerElement', {
-				value: {
-					querySelector: vi.fn(() => ({ showPopover: vi.fn(), hidePopover })),
-				},
-				writable: true,
-			})
-			sut.attaching()
-			const event = new Snack('Saved', 'info', { duration: 5000, onDismiss })
-			subscribeHandler?.(event)
+			const snack = publish('Saved', { onDismiss })
 
-			event.handle?.dismiss()
-			event.handle?.dismiss()
-			vi.advanceTimersByTime(5000)
+			snack.handle?.dismiss()
+			snack.handle?.dismiss()
 
-			expect(hidePopover).toHaveBeenCalledOnce()
-			expect(sut.snacks[0].dismissTimer).toBeNull()
+			expect(sut.leaving).toBe(true)
 			expect(onDismiss).toHaveBeenCalledOnce()
+		})
+
+		it(`@spec ${SPEC} "Dismissing a waiting snack"`, () => {
+			const onDismiss = vi.fn()
+			publish('shown')
+			const waiting = publish('waiting', { onDismiss })
+
+			waiting.handle?.dismiss()
+			waiting.handle?.dismiss()
+
+			expect(onDismiss).toHaveBeenCalledOnce()
+			expect(showOrder()).toEqual(['shown'])
+		})
+
+		// @spec components/infrastructure/fan/web/global/snack-bar "DOM cleanup after exit transition"
+		it('keeps a dismissed snack until its item reports the exit has ended', () => {
+			const snack = publish('Saved')
+			snack.handle?.dismiss()
+
+			expect(sut.snacks).toEqual([snack])
+			sut.onExited(snack)
+			expect(sut.snacks).toEqual([])
 		})
 	})
 
-	describe('onToggle', () => {
-		// @spec components/infrastructure/fan/web/global/snack-bar "DOM cleanup after exit transition"
-		it('removes the snack when its popover reports closed', () => {
-			sut.attaching()
-			subscribeHandler?.(new Snack('first', 'info', { duration: 3000 }))
-			subscribeHandler?.(new Snack('second', 'info', { duration: 3000 }))
-			const [first] = sut.snacks
+	describe('a snack that stays until the fan acts', () => {
+		const update = () =>
+			publish('新しいバージョンがあります', {
+				duration: Number.POSITIVE_INFINITY,
+				action: { label: '更新', callback: () => {} },
+			})
 
-			sut.onToggle({ newState: 'open' } as ToggleEvent, first)
-			expect(sut.snacks).toHaveLength(2)
-			sut.onToggle({ newState: 'closed' } as ToggleEvent, first)
+		it(`@spec ${SPEC} "The update snack gives way"`, () => {
+			const applied = vi.fn()
+			const snack = new Snack('新しいバージョンがあります', 'info', {
+				duration: Number.POSITIVE_INFINITY,
+				onDismiss: applied,
+				action: { label: '更新', callback: () => {} },
+			})
+			subscribeHandler?.(snack)
+			publish('BAND 1をフォローしました')
 
-			expect(sut.snacks.map((s) => s.message)).toEqual(['second'])
+			// It leaves without being dismissed.
+			expect(sut.shown).toBe(snack)
+			expect(sut.leaving).toBe(true)
+			exit()
+			expect(sut.shown?.message).toBe('BAND 1をフォローしました')
+			sut.shown?.handle?.dismiss()
+			exit()
+			// Back once nothing else is shown or waiting, never applied or lost.
+			expect(sut.shown).toBe(snack)
+			expect(sut.leaving).toBe(false)
+			expect(applied).not.toHaveBeenCalled()
+		})
+
+		it('waits behind every snack published while it is aside', () => {
+			update()
+			publish('one')
+			exit()
+			publish('two')
+
+			expect(showOrder()).toEqual(['one', 'two', '新しいバージョンがあります'])
+		})
+
+		it('does not come back once dismissed while aside', () => {
+			const snack = update()
+			publish('one')
+			snack.handle?.dismiss()
+			exit()
+
+			expect(showOrder()).toEqual(['one'])
+		})
+	})
+
+	describe('replace mode (the organizer console)', () => {
+		it('dismisses the shown and every waiting snack; the newest is next', () => {
+			sut.replace = true
+			const onDismiss = vi.fn()
+			publish('saved', { onDismiss })
+			const waiting = vi.fn()
+			publish('copied', { onDismiss: waiting })
+			publish('deleted')
+
+			expect(onDismiss).toHaveBeenCalledOnce()
+			expect(waiting).toHaveBeenCalledOnce()
+			expect(sut.leaving).toBe(true)
+			exit()
+			expect(showOrder()).toEqual(['deleted'])
 		})
 	})
 })

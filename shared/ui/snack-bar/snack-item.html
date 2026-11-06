@@ -1,0 +1,46 @@
+<!-- The host is the popover (snack-bar sets popover, role and class on it).
+     Inside, a horizontal scroller holds the surface between two empty
+     gutters; scroll snapping rests it in the middle, and a swipe that carries
+     it into a gutter dismisses it. -->
+<div
+  ref="swipe"
+  class="snack-swipe"
+  scroll.trigger="onScroll()"
+  scrollend.trigger="onScrollEnd()"
+  wheel.trigger="onWheel()"
+>
+  <div class="snack-gutter"></div>
+  <div
+    ref="surface"
+    class="snack-surface"
+    pointerdown.trigger="onPointerDown()"
+    pointerup.trigger="onPointerUp()"
+    pointercancel.trigger="onPointerUp()"
+  >
+    <svg-icon if.bind="icons && snack.icon" name.bind="snack.icon" class="snack-icon" data-icon.bind="snack.icon"></svg-icon>
+    <span class="snack-message"><au-slot name="message">${snack.message}</au-slot></span>
+    <!-- The fan app styles the action with its shared button (on-container,
+         on the coloured snack); the organizer console, which has no shared
+         button, styles `.snack-action-btn` itself. -->
+    <button
+      if.bind="snack.action"
+      type="button"
+      click.trigger="onAction()"
+      class="[ snack-action-btn button ] [ pressable ]"
+      data-variant="on-container"
+      data-attention.bind="snack.attention || null"
+    ><au-slot name="action">${snack.action.label}</au-slot></button>
+    <button
+      if.bind="dismissible"
+      type="button"
+      click.trigger="onClose()"
+      class="snack-close-btn"
+      aria-label.bind="closeLabel"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path>
+      </svg>
+    </button>
+  </div>
+  <div class="snack-gutter"></div>
+</div>
