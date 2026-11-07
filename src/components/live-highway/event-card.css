@@ -1,3 +1,4 @@
+/* stylelint-disable no-unknown-custom-properties -- --artist-hue is set inline by the template from the concert data */
 @layer block {
 	@scope (event-card) {
 		:scope {

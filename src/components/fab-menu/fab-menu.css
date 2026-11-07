@@ -1,3 +1,4 @@
+/* stylelint-disable no-unknown-custom-properties -- each item's --i and --n are set inline by the template */
 @layer block {
 	@scope (fab-menu) {
 		:scope {

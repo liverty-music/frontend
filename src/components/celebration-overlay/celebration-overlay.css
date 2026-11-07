@@ -1,3 +1,4 @@
+/* stylelint-disable no-unknown-custom-properties -- each piece's --_dx, --_dy, --_size, --_spin, --_duration, --_delay and --_color are set inline by the template */
 @layer block {
 	@scope (celebration-overlay) {
 		:scope {

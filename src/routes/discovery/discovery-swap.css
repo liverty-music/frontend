@@ -24,6 +24,7 @@
 			grid-area: bubbles;
 			place-self: end start;
 
+			/* stylelint-disable-next-line no-unknown-custom-properties -- discovery-route.css sets it on .discovery-layout */
 			margin-block-end: var(--orb-floor);
 			margin-inline-start: calc(50% + var(--orb-max-r) + var(--space-s));
 		}

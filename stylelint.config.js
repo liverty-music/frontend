@@ -1,32 +1,12 @@
-import { fileURLToPath } from 'node:url'
-import { definedColorTokens } from './stylelint-plugin-cube-css/lib/utils/defined-color-tokens.js'
-
-/** The --color-* tokens an app's token stylesheet defines. */
-const tokens = (path) =>
-	definedColorTokens(fileURLToPath(new URL(path, import.meta.url)))
-
 /** @type {import('stylelint').Config} */
 export default {
 	extends: ['stylelint-config-standard', 'stylelint-config-clean-order'],
-	plugins: ['stylelint-use-logical', './stylelint-plugin-cube-css/index.js'],
+	plugins: ['./stylelint-plugin-cube-css/index.js'],
 	rules: {
 		'import-notation': null,
 
 		// Allow token names like --step--1 (negative step scale).
 		'custom-property-pattern': null,
-
-		'at-rule-no-unknown': [
-			true,
-			{
-				ignoreAtRules: [
-					'layer',
-					'container',
-					'starting-style',
-					'property',
-					'scope',
-				],
-			},
-		],
 
 		'function-no-unknown': [
 			true,
@@ -40,11 +20,10 @@ export default {
 		'color-no-hex': true,
 
 		// Enforce CSS Logical Properties over physical properties.
-		// Autofix-capable: `stylelint --fix` converts physical → logical automatically.
-		'csstools/use-logical': [
-			'always',
+		'property-layout-mappings': [
+			'flow-relative',
 			{
-				except: [
+				ignoreProperties: [
 					// Images, videos, and canvas elements have physically fixed aspect ratios.
 					// Their dimensions are intrinsic to the media, not to the writing direction,
 					// so physical width/height is appropriate here.
@@ -52,9 +31,21 @@ export default {
 					'height',
 					'max-width',
 					'max-height',
+					// stylelint-use-logical, which this rule replaced, accepted these too.
+					// The rule objects to multi-value shorthands and axis longhands, which
+					// behave the same in the horizontal writing mode every app uses.
+					'padding',
+					'margin',
+					'inset',
+					'/^overflow/',
+					'/^overscroll-behavior/',
 				],
 			},
 		],
+
+		// A var() resolves to nothing when no stylesheet defines it. A property set
+		// inline by a template is declared by a described disable in its stylesheet.
+		'no-unknown-custom-properties': true,
 
 		'property-disallowed-list': [
 			// z-index is not a logical/physical property concern — it's banned to enforce
@@ -98,10 +89,6 @@ export default {
 		'cube/prefer-vi-over-vw': true,
 		'cube/require-container-name': true,
 		'cube/prefer-color-mix': true,
-		'cube/no-undefined-color-token': [
-			true,
-			{ tokens: tokens('./src/styles/tokens.css') },
-		],
 	},
 	overrides: [
 		{
@@ -115,31 +102,25 @@ export default {
 		},
 		// Each self-contained entry declares its own tokens.
 		{
+			files: ['src/**/*.css', 'shared/**/*.css'],
+			referenceFiles: ['src/styles/*.css', 'shared/styles/*.css'],
+		},
+		{
 			files: ['admin/**/*.css'],
-			rules: {
-				'cube/no-undefined-color-token': [
-					true,
-					{ tokens: tokens('./admin/styles/main.css') },
-				],
-			},
+			referenceFiles: ['admin/styles/main.css'],
 		},
 		{
 			files: ['reception/**/*.css'],
-			rules: {
-				'cube/no-undefined-color-token': [
-					true,
-					{ tokens: tokens('./reception/styles/main.css') },
-				],
-			},
+			referenceFiles: ['reception/styles/main.css'],
 		},
 		{
 			files: ['organizer/**/*.css'],
-			rules: {
-				'cube/no-undefined-color-token': [
-					true,
-					{ tokens: tokens('./organizer/styles/tokens.css') },
-				],
-			},
+			referenceFiles: [
+				'organizer/styles/*.css',
+				'shared/styles/*.css',
+				// Defines --page-inline-padding, which every screen inherits.
+				'organizer/organizer-shell/organizer-shell.css',
+			],
 		},
 	],
 }
