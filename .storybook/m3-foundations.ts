@@ -39,6 +39,9 @@ const sample = (root: ParentNode, name: string): HTMLElement => {
 
 /** Title-large is 22 px on a 28 px line at a narrow and a wide window. */
 export async function expectTitleAtAnyWidth(root: ParentNode): Promise<void> {
+	// The window size stays with the browser tab for the stories that run after
+	// this one, so it goes back to what it was.
+	const { innerWidth, innerHeight } = window
 	try {
 		for (const width of [360, 1280]) {
 			await page.viewport(width, 800)
@@ -47,7 +50,7 @@ export async function expectTitleAtAnyWidth(root: ParentNode): Promise<void> {
 			expect(style.lineHeight, `at ${width} px`).toBe('28px')
 		}
 	} finally {
-		await page.viewport(1280, 800)
+		await page.viewport(innerWidth, innerHeight)
 	}
 }
 
