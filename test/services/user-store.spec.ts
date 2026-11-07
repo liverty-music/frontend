@@ -7,8 +7,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { IUserRpcClient } from '../../src/adapter/rpc/client/user-client'
 import type { User } from '../../src/entities/user'
 import { IAuthService } from '../../src/services/auth-service'
-import { SignedOut } from '../../src/services/events/signed-out'
 import { HomeChanged } from '../../src/services/events/home-changed'
+import { SignedOut } from '../../src/services/events/signed-out'
 import { IUserStore, UserStore } from '../../src/services/user-store'
 import { createTestContainer } from '../helpers/create-container'
 import { createMockAuth } from '../helpers/mock-auth'
@@ -160,16 +160,12 @@ describe('UserStore', () => {
 			expect(store.currentLanguage).toBe('en')
 		})
 
-		// @spec components/infrastructure/fan/web/global/i18n "NULL preferred_language surfaced and backfilled"
-		it('falls back to the i18n mirror and does NOT backfill when preferredLanguage is NULL', () => {
+		it('falls back to the i18n mirror until the account has loaded', () => {
 			const { store, rpc } = build({ auth: makeAuth(true) })
-			store.current = { id: 'u' } as User // no preferredLanguage
 
 			// Surfaces the active locale ('ja' from the mock i18n) ...
 			expect(store.currentLanguage).toBe('ja')
-			// ... and is a PURE projection: the backfill RPC is owned by
-			// user-hydration-task, never the getter (no retry storm).
-			store.currentLanguage
+			// ... and is a PURE projection: reading it issues no RPC.
 			expect(rpc.setPreferredLanguage).not.toHaveBeenCalled()
 		})
 	})

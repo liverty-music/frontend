@@ -1,7 +1,7 @@
 import type { IContainer } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ILocalStorage } from '../adapter/storage/local-storage'
-import { SessionKeys, StorageKeys } from '../constants/storage-keys'
+import { StorageKeys } from '../constants/storage-keys'
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
 
@@ -131,7 +131,7 @@ function makeContainer(): IContainer {
 	} as unknown as IContainer
 }
 
-// Flush microtasks so the fire-and-forget backfill promise has a chance to
+// Flush microtasks so a fire-and-forget promise has a chance to
 // resolve before assertions run.
 async function flushMicrotasks(): Promise<void> {
 	await Promise.resolve()
@@ -148,8 +148,6 @@ describe('runUserHydration', () => {
 		i18nState.locale = 'en'
 		lsMap.clear()
 		lsMap.set(StorageKeys.language, 'en')
-		// Reset the per-tab backfill flag so tests start from a clean state.
-		sessionStorage.removeItem(SessionKeys.languageBackfillAttempted)
 	})
 
 	it('skips hydration when the user is not authenticated', async () => {
@@ -200,6 +198,8 @@ describe('runUserHydration', () => {
 
 	// @spec components/infrastructure/fan/web/global/i18n "i18n locale aligns with backend value on every authenticated render"
 	// @spec components/infrastructure/fan/web/global/i18n "Saved language differs from the account's language"
+	// @spec components/infrastructure/fan/web/global/i18n "Account language used as is"
+	// @spec stories/restore-session-on-cold-start "Account language kept on a device in another language"
 	it('applies preferred_language to i18n when present and differs from clientLocale, and saves it', async () => {
 		mockUserStore.current = { id: 'user-1', preferredLanguage: 'ja' }
 		mockUserStore.ensureLoaded.mockImplementationOnce(async () => {
@@ -244,57 +244,6 @@ describe('runUserHydration', () => {
 		expect(lsMap.get(StorageKeys.language)).toBe('en')
 	})
 
-	// @spec components/infrastructure/fan/web/global/i18n "Hydrated profile has no preferred language"
-	// @spec components/infrastructure/fan/web/global/i18n "NULL preferred_language surfaced and backfilled"
-	it('backfills preferred_language fire-and-forget when absent in hydrated profile', async () => {
-		mockUserStore.current = { id: 'user-1', preferredLanguage: undefined }
-		mockUserStore.ensureLoaded.mockImplementationOnce(async () => {
-			return mockUserStore.current
-		})
-		i18nState.locale = 'ja'
-		lsMap.set(StorageKeys.language, 'ja')
-
-		await runUserHydration(makeContainer())
-		await flushMicrotasks()
-
-		expect(mockUserStore.updatePreferredLanguage).toHaveBeenCalledWith('ja')
-		// The User now carries the value sent, and the active locale stays.
-		expect(mockUserStore.current?.preferredLanguage).toBe('ja')
-		expect(mockI18n.setLocale).not.toHaveBeenCalled()
-		expect(i18nState.locale).toBe('ja')
-		// The saved language is kept after a successful backfill.
-		expect(lsMap.get(StorageKeys.language)).toBe('ja')
-		expect(sessionStorage.getItem(SessionKeys.languageBackfillAttempted)).toBe(
-			'1',
-		)
-	})
-
-	// @spec components/infrastructure/fan/web/global/i18n "Backfill RPC failure is non-fatal"
-	it('preserves localStorage and clears the session flag when backfill RPC fails so next session retries', async () => {
-		mockUserStore.current = { id: 'user-1', preferredLanguage: undefined }
-		mockUserStore.ensureLoaded.mockImplementationOnce(async () => {
-			return mockUserStore.current
-		})
-		mockUserStore.updatePreferredLanguage.mockRejectedValueOnce(
-			new Error('network'),
-		)
-
-		// Non-fatal: hydration resolves and the current locale stays in place.
-		await expect(runUserHydration(makeContainer())).resolves.toBeUndefined()
-		await flushMicrotasks()
-		expect(mockWarn).toHaveBeenCalledWith(
-			expect.stringContaining('Failed to backfill preferred_language'),
-			expect.anything(),
-		)
-		expect(i18nState.locale).toBe('en')
-
-		expect(lsMap.get(StorageKeys.language)).toBe('en')
-		// Optimistic flag was rolled back on failure.
-		expect(
-			sessionStorage.getItem(SessionKeys.languageBackfillAttempted),
-		).toBeNull()
-	})
-
 	// @spec components/infrastructure/fan/web/global/i18n "Sign-out after a reload keeps the language"
 	it('keeps localStorage["language"] after hydration so a later sign-out opens in it', async () => {
 		// A reload of a signed-in session: the key already holds the account's
@@ -311,32 +260,6 @@ describe('runUserHydration', () => {
 
 		expect(mockLocalStorage.removeItem).not.toHaveBeenCalled()
 		expect(lsMap.get(StorageKeys.language)).toBe('ja')
-	})
-
-	it('does NOT re-fire backfill on a second call when the session flag is set', async () => {
-		// First call: row has no preferred_language → backfill runs, flag set.
-		mockUserStore.current = { id: 'user-1', preferredLanguage: undefined }
-		mockUserStore.ensureLoaded.mockResolvedValue(mockUserStore.current)
-		i18nState.locale = 'ja'
-
-		await runUserHydration(makeContainer())
-		await flushMicrotasks()
-
-		expect(mockUserStore.updatePreferredLanguage).toHaveBeenCalledTimes(1)
-		expect(sessionStorage.getItem(SessionKeys.languageBackfillAttempted)).toBe(
-			'1',
-		)
-
-		// Second call in the same tab: even though the DB column is still NULL
-		// (we simulate a stuck row), the flag prevents another write.
-		mockUserStore.current = { id: 'user-1', preferredLanguage: undefined }
-		mockUserStore.ensureLoaded.mockResolvedValue(mockUserStore.current)
-
-		await runUserHydration(makeContainer())
-		await flushMicrotasks()
-
-		// Still 1 — second backfill blocked by the session flag.
-		expect(mockUserStore.updatePreferredLanguage).toHaveBeenCalledTimes(1)
 	})
 
 	it('does NOT call ensureLoaded until auth.ready resolves (deferred-ready ordering invariant)', async () => {

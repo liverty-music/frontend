@@ -12,14 +12,10 @@ export function userFrom(proto: ProtoUser): User {
 					level2: home.level2 || undefined,
 				}
 			: undefined,
-		// Pass through whatever the backend stored — coercing unsupported
-		// values to `undefined` here would let the hydration backfill path
-		// overwrite the stored value (the user's true preference) with the
-		// client's detected locale, silently destroying data. The settings
-		// UI handles "current locale not in SUPPORTED_LANGUAGES" by not
+		// Pass through whatever the backend stored. The settings UI handles "current locale not in SUPPORTED_LANGUAGES" by not
 		// highlighting any selector option, which is the right "show, don't
 		// hide" posture for an unexpected DB state.
-		preferredLanguage: proto.preferredLanguage || undefined,
+		preferredLanguage: proto.preferredLanguage,
 		fullName: proto.fullName?.value || undefined,
 		phoneNumber: proto.phoneNumber?.value || undefined,
 	}

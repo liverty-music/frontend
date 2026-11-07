@@ -22,7 +22,6 @@ describe('storage names', () => {
 
 	it('names the sessionStorage keys', () => {
 		expect(SessionKeys).toEqual({
-			languageBackfillAttempted: 'lang.backfillAttempted',
 			followReconcileAttempted: 'follow.reconcileAttempted',
 		})
 	})

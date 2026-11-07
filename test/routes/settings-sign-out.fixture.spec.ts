@@ -64,6 +64,7 @@ describe('Sign-out from the settings screen (fixture)', () => {
 		const userRpc = {
 			get: vi.fn(async () => ({
 				id: 'user-a',
+				preferredLanguage: 'ja',
 				fullName: '山田 花子',
 				phoneNumber: '+819012345678',
 			})),

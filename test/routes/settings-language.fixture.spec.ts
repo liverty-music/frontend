@@ -54,7 +54,7 @@ const BottomSheetStub = CustomElement.define(
 interface Options {
 	readonly authenticated: boolean
 	readonly lng?: 'ja' | 'en'
-	/** The signed-in fan's saved language; absent for a NULL legacy row. */
+	/** The signed-in fan's language; absent while the account has not loaded. */
 	readonly preferredLanguage?: string
 	readonly setPreferredLanguage?: (lang: string) => Promise<unknown>
 }
@@ -115,12 +115,11 @@ async function render(o: Options) {
 		.build().started
 	const container = fixture.container
 	const userStore = container.get(IUserStore)
-	if (o.authenticated) {
+	// Without a language the account has not loaded yet.
+	if (o.authenticated && o.preferredLanguage) {
 		userStore.current = {
 			id: 'user-1',
-			...(o.preferredLanguage
-				? { preferredLanguage: o.preferredLanguage }
-				: {}),
+			preferredLanguage: o.preferredLanguage,
 		} as never
 	}
 	await tasksSettled()
@@ -191,16 +190,16 @@ describe('Settings language and home area (fixture)', () => {
 		await r.fixture.stop(true)
 	})
 
-	// @spec components/infrastructure/fan/web/route/settings "Displaying language option before backfill completes"
+	// @spec components/infrastructure/fan/web/route/settings "Displaying language option before the account loads"
 	it('shows the active locale until the saved language arrives, then follows it', async () => {
 		const getItem = vi.spyOn(Storage.prototype, 'getItem')
 		const r = await render({ authenticated: true, lng: 'en' })
 
-		// No saved language yet (NULL row): the active locale is shown.
+		// The account has no language yet: the active locale is shown.
 		expect(r.languageRow()).toBe('English')
 		expect(getItem).not.toHaveBeenCalledWith(StorageKeys.language)
 
-		// The backfill response populates the User; the row re-evaluates.
+		// The account arrives; the row re-evaluates.
 		r.userStore.current = { id: 'user-1', preferredLanguage: 'ja' } as never
 		await tasksSettled()
 		expect(r.languageRow()).toBe('日本語')
