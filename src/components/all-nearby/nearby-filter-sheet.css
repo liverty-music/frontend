@@ -17,11 +17,6 @@
 		.filter-rows {
 			display: grid;
 			gap: var(--space-2xs);
-
-			margin: 0;
-			padding: 0;
-
-			list-style: none;
 		}
 
 		/* One row per filter: what it is, its value, and a caret to its own

@@ -3,7 +3,6 @@ import {
 	type Meta,
 	type StoryObj,
 } from '@aurelia/storybook'
-import { CustomElement } from 'aurelia'
 import { expect, userEvent, waitFor, within } from 'storybook/test'
 import { NearbyFilterSheet } from './nearby-filter-sheet'
 
@@ -19,9 +18,20 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
+/**
+ * The sheet with a button that opens it, as the launcher's filter action does,
+ * so the sheet can be opened again after the play function has closed it.
+ */
 const render: Story['render'] = (args) =>
 	defineAureliaStory({
-		template: `<nearby-filter-sheet area-name.bind="areaName" period-label.bind="periodLabel"></nearby-filter-sheet>`,
+		template: `
+			<button type="button" click.trigger="sheet.open()">Open filters</button>
+			<nearby-filter-sheet
+				component.ref="sheet"
+				area-name.bind="areaName"
+				period-label.bind="periodLabel"
+			></nearby-filter-sheet>
+		`,
 		props: args,
 		register: [NearbyFilterSheet],
 	})
@@ -35,8 +45,8 @@ function play(area: string, period: string): Story['play'] {
 	return async ({ canvasElement }) => {
 		const host = canvasElement.querySelector('nearby-filter-sheet')
 		if (!host) throw new Error('not rendered')
-		CustomElement.for<NearbyFilterSheet>(host).viewModel.open()
 		const canvas = within(canvasElement)
+		await userEvent.click(canvas.getByRole('button', { name: 'Open filters' }))
 		const areaRow = canvas.getByRole('button', {
 			name: new RegExp(`エリア\\s*${area}`),
 		})
@@ -47,6 +57,13 @@ function play(area: string, period: string): Story['play'] {
 			expect(areaRow).toBeVisible()
 			expect(periodRow).toBeVisible()
 		})
+		// The sheet's `flow` composition spaces the rows from the title; a
+		// margin set on the list in the block layer would cancel it.
+		const title = canvas.getByRole('heading', { name: 'エリアと期間' })
+		const list = canvas.getByRole('list')
+		await expect(
+			list.getBoundingClientRect().top - title.getBoundingClientRect().bottom,
+		).toBeGreaterThanOrEqual(8)
 
 		let chosen = ''
 		host.addEventListener('filter-row-chosen', (e) => {
