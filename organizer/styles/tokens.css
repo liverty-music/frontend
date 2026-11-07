@@ -252,6 +252,7 @@
 		--md-sys-color-on-warning-container: var(--md-color-on-warning-container);
 		--md-sys-color-neutral-container: var(--md-color-neutral-container);
 		--md-sys-color-on-neutral-container: var(--md-color-on-neutral-container);
+		--md-sys-color-shadow: oklch(0% 0 0deg);
 
 		/* Corner shapes at the Material 3 values (ShapeTokens.kt). */
 		--md-sys-shape-corner-none: 0;
@@ -264,5 +265,9 @@
 		--md-sys-shape-corner-extra-large-increased: 32px;
 		--md-sys-shape-corner-extra-extra-large: 48px;
 		--md-sys-shape-corner-full: 9999px;
+
+		/* A calm work tool: no brand face, every style uses the plain one. */
+		--md-ref-typeface-brand: var(--md-ref-typeface-plain);
+		--md-ref-typeface-mono: var(--font-mono);
 	}
 }

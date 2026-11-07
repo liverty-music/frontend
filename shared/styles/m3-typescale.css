@@ -1,0 +1,158 @@
+/*
+ * Material 3 type styles as utilities, shared by the fan app and the organizer
+ * console (imported by each app's main.css and by organizer/styles/shared.css,
+ * so the classes reach every console shadow root). A template gives text its
+ * style with one class; a component's stylesheet sets no font. Each class sets
+ * two properties, the most a utility may (cube/utility-single-property).
+ */
+@layer utility {
+	.md-typescale-display-large {
+		font: var(--md-sys-typescale-display-large);
+		letter-spacing: var(--md-sys-typescale-display-large-tracking);
+	}
+
+	.md-typescale-display-large-emphasized {
+		font: var(--md-sys-typescale-display-large-emphasized);
+		letter-spacing: var(--md-sys-typescale-display-large-tracking);
+	}
+
+	.md-typescale-display-medium {
+		font: var(--md-sys-typescale-display-medium);
+		letter-spacing: var(--md-sys-typescale-display-medium-tracking);
+	}
+
+	.md-typescale-display-medium-emphasized {
+		font: var(--md-sys-typescale-display-medium-emphasized);
+		letter-spacing: var(--md-sys-typescale-display-medium-tracking);
+	}
+
+	.md-typescale-display-small {
+		font: var(--md-sys-typescale-display-small);
+		letter-spacing: var(--md-sys-typescale-display-small-tracking);
+	}
+
+	.md-typescale-display-small-emphasized {
+		font: var(--md-sys-typescale-display-small-emphasized);
+		letter-spacing: var(--md-sys-typescale-display-small-tracking);
+	}
+
+	.md-typescale-headline-large {
+		font: var(--md-sys-typescale-headline-large);
+		letter-spacing: var(--md-sys-typescale-headline-large-tracking);
+	}
+
+	.md-typescale-headline-large-emphasized {
+		font: var(--md-sys-typescale-headline-large-emphasized);
+		letter-spacing: var(--md-sys-typescale-headline-large-tracking);
+	}
+
+	.md-typescale-headline-medium {
+		font: var(--md-sys-typescale-headline-medium);
+		letter-spacing: var(--md-sys-typescale-headline-medium-tracking);
+	}
+
+	.md-typescale-headline-medium-emphasized {
+		font: var(--md-sys-typescale-headline-medium-emphasized);
+		letter-spacing: var(--md-sys-typescale-headline-medium-tracking);
+	}
+
+	.md-typescale-headline-small {
+		font: var(--md-sys-typescale-headline-small);
+		letter-spacing: var(--md-sys-typescale-headline-small-tracking);
+	}
+
+	.md-typescale-headline-small-emphasized {
+		font: var(--md-sys-typescale-headline-small-emphasized);
+		letter-spacing: var(--md-sys-typescale-headline-small-tracking);
+	}
+
+	.md-typescale-title-large {
+		font: var(--md-sys-typescale-title-large);
+		letter-spacing: var(--md-sys-typescale-title-large-tracking);
+	}
+
+	.md-typescale-title-large-emphasized {
+		font: var(--md-sys-typescale-title-large-emphasized);
+		letter-spacing: var(--md-sys-typescale-title-large-tracking);
+	}
+
+	.md-typescale-title-medium {
+		font: var(--md-sys-typescale-title-medium);
+		letter-spacing: var(--md-sys-typescale-title-medium-tracking);
+	}
+
+	.md-typescale-title-medium-emphasized {
+		font: var(--md-sys-typescale-title-medium-emphasized);
+		letter-spacing: var(--md-sys-typescale-title-medium-tracking);
+	}
+
+	.md-typescale-title-small {
+		font: var(--md-sys-typescale-title-small);
+		letter-spacing: var(--md-sys-typescale-title-small-tracking);
+	}
+
+	.md-typescale-title-small-emphasized {
+		font: var(--md-sys-typescale-title-small-emphasized);
+		letter-spacing: var(--md-sys-typescale-title-small-tracking);
+	}
+
+	.md-typescale-body-large {
+		font: var(--md-sys-typescale-body-large);
+		letter-spacing: var(--md-sys-typescale-body-large-tracking);
+	}
+
+	.md-typescale-body-large-emphasized {
+		font: var(--md-sys-typescale-body-large-emphasized);
+		letter-spacing: var(--md-sys-typescale-body-large-tracking);
+	}
+
+	.md-typescale-body-medium {
+		font: var(--md-sys-typescale-body-medium);
+		letter-spacing: var(--md-sys-typescale-body-medium-tracking);
+	}
+
+	.md-typescale-body-medium-emphasized {
+		font: var(--md-sys-typescale-body-medium-emphasized);
+		letter-spacing: var(--md-sys-typescale-body-medium-tracking);
+	}
+
+	.md-typescale-body-small {
+		font: var(--md-sys-typescale-body-small);
+		letter-spacing: var(--md-sys-typescale-body-small-tracking);
+	}
+
+	.md-typescale-body-small-emphasized {
+		font: var(--md-sys-typescale-body-small-emphasized);
+		letter-spacing: var(--md-sys-typescale-body-small-tracking);
+	}
+
+	.md-typescale-label-large {
+		font: var(--md-sys-typescale-label-large);
+		letter-spacing: var(--md-sys-typescale-label-large-tracking);
+	}
+
+	.md-typescale-label-large-emphasized {
+		font: var(--md-sys-typescale-label-large-emphasized);
+		letter-spacing: var(--md-sys-typescale-label-large-tracking);
+	}
+
+	.md-typescale-label-medium {
+		font: var(--md-sys-typescale-label-medium);
+		letter-spacing: var(--md-sys-typescale-label-medium-tracking);
+	}
+
+	.md-typescale-label-medium-emphasized {
+		font: var(--md-sys-typescale-label-medium-emphasized);
+		letter-spacing: var(--md-sys-typescale-label-medium-tracking);
+	}
+
+	.md-typescale-label-small {
+		font: var(--md-sys-typescale-label-small);
+		letter-spacing: var(--md-sys-typescale-label-small-tracking);
+	}
+
+	.md-typescale-label-small-emphasized {
+		font: var(--md-sys-typescale-label-small-emphasized);
+		letter-spacing: var(--md-sys-typescale-label-small-tracking);
+	}
+}

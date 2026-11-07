@@ -2,9 +2,10 @@ import { describe, expect, it } from 'vitest'
 import m3Sys from '../../shared/styles/m3-sys.css?raw'
 
 /**
- * The state, motion and easing tokens are defined once, in
- * shared/styles/m3-sys.css, and both the fan app and the organizer console
- * load that file. Colors are not shared: each app keeps its own values.
+ * The state, motion, type, elevation, focus ring and touch target tokens and
+ * the plain typeface are defined once, in shared/styles/m3-sys.css, and both
+ * the fan app and the organizer console load that file. Colors, shapes and the
+ * brand typeface are not shared: each app keeps its own values.
  */
 
 const appCss = import.meta.glob<string>(
@@ -30,7 +31,8 @@ function withoutReducedMotion(css: string): string {
 	return start === -1 ? css : css.slice(0, start)
 }
 
-const SHARED_PREFIX = /^--md-sys-(state|motion)-/
+const SHARED_PREFIX =
+	/^--md-(sys-(state|motion|typescale|elevation)-|sys-target-size$|ref-typeface-plain$)/
 
 describe('shared M3 system tokens', () => {
 	it('@spec components/infrastructure/fan/web/global/design-tokens "One edit applies to both apps"', () => {
@@ -84,11 +86,26 @@ describe('shared M3 system tokens', () => {
 	})
 
 	it('@spec components/infrastructure/fan/web/global/design-tokens "Colors stay per app"', () => {
-		// The shared file carries only state and motion tokens: no color, type
-		// or shape value that one app could change for the other.
+		// The shared file carries no color, shape or brand typeface that one app
+		// could change for the other: only the shared families.
 		const shared = declarations(m3Sys)
 		expect(shared.length).toBeGreaterThan(0)
 		expect(shared.filter((d) => !SHARED_PREFIX.test(d.name))).toEqual([])
+
+		// Each app names its own shadow color, corner shapes and brand typeface.
+		for (const file of [
+			'/src/styles/tokens.css',
+			'/organizer/styles/tokens.css',
+		]) {
+			const names = declarations(appCss[file]).map((d) => d.name)
+			for (const name of [
+				'--md-sys-color-shadow',
+				'--md-sys-shape-corner-extra-large',
+				'--md-ref-typeface-brand',
+			]) {
+				expect(names, `${file} ${name}`).toContain(name)
+			}
+		}
 
 		// Each app gives the shared role name its own value: the fan app's dark
 		// navy surface, the console's light/dark pair. Neither reaches the other.

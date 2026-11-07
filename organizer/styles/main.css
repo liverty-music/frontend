@@ -4,9 +4,10 @@
  * console shares only the M3 system tokens (state layers, motion) with the fan
  * app; its color roles, type scale, shape and space live in `./tokens.css`.
  */
-@layer reset, tokens, global, composition, block;
+@layer reset, tokens, global, composition, utility, block;
 
-/* State-layer opacities, durations and easings shared with the fan app. */
+/* State layers, motion, type styles, elevation, focus ring and touch target
+   shared with the fan app. */
 @import "../../shared/styles/m3-sys.css";
 
 /* The console's color roles, type scale, shape and space. */

@@ -382,6 +382,7 @@
 		--md-sys-color-outline: var(--md-color-outline);
 		--md-sys-color-outline-variant: var(--md-color-outline-variant);
 		--md-sys-color-scrim: var(--md-color-scrim);
+		--md-sys-color-shadow: oklch(0% 0 0deg);
 
 		/* Corner shapes at the Material 3 values (ShapeTokens.kt). */
 		--md-sys-shape-corner-none: 0;
@@ -394,5 +395,9 @@
 		--md-sys-shape-corner-extra-large-increased: 32px;
 		--md-sys-shape-corner-extra-extra-large: 48px;
 		--md-sys-shape-corner-full: 9999px;
+
+		/* Display and headline styles: Righteous, with the plain face behind it
+		   for the characters it lacks. */
+		--md-ref-typeface-brand: "Righteous", var(--md-ref-typeface-plain);
 	}
 }
