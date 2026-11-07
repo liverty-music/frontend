@@ -6,6 +6,7 @@ import { CustomElement, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AppShell } from '../src/app-shell'
 import { BottomNavBar } from '../src/components/bottom-nav-bar/bottom-nav-bar'
+import { NotificationBell } from '../src/components/notification-bell/notification-bell'
 import { PageHeader } from '../src/components/page-header/page-header'
 import { SvgIcon } from '../src/components/svg-icon/svg-icon'
 import { IAnalyticsService } from '../src/lib/analytics/analytics-service'
@@ -14,6 +15,7 @@ import { IBottomSheetTracker } from '../src/services/bottom-sheet-tracker'
 import { IErrorBoundaryService } from '../src/services/error-boundary-service'
 import { IFabMenuService } from '../src/services/fab-menu-service'
 import { INotificationManager } from '../src/services/notification-manager'
+import { INotificationStore } from '../src/services/notification-store'
 import { IOnboardingService } from '../src/services/onboarding-service'
 import { IPromptCoordinator } from '../src/services/prompt-coordinator'
 import { IPushService } from '../src/services/push-service'
@@ -70,6 +72,10 @@ vi.mock(
 )
 vi.mock('../src/routes/passkeys/passkeys-route', stub('PasskeysRoute'))
 vi.mock(
+	'../src/routes/notifications/notifications-route',
+	stub('NotificationsRoute'),
+)
+vi.mock(
 	'../src/routes/delete-account/delete-account-route',
 	stub('DeleteAccountRoute'),
 )
@@ -93,10 +99,22 @@ describe('app-shell', () => {
 	interface ShellState {
 		isAuthenticated?: boolean
 		onboarding?: { isOnboarding: boolean; isCompleted: boolean }
+		unreadCount?: number
+	}
+
+	let notificationStore: {
+		unreadCount: number
+		refresh: ReturnType<typeof vi.fn>
+		markRead: ReturnType<typeof vi.fn>
 	}
 
 	async function renderShell(state: ShellState = {}) {
 		captureError = vi.fn()
+		notificationStore = {
+			unreadCount: state.unreadCount ?? 0,
+			refresh: vi.fn(async () => {}),
+			markRead: vi.fn(async () => {}),
+		}
 		const shell = createFixture(
 			CustomElement.getDefinition(AppShell).template as string,
 			AppShell,
@@ -115,13 +133,16 @@ describe('app-shell', () => {
 				}),
 				BottomNavBar,
 				PageHeader,
+				NotificationBell,
 				SvgIcon,
+				Registration.instance(INotificationStore, notificationStore),
 				Registration.instance(IErrorBoundaryService, {
 					captureError,
 					addBreadcrumb: vi.fn(),
 				}),
 				Registration.instance(IAuthService, {
 					isAuthenticated: state.isAuthenticated ?? false,
+					ready: Promise.resolve(),
 				}),
 				Registration.instance(IOnboardingService, {
 					isOnboarding: false,
@@ -470,6 +491,108 @@ describe('app-shell', () => {
 
 	// The shell decides whether the install banner is mounted; the banner then
 	// shows while the app is not installed (pwa-install-service.spec.ts).
+	describe('notification bell', () => {
+		const bell = () => host().querySelector('[data-testid="notification-bell"]')
+		const badge = () =>
+			host().querySelector('[data-testid="notification-bell-badge"]')
+		// A signed-in fan who has not finished onboarding: the install banner, whose cue
+		// restarts through getAnimations() (absent in jsdom), stays out of the shell.
+		const signedIn = {
+			isAuthenticated: true,
+			onboarding: { isOnboarding: false, isCompleted: false },
+		}
+
+		async function renderBellAt(state: ShellState) {
+			await fixture.stop(true)
+			fixture = await renderShell(state)
+			router = fixture.container.get(IRouter)
+			await go('tickets')
+		}
+
+		// @spec components/infrastructure/fan/web/global/page-header "Two unread"
+		it('shows the unread count as a badge', async () => {
+			await renderBellAt({ ...signedIn, unreadCount: 2 })
+			expect(badge()?.textContent).toBe('2')
+		})
+
+		// @spec components/infrastructure/fan/web/global/page-header "All read"
+		it('shows no badge when every notification is read', async () => {
+			await renderBellAt({ ...signedIn, unreadCount: 0 })
+			expect(bell()).not.toBeNull()
+			expect(badge()).toBeNull()
+		})
+
+		// @spec components/infrastructure/fan/web/global/page-header "Guest"
+		it('is not shown to a guest', async () => {
+			await go('discovery')
+			expect(headerTitle()).not.toBeNull()
+			expect(bell()).toBeNull()
+		})
+
+		// @spec components/infrastructure/fan/web/global/page-header "Open the center"
+		it('opens the notification center', async () => {
+			await renderBellAt(signedIn)
+			;(bell() as HTMLButtonElement).click()
+			await tasksSettled()
+			await vi.waitFor(() =>
+				expect(displayedRoute()).toBe('notifications-route'),
+			)
+		})
+
+		it('refreshes on start and when the app returns to the foreground', async () => {
+			await renderBellAt(signedIn)
+			await vi.waitFor(() =>
+				expect(notificationStore.refresh).toHaveBeenCalledTimes(1),
+			)
+			document.dispatchEvent(new Event('visibilitychange'))
+			expect(notificationStore.refresh).toHaveBeenCalledTimes(2)
+		})
+	})
+
+	describe('opening a push notification', () => {
+		const NOTIFICATION = '019a0000-0000-7000-8000-000000000001'
+
+		async function renderSignedIn(isAuthenticated: boolean) {
+			await fixture.stop(true)
+			window.history.replaceState(null, '', '/')
+			fixture = await renderShell({ isAuthenticated })
+			router = fixture.container.get(IRouter)
+			notificationStore.markRead.mockClear()
+		}
+
+		// @spec components/infrastructure/fan/web/global/service-worker "Open a lottery loss notification"
+		it('marks it read for a signed-in fan and removes the parameter', async () => {
+			await renderSignedIn(true)
+
+			await go(`tickets?notification=${NOTIFICATION}`)
+
+			await vi.waitFor(() =>
+				expect(notificationStore.markRead).toHaveBeenCalledWith(NOTIFICATION),
+			)
+			expect(displayedRoute()).toBe('tickets-route')
+			expect(window.location.search).toBe('')
+		})
+
+		// @spec components/infrastructure/fan/web/global/service-worker "Marking fails"
+		it('shows the page without waiting for the marking to finish', async () => {
+			await renderSignedIn(true)
+			notificationStore.markRead.mockReturnValue(new Promise(() => {}))
+
+			await go(`tickets?notification=${NOTIFICATION}`)
+
+			expect(displayedRoute()).toBe('tickets-route')
+		})
+
+		it('leaves it unread for a guest, and removes the parameter', async () => {
+			await renderSignedIn(false)
+
+			await go(`discovery?notification=${NOTIFICATION}`)
+
+			await vi.waitFor(() => expect(window.location.search).toBe(''))
+			expect(notificationStore.markRead).not.toHaveBeenCalled()
+		})
+	})
+
 	describe('install banner', () => {
 		const banner = () => host().querySelector('pwa-install-banner .pwa-banner')
 

@@ -429,6 +429,19 @@
 			}
 		}
 	},
+	"notifications": {
+		"signInRequired": "通知を見るにはログインが必要です。",
+		"title": "通知",
+		"loading": "読み込んでいます…",
+		"error": "通知を読み込めませんでした。",
+		"retry": "再読み込み",
+		"empty": "通知はまだありません。",
+		"unread": "未読",
+		"justNow": "たった今",
+		"minutesAgo": "{{count}}分前",
+		"hoursAgo": "{{count}}時間前",
+		"bell": "通知(未読{{count}}件)"
+	},
 	"nav": {
 		"home": "Timetable",
 		"discovery": "Discovery",

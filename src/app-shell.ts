@@ -10,9 +10,11 @@ import { IAuthService } from './services/auth-service'
 import { IBottomSheetTracker } from './services/bottom-sheet-tracker'
 import { IErrorBoundaryService } from './services/error-boundary-service'
 import { IFabMenuService, settingsAction } from './services/fab-menu-service'
+import { INotificationStore } from './services/notification-store'
 import { IOnboardingService } from './services/onboarding-service'
 import { IPromptCoordinator } from './services/prompt-coordinator'
 import { IPwaInstallService } from './services/pwa-install-service'
+import { NOTIFICATION_QUERY_PARAM } from './util/notification-link'
 
 /**
  * Shell-owned route data. Page identity lives here and nowhere else: the shell
@@ -205,6 +207,13 @@ const routeTable = [
 		// Uses the existing 'ticket' icon (svg-icon.html case="ticket").
 		data: { titleKey: 'nav.tickets', icon: 'ticket', labelKey: 'nav.tickets' },
 	},
+	// The notification center opens from the bell in the header; not a tab.
+	{
+		path: 'notifications',
+		component: import('./routes/notifications/notifications-route'),
+		title: 'Notifications',
+		data: { titleKey: 'notifications.title' },
+	},
 	// Settings is not a tab: it opens from the last item of the FAB launcher on
 	// the four tab pages (`isTabRoute`), and highlights no tab.
 	{
@@ -291,6 +300,7 @@ export class AppShell {
 	private readonly routerEvents = resolve(IRouterEvents)
 	public readonly auth = resolve(IAuthService)
 	public readonly onboarding = resolve(IOnboardingService)
+	public readonly notifications = resolve(INotificationStore)
 	// Global FAB action launcher registry. The shell owns the single launcher
 	// instance and gates its visibility on `showNav && actions.length`.
 	public readonly fabMenu = resolve(IFabMenuService)
@@ -356,8 +366,45 @@ export class AppShell {
 	// Defaults to true so authenticated routes show the nav bar immediately.
 	public showNav = true
 
+	/** The bell in the header opens the notification center. */
+	public openNotifications(): void {
+		void this.router.load('notifications')
+	}
+
+	// Refreshes the bell when a sign-in completes after the app started.
+	@watch((vm: AppShell) => vm.auth.isAuthenticated)
+	protected isAuthenticatedChanged(): void {
+		void this.notifications.refresh()
+	}
+
+	private readonly onVisibilityChange = (): void => {
+		if (document.visibilityState === 'visible') {
+			void this.notifications.refresh()
+		}
+	}
+
+	/**
+	 * Marks the notification read whose push the fan opened: the Service Worker
+	 * names it in the URL, because it holds no access token. A guest's stays
+	 * unread. The parameter is removed either way, so it never lingers in a URL
+	 * the fan shares or reloads.
+	 */
+	private async markOpenedNotification(): Promise<void> {
+		const url = new URL(window.location.href)
+		const id = url.searchParams.get(NOTIFICATION_QUERY_PARAM)
+		if (!id) return
+		url.searchParams.delete(NOTIFICATION_QUERY_PARAM)
+		window.history.replaceState(window.history.state, '', url)
+		await this.auth.ready
+		if (this.auth.isAuthenticated) {
+			await this.notifications.markRead(id)
+		}
+	}
+
 	public binding(): void {
 		this.applySettingsItem()
+		void this.auth.ready.then(() => this.notifications.refresh())
+		document.addEventListener('visibilitychange', this.onVisibilityChange)
 		this.subscriptions.push(
 			this.routerEvents.subscribe('au:router:navigation-error', (event) => {
 				this.logger.error('Navigation error', { event })
@@ -374,6 +421,7 @@ export class AppShell {
 				this.showNav = (node?.data as ShellRouteData)?.chrome !== false
 				const name = node?.path ?? 'unknown'
 				this.errorBoundary.addBreadcrumb('navigation', name)
+				void this.markOpenedNotification()
 			}),
 		)
 	}
@@ -383,6 +431,7 @@ export class AppShell {
 			sub.dispose()
 		}
 		this.subscriptions.length = 0
+		document.removeEventListener('visibilitychange', this.onVisibilityChange)
 		this.fabMenu.setTrailing(null)
 	}
 }

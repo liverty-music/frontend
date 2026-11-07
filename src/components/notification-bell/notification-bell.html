@@ -1,0 +1,12 @@
+<import from="./notification-bell.css"></import>
+
+<button
+	type="button"
+	class="[ notification-bell ] [ pressable ]"
+	data-testid="notification-bell"
+	t="[aria-label]notifications.bell"
+	t-params.bind="{ count: unreadCount }"
+>
+	<svg-icon name="bell"></svg-icon>
+	<span if.bind="unreadCount > 0" class="notification-bell-badge" data-testid="notification-bell-badge" aria-hidden="true">${unreadCount}</span>
+</button>

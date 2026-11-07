@@ -2,13 +2,20 @@
 <import from="./components/pwa-install-banner/pwa-install-banner"></import>
 <import from="../shared/ui/snack-bar/snack-bar"></import>
 <import from="./components/fab-menu/fab-menu"></import>
+<import from="./components/notification-bell/notification-bell"></import>
 
 <!-- Single shell-hosted page header, positioned in the shell grid's `header`
      area (the CE sets its own `grid-area: header`). Its title is the displayed
      route's `data.titleKey`. Gated on `showNav` (same visibility as the nav bar)
      AND a non-empty title, so header-less routes (legal, about, not-found)
      render no header row. -->
-<page-header if.bind="showNav && titleKey" title-key.bind="titleKey"></page-header>
+<page-header if.bind="showNav && titleKey" title-key.bind="titleKey">
+  <notification-bell
+    if.bind="auth.isAuthenticated"
+    unread-count.bind="notifications.unreadCount"
+    click.trigger="openNotifications()"
+  ></notification-bell>
+</page-header>
 
 <au-viewport></au-viewport>
 

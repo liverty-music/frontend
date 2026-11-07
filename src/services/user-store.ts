@@ -52,7 +52,7 @@ export interface ProvisionResult {
  *   - `guestHome` is @observable.
  *   - `i18nLocale` mirrors the active i18n locale, kept in sync via the
  *     i18n locale-changed event. It is the single source of truth for the
- *     guest locale and the authed-NULL fallback (a render-time
+ *     guest locale and for a signed-in fan whose account has not loaded (a render-time
  *     `i18n.getLocale()` read is not observable and would freeze the binding).
  */
 export class UserStore {
@@ -101,9 +101,9 @@ export class UserStore {
 	/**
 	 * Reactive mirror of the active i18n locale, normalized to a supported
 	 * code. Seeded from the current locale and updated whenever i18n publishes
-	 * a locale change. Used as the observable fallback for the authed-NULL and
-	 * guest-unset paths — replacing the unobservable `i18n.getLocale()` read
-	 * that froze the guest selector highlight.
+	 * a locale change. Used as the observable language of a guest and of a
+	 * signed-in fan whose account has not loaded — replacing the unobservable
+	 * `i18n.getLocale()` read that froze the guest selector highlight.
 	 */
 	@observable private i18nLocale: string = normalizeToSupportedLanguage(
 		this.i18n.getLocale(),
@@ -120,8 +120,8 @@ export class UserStore {
 		})
 		// The i18n subsystem publishes `{ oldLocale, newLocale }` on this EA
 		// channel after every successful setLocale. Mirroring it into an
-		// @observable is what makes `currentLanguage` re-evaluate for the
-		// guest/authed-NULL paths without a render-time getLocale() read.
+		// @observable is what makes `currentLanguage` re-evaluate for a guest
+		// without a render-time getLocale() read.
 		this.ea.subscribe(
 			Signals.I18N_EA_CHANNEL,
 			(payload: { oldLocale: string; newLocale: string }) => {
@@ -174,11 +174,9 @@ export class UserStore {
 	 *
 	 * Authenticated: `User.preferredLanguage`, normalized to a SUPPORTED code
 	 * so a non-supported backend tag ('en-US') still maps to a value the
-	 * selector can highlight ('en'). When the row's preference is NULL/undefined
-	 * (historical rows pending backfill), falls back to the observable
-	 * `i18nLocale` mirror. Persisting that NULL → backfill is owned solely by
-	 * `user-hydration-task` (an activating AppTask); this getter is a PURE
-	 * projection of observable state and never issues an RPC.
+	 * selector can highlight ('en'). Until the account has loaded, the observable
+	 * `i18nLocale` mirror. This getter is a PURE projection of observable state
+	 * and never issues an RPC.
 	 *
 	 * Guest: the observable `i18nLocale` mirror, which always equals the active
 	 * i18n locale — so the selector highlight can never drift from the rendered
@@ -193,9 +191,6 @@ export class UserStore {
 		if (this.auth.isAuthenticated) {
 			const preferred = this.current?.preferredLanguage
 			if (preferred) return normalizeToSupportedLanguage(preferred)
-			// NULL server preferred_language: surface the active locale. The
-			// hydration task owns the one-shot backfill RPC, so this getter
-			// stays side-effect-free and safe to re-evaluate on every pass.
 			return this.i18nLocale
 		}
 		return this.i18nLocale

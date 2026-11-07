@@ -1,0 +1,40 @@
+@layer block {
+	@scope (notification-bell) {
+		.notification-bell {
+			position: relative;
+
+			display: grid;
+			place-items: center;
+
+			inline-size: 2.75rem;
+			block-size: 2.75rem;
+			padding: 0;
+			border: 0;
+			border-radius: var(--radius-full);
+
+			color: var(--color-text-primary);
+
+			background: transparent;
+		}
+
+		.notification-bell-badge {
+			position: absolute;
+			inset-block-start: 0.125rem;
+			inset-inline-end: 0.125rem;
+
+			display: grid;
+			place-items: center;
+
+			min-inline-size: 1.25rem;
+			block-size: 1.25rem;
+			padding-inline: var(--space-3xs);
+			border-radius: var(--radius-full);
+
+			font-size: var(--step--2);
+			font-weight: 600;
+			color: var(--md-color-on-primary);
+
+			background: var(--md-color-primary);
+		}
+	}
+}

@@ -29,6 +29,7 @@ import {
 } from './lib/offline/rpc-write-route'
 import { handlePushSubscriptionChange } from './lib/push/push-renewal'
 import { Events } from './services/analytics-events'
+import { notificationTargetUrl } from './util/notification-link'
 
 // ---------------------------------------------------------------------------
 // Precache app shell assets injected by vite-plugin-pwa at build time.
@@ -190,12 +191,11 @@ self.addEventListener('notificationclick', (event) => {
 				type: 'window',
 				includeUncontrolled: true,
 			})
-			let targetUrl: URL
-			try {
-				targetUrl = new URL(url, self.location.origin)
-			} catch {
-				targetUrl = new URL('/', self.location.origin)
-			}
+			const targetUrl = notificationTargetUrl(
+				url,
+				data.notificationId,
+				self.location.origin,
+			)
 			for (const client of clients) {
 				const clientUrl = new URL(client.url)
 				if (clientUrl.href === targetUrl.href && 'focus' in client) {

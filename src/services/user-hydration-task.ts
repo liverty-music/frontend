@@ -1,7 +1,7 @@
 import { I18N } from '@aurelia/i18n'
 import { AppTask, DI, IContainer, ILogger } from 'aurelia'
 import { ILocalStorage } from '../adapter/storage/local-storage'
-import { SessionKeys, StorageKeys } from '../constants/storage-keys'
+import { StorageKeys } from '../constants/storage-keys'
 import { IAnalyticsService } from '../lib/analytics/analytics-service'
 import {
 	isSupportedLanguage,
@@ -15,8 +15,7 @@ import { IUserStore } from './user-store'
  * Runs the authenticated boot sequence:
  *   1. Wait for auth readiness.
  *   2. Hydrate `UserStore.current` via `ensureLoaded` (Get or idempotent Create).
- *   3. Apply `current.preferredLanguage` to i18n, or backfill it from the
- *      currently effective locale when the row has no preference yet.
+ *   3. Apply `current.preferredLanguage` to i18n.
  *
  * `localStorage['language']` is kept: the detector writes the applied locale
  * back to it, so after a sign-out (or an involuntary logout) the next boot
@@ -36,12 +35,8 @@ export async function runUserHydration(container: IContainer): Promise<void> {
 	const i18n = container.get(I18N)
 	const localStorage = container.get(ILocalStorage)
 
-	// Capture once: setLocale isn't called between here and the backfill
-	// branch, so reusing the value also guarantees that ensureLoaded's
-	// Create-when-no-User path and the backfill RPC send identical strings.
-	//
-	// Normalize so out-of-range navigator codes don't round-trip into
-	// Create / UpdatePreferredLanguage, where the `preferred_language` proto
+	// Normalize so out-of-range navigator codes don't round-trip into Create,
+	// where the `preferred_language` proto
 	// rule (checked by the transport's validation interceptor, then by the
 	// backend) would reject them. normalizeToSupportedLanguage handles
 	// BCP 47 region tags too ('en-US' → 'en') so English-browser users
@@ -93,32 +88,6 @@ export async function runUserHydration(container: IContainer): Promise<void> {
 		if (applied) {
 			localStorage.setItem(StorageKeys.language, current.preferredLanguage)
 		}
-	} else if (!sessionStorage.getItem(SessionKeys.languageBackfillAttempted)) {
-		// Legacy NULL row: backfill once per tab. Fire-and-forget so the
-		// activating-task isn't blocked on a second serial RPC before any
-		// route renders — the backfill is idempotent and the current session's
-		// locale (clientLocale) is already active. Set the flag optimistically
-		// and clear it on failure so the next session retries.
-		//
-		// Intentional direct sessionStorage access: there is no
-		// ISessionStorage adapter in the codebase (only ILocalStorage),
-		// and the per-tab scoping of sessionStorage is exactly the
-		// rate-limit granularity we want here (see the SessionKeys
-		// comment in constants/storage-keys.ts). Tests in JSDOM access
-		// `sessionStorage` directly in `beforeEach` to control the flag.
-		sessionStorage.setItem(SessionKeys.languageBackfillAttempted, '1')
-		void userStore.updatePreferredLanguage(clientLocale).then(
-			() => {
-				logger.info('Backfilled preferred_language', { lang: clientLocale })
-			},
-			(err: unknown) => {
-				logger.warn(
-					'Failed to backfill preferred_language; will retry on next session',
-					{ error: err, lang: clientLocale },
-				)
-				sessionStorage.removeItem(SessionKeys.languageBackfillAttempted)
-			},
-		)
 	}
 }
 

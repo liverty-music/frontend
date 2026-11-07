@@ -1,0 +1,32 @@
+<import from="./notifications-route.css"></import>
+
+<!-- The page title is owned by the shell-hosted <page-header> (data.titleKey). -->
+<template class="[ notifications-route ] [ flow ]">
+	<p if.bind="store.state === 'loading' && store.notifications.length === 0" class="notifications-lead" role="status" t="notifications.loading"></p>
+
+	<section if.bind="store.state === 'error' && store.notifications.length === 0" class="[ notifications-error ] [ flow ]" data-testid="notifications-error">
+		<p class="notifications-lead" t="notifications.error"></p>
+		<button type="button" class="[ button ] [ pressable ]" click.trigger="store.refresh()" t="notifications.retry"></button>
+	</section>
+
+	<p if.bind="store.state === 'ready' && store.notifications.length === 0" class="notifications-lead" data-testid="notifications-empty" t="notifications.empty"></p>
+
+	<ul if.bind="store.notifications.length > 0" class="notifications-list" role="list">
+		<li repeat.for="notification of store.notifications; key.bind: notification.id">
+			<button
+				type="button"
+				class="[ notifications-item ] [ pressable ]"
+				data-testid="notifications-item"
+				data-read.bind="!!notification.readTime"
+				click.trigger="open(notification)"
+			>
+				<span class="notifications-item-head">
+					<span if.bind="!notification.readTime" class="notifications-unread" data-testid="notifications-unread" t="[aria-label]notifications.unread"></span>
+					<span class="notifications-item-title">${notification.title}</span>
+				</span>
+				<span class="notifications-item-body">${notification.body}</span>
+				<span class="notifications-item-time">${sentLabel(notification)}</span>
+			</button>
+		</li>
+	</ul>
+</template>

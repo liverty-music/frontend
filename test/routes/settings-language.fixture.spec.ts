@@ -54,7 +54,7 @@ const BottomSheetStub = CustomElement.define(
 interface Options {
 	readonly authenticated: boolean
 	readonly lng?: 'ja' | 'en'
-	/** The signed-in fan's saved language; absent for a NULL legacy row. */
+	/** The signed-in fan's saved language; absent until the account has loaded. */
 	readonly preferredLanguage?: string
 	readonly setPreferredLanguage?: (lang: string) => Promise<unknown>
 }
@@ -196,11 +196,11 @@ describe('Settings language and home area (fixture)', () => {
 		const getItem = vi.spyOn(Storage.prototype, 'getItem')
 		const r = await render({ authenticated: true, lng: 'en' })
 
-		// No saved language yet (NULL row): the active locale is shown.
+		// The account has no language yet: the active locale is shown.
 		expect(r.languageRow()).toBe('English')
 		expect(getItem).not.toHaveBeenCalledWith(StorageKeys.language)
 
-		// The backfill response populates the User; the row re-evaluates.
+		// The account arrives; the row re-evaluates.
 		r.userStore.current = { id: 'user-1', preferredLanguage: 'ja' } as never
 		await tasksSettled()
 		expect(r.languageRow()).toBe('日本語')

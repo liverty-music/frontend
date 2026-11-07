@@ -38,6 +38,7 @@ export const ROUTE_MARKERS: readonly RouteMarker[] = [
 	{ route: 'passkeys', marker: 'passkeys-lead' },
 	{ route: 'passkeys-callback', marker: 'passkeys-callback-loading' },
 	{ route: 'delete-account', marker: 'delete-account-lead' },
+	{ route: 'notifications', marker: 'notifications-lead' },
 ]
 
 /**
