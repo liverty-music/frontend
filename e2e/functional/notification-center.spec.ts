@@ -1,4 +1,5 @@
 import {
+	connectError,
 	FAN_EMAIL,
 	FAN_SUB,
 	mockFanRpc,
@@ -17,6 +18,8 @@ test.describe.configure({ timeout: 60_000 })
  */
 
 const CAPABILITY = 'stories/review-received-notifications'
+const ROUTE = 'components/infrastructure/fan/web/route/notifications'
+const SERVICE_WORKER = 'components/infrastructure/fan/web/global/service-worker'
 const USER = {
 	user: {
 		id: { value: '00000000-0000-4000-8000-c00000000002' },
@@ -38,7 +41,11 @@ interface Stored {
 }
 
 /** Signed in, with a mocked backend holding `stored`. */
-async function openAs(page: Page, stored: Stored[]): Promise<void> {
+async function openAs(
+	page: Page,
+	stored: Stored[],
+	options: { markingFails?: boolean } = {},
+): Promise<void> {
 	await page.context().addInitScript(seedSignedIn, {
 		sub: FAN_SUB,
 		email: FAN_EMAIL,
@@ -67,6 +74,7 @@ async function openAs(page: Page, stored: Stored[]): Promise<void> {
 			},
 		}),
 		'NotificationService/MarkRead': (body) => {
+			if (options.markingFails) return connectError('unavailable', 503)
 			const id = (body.notificationId as { value: string }).value
 			for (const n of stored) if (n.id === id) n.read = true
 			return { body: {} }
@@ -84,7 +92,9 @@ const bellBadge = (page: Page) => page.getByTestId('notification-bell-badge')
 const items = (page: Page) => page.getByTestId('notifications-item')
 
 test.describe('the notification center', () => {
-	test(`@spec ${CAPABILITY} "Fan without push"`, async ({ page }) => {
+	test(`@spec ${CAPABILITY} "Fan without push" @spec ${ROUTE} "Push never reached the fan"`, async ({
+		page,
+	}) => {
 		// No PushSubscription exists: the notification is listed all the same.
 		await openAs(page, [lotteryLoss(1)])
 
@@ -135,6 +145,35 @@ test.describe('the notification center', () => {
 		await page.getByTestId('notification-bell').click()
 		await expect(page).toHaveURL(/\/notifications$/)
 		await expect(items(page).first()).toHaveAttribute('data-read', 'true')
+		await expect(page.getByTestId('notifications-unread')).toHaveCount(1)
+	})
+
+	test(`@spec ${SERVICE_WORKER} "Open a lottery loss notification"`, async ({
+		page,
+	}) => {
+		const stored = [{ ...lotteryLoss(1), url: `/events/${ID(9)}` }]
+		await openAs(page, stored)
+
+		await page.goto(`${stored[0].url}?notification=${ID(1)}`)
+
+		await expect(page).toHaveURL(new RegExp(`/events/${ID(9)}$`))
+		await expect.poll(() => stored[0].read).toBe(true)
+		await page.goto('/notifications')
+		await expect(items(page).first()).toHaveAttribute('data-read', 'true')
+	})
+
+	test(`@spec ${SERVICE_WORKER} "Marking fails"`, async ({ page }) => {
+		const stored = [{ ...lotteryLoss(1), url: `/events/${ID(9)}` }]
+		await openAs(page, stored, { markingFails: true })
+		const refused = page.waitForResponse((r) =>
+			r.url().includes('NotificationService/MarkRead'),
+		)
+
+		await page.goto(`${stored[0].url}?notification=${ID(1)}`)
+		expect((await refused).status()).toBe(503)
+
+		await expect(page).toHaveURL(new RegExp(`/events/${ID(9)}$`))
+		await page.goto('/notifications')
 		await expect(page.getByTestId('notifications-unread')).toHaveCount(1)
 	})
 

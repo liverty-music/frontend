@@ -114,7 +114,6 @@ describe('NotificationStore', () => {
 		expect(store.unreadCount).toBe(0)
 	})
 
-	// @spec components/infrastructure/fan/web/global/service-worker "Marking fails"
 	it('rolls back without rejecting when marking fails', async () => {
 		const { store } = build()
 		await store.refresh()

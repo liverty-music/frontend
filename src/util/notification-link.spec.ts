@@ -7,7 +7,6 @@ import {
 const ORIGIN = 'https://app.example.com'
 
 describe('notificationTargetUrl', () => {
-	// @spec components/infrastructure/fan/web/global/service-worker "Open a lottery loss notification"
 	it('opens the link naming the notification', () => {
 		const url = notificationTargetUrl('/events/event-1', 'n-1', ORIGIN)
 

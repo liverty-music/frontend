@@ -573,7 +573,6 @@ describe('app-shell', () => {
 			expect(window.location.search).toBe('')
 		})
 
-		// @spec components/infrastructure/fan/web/global/service-worker "Marking fails"
 		it('shows the page without waiting for the marking to finish', async () => {
 			await renderSignedIn(true)
 			notificationStore.markRead.mockReturnValue(new Promise(() => {}))

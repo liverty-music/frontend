@@ -111,8 +111,7 @@ describe('NotificationsRoute', () => {
 		).toEqual([true, false, true])
 	})
 
-	// @spec components/infrastructure/fan/web/route/notifications "Push never reached the fan"
-	it('lists a notification whatever happened to its push, with its line break kept', async () => {
+	it('keeps the line break of the body', async () => {
 		const { items } = await render({ notifications: [notification({})] })
 
 		const body = items()[0].querySelector('.notifications-item-body')

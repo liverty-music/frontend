@@ -9,6 +9,12 @@ import { NotificationBell } from './notification-bell'
 const meta = {
 	title: 'Components/NotificationBell',
 	component: NotificationBell,
+	argTypes: {
+		unreadCount: {
+			control: 'number',
+			description: 'Unread notifications; no badge at 0.',
+		},
+	},
 	render: (args) =>
 		defineAureliaStory({
 			template:

@@ -199,9 +199,7 @@ describe('runUserHydration', () => {
 	// @spec components/infrastructure/fan/web/global/i18n "i18n locale aligns with backend value on every authenticated render"
 	// @spec components/infrastructure/fan/web/global/i18n "Saved language differs from the account's language"
 	// @spec components/infrastructure/fan/web/global/i18n "Account language used as is"
-	// @spec stories/restore-session-on-cold-start "Reopen with a remembered account"
 	// @spec stories/restore-session-on-cold-start "Account language kept on a device in another language"
-	// @spec stories/restore-session-on-cold-start "Language chosen on another device"
 	it('applies preferred_language to i18n when present and differs from clientLocale, and saves it', async () => {
 		mockUserStore.current = { id: 'user-1', preferredLanguage: 'ja' }
 		mockUserStore.ensureLoaded.mockImplementationOnce(async () => {
