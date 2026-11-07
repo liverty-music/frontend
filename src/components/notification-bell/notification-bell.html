@@ -8,5 +8,5 @@
 	t-params.bind="{ count: unreadCount }"
 >
 	<svg-icon name="bell"></svg-icon>
-	<span if.bind="unreadCount > 0" class="notification-bell-badge" data-testid="notification-bell-badge" aria-hidden="true">${unreadCount}</span>
+	<small if.bind="unreadCount > 0" class="notification-bell-badge" data-testid="notification-bell-badge" aria-hidden="true">${unreadCount}</small>
 </button>

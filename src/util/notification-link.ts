@@ -25,3 +25,20 @@ export function notificationTargetUrl(
 	}
 	return target
 }
+
+/**
+ * The message the Service Worker posts to an open window it brings to the
+ * front for a push the fan opened, naming the notification so the app can mark
+ * it read without reloading the page.
+ */
+export const NOTIFICATION_OPENED_MESSAGE = 'notification-opened'
+
+/** Whether two URLs open the same page, whatever notification they name. */
+export function isSamePage(a: URL, b: URL): boolean {
+	const strip = (url: URL): string => {
+		const copy = new URL(url.href)
+		copy.searchParams.delete(NOTIFICATION_QUERY_PARAM)
+		return copy.href
+	}
+	return strip(a) === strip(b)
+}

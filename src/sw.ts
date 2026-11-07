@@ -29,7 +29,11 @@ import {
 } from './lib/offline/rpc-write-route'
 import { handlePushSubscriptionChange } from './lib/push/push-renewal'
 import { Events } from './services/analytics-events'
-import { notificationTargetUrl } from './util/notification-link'
+import {
+	isSamePage,
+	NOTIFICATION_OPENED_MESSAGE,
+	notificationTargetUrl,
+} from './util/notification-link'
 
 // ---------------------------------------------------------------------------
 // Precache app shell assets injected by vite-plugin-pwa at build time.
@@ -196,10 +200,18 @@ self.addEventListener('notificationclick', (event) => {
 				data.notificationId,
 				self.location.origin,
 			)
+			// A window already on the page is brought to the front and told which
+			// notification was opened; reloading it would lose the fan's place.
 			for (const client of clients) {
-				const clientUrl = new URL(client.url)
-				if (clientUrl.href === targetUrl.href && 'focus' in client) {
-					return client.focus()
+				if (isSamePage(new URL(client.url), targetUrl) && 'focus' in client) {
+					const focused = await client.focus()
+					if (data.notificationId) {
+						focused.postMessage({
+							type: NOTIFICATION_OPENED_MESSAGE,
+							notificationId: data.notificationId,
+						})
+					}
+					return focused
 				}
 			}
 			// Only open same-origin URLs to prevent external redirects.

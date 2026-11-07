@@ -582,6 +582,37 @@ describe('app-shell', () => {
 			expect(displayedRoute()).toBe('tickets-route')
 		})
 
+		it('marks it read when the open window is brought to the front', async () => {
+			const serviceWorker = new EventTarget()
+			Object.defineProperty(navigator, 'serviceWorker', {
+				value: serviceWorker,
+				configurable: true,
+			})
+			try {
+				await renderSignedIn(true)
+				await go('tickets')
+
+				serviceWorker.dispatchEvent(
+					new MessageEvent('message', {
+						data: {
+							type: 'notification-opened',
+							notificationId: NOTIFICATION,
+						},
+					}),
+				)
+
+				await vi.waitFor(() =>
+					expect(notificationStore.markRead).toHaveBeenCalledWith(NOTIFICATION),
+				)
+				expect(displayedRoute()).toBe('tickets-route')
+			} finally {
+				await fixture.stop(true)
+				Reflect.deleteProperty(navigator, 'serviceWorker')
+				fixture = await renderShell()
+				router = fixture.container.get(IRouter)
+			}
+		})
+
 		it('leaves it unread for a guest, and removes the parameter', async () => {
 			await renderSignedIn(false)
 

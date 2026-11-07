@@ -11,7 +11,7 @@
 
 	<p if.bind="store.state === 'ready' && store.notifications.length === 0" class="notifications-lead" data-testid="notifications-empty" t="notifications.empty"></p>
 
-	<ul if.bind="store.notifications.length > 0" class="notifications-list" role="list">
+	<ul if.bind="store.notifications.length > 0" class="[ notifications-list ] [ wrapper ]" role="list">
 		<li repeat.for="notification of store.notifications; key.bind: notification.id">
 			<button
 				type="button"
@@ -22,10 +22,10 @@
 			>
 				<span class="notifications-item-head">
 					<span if.bind="!notification.readTime" class="notifications-unread" data-testid="notifications-unread" t="[aria-label]notifications.unread"></span>
-					<span class="notifications-item-title">${notification.title}</span>
+					<strong class="notifications-item-title">${notification.title}</strong>
 				</span>
 				<span class="notifications-item-body">${notification.body}</span>
-				<span class="notifications-item-time">${sentLabel(notification)}</span>
+				<small class="notifications-item-time">${sentLabel(notification)}</small>
 			</button>
 		</li>
 	</ul>

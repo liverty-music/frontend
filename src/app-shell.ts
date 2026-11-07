@@ -14,7 +14,10 @@ import { INotificationStore } from './services/notification-store'
 import { IOnboardingService } from './services/onboarding-service'
 import { IPromptCoordinator } from './services/prompt-coordinator'
 import { IPwaInstallService } from './services/pwa-install-service'
-import { NOTIFICATION_QUERY_PARAM } from './util/notification-link'
+import {
+	NOTIFICATION_OPENED_MESSAGE,
+	NOTIFICATION_QUERY_PARAM,
+} from './util/notification-link'
 
 /**
  * Shell-owned route data. Page identity lives here and nowhere else: the shell
@@ -395,6 +398,25 @@ export class AppShell {
 		if (!id) return
 		url.searchParams.delete(NOTIFICATION_QUERY_PARAM)
 		window.history.replaceState(window.history.state, '', url)
+		await this.markReadIfSignedIn(id)
+	}
+
+	/**
+	 * Marks the notification read whose push the fan opened while this window
+	 * was already on its page: the Service Worker brings the window to the front
+	 * and names the notification in a message instead of the URL.
+	 */
+	private readonly onServiceWorkerMessage = (event: MessageEvent): void => {
+		const data = event.data as
+			| { type?: string; notificationId?: string }
+			| undefined
+		if (data?.type === NOTIFICATION_OPENED_MESSAGE && data.notificationId) {
+			void this.markReadIfSignedIn(data.notificationId)
+		}
+	}
+
+	/** A guest's notification stays unread. */
+	private async markReadIfSignedIn(id: string): Promise<void> {
 		await this.auth.ready
 		if (this.auth.isAuthenticated) {
 			await this.notifications.markRead(id)
@@ -405,6 +427,10 @@ export class AppShell {
 		this.applySettingsItem()
 		void this.auth.ready.then(() => this.notifications.refresh())
 		document.addEventListener('visibilitychange', this.onVisibilityChange)
+		navigator.serviceWorker?.addEventListener(
+			'message',
+			this.onServiceWorkerMessage,
+		)
 		this.subscriptions.push(
 			this.routerEvents.subscribe('au:router:navigation-error', (event) => {
 				this.logger.error('Navigation error', { event })
@@ -432,6 +458,10 @@ export class AppShell {
 		}
 		this.subscriptions.length = 0
 		document.removeEventListener('visibilitychange', this.onVisibilityChange)
+		navigator.serviceWorker?.removeEventListener(
+			'message',
+			this.onServiceWorkerMessage,
+		)
 		this.fabMenu.setTrailing(null)
 	}
 }
