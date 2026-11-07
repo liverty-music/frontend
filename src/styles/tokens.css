@@ -344,5 +344,60 @@
 		   pixel constant (design D7). Excludes the safe-area inset, which each
 		   consumer adds on its own. */
 		--bottom-nav-height: 3.5rem;
+
+		/* Material 3 names for the same values (adopt-m3-cube-ui-foundation).
+		   Colour roles alias today's tokens until the rename moves every use. */
+		--md-sys-color-primary: var(--md-color-primary);
+		--md-sys-color-on-primary: var(--md-color-on-primary);
+		--md-sys-color-primary-container: var(--md-color-primary-container);
+		--md-sys-color-on-primary-container: var(--md-color-on-primary-container);
+		--md-sys-color-secondary: var(--md-color-secondary);
+		--md-sys-color-on-secondary: var(--md-color-on-secondary);
+		--md-sys-color-secondary-container: var(--md-color-secondary-container);
+		--md-sys-color-on-secondary-container: var(
+			--md-color-on-secondary-container
+		);
+		--md-sys-color-tertiary: var(--md-color-tertiary);
+		--md-sys-color-on-tertiary: var(--md-color-on-tertiary);
+		--md-sys-color-tertiary-container: var(--md-color-tertiary-container);
+		--md-sys-color-on-tertiary-container: var(--md-color-on-tertiary-container);
+		--md-sys-color-error: var(--md-color-error);
+		--md-sys-color-on-error: var(--md-color-on-error);
+		--md-sys-color-error-container: var(--md-color-error-container);
+		--md-sys-color-on-error-container: var(--md-color-on-error-container);
+		--md-sys-color-surface: var(--md-color-surface);
+		--md-sys-color-on-surface: var(--md-color-on-surface);
+		--md-sys-color-on-surface-variant: var(--md-color-on-surface-variant);
+		--md-sys-color-surface-container-lowest: var(
+			--md-color-surface-container-lowest
+		);
+		--md-sys-color-surface-container-low: var(--md-color-surface-container-low);
+		--md-sys-color-surface-container: var(--md-color-surface-container);
+		--md-sys-color-surface-container-high: var(
+			--md-color-surface-container-high
+		);
+		--md-sys-color-surface-container-highest: var(
+			--md-color-surface-container-highest
+		);
+		--md-sys-color-outline: var(--md-color-outline);
+		--md-sys-color-outline-variant: var(--md-color-outline-variant);
+		--md-sys-color-scrim: var(--md-color-scrim);
+		--md-sys-color-shadow: oklch(0% 0 0deg);
+
+		/* Corner shapes at the Material 3 values (ShapeTokens.kt). */
+		--md-sys-shape-corner-none: 0;
+		--md-sys-shape-corner-extra-small: 4px;
+		--md-sys-shape-corner-small: 8px;
+		--md-sys-shape-corner-medium: 12px;
+		--md-sys-shape-corner-large: 16px;
+		--md-sys-shape-corner-large-increased: 20px;
+		--md-sys-shape-corner-extra-large: 28px;
+		--md-sys-shape-corner-extra-large-increased: 32px;
+		--md-sys-shape-corner-extra-extra-large: 48px;
+		--md-sys-shape-corner-full: 9999px;
+
+		/* Display and headline styles: Righteous, with the plain face behind it
+		   for the characters it lacks. */
+		--md-ref-typeface-brand: "Righteous", var(--md-ref-typeface-plain);
 	}
 }

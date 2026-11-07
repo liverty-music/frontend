@@ -8,7 +8,10 @@
  * The layer order matches `./main.css`; in a shadow root it puts a
  * component's own `block` rules above these.
  */
-@layer reset, global, block;
+@layer reset, global, utility, block;
+
+/* Type styles, so a console component's template can use the classes. */
+@import "../../shared/styles/m3-typescale.css";
 
 @layer reset {
 	:where(*),
