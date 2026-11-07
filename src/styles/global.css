@@ -105,7 +105,7 @@
 	}
 
 	/* View Transitions API for route animations — pseudo-elements cannot be wrapped in :where() */
-	/* stylelint-disable cube/prefer-where-in-reset */
+	/* stylelint-disable cube/prefer-where-in-reset -- view transition pseudo-elements cannot be wrapped in :where() */
 	::view-transition-old(root) {
 		animation: var(--transition-route-duration) var(--transition-route-easing)
 			both fade-out;
@@ -165,7 +165,7 @@
 	   them like the list's scroll box does, so rows scrolled under the header
 	   stay hidden while one row animates out. Nested groups (CSS View
 	   Transitions 2, Chrome 140+) are newer than both linters' lists. */
-	/* stylelint-disable selector-pseudo-element-no-unknown */
+	/* stylelint-disable selector-pseudo-element-no-unknown -- nested view transition groups are newer than the linter's list */
 
 	/* biome-ignore lint/correctness/noUnknownPseudoElement: see above */
 	::view-transition-group-children(artist-rows) {

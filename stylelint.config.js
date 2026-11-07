@@ -1,7 +1,39 @@
+const PROPERTY_DISALLOWED = [
+	// z-index is not a logical/physical property concern — it's banned to enforce
+	// a design-token-based stacking context strategy instead of arbitrary values.
+	'z-index',
+]
+
+// Legacy layout values that bypass writing-mode awareness.
+// Use `float: inline-start`/`inline-end`, `clear: inline-start`/`inline-end`,
+// and `text-align: start`/`end` instead.
+const VALUE_DISALLOWED = {
+	float: ['left', 'right'],
+	clear: ['left', 'right'],
+	'text-align': ['left', 'right'],
+}
+
+/** What a component's own stylesheet may read, by what it styles. */
+const LOCAL_TOKEN = '/^--_/'
+const COLOUR_TOKENS = [
+	'/^--md-sys-color-/',
+	// A state layer is a colour-mix() over a state opacity.
+	'/^--md-sys-state-/',
+	'/^--color-brand-/',
+	'/^--color-stage-/',
+	'--color-error',
+	'--color-warning',
+	'--color-success',
+	LOCAL_TOKEN,
+]
+
 /** @type {import('stylelint').Config} */
 export default {
 	extends: ['stylelint-config-standard', 'stylelint-config-clean-order'],
 	plugins: ['./stylelint-plugin-cube-css/index.js'],
+	reportDescriptionlessDisables: true,
+	reportNeedlessDisables: true,
+	reportUnscopedDisables: true,
 	rules: {
 		'import-notation': null,
 
@@ -47,20 +79,9 @@ export default {
 		// inline by a template is declared by a described disable in its stylesheet.
 		'no-unknown-custom-properties': true,
 
-		'property-disallowed-list': [
-			// z-index is not a logical/physical property concern — it's banned to enforce
-			// a design-token-based stacking context strategy instead of arbitrary values.
-			'z-index',
-		],
+		'property-disallowed-list': PROPERTY_DISALLOWED,
 
-		// Legacy layout values that bypass writing-mode awareness.
-		// Use `float: inline-start`/`inline-end`, `clear: inline-start`/`inline-end`,
-		// and `text-align: start`/`end` instead.
-		'declaration-property-value-disallowed-list': {
-			float: ['left', 'right'],
-			clear: ['left', 'right'],
-			'text-align': ['left', 'right'],
-		},
+		'declaration-property-value-disallowed-list': VALUE_DISALLOWED,
 
 		// Enforce Container Queries over viewport Media Queries.
 		// Components should respond to their container width, not the viewport.
@@ -98,6 +119,46 @@ export default {
 			files: ['organizer/ui/**/*.css'],
 			rules: {
 				'cube/block-require-scope': null,
+			},
+		},
+		// A component's stylesheet cannot undo a shared layer. Margins come from a
+		// composition, type from a type style, focus from the global ring, and each
+		// visual value from a role token. `overrides` replaces a rule's value rather
+		// than merging it, so these repeat the base config's entries.
+		{
+			files: [
+				'src/components/**/*.css',
+				'src/routes/**/*.css',
+				'shared/ui/**/*.css',
+				'src/app-shell.css',
+				'src/styles/button.css',
+				'organizer/!(styles)/**/*.css',
+			],
+			rules: {
+				'property-disallowed-list': [
+					...PROPERTY_DISALLOWED,
+					'/^margin/',
+					'/^font(-family|-size|-weight|-style)?$/',
+					'line-height',
+					'letter-spacing',
+					'/^outline/',
+				],
+				'declaration-property-value-disallowed-list': {
+					...VALUE_DISALLOWED,
+					'/^padding/': ['0'],
+					'list-style': ['none'],
+				},
+				'declaration-property-custom-property-allowed-list': {
+					'/^(color|background(-color)?|border(-[a-z]+)*-color|fill|stroke|caret-color|accent-color)$/':
+						COLOUR_TOKENS,
+					'/^border(-[a-z]+)*-radius$/': ['/^--md-sys-shape-/', LOCAL_TOKEN],
+					'box-shadow': ['/^--md-sys-elevation-/', '/^--glow-/', LOCAL_TOKEN],
+					'/^(padding|gap|row-gap|column-gap)/': ['/^--space-/', LOCAL_TOKEN],
+				},
+				'declaration-property-value-allowed-list': {
+					'box-shadow': ['none', '/^var\\(/'],
+				},
+				'cube/block-max-lines': [true, { max: 100 }],
 			},
 		},
 		// Each self-contained entry declares its own tokens.

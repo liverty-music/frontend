@@ -10,7 +10,7 @@ const ruleName = 'cube/block-max-lines';
 
 const messages = ruleMessages(ruleName, {
 	rejected: (lines, max) =>
-		`@scope block is ${lines} lines, exceeding the maximum of ${max} lines. Split into smaller blocks.`,
+		`Block is ${lines} lines, exceeding the maximum of ${max} lines. Split into smaller blocks.`,
 });
 
 const meta = {
@@ -38,24 +38,35 @@ const ruleFunction = (primary, secondaryOptions) => {
 
 		const max = secondaryOptions?.max ?? DEFAULT_MAX;
 
-		root.walkAtRules('scope', (scopeNode) => {
-			const layer = getLayerContext(scopeNode);
-
-			// Only check @scope blocks inside @layer block
-			if (layer !== 'block') return;
-
-			const startLine = scopeNode.source.start.line;
-			const endLine = scopeNode.source.end.line;
-			const lines = endLine - startLine + 1;
+		const check = (node) => {
+			const lines = node.source.end.line - node.source.start.line + 1;
 
 			if (lines > max) {
 				report({
 					message: messages.rejected(lines, max),
-					node: scopeNode,
+					node,
 					result,
 					ruleName,
 				});
 			}
+		};
+
+		root.walkAtRules('scope', (scopeNode) => {
+			// Only check @scope blocks inside @layer block
+			if (getLayerContext(scopeNode) === 'block') check(scopeNode);
+		});
+
+		// A component in a shadow root needs no @scope, so its block is the layer.
+		root.walkAtRules('layer', (layerNode) => {
+			if (layerNode.params !== 'block' || !layerNode.nodes) return;
+
+			let hasScope = false;
+
+			layerNode.walkAtRules('scope', () => {
+				hasScope = true;
+			});
+
+			if (!hasScope) check(layerNode);
 		});
 	};
 };

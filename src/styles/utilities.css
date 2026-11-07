@@ -138,7 +138,7 @@
 	/* Busy state — applied by the `busy-on-click` custom attribute while an async
 	   click handler is in flight. Dims the control, blocks further interaction,
 	   and overlays a spinner. Multi-property by nature (state, not a token). */
-	/* stylelint-disable-next-line cube/utility-single-property */
+	/* stylelint-disable-next-line cube/utility-single-property -- a state, not a token: it sets several properties together */
 	[data-busy] {
 		pointer-events: none;
 		cursor: progress;
@@ -148,7 +148,7 @@
 
 	/* Centered with transform (no negative margins, which the token rule forbids);
 	   the spin keyframe keeps the translate so it stays centered while rotating. */
-	/* stylelint-disable-next-line cube/utility-single-property */
+	/* stylelint-disable-next-line cube/utility-single-property -- the spinner of the busy state */
 	[data-busy]::after {
 		content: "";
 
@@ -167,7 +167,7 @@
 	}
 
 	/* Accessibility — multi-property utility required for screen-reader-only pattern */
-	/* stylelint-disable-next-line cube/utility-single-property */
+	/* stylelint-disable-next-line cube/utility-single-property -- the screen-reader-only pattern takes several properties */
 	.visually-hidden {
 		position: absolute;
 
@@ -188,7 +188,6 @@
 	   control's own box, and only the visual corner radius morphs, so the
 	   clickable bounds stay stable. Lives in the utility layer so component
 	   (block-layer) shape/`:active` rules keep precedence. */
-	/* stylelint-disable-next-line cube/utility-single-property */
 	.pressable {
 		position: relative;
 
@@ -199,7 +198,7 @@
 			transform var(--md-duration-short3) var(--md-easing-standard);
 	}
 
-	/* stylelint-disable-next-line cube/utility-single-property */
+	/* stylelint-disable-next-line cube/utility-single-property -- the state layer takes several properties together */
 	.pressable::after {
 		pointer-events: none;
 		content: "";
@@ -237,7 +236,7 @@
 		}
 	}
 
-	/* stylelint-disable-next-line cube/utility-single-property */
+	/* stylelint-disable-next-line cube/utility-single-property -- the shimmer takes several properties together */
 	.skeleton {
 		border-radius: var(--md-shape-small);
 
@@ -258,7 +257,6 @@
 	   spring plus a persistent selected state layer, driven by a real
 	   selection attribute (never hover). Applied via `data-selected-morph`;
 	   components layer their own selected color on top. */
-	/* stylelint-disable-next-line cube/utility-single-property */
 	[data-selected-morph] {
 		transition:
 			background-color var(--md-duration-medium1) var(--md-spring-effects),
