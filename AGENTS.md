@@ -78,6 +78,17 @@ General Aurelia 2 guidance comes from the `aurelia` skill (web-frontend plugin) 
   `stylelint-plugin-cube-css/`). Run `npm run lint:css` and read the failing rule's source in
   `stylelint-plugin-cube-css/lib/rules/` before working around it. Class attributes use CUBE
   bracket groups: `class="[ block ] [ composition ] [ utilities ]"`.
+- A component's stylesheet cannot undo a shared layer: it sets no margin, font or focus outline,
+  repeats no value from `reset.css`, and reads only role tokens (the `overrides` in
+  `stylelint.config.js`; `stylelint-plugin-cube-css/test/config/` shows what passes and fails).
+- A `stylelint-disable` comment needs a rule name and a reason after `--`, and it must disable a
+  real problem; lint fails otherwise. Reviewers check the reason.
+- `stylelint-suppressions.json` is the list of violations not fixed yet, with a count per file and
+  rule. It belongs to the change `adopt-m3-cube-ui-foundation`, which is complete when the list is
+  empty. Lint fails when a file exceeds its count, so new violations cannot be added, but it does not
+  notice a count that is too high. After fixing violations, run `npm run lint:css:suppress` and
+  commit the smaller list. Check that diff: the command also records any new violation, so no count
+  may rise.
 
 ### Inline styles (CUBE CSS)
 
@@ -230,6 +241,7 @@ New vs returning users are distinguished by the `isSignUp` flag in the OIDC stat
 
 ## Review criteria (flag violations; quote the rule + link the existing code compared against)
 
+- A layout that changes with the window's width changes at the Material 3 breakpoints: 600, 840, 1200 and 1600 px. Lint cannot check this, because `@container` conditions cannot read custom properties. A component adapting to its own container may use other widths.
 - No direct `localStorage` in services — persist `@observable` state via `src/adapter/storage/` (cf. `follow-store.ts`).
 - A route reachable without auth MUST set `data: { auth: false }` in `app-shell.ts`; the gate lives in `auth-hook.ts`, not components.
 - Any `attached()` that adds a listener / starts a `requestAnimationFrame` / subscribes MUST release it in `detaching()` (cf. `concert-highway.ts`).
