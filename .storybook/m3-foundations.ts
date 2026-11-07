@@ -20,8 +20,8 @@ export const TYPE_SAMPLES = `
 /** Markup of the elevation samples: two surfaces at level 2, and each level. */
 export const ELEVATION_SAMPLES = `
 	<div style="display:flex; flex-wrap:wrap; gap:24px; padding:24px; background:var(--md-color-surface); color:var(--md-color-on-surface)">
-		<div data-level="2" data-pair style="padding:16px; background:var(--md-color-surface-container); box-shadow:var(--md-sys-elevation-level2)">Menu</div>
-		<div data-level="2" data-pair style="padding:16px; background:var(--md-color-surface-container); box-shadow:var(--md-sys-elevation-level2)">Floating button</div>
+		<div data-level="2" style="padding:16px; background:var(--md-color-surface-container); box-shadow:var(--md-sys-elevation-level2)">Menu</div>
+		<div data-level="2" style="padding:16px; background:var(--md-color-surface-container); box-shadow:var(--md-sys-elevation-level2)">Floating button</div>
 		${[1, 3, 4, 5]
 			.map(
 				(level) =>
@@ -76,19 +76,61 @@ export function expectLargerBrowserTextSize(root: ParentNode): void {
 	}
 }
 
-/** Two surfaces at one level cast the same shadow, and levels differ. */
-export function expectNamedElevationLevels(root: ParentNode): void {
-	const shadows = (selector: string) =>
-		[...root.querySelectorAll<HTMLElement>(selector)].map(
-			(element) => getComputedStyle(element).boxShadow,
-		)
-	const [menu, button] = shadows('[data-pair]')
-	expect(menu).not.toBe('none')
-	expect(button).toBe(menu)
+/**
+ * Material 3 elevation levels 1 to 5 (1, 3, 6, 8 and 12 dp): a key shadow at
+ * 30 % and an ambient shadow at 15 % of the app's shadow colour, as
+ * `[x, y, blur, spread]` in px.
+ */
+const LEVELS: Record<number, [number[], number[]]> = {
+	1: [
+		[0, 1, 2, 0],
+		[0, 1, 3, 1],
+	],
+	2: [
+		[0, 1, 2, 0],
+		[0, 2, 6, 2],
+	],
+	3: [
+		[0, 1, 3, 0],
+		[0, 4, 8, 3],
+	],
+	4: [
+		[0, 2, 3, 0],
+		[0, 6, 10, 4],
+	],
+	5: [
+		[0, 4, 4, 0],
+		[0, 8, 12, 6],
+	],
+}
 
-	const byLevel = [1, 2, 3, 4, 5].map(
-		(level) => shadows(`[data-level="${level}"]`)[0],
-	)
-	expect(new Set(byLevel).size).toBe(5)
-	for (const shadow of byLevel) expect(shadow).not.toBe('none')
+/** The computed shadow of the Material 3 definition of `level`, in `root`. */
+function expectedShadow(root: ParentNode, level: number): string {
+	const shade = (alpha: number) =>
+		`color-mix(in oklch, var(--md-sys-color-shadow) ${alpha}%, transparent)`
+	const [key, ambient] = LEVELS[level]
+	const probe = document.createElement('div')
+	probe.style.boxShadow = [
+		`${key.map((px) => `${px}px`).join(' ')} ${shade(30)}`,
+		`${ambient.map((px) => `${px}px`).join(' ')} ${shade(15)}`,
+	].join(', ')
+	;(root instanceof Document ? root.body : root).append(probe)
+	const shadow = getComputedStyle(probe).boxShadow
+	probe.remove()
+	return shadow
+}
+
+/**
+ * Each surface casts the shadow Material 3 defines for its level, so the menu
+ * and the floating button at level 2 cast the same one.
+ */
+export function expectNamedElevationLevels(root: ParentNode): void {
+	const surfaces = [...root.querySelectorAll<HTMLElement>('[data-level]')]
+	expect(surfaces).toHaveLength(6)
+	for (const surface of surfaces) {
+		const level = Number(surface.dataset.level)
+		expect(getComputedStyle(surface).boxShadow, `level ${level}`).toBe(
+			expectedShadow(root, level),
+		)
+	}
 }
