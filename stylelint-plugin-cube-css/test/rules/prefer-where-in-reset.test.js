@@ -34,6 +34,20 @@ describe(ruleName, () => {
 		expect(warnings[0].text).toContain('h1');
 	});
 
+	it('accepts pseudo-elements, which :where() cannot contain', async () => {
+		const result = await lint(`
+			@layer reset {
+				:where(*),
+				::before,
+				::after {
+					box-sizing: border-box;
+				}
+			}
+		`);
+
+		expect(getWarnings(result)).toHaveLength(0);
+	});
+
 	it('accepts selectors wrapped in :where()', async () => {
 		const result = await lint(`
 			@layer reset {

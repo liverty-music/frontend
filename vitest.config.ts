@@ -37,6 +37,7 @@ const unitProject = mergeConfig(
 				'e2e/**',
 				'scripts/**',
 				'test/**/*.node.spec.ts',
+				'stylelint-plugin-cube-css/test/**/*.node.spec.js',
 			],
 			root: fileURLToPath(new URL('./', import.meta.url)),
 			setupFiles: ['./test/setup.ts'],
@@ -59,7 +60,11 @@ const scriptsProject = defineProject({
 		environment: 'node',
 		// `*.node.spec.ts` under test/ need real Node APIs too (e.g. a child
 		// process with another time zone).
-		include: ['scripts/**/*.spec.ts', 'test/**/*.node.spec.ts'],
+		include: [
+			'scripts/**/*.spec.ts',
+			'test/**/*.node.spec.ts',
+			'stylelint-plugin-cube-css/test/**/*.node.spec.js',
+		],
 		root: fileURLToPath(new URL('./', import.meta.url)),
 	},
 })

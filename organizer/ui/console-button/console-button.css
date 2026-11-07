@@ -29,16 +29,16 @@
 		white-space: nowrap;
 
 		background: transparent;
-
-		&:disabled {
-			cursor: not-allowed;
-			color: color-mix(in oklch, var(--md-color-on-surface) 38%, transparent);
-		}
 	}
 
 	a:has(console-icon),
 	button:has(console-icon, circular-progress) {
 		padding-inline-start: var(--space-s);
+	}
+
+	button:disabled {
+		cursor: not-allowed;
+		color: color-mix(in oklch, var(--md-color-on-surface) 38%, transparent);
 	}
 
 	[data-variant="filled"] {

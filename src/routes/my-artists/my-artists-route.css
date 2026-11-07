@@ -158,6 +158,7 @@
 
 		/* ── Artist row ── */
 		.artist-row {
+			/* stylelint-disable-next-line no-unknown-custom-properties -- set inline by the template, per artist */
 			view-transition-name: var(--_vt-name);
 
 			view-transition-group: nearest;
@@ -205,6 +206,7 @@
 
 			vertical-align: middle;
 
+			/* stylelint-disable-next-line no-unknown-custom-properties -- set inline by the template, per artist */
 			background-color: var(--_dot-color);
 		}
 

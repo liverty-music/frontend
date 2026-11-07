@@ -1,32 +1,44 @@
-import { fileURLToPath } from 'node:url'
-import { definedColorTokens } from './stylelint-plugin-cube-css/lib/utils/defined-color-tokens.js'
+const PROPERTY_DISALLOWED = [
+	// z-index is not a logical/physical property concern — it's banned to enforce
+	// a design-token-based stacking context strategy instead of arbitrary values.
+	'z-index',
+]
 
-/** The --color-* tokens an app's token stylesheet defines. */
-const tokens = (path) =>
-	definedColorTokens(fileURLToPath(new URL(path, import.meta.url)))
+// Legacy layout values that bypass writing-mode awareness.
+// Use `float: inline-start`/`inline-end`, `clear: inline-start`/`inline-end`,
+// and `text-align: start`/`end` instead.
+const VALUE_DISALLOWED = {
+	float: ['left', 'right'],
+	clear: ['left', 'right'],
+	'text-align': ['left', 'right'],
+}
+
+/** What a component's own stylesheet may read, by what it styles. */
+const LOCAL_TOKEN = '/^--_/'
+const COLOUR_TOKENS = [
+	'/^--md-sys-color-/',
+	// A state layer is a colour-mix() over a state opacity.
+	'/^--md-sys-state-/',
+	'/^--color-brand-/',
+	'/^--color-stage-/',
+	'--color-error',
+	'--color-warning',
+	'--color-success',
+	LOCAL_TOKEN,
+]
 
 /** @type {import('stylelint').Config} */
 export default {
 	extends: ['stylelint-config-standard', 'stylelint-config-clean-order'],
-	plugins: ['stylelint-use-logical', './stylelint-plugin-cube-css/index.js'],
+	plugins: ['./stylelint-plugin-cube-css/index.js'],
+	reportDescriptionlessDisables: true,
+	reportNeedlessDisables: true,
+	reportUnscopedDisables: true,
 	rules: {
 		'import-notation': null,
 
 		// Allow token names like --step--1 (negative step scale).
 		'custom-property-pattern': null,
-
-		'at-rule-no-unknown': [
-			true,
-			{
-				ignoreAtRules: [
-					'layer',
-					'container',
-					'starting-style',
-					'property',
-					'scope',
-				],
-			},
-		],
 
 		'function-no-unknown': [
 			true,
@@ -40,11 +52,10 @@ export default {
 		'color-no-hex': true,
 
 		// Enforce CSS Logical Properties over physical properties.
-		// Autofix-capable: `stylelint --fix` converts physical → logical automatically.
-		'csstools/use-logical': [
-			'always',
+		'property-layout-mappings': [
+			'flow-relative',
 			{
-				except: [
+				ignoreProperties: [
 					// Images, videos, and canvas elements have physically fixed aspect ratios.
 					// Their dimensions are intrinsic to the media, not to the writing direction,
 					// so physical width/height is appropriate here.
@@ -52,24 +63,25 @@ export default {
 					'height',
 					'max-width',
 					'max-height',
+					// stylelint-use-logical, which this rule replaced, accepted these too.
+					// The rule objects to multi-value shorthands and axis longhands, which
+					// behave the same in the horizontal writing mode every app uses.
+					'padding',
+					'margin',
+					'inset',
+					'/^overflow/',
+					'/^overscroll-behavior/',
 				],
 			},
 		],
 
-		'property-disallowed-list': [
-			// z-index is not a logical/physical property concern — it's banned to enforce
-			// a design-token-based stacking context strategy instead of arbitrary values.
-			'z-index',
-		],
+		// A var() resolves to nothing when no stylesheet defines it. A property set
+		// inline by a template is declared by a described disable in its stylesheet.
+		'no-unknown-custom-properties': true,
 
-		// Legacy layout values that bypass writing-mode awareness.
-		// Use `float: inline-start`/`inline-end`, `clear: inline-start`/`inline-end`,
-		// and `text-align: start`/`end` instead.
-		'declaration-property-value-disallowed-list': {
-			float: ['left', 'right'],
-			clear: ['left', 'right'],
-			'text-align': ['left', 'right'],
-		},
+		'property-disallowed-list': PROPERTY_DISALLOWED,
+
+		'declaration-property-value-disallowed-list': VALUE_DISALLOWED,
 
 		// Enforce Container Queries over viewport Media Queries.
 		// Components should respond to their container width, not the viewport.
@@ -98,10 +110,6 @@ export default {
 		'cube/prefer-vi-over-vw': true,
 		'cube/require-container-name': true,
 		'cube/prefer-color-mix': true,
-		'cube/no-undefined-color-token': [
-			true,
-			{ tokens: tokens('./src/styles/tokens.css') },
-		],
 	},
 	overrides: [
 		{
@@ -113,33 +121,75 @@ export default {
 				'cube/block-require-scope': null,
 			},
 		},
+		// A component's stylesheet cannot undo a shared layer. Margins come from a
+		// composition, type from a `.md-typescale-*` class in the template, focus from
+		// the global ring, and each visual value from a role token. `overrides`
+		// replaces a rule's value rather than merging it, so these repeat the base
+		// config's entries.
+		//
+		// The allowed names are the target of adopt-m3-cube-ui-foundation: the
+		// `--md-sys-color-*`, `--md-sys-shape-*` and `--md-sys-elevation-*` tokens and
+		// the type classes are added by its later steps, which rename today's
+		// `--md-color-*`, `--md-shape-*` and `--md-elevation-*`. Until then their uses
+		// are recorded in stylelint-suppressions.json. Admin and reception are outside
+		// that change and keep their own rules.
+		{
+			files: [
+				'src/components/**/*.css',
+				'src/routes/**/*.css',
+				'shared/ui/**/*.css',
+				'src/app-shell.css',
+				'src/styles/button.css',
+				'organizer/!(styles)/**/*.css',
+			],
+			rules: {
+				'property-disallowed-list': [
+					...PROPERTY_DISALLOWED,
+					'/^margin/',
+					'/^font(-family|-size|-weight|-style)?$/',
+					'line-height',
+					'letter-spacing',
+					'/^outline/',
+				],
+				'declaration-property-value-disallowed-list': {
+					...VALUE_DISALLOWED,
+					'/^padding/': ['0'],
+					'list-style': ['none'],
+				},
+				'declaration-property-custom-property-allowed-list': {
+					'/^(color|background(-color)?|border(-[a-z]+)*-color|fill|stroke|caret-color|accent-color)$/':
+						COLOUR_TOKENS,
+					'/^border(-[a-z]+)*-radius$/': ['/^--md-sys-shape-/', LOCAL_TOKEN],
+					'box-shadow': ['/^--md-sys-elevation-/', '/^--glow-/', LOCAL_TOKEN],
+					'/^(padding|gap|row-gap|column-gap)/': ['/^--space-/', LOCAL_TOKEN],
+				},
+				'declaration-property-value-allowed-list': {
+					'box-shadow': ['none', '/^var\\(/'],
+				},
+				'cube/block-max-lines': [true, { max: 100 }],
+			},
+		},
 		// Each self-contained entry declares its own tokens.
 		{
+			files: ['src/**/*.css', 'shared/**/*.css'],
+			referenceFiles: ['src/styles/*.css', 'shared/styles/*.css'],
+		},
+		{
 			files: ['admin/**/*.css'],
-			rules: {
-				'cube/no-undefined-color-token': [
-					true,
-					{ tokens: tokens('./admin/styles/main.css') },
-				],
-			},
+			referenceFiles: ['admin/styles/main.css'],
 		},
 		{
 			files: ['reception/**/*.css'],
-			rules: {
-				'cube/no-undefined-color-token': [
-					true,
-					{ tokens: tokens('./reception/styles/main.css') },
-				],
-			},
+			referenceFiles: ['reception/styles/main.css'],
 		},
 		{
 			files: ['organizer/**/*.css'],
-			rules: {
-				'cube/no-undefined-color-token': [
-					true,
-					{ tokens: tokens('./organizer/styles/tokens.css') },
-				],
-			},
+			referenceFiles: [
+				'organizer/styles/*.css',
+				'shared/styles/*.css',
+				// Defines --page-inline-padding, which every screen inherits.
+				'organizer/organizer-shell/organizer-shell.css',
+			],
 		},
 	],
 }

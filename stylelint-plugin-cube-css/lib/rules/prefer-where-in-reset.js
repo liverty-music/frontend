@@ -18,7 +18,16 @@ const meta = {
 	fixable: false,
 };
 
-const EXEMPT_SELECTORS = new Set([':root', 'body', 'html', '*']);
+// `:where()` cannot contain pseudo-elements: a browser drops them from the list,
+// so `::before` and `::after` have to stay outside it.
+const EXEMPT_SELECTORS = new Set([
+	':root',
+	'body',
+	'html',
+	'*',
+	'::before',
+	'::after',
+]);
 const TARGET_LAYERS = new Set(['reset', 'global']);
 
 /**

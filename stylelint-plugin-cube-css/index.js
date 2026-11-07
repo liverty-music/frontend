@@ -12,7 +12,6 @@ import dataAttrNaming from './lib/rules/data-attr-naming.js';
 import preferViOverVw from './lib/rules/prefer-vi-over-vw.js';
 import requireContainerName from './lib/rules/require-container-name.js';
 import preferColorMix from './lib/rules/prefer-color-mix.js';
-import noUndefinedColorToken from './lib/rules/no-undefined-color-token.js';
 
 export default [
 	requireLayer,
@@ -29,5 +28,4 @@ export default [
 	preferViOverVw,
 	requireContainerName,
 	preferColorMix,
-	noUndefinedColorToken,
 ];

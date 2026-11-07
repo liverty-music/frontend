@@ -61,6 +61,19 @@ describe(ruleName, () => {
 		expect(warnings[0].text).toContain('maximum of 10 lines');
 	});
 
+	it('measures a block layer with no @scope, as a shadow-root component has', async () => {
+		const declarations = Array.from(
+			{ length: 20 },
+			(_, i) => `--var-${i}: 0;`,
+		).join('\n');
+		const result = await lint(
+			`@layer block {\n:host {\n${declarations}\n}\n}`,
+			[true, { max: 10 }],
+		);
+
+		expect(getWarnings(result)).toHaveLength(1);
+	});
+
 	it('ignores @scope blocks outside @layer', async () => {
 		const declarations = Array.from(
 			{ length: 90 },

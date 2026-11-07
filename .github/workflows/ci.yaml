@@ -63,6 +63,7 @@ jobs:
               - 'vitest.config.ts'
               - 'biome.json'
               - 'stylelint.config.js'
+              - 'stylelint-suppressions.json'
               - 'stylelint-plugin-cube-css/**'
               - 'Makefile'
               - 'playwright.config.mjs'

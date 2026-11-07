@@ -8,7 +8,9 @@
 @layer reset, tokens, global, composition, block;
 
 @layer reset {
-	:where(*, *::before, *::after) {
+	:where(*),
+	::before,
+	::after {
 		box-sizing: border-box;
 	}
 
