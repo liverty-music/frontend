@@ -31,11 +31,13 @@
 		--color-text-primary: oklch(98.5% 0 0deg);
 		--color-text-secondary: oklch(82% 0.02 275deg);
 		--color-error: oklch(65% 0.2 25deg);
+		--space-xs: 0.75rem;
 		--space-s: 1rem;
 		--space-m: 1.5rem;
 		--space-l: 2rem;
 		--step--1: 0.833rem;
 		--step-0: 1rem;
+		--step-1: 1.2rem;
 		--step-3: 1.953rem;
 		--font-body: "Poppins", system-ui, sans-serif;
 		--font-display: "Outfit", system-ui, sans-serif;
