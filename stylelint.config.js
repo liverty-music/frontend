@@ -122,9 +122,17 @@ export default {
 			},
 		},
 		// A component's stylesheet cannot undo a shared layer. Margins come from a
-		// composition, type from a type style, focus from the global ring, and each
-		// visual value from a role token. `overrides` replaces a rule's value rather
-		// than merging it, so these repeat the base config's entries.
+		// composition, type from a `.md-typescale-*` class in the template, focus from
+		// the global ring, and each visual value from a role token. `overrides`
+		// replaces a rule's value rather than merging it, so these repeat the base
+		// config's entries.
+		//
+		// The allowed names are the target of adopt-m3-cube-ui-foundation: the
+		// `--md-sys-color-*`, `--md-sys-shape-*` and `--md-sys-elevation-*` tokens and
+		// the type classes are added by its later steps, which rename today's
+		// `--md-color-*`, `--md-shape-*` and `--md-elevation-*`. Until then their uses
+		// are recorded in stylelint-suppressions.json. Admin and reception are outside
+		// that change and keep their own rules.
 		{
 			files: [
 				'src/components/**/*.css',
