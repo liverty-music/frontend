@@ -11,7 +11,9 @@
 @layer reset, global, block;
 
 @layer reset {
-	:where(*, *::before, *::after) {
+	:where(*),
+	::before,
+	::after {
 		box-sizing: border-box;
 	}
 

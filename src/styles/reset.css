@@ -1,5 +1,7 @@
 @layer reset {
-	:where(*, *::before, *::after) {
+	:where(*),
+	::before,
+	::after {
 		box-sizing: border-box;
 		margin: 0;
 		padding: 0;
