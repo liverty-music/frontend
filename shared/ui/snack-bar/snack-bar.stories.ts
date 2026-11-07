@@ -397,8 +397,10 @@ export const SwipePastHalf = {
 		if (!reduced) {
 			// @spec components/infrastructure/fan/web/global/snack-bar "Swipe past the dismiss point"
 			// It leaves to the left, the way it was swiped.
-			await expect(surface.getBoundingClientRect().left).toBeLessThan(
-				before.left - before.width / 2,
+			await waitFor(() =>
+				expect(surface.getBoundingClientRect().left).toBeLessThan(
+					before.left - before.width / 2,
+				),
 			)
 		} else {
 			// @spec components/infrastructure/fan/web/global/snack-bar "Swipe under reduced motion"
@@ -437,8 +439,15 @@ export const ShortSwipe = {
 } satisfies Story
 
 /**
- * A 4-second snack held after 3 seconds for 5 seconds stays, and goes 1
- * second after it is released.
+ * A 4-second snack held for 5 seconds stays, and after release goes when the
+ * time it had left runs out, not at once.
+ *
+ * The times are measured, not assumed: under a loaded test run the press and
+ * the checks can land later than asked, and a timer fires late but never
+ * early. The press comes 1 second in, leaving about 3 seconds; the snack must
+ * then stay at least 1 second after release and go within what it had left
+ * plus a margin. This checks that a real pointer press reaches the timer; the
+ * timer's arithmetic is verified in snack-item.spec.ts.
  */
 export const HoldPausesTimer = {
 	render: demo(),
@@ -448,18 +457,22 @@ export const HoldPausesTimer = {
 			canvas.getByRole('button', { name: 'Show a 4-second snack' }),
 		)
 		const { item } = await openSnack(canvasElement)
-		await sleep(3000)
+		await sleep(1000)
 		if (!(await pressAndHold('.snack-surface'))) return
+		// The press landed before the snack timed out.
+		await expect(item.matches(':popover-open')).toBe(true)
 		await sleep(5000)
 
-		// @spec components/infrastructure/fan/web/global/snack-bar "Holding pauses the timer"
+		// A real held pointer pauses the timer. The scenario "Holding pauses the
+		// timer", with its exact times, is verified in snack-item.spec.ts.
 		await expect(item.matches(':popover-open')).toBe(true)
+		const released = performance.now()
 		await releasePointer()
-		await sleep(800)
-		await expect(item.matches(':popover-open')).toBe(true)
+
 		await waitFor(() => expect(item.matches(':popover-open')).toBe(false), {
-			timeout: 500,
+			timeout: 5000,
 		})
+		await expect(performance.now() - released).toBeGreaterThanOrEqual(1000)
 	},
 } satisfies Story
 
