@@ -189,8 +189,9 @@ export class UserStore {
 	 */
 	public get currentLanguage(): string {
 		if (this.auth.isAuthenticated) {
-			const preferred = this.current?.preferredLanguage
-			if (preferred) return normalizeToSupportedLanguage(preferred)
+			if (this.current) {
+				return normalizeToSupportedLanguage(this.current.preferredLanguage)
+			}
 			return this.i18nLocale
 		}
 		return this.i18nLocale
@@ -288,16 +289,10 @@ export class UserStore {
 		preferredLanguage: string,
 	): Promise<User | undefined> {
 		const updated = await this.rpcClient.setPreferredLanguage(preferredLanguage)
-		// Use the DB-authoritative entity when the server returned a populated
-		// user with a non-empty preferredLanguage. If the server omitted the
-		// user field entirely, OR returned a user whose preferredLanguage is
-		// missing/empty (the mapper coerces proto3 default "" to undefined,
-		// which can happen on a partial proto migration or a misconfigured
-		// validator), patch the cached field locally with the value we
-		// successfully sent. Wiping `current` with a stale/incomplete entity
-		// would break the rest of the session for everyone reading
-		// userStore.current.
-		if (updated?.preferredLanguage) {
+		// Use the DB-authoritative entity when the server returned the user. If
+		// it omitted the user field, patch the cached field locally with the
+		// value we successfully sent rather than wiping `current`.
+		if (updated) {
 			this.current = updated
 		} else if (this.current) {
 			this.current = { ...this.current, preferredLanguage }

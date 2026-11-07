@@ -67,27 +67,25 @@ export async function runUserHydration(container: IContainer): Promise<void> {
 	// only when the user has explicitly opted out of analytics.
 	container.get(IAnalyticsService).identify(current.id)
 
-	if (current.preferredLanguage) {
-		// AWAIT setLocale before runUserHydration resolves: the wrapping
-		// AppTask.activating delays first render until this promise
-		// settles, so finishing locale-apply here means the first paint
-		// renders in the DB-authoritative locale rather than the
-		// client-detected one. Without the await Aurelia marks the app
-		// active and routes immediately, producing a visible
-		// language flash when setLocale eventually fires.
-		//
-		// Save the applied locale explicitly rather than relying on the
-		// detector's cache side effect, so the first screen after a sign-out
-		// opens in it. On apply failure the saved language stays as it was.
-		const applied = await applyPreferredLanguageToI18n({
-			i18n,
-			logger,
-			clientLocale,
-			preferred: current.preferredLanguage,
-		})
-		if (applied) {
-			localStorage.setItem(StorageKeys.language, current.preferredLanguage)
-		}
+	// AWAIT setLocale before runUserHydration resolves: the wrapping
+	// AppTask.activating delays first render until this promise
+	// settles, so finishing locale-apply here means the first paint
+	// renders in the DB-authoritative locale rather than the
+	// client-detected one. Without the await Aurelia marks the app
+	// active and routes immediately, producing a visible
+	// language flash when setLocale eventually fires.
+	//
+	// Save the applied locale explicitly rather than relying on the
+	// detector's cache side effect, so the first screen after a sign-out
+	// opens in it. On apply failure the saved language stays as it was.
+	const applied = await applyPreferredLanguageToI18n({
+		i18n,
+		logger,
+		clientLocale,
+		preferred: current.preferredLanguage,
+	})
+	if (applied) {
+		localStorage.setItem(StorageKeys.language, current.preferredLanguage)
 	}
 }
 

@@ -18,13 +18,11 @@ export interface User {
 	readonly home?: UserHome
 	/**
 	 * The user's preferred display language as an ISO 639-1 two-letter code
-	 * (e.g., "ja", "en"). Absent (`undefined`) when the backend row has not yet
-	 * captured a language preference — in that case the hydration task backfills
-	 * it from the currently effective i18n locale.
+	 * (e.g., "ja", "en"). Every User has one: Create requires it.
 	 *
 	 * @source proto/liverty_music/entity/v1/user.proto — User.preferred_language
 	 */
-	readonly preferredLanguage?: string
+	readonly preferredLanguage: string
 	/**
 	 * The 本人確認 (identity check) full name shown on the fan's tickets and
 	 * prefilled at lottery entry and checkout. Absent until the fan first gives

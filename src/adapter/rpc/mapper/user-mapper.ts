@@ -15,7 +15,7 @@ export function userFrom(proto: ProtoUser): User {
 		// Pass through whatever the backend stored. The settings UI handles "current locale not in SUPPORTED_LANGUAGES" by not
 		// highlighting any selector option, which is the right "show, don't
 		// hide" posture for an unexpected DB state.
-		preferredLanguage: proto.preferredLanguage || undefined,
+		preferredLanguage: proto.preferredLanguage,
 		fullName: proto.fullName?.value || undefined,
 		phoneNumber: proto.phoneNumber?.value || undefined,
 	}
