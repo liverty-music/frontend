@@ -208,6 +208,11 @@
 			--md-sys-motion-duration-extra-long2: 0ms;
 			--md-sys-motion-duration-extra-long3: 0ms;
 			--md-sys-motion-duration-extra-long4: 0ms;
+			--md-sys-motion-spring-spatial-duration: 0ms;
+			--md-sys-motion-spring-spatial-fast-duration: 0ms;
+			--md-sys-motion-spring-spatial-slow-duration: 0ms;
+			--md-sys-motion-spring-effects-duration: 0ms;
+			--md-sys-motion-spring-effects-fast-duration: 0ms;
 		}
 	}
 }
