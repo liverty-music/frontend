@@ -1,5 +1,6 @@
 import { expect } from 'storybook/test'
 import { page } from 'vitest/browser'
+import sharedTokens from '../shared/styles/m3-sys.css?raw'
 
 /**
  * Checks of the shared Material 3 foundations (shared/styles/m3-sys.css and
@@ -136,4 +137,57 @@ export function expectNamedElevationLevels(root: ParentNode): void {
 			expectedShadow(root, level),
 		)
 	}
+}
+
+/** Custom properties a stylesheet declares, with whitespace collapsed. */
+function declared(css: string): Map<string, string> {
+	return new Map(
+		[...css.matchAll(/(--[\w-]+)\s*:\s*([^;]+);/g)].map((m) => [
+			m[1],
+			m[2]
+				.replace(/\s+/g, ' ')
+				.replace(/\(\s/g, '(')
+				.replace(/\s\)/g, ')')
+				.trim(),
+		]),
+	)
+}
+
+/** The value `name` computes to on `element`, whitespace collapsed. */
+function computed(element: Element, name: string): string {
+	return getComputedStyle(element)
+		.getPropertyValue(name)
+		.replace(/\s+/g, ' ')
+		.replace(/\(\s/g, '(')
+		.replace(/\s\)/g, ')')
+		.trim()
+}
+
+/**
+ * Every state and motion token of the shared file computes, in this app, to
+ * the value the shared file declares; with motion reduced, to its reduced
+ * value. So an edit there reaches the app with no other edit.
+ */
+export function expectSharedStateAndMotion(element: Element): void {
+	const reducedAt = sharedTokens.indexOf('@media (prefers-reduced-motion')
+	const tokens = declared(sharedTokens.slice(0, reducedAt))
+	if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+		for (const [name, value] of declared(sharedTokens.slice(reducedAt))) {
+			tokens.set(name, value)
+		}
+	}
+	const names = [...tokens.keys()].filter((name) =>
+		/^--md-sys-(state|motion)-/.test(name),
+	)
+	expect(names.length).toBeGreaterThan(20)
+	for (const name of names) {
+		expect(computed(element, name), name).toBe(tokens.get(name))
+	}
+}
+
+/** The app's surface colour is the one its own token file declares. */
+export function expectOwnSurface(element: Element, appTokens: string): void {
+	const own = declared(appTokens).get('--md-sys-color-surface')
+	expect(own).toBeTruthy()
+	expect(computed(element, '--md-sys-color-surface')).toBe(own)
 }
