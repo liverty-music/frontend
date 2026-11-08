@@ -7,6 +7,8 @@
 	t="[aria-label]notifications.bell"
 	t-params.bind="{ count: unreadCount }"
 >
-	<svg-icon name="bell"></svg-icon>
-	<small if.bind="unreadCount > 0" class="notification-bell-badge" data-testid="notification-bell-badge" aria-hidden="true">${unreadCount}</small>
+	<span class="notification-bell-icon">
+		<svg-icon name.bind="iconName" size="lg" data-testid="notification-bell-icon"></svg-icon>
+		<small if.bind="unreadCount > 0" class="[ notification-bell-badge ] [ md-typescale-label-small ]" data-testid="notification-bell-badge" aria-hidden="true">${unreadCount}</small>
+	</span>
 </button>
