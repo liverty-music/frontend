@@ -57,11 +57,11 @@
 
 		/* Hover and keyboard focus raise the `pressable` state layer. */
 		:scope:focus-visible::after {
-			opacity: var(--md-state-focus);
+			opacity: var(--md-sys-state-focus-opacity);
 		}
 
 		:scope:hover:not(:disabled)::after {
-			opacity: var(--md-state-hover);
+			opacity: var(--md-sys-state-hover-opacity);
 		}
 
 		:scope:disabled {

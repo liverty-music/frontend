@@ -205,7 +205,7 @@
 
 		.event-card[data-matched]:active::after,
 		.event-card:not([data-matched]):active::before {
-			opacity: var(--md-state-pressed);
+			opacity: var(--md-sys-state-pressed-opacity);
 		}
 
 		/* =============================================

@@ -222,7 +222,7 @@
 	}
 
 	.pressable:active::after {
-		opacity: var(--md-state-pressed);
+		opacity: var(--md-sys-state-pressed-opacity);
 	}
 
 	/* ── Skeleton loading placeholder (M3) ──
@@ -285,7 +285,12 @@
 		[data-selected]
 	):hover {
 		background-image: linear-gradient(
-			color-mix(in oklab, currentcolor var(--md-state-hover), transparent) 0 0
+			color-mix(
+					in oklab,
+					currentcolor calc(var(--md-sys-state-hover-opacity) * 100%),
+					transparent
+				)
+				0 0
 		);
 	}
 

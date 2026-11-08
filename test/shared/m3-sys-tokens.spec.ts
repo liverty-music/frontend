@@ -69,10 +69,6 @@ describe('shared M3 system tokens', () => {
 			]),
 		)
 		const aliases: Record<string, string> = {
-			'--md-state-hover': '--md-sys-state-hover-opacity',
-			'--md-state-focus': '--md-sys-state-focus-opacity',
-			'--md-state-pressed': '--md-sys-state-pressed-opacity',
-			'--md-state-dragged': '--md-sys-state-dragged-opacity',
 			'--md-easing-standard': '--md-sys-motion-easing-standard',
 			'--md-easing-emphasized-accelerate':
 				'--md-sys-motion-easing-emphasized-accelerate',

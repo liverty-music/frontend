@@ -263,10 +263,6 @@
 		   tokens above are the launcher's pre-existing local copy.) Hover, focus,
 		   pressed and dragged alias the shared system opacities in
 		   shared/styles/m3-sys.css, as percentages for color-mix(). */
-		--md-state-hover: calc(var(--md-sys-state-hover-opacity) * 100%);
-		--md-state-focus: calc(var(--md-sys-state-focus-opacity) * 100%);
-		--md-state-pressed: calc(var(--md-sys-state-pressed-opacity) * 100%);
-		--md-state-dragged: calc(var(--md-sys-state-dragged-opacity) * 100%);
 
 		/* Fan-local: M3 publishes no selected opacity (StateTokens.kt). */
 		--md-state-selected: 12%;
@@ -312,10 +308,6 @@
 		); /* rounded-rect panel */
 
 		/* M3 state-layer opacities, overlaid on each element's on-role color. */
-		--fab-state-hover: 8%;
-		--fab-state-focus: 10%;
-		--fab-state-pressed: 10%;
-		--fab-state-selected: 12%;
 
 		/* Rendered height of the bottom navigation bar. Single source of truth:
 		   bottom-nav-bar sizes itself from this, and the FAB launcher offsets

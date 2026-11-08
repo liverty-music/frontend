@@ -100,15 +100,15 @@
 		}
 
 		.fab-toggle:hover::after {
-			opacity: var(--fab-state-hover);
+			opacity: var(--md-sys-state-hover-opacity);
 		}
 
 		.fab-toggle:focus-visible::after {
-			opacity: var(--fab-state-focus);
+			opacity: var(--md-sys-state-focus-opacity);
 		}
 
 		.fab-toggle:active::after {
-			opacity: var(--fab-state-pressed);
+			opacity: var(--md-sys-state-pressed-opacity);
 		}
 
 		/* ── Glyph: equalizer ↔ close ── */
@@ -349,15 +349,15 @@
 		}
 
 		.fab-item:hover::after {
-			opacity: var(--fab-state-hover);
+			opacity: var(--md-sys-state-hover-opacity);
 		}
 
 		.fab-item:focus-visible::after {
-			opacity: var(--fab-state-focus);
+			opacity: var(--md-sys-state-focus-opacity);
 		}
 
 		.fab-item:active::after {
-			opacity: var(--fab-state-pressed);
+			opacity: var(--md-sys-state-pressed-opacity);
 		}
 
 		/* Selected/active item = filled brand container (the M3 "on" treatment).
