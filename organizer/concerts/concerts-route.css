@@ -27,7 +27,6 @@
 		}
 
 		.message-title {
-			font: var(--md-type-title-medium);
 			color: var(--md-sys-color-on-surface);
 		}
 

@@ -15,7 +15,7 @@
 
     <section if.bind="groups.length" class="groups" aria-label.bind="'home.listLabel' & t" data-testid="home-items">
       <section repeat.for="group of groups; key: kind" class="group" data-group.bind="group.kind">
-        <h2 class="subheader" id.bind="`home-${group.kind}`">${`home.kind.${group.kind}` & t}</h2>
+        <h2 class="[ subheader ] [ md-typescale-title-small ]" id.bind="`home-${group.kind}`">${`home.kind.${group.kind}` & t}</h2>
         <ul class="list" aria-labelledby.bind="`home-${group.kind}`">
           <li repeat.for="item of group.items; key: key" data-kind.bind="item.kind">
             <list-item href.bind="item.actionHref">
@@ -31,7 +31,7 @@
               </template>
               <template case="draft">${item.concertTitle}</template>
               </template>
-              <span slot="trailing" class="trailing">
+              <span slot="trailing" class="[ trailing ] [ md-typescale-label-large ]">
                 <template if.bind="item.kind === 'draft'">${item.when | jstDay}</template>
                 <template else>${`home.action.${item.kind}` & t}</template>
                 <console-icon name="chevron-right"></console-icon>

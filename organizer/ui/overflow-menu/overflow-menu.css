@@ -64,8 +64,6 @@
 		min-block-size: var(--md-target-size);
 		padding-inline: var(--space-xs);
 		border: none;
-
-		font: var(--md-type-label-large);
 		color: inherit;
 		text-align: start;
 		text-decoration: none;

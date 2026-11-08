@@ -2,7 +2,7 @@
 <import from="../crumb-text/crumb-text"></import>
 
 <nav if.bind="breadcrumbs.trail.length" aria-label.bind="'shell.breadcrumb' & t" class="breadcrumb">
-  <ol class="trail">
+  <ol class="[ trail ] [ md-typescale-body-medium ]">
     <li repeat.for="crumb of breadcrumbs.trail">
       <a if.bind="crumb.href && !$last" href.bind="crumb.href"><crumb-text crumb.bind="crumb"></crumb-text></a>
       <span else aria-current.bind="$last ? 'page' : null"><crumb-text crumb.bind="crumb"></crumb-text></span>

@@ -156,23 +156,6 @@
 			oklch(86% 0.01 285deg)
 		);
 
-		/* ── Type ──
-		   A fixed M3 scale (TypeScaleTokens.kt) that does not follow the window:
-		   members compare numbers across windows, and M3 adapts the layout,
-		   not the text size, across window classes. */
-		--font-body:
-			"Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", system-ui, sans-serif;
-		--font-mono: ui-monospace, "SFMono-Regular", monospace;
-		--md-type-body-small: 400 12px / 16px var(--font-body);
-		--md-type-body-medium: 400 14px / 20px var(--font-body);
-		--md-type-body-large: 400 16px / 24px var(--font-body);
-		--md-type-label-medium: 500 12px / 16px var(--font-body);
-		--md-type-label-large: 500 14px / 20px var(--font-body);
-		--md-type-title-small: 500 14px / 20px var(--font-body);
-		--md-type-title-medium: 500 16px / 24px var(--font-body);
-		--md-type-title-large: 400 22px / 28px var(--font-body);
-		--md-type-headline-small: 400 24px / 32px var(--font-body);
-
 		/* ── Space (4 px grid) ── */
 		--space-3xs: 4px;
 		--space-2xs: 8px;
@@ -228,6 +211,6 @@
 
 		/* A calm work tool: no brand face, every style uses the plain one. */
 		--md-ref-typeface-brand: var(--md-ref-typeface-plain);
-		--md-ref-typeface-mono: var(--font-mono);
+		--md-ref-typeface-mono: ui-monospace, "SFMono-Regular", monospace;
 	}
 }

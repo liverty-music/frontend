@@ -12,7 +12,7 @@
     href.bind="href"
     target.bind="target || null"
     rel.bind="target === '_blank' ? 'noopener' : null"
-    class="state-layer touch-target"
+    class="[ state-layer touch-target md-typescale-label-large ]"
     data-variant.bind="variant"
   >
     <console-icon if.bind="icon" name.bind="icon"></console-icon>
@@ -22,7 +22,7 @@
     else
     ref="control"
     type.bind="type"
-    class="state-layer touch-target"
+    class="[ state-layer touch-target md-typescale-label-large ]"
     data-variant.bind="variant"
     data-pending.bind="pending"
     disabled.bind="disabled"

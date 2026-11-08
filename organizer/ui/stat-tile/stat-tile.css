@@ -15,18 +15,15 @@
 	}
 
 	.label {
-		font: var(--md-type-label-large);
 		color: var(--md-sys-color-on-surface-variant);
 	}
 
 	.value {
-		font: var(--md-type-headline-small);
 		font-variant-numeric: tabular-nums;
 		color: var(--md-sys-color-on-surface);
 	}
 
 	.supporting {
-		font: var(--md-type-body-small);
 		color: var(--md-sys-color-on-surface-variant);
 	}
 }

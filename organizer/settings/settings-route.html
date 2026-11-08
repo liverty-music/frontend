@@ -10,21 +10,21 @@
 
   <template if.bind="organizerState === 'ready'">
     <section class="part" aria-labelledby="settings-organization">
-      <h2 id="settings-organization" class="section-title">${'settings.organization' & t}</h2>
+      <h2 id="settings-organization" class="[ section-title ] [ md-typescale-title-large ]">${'settings.organization' & t}</h2>
       <description-list items.bind="organization"></description-list>
       <p class="note">${'settings.changeOnRequest' & t}</p>
     </section>
 
     <section class="part" aria-labelledby="settings-artists">
-      <h2 id="settings-artists" class="section-title">${'settings.artistsTitle' & t}</h2>
+      <h2 id="settings-artists" class="[ section-title ] [ md-typescale-title-large ]">${'settings.artistsTitle' & t}</h2>
       <ul if.bind="artistNames.length" class="artists">
-        <li repeat.for="artist of artistNames" class="artist">${artist}</li>
+        <li repeat.for="artist of artistNames" class="[ artist ] [ md-typescale-body-large ]">${artist}</li>
       </ul>
       <p else class="note">${'settings.noArtists' & t}</p>
     </section>
 
     <section class="part" aria-labelledby="settings-business">
-      <h2 id="settings-business" class="section-title">${'settings.business.title' & t}</h2>
+      <h2 id="settings-business" class="[ section-title ] [ md-typescale-title-large ]">${'settings.business.title' & t}</h2>
       <p class="note">${'settings.business.explain' & t}</p>
       <prerequisite-callout if.bind="!businessComplete" heading.bind="'settings.business.incomplete' & t">
         ${'settings.business.incompleteBody' & t}
@@ -34,14 +34,14 @@
   </template>
 
   <section id="payout" class="part" aria-labelledby="settings-payout">
-    <h2 id="settings-payout" class="section-title">${'settings.payout.title' & t}</h2>
+    <h2 id="settings-payout" class="[ section-title ] [ md-typescale-title-large ]">${'settings.payout.title' & t}</h2>
     <div if.bind="payoutState === 'error'" class="message" role="alert">
       <p>${'settings.payout.failed' & t}</p>
       <console-button variant="tonal" click.trigger="loadPayout()">${'common.retry' & t}</console-button>
     </div>
     <template if.bind="payoutState === 'ready'">
       <p if.bind="account" class="status">
-        <span class="status-term">${'settings.payout.status' & t}</span>
+        <span class="[ status-term ] [ md-typescale-label-large ]">${'settings.payout.status' & t}</span>
         <status-badge tone.bind="payoutStatus.tone" label.bind="payoutStatus.key & t" data-testid="payout-status"></status-badge>
       </p>
       <template if.bind="!payoutActive">

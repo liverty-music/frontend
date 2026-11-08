@@ -21,14 +21,6 @@
 		justify-items: start;
 	}
 
-	.heading {
-		font: var(--md-type-title-small);
-	}
-
-	.body {
-		font: var(--md-type-body-medium);
-	}
-
 	/* The fix reads as a link in the callout's text color, not the brand
 	   color (design-tokens "The brand color marks only the primary action,
 	   focus and the logo"). */
@@ -43,8 +35,6 @@
 		padding: 0 var(--space-2xs);
 		border: none;
 		border-radius: var(--md-sys-shape-corner-small);
-
-		font: var(--md-type-label-large);
 		color: inherit;
 		text-decoration: underline;
 		text-underline-offset: 3px;
@@ -62,8 +52,6 @@
 		margin-inline: calc(-1 * var(--space-2xs));
 		padding: 0 var(--space-2xs);
 		border-radius: var(--md-sys-shape-corner-small);
-
-		font: var(--md-type-body-medium);
 		color: inherit;
 		text-decoration: underline;
 		text-underline-offset: 3px;

@@ -27,7 +27,7 @@
         <option if.bind="!required || !hour" value="">${'timeField.unset' & t}</option>
         <option repeat.for="h of hours" value.bind="h">${h}</option>
       </select>
-      <span class="separator" aria-hidden="true">:</span>
+      <span class="[ separator ] [ md-typescale-body-large ]" aria-hidden="true">:</span>
       <select
         value.bind="minute"
         required.bind="required"

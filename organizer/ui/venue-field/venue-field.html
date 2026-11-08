@@ -7,13 +7,13 @@
 <use-shadow-dom></use-shadow-dom>
 
 <div class="venue-field" data-invalid.bind="!!error">
-  <label for.bind="inputId" class="label">${label}<span if.bind="required" class="required"> *<span class="visually-hidden">${'common.required' & t}</span></span></label>
+  <label for.bind="inputId" class="[ label ] [ md-typescale-label-large ]">${label}<span if.bind="required" class="required"> *<span class="visually-hidden">${'common.required' & t}</span></span></label>
 
   <div if.bind="value" class="picked" data-role="picked">
     <console-icon name="check-circle" class="picked-icon"></console-icon>
     <div class="picked-text">
-      <span class="picked-name">${value.name}</span>
-      <span if.bind="value.address" class="picked-address">${value.address}</span>
+      <span class="[ picked-name ] [ md-typescale-body-large ]">${value.name}</span>
+      <span if.bind="value.address" class="[ picked-address ] [ md-typescale-body-small ]">${value.address}</span>
     </div>
     <console-button component.ref="changeButton" variant="text" click.trigger="change()">${'venueField.change' & t}</console-button>
   </div>
@@ -22,6 +22,7 @@
     <div class="control">
       <console-icon name="search" class="leading-icon"></console-icon>
       <input
+        class="md-typescale-body-large"
         ref="input"
         id.bind="inputId"
         type="text"
@@ -57,15 +58,15 @@
           aria-selected.bind="$index === activeIndex ? 'true' : 'false'"
           click.trigger="pick(candidate)"
         >
-          <span class="option-name">${candidate.name}</span>
-          <span if.bind="candidate.address" class="option-address">${candidate.address}</span>
+          <span class="[ option-name ] [ md-typescale-body-large ]">${candidate.name}</span>
+          <span if.bind="candidate.address" class="[ option-address ] [ md-typescale-body-small ]">${candidate.address}</span>
         </li>
       </ul>
       <!-- Places API policies: the source is credited within the list's own container. -->
-      <p class="attribution" translate="no">${'venueField.attribution' & t}</p>
+      <p class="[ attribution ] [ md-typescale-label-medium ]" translate="no">${'venueField.attribution' & t}</p>
     </div>
 
-    <div id.bind="`${inputId}-status`" class="status" role="status">
+    <div id.bind="`${inputId}-status`" class="[ status ] [ md-typescale-body-small ]" role="status">
       <template if.bind="state === 'searching'">${'venueField.searching' & t}</template>
       <template if.bind="state === 'none'">${'venueField.noMatch' & t}</template>
       <span if.bind="state === 'unavailable'" class="unavailable">
@@ -75,6 +76,6 @@
     </div>
   </template>
 
-  <p if.bind="errorText" id.bind="`${inputId}-error`" class="error">${errorText.key & t:errorText.params}</p>
-  <p if.bind="showHint" id.bind="`${inputId}-hint`" class="supporting">${'venueField.hint' & t}</p>
+  <p if.bind="errorText" id.bind="`${inputId}-error`" class="[ error ] [ md-typescale-body-small ]">${errorText.key & t:errorText.params}</p>
+  <p if.bind="showHint" id.bind="`${inputId}-hint`" class="[ supporting ] [ md-typescale-body-small ]">${'venueField.hint' & t}</p>
 </div>

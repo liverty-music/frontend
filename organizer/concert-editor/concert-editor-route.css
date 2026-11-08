@@ -29,7 +29,6 @@
 		}
 
 		.section-title {
-			font: var(--md-type-title-large);
 			color: var(--md-sys-color-on-surface);
 		}
 
@@ -39,7 +38,6 @@
 
 		.legend {
 			margin-block-end: var(--space-2xs);
-			font: var(--md-type-title-medium);
 			color: var(--md-sys-color-on-surface);
 		}
 
@@ -119,12 +117,10 @@
 		}
 
 		.visibility-label {
-			font: var(--md-type-title-small);
 			color: var(--md-sys-color-on-surface);
 		}
 
 		.visibility-effect {
-			font: var(--md-type-body-small);
 			color: var(--md-sys-color-on-surface-variant);
 		}
 
@@ -170,7 +166,6 @@
 		}
 
 		.event-title {
-			font: var(--md-type-title-medium);
 			color: var(--md-sys-color-on-surface);
 		}
 
@@ -180,7 +175,6 @@
 		}
 
 		.label {
-			font: var(--md-type-label-large);
 			color: var(--md-sys-color-on-surface-variant);
 		}
 
@@ -188,8 +182,6 @@
 			display: flex;
 			gap: var(--space-2xs);
 			align-items: center;
-
-			font: var(--md-type-body-small);
 			color: var(--md-sys-color-error);
 		}
 

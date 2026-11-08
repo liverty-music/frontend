@@ -42,10 +42,10 @@
         error.bind="error(errors.name, submitted)"
       ></console-field>
       <div else class="fixed">
-        <span class="label">${'lotteryEditor.name' & t}</span>
+        <span class="[ label ] [ md-typescale-label-large ]">${'lotteryEditor.name' & t}</span>
         <span>${model.name}</span>
       </div>
-      <h2 class="section-title">${'firstComeEditor.sections.window' & t}</h2>
+      <h2 class="[ section-title ] [ md-typescale-title-large ]">${'firstComeEditor.sections.window' & t}</h2>
       <div class="row">
         <console-field
           type="date"
@@ -82,11 +82,11 @@
         ></console-time-field>
       </div>
       <section class="tickets" aria-labelledby="first-come-tickets">
-        <h2 id="first-come-tickets" class="section-title">${'firstComeEditor.sections.tickets' & t}</h2>
+        <h2 id="first-come-tickets" class="[ section-title ] [ md-typescale-title-large ]">${'firstComeEditor.sections.tickets' & t}</h2>
         <p class="note">${'saleEditor.sellsEveryStock' & t:{ limit: perAccountLimit }}</p>
         <ul class="stock-list">
           <li repeat.for="stock of stocks; key: id" class="stock" data-stock.bind="stock.id">
-            <span class="stock-name">${stock.name}</span>
+            <span class="[ stock-name ] [ md-typescale-title-small ]">${stock.name}</span>
             <span>${stock.price | yen} ${'stock.taxIncluded' & t} · ${'sale.quantity' & t:{ tickets: stock.quantity }}</span>
           </li>
         </ul>

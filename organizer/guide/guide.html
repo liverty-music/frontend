@@ -6,6 +6,9 @@
 <meta name="robots" content="noindex">
 <meta name="color-scheme" content="light dark">
 <title>主催者コンソールの使い方 | Liverty Music</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@100..900&display=swap" rel="stylesheet">
 <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96">
 <link rel="shortcut icon" href="/favicon.ico">
 <!--
@@ -50,7 +53,8 @@
   --neutral-container: light-dark(oklch(91.5% 0.007 285deg), oklch(31% 0.014 285deg));
   --on-neutral-container: light-dark(oklch(36% 0.016 285deg), oklch(86% 0.01 285deg));
 
-  --font-body: "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", system-ui, sans-serif;
+  /* The console's plain typeface (shared/styles/m3-sys.css). */
+  --font-body: "Noto Sans JP", "Hiragino Sans", "Yu Gothic UI", system-ui, sans-serif;
   --font-mono: ui-monospace, "SFMono-Regular", monospace;
 
   --space-3xs: 0.25rem;

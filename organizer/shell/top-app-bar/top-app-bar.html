@@ -7,30 +7,30 @@
       <console-icon name="arrow-back"></console-icon>
       <span class="visually-hidden">${'shell.back' & t}: <crumb-text crumb.bind="breadcrumbs.parent"></crumb-text></span>
     </a>
-    <span class="title"><crumb-text crumb.bind="breadcrumbs.current"></crumb-text></span>
+    <span class="[ title ] [ md-typescale-title-large ]"><crumb-text crumb.bind="breadcrumbs.current"></crumb-text></span>
   </template>
   <a href.bind="context.homeHref" class="brand" data-deep.bind="!!breadcrumbs.parent" aria-label.bind="'app.name' & t">
-    <span class="brand-mark">${'app.logoMark' & t}</span>
-    <span class="brand-product">${'app.logoSub' & t}</span>
+    <span class="[ brand-mark ] [ md-typescale-title-small-emphasized ]">${'app.logoMark' & t}</span>
+    <span class="[ brand-product ] [ md-typescale-label-medium md-typescale-title-medium ]">${'app.logoSub' & t}</span>
   </a>
   <div class="context" data-deep.bind="!!breadcrumbs.parent">
-    <span class="organizer-name" data-testid="organizer-name">${context.organizerName}</span>
+    <span class="[ organizer-name ] [ md-typescale-label-medium md-typescale-title-small ]" data-testid="organizer-name">${context.organizerName}</span>
     <template if.bind="artists.length > 1">
       <button
         type="button"
-        class="artist-button state-layer touch-target"
+        class="[ artist-button state-layer touch-target ] [ md-typescale-label-large ]"
         popovertarget="artist-menu"
         aria-label.bind="'shell.artistMenu' & t:{ name: artistName }"
         data-testid="artist-menu-button"
       >
-        <span class="artist-name">${artistName}</span>
+        <span class="[ artist-name ] [ md-typescale-label-large ]">${artistName}</span>
         <console-icon name="arrow-drop-down"></console-icon>
       </button>
       <nav ref="artistMenu" id="artist-menu" popover class="menu artist-menu" aria-label.bind="'shell.artists' & t">
         <a
           repeat.for="artist of artists; key: id"
           href.bind="artist.href"
-          class="menu-item state-layer"
+          class="[ menu-item state-layer ] [ md-typescale-label-large ]"
           aria-current.bind="artist.id === context.artistId ? 'true' : null"
           click.trigger="chooseArtist()"
         >
@@ -62,12 +62,12 @@
     <console-icon name="account-circle"></console-icon>
   </button>
   <div ref="menu" id="account-menu" popover class="menu account-menu">
-    <p class="menu-heading" id="account-menu-language">${'shell.language' & t}</p>
+    <p class="[ menu-heading ] [ md-typescale-label-medium ]" id="account-menu-language">${'shell.language' & t}</p>
     <div role="group" aria-labelledby="account-menu-language" class="menu-group">
       <button
         repeat.for="code of languages"
         type="button"
-        class="menu-item state-layer"
+        class="[ menu-item state-layer ] [ md-typescale-label-large ]"
         lang.bind="code"
         aria-pressed.bind="language.current === code ? 'true' : 'false'"
         click.trigger="setLanguage(code)"
@@ -77,7 +77,7 @@
       </button>
     </div>
     <hr class="menu-divider">
-    <button type="button" class="menu-item state-layer" click.trigger="signOut()">
+    <button type="button" class="[ menu-item state-layer ] [ md-typescale-label-large ]" click.trigger="signOut()">
       <console-icon name="logout"></console-icon>
       <span>${'shell.signOut' & t}</span>
     </button>

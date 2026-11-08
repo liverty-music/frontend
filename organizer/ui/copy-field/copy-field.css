@@ -9,7 +9,6 @@
 	}
 
 	.label {
-		font: var(--md-type-label-large);
 		color: var(--md-sys-color-on-surface-variant);
 	}
 
@@ -30,8 +29,6 @@
 
 		min-inline-size: 0;
 
-		font: var(--md-type-body-medium);
-		font-family: var(--font-mono);
 		color: var(--md-sys-color-on-surface);
 		text-overflow: ellipsis;
 		white-space: nowrap;

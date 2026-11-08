@@ -332,7 +332,7 @@ export const PageLabelStyle = {
 					<style>
 						@scope (.page) {
 							.label {
-								font: var(--md-type-label-large);
+								font: var(--md-sys-typescale-label-large);
 								color: var(--md-sys-color-on-surface-variant);
 							}
 						}
