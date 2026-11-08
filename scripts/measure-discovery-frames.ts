@@ -160,6 +160,8 @@ interface Sample {
 	intervals: number[]
 	scripts: number[]
 	loaf: number[]
+	/** Long animation frames over 100 ms with their longest scripts. */
+	longFrames: { duration: number; scripts: string[] }[]
 	rects: number
 }
 
@@ -177,6 +179,7 @@ function probe(): void {
 	let intervals: number[] = []
 	let scripts: number[] = []
 	let loaf: number[] = []
+	let longFrames: Sample['longFrames'] = []
 	let rects = 0
 	const raf = w.requestAnimationFrame.bind(w)
 	let frameScript = 0
@@ -201,7 +204,24 @@ function probe(): void {
 		return rect.call(this)
 	}
 	new PerformanceObserver((list) => {
-		for (const e of list.getEntries()) if (rec) loaf.push(e.duration)
+		for (const e of list.getEntries()) {
+			if (!rec) continue
+			loaf.push(e.duration)
+			if (e.duration < 100) continue
+			const scripts = (
+				(e as unknown as { scripts: PerformanceEntry[] }).scripts ?? []
+			).map((s) => {
+				const x = s as unknown as {
+					duration: number
+					invoker: string
+					sourceFunctionName: string
+					sourceURL: string
+					forcedStyleAndLayoutDuration: number
+				}
+				return `${Math.round(x.duration)}ms ${x.invoker} ${x.sourceFunctionName}@${x.sourceURL.split('/').pop()} (layout ${Math.round(x.forcedStyleAndLayoutDuration)}ms)`
+			})
+			longFrames.push({ duration: Math.round(e.duration), scripts })
+		}
 	}).observe({ type: 'long-animation-frame' })
 	let last = 0
 	const tick = (t: number) => {
@@ -215,12 +235,13 @@ function probe(): void {
 			intervals = []
 			scripts = []
 			loaf = []
+			longFrames = []
 			rects = 0
 			rec = true
 		},
 		stop() {
 			rec = false
-			return { intervals, scripts, loaf, rects }
+			return { intervals, scripts, loaf, longFrames, rects }
 		},
 	}
 }
@@ -251,6 +272,7 @@ function summarize(s: Sample) {
 		scriptP50: quantile(s.scripts, 0.5),
 		scriptP95: quantile(s.scripts, 0.95),
 		loaf: s.loaf.length,
+		longFrames: s.longFrames,
 		rectCalls: s.rects,
 	}
 }
