@@ -159,7 +159,7 @@
       "count": 2
     },
     "property-disallowed-list": {
-      "count": 6
+      "count": 4
     }
   },
   "organizer/ui/confirm-dialog/confirm-dialog.css": {
@@ -522,12 +522,12 @@
   },
   "src/routes/about/about-route.css": {
     "property-disallowed-list": {
-      "count": 4
+      "count": 1
     }
   },
   "src/routes/auth-callback/auth-callback-route.css": {
     "property-disallowed-list": {
-      "count": 3
+      "count": 1
     }
   },
   "src/routes/checkout/checkout-route.css": {
@@ -535,7 +535,7 @@
       "count": 1
     },
     "property-disallowed-list": {
-      "count": 26
+      "count": 4
     }
   },
   "src/routes/consent/consent-route.css": {
@@ -549,17 +549,17 @@
       "count": 1
     },
     "property-disallowed-list": {
-      "count": 14
+      "count": 2
     }
   },
   "src/routes/dashboard/dashboard-route.css": {
     "property-disallowed-list": {
-      "count": 6
+      "count": 2
     }
   },
   "src/routes/delete-account/delete-account-route.css": {
     "property-disallowed-list": {
-      "count": 8
+      "count": 1
     }
   },
   "src/routes/discovery/discovery-route.css": {
@@ -570,7 +570,7 @@
       "count": 4
     },
     "property-disallowed-list": {
-      "count": 20
+      "count": 6
     }
   },
   "src/routes/discovery/discovery-swap.css": {
@@ -583,7 +583,7 @@
       "count": 1
     },
     "property-disallowed-list": {
-      "count": 26
+      "count": 2
     }
   },
   "src/routes/lottery-entry/lottery-entry-route.css": {
@@ -591,12 +591,12 @@
       "count": 1
     },
     "property-disallowed-list": {
-      "count": 19
+      "count": 3
     }
   },
   "src/routes/legal/licenses-route.css": {
     "property-disallowed-list": {
-      "count": 14
+      "count": 3
     }
   },
   "src/routes/lottery-entry-status/lottery-entry-status-route.css": {
@@ -604,7 +604,7 @@
       "count": 1
     },
     "property-disallowed-list": {
-      "count": 17
+      "count": 1
     }
   },
   "src/routes/my-artists/my-artists-route.css": {
@@ -618,12 +618,12 @@
       "count": 2
     },
     "property-disallowed-list": {
-      "count": 14
+      "count": 5
     }
   },
   "src/routes/not-found/not-found-route.css": {
     "property-disallowed-list": {
-      "count": 7
+      "count": 2
     }
   },
   "src/routes/order/order-route.css": {
@@ -634,30 +634,22 @@
       "count": 2
     },
     "property-disallowed-list": {
-      "count": 35
+      "count": 4
     }
   },
   "src/routes/passkey-recovery/passkey-recovery-route.css": {
     "property-disallowed-list": {
-      "count": 12
+      "count": 3
     }
   },
   "src/routes/passkeys/passkeys-route.css": {
-    "cube/block-max-lines": {
-      "count": 1
-    },
-    "property-disallowed-list": {
-      "count": 11
-    }
-  },
-  "src/routes/passkeys-callback/passkeys-callback-route.css": {
     "property-disallowed-list": {
       "count": 1
     }
   },
   "src/routes/resale-entries/resale-entries-route.css": {
     "property-disallowed-list": {
-      "count": 10
+      "count": 2
     }
   },
   "src/routes/resale-entry/resale-entry-route.css": {
@@ -665,22 +657,17 @@
       "count": 1
     },
     "property-disallowed-list": {
-      "count": 23
-    }
-  },
-  "src/routes/settings/identity-verification.css": {
-    "property-disallowed-list": {
-      "count": 2
+      "count": 4
     }
   },
   "src/routes/settings/language-selector.css": {
     "property-disallowed-list": {
-      "count": 7
+      "count": 1
     }
   },
   "src/routes/settings/personal-details.css": {
     "property-disallowed-list": {
-      "count": 7
+      "count": 2
     }
   },
   "src/routes/settings/settings-route.css": {
@@ -688,7 +675,7 @@
       "count": 1
     },
     "property-disallowed-list": {
-      "count": 15
+      "count": 4
     }
   },
   "src/routes/tickets/tickets-route.css": {
@@ -696,12 +683,12 @@
       "count": 1
     },
     "property-disallowed-list": {
-      "count": 32
+      "count": 4
     }
   },
   "src/routes/verify-email/verify-email-route.css": {
     "property-disallowed-list": {
-      "count": 5
+      "count": 1
     }
   },
   "src/routes/welcome/welcome-route.css": {
@@ -712,7 +699,7 @@
       "count": 1
     },
     "property-disallowed-list": {
-      "count": 33
+      "count": 9
     }
   },
   "src/components/all-nearby/date-range-sheet.css": {

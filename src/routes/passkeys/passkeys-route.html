@@ -1,8 +1,8 @@
 <!-- The page title is owned by the shell-hosted <page-header> (data.titleKey). -->
 <main class="[ passkeys ] [ stack ]">
-  <p t="passkeys.lead" class="passkeys-lead"></p>
+  <p t="passkeys.lead" class="[ passkeys-lead ] [ md-typescale-body-medium ]"></p>
 
-  <output if.bind="listState === 'loading'" class="passkeys-status" aria-busy="true" t="passkeys.loading"></output>
+  <output if.bind="listState === 'loading'" class="[ passkeys-status ] [ md-typescale-body-large ]" aria-busy="true" t="passkeys.loading"></output>
 
   <section if.bind="listState === 'error'" class="[ passkeys-error ] [ stack ]" role="alert" data-testid="passkeys-list-error">
     <p t="passkeys.listFailed"></p>
@@ -14,7 +14,7 @@
       <li repeat.for="passkey of passkeys" class="passkeys-item" data-testid="passkeys-item">
         <svg-icon name="lock" class="passkeys-icon"></svg-icon>
         <span class="[ passkeys-label ] [ stack ]">
-          <span class="passkeys-name" data-testid="passkeys-name">
+          <span class="[ passkeys-name ] [ md-typescale-body-large ]" data-testid="passkeys-name">
             <template if.bind="passkey.providerName">${passkey.providerName}</template>
             <template else>
               <template if.bind="passkey.name">${passkey.name}</template>
@@ -24,7 +24,7 @@
           <time
             if.bind="passkey.addedDate"
             datetime.attr="passkey.addedDate"
-            class="passkeys-added"
+            class="[ passkeys-added ] [ md-typescale-body-medium ]"
             data-testid="passkeys-added"
             t="passkeys.addedOn"
             t-params.bind="{ date: passkey.addedLabel }"
@@ -42,7 +42,7 @@
         ></button>
       </li>
     </ul>
-    <p id="passkeys-last-note" if.bind="!canRemove" t="passkeys.lastPasskey" class="passkeys-note" data-testid="passkeys-last-note"></p>
+    <p id="passkeys-last-note" if.bind="!canRemove" t="passkeys.lastPasskey" class="[ passkeys-note ] [ md-typescale-body-medium ]" data-testid="passkeys-last-note"></p>
 
     <button
       type="button"
@@ -54,8 +54,8 @@
       <svg-icon name="plus" size="md"></svg-icon>
       <span t="passkeys.add"></span>
     </button>
-    <p id="passkeys-add-note" t="passkeys.addNote" class="passkeys-note"></p>
-    <p id="passkeys-add-existing-note" t="passkeys.addExistingNote" class="passkeys-note" data-testid="passkeys-add-existing-note"></p>
+    <p id="passkeys-add-note" t="passkeys.addNote" class="[ passkeys-note ] [ md-typescale-body-medium ]"></p>
+    <p id="passkeys-add-existing-note" t="passkeys.addExistingNote" class="[ passkeys-note ] [ md-typescale-body-medium ]" data-testid="passkeys-add-existing-note"></p>
   </template>
 
   <a href="/settings" class="passkeys-back" t="passkeys.backToSettings"></a>
@@ -65,16 +65,16 @@
      of the confirmation, so the fan reads it before confirming. -->
 <bottom-sheet open.bind="confirmOpen" sheet-closed.trigger="cancelRemoval()" aria-label.bind="'passkeys.confirm.title' | t">
   <div class="[ passkeys-confirm ] [ stack ]" data-testid="passkeys-confirm">
-    <h2 t="passkeys.confirm.title" class="passkeys-confirm-title"></h2>
-    <p class="passkeys-confirm-name">
+    <h2 t="passkeys.confirm.title" class="[ passkeys-confirm-title ] [ md-typescale-headline-small ]"></h2>
+    <p class="[ passkeys-confirm-name ] [ md-typescale-body-large-emphasized ]">
       <template if.bind="pendingRemoval.providerName">${pendingRemoval.providerName}</template>
       <template else>
         <template if.bind="pendingRemoval.name">${pendingRemoval.name}</template>
         <template else>${'passkeys.unnamed' | t}</template>
       </template>
     </p>
-    <p t="passkeys.confirm.managerNote" class="passkeys-note"></p>
-    <p if.bind="removalFailed" role="alert" t="passkeys.confirm.failed" class="passkeys-confirm-error" data-testid="passkeys-removal-error"></p>
+    <p t="passkeys.confirm.managerNote" class="[ passkeys-note ] [ md-typescale-body-medium ]"></p>
+    <p if.bind="removalFailed" role="alert" t="passkeys.confirm.failed" class="[ passkeys-confirm-error ] [ md-typescale-body-medium ]" data-testid="passkeys-removal-error"></p>
     <button
       type="button"
       busy-on-click.bind="() => confirmRemoval()"

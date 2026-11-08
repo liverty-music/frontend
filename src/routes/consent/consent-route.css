@@ -24,10 +24,6 @@
 		}
 
 		.consent-title {
-			font-family: var(--font-display);
-			font-size: var(--step-2);
-			font-weight: normal;
-			line-height: var(--leading-snug);
 			color: var(--md-sys-color-on-surface);
 			text-wrap: balance;
 			word-break: auto-phrase;
@@ -35,9 +31,6 @@
 
 		.consent-paragraph {
 			max-inline-size: 36rem;
-
-			font-size: var(--step--1);
-			line-height: var(--leading-relaxed);
 			color: var(--md-sys-color-on-surface-variant);
 			text-wrap: pretty;
 			word-break: auto-phrase;
@@ -97,14 +90,10 @@
 		}
 
 		.consent-row-label {
-			font-size: var(--step--1);
-			font-weight: 600;
 			color: var(--md-sys-color-on-surface);
 		}
 
 		.consent-row-description {
-			font-size: var(--step--1);
-			line-height: var(--leading-relaxed);
 			color: var(--md-sys-color-on-surface-variant);
 			text-wrap: pretty;
 			word-break: auto-phrase;
@@ -117,7 +106,6 @@
 		}
 
 		.consent-policy-line {
-			font-size: var(--step--1);
 			color: var(--md-sys-color-on-surface-variant);
 			text-align: center;
 		}
@@ -127,8 +115,6 @@
 			   button padding/display-font so it reads as the inline text link it
 			   replaces. */
 			padding: 0;
-
-			font: inherit;
 			color: var(--color-brand-accent);
 			text-decoration: underline;
 			text-underline-offset: 3px;

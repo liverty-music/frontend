@@ -16,10 +16,6 @@
 		}
 
 		.tickets-title {
-			font-family: var(--font-display);
-			font-size: var(--step-2);
-			font-weight: normal;
-			line-height: var(--leading-snug);
 			color: var(--md-sys-color-on-surface);
 			text-wrap: balance;
 		}
@@ -50,14 +46,10 @@
 		}
 
 		.tickets-step-title {
-			font-size: var(--step-1);
-			font-weight: 600;
 			color: var(--md-sys-color-on-surface);
 		}
 
 		.tickets-lead {
-			font-size: var(--step--1);
-			line-height: var(--leading-relaxed);
 			color: var(--md-sys-color-on-surface-variant);
 			text-wrap: pretty;
 		}
@@ -65,9 +57,6 @@
 		/* Order detail link inside a ticket card */
 		.tickets-order-link {
 			display: inline-block;
-
-			font-size: var(--step--1);
-			font-weight: 600;
 			color: var(--color-brand-primary);
 			text-decoration: none;
 
@@ -91,8 +80,6 @@
 		}
 
 		.tickets-event-title {
-			font-size: var(--step-1);
-			font-weight: 700;
 			color: var(--md-sys-color-on-surface);
 			text-wrap: balance;
 		}
@@ -118,13 +105,10 @@
 		}
 
 		.tickets-number {
-			font-size: var(--step--1);
-			font-weight: 600;
 			color: var(--md-sys-color-on-surface);
 		}
 
 		.tickets-admitted {
-			font-size: var(--step--1);
 			color: var(--md-sys-color-on-surface-variant);
 		}
 
@@ -134,9 +118,6 @@
 			padding-inline: var(--space-xs);
 			border: 1px solid var(--md-sys-color-outline-variant);
 			border-radius: var(--md-sys-shape-corner-medium);
-
-			font-size: var(--step--1);
-			font-weight: 600;
 			color: var(--md-sys-color-on-surface-variant);
 
 			&[data-state="not-entered"] {
@@ -164,9 +145,6 @@
 			padding: var(--space-s);
 			border: 1px solid var(--md-sys-color-outline-variant);
 			border-radius: var(--md-sys-shape-corner-large);
-
-			font-size: var(--step--1);
-			line-height: var(--leading-relaxed);
 			color: var(--md-sys-color-on-surface);
 
 			background: var(--md-sys-color-surface-container);
@@ -189,13 +167,10 @@
 		}
 
 		.tickets-code-event {
-			font-weight: 600;
 			color: var(--md-sys-color-on-surface);
 		}
 
 		.tickets-code-count {
-			font-family: var(--font-display);
-			font-size: var(--step-3);
 			color: var(--md-sys-color-on-surface);
 		}
 
@@ -247,13 +222,10 @@
 		}
 
 		.tickets-summary-key {
-			font-size: var(--step--1);
-			font-weight: 600;
 			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.tickets-summary-val {
-			font-size: var(--step-0);
 			color: var(--md-sys-color-on-surface);
 			text-align: end;
 		}
@@ -262,14 +234,10 @@
 		.tickets-resale-notice {
 			padding: var(--space-xs);
 			border-inline-start: 2px solid var(--md-sys-color-outline-variant);
-
-			font-size: var(--step--2);
-			line-height: var(--leading-relaxed);
 			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.tickets-error {
-			font-size: var(--step--1);
 			color: var(--color-error);
 		}
 

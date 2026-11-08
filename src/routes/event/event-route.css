@@ -33,9 +33,6 @@
 		}
 
 		.event-empty-title {
-			font-family: var(--font-display);
-			font-size: var(--step-2);
-			font-weight: normal;
 			color: var(--md-sys-color-on-surface);
 		}
 
@@ -57,8 +54,6 @@
 			place-items: center;
 
 			block-size: 100%;
-
-			font-size: var(--step-4);
 			color: var(--md-sys-color-on-surface-variant);
 
 			background: linear-gradient(
@@ -81,16 +76,7 @@
 			background: oklch(from var(--color-warning) l c h / 12%);
 		}
 
-		.event-banner-title {
-			font-size: var(--step-1);
-			font-weight: 700;
-		}
-
 		.event-title {
-			font-family: var(--font-display);
-			font-size: var(--step-3);
-			font-weight: normal;
-			line-height: var(--leading-snug);
 			color: var(--md-sys-color-on-surface);
 			text-wrap: balance;
 		}
@@ -108,8 +94,6 @@
 		}
 
 		.event-performer-name {
-			font-size: var(--step-1);
-			font-weight: 600;
 			color: var(--md-sys-color-on-surface);
 		}
 
@@ -118,8 +102,6 @@
 			padding-inline: var(--space-s);
 			border: 1px solid var(--color-brand-primary);
 			border-radius: var(--md-sys-shape-corner-medium);
-
-			font-weight: 600;
 			color: var(--color-brand-primary);
 
 			background: transparent;
@@ -147,7 +129,6 @@
 		}
 
 		.event-detail-primary {
-			font-weight: 600;
 			color: var(--md-sys-color-on-surface);
 		}
 
@@ -168,8 +149,6 @@
 		}
 
 		.event-section-title {
-			font-size: var(--step-0);
-			font-weight: 600;
 			color: var(--md-sys-color-on-surface);
 		}
 
@@ -206,13 +185,10 @@
 		}
 
 		.event-stock-name {
-			font-size: var(--step-1);
-			font-weight: 600;
 			color: var(--md-sys-color-on-surface);
 		}
 
 		.event-sale-held {
-			font-weight: 600;
 			color: var(--md-sys-color-on-surface);
 		}
 
@@ -221,19 +197,15 @@
 		}
 
 		.event-sale-name {
-			font-weight: 600;
 			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.event-sale-price,
 		.event-sale-status {
-			font-size: var(--step-1);
-			font-weight: 600;
 			color: var(--md-sys-color-on-surface);
 		}
 
 		.event-sale-low {
-			font-weight: 600;
 			color: var(--color-brand-accent);
 		}
 
@@ -244,7 +216,6 @@
 
 		.event-date-status {
 			margin-inline-start: var(--space-2xs);
-			font-weight: 600;
 			color: var(--md-sys-color-on-surface-variant);
 		}
 	}

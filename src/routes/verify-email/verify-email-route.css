@@ -12,20 +12,16 @@
 
 		.verify-email-lead,
 		.verify-email-message {
-			font-size: var(--step-0);
-			line-height: var(--leading-relaxed);
 			color: var(--md-sys-color-on-surface);
 			text-wrap: pretty;
 		}
 
 		.verify-email-hint {
-			font-size: var(--step--1);
 			color: var(--md-sys-color-on-surface-variant);
 			text-wrap: pretty;
 		}
 
 		.verify-email-error {
-			font-size: var(--step--1);
 			color: var(--color-error);
 		}
 

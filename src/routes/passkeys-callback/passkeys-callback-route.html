@@ -1,5 +1,5 @@
 <main class="[ passkeys-callback ]">
-  <output if.bind="!failure" class="passkeys-callback-loading" role="status" aria-busy="true">
+  <output if.bind="!failure" class="[ passkeys-callback-loading ] [ md-typescale-body-large ]" role="status" aria-busy="true">
     <p t="passkeys.callback.verifying"></p>
   </output>
   <section if.bind="failure" class="[ passkeys-callback-error ] [ stack ]" role="alert" data-testid="passkeys-callback-error">

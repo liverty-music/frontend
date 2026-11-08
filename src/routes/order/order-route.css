@@ -16,10 +16,6 @@
 		}
 
 		.order-title {
-			font-family: var(--font-display);
-			font-size: var(--step-2);
-			font-weight: normal;
-			line-height: var(--leading-snug);
 			color: var(--md-sys-color-on-surface);
 			text-wrap: balance;
 		}
@@ -46,20 +42,14 @@
 		}
 
 		.order-section-title {
-			font-size: var(--step-0);
-			font-weight: 600;
 			color: var(--md-sys-color-on-surface);
 		}
 
 		.order-step-title {
-			font-size: var(--step-1);
-			font-weight: 600;
 			color: var(--md-sys-color-on-surface);
 		}
 
 		.order-lead {
-			font-size: var(--step--1);
-			line-height: var(--leading-relaxed);
 			color: var(--md-sys-color-on-surface-variant);
 			text-wrap: pretty;
 		}
@@ -100,23 +90,15 @@
 		}
 
 		.order-status-banner-label {
-			font-size: var(--step-1);
-			font-weight: 700;
 			color: var(--md-sys-color-on-surface);
 		}
 
 		.order-status-banner-desc {
-			font-size: var(--step--1);
-			line-height: var(--leading-relaxed);
 			color: var(--md-sys-color-on-surface-variant);
 			text-wrap: pretty;
 		}
 
 		/* Payment status badge (inline, within the payment card) */
-		.order-payment-status-label {
-			font-size: var(--step--1);
-			font-weight: 600;
-		}
 
 		.order-payment-status {
 			display: inline-flex;
@@ -189,13 +171,10 @@
 
 		.order-summary-key {
 			flex-shrink: 0;
-			font-size: var(--step--1);
-			font-weight: 600;
 			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.order-summary-val {
-			font-size: var(--step-0);
 			color: var(--md-sys-color-on-surface);
 			text-align: end;
 		}
@@ -205,16 +184,11 @@
 			display: flex;
 			gap: var(--space-2xs);
 			align-items: baseline;
-
-			font-size: var(--step-1);
-			font-weight: 700;
 			color: var(--md-sys-color-on-surface);
 			text-align: end;
 		}
 
 		.order-tax-label {
-			font-size: var(--step--2);
-			font-weight: normal;
 			color: var(--md-sys-color-on-surface-variant);
 		}
 
@@ -246,10 +220,6 @@
 		}
 
 		/* Ticket status badge */
-		.order-ticket-status-label {
-			font-size: var(--step--1);
-			font-weight: 600;
-		}
 
 		.order-ticket-status {
 			display: inline-flex;
@@ -311,13 +281,10 @@
 		}
 
 		.order-ticket-summary-key {
-			font-size: var(--step--1);
-			font-weight: 600;
 			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.order-ticket-summary-val {
-			font-size: var(--step-0);
 			color: var(--md-sys-color-on-surface);
 			text-align: end;
 		}
@@ -326,14 +293,10 @@
 		.order-ticket-resale-notice {
 			padding: var(--space-xs);
 			border-inline-start: 2px solid var(--md-sys-color-outline-variant);
-
-			font-size: var(--step--2);
-			line-height: var(--leading-relaxed);
 			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.order-error {
-			font-size: var(--step--1);
 			color: var(--color-error);
 		}
 

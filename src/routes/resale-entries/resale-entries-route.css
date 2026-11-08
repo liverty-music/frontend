@@ -16,10 +16,6 @@
 		}
 
 		.resale-entries-title {
-			font-family: var(--font-display);
-			font-size: var(--step-2);
-			font-weight: normal;
-			line-height: var(--leading-snug);
 			color: var(--md-sys-color-on-surface);
 			text-wrap: balance;
 		}
@@ -47,20 +43,16 @@
 
 		.resale-entries-event,
 		.resale-entries-lead {
-			font-size: var(--step--1);
-			line-height: var(--leading-relaxed);
 			color: var(--md-sys-color-on-surface-variant);
 			text-wrap: pretty;
 		}
 
 		.resale-entries-seat,
 		.resale-entries-state {
-			font-weight: 600;
 			color: var(--md-sys-color-on-surface);
 		}
 
 		.resale-entries-error {
-			font-size: var(--step--1);
 			color: var(--color-error);
 		}
 

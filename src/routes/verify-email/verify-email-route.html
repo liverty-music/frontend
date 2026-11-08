@@ -1,8 +1,8 @@
 <!-- The page title is owned by the shell-hosted <page-header> (data.titleKey). -->
 <main class="[ verify-email ] [ stack ]" data-testid="verify-email">
   <template if.bind="canConfirm">
-    <p t="verifyEmail.lead" class="verify-email-lead"></p>
-    <p if.bind="state === 'failed'" role="alert" t="verifyEmail.failed" class="verify-email-error" data-testid="verify-email-failed"></p>
+    <p t="verifyEmail.lead" class="[ verify-email-lead ] [ md-typescale-body-large ]"></p>
+    <p if.bind="state === 'failed'" role="alert" t="verifyEmail.failed" class="[ verify-email-error ] [ md-typescale-body-medium ]" data-testid="verify-email-failed"></p>
     <button
       type="button"
       click.trigger="confirm()"
@@ -18,16 +18,16 @@
 
   <section if.bind="state === 'verified'" class="[ verify-email-result ] [ stack ]" aria-live="polite" data-testid="verify-email-verified">
     <success-mark></success-mark>
-    <p t="verifyEmail.verified" class="verify-email-message"></p>
+    <p t="verifyEmail.verified" class="[ verify-email-message ] [ md-typescale-body-large ]"></p>
     <a load="/" class="[ button ] [ pressable ]" t="verifyEmail.openApp" data-testid="verify-email-open-app"></a>
   </section>
 
   <section if.bind="state === 'invalid'" class="[ verify-email-result ] [ stack ]" aria-live="polite" data-testid="verify-email-invalid">
-    <p t="verifyEmail.invalid" class="verify-email-message"></p>
-    <p t="verifyEmail.invalidNext" class="verify-email-hint"></p>
+    <p t="verifyEmail.invalid" class="[ verify-email-message ] [ md-typescale-body-large ]"></p>
+    <p t="verifyEmail.invalidNext" class="[ verify-email-hint ] [ md-typescale-body-medium ]"></p>
   </section>
 
   <section if.bind="state === 'tooMany'" class="[ verify-email-result ] [ stack ]" aria-live="polite" data-testid="verify-email-too-many">
-    <p t="verifyEmail.tooMany" class="verify-email-message"></p>
+    <p t="verifyEmail.tooMany" class="[ verify-email-message ] [ md-typescale-body-large ]"></p>
   </section>
 </main>

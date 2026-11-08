@@ -10,8 +10,6 @@
 			transparent
 		);
 		--snack-bar-shadow: 0 3px 8px oklch(0% 0 0deg / 20%);
-		--snack-bar-font-family: var(--font-body);
-		--snack-bar-font-weight: 400;
 
 		display: contents;
 		font: var(--md-type-body-medium);

@@ -19,8 +19,8 @@
     if.bind="!isLoading && artists.length === 0"
     icon="music"
   >
-    <h2 t="myArtists.empty.title" class="empty-title"></h2>
-    <p t="myArtists.empty.subtitle" class="empty-subtitle"></p>
+    <h2 t="myArtists.empty.title" class="[ empty-title ] [ md-typescale-title-large ]"></h2>
+    <p t="myArtists.empty.subtitle" class="[ empty-subtitle ] [ md-typescale-body-medium ]"></p>
     <a
       href="/discovery"
       t="myArtists.empty.discoverButton"
@@ -41,10 +41,10 @@
           <template if.bind="!editing">
             <!-- Hype tier labels are Layer B brand expressions (per brand-vocabulary spec):
                  rendered invariantly in English in every locale, not via i18n. -->
-            <th scope="col" class="hype-col-header">👀<small>Watch</small></th>
-            <th scope="col" class="hype-col-header">🔥<small>Home</small></th>
-            <th scope="col" class="hype-col-header">🔥🔥<small>Nearby</small></th>
-            <th scope="col" class="hype-col-header">🔥🔥🔥<small>Away</small></th>
+            <th scope="col" class="[ hype-col-header ] [ md-typescale-label-small ]">👀<small>Watch</small></th>
+            <th scope="col" class="[ hype-col-header ] [ md-typescale-label-small ]">🔥<small>Home</small></th>
+            <th scope="col" class="[ hype-col-header ] [ md-typescale-label-small ]">🔥🔥<small>Nearby</small></th>
+            <th scope="col" class="[ hype-col-header ] [ md-typescale-label-small ]">🔥🔥🔥<small>Away</small></th>
           </template>
           <!-- Remove column header: only visible in edit mode. -->
           <th if.bind="editing" scope="col"><span class="[ visually-hidden ]" t="myArtists.table.removeCol"></span></th>
@@ -59,7 +59,7 @@
           <!-- Artist name cell -->
           <th scope="row" class="artist-name-cell">
             <span class="artist-row-indicator" aria-hidden="true"></span>
-            <span class="artist-row-name">${artist.artist.name}</span>
+            <span class="[ artist-row-name ] [ md-typescale-label-large ]">${artist.artist.name}</span>
           </th>
 
           <!-- Hype dot cells: hidden in edit mode to avoid layout shift. -->
