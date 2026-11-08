@@ -12,8 +12,16 @@ import type { SpriteResult } from './sprite-worker'
 /** A painted bubble part, pasted every frame with `drawImage`. */
 export interface Sprite {
 	image: CanvasImageSource
-	/** Half the sprite's side in CSS px. */
+	/**
+	 * Half the side of the painted area in CSS px: the bubble's center is
+	 * this far from the image's top-left corner.
+	 */
 	half: number
+	/**
+	 * The image's side in CSS px. It can exceed `2 * half` by under one device
+	 * pixel, since the image is a whole number of device pixels.
+	 */
+	size: number
 }
 
 /** Above this many sprites the cache is cleared (a long session of taps). */
@@ -184,7 +192,11 @@ export class BubbleSprites {
 				r.bitmap.close()
 				continue
 			}
-			this.store(r.key, { image: r.bitmap, half: r.half })
+			this.store(r.key, {
+				image: r.bitmap,
+				half: r.half,
+				size: r.bitmap.width / this.dpr,
+			})
 		}
 	}
 
@@ -215,7 +227,11 @@ export class BubbleSprites {
 			this.measure = measureWith(m)
 		}
 		paintSprite(ctx, req, this.measure)
-		return { image: canvas, half: spriteHalf(req.kind, req.radius) }
+		return {
+			image: canvas,
+			half: spriteHalf(req.kind, req.radius),
+			size: canvas.width / req.dpr,
+		}
 	}
 }
 

@@ -111,6 +111,8 @@ export class DnaOrbCanvas {
 	// Pending `audio.prepare()` (an idle callback id, or a timer id as a fallback).
 	private audioPrepareHandle = 0
 	private audioPrepareIsTimer = false
+	// Device pixels per CSS px the canvas renders at.
+	private dpr = 1
 	// The canvas size in CSS px, read on layout only (never per frame).
 	private viewWidth = 0
 	private viewHeight = 0
@@ -539,6 +541,7 @@ export class DnaOrbCanvas {
 		// Read here, on layout, so a frame never forces one.
 		this.viewWidth = rect.width
 		this.viewHeight = rect.height
+		this.dpr = dpr
 		this.sprites.setDpr(dpr)
 
 		this.floorInset = this.readFloorInset()
@@ -908,15 +911,32 @@ export class DnaOrbCanvas {
 		return drawn
 	}
 
-	/** Paste `sprite` centered on (`x`, `y`), scaled by `scale`. */
+	/**
+	 * Paste `sprite` centered on (`x`, `y`), scaled by `scale`. At full size
+	 * it is pasted pixel for pixel on the device pixel grid (moving it by under
+	 * half a device pixel), so it is not resampled and its name stays as crisp
+	 * as when drawn directly.
+	 */
 	private drawSprite(
 		sprite: Sprite,
 		x: number,
 		y: number,
 		scale: number,
 	): void {
+		if (scale === 1) {
+			const dpr = this.dpr
+			this.ctx.drawImage(
+				sprite.image,
+				Math.round((x - sprite.half) * dpr) / dpr,
+				Math.round((y - sprite.half) * dpr) / dpr,
+				sprite.size,
+				sprite.size,
+			)
+			return
+		}
 		const half = sprite.half * scale
-		this.ctx.drawImage(sprite.image, x - half, y - half, half * 2, half * 2)
+		const size = sprite.size * scale
+		this.ctx.drawImage(sprite.image, x - half, y - half, size, size)
 	}
 
 	/**

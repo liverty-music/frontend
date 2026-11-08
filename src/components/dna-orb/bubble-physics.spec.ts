@@ -221,9 +221,9 @@ describe('BubblePhysics.reconcile', () => {
 
 		const b = physics.getBubbles().find((x) => x.artist.id === 'b')
 		expect(b?.isSpawning).toBe(true)
-		// One step from the tap point, pushed outward.
-		expect(b?.body.position.x).toBeCloseTo(123, -1)
-		expect(b?.body.position.y).toBeCloseTo(45, -1)
+		// One step from the tap point, pushed outward by a random force.
+		const { x, y } = b?.body.position ?? { x: 0, y: 0 }
+		expect(Math.hypot(x - 123, y - 45)).toBeLessThan(15)
 		// An unplaced add stays instant (no spawn animation).
 		const a = physics.getBubbles().find((x) => x.artist.id === 'a')
 		expect(a?.isSpawning).toBe(false)

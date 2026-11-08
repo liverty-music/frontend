@@ -58,12 +58,17 @@ class FakeSpriteWorker {
 	answerAll(): { close: ReturnType<typeof vi.fn> }[] {
 		const requests = this.posted.flat().slice(this.answered)
 		this.answered += requests.length
-		const bitmaps = requests.map(() => ({ close: vi.fn() }))
+		const half = (r: SpriteRequest) =>
+			r.kind === 'label' ? r.radius : r.radius * 1.6
+		const bitmaps = requests.map((r) => ({
+			close: vi.fn(),
+			width: Math.ceil(half(r) * 2 * r.dpr),
+		}))
 		this.onmessage?.({
 			data: requests.map((r, i) => ({
 				key: r.key,
 				gen: r.gen,
-				half: r.kind === 'label' ? r.radius : r.radius * 1.6,
+				half: half(r),
 				bitmap: bitmaps[i] as unknown as ImageBitmap,
 			})),
 		} as MessageEvent<SpriteResult[]>)
