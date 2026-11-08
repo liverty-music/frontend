@@ -44,10 +44,27 @@ const scheduleIdle: IdleScheduler = (callback) => {
 }
 
 /**
+ * Request types the client sends unvalidated: each is built only from ids the
+ * app already holds, never from what the fan typed, so a rule it breaks is an
+ * app bug the backend reports anyway. They are the requests a tap on a
+ * Discovery bubble sends; compiling their rules the first time one is sent
+ * cost a 176-246 ms frame right after the tap at 4x CPU throttling (design of
+ * `smooth-discovery-and-faster-start-up`). Named by type name, not by schema,
+ * so this module does not pull the service descriptors into the boot chunk.
+ */
+export const UNVALIDATED_REQUEST_TYPES: ReadonlySet<string> = new Set([
+	'liverty_music.rpc.artist.v1.ListSimilarRequest',
+	'liverty_music.rpc.follow.v1.FollowRequest',
+	'liverty_music.rpc.concert.v1.ListByArtistRequest',
+])
+
+/**
  * Creates an interceptor that validates outgoing unary requests against the
  * `buf.validate` rules declared in the proto schema, failing locally with
  * `InvalidArgument` (the violations are carried as the error's `cause`)
  * instead of sending a request the backend would reject.
+ *
+ * Request types in `unvalidated` are never compiled or validated.
  *
  * Validation never blocks a request. Loading starts at the first idle moment
  * after the interceptor is created, and until the validator module resolves,
@@ -63,6 +80,7 @@ export const createValidateInterceptor = (
 	load: ValidatorLoader,
 	logger: ILogger,
 	idle: IdleScheduler = scheduleIdle,
+	unvalidated: ReadonlySet<string> = UNVALIDATED_REQUEST_TYPES,
 ): Interceptor => {
 	let validator: Validator | null = null
 	// Request types whose rules are compiled, and those scheduled to compile.
@@ -93,6 +111,7 @@ export const createValidateInterceptor = (
 	})
 
 	return (next) => async (req) => {
+		if (unvalidated.has(req.method.input.typeName)) return await next(req)
 		if (req.stream === false && validator) {
 			compileWhenIdle(validator, req.method.input)
 		}
