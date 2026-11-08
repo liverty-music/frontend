@@ -49,12 +49,8 @@
 			& > span {
 				padding: var(--space-2xs);
 
-				font-family: var(--font-display);
-				font-size: var(--step--1);
-				font-weight: normal;
 				text-align: center;
 				text-transform: uppercase;
-				letter-spacing: 0.05em;
 			}
 
 			& > span:not(:last-child) {

@@ -56,7 +56,7 @@
 	"userHome": {
 		"saveFailed": "Couldn't save your area. Please try again in a moment.",
 		"title": "Select Your Home Area",
-		"description": "HOME STAGE shows lives in the area you select. Where do you live?",
+		"description": "The HOME lane shows lives in the area you select. Where do you live?",
 		"quickSelect": "Quick Select",
 		"selectByRegion": "Select by Region",
 		"selectPrefecture": "Select your prefecture.",
@@ -173,9 +173,9 @@
 	},
 	"dashboard": {
 		"lane": {
-			"home": "HOME STAGE",
-			"near": "NEAR STAGE",
-			"away": "AWAY STAGE"
+			"home": "HOME",
+			"near": "NEAR",
+			"away": "AWAY"
 		},
 		"coachMark": {
 			"viewArtists": "Check out your artist list too!"

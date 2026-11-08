@@ -25,9 +25,9 @@
        `dateGroups.length` withheld the frame for exactly the window it is there
        to fill. -->
   <header class="[ stage-header ]">
-    <span data-stage="home">HOME STAGE</span>
-    <span data-stage="near">NEAR STAGE</span>
-    <span if.bind="!hideAway" data-stage="away">AWAY STAGE</span>
+    <span data-stage="home" class="md-typescale-headline-small" t="dashboard.lane.home"></span>
+    <span data-stage="near" class="md-typescale-headline-small" t="dashboard.lane.near"></span>
+    <span if.bind="!hideAway" data-stage="away" class="md-typescale-headline-small" t="dashboard.lane.away"></span>
   </header>
 
   <ol class="[ concert-scroll ] [ date-group-list ]" data-testid="concert-scroll">
