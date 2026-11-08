@@ -6,8 +6,6 @@
 		}
 
 		.notification-bell {
-			position: relative;
-
 			display: grid;
 			place-items: center;
 
@@ -19,22 +17,31 @@
 			background: transparent;
 		}
 
-		/* Opaque, so the count never runs into the bell under it: the brand
+		/* The 24 px bell; the badge is placed on its top corner. */
+		.notification-bell-icon {
+			position: relative;
+			display: block;
+			inline-size: 1.5rem;
+			block-size: 1.5rem;
+		}
+
+		/* Material 3's large badge: 16 px high, over the bell's top corner.
+		   Opaque, so the count never runs into the bell under it: the brand
 		   colour darkened until light text on it passes 4.5:1. A pill, so two
-		   digits keep round ends. */
+		   digits keep round ends. The type comes from md-typescale-label-small. */
 		.notification-bell-badge {
 			--_badge-fill: color-mix(in oklch, var(--color-brand-primary) 65%, black);
 			--_pill: 9999px;
 
 			position: absolute;
-			inset-block-start: 0.125rem;
-			inset-inline-end: 0.125rem;
+			inset-block-start: -0.25rem;
+			inset-inline-start: 0.875rem;
 
 			display: grid;
 			place-items: center;
 
-			min-inline-size: 1.25rem;
-			block-size: 1.25rem;
+			min-inline-size: 1rem;
+			block-size: 1rem;
 			padding-inline: var(--space-3xs);
 			border-radius: var(--_pill);
 

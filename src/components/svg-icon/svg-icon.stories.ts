@@ -20,6 +20,7 @@ const ICON_NAMES = [
 	'mail',
 	'x-circle',
 	'bell',
+	'bell-filled',
 	'calendar',
 	'map-pin',
 	'lock',

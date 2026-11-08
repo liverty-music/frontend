@@ -32,6 +32,20 @@ export const NoUnread = {
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement)
 		await expect(canvas.queryByTestId('notification-bell-badge')).toBeNull()
+		// Nothing unread: the outline bell.
+		await expect(
+			canvasElement.querySelector('[data-testid="notification-bell-icon"] svg'),
+		).toHaveAttribute('fill', 'none')
+	},
+} satisfies Story
+
+export const TwelveUnread = {
+	args: { unreadCount: 12 },
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement)
+		await expect(
+			canvas.getByTestId('notification-bell-badge'),
+		).toHaveTextContent('12')
 	},
 } satisfies Story
 
@@ -42,5 +56,9 @@ export const TwoUnread = {
 		await expect(
 			canvas.getByTestId('notification-bell-badge'),
 		).toHaveTextContent('2')
+		// Something unread: the filled bell.
+		await expect(
+			canvasElement.querySelector('[data-testid="notification-bell-icon"] svg'),
+		).toHaveAttribute('fill', 'currentColor')
 	},
 } satisfies Story
