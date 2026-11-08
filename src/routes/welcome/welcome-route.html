@@ -25,7 +25,7 @@
         checked.to-view="currentLocale"
         change.trigger="selectLanguage(lang)"
       >
-      <span class="[ welcome-lang-text ] [ md-typescale-label-large${lang === currentLocale ? '-emphasized' : ''} ]">${lang === 'ja' ? '日本語' : 'EN'}</span>
+      <span class="[ welcome-lang-text ] [ md-typescale-label-large ]" md-typescale-label-large-emphasized.class="lang === currentLocale">${lang === 'ja' ? '日本語' : 'EN'}</span>
     </label>
   </fieldset>
 

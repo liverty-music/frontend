@@ -133,7 +133,8 @@
             <span if.bind="config.status === 'lost'" class="journey-separator" aria-hidden="true"></span>
             <button
               type="button"
-              class="[ journey-node ] [ md-typescale-label-large${status === config.status ? '-emphasized' : ''} ]"
+              class="[ journey-node ] [ md-typescale-label-large ]"
+              md-typescale-label-large-emphasized.class="status === config.status"
               data-testid="journey-btn"
               data-journey-status.bind="config.status"
               aria-pressed.bind="status === config.status ? 'true' : 'false'"

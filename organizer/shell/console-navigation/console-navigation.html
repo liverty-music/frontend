@@ -4,7 +4,8 @@
   <a
     repeat.for="item of destinations"
     href.bind="item.href"
-    class="[ item ] [ md-typescale-label-medium${item.id === current ? '-emphasized' : ''} ]"
+    class="[ item ] [ md-typescale-label-medium ]"
+    md-typescale-label-medium-emphasized.class="item.id === current"
     data-destination.bind="item.id"
     aria-current.bind="item.id === current ? 'page' : null"
   >
