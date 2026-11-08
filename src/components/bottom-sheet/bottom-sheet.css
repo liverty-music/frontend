@@ -189,7 +189,10 @@
 			overflow-y: auto;
 
 			max-block-size: 90svh;
-			border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
+
+			/* Only the top edge is rounded; logical corners mirror under RTL. */
+			border-start-start-radius: var(--md-sys-shape-corner-extra-large);
+			border-start-end-radius: var(--md-sys-shape-corner-extra-large);
 
 			background: var(--sheet-bg, var(--md-sys-color-surface-container));
 			box-shadow: var(--shadow-sheet);

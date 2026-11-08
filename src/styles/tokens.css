@@ -61,9 +61,6 @@
 		--space-2xl: clamp(4rem, calc(3.65rem + 1.74vi), 5rem);
 		--space-3xl: clamp(6rem, calc(5.48rem + 2.61vi), 7.5rem);
 
-		/* Radius */
-		--radius-sheet: 1.5rem;
-
 		/* Toggle / switch control geometry (shared by the settings + consent
 		   toggle rows, which render identical switches in separate @scopes). */
 		--toggle-track-inline: 2.75rem;
@@ -196,14 +193,6 @@
 
 		/* Fan-local: M3 publishes no selected opacity (StateTokens.kt). */
 		--md-state-selected: 12%;
-
-		/* ── M3 shape roles ──
-		   Aliases over the existing radius tokens where they line up, plus the
-		   Expressive -increased emphasis steps as new values. Consume these with
-		   LOGICAL radius properties (border-start-start-radius, …) so directional
-		   rounding mirrors correctly under RTL. Radius must match component size:
-		   small controls → small, sheets → extra-large, pills/avatars → full. */
-		--md-shape-extra-large: var(--radius-sheet); /* 24px — sheets */
 
 		/* ── FAB launcher layout + interaction tokens ── */
 		--fab-size: 3.5rem; /* 56px M3 FAB */
