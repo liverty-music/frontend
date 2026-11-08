@@ -11,10 +11,10 @@
   </template>
   <a href.bind="context.homeHref" class="brand" data-deep.bind="!!breadcrumbs.parent" aria-label.bind="'app.name' & t">
     <span class="[ brand-mark ] [ md-typescale-title-small-emphasized ]">${'app.logoMark' & t}</span>
-    <span class="[ brand-product ] [ md-typescale-label-medium md-typescale-title-medium ]">${'app.logoSub' & t}</span>
+    <span class="[ brand-product ] [ md-typescale-label-medium ]">${'app.logoSub' & t}</span>
   </a>
   <div class="context" data-deep.bind="!!breadcrumbs.parent">
-    <span class="[ organizer-name ] [ md-typescale-label-medium md-typescale-title-small ]" data-testid="organizer-name">${context.organizerName}</span>
+    <span class="[ organizer-name ] [ md-typescale-label-medium ]" data-testid="organizer-name">${context.organizerName}</span>
     <template if.bind="artists.length > 1">
       <button
         type="button"

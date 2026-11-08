@@ -251,9 +251,15 @@
 				align-items: center;
 			}
 
+			/* stylelint-disable property-disallowed-list -- the brand and the organizer name grow with the window class, which a template cannot see */
 			.brand-mark {
-				/* stylelint-disable-next-line property-disallowed-list -- the wordmark grows with the window class, which a template cannot see */
 				font: var(--md-sys-typescale-title-medium-emphasized);
+				letter-spacing: var(--md-sys-typescale-title-medium-tracking);
+			}
+
+			.brand-product {
+				font: var(--md-sys-typescale-title-medium);
+				letter-spacing: var(--md-sys-typescale-title-medium-tracking);
 			}
 
 			.context {
@@ -264,8 +270,12 @@
 
 			.organizer-name {
 				flex: 0 1 auto;
+
+				font: var(--md-sys-typescale-title-small);
+				letter-spacing: var(--md-sys-typescale-title-small-tracking);
 				color: var(--md-sys-color-on-surface);
 			}
+			/* stylelint-enable property-disallowed-list */
 
 			.artist-button {
 				min-block-size: var(--md-target-size);
