@@ -4,6 +4,7 @@ import {
 	type StoryObj,
 } from '@aurelia/storybook'
 import { expect, within } from 'storybook/test'
+import { resolveColor } from '../../../.storybook/contrast'
 import { Toast } from './toast'
 
 const meta = {
@@ -44,6 +45,26 @@ export const Open = {
 		await expect(
 			canvas.getByText('新しいライブが1件見つかりました'),
 		).toBeInTheDocument()
+
+		// @spec components/infrastructure/fan/web/global/toast "Fixed top positioning"
+		const style = getComputedStyle(dialog as HTMLElement)
+		await expect(style.insetBlockStart).toBe('0px')
+		await expect(style.backgroundColor).toBe(
+			resolveColor(
+				dialog as HTMLElement,
+				'var(--md-sys-color-surface-container)',
+			),
+		)
+		await expect(style.borderTopWidth).toBe('1px')
+		await expect(style.borderTopStyle).toBe('solid')
+		await expect(style.borderTopColor).toBe(
+			resolveColor(
+				dialog as HTMLElement,
+				'var(--md-sys-color-outline-variant)',
+			),
+		)
+		await expect(style.borderTopLeftRadius).toBe('16px')
+		await expect(style.boxShadow).not.toBe('none')
 	},
 } satisfies Story
 

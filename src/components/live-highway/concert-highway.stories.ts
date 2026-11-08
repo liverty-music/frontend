@@ -5,6 +5,7 @@ import {
 } from '@aurelia/storybook'
 import { CustomElement } from 'aurelia'
 import { expect } from 'storybook/test'
+import { composite, contrast, resolveColor } from '../../../.storybook/contrast'
 import { artistHue } from '../../adapter/view/artist-color'
 import { BeamVarsCustomAttribute } from '../../custom-attributes/beam-vars'
 import type { Concert, DateGroup, LaneType } from '../../entities/concert'
@@ -207,6 +208,29 @@ export const PopulatedTimetable = {
 
 		await assertLanesAlignWithStageHeader(canvasElement, 3)
 
+		// @spec components/infrastructure/fan/web/global/live-highway "Festival-style color-coded STAGE headers"
+		for (const span of canvasElement.querySelectorAll<HTMLElement>(
+			'.stage-header > span',
+		)) {
+			const style = getComputedStyle(span)
+			await expect(style.fontFamily.startsWith('Righteous')).toBe(true)
+			await expect([
+				style.fontSize,
+				style.fontWeight,
+				style.textTransform,
+			]).toEqual(['24px', '400', 'uppercase'])
+			await expect(style.color).toBe(
+				resolveColor(span, 'var(--md-sys-color-surface)'),
+			)
+			await expect(style.backgroundColor).toBe(
+				resolveColor(span, `var(--color-stage-${span.dataset.stage})`),
+			)
+			// Readable on every stage colour: 24 px is large text, 3:1 (WCAG 1.4.3).
+			await expect(
+				contrast(composite(style.backgroundColor), composite(style.color)),
+			).toBeGreaterThanOrEqual(3)
+		}
+
 		// @spec components/infrastructure/fan/web/route/dashboard "Viewport-scoping off-screen content does not regress sticky headers or shift layout"
 		// Sticky date separators, alongside the lane alignment asserted above.
 		const separator =
@@ -253,6 +277,21 @@ const LONG_GROUPS: DateGroup[] = Array.from({ length: 225 }, (_, i) => {
 export const WindowedLongTimetable = {
 	render: () => highwayStory(LONG_GROUPS),
 	play: async ({ canvasElement }) => {
+		// @spec components/infrastructure/fan/web/global/live-highway "Festival-style color-coded STAGE headers"
+		// The header stays at the top while the timetable scrolls: it sits
+		// outside the scrolling list rather than being position: sticky.
+		const stageHeader = canvasElement.querySelector(
+			'.stage-header',
+		) as HTMLElement
+		const scroller = canvasElement.querySelector(
+			'.concert-scroll',
+		) as HTMLElement
+		await expect(scroller.contains(stageHeader)).toBe(false)
+		const top = stageHeader.getBoundingClientRect().top
+		scroller.scrollTop = 200
+		await expect(scroller.scrollTop).toBeGreaterThan(0)
+		await expect(stageHeader.getBoundingClientRect().top).toBe(top)
+		scroller.scrollTop = 0
 		const groups = [
 			...canvasElement.querySelectorAll<HTMLElement>(
 				'.concert-scroll > .date-group',
