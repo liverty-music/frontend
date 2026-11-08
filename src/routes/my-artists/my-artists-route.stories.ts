@@ -269,7 +269,10 @@ export const RemoveWhileScrolled = {
 		].find((r) => r.getBoundingClientRect().top >= listTop)
 		const remove = row?.querySelector<HTMLElement>('.artist-remove-btn')
 		if (!remove) throw new Error('no visible row')
-		const before = await capturePixels(thead)
+		// The header ends where the list begins; the capture stops 1 px short
+		// so that it holds only the header.
+		const headerOnly = { blockEndInset: 1 }
+		const before = await capturePixels(thead, headerOnly)
 		await userEvent.click(remove)
 
 		// @spec components/infrastructure/fan/web/route/my-artists "Header stays clear while a row animates out"
@@ -291,7 +294,7 @@ export const RemoveWhileScrolled = {
 			a.pause()
 			a.currentTime = 0
 		}
-		const during = await capturePixels(thead)
+		const during = await capturePixels(thead, headerOnly)
 		for (const a of animations) a.finish()
 		await expect(during).toBe(before)
 		await expectLabelsUncovered(thead)

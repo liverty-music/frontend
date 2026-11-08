@@ -10,7 +10,9 @@ import {
 	expectNamedElevationLevels,
 	expectOwnSurface,
 	expectSharedStateAndMotion,
+	expectSpacingAtAnyWidth,
 	expectTitleAtAnyWidth,
+	spacingSamples,
 	TYPE_SAMPLES,
 } from '../../.storybook/m3-foundations'
 import { consoleStoryParameters } from '../ui/story-support'
@@ -62,6 +64,16 @@ export const ElevationLevels = {
 		const root = consoleShadowRoot(canvasElement, ELEVATION_SAMPLES)
 		// @spec components/infrastructure/organizer/web/global/design-tokens "A floating surface at a named level"
 		expectNamedElevationLevels(root)
+	},
+} satisfies Story
+
+export const SpacingSteps = {
+	render: () => defineAureliaStory({ template: '' }),
+	play: async ({ canvasElement }) => {
+		// Inside a console shadow root, where the console's spacing applies.
+		const root = consoleShadowRoot(canvasElement, spacingSamples())
+		// @spec components/infrastructure/organizer/web/global/design-tokens "Same spacing on any width"
+		await expectSpacingAtAnyWidth(root)
 	},
 } satisfies Story
 

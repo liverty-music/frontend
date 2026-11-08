@@ -11,7 +11,9 @@ import {
 	expectNamedElevationLevels,
 	expectOwnSurface,
 	expectSharedStateAndMotion,
+	expectSpacingAtAnyWidth,
 	expectTitleAtAnyWidth,
+	spacingSamples,
 	TYPE_SAMPLES,
 } from '../../.storybook/m3-foundations'
 import fanTokens from './tokens.css?raw'
@@ -44,6 +46,18 @@ export const ElevationLevels = {
 	play: async ({ canvasElement }) => {
 		// @spec components/infrastructure/fan/web/global/design-tokens "A floating surface at a named level"
 		expectNamedElevationLevels(canvasElement)
+	},
+} satisfies Story
+
+/** The fan app's spacing steps; it alone defines the two largest. */
+const FAN_ONLY_STEPS = { '2xl': 64, '3xl': 96 }
+
+export const SpacingSteps = {
+	render: () =>
+		defineAureliaStory({ template: spacingSamples(FAN_ONLY_STEPS) }),
+	play: async ({ canvasElement }) => {
+		// @spec components/infrastructure/fan/web/global/design-tokens "Same spacing on any width"
+		await expectSpacingAtAnyWidth(canvasElement, FAN_ONLY_STEPS)
 	},
 } satisfies Story
 
