@@ -27,7 +27,7 @@ type Story = StoryObj<typeof meta>
 export const Help = {
 	render: (args) =>
 		defineAureliaStory({
-			template: `<div style="padding:16px; color:var(--md-color-on-surface-variant); background:var(--md-color-surface)"><console-icon name.bind="name"></console-icon></div>`,
+			template: `<div style="padding:16px; color:var(--md-sys-color-on-surface-variant); background:var(--md-sys-color-surface)"><console-icon name.bind="name"></console-icon></div>`,
 			props: args,
 		}),
 	play: async ({ canvasElement }) => {
@@ -46,7 +46,7 @@ export const All = {
 	render: () =>
 		defineAureliaStory({
 			template: `
-				<div style="display:flex; flex-wrap:wrap; gap:16px; padding:16px; color:var(--md-color-on-surface); background:var(--md-color-surface)">
+				<div style="display:flex; flex-wrap:wrap; gap:16px; padding:16px; color:var(--md-sys-color-on-surface); background:var(--md-sys-color-surface)">
 					<console-icon repeat.for="name of names" name.bind="name" title.bind="name"></console-icon>
 				</div>
 			`,

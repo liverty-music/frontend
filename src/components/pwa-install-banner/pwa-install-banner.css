@@ -45,7 +45,7 @@
 			border-block-start: 2px solid;
 			border-image: linear-gradient(to right, var(--_a), var(--_b)) 1;
 
-			background: oklch(from var(--color-surface-base) l c h / 85%);
+			background: oklch(from var(--md-sys-color-surface) l c h / 85%);
 			backdrop-filter: blur(12px);
 		}
 
@@ -65,7 +65,7 @@
 
 			font-size: var(--_banner-text);
 			font-weight: 500;
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 			white-space: nowrap;
 		}
 
@@ -93,7 +93,7 @@
 		.pwa-banner-sheet-title {
 			font-size: var(--step-1);
 			font-weight: 600;
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 		}
 
 		.pwa-banner-sheet-steps {
@@ -112,7 +112,7 @@
 			align-items: flex-start;
 
 			font-size: var(--step-0);
-			color: var(--color-text-secondary);
+			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.pwa-banner-step-num {

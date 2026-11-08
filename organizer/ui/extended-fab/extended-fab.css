@@ -28,11 +28,11 @@
 		border-radius: var(--md-shape-large);
 
 		font: var(--md-type-label-large);
-		color: var(--md-color-on-primary-container);
+		color: var(--md-sys-color-on-primary-container);
 		text-decoration: none;
 		white-space: nowrap;
 
-		background: var(--md-color-primary-container);
+		background: var(--md-sys-color-primary-container);
 		box-shadow: var(--md-elevation-3);
 
 		transition: box-shadow var(--md-sys-motion-duration-short4)

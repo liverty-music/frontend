@@ -5,15 +5,15 @@
 			max-inline-size: min(28rem, calc(100vi - 2 * var(--space-s)));
 			margin: auto;
 			padding: 0;
-			border: 1px solid var(--color-border-subtle);
+			border: 1px solid var(--md-sys-color-outline-variant);
 			border-radius: var(--radius-card);
 
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 
-			background: var(--color-surface-raised);
+			background: var(--md-sys-color-surface-container);
 
 			&::backdrop {
-				background: var(--md-color-scrim);
+				background: var(--md-sys-color-scrim);
 			}
 		}
 
@@ -26,13 +26,13 @@
 		.confirm-dialog-heading {
 			font-size: var(--step-1);
 			font-weight: 600;
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 		}
 
 		.confirm-dialog-text {
 			font-size: var(--step--1);
 			line-height: var(--leading-relaxed);
-			color: var(--color-text-secondary);
+			color: var(--md-sys-color-on-surface-variant);
 			text-wrap: pretty;
 
 			/* A caller may put the new values on a line of their own. */

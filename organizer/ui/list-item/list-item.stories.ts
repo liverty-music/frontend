@@ -23,7 +23,7 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 const frame = (items: string) => `
-	<div style="inline-size:390px; background:var(--md-color-surface); color:var(--md-color-on-surface)">
+	<div style="inline-size:390px; background:var(--md-sys-color-surface); color:var(--md-sys-color-on-surface)">
 		<ul aria-label="公演" style="margin:0; padding:0; list-style:none">${items}</ul>
 	</div>
 `

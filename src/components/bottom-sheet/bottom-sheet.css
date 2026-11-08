@@ -191,7 +191,7 @@
 			max-block-size: 90svh;
 			border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
 
-			background: var(--sheet-bg, var(--color-surface-raised));
+			background: var(--sheet-bg, var(--md-sys-color-surface-container));
 			box-shadow: var(--shadow-sheet);
 
 			/* Focus target on open; suppress the focus ring on the container

@@ -5,7 +5,7 @@
 			   base surface at 85% with a 2px brand line. A banner stays on screen,
 			   so it is not filled with the brand gradient of the transient snack
 			   bar. */
-			--_surface-bg: oklch(from var(--color-surface-base) l c h / 85%);
+			--_surface-bg: oklch(from var(--md-sys-color-surface) l c h / 85%);
 			--_gradient-from: var(--color-brand-primary);
 			--_gradient-to: var(--color-brand-secondary);
 
@@ -63,7 +63,7 @@
 
 			font-size: var(--_banner-text);
 			font-weight: 500;
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 			white-space: nowrap;
 		}
 

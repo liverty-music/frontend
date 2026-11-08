@@ -21,7 +21,7 @@
 		}
 
 		.concert-title {
-			color: var(--md-color-on-surface-variant);
+			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.meta {
@@ -32,7 +32,7 @@
 		}
 
 		.venue {
-			color: var(--md-color-on-surface-variant);
+			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.actions {
@@ -47,7 +47,7 @@
 		}
 
 		.cancelled-note {
-			color: var(--md-color-error);
+			color: var(--md-sys-color-error);
 		}
 
 		.message {

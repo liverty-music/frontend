@@ -43,7 +43,7 @@ interface DialogHost {
 
 const host = (opener: string, dialog: string) => ({
 	template: `
-		<div style="padding:24px; background:var(--md-color-surface); color:var(--md-color-on-surface)">
+		<div style="padding:24px; background:var(--md-sys-color-surface); color:var(--md-sys-color-on-surface)">
 			${opener}
 			${dialog}
 			<output data-testid="result">\${result}</output>
@@ -109,12 +109,12 @@ export const PublishAsksFirst = {
 			deepQuery(dialog.element(), 'console-button:not([data-role])'),
 		)
 		await expect(dismiss.color).toBe(
-			roleColor(page, '--md-color-on-surface-variant'),
+			roleColor(page, '--md-sys-color-on-surface-variant'),
 		)
 		await expect(
 			lookOf(deepQuery(dialog.element(), 'console-button[data-role="confirm"]'))
 				.background,
-		).toBe(roleColor(page, '--md-color-primary'))
+		).toBe(roleColor(page, '--md-sys-color-primary'))
 
 		await userEvent.click(dialog.getByRole('button', { name: '公開する' }))
 
@@ -185,7 +185,7 @@ export const RevokeAScanner = {
 		// error container, not by the brand color.
 		const page = canvasElement.querySelector<HTMLElement>('div')
 		if (!page) throw new Error('page not rendered')
-		const brand = roleColor(page, '--md-color-primary')
+		const brand = roleColor(page, '--md-sys-color-primary')
 		const dismiss = lookOf(
 			deepQuery(dialog.element(), 'console-button:not([data-role])'),
 		)
@@ -194,7 +194,9 @@ export const RevokeAScanner = {
 		)
 		await expect([dismiss.color, dismiss.background]).not.toContain(brand)
 		await expect([confirm.color, confirm.background]).not.toContain(brand)
-		await expect(confirm.background).toBe(roleColor(page, '--md-color-error'))
+		await expect(confirm.background).toBe(
+			roleColor(page, '--md-sys-color-error'),
+		)
 
 		await userEvent.click(dialog.getByRole('button', { name: '取り消す' }))
 		await expect(canvas.getByTestId('result').element()).toHaveTextContent(

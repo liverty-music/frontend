@@ -21,14 +21,14 @@
 			padding: var(--space-m) var(--space-s);
 			border-radius: var(--md-shape-medium);
 
-			color: var(--md-color-on-surface-variant);
+			color: var(--md-sys-color-on-surface-variant);
 
-			background: var(--md-color-surface-container-low);
+			background: var(--md-sys-color-surface-container-low);
 		}
 
 		.message-title {
 			font: var(--md-type-title-medium);
-			color: var(--md-color-on-surface);
+			color: var(--md-sys-color-on-surface);
 		}
 
 		@container shell (width >= 600px) {

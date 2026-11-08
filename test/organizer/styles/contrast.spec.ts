@@ -14,7 +14,7 @@ type Theme = 'light' | 'dark'
 function readRoles(css: string): Map<string, Record<Theme, Oklch>> {
 	const roles = new Map<string, Record<Theme, Oklch>>()
 	const flat = css.replace(/\s+/g, ' ')
-	for (const m of flat.matchAll(/(--md-color-[\w-]+)\s*:\s*([^;]+);/g)) {
+	for (const m of flat.matchAll(/(--md-sys-color-[\w-]+)\s*:\s*([^;]+);/g)) {
 		const value = m[2].trim()
 		const pair = value.match(
 			/^light-dark\(\s*(oklch\([^)]*\))\s*,\s*(oklch\([^)]*\))\s*\)$/,
@@ -76,8 +76,8 @@ const UI_PAIRS: Array<[string, string]> = SURFACES.flatMap(
 const roles = readRoles(tokensCss)
 
 function role(name: string, theme: Theme): Oklch {
-	const r = roles.get(`--md-color-${name}`)
-	if (!r) throw new Error(`role --md-color-${name} is not defined`)
+	const r = roles.get(`--md-sys-color-${name}`)
+	if (!r) throw new Error(`role --md-sys-color-${name} is not defined`)
 	return r[theme]
 }
 
@@ -86,8 +86,9 @@ describe('console color roles', () => {
 		const single = [...roles.entries()]
 			.filter(([, v]) => v.light === v.dark)
 			.map(([k]) => k)
-		// Only the scrim is the same in both themes.
-		expect(single).toEqual(['--md-color-scrim'])
+		// Only the scrim and the shadow, black in Material 3, are the same in
+		// both themes.
+		expect(single).toEqual(['--md-sys-color-scrim', '--md-sys-color-shadow'])
 	})
 
 	for (const theme of ['light', 'dark'] as const) {

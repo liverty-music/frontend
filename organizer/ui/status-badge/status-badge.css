@@ -4,8 +4,8 @@
 	}
 
 	.badge {
-		--_container: var(--md-color-neutral-container);
-		--_on-container: var(--md-color-on-neutral-container);
+		--_container: var(--md-sys-color-neutral-container);
+		--_on-container: var(--md-sys-color-on-neutral-container);
 
 		display: inline-flex;
 		gap: var(--space-3xs);
@@ -30,22 +30,22 @@
 	}
 
 	.badge[data-tone="success"] {
-		--_container: var(--md-color-success-container);
-		--_on-container: var(--md-color-on-success-container);
+		--_container: var(--md-sys-color-success-container);
+		--_on-container: var(--md-sys-color-on-success-container);
 	}
 
 	.badge[data-tone="warning"] {
-		--_container: var(--md-color-warning-container);
-		--_on-container: var(--md-color-on-warning-container);
+		--_container: var(--md-sys-color-warning-container);
+		--_on-container: var(--md-sys-color-on-warning-container);
 	}
 
 	.badge[data-tone="error"] {
-		--_container: var(--md-color-error-container);
-		--_on-container: var(--md-color-on-error-container);
+		--_container: var(--md-sys-color-error-container);
+		--_on-container: var(--md-sys-color-on-error-container);
 	}
 
 	.badge[data-tone="info"] {
-		--_container: var(--md-color-secondary-container);
-		--_on-container: var(--md-color-on-secondary-container);
+		--_container: var(--md-sys-color-secondary-container);
+		--_on-container: var(--md-sys-color-on-secondary-container);
 	}
 }

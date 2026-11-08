@@ -72,7 +72,7 @@ const renderAt =
 	(width: number): Story['render'] =>
 	() =>
 		defineAureliaStory({
-			template: `<div style="inline-size:${width}px; padding:16px; background:var(--md-color-surface)"><data-list columns.bind="columns" rows.bind="rows" label="公演"></data-list></div>`,
+			template: `<div style="inline-size:${width}px; padding:16px; background:var(--md-sys-color-surface)"><data-list columns.bind="columns" rows.bind="rows" label="公演"></data-list></div>`,
 			props: { columns, rows },
 		})
 
@@ -157,7 +157,7 @@ export const Table = {
 export const Empty = {
 	render: () =>
 		defineAureliaStory({
-			template: `<div style="inline-size:390px; padding:16px; background:var(--md-color-surface)"><data-list columns.bind="columns" rows.bind="rows" label="公演"></data-list></div>`,
+			template: `<div style="inline-size:390px; padding:16px; background:var(--md-sys-color-surface)"><data-list columns.bind="columns" rows.bind="rows" label="公演"></data-list></div>`,
 			props: { columns, rows: [] },
 		}),
 } satisfies Story

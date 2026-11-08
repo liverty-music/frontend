@@ -9,7 +9,7 @@
 				env(safe-area-inset-bottom, 0px)
 			);
 			padding-block-end: var(--safe-area-block-end);
-			background: var(--md-color-surface-container);
+			background: var(--md-sys-color-surface-container);
 		}
 
 		.navigation {
@@ -29,7 +29,7 @@
 			min-inline-size: var(--md-target-size);
 
 			font: var(--md-type-label-medium);
-			color: var(--md-color-on-surface-variant);
+			color: var(--md-sys-color-on-surface-variant);
 			text-decoration: none;
 		}
 
@@ -47,11 +47,11 @@
 
 		.item[aria-current="page"] {
 			font-weight: 700;
-			color: var(--md-color-on-surface);
+			color: var(--md-sys-color-on-surface);
 
 			& .indicator {
-				color: var(--md-color-on-secondary-container);
-				background: var(--md-color-secondary-container);
+				color: var(--md-sys-color-on-secondary-container);
+				background: var(--md-sys-color-secondary-container);
 			}
 		}
 

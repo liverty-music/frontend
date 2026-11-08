@@ -8,7 +8,7 @@
 			position: relative;
 			grid-column: 1 / -1;
 			grid-row: 1 / -1;
-			background: var(--color-surface-base);
+			background: var(--md-sys-color-surface);
 		}
 
 		/* The swap tile sits beside the orb, just outside the largest orb, in

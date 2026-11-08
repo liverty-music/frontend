@@ -25,7 +25,7 @@
 
 			min-block-size: 0;
 
-			background: var(--color-surface-base);
+			background: var(--md-sys-color-surface);
 		}
 
 		.state-center {
@@ -88,9 +88,9 @@
 
 			padding-block: var(--space-2xs);
 			padding-inline: var(--space-s);
-			border-block-start: 1px solid var(--color-border-subtle);
+			border-block-start: 1px solid var(--md-sys-color-outline-variant);
 
-			background: var(--color-surface-raised);
+			background: var(--md-sys-color-surface-container);
 		}
 
 		/* ── Table ──
@@ -166,7 +166,7 @@
 			& td,
 			& th {
 				border-block: 1px solid var(--_white-10);
-				background: var(--color-surface-raised);
+				background: var(--md-sys-color-surface-container);
 			}
 
 			& th:first-child {
@@ -217,7 +217,7 @@
 
 			font-size: var(--step--1);
 			font-weight: 500;
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 			text-overflow: ellipsis;
 			white-space: nowrap;
 		}
@@ -241,7 +241,10 @@
 				inline-size: calc(3 * 100%);
 				block-size: 2px;
 
-				background: var(--color-border-subtle, oklch(100% 0 0deg / 10%));
+				background: var(
+					--md-sys-color-outline-variant,
+					oklch(100% 0 0deg / 10%)
+				);
 			}
 		}
 
@@ -268,7 +271,7 @@
 			border: none;
 			border-radius: var(--radius-full);
 
-			background: var(--color-border-subtle, oklch(100% 0 0deg / 20%));
+			background: var(--md-sys-color-outline-variant, oklch(100% 0 0deg / 20%));
 
 			transition:
 				inline-size 200ms ease-out,
@@ -293,7 +296,7 @@
 			/* WATCH: minimal */
 			&[data-active="true"][data-level="watch"] {
 				border: 1px solid oklch(100% 0 0deg / 10%);
-				background: var(--color-surface-base, oklch(100% 0 0deg / 5%));
+				background: var(--md-sys-color-surface, oklch(100% 0 0deg / 5%));
 			}
 
 			/* HOME: subtle glow */

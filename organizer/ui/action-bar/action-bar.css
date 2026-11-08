@@ -14,8 +14,8 @@
 		justify-content: flex-end;
 
 		padding-block: var(--space-xs);
-		border-block-start: 1px solid var(--md-color-outline-variant);
+		border-block-start: 1px solid var(--md-sys-color-outline-variant);
 
-		background: var(--md-color-surface);
+		background: var(--md-sys-color-surface);
 	}
 }

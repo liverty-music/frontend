@@ -207,7 +207,7 @@
 			padding: 0;
 			border: none;
 
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 
 			background: transparent;
 
@@ -228,7 +228,7 @@
 		}
 
 		.fab-panel:popover-open .fab-scrim {
-			background: var(--md-color-scrim);
+			background: var(--md-sys-color-scrim);
 
 			@starting-style {
 				background: transparent;
@@ -300,9 +300,9 @@
 			font-family: var(--font-body);
 			font-size: var(--step--1);
 			font-weight: 500;
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 
-			background: var(--md-color-menu-surface);
+			background: var(--md-sys-color-menu-surface);
 			box-shadow: var(--shadow-soft);
 		}
 
@@ -323,10 +323,10 @@
 			border-radius: var(--radius-sm);
 
 			line-height: var(--leading-tight);
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 			text-align: end;
 
-			background: var(--md-color-menu-surface);
+			background: var(--md-sys-color-menu-surface);
 			box-shadow: var(--shadow-soft);
 		}
 
@@ -364,8 +364,8 @@
 		   Covers the beam toggle (aria-pressed) and the filter command (data-active). */
 		.fab-item[aria-pressed="true"],
 		.fab-item[data-active="true"] {
-			color: var(--md-color-on-primary-container);
-			background: var(--md-color-primary-container);
+			color: var(--md-sys-color-on-primary-container);
+			background: var(--md-sys-color-primary-container);
 		}
 
 		/* Left-handed: the arc mirrors to curve up and to the left, and the

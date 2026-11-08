@@ -24,7 +24,7 @@
 			min-block-size: 64px;
 			padding-inline: var(--space-3xs);
 
-			background: var(--md-color-surface);
+			background: var(--md-sys-color-surface);
 		}
 
 		/* Compact, below a destination: the back arrow and the page title take
@@ -38,7 +38,7 @@
 			block-size: var(--md-target-size);
 			border-radius: var(--md-shape-full);
 
-			color: var(--md-color-on-surface);
+			color: var(--md-sys-color-on-surface);
 		}
 
 		.title {
@@ -48,7 +48,7 @@
 			min-inline-size: 0;
 
 			font: var(--md-type-title-large);
-			color: var(--md-color-on-surface);
+			color: var(--md-sys-color-on-surface);
 			text-overflow: ellipsis;
 			white-space: nowrap;
 		}
@@ -82,12 +82,12 @@
 		.brand-mark {
 			font: var(--md-type-title-small);
 			font-weight: 700;
-			color: var(--md-color-primary);
+			color: var(--md-sys-color-primary);
 		}
 
 		.brand-product {
 			font: var(--md-type-label-medium);
-			color: var(--md-color-on-surface-variant);
+			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		/* The Organizer and the Artist worked on, stacked on a compact window;
@@ -113,13 +113,13 @@
 		.organizer-name {
 			padding-inline: var(--space-xs) var(--space-3xs);
 			font: var(--md-type-label-medium);
-			color: var(--md-color-on-surface-variant);
+			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.context > .artist-name {
 			padding-inline: var(--space-xs) var(--space-3xs);
 			font: var(--md-type-label-large);
-			color: var(--md-color-on-surface);
+			color: var(--md-sys-color-on-surface);
 		}
 
 		/* M3 menu button: the current Artist and a drop-down arrow. */
@@ -139,7 +139,7 @@
 			border-radius: var(--md-shape-full);
 
 			font: var(--md-type-label-large);
-			color: var(--md-color-on-surface);
+			color: var(--md-sys-color-on-surface);
 
 			background: transparent;
 		}
@@ -160,7 +160,7 @@
 			border: none;
 			border-radius: var(--md-shape-full);
 
-			color: var(--md-color-on-surface-variant);
+			color: var(--md-sys-color-on-surface-variant);
 
 			background: transparent;
 		}
@@ -175,16 +175,16 @@
 			border: none;
 			border-radius: var(--md-shape-extra-small);
 
-			color: var(--md-color-on-surface);
+			color: var(--md-sys-color-on-surface);
 
-			background: var(--md-color-surface-container);
+			background: var(--md-sys-color-surface-container);
 			box-shadow: var(--md-elevation-2);
 		}
 
 		.menu-heading {
 			padding: var(--space-2xs) var(--space-s) var(--space-3xs);
 			font: var(--md-type-label-medium);
-			color: var(--md-color-on-surface-variant);
+			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.menu-group {
@@ -240,7 +240,7 @@
 		.menu-divider {
 			margin-block: var(--space-2xs);
 			border: none;
-			border-block-start: 1px solid var(--md-color-outline-variant);
+			border-block-start: 1px solid var(--md-sys-color-outline-variant);
 		}
 
 		/* Medium and wider: the brand lockup on one line above the rail, the
@@ -281,7 +281,7 @@
 			.organizer-name {
 				flex: 0 1 auto;
 				font: var(--md-type-title-small);
-				color: var(--md-color-on-surface);
+				color: var(--md-sys-color-on-surface);
 			}
 
 			.artist-button {

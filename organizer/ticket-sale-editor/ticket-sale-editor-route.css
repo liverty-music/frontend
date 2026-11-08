@@ -7,7 +7,7 @@
 
 		.context,
 		.note {
-			color: var(--md-color-on-surface-variant);
+			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		/* One column of fields, capped at 600 px (M3 forms); sections are set
@@ -26,7 +26,7 @@
 		.section-title {
 			margin-block-start: var(--space-m);
 			font: var(--md-type-title-large);
-			color: var(--md-color-on-surface);
+			color: var(--md-sys-color-on-surface);
 		}
 
 		/* The event's seat types the sale sells: name, then price and quantity. */
@@ -54,7 +54,7 @@
 
 		.stock-name {
 			font: var(--md-type-title-small);
-			color: var(--md-color-on-surface);
+			color: var(--md-sys-color-on-surface);
 		}
 
 		.fixed {
@@ -64,7 +64,7 @@
 
 		.label {
 			font: var(--md-type-label-large);
-			color: var(--md-color-on-surface-variant);
+			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.problem {
@@ -75,9 +75,9 @@
 			padding: var(--space-xs) var(--space-s);
 			border-radius: var(--md-shape-medium);
 
-			color: var(--md-color-on-error-container);
+			color: var(--md-sys-color-on-error-container);
 
-			background: var(--md-color-error-container);
+			background: var(--md-sys-color-error-container);
 		}
 
 		.message {

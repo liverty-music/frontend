@@ -18,7 +18,7 @@
 		border: none;
 		border-radius: var(--md-shape-full);
 
-		color: var(--md-color-on-surface-variant);
+		color: var(--md-sys-color-on-surface-variant);
 
 		background: transparent;
 	}
@@ -33,9 +33,9 @@
 		border: none;
 		border-radius: var(--md-shape-extra-small);
 
-		color: var(--md-color-on-surface);
+		color: var(--md-sys-color-on-surface);
 
-		background: var(--md-color-surface-container);
+		background: var(--md-sys-color-surface-container);
 		box-shadow: var(--md-elevation-2);
 	}
 
@@ -79,7 +79,11 @@
 		/* Unavailable items stay in the menu, dimmed (M3 Menus). */
 		&[aria-disabled="true"] {
 			cursor: not-allowed;
-			color: color-mix(in oklch, var(--md-color-on-surface) 38%, transparent);
+			color: color-mix(
+				in oklch,
+				var(--md-sys-color-on-surface) 38%,
+				transparent
+			);
 		}
 	}
 }

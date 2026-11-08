@@ -69,10 +69,10 @@ function venueStory(
 		client.search.mockClear()
 		return defineAureliaStory({
 			template: `
-				<div style="color-scheme:${options.scheme ?? 'light'}; inline-size:390px; padding:16px; background:var(--md-color-surface)">
+				<div style="color-scheme:${options.scheme ?? 'light'}; inline-size:390px; padding:16px; background:var(--md-sys-color-surface)">
 					<venue-field label.bind="label" error.bind="error" required.bind="required" value.bind="value" typed-not-picked.bind="typedNotPicked"></venue-field>
-					<p style="color:var(--md-color-on-surface)" data-testid="value">\${value ? value.placeId : 'none'}</p>
-					<p style="color:var(--md-color-on-surface)" data-testid="typed">\${typedNotPicked ? 'typed' : 'clean'}</p>
+					<p style="color:var(--md-sys-color-on-surface)" data-testid="value">\${value ? value.placeId : 'none'}</p>
+					<p style="color:var(--md-sys-color-on-surface)" data-testid="typed">\${typedNotPicked ? 'typed' : 'clean'}</p>
 				</div>
 			`,
 			props: { ...args, value: options.value ?? null, typedNotPicked: false },

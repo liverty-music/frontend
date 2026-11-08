@@ -16,7 +16,7 @@
 			font-family: var(--font-display);
 			font-size: var(--step-1);
 			font-weight: normal;
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 		}
 
 		/* Vertical list; layout comes from `[ stack ]` (composition layer).
@@ -37,9 +37,9 @@
 			font-family: var(--font-display);
 			font-size: var(--step--1);
 			font-weight: 600;
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 
-			background: var(--color-surface-overlay);
+			background: var(--md-sys-color-surface-container-high);
 
 			transition:
 				background-color var(--transition-fast) ease-out,
@@ -59,7 +59,7 @@
 		.language-check {
 			inline-size: 1.25rem;
 			block-size: 1.25rem;
-			color: var(--md-color-primary);
+			color: var(--md-sys-color-primary);
 		}
 	}
 }

@@ -26,7 +26,7 @@ type Story = StoryObj<typeof meta>
 export const Indeterminate = {
 	render: (args) =>
 		defineAureliaStory({
-			template: `<div style="inline-size:390px; padding:16px; background:var(--md-color-surface)"><linear-progress label.bind="label"></linear-progress></div>`,
+			template: `<div style="inline-size:390px; padding:16px; background:var(--md-sys-color-surface)"><linear-progress label.bind="label"></linear-progress></div>`,
 			props: args,
 		}),
 	play: async ({ canvasElement }) => {

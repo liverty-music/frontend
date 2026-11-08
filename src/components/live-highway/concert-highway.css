@@ -59,17 +59,17 @@
 			}
 
 			& > [data-stage="home"] {
-				color: var(--color-surface-base);
+				color: var(--md-sys-color-surface);
 				background: var(--color-stage-home);
 			}
 
 			& > [data-stage="near"] {
-				color: var(--color-surface-base);
+				color: var(--md-sys-color-surface);
 				background: var(--color-stage-near);
 			}
 
 			& > [data-stage="away"] {
-				color: var(--color-surface-base);
+				color: var(--md-sys-color-surface);
 				background: var(--color-stage-away);
 			}
 		}

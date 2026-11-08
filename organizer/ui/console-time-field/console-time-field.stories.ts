@@ -45,7 +45,7 @@ type Story = StoryObj<typeof meta>
 const render: Story['render'] = (args) =>
 	defineAureliaStory({
 		template: `
-			<div style="inline-size:360px; padding:16px; background:var(--md-color-surface)">
+			<div style="inline-size:360px; padding:16px; background:var(--md-sys-color-surface)">
 				<console-time-field
 					label.bind="label" value.bind="value" error.bind="error" hint.bind="hint"
 					required.bind="required" disabled.bind="disabled" readonly.bind="readonly"
@@ -145,7 +145,7 @@ export const OffStepMinuteKept = {
 	render: (args) =>
 		defineAureliaStory({
 			template: `
-				<div style="inline-size:360px; padding:16px; background:var(--md-color-surface)">
+				<div style="inline-size:360px; padding:16px; background:var(--md-sys-color-surface)">
 					<console-time-field label="開演" value.bind="value"></console-time-field>
 					<output data-testid="value">\${value}</output>
 				</div>
@@ -179,7 +179,7 @@ export const ChoosingEmitsChange = {
 	render: (args) =>
 		defineAureliaStory({
 			template: `
-				<div style="inline-size:360px; padding:16px; background:var(--md-color-surface)">
+				<div style="inline-size:360px; padding:16px; background:var(--md-sys-color-surface)">
 					<console-time-field label="開場" value.to-view="value" change.trigger="chosen = $event.detail.value"></console-time-field>
 					<output data-testid="chosen">\${chosen}</output>
 				</div>
@@ -214,7 +214,7 @@ export const TwelveHourDevice = {
 	render: (args) =>
 		defineAureliaStory({
 			template: `
-				<div lang="en-US" style="inline-size:360px; padding:16px; background:var(--md-color-surface)">
+				<div lang="en-US" style="inline-size:360px; padding:16px; background:var(--md-sys-color-surface)">
 					<console-time-field label="Doors" value.bind="value"></console-time-field>
 				</div>
 			`,
@@ -248,7 +248,7 @@ const renderPicker =
 	(args) =>
 		defineAureliaStory({
 			template: `
-				<div style="color-scheme:${scheme}; inline-size:360px; padding:16px; background:var(--md-color-surface)">
+				<div style="color-scheme:${scheme}; inline-size:360px; padding:16px; background:var(--md-sys-color-surface)">
 					<console-time-field label="開演" value.bind="value" required.bind="true"></console-time-field>
 				</div>
 			`,
@@ -274,7 +274,7 @@ async function checkOpenPicker(canvasElement: HTMLElement): Promise<void> {
 		).toBeGreaterThanOrEqual(4.5)
 	}
 	const probe = document.createElement('span')
-	probe.style.background = 'var(--md-color-surface-container)'
+	probe.style.background = 'var(--md-sys-color-surface-container)'
 	canvasElement.firstElementChild?.append(probe)
 	await expect(getComputedStyle(options[1]).backgroundColor).toBe(
 		getComputedStyle(probe).backgroundColor,

@@ -12,7 +12,7 @@
 			block-size: 100dvb;
 			padding: var(--space-l);
 
-			background: var(--color-surface-base);
+			background: var(--md-sys-color-surface);
 		}
 
 		/* Loading cluster: indicator + text side by side. */
@@ -20,7 +20,7 @@
 			--cluster-gap: var(--space-s);
 
 			align-items: center;
-			color: var(--color-text-secondary);
+			color: var(--md-sys-color-on-surface-variant);
 		}
 	}
 }

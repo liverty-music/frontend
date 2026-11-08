@@ -240,11 +240,11 @@
 	.skeleton {
 		border-radius: var(--md-shape-small);
 
-		background-color: var(--md-color-surface-container-high);
+		background-color: var(--md-sys-color-surface-container-high);
 		background-image: linear-gradient(
 			100deg,
 			transparent 30%,
-			color-mix(in oklab, var(--md-color-on-surface) 8%, transparent) 50%,
+			color-mix(in oklab, var(--md-sys-color-on-surface) 8%, transparent) 50%,
 			transparent 70%
 		);
 		background-size: 200% 100%;

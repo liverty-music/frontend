@@ -8,7 +8,7 @@
 			padding-block: var(--space-l);
 			padding-inline: var(--space-m);
 
-			background: var(--color-surface-base);
+			background: var(--md-sys-color-surface);
 		}
 
 		.checkout {
@@ -24,12 +24,12 @@
 			font-size: var(--step-2);
 			font-weight: normal;
 			line-height: var(--leading-snug);
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 			text-wrap: balance;
 		}
 
 		.checkout-status {
-			color: var(--color-text-secondary);
+			color: var(--md-sys-color-on-surface-variant);
 			text-align: center;
 		}
 
@@ -40,39 +40,39 @@
 
 		.checkout-event-title {
 			font-weight: 600;
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 		}
 
 		.checkout-event-meta {
 			font-size: var(--step--1);
-			color: var(--color-text-secondary);
+			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.checkout-countdown {
 			font-size: var(--step--1);
 			font-variant-numeric: tabular-nums;
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 		}
 
 		.checkout-panel {
 			--flow-space: var(--space-m);
 
 			padding: var(--space-m);
-			border: 1px solid var(--color-border-subtle);
+			border: 1px solid var(--md-sys-color-outline-variant);
 			border-radius: var(--radius-card);
-			background: var(--color-surface-raised);
+			background: var(--md-sys-color-surface-container);
 		}
 
 		.checkout-step-title {
 			font-size: var(--step-1);
 			font-weight: 600;
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 		}
 
 		.checkout-note {
 			font-size: var(--step--1);
 			line-height: var(--leading-relaxed);
-			color: var(--color-text-secondary);
+			color: var(--md-sys-color-on-surface-variant);
 			text-wrap: pretty;
 		}
 
@@ -85,7 +85,7 @@
 		.checkout-label {
 			font-size: var(--step--1);
 			font-weight: 600;
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 		}
 
 		.checkout-input {
@@ -93,13 +93,13 @@
 			min-block-size: 48px;
 			padding-block: var(--space-2xs);
 			padding-inline: var(--space-s);
-			border: 1px solid var(--color-border-subtle);
+			border: 1px solid var(--md-sys-color-outline-variant);
 			border-radius: var(--radius-button);
 
 			font-size: var(--step-0);
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 
-			background: var(--color-surface-base);
+			background: var(--md-sys-color-surface);
 
 			&:focus-visible {
 				border-color: var(--color-brand-primary);
@@ -112,17 +112,17 @@
 		.checkout-seat-type {
 			font-size: var(--step-1);
 			font-weight: 600;
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 		}
 
 		.checkout-price {
-			color: var(--color-text-secondary);
+			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.checkout-total {
 			font-size: var(--step-1);
 			font-weight: 600;
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 		}
 
 		.checkout-terms {
@@ -131,7 +131,7 @@
 
 			font-size: var(--step--1);
 			line-height: var(--leading-relaxed);
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 
 			& dt {
 				font-weight: 600;
@@ -139,7 +139,7 @@
 
 			& dd {
 				margin-block-end: var(--space-xs);
-				color: var(--color-text-secondary);
+				color: var(--md-sys-color-on-surface-variant);
 			}
 		}
 

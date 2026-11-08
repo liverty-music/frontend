@@ -24,7 +24,7 @@
 			block-size: var(--bottom-nav-height);
 			padding-block-end: var(--_safe-area-bottom);
 
-			background: var(--color-surface-raised);
+			background: var(--md-sys-color-surface-container);
 
 			/* Gradient top border via pseudo-element (avoids border-image + border-radius conflict) */
 			&::before {

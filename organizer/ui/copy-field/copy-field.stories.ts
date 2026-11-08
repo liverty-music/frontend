@@ -28,7 +28,7 @@ type Story = StoryObj<typeof meta>
 const render: Story['render'] = (args) =>
 	defineAureliaStory({
 		template: `
-			<div style="padding:16px; background:var(--md-color-surface); color:var(--md-color-on-surface)">
+			<div style="padding:16px; background:var(--md-sys-color-surface); color:var(--md-sys-color-on-surface)">
 				<copy-field label.bind="label" value.bind="value"></copy-field>
 				<console-snackbar></console-snackbar>
 			</div>

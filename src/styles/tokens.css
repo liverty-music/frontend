@@ -10,15 +10,6 @@
 		--color-stage-near: oklch(75% 0.18 195deg);
 		--color-stage-away: oklch(68% 0.25 330deg);
 
-		/* Surface colors (deep navy — dark but with color) */
-		--color-surface-base: oklch(18% 0.04 275deg);
-		--color-surface-raised: oklch(22% 0.04 275deg);
-		--color-surface-overlay: oklch(26% 0.04 275deg);
-
-		/* Text colors (warm-tinted) */
-		--color-text-primary: oklch(98.5% 0 0deg);
-		--color-text-secondary: oklch(82% 0.02 275deg);
-
 		/* Lightness raised 60%→68% so muted text clears the M3 4.5:1 body-text
 		   contrast target on the dark surface tiers (verified via axe in the
 		   Storybook a11y run). Stays the dimmest text tier (< secondary 82%). */
@@ -38,10 +29,6 @@
 		--journey-hue-unpaid: 75deg; /* action required — amber */
 		--journey-hue-paid: 160deg; /* success — the hue of --color-success */
 		--journey-hue-lost: 25deg; /* failure — red */
-
-		/* Border colors */
-		--color-border-subtle: oklch(98.5% 0 0deg / 12%);
-		--color-border-muted: oklch(98.5% 0 0deg / 22%);
 
 		/* Typography — festival display + clean body */
 		--font-display: "Righteous", "Outfit", system-ui, sans-serif;
@@ -190,43 +177,47 @@
 		   on-primary label measures 4.5:1 (4.64:1), so text on a primary fill
 		   passes at every size. --color-brand-primary stays at 65% for surfaces
 		   that carry no text (the FAB, brand lines, gradients and glows). */
-		--md-color-primary: oklch(from var(--color-brand-primary) 57% c h);
-		--md-color-on-primary: var(--color-white);
-		--md-color-primary-container: oklch(
+		--md-sys-color-primary: oklch(from var(--color-brand-primary) 57% c h);
+		--md-sys-color-on-primary: var(--color-white);
+		--md-sys-color-primary-container: oklch(
 			from var(--color-brand-primary) 48% 0.19 h
 		);
-		--md-color-on-primary-container: oklch(
+		--md-sys-color-on-primary-container: oklch(
 			from var(--color-brand-primary) 96% 0.04 h
 		);
 
 		/* Accent — secondary (electric blue). */
-		--md-color-secondary: var(--color-brand-secondary);
-		--md-color-on-secondary: oklch(
+		--md-sys-color-secondary: var(--color-brand-secondary);
+		--md-sys-color-on-secondary: oklch(
 			from var(--color-brand-secondary) 18% 0.06 h
 		);
-		--md-color-secondary-container: oklch(
+		--md-sys-color-secondary-container: oklch(
 			from var(--color-brand-secondary) 45% 0.15 h
 		);
-		--md-color-on-secondary-container: oklch(
+		--md-sys-color-on-secondary-container: oklch(
 			from var(--color-brand-secondary) 95% 0.03 h
 		);
 
 		/* Accent — tertiary (expressive lime; maps brand-accent). Reach for this
 		   for hero-moment pops that need a genuinely different hue from primary. */
-		--md-color-tertiary: var(--color-brand-accent);
-		--md-color-on-tertiary: oklch(from var(--color-brand-accent) 20% 0.06 h);
-		--md-color-tertiary-container: oklch(
+		--md-sys-color-tertiary: var(--color-brand-accent);
+		--md-sys-color-on-tertiary: oklch(
+			from var(--color-brand-accent) 20% 0.06 h
+		);
+		--md-sys-color-tertiary-container: oklch(
 			from var(--color-brand-accent) 45% 0.12 h
 		);
-		--md-color-on-tertiary-container: oklch(
+		--md-sys-color-on-tertiary-container: oklch(
 			from var(--color-brand-accent) 95% 0.04 h
 		);
 
 		/* Error (aliases the physical state color + derived companions). */
-		--md-color-error: var(--color-error);
-		--md-color-on-error: oklch(from var(--color-error) 18% 0.05 h);
-		--md-color-error-container: oklch(from var(--color-error) 42% 0.14 h);
-		--md-color-on-error-container: oklch(from var(--color-error) 95% 0.03 h);
+		--md-sys-color-error: var(--color-error);
+		--md-sys-color-on-error: oklch(from var(--color-error) 18% 0.05 h);
+		--md-sys-color-error-container: oklch(from var(--color-error) 42% 0.14 h);
+		--md-sys-color-on-error-container: oklch(
+			from var(--color-error) 95% 0.03 h
+		);
 
 		/* Snack bar containers, one gradient per severity. Each stop sits at the
 		   highest lightness at which the white message, and the on-container
@@ -234,43 +225,45 @@
 		   gradient (its oklab blend dips below the ends mid-way). Info keeps the
 		   brand hues, darker than the primary role because the action needs it
 		   mid-gradient; warning is a flat amber; error a deep red. */
-		--md-color-snack-info-from: oklch(
+		--md-sys-color-snack-info-from: oklch(
 			from var(--color-brand-primary) 50.5% c h
 		);
-		--md-color-snack-info-to: oklch(from var(--color-brand-secondary) 48% c h);
-		--md-color-snack-warning: oklch(47.5% 0.16 75deg);
-		--md-color-snack-error-from: oklch(40% 0.2 25deg);
-		--md-color-snack-error-to: oklch(45% 0.18 25deg);
+		--md-sys-color-snack-info-to: oklch(
+			from var(--color-brand-secondary) 48% c h
+		);
+		--md-sys-color-snack-warning: oklch(47.5% 0.16 75deg);
+		--md-sys-color-snack-error-from: oklch(40% 0.2 25deg);
+		--md-sys-color-snack-error-to: oklch(45% 0.18 25deg);
 
 		/* Neutral / surface roles (aliases over the physical surface + text
 		   tokens). on-surface = body text; on-surface-variant = secondary text. */
-		--md-color-surface: var(--color-surface-base);
-		--md-color-on-surface: var(--color-text-primary);
-		--md-color-on-surface-variant: var(--color-text-secondary);
-		--md-color-outline: var(--color-border-muted);
-		--md-color-outline-variant: var(--color-border-subtle);
+		--md-sys-color-surface: oklch(18% 0.04 275deg);
+		--md-sys-color-on-surface: oklch(98.5% 0 0deg);
+		--md-sys-color-on-surface-variant: oklch(82% 0.02 275deg);
+		--md-sys-color-outline: oklch(98.5% 0 0deg / 22%);
+		--md-sys-color-outline-variant: oklch(98.5% 0 0deg / 12%);
 
 		/* ── Tonal surface-container tiers (M3: five tiers, lowest → highest) ──
 		   Depth is expressed by tonal tier, not shadow, so surfaces survive
 		   forced-colors. Physical↔semantic mapping: -low/-container/-high alias
 		   the existing base/raised/overlay tokens; -lowest and -highest are the
 		   two derived extremes (same hue/chroma, lightness stepped ±3%). */
-		--md-color-surface-container-lowest: oklch(
-			from var(--color-surface-base) 15% c h
+		--md-sys-color-surface-container-lowest: oklch(
+			from var(--md-sys-color-surface) 15% c h
 		);
-		--md-color-surface-container-low: var(--color-surface-base);
-		--md-color-surface-container: var(--color-surface-raised);
-		--md-color-surface-container-high: var(--color-surface-overlay);
-		--md-color-surface-container-highest: oklch(
-			from var(--color-surface-overlay) 30% c h
+		--md-sys-color-surface-container-low: var(--md-sys-color-surface);
+		--md-sys-color-surface-container: oklch(22% 0.04 275deg);
+		--md-sys-color-surface-container-high: oklch(26% 0.04 275deg);
+		--md-sys-color-surface-container-highest: oklch(
+			from var(--md-sys-color-surface-container-high) 30% c h
 		);
 
 		/* Raised surface of the FAB's action items: 3:1 or more against the page
 		   dimmed by the scrim (WCAG 1.4.11), white ink on it 4.5:1 or more. */
-		--md-color-menu-surface: oklch(50% 0.035 275deg);
+		--md-sys-color-menu-surface: oklch(50% 0.035 275deg);
 
 		/* Modal backdrop scrim (dims the page behind the open panel). */
-		--md-color-scrim: oklch(0% 0 0deg / 45%);
+		--md-sys-color-scrim: oklch(0% 0 0deg / 45%);
 
 		/* ── M3 state-layer opacities ──
 		   A single scale, overlaid as the element's on-* role at the given
@@ -345,43 +338,7 @@
 		   consumer adds on its own. */
 		--bottom-nav-height: 3.5rem;
 
-		/* Material 3 names for the same values (adopt-m3-cube-ui-foundation).
-		   Colour roles alias today's tokens until the rename moves every use. */
-		--md-sys-color-primary: var(--md-color-primary);
-		--md-sys-color-on-primary: var(--md-color-on-primary);
-		--md-sys-color-primary-container: var(--md-color-primary-container);
-		--md-sys-color-on-primary-container: var(--md-color-on-primary-container);
-		--md-sys-color-secondary: var(--md-color-secondary);
-		--md-sys-color-on-secondary: var(--md-color-on-secondary);
-		--md-sys-color-secondary-container: var(--md-color-secondary-container);
-		--md-sys-color-on-secondary-container: var(
-			--md-color-on-secondary-container
-		);
-		--md-sys-color-tertiary: var(--md-color-tertiary);
-		--md-sys-color-on-tertiary: var(--md-color-on-tertiary);
-		--md-sys-color-tertiary-container: var(--md-color-tertiary-container);
-		--md-sys-color-on-tertiary-container: var(--md-color-on-tertiary-container);
-		--md-sys-color-error: var(--md-color-error);
-		--md-sys-color-on-error: var(--md-color-on-error);
-		--md-sys-color-error-container: var(--md-color-error-container);
-		--md-sys-color-on-error-container: var(--md-color-on-error-container);
-		--md-sys-color-surface: var(--md-color-surface);
-		--md-sys-color-on-surface: var(--md-color-on-surface);
-		--md-sys-color-on-surface-variant: var(--md-color-on-surface-variant);
-		--md-sys-color-surface-container-lowest: var(
-			--md-color-surface-container-lowest
-		);
-		--md-sys-color-surface-container-low: var(--md-color-surface-container-low);
-		--md-sys-color-surface-container: var(--md-color-surface-container);
-		--md-sys-color-surface-container-high: var(
-			--md-color-surface-container-high
-		);
-		--md-sys-color-surface-container-highest: var(
-			--md-color-surface-container-highest
-		);
-		--md-sys-color-outline: var(--md-color-outline);
-		--md-sys-color-outline-variant: var(--md-color-outline-variant);
-		--md-sys-color-scrim: var(--md-color-scrim);
+		/* Shadow colour of the shared elevation levels. */
 		--md-sys-color-shadow: oklch(0% 0 0deg);
 
 		/* Corner shapes at the Material 3 values (ShapeTokens.kt). */

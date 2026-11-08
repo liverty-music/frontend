@@ -25,7 +25,7 @@ type Story = StoryObj<typeof meta>
 export const Default = {
 	render: (args) =>
 		defineAureliaStory({
-			template: `<div style="padding:16px; background:var(--md-color-surface)"><stat-tile label.bind="label" value.bind="value" supporting.bind="supporting"></stat-tile></div>`,
+			template: `<div style="padding:16px; background:var(--md-sys-color-surface)"><stat-tile label.bind="label" value.bind="value" supporting.bind="supporting"></stat-tile></div>`,
 			props: args,
 		}),
 } satisfies Story
@@ -40,7 +40,7 @@ export const CountsLineUp = {
 	render: () =>
 		defineAureliaStory({
 			template: `
-				<div style="display:grid; justify-items:end; gap:8px; inline-size:240px; padding:16px; background:var(--md-color-surface)">
+				<div style="display:grid; justify-items:end; gap:8px; inline-size:240px; padding:16px; background:var(--md-sys-color-surface)">
 					<stat-tile label="応募数" value.bind="count | count" style="justify-self:stretch" data-testid="a"></stat-tile>
 					<stat-tile label="申込枚数" value.bind="requested | count" style="justify-self:stretch" data-testid="b"></stat-tile>
 				</div>

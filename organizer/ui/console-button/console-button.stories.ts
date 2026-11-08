@@ -46,7 +46,7 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 const surface =
-	'display:flex; flex-wrap:wrap; gap:16px; padding:24px; background:var(--md-color-surface); color:var(--md-color-on-surface)'
+	'display:flex; flex-wrap:wrap; gap:16px; padding:24px; background:var(--md-sys-color-surface); color:var(--md-sys-color-on-surface)'
 
 /** The button (or link) in the shadow root of a `<console-button>`. */
 function controlOf(host: HTMLElement): HTMLElement {
@@ -95,7 +95,7 @@ export const Variants = {
 		// Only the filled button is in the brand color; the text buttons are not.
 		const row = canvasElement.querySelector<HTMLElement>('div')
 		if (!row) throw new Error('row not rendered')
-		const brand = roleColor(row, '--md-color-primary')
+		const brand = roleColor(row, '--md-sys-color-primary')
 		const inBrand = deepQueryAll(canvasElement, 'console-button')
 			.filter((host) => {
 				const style = getComputedStyle(controlOf(host))
@@ -137,7 +137,7 @@ export const TextInBothThemes = {
 						<console-button data-text variant="text" icon="add">公演日を追加</console-button>
 						<console-button variant="filled">保存する</console-button>
 					</div>
-					<div data-testid="dark-dialog" style="color-scheme:dark; ${surface}; background:var(--md-color-surface-container-high)">
+					<div data-testid="dark-dialog" style="color-scheme:dark; ${surface}; background:var(--md-sys-color-surface-container-high)">
 						<console-button data-text variant="text">やめる</console-button>
 						<console-button variant="danger">取り消す</console-button>
 					</div>
@@ -151,8 +151,8 @@ export const TextInBothThemes = {
 				`[data-testid="${id}"]`,
 			)
 			if (!panel) throw new Error(`${id} not rendered`)
-			const brand = roleColor(panel, '--md-color-primary')
-			const neutral = roleColor(panel, '--md-color-on-surface-variant')
+			const brand = roleColor(panel, '--md-sys-color-primary')
+			const neutral = roleColor(panel, '--md-sys-color-on-surface-variant')
 			const background = getComputedStyle(panel).backgroundColor
 			// `variant` is a bindable, so the host keeps no attribute to select by.
 			const texts = [
@@ -333,7 +333,7 @@ export const PageLabelStyle = {
 						@scope (.page) {
 							.label {
 								font: var(--md-type-label-large);
-								color: var(--md-color-on-surface-variant);
+								color: var(--md-sys-color-on-surface-variant);
 							}
 						}
 					</style>

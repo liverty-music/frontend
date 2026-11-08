@@ -13,14 +13,14 @@
 			padding: var(--space-s);
 			padding-block-end: var(--space-2xl);
 
-			color: var(--color-text-secondary);
+			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.licenses-title {
 			font-family: var(--font-display);
 			font-size: var(--step-3);
 			font-weight: 700;
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 		}
 
 		.licenses-intro {
@@ -29,9 +29,9 @@
 
 		.licenses-item {
 			padding: var(--space-xs);
-			border: 1px solid var(--color-border-subtle);
+			border: 1px solid var(--md-sys-color-outline-variant);
 			border-radius: var(--radius-card);
-			background: var(--color-surface-raised);
+			background: var(--md-sys-color-surface-container);
 		}
 
 		.licenses-item-head {
@@ -43,7 +43,7 @@
 
 		.licenses-name {
 			font-weight: 600;
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 
 			/* Long scoped names (e.g. @buf/bufbuild_protovalidate.connectrpc_es)
 			   have no break opportunities; allow breaking anywhere so they wrap
@@ -53,7 +53,7 @@
 
 		.licenses-version {
 			font-size: var(--step--2);
-			color: var(--color-text-secondary);
+			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.licenses-license {
@@ -63,7 +63,7 @@
 
 			font-size: var(--step--2);
 
-			background: var(--color-surface-overlay);
+			background: var(--md-sys-color-surface-container-high);
 		}
 
 		.licenses-publisher {
@@ -72,7 +72,7 @@
 
 		.licenses-repository {
 			font-size: var(--step--1);
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 		}
 
 		.licenses-text > summary {
@@ -92,7 +92,7 @@
 			overflow-wrap: anywhere;
 			white-space: pre-wrap;
 
-			background: var(--color-surface-base);
+			background: var(--md-sys-color-surface);
 		}
 	}
 }

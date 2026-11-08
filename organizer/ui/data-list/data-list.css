@@ -20,18 +20,18 @@
 	.table th,
 	.table td {
 		padding: var(--space-xs) var(--space-s);
-		border-block-end: 1px solid var(--md-color-outline-variant);
+		border-block-end: 1px solid var(--md-sys-color-outline-variant);
 		text-align: start;
 	}
 
 	.table thead th {
 		font: var(--md-type-label-large);
-		color: var(--md-color-on-surface-variant);
+		color: var(--md-sys-color-on-surface-variant);
 	}
 
 	.table tbody th {
 		font-weight: 500;
-		color: var(--md-color-on-surface);
+		color: var(--md-sys-color-on-surface);
 	}
 
 	.table [data-numeric="true"] {
@@ -41,7 +41,7 @@
 	.subtitle {
 		display: block;
 		font: var(--md-type-body-small);
-		color: var(--md-color-on-surface-variant);
+		color: var(--md-sys-color-on-surface-variant);
 	}
 
 	/* A row that opens a page is one target: its row header's link covers the
@@ -52,7 +52,7 @@
 		&:hover {
 			background: color-mix(
 				in oklch,
-				var(--md-color-on-surface)
+				var(--md-sys-color-on-surface)
 					calc(var(--md-sys-state-hover-opacity) * 100%),
 				transparent
 			);
@@ -74,7 +74,7 @@
 		}
 
 		&:focus-visible::after {
-			outline: var(--focus-ring-width) solid var(--md-color-primary);
+			outline: var(--focus-ring-width) solid var(--md-sys-color-primary);
 			outline-offset: calc(-1 * var(--focus-ring-width));
 		}
 	}

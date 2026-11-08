@@ -18,7 +18,7 @@ type Story = StoryObj<typeof meta>
 
 const render: Story['render'] = (args) =>
 	defineAureliaStory({
-		template: `<div style="padding:16px; background:var(--md-color-surface)"><description-list items.bind="items" empty-label="未登録"></description-list></div>`,
+		template: `<div style="padding:16px; background:var(--md-sys-color-surface)"><description-list items.bind="items" empty-label="未登録"></description-list></div>`,
 		props: args,
 	})
 

@@ -12,7 +12,7 @@
 			padding-block: var(--space-l);
 			padding-inline: var(--space-m);
 
-			background: var(--color-surface-base);
+			background: var(--md-sys-color-surface);
 		}
 
 		.resale-entries-title {
@@ -20,7 +20,7 @@
 			font-size: var(--step-2);
 			font-weight: normal;
 			line-height: var(--leading-snug);
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 			text-wrap: balance;
 		}
 
@@ -39,24 +39,24 @@
 			max-inline-size: 36rem;
 			margin-inline: auto;
 			padding: var(--space-m);
-			border: 1px solid var(--color-border-subtle);
+			border: 1px solid var(--md-sys-color-outline-variant);
 			border-radius: var(--radius-card);
 
-			background: var(--color-surface-raised);
+			background: var(--md-sys-color-surface-container);
 		}
 
 		.resale-entries-event,
 		.resale-entries-lead {
 			font-size: var(--step--1);
 			line-height: var(--leading-relaxed);
-			color: var(--color-text-secondary);
+			color: var(--md-sys-color-on-surface-variant);
 			text-wrap: pretty;
 		}
 
 		.resale-entries-seat,
 		.resale-entries-state {
 			font-weight: 600;
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 		}
 
 		.resale-entries-error {

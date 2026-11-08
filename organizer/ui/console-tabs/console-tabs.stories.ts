@@ -30,7 +30,7 @@ const TABS = [
 const render: Story['render'] = (args) =>
 	defineAureliaStory({
 		template: `
-			<div style="padding:16px; background:var(--md-color-surface)">
+			<div style="padding:16px; background:var(--md-sys-color-surface)">
 				<console-tabs tabs.bind="tabs" active.bind="active" label="公演の管理" click.trigger="select($event)"></console-tabs>
 			</div>
 		`,

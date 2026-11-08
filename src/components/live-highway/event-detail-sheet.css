@@ -37,7 +37,7 @@
 
 			background: linear-gradient(
 				to top,
-				var(--color-surface-raised),
+				var(--md-sys-color-surface-container),
 				transparent
 			);
 		}
@@ -83,12 +83,12 @@
 
 		.detail-primary {
 			font-weight: 500;
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 		}
 
 		.detail-secondary {
 			font-size: var(--step--1);
-			color: var(--color-text-secondary);
+			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.detail-link {
@@ -114,7 +114,7 @@
 
 		.out-of-range-text {
 			font-size: var(--step--1);
-			color: var(--color-text-secondary);
+			color: var(--md-sys-color-on-surface-variant);
 			text-wrap: pretty;
 			word-break: auto-phrase;
 		}
@@ -140,7 +140,7 @@
 		.journey-heading {
 			font-size: var(--step--1);
 			font-weight: 500;
-			color: var(--color-text-secondary);
+			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.journey-notify {
@@ -200,7 +200,7 @@
 
 			font-size: var(--step--1);
 			font-weight: 500;
-			color: var(--color-text-secondary);
+			color: var(--md-sys-color-on-surface-variant);
 
 			transition:
 				border-color 150ms ease-out,
@@ -219,7 +219,7 @@
 
 		.journey-node[aria-pressed="false"]:hover:not(:disabled) {
 			border-color: var(--_border-light-hover);
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 			background: var(--_bg-hover);
 		}
 
@@ -267,7 +267,7 @@
 			align-items: center;
 
 			font-size: var(--step--1);
-			color: var(--color-text-secondary);
+			color: var(--md-sys-color-on-surface-variant);
 			text-wrap: pretty;
 			word-break: auto-phrase;
 		}

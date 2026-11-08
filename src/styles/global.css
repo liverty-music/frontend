@@ -3,15 +3,15 @@
 		font-family: var(--font-body);
 		font-size: var(--step-0);
 		line-height: var(--leading-relaxed);
-		color: var(--color-text-primary);
+		color: var(--md-sys-color-on-surface);
 
-		background: var(--color-surface-base);
+		background: var(--md-sys-color-surface);
 	}
 
 	/* Top-layer elements inherit from <html>, not <body>.
 	   Restore the app's text color for all popovers and dialogs. */
 	:where([popover], dialog) {
-		color: var(--color-text-primary);
+		color: var(--md-sys-color-on-surface);
 	}
 
 	:where(h1, h2, h3, h4, h5, h6) {
@@ -92,11 +92,11 @@
 	:where(input, textarea, select) {
 		padding-block: var(--space-2xs);
 		padding-inline: var(--space-xs);
-		border: 1px solid var(--color-border-subtle);
+		border: 1px solid var(--md-sys-color-outline-variant);
 		border-radius: var(--radius-button);
 
 		accent-color: var(--color-brand-primary);
-		background: var(--color-surface-raised);
+		background: var(--md-sys-color-surface-container);
 	}
 
 	:where(svg) {

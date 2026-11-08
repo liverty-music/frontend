@@ -13,7 +13,7 @@
 		block-size: 4px;
 		border-radius: var(--md-shape-full);
 
-		background: var(--md-color-secondary-container);
+		background: var(--md-sys-color-secondary-container);
 	}
 
 	.indicator {
@@ -24,7 +24,7 @@
 		inline-size: 40%;
 		border-radius: inherit;
 
-		background: var(--md-color-on-surface-variant);
+		background: var(--md-sys-color-on-surface-variant);
 
 		animation: linear-progress-slide 1.6s var(--md-sys-motion-easing-standard)
 			infinite;

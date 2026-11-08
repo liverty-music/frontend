@@ -1,8 +1,5 @@
 {
   "organizer/auth-callback/auth-callback-route.css": {
-    "declaration-property-custom-property-allowed-list": {
-      "count": 2
-    },
     "property-disallowed-list": {
       "count": 1
     }
@@ -12,7 +9,7 @@
       "count": 1
     },
     "declaration-property-custom-property-allowed-list": {
-      "count": 13
+      "count": 3
     },
     "declaration-property-value-disallowed-list": {
       "count": 3
@@ -23,7 +20,7 @@
   },
   "organizer/concerts/concerts-route.css": {
     "declaration-property-custom-property-allowed-list": {
-      "count": 4
+      "count": 1
     },
     "property-disallowed-list": {
       "count": 3
@@ -34,7 +31,7 @@
       "count": 1
     },
     "declaration-property-custom-property-allowed-list": {
-      "count": 16
+      "count": 4
     },
     "declaration-property-value-disallowed-list": {
       "count": 4
@@ -43,14 +40,9 @@
       "count": 14
     }
   },
-  "organizer/event/event-route.css": {
-    "declaration-property-custom-property-allowed-list": {
-      "count": 3
-    }
-  },
   "organizer/denied/denied-route.css": {
     "declaration-property-custom-property-allowed-list": {
-      "count": 3
+      "count": 1
     },
     "property-disallowed-list": {
       "count": 1
@@ -58,7 +50,7 @@
   },
   "organizer/find-organizer/find-organizer-route.css": {
     "declaration-property-custom-property-allowed-list": {
-      "count": 3
+      "count": 1
     },
     "property-disallowed-list": {
       "count": 1
@@ -66,7 +58,7 @@
   },
   "organizer/home/home-route.css": {
     "declaration-property-custom-property-allowed-list": {
-      "count": 5
+      "count": 1
     },
     "declaration-property-value-disallowed-list": {
       "count": 2
@@ -77,7 +69,7 @@
   },
   "organizer/landing/landing-route.css": {
     "declaration-property-custom-property-allowed-list": {
-      "count": 3
+      "count": 1
     },
     "property-disallowed-list": {
       "count": 1
@@ -85,7 +77,7 @@
   },
   "organizer/lottery-sale-editor/lottery-sale-editor-route.css": {
     "declaration-property-custom-property-allowed-list": {
-      "count": 7
+      "count": 1
     },
     "declaration-property-value-disallowed-list": {
       "count": 2
@@ -96,7 +88,7 @@
   },
   "organizer/sale-editor/sale-editor-route.css": {
     "declaration-property-custom-property-allowed-list": {
-      "count": 3
+      "count": 1
     }
   },
   "organizer/organizer-shell/organizer-shell.css": {
@@ -108,9 +100,6 @@
     }
   },
   "organizer/settings/settings-route.css": {
-    "declaration-property-custom-property-allowed-list": {
-      "count": 5
-    },
     "declaration-property-value-disallowed-list": {
       "count": 2
     },
@@ -120,7 +109,7 @@
   },
   "organizer/ticket-sale-editor/ticket-sale-editor-route.css": {
     "declaration-property-custom-property-allowed-list": {
-      "count": 7
+      "count": 1
     },
     "declaration-property-value-disallowed-list": {
       "count": 2
@@ -130,25 +119,19 @@
     }
   },
   "src/components/auth-status.css": {
-    "declaration-property-custom-property-allowed-list": {
-      "count": 1
-    },
     "property-disallowed-list": {
       "count": 1
     }
   },
   "src/styles/button.css": {
     "declaration-property-custom-property-allowed-list": {
-      "count": 14
+      "count": 6
     },
     "property-disallowed-list": {
       "count": 4
     }
   },
   "organizer/event/reception-tab/reception-tab.css": {
-    "declaration-property-custom-property-allowed-list": {
-      "count": 3
-    },
     "declaration-property-value-disallowed-list": {
       "count": 2
     },
@@ -161,7 +144,7 @@
       "count": 1
     },
     "declaration-property-custom-property-allowed-list": {
-      "count": 13
+      "count": 1
     },
     "declaration-property-value-disallowed-list": {
       "count": 2
@@ -171,9 +154,6 @@
     }
   },
   "organizer/shell/console-breadcrumb/console-breadcrumb.css": {
-    "declaration-property-custom-property-allowed-list": {
-      "count": 2
-    },
     "declaration-property-value-disallowed-list": {
       "count": 2
     },
@@ -183,7 +163,7 @@
   },
   "organizer/shell/console-navigation/console-navigation.css": {
     "declaration-property-custom-property-allowed-list": {
-      "count": 7
+      "count": 2
     },
     "property-disallowed-list": {
       "count": 2
@@ -194,7 +174,7 @@
       "count": 1
     },
     "declaration-property-custom-property-allowed-list": {
-      "count": 18
+      "count": 5
     },
     "declaration-property-value-disallowed-list": {
       "count": 1
@@ -206,14 +186,6 @@
   "shared/ui/circular-progress/circular-progress.css": {
     "cube/block-max-lines": {
       "count": 1
-    },
-    "declaration-property-custom-property-allowed-list": {
-      "count": 1
-    }
-  },
-  "organizer/ui/action-bar/action-bar.css": {
-    "declaration-property-custom-property-allowed-list": {
-      "count": 1
     }
   },
   "shared/ui/snack-bar/snack-bar.css": {
@@ -221,7 +193,7 @@
       "count": 1
     },
     "declaration-property-custom-property-allowed-list": {
-      "count": 9
+      "count": 8
     },
     "declaration-property-value-allowed-list": {
       "count": 2
@@ -235,7 +207,7 @@
   },
   "organizer/ui/confirm-dialog/confirm-dialog.css": {
     "declaration-property-custom-property-allowed-list": {
-      "count": 5
+      "count": 1
     },
     "property-disallowed-list": {
       "count": 5
@@ -246,7 +218,7 @@
       "count": 1
     },
     "declaration-property-custom-property-allowed-list": {
-      "count": 13
+      "count": 1
     },
     "property-disallowed-list": {
       "count": 1
@@ -257,7 +229,7 @@
       "count": 1
     },
     "declaration-property-custom-property-allowed-list": {
-      "count": 26
+      "count": 4
     },
     "declaration-property-value-allowed-list": {
       "count": 1
@@ -271,24 +243,18 @@
   },
   "organizer/ui/console-snackbar/console-snackbar.css": {
     "declaration-property-custom-property-allowed-list": {
-      "count": 3
+      "count": 2
     },
     "property-disallowed-list": {
       "count": 3
     }
   },
   "organizer/ui/console-tabs/console-tabs.css": {
-    "declaration-property-custom-property-allowed-list": {
-      "count": 3
-    },
     "property-disallowed-list": {
       "count": 1
     }
   },
   "organizer/ui/console-time-field/console-time-field.css": {
-    "declaration-property-custom-property-allowed-list": {
-      "count": 1
-    },
     "declaration-property-value-disallowed-list": {
       "count": 2
     },
@@ -296,23 +262,15 @@
       "count": 1
     }
   },
-  "organizer/ui/copy-button/copy-button.css": {
-    "declaration-property-custom-property-allowed-list": {
-      "count": 1
-    }
-  },
   "organizer/ui/copy-field/copy-field.css": {
     "declaration-property-custom-property-allowed-list": {
-      "count": 4
+      "count": 1
     },
     "property-disallowed-list": {
       "count": 3
     }
   },
   "organizer/ui/data-list/data-list.css": {
-    "declaration-property-custom-property-allowed-list": {
-      "count": 4
-    },
     "declaration-property-value-disallowed-list": {
       "count": 2
     },
@@ -321,16 +279,13 @@
     }
   },
   "organizer/ui/description-list/description-list.css": {
-    "declaration-property-custom-property-allowed-list": {
-      "count": 3
-    },
     "property-disallowed-list": {
       "count": 3
     }
   },
   "organizer/ui/extended-fab/extended-fab.css": {
     "declaration-property-custom-property-allowed-list": {
-      "count": 5
+      "count": 3
     },
     "property-disallowed-list": {
       "count": 1
@@ -338,7 +293,7 @@
   },
   "organizer/ui/icon-button/icon-button.css": {
     "declaration-property-custom-property-allowed-list": {
-      "count": 3
+      "count": 1
     },
     "declaration-property-value-disallowed-list": {
       "count": 1
@@ -346,20 +301,17 @@
   },
   "organizer/ui/linear-progress/linear-progress.css": {
     "declaration-property-custom-property-allowed-list": {
-      "count": 3
+      "count": 1
     }
   },
   "organizer/ui/list-item/list-item.css": {
-    "declaration-property-custom-property-allowed-list": {
-      "count": 5
-    },
     "property-disallowed-list": {
       "count": 5
     }
   },
   "organizer/ui/overflow-menu/overflow-menu.css": {
     "declaration-property-custom-property-allowed-list": {
-      "count": 7
+      "count": 3
     },
     "declaration-property-value-disallowed-list": {
       "count": 1
@@ -370,7 +322,7 @@
   },
   "organizer/ui/prerequisite-callout/prerequisite-callout.css": {
     "declaration-property-custom-property-allowed-list": {
-      "count": 5
+      "count": 3
     },
     "property-disallowed-list": {
       "count": 6
@@ -378,7 +330,7 @@
   },
   "organizer/ui/stat-tile/stat-tile.css": {
     "declaration-property-custom-property-allowed-list": {
-      "count": 5
+      "count": 1
     },
     "property-disallowed-list": {
       "count": 3
@@ -397,7 +349,7 @@
       "count": 1
     },
     "declaration-property-custom-property-allowed-list": {
-      "count": 23
+      "count": 5
     },
     "declaration-property-value-allowed-list": {
       "count": 1
@@ -414,7 +366,7 @@
       "count": 1
     },
     "declaration-property-custom-property-allowed-list": {
-      "count": 7
+      "count": 6
     },
     "declaration-property-value-allowed-list": {
       "count": 1
@@ -428,7 +380,7 @@
       "count": 1
     },
     "declaration-property-custom-property-allowed-list": {
-      "count": 18
+      "count": 6
     },
     "declaration-property-value-disallowed-list": {
       "count": 5
@@ -442,7 +394,7 @@
       "count": 1
     },
     "declaration-property-custom-property-allowed-list": {
-      "count": 6
+      "count": 5
     },
     "declaration-property-value-disallowed-list": {
       "count": 1
@@ -456,7 +408,7 @@
       "count": 1
     },
     "declaration-property-custom-property-allowed-list": {
-      "count": 3
+      "count": 2
     },
     "declaration-property-value-disallowed-list": {
       "count": 1
@@ -469,16 +421,13 @@
     "cube/block-max-lines": {
       "count": 1
     },
-    "declaration-property-custom-property-allowed-list": {
-      "count": 3
-    },
     "property-disallowed-list": {
       "count": 11
     }
   },
   "src/components/confirm-dialog/confirm-dialog.css": {
     "declaration-property-custom-property-allowed-list": {
-      "count": 6
+      "count": 1
     },
     "declaration-property-value-disallowed-list": {
       "count": 1
@@ -506,7 +455,7 @@
   },
   "src/components/error-banner/error-banner.css": {
     "declaration-property-custom-property-allowed-list": {
-      "count": 6
+      "count": 2
     },
     "property-disallowed-list": {
       "count": 7
@@ -519,7 +468,7 @@
   },
   "src/components/event-date-tabs/event-date-tabs.css": {
     "declaration-property-custom-property-allowed-list": {
-      "count": 6
+      "count": 2
     },
     "property-disallowed-list": {
       "count": 4
@@ -530,7 +479,7 @@
       "count": 1
     },
     "declaration-property-custom-property-allowed-list": {
-      "count": 16
+      "count": 6
     },
     "declaration-property-value-allowed-list": {
       "count": 1
@@ -544,16 +493,13 @@
   },
   "src/components/inline-error/inline-error.css": {
     "declaration-property-custom-property-allowed-list": {
-      "count": 2
+      "count": 1
     },
     "property-disallowed-list": {
       "count": 3
     }
   },
   "src/components/legal-document/legal-document.css": {
-    "declaration-property-custom-property-allowed-list": {
-      "count": 4
-    },
     "property-disallowed-list": {
       "count": 10
     }
@@ -571,7 +517,7 @@
       "count": 1
     },
     "declaration-property-custom-property-allowed-list": {
-      "count": 11
+      "count": 5
     },
     "declaration-property-value-allowed-list": {
       "count": 4
@@ -585,7 +531,7 @@
       "count": 1
     },
     "declaration-property-custom-property-allowed-list": {
-      "count": 9
+      "count": 6
     },
     "declaration-property-value-disallowed-list": {
       "count": 2
@@ -599,7 +545,7 @@
       "count": 1
     },
     "declaration-property-custom-property-allowed-list": {
-      "count": 11
+      "count": 9
     },
     "declaration-property-value-allowed-list": {
       "count": 1
@@ -613,16 +559,13 @@
       "count": 1
     },
     "declaration-property-custom-property-allowed-list": {
-      "count": 15
+      "count": 6
     },
     "property-disallowed-list": {
       "count": 37
     }
   },
   "src/components/page-header/page-header.css": {
-    "declaration-property-custom-property-allowed-list": {
-      "count": 2
-    },
     "property-disallowed-list": {
       "count": 4
     }
@@ -632,7 +575,7 @@
       "count": 1
     },
     "declaration-property-custom-property-allowed-list": {
-      "count": 10
+      "count": 4
     },
     "declaration-property-value-disallowed-list": {
       "count": 3
@@ -643,7 +586,7 @@
   },
   "src/components/post-signup-dialog/post-signup-dialog.css": {
     "declaration-property-custom-property-allowed-list": {
-      "count": 2
+      "count": 1
     },
     "property-disallowed-list": {
       "count": 9
@@ -654,7 +597,7 @@
       "count": 1
     },
     "declaration-property-custom-property-allowed-list": {
-      "count": 7
+      "count": 1
     },
     "declaration-property-value-disallowed-list": {
       "count": 2
@@ -668,7 +611,7 @@
       "count": 1
     },
     "declaration-property-custom-property-allowed-list": {
-      "count": 11
+      "count": 7
     },
     "declaration-property-value-disallowed-list": {
       "count": 4
@@ -681,16 +624,13 @@
     "cube/block-max-lines": {
       "count": 1
     },
-    "declaration-property-custom-property-allowed-list": {
-      "count": 2
-    },
     "property-disallowed-list": {
       "count": 2
     }
   },
   "src/components/toast/toast.css": {
     "declaration-property-custom-property-allowed-list": {
-      "count": 3
+      "count": 2
     },
     "property-disallowed-list": {
       "count": 1
@@ -698,7 +638,7 @@
   },
   "src/components/user-home-selector/user-home-selector.css": {
     "declaration-property-custom-property-allowed-list": {
-      "count": 6
+      "count": 2
     },
     "property-disallowed-list": {
       "count": 16
@@ -706,16 +646,13 @@
   },
   "src/routes/about/about-route.css": {
     "declaration-property-custom-property-allowed-list": {
-      "count": 4
+      "count": 1
     },
     "property-disallowed-list": {
       "count": 4
     }
   },
   "src/routes/auth-callback/auth-callback-route.css": {
-    "declaration-property-custom-property-allowed-list": {
-      "count": 2
-    },
     "property-disallowed-list": {
       "count": 3
     }
@@ -725,7 +662,7 @@
       "count": 1
     },
     "declaration-property-custom-property-allowed-list": {
-      "count": 19
+      "count": 2
     },
     "property-disallowed-list": {
       "count": 26
@@ -736,7 +673,7 @@
       "count": 1
     },
     "declaration-property-custom-property-allowed-list": {
-      "count": 16
+      "count": 6
     },
     "declaration-property-value-disallowed-list": {
       "count": 1
@@ -747,7 +684,7 @@
   },
   "src/routes/dashboard/dashboard-route.css": {
     "declaration-property-custom-property-allowed-list": {
-      "count": 3
+      "count": 1
     },
     "property-disallowed-list": {
       "count": 6
@@ -755,7 +692,7 @@
   },
   "src/routes/delete-account/delete-account-route.css": {
     "declaration-property-custom-property-allowed-list": {
-      "count": 7
+      "count": 1
     },
     "property-disallowed-list": {
       "count": 8
@@ -766,7 +703,7 @@
       "count": 1
     },
     "declaration-property-custom-property-allowed-list": {
-      "count": 13
+      "count": 6
     },
     "declaration-property-value-disallowed-list": {
       "count": 4
@@ -776,9 +713,6 @@
     }
   },
   "src/routes/discovery/discovery-swap.css": {
-    "declaration-property-custom-property-allowed-list": {
-      "count": 1
-    },
     "property-disallowed-list": {
       "count": 3
     }
@@ -788,7 +722,7 @@
       "count": 1
     },
     "declaration-property-custom-property-allowed-list": {
-      "count": 25
+      "count": 4
     },
     "property-disallowed-list": {
       "count": 26
@@ -799,7 +733,7 @@
       "count": 1
     },
     "declaration-property-custom-property-allowed-list": {
-      "count": 16
+      "count": 3
     },
     "property-disallowed-list": {
       "count": 19
@@ -807,7 +741,7 @@
   },
   "src/routes/legal/licenses-route.css": {
     "declaration-property-custom-property-allowed-list": {
-      "count": 11
+      "count": 3
     },
     "property-disallowed-list": {
       "count": 14
@@ -818,7 +752,7 @@
       "count": 1
     },
     "declaration-property-custom-property-allowed-list": {
-      "count": 16
+      "count": 3
     },
     "property-disallowed-list": {
       "count": 17
@@ -829,7 +763,7 @@
       "count": 1
     },
     "declaration-property-custom-property-allowed-list": {
-      "count": 16
+      "count": 9
     },
     "declaration-property-value-allowed-list": {
       "count": 3
@@ -843,7 +777,7 @@
   },
   "src/routes/not-found/not-found-route.css": {
     "declaration-property-custom-property-allowed-list": {
-      "count": 8
+      "count": 2
     },
     "property-disallowed-list": {
       "count": 7
@@ -854,7 +788,7 @@
       "count": 1
     },
     "declaration-property-custom-property-allowed-list": {
-      "count": 30
+      "count": 7
     },
     "declaration-property-value-disallowed-list": {
       "count": 2
@@ -865,7 +799,7 @@
   },
   "src/routes/passkey-recovery/passkey-recovery-route.css": {
     "declaration-property-custom-property-allowed-list": {
-      "count": 9
+      "count": 2
     },
     "property-disallowed-list": {
       "count": 12
@@ -876,23 +810,20 @@
       "count": 1
     },
     "declaration-property-custom-property-allowed-list": {
-      "count": 10
+      "count": 1
     },
     "property-disallowed-list": {
       "count": 11
     }
   },
   "src/routes/passkeys-callback/passkeys-callback-route.css": {
-    "declaration-property-custom-property-allowed-list": {
-      "count": 3
-    },
     "property-disallowed-list": {
       "count": 1
     }
   },
   "src/routes/resale-entries/resale-entries-route.css": {
     "declaration-property-custom-property-allowed-list": {
-      "count": 6
+      "count": 1
     },
     "property-disallowed-list": {
       "count": 10
@@ -903,7 +834,7 @@
       "count": 1
     },
     "declaration-property-custom-property-allowed-list": {
-      "count": 18
+      "count": 3
     },
     "property-disallowed-list": {
       "count": 23
@@ -911,7 +842,7 @@
   },
   "src/routes/settings/identity-verification.css": {
     "declaration-property-custom-property-allowed-list": {
-      "count": 2
+      "count": 1
     },
     "property-disallowed-list": {
       "count": 2
@@ -919,7 +850,7 @@
   },
   "src/routes/settings/language-selector.css": {
     "declaration-property-custom-property-allowed-list": {
-      "count": 5
+      "count": 1
     },
     "property-disallowed-list": {
       "count": 7
@@ -927,7 +858,7 @@
   },
   "src/routes/settings/personal-details.css": {
     "declaration-property-custom-property-allowed-list": {
-      "count": 5
+      "count": 1
     },
     "property-disallowed-list": {
       "count": 7
@@ -938,7 +869,7 @@
       "count": 1
     },
     "declaration-property-custom-property-allowed-list": {
-      "count": 7
+      "count": 2
     },
     "property-disallowed-list": {
       "count": 15
@@ -949,20 +880,15 @@
       "count": 1
     },
     "declaration-property-custom-property-allowed-list": {
-      "count": 27
+      "count": 7
     },
     "property-disallowed-list": {
       "count": 32
     }
   },
-  "src/routes/verify-callback/verify-callback-route.css": {
-    "declaration-property-custom-property-allowed-list": {
-      "count": 2
-    }
-  },
   "src/routes/verify-email/verify-email-route.css": {
     "declaration-property-custom-property-allowed-list": {
-      "count": 4
+      "count": 1
     },
     "property-disallowed-list": {
       "count": 5
@@ -973,7 +899,7 @@
       "count": 1
     },
     "declaration-property-custom-property-allowed-list": {
-      "count": 12
+      "count": 4
     },
     "declaration-property-value-disallowed-list": {
       "count": 1
@@ -987,7 +913,7 @@
       "count": 1
     },
     "declaration-property-custom-property-allowed-list": {
-      "count": 12
+      "count": 5
     },
     "property-disallowed-list": {
       "count": 16
@@ -995,7 +921,7 @@
   },
   "src/components/all-nearby/nearby-concerts.css": {
     "declaration-property-custom-property-allowed-list": {
-      "count": 2
+      "count": 1
     },
     "property-disallowed-list": {
       "count": 5
@@ -1003,7 +929,7 @@
   },
   "src/components/all-nearby/nearby-filter-sheet.css": {
     "declaration-property-custom-property-allowed-list": {
-      "count": 7
+      "count": 3
     },
     "property-disallowed-list": {
       "count": 8

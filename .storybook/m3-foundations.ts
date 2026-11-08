@@ -9,7 +9,7 @@ import { page } from 'vitest/browser'
 
 /** Markup of the type style samples, on the app's surface. */
 export const TYPE_SAMPLES = `
-	<div style="display:grid; gap:8px; padding:16px; background:var(--md-color-surface); color:var(--md-color-on-surface)">
+	<div style="display:grid; gap:8px; padding:16px; background:var(--md-sys-color-surface); color:var(--md-sys-color-on-surface)">
 		<p class="md-typescale-title-large" data-sample="title-large">Title large 公演の詳細</p>
 		<p class="md-typescale-label-large" data-sample="label-large">Label large</p>
 		<p class="md-typescale-label-large-emphasized" data-sample="label-large-emphasized">Label large emphasized</p>
@@ -19,13 +19,13 @@ export const TYPE_SAMPLES = `
 
 /** Markup of the elevation samples: two surfaces at level 2, and each level. */
 export const ELEVATION_SAMPLES = `
-	<div style="display:flex; flex-wrap:wrap; gap:24px; padding:24px; background:var(--md-color-surface); color:var(--md-color-on-surface)">
-		<div data-level="2" style="padding:16px; background:var(--md-color-surface-container); box-shadow:var(--md-sys-elevation-level2)">Menu</div>
-		<div data-level="2" style="padding:16px; background:var(--md-color-surface-container); box-shadow:var(--md-sys-elevation-level2)">Floating button</div>
+	<div style="display:flex; flex-wrap:wrap; gap:24px; padding:24px; background:var(--md-sys-color-surface); color:var(--md-sys-color-on-surface)">
+		<div data-level="2" style="padding:16px; background:var(--md-sys-color-surface-container); box-shadow:var(--md-sys-elevation-level2)">Menu</div>
+		<div data-level="2" style="padding:16px; background:var(--md-sys-color-surface-container); box-shadow:var(--md-sys-elevation-level2)">Floating button</div>
 		${[1, 3, 4, 5]
 			.map(
 				(level) =>
-					`<div data-level="${level}" style="padding:16px; background:var(--md-color-surface-container); box-shadow:var(--md-sys-elevation-level${level})">Level ${level}</div>`,
+					`<div data-level="${level}" style="padding:16px; background:var(--md-sys-color-surface-container); box-shadow:var(--md-sys-elevation-level${level})">Level ${level}</div>`,
 			)
 			.join('')}
 	</div>

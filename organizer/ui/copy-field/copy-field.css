@@ -10,7 +10,7 @@
 
 	.label {
 		font: var(--md-type-label-large);
-		color: var(--md-color-on-surface-variant);
+		color: var(--md-sys-color-on-surface-variant);
 	}
 
 	.row {
@@ -21,7 +21,7 @@
 		padding-inline-start: var(--space-s);
 		border-radius: var(--md-shape-extra-small);
 
-		background: var(--md-color-surface-container-highest);
+		background: var(--md-sys-color-surface-container-highest);
 	}
 
 	.value {
@@ -32,7 +32,7 @@
 
 		font: var(--md-type-body-medium);
 		font-family: var(--font-mono);
-		color: var(--md-color-on-surface);
+		color: var(--md-sys-color-on-surface);
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}

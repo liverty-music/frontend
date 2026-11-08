@@ -8,7 +8,7 @@ import { composite, contrast, resolveColor, WCAG_AA } from './contrast'
  * compact button, one message style and one motion.
  */
 
-const SURFACE = 'oklch(from var(--color-surface-base) l c h / 85%)'
+const SURFACE = 'oklch(from var(--md-sys-color-surface) l c h / 85%)'
 
 /** The attention cue's keyframes, shared by the brand line and the CTA. */
 const CUE = 'banner-cue'
@@ -72,7 +72,7 @@ export async function expectCompactFilledButton(
 	const style = getComputedStyle(action)
 	await expect(action.hasAttribute('data-variant')).toBe(false)
 	await expect(style.backgroundColor).toBe(
-		resolveColor(action, 'var(--md-color-primary)'),
+		resolveColor(action, 'var(--md-sys-color-primary)'),
 	)
 	await expect(style.color).toBe(resolveColor(action, 'var(--color-white)'))
 	await expect(
@@ -98,7 +98,7 @@ export async function expectBannerMessage(
 ): Promise<void> {
 	const style = getComputedStyle(message)
 	await expect(style.color).toBe(
-		resolveColor(message, 'var(--color-text-primary)'),
+		resolveColor(message, 'var(--md-sys-color-on-surface)'),
 	)
 	await expect(style.fontWeight).toBe('500')
 	await expect(style.opacity).toBe('1')
