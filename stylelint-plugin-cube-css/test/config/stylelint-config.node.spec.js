@@ -27,6 +27,32 @@ const block = (declarations) => `
 }
 `;
 
+// @spec components/infrastructure/fan/web/global/design-tokens "No undefined color"
+describe('every stylesheet', () => {
+	it('references only colors and other tokens that are defined', async () => {
+		const { results } = await stylelint.lint({
+			files: [
+				'src/**/*.css',
+				'shared/**/*.css',
+				'organizer/**/*.css',
+				'admin/**/*.css',
+				'reception/**/*.css',
+			],
+			cwd: root,
+			configFile: `${root}stylelint.config.js`,
+		});
+		const unknown = results.flatMap((result) =>
+			result.warnings
+				.filter((warning) => warning.rule === 'no-unknown-custom-properties')
+				.map((warning) => `${result.source}:${warning.line} ${warning.text}`),
+		);
+
+		expect(results.length).toBeGreaterThan(100);
+		expect(unknown).toEqual([]);
+		// It lints every stylesheet in the repository.
+	}, 60_000);
+});
+
 describe('stylelint.config.js in a component stylesheet', () => {
 	// The defect that started this: a list's `margin: 0` cancelled `.flow`,
 	// because the block layer comes after the composition layer.
