@@ -172,5 +172,7 @@ export const Swapping = {
 		await expect(getComputedStyle(sparkle).animationName).toBe(
 			reduced ? 'none' : 'swap-twinkle',
 		)
+		// The sparkles are HTML over the icon, so the compositor animates them.
+		await expect(sparkle.closest('svg')).toBeNull()
 	},
 } satisfies Story

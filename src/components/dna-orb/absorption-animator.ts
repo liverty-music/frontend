@@ -55,6 +55,21 @@ export class AbsorptionAnimator {
 	public elastic = false
 	/** When set, the on-tap burst spray is suppressed (`prefers-reduced-motion`). */
 	public reducedMotion = false
+	/**
+	 * Draws the absorbing bubble's name at (`x`, `y`) from the label the
+	 * bubble showed in the field (laid out for its full `radius`), scaled by
+	 * `scale`. Returns false when no such label is ready; the name is then
+	 * drawn as text in a font sized to the shrinking bubble.
+	 */
+	public drawLabel:
+		| ((
+				name: string,
+				x: number,
+				y: number,
+				radius: number,
+				scale: number,
+		  ) => boolean)
+		| null = null
 
 	/** Trajectory easing — elastic overshoot when enabled, otherwise ease-in cubic. */
 	private trajectoryEase(t: number): number {
@@ -234,7 +249,10 @@ export class AbsorptionAnimator {
 			ctx.fill()
 
 			// Artist name
-			if (radius > 10) {
+			if (
+				radius > 10 &&
+				!this.drawLabel?.(anim.artistName, x, y, anim.radius, scale)
+			) {
 				ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`
 				ctx.font = `${Math.max(8, radius * 0.4)}px sans-serif`
 				ctx.textAlign = 'center'

@@ -420,6 +420,8 @@ export class DiscoveryRoute {
 		// Before attach the launcher is seeded by attached().
 		if (this.fabDisposer) this.refreshFabActions()
 		if (view === 'nearby') {
+			// Switching to All Nearby ends the visit's frame measurement.
+			this.dnaOrbCanvas?.endFrameMeasurement()
 			this.dnaOrbCanvas?.pause()
 		} else if (this.bubblesShown && !document.hidden) {
 			this.dnaOrbCanvas?.resume()

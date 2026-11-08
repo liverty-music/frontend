@@ -28,6 +28,11 @@ export const GHOST_OPACITY = 0.35
 // the name (drawn above opacity 0.55) shows about 46 ms after the swap.
 const REVEAL_IN_PLACE_SPEED = 1 / 150
 
+/** Tap-origin spawns that leave their tap point per frame. */
+export const SPAWNS_PER_FRAME = 3
+// Matter's default collision mask: collide with every category.
+const COLLIDE_WITH_ALL = 0xffffffff
+
 /** Parameters for adding an artist to the physics simulation. */
 export interface BubbleArtistParams {
 	artist: Artist
@@ -112,6 +117,9 @@ export class BubblePhysics {
 				this.Matter = await preloadPhysics()
 				this.engine = this.Matter?.Engine.create({
 					gravity: { x: 0, y: 0.15, scale: 0.001 },
+					// Bubbles at rest sleep and cost the solver nothing until the
+					// field changes (see `wakeAll`).
+					enableSleeping: true,
 				})
 				this.world = this.engine.world
 			}
@@ -124,6 +132,7 @@ export class BubblePhysics {
 				this.Matter?.Composite.remove(this.world, wall)
 			}
 			this.walls = []
+			this.wakeAll()
 
 			const wallThickness = 50
 			const orbZoneHeight = 130
@@ -183,6 +192,22 @@ export class BubblePhysics {
 			x: this.width / 2,
 			y: newY,
 		})
+		// A sleeping body does not collide with a static one: the moved floor
+		// would pass through bubbles at rest.
+		this.wakeAll()
+	}
+
+	/**
+	 * Wake every body. Matter wakes a sleeping body only when a moving body hits
+	 * it, so after a removal or an addition a bubble at rest could stay floating
+	 * where a removed bubble held it up.
+	 */
+	private wakeAll(): void {
+		const sleeping = this.Matter?.Sleeping
+		if (!sleeping) return
+		for (const b of this.bubbleMap.values()) {
+			if (b.body.isSleeping) sleeping.set(b.body, false)
+		}
 	}
 
 	/**
@@ -217,6 +242,7 @@ export class BubblePhysics {
 		// loaded — e.g. `attached()`/`artistsChanged` firing before the canvas has a
 		// non-zero layout), skip. The canvas re-paints once `init()` completes.
 		if (!this.Matter || !this.world) return 0
+		if (params.length > 0) this.wakeAll()
 		let dropped = 0
 		for (const { artist, radius, position } of params) {
 			const id = artist.id
@@ -307,6 +333,10 @@ export class BubblePhysics {
 		// removed then re-added within the ~300ms fade window, e.g. a genre toggle
 		// A→B→A) so it is retained instead of silently disappearing when the fade
 		// completes; fade out real bodies no longer in the target.
+		// A queued tap-origin spawn no longer in the target never enters.
+		for (const id of this.queuedSpawns.keys()) {
+			if (!paramsById.has(id)) this.queuedSpawns.delete(id)
+		}
 		for (const [id, bubble] of this.bubbleMap) {
 			if (id.startsWith('__ghost__')) continue
 			if (paramsById.has(id)) {
@@ -328,10 +358,13 @@ export class BubblePhysics {
 		for (const artist of overflow) {
 			const p = paramsById.get(artist.id)
 			if (!p) continue
+			// Already waiting to pop out of an earlier tap point.
+			if (this.queuedSpawns.has(artist.id)) continue
 			const pos = placements?.get(artist.id)
 			if (pos) {
-				// Tap-origin add: pop outward from the tap point (spawn animation).
-				this.spawnBubblesAt([p], pos.x, pos.y)
+				// Tap-origin add: pop outward from the tap point (spawn animation),
+				// queued so a few leave the point per frame (see `update`).
+				this.queuedSpawns.set(artist.id, { params: p, x: pos.x, y: pos.y })
 			} else {
 				instantParams.push(p)
 			}
@@ -346,6 +379,7 @@ export class BubblePhysics {
 	): void {
 		// Skip if init has not run yet — never store a bodyless bubble (see addBubbles).
 		if (!this.Matter || !this.world) return
+		if (params.length > 0) this.wakeAll()
 		for (const { artist, radius } of params) {
 			const id = artist.id
 			if (!id || this.bubbleMap.has(id)) continue
@@ -380,12 +414,28 @@ export class BubblePhysics {
 		}
 	}
 
+	/**
+	 * Tap-origin spawns not yet in the world, in arrival order. `update` lets
+	 * `SPAWNS_PER_FRAME` of them leave their tap point per frame, so 30 bodies
+	 * never overlap on one point in one solver step.
+	 */
+	private readonly queuedSpawns = new Map<
+		string,
+		{ params: BubbleArtistParams; x: number; y: number }
+	>()
+
+	/** The bubbles queued to pop out of a tap point, not in the world yet. */
+	public pendingSpawnParams(): BubbleArtistParams[] {
+		return Array.from(this.queuedSpawns.values(), (q) => q.params)
+	}
+
 	public removeBubble(artistId: string): PhysicsBubble | undefined {
 		const bubble = this.bubbleMap.get(artistId)
 		if (!bubble) return undefined
 
 		this.Matter?.Composite.remove(this.world, bubble.body)
 		this.bubbleMap.delete(artistId)
+		this.wakeAll()
 		return bubble
 	}
 
@@ -394,6 +444,9 @@ export class BubblePhysics {
 		if (!bubble || bubble.isFadingOut) return
 		bubble.isFadingOut = true
 		bubble.fadeOutProgress = 0
+		// A fading bubble no longer pushes the others, and those it held up fall.
+		bubble.body.collisionFilter.mask = 0
+		this.wakeAll()
 	}
 
 	/**
@@ -405,6 +458,8 @@ export class BubblePhysics {
 		bubble.isFadingOut = false
 		bubble.fadeOutProgress = 0
 		bubble.opacity = 1
+		bubble.body.collisionFilter.mask = COLLIDE_WITH_ALL
+		this.wakeAll()
 		if (
 			this.fadeOutPendingIds.delete(artistId) &&
 			this.fadeOutPendingIds.size === 0 &&
@@ -443,6 +498,7 @@ export class BubblePhysics {
 	 * revealed name becomes readable on real time at any frame rate.
 	 */
 	public update(delta: number, animDelta = delta): void {
+		this.releaseQueuedSpawns()
 		this.Matter?.Engine.update(this.engine, delta)
 
 		const FADE_OUT_SPEED = 0.0033 // ~300ms to complete
@@ -490,6 +546,18 @@ export class BubblePhysics {
 					}
 				}
 			}
+		}
+	}
+
+	/** Let the next few queued tap-origin spawns leave their tap point. */
+	private releaseQueuedSpawns(): void {
+		if (this.queuedSpawns.size === 0) return
+		let released = 0
+		for (const [id, q] of this.queuedSpawns) {
+			if (released >= SPAWNS_PER_FRAME) break
+			this.queuedSpawns.delete(id)
+			this.spawnBubblesAt([q.params], q.x, q.y)
+			released++
 		}
 	}
 
@@ -557,6 +625,7 @@ export class BubblePhysics {
 			this.Matter.Composite.clear(this.world, false)
 		}
 		this.bubbleMap.clear()
+		this.queuedSpawns.clear()
 		this.walls = []
 		this.initGeneration++
 		this.initPromise = null
@@ -568,6 +637,7 @@ export class BubblePhysics {
 			this.Matter.Composite.clear(this.world, false)
 		}
 		this.bubbleMap.clear()
+		this.queuedSpawns.clear()
 		this.walls = []
 		this.initPromise = null
 	}

@@ -59,7 +59,8 @@
 
       <circle class="swap-badge" cx="53" cy="53" r="8.5"></circle>
 
-      <!-- Artist bubbles: three bubbles and three sparkles, drawn around (0, 0). -->
+      <!-- Artist bubbles: three bubbles, drawn around (0, 0); their sparkles
+           are HTML over the icon (.swap-sparkles). -->
       <g class="swap-glyph swap-glyph-artists" data-testid="swap-glyph-artists">
         <circle cx="-3.5" cy="-1" r="7.5" fill="url(#swap-bubble-0)"></circle>
         <circle cx="-3.5" cy="-1" r="7.5" fill="url(#swap-sheen)"></circle>
@@ -76,9 +77,6 @@
         <ellipse cx="2.95" cy="4.23" rx="2.27" ry="1.4" fill="url(#swap-glint)" transform="rotate(-35 2.95 4.23)"></ellipse>
         <circle cx="7.27" cy="8.66" r="0.49" class="swap-glint-dot"></circle>
         <circle cx="5" cy="6.5" r="5.1" class="swap-rim"></circle>
-        <g transform="translate(-11.5 -9) scale(0.9)"><path class="swap-sparkle" data-sparkle="1" d="M0 -3.2 Q0.45 -0.45 3.2 0 Q0.45 0.45 0 3.2 Q-0.45 0.45 -3.2 0 Q-0.45 -0.45 0 -3.2 Z"></path></g>
-        <g transform="translate(12.5 1.5) scale(0.7)"><path class="swap-sparkle" data-sparkle="2" d="M0 -3.2 Q0.45 -0.45 3.2 0 Q0.45 0.45 0 3.2 Q-0.45 0.45 -3.2 0 Q-0.45 -0.45 0 -3.2 Z"></path></g>
-        <g transform="translate(-9 9.5) scale(0.6)"><path class="swap-sparkle" data-sparkle="3" d="M0 -3.2 Q0.45 -0.45 3.2 0 Q0.45 0.45 0 3.2 Q-0.45 0.45 -3.2 0 Q-0.45 -0.45 0 -3.2 Z"></path></g>
       </g>
 
       <!-- All Nearby: a ticket marked LIVE with a white location pin, drawn around (0, 0). -->
@@ -92,6 +90,14 @@
         <circle class="swap-pin-hole" cx="9" cy="-4.6" r="1.7"></circle>
       </g>
     </svg>
+    <!-- The artist glyph's three sparkles, following its slot. HTML, so the
+         compositor animates them; SVG shapes animated by transform are laid
+         out again on every frame. -->
+    <span class="swap-sparkles" data-view.bind="view" aria-hidden="true">
+      <span class="swap-sparkle" data-sparkle="1"></span>
+      <span class="swap-sparkle" data-sparkle="2"></span>
+      <span class="swap-sparkle" data-sparkle="3"></span>
+    </span>
   </span>
   <span class="visually-hidden" t.bind="labelKey"></span>
 </button>

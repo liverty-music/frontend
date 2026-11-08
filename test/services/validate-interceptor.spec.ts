@@ -1,3 +1,6 @@
+import { ListSimilarRequestSchema } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/artist/v1/artist_service_pb.js'
+import { ListByArtistRequestSchema } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/concert/v1/concert_service_pb.js'
+import { FollowRequestSchema } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/follow/v1/follow_service_pb.js'
 import {
 	CreateRequestSchema,
 	IdentityVerificationService,
@@ -8,6 +11,7 @@ import { Code, ConnectError } from '@connectrpc/connect'
 import { describe, expect, it, vi } from 'vitest'
 import {
 	createValidateInterceptor,
+	UNVALIDATED_REQUEST_TYPES,
 	type ValidatorLoader,
 } from '../../src/services/validate-interceptor'
 
@@ -153,5 +157,44 @@ describe('createValidateInterceptor', () => {
 		await handler(validRequest())
 
 		expect(next).toHaveBeenCalledOnce()
+	})
+
+	describe('request types sent unvalidated', () => {
+		it('never compiles or validates a type in the unvalidated set', async () => {
+			const scheduled: (() => void)[] = []
+			const idle = (callback: () => void) => {
+				scheduled.push(callback)
+			}
+			const load: ValidatorLoader = () => Promise.resolve(createValidator())
+			const interceptor = createValidateInterceptor(
+				load,
+				mockLogger,
+				idle,
+				new Set([CreateRequestSchema.typeName]),
+			)
+			// Only the validator module's load is scheduled.
+			scheduled.shift()?.()
+			await Promise.resolve()
+			await Promise.resolve()
+			const next = vi.fn().mockResolvedValue({ message: 'ok' })
+			const handler = interceptor(next)
+
+			await handler(invalidRequest())
+			for (const run of scheduled.splice(0)) run()
+			await handler(invalidRequest())
+
+			expect(scheduled).toHaveLength(0)
+			expect(next).toHaveBeenCalledTimes(2)
+		})
+
+		it('names the requests a Discovery bubble tap sends, by their generated type names', () => {
+			expect([...UNVALIDATED_REQUEST_TYPES].sort()).toEqual(
+				[
+					ListSimilarRequestSchema.typeName,
+					FollowRequestSchema.typeName,
+					ListByArtistRequestSchema.typeName,
+				].sort(),
+			)
+		})
 	})
 })

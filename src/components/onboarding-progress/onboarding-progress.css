@@ -72,17 +72,33 @@
 			position: absolute;
 			inset: 0;
 
+			overflow: clip;
+
 			border-radius: inherit;
 
-			background: var(--_band), var(--_band);
-			background-size:
-				100% 100%,
-				50% 100%;
-			background-blend-mode: screen;
+			background: var(--_band);
 			clip-path: inset(0 calc(100% - var(--progress) * 1%) 0 0 round 999px);
 			box-shadow: 0 0 0.75rem var(--_glow);
 
-			animation: progress-sheen 2.8s linear infinite;
+			/* The sheen: the band again at half the width, screened over the fill
+			   and slid by transform so the compositor moves it without a repaint.
+			   Twice the fill's width, it slides one fill width (two repeats) per
+			   loop. */
+			&::before {
+				content: "";
+
+				position: absolute;
+				inset-block: 0;
+				inset-inline-start: 0;
+
+				inline-size: 200%;
+
+				background: var(--_band);
+				background-size: 25% 100%;
+				mix-blend-mode: screen;
+
+				animation: progress-sheen 2.8s linear infinite;
+			}
 		}
 
 		/* The leading spark rides the edge of the light. */
@@ -109,10 +125,12 @@
 		}
 
 		@keyframes progress-sheen {
+			from {
+				transform: translateX(-50%);
+			}
+
 			to {
-				background-position:
-					0 0,
-					200% 0;
+				transform: translateX(0);
 			}
 		}
 
@@ -251,7 +269,7 @@
 				transition: none;
 			}
 
-			.onboarding-progress-fill,
+			.onboarding-progress-fill::before,
 			.onboarding-progress-spark,
 			.onboarding-progress-ready,
 			.onboarding-progress-ready-icon::after {
