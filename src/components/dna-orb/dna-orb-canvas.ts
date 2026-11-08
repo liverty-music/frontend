@@ -48,6 +48,12 @@ export {
 	wrapText,
 } from './sprite-paint'
 
+/** A size in CSS px. */
+interface ElementSize {
+	width: number
+	height: number
+}
+
 /** What `renderBubble` put on screen for one bubble. */
 type Drawn = 'nothing' | 'body' | 'body-and-name'
 
@@ -284,9 +290,11 @@ export class DnaOrbCanvas {
 		// would then skip `physics.init()`, and painting into an uninitialized
 		// physics layer produced bodyless bubbles (render crash, empty canvas).
 		// Wait for a real layout size before initializing + the first paint.
-		await this.waitForSize()
+		const size = await this.waitForSize()
 		if (this.detached) return // detached while waiting for layout
-		const { width, height } = this.sizeCanvas()
+		// The size read while waiting: reading it again here would force a second
+		// layout, since the rest of the route attaches in between.
+		const { width, height } = this.sizeCanvas(size)
 
 		// A cold visit's ghosts are drawn at once as static placeholders, and the
 		// frame loop starts now: the first bubbles need no physics engine.
@@ -375,26 +383,33 @@ export class DnaOrbCanvas {
 	}
 
 	/**
-	 * Resolve once the host element has a non-zero layout size. Immediate when
+	 * Resolve with the host element's size once it is non-zero. Immediate when
 	 * already laid out; otherwise a one-shot `ResizeObserver` waits for the first
-	 * non-zero size (SPA route-enter before layout).
+	 * non-zero size (SPA route-enter before layout). Resolves with a zero size
+	 * when `detaching()` settles the wait.
 	 */
-	private async waitForSize(): Promise<void> {
+	private async waitForSize(): Promise<ElementSize> {
 		const rect = this.element.getBoundingClientRect()
-		if (rect.width === 0 || rect.height === 0) {
-			await new Promise<void>((resolve) => {
-				// Capture the resolver so `detaching()` can settle this wait too —
-				// otherwise a detach while still 0×0 would leave the promise (and the
-				// component it closes over) pending forever, and the `detached` guard
-				// below would be unreachable.
-				this.sizeResolve = resolve
-				this.sizeObserver = new ResizeObserver(() => {
-					const r = this.element.getBoundingClientRect()
-					if (r.width > 0 && r.height > 0) this.settleSizeWait()
-				})
-				this.sizeObserver.observe(this.element)
-			})
+		if (rect.width > 0 && rect.height > 0) {
+			return { width: rect.width, height: rect.height }
 		}
+		let size: ElementSize = { width: 0, height: 0 }
+		await new Promise<void>((resolve) => {
+			// Capture the resolver so `detaching()` can settle this wait too —
+			// otherwise a detach while still 0×0 would leave the promise (and the
+			// component it closes over) pending forever, and the `detached` guard
+			// below would be unreachable.
+			this.sizeResolve = resolve
+			this.sizeObserver = new ResizeObserver(() => {
+				const r = this.element.getBoundingClientRect()
+				if (r.width > 0 && r.height > 0) {
+					size = { width: r.width, height: r.height }
+					this.settleSizeWait()
+				}
+			})
+			this.sizeObserver.observe(this.element)
+		})
+		return size
 	}
 
 	/** Stop the size wait: disconnect the observer and resolve the pending promise. */
@@ -518,7 +533,7 @@ export class DnaOrbCanvas {
 	private async resize(): Promise<void> {
 		const rect = this.element.getBoundingClientRect()
 		if (!rect || rect.width === 0 || rect.height === 0) return
-		const { width, height } = this.sizeCanvas()
+		const { width, height } = this.sizeCanvas(rect)
 		await this.initPhysics(width, height)
 	}
 
@@ -526,11 +541,13 @@ export class DnaOrbCanvas {
 	 * Size the canvas backing store and the orb to the element (synchronous; no
 	 * physics), so the first frame can be drawn before the engine loads.
 	 */
-	private sizeCanvas(): { width: number; height: number } {
+	private sizeCanvas(
+		size: ElementSize = this.element.getBoundingClientRect(),
+	): ElementSize {
 		// Capped at 2: a 3x screen would raster 2.25x the pixels of 2x every
 		// frame for bubbles whose edges are soft anyway.
 		const dpr = Math.min(window.devicePixelRatio || 1, MAX_CANVAS_DPR)
-		const rect = this.element.getBoundingClientRect()
+		const rect = size
 		this.displayLimit = displayCapacityFor(rect.width)
 
 		this.canvas.width = rect.width * dpr

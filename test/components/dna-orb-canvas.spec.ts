@@ -766,6 +766,18 @@ describe('DnaOrbCanvas', () => {
 	})
 
 	describe('canvas size', () => {
+		it('reads the element size once while attaching, so it forces at most one layout', async () => {
+			vi.spyOn(globalThis, 'requestAnimationFrame').mockReturnValue(1)
+			const rect = mockElement.getBoundingClientRect as ReturnType<typeof vi.fn>
+			rect.mockClear()
+
+			await sut.attached()
+
+			expect(rect).toHaveBeenCalledTimes(1)
+			expect(mockCanvas.style.width).toBe('400px')
+			expect(mockCanvas.style.height).toBe('600px')
+		})
+
 		it('reads the element size on layout, never in a frame', async () => {
 			vi.spyOn(globalThis, 'requestAnimationFrame').mockReturnValue(1)
 			await sut.attached()
