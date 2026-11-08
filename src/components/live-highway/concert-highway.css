@@ -95,8 +95,6 @@
 
 			min-block-size: 0;
 
-			list-style: none;
-
 			/* Date group — the unit of the date window: only the groups in the
 			   window exist, so nothing here has to skip rendering work.
 
@@ -198,7 +196,6 @@
 			display: grid;
 			grid-column: 1 / -1;
 			grid-template-columns: subgrid;
-			list-style: none;
 		}
 
 		.lane {

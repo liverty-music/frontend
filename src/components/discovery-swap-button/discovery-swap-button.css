@@ -40,6 +40,7 @@
 
 			display: grid;
 
+			/* stylelint-disable-next-line declaration-property-value-disallowed-list -- cancels the padding global.css gives every button and form field */
 			padding: 0;
 			border: 0;
 			color: inherit;

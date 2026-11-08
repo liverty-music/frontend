@@ -3,9 +3,6 @@
     "cube/block-max-lines": {
       "count": 1
     },
-    "declaration-property-value-disallowed-list": {
-      "count": 3
-    },
     "property-disallowed-list": {
       "count": 7
     }
@@ -18,9 +15,6 @@
   "organizer/concert-editor/concert-editor-route.css": {
     "cube/block-max-lines": {
       "count": 1
-    },
-    "declaration-property-value-disallowed-list": {
-      "count": 4
     },
     "property-disallowed-list": {
       "count": 7
@@ -37,9 +31,6 @@
     }
   },
   "organizer/home/home-route.css": {
-    "declaration-property-value-disallowed-list": {
-      "count": 2
-    },
     "property-disallowed-list": {
       "count": 3
     }
@@ -50,9 +41,6 @@
     }
   },
   "organizer/lottery-sale-editor/lottery-sale-editor-route.css": {
-    "declaration-property-value-disallowed-list": {
-      "count": 2
-    },
     "property-disallowed-list": {
       "count": 2
     }
@@ -66,17 +54,11 @@
     }
   },
   "organizer/settings/settings-route.css": {
-    "declaration-property-value-disallowed-list": {
-      "count": 2
-    },
     "property-disallowed-list": {
       "count": 1
     }
   },
   "organizer/ticket-sale-editor/ticket-sale-editor-route.css": {
-    "declaration-property-value-disallowed-list": {
-      "count": 2
-    },
     "property-disallowed-list": {
       "count": 2
     }
@@ -87,9 +69,6 @@
     }
   },
   "organizer/event/reception-tab/reception-tab.css": {
-    "declaration-property-value-disallowed-list": {
-      "count": 2
-    },
     "property-disallowed-list": {
       "count": 2
     }
@@ -98,17 +77,11 @@
     "cube/block-max-lines": {
       "count": 1
     },
-    "declaration-property-value-disallowed-list": {
-      "count": 2
-    },
     "property-disallowed-list": {
       "count": 2
     }
   },
   "organizer/shell/console-breadcrumb/console-breadcrumb.css": {
-    "declaration-property-value-disallowed-list": {
-      "count": 2
-    },
     "property-disallowed-list": {
       "count": 2
     }
@@ -123,9 +96,6 @@
       "count": 1
     },
     "declaration-property-custom-property-allowed-list": {
-      "count": 1
-    },
-    "declaration-property-value-disallowed-list": {
       "count": 1
     },
     "property-disallowed-list": {
@@ -145,9 +115,6 @@
       "count": 6
     },
     "declaration-property-value-allowed-list": {
-      "count": 2
-    },
-    "declaration-property-value-disallowed-list": {
       "count": 2
     },
     "property-disallowed-list": {
@@ -174,9 +141,6 @@
     "declaration-property-value-allowed-list": {
       "count": 1
     },
-    "declaration-property-value-disallowed-list": {
-      "count": 1
-    },
     "property-disallowed-list": {
       "count": 1
     }
@@ -186,15 +150,7 @@
       "count": 1
     }
   },
-  "organizer/ui/console-time-field/console-time-field.css": {
-    "declaration-property-value-disallowed-list": {
-      "count": 2
-    }
-  },
   "organizer/ui/data-list/data-list.css": {
-    "declaration-property-value-disallowed-list": {
-      "count": 2
-    },
     "property-disallowed-list": {
       "count": 4
     }
@@ -209,11 +165,6 @@
       "count": 2
     }
   },
-  "organizer/ui/icon-button/icon-button.css": {
-    "declaration-property-value-disallowed-list": {
-      "count": 1
-    }
-  },
   "organizer/ui/list-item/list-item.css": {
     "property-disallowed-list": {
       "count": 1
@@ -221,9 +172,6 @@
   },
   "organizer/ui/overflow-menu/overflow-menu.css": {
     "declaration-property-custom-property-allowed-list": {
-      "count": 1
-    },
-    "declaration-property-value-disallowed-list": {
       "count": 1
     },
     "property-disallowed-list": {
@@ -245,9 +193,6 @@
     "declaration-property-value-allowed-list": {
       "count": 1
     },
-    "declaration-property-value-disallowed-list": {
-      "count": 2
-    },
     "property-disallowed-list": {
       "count": 4
     }
@@ -267,9 +212,6 @@
     "cube/block-max-lines": {
       "count": 1
     },
-    "declaration-property-value-disallowed-list": {
-      "count": 5
-    },
     "property-disallowed-list": {
       "count": 10
     }
@@ -281,9 +223,6 @@
     "declaration-property-custom-property-allowed-list": {
       "count": 2
     },
-    "declaration-property-value-disallowed-list": {
-      "count": 1
-    },
     "property-disallowed-list": {
       "count": 2
     }
@@ -294,9 +233,6 @@
     },
     "declaration-property-custom-property-allowed-list": {
       "count": 2
-    },
-    "declaration-property-value-disallowed-list": {
-      "count": 1
     },
     "property-disallowed-list": {
       "count": 5
@@ -311,9 +247,6 @@
     }
   },
   "src/components/confirm-dialog/confirm-dialog.css": {
-    "declaration-property-value-disallowed-list": {
-      "count": 1
-    },
     "property-disallowed-list": {
       "count": 1
     }
@@ -323,9 +256,6 @@
       "count": 1
     },
     "declaration-property-value-allowed-list": {
-      "count": 1
-    },
-    "declaration-property-value-disallowed-list": {
       "count": 1
     },
     "property-disallowed-list": {
@@ -354,9 +284,6 @@
     },
     "declaration-property-value-allowed-list": {
       "count": 1
-    },
-    "declaration-property-value-disallowed-list": {
-      "count": 5
     },
     "property-disallowed-list": {
       "count": 3
@@ -395,9 +322,6 @@
     "declaration-property-custom-property-allowed-list": {
       "count": 4
     },
-    "declaration-property-value-disallowed-list": {
-      "count": 2
-    },
     "property-disallowed-list": {
       "count": 1
     }
@@ -428,9 +352,6 @@
     "cube/block-max-lines": {
       "count": 1
     },
-    "declaration-property-value-disallowed-list": {
-      "count": 3
-    },
     "property-disallowed-list": {
       "count": 10
     }
@@ -443,9 +364,6 @@
   "src/components/pwa-install-banner/pwa-install-banner.css": {
     "cube/block-max-lines": {
       "count": 1
-    },
-    "declaration-property-value-disallowed-list": {
-      "count": 2
     }
   },
   "src/components/settings-list/settings-list.css": {
@@ -454,9 +372,6 @@
     },
     "declaration-property-custom-property-allowed-list": {
       "count": 1
-    },
-    "declaration-property-value-disallowed-list": {
-      "count": 4
     },
     "property-disallowed-list": {
       "count": 1
@@ -505,9 +420,6 @@
     "declaration-property-custom-property-allowed-list": {
       "count": 1
     },
-    "declaration-property-value-disallowed-list": {
-      "count": 1
-    },
     "property-disallowed-list": {
       "count": 2
     }
@@ -525,9 +437,6 @@
   "src/routes/discovery/discovery-route.css": {
     "cube/block-max-lines": {
       "count": 1
-    },
-    "declaration-property-value-disallowed-list": {
-      "count": 4
     },
     "property-disallowed-list": {
       "count": 6
@@ -574,9 +483,6 @@
     "declaration-property-value-allowed-list": {
       "count": 3
     },
-    "declaration-property-value-disallowed-list": {
-      "count": 2
-    },
     "property-disallowed-list": {
       "count": 5
     }
@@ -589,9 +495,6 @@
   "src/routes/order/order-route.css": {
     "cube/block-max-lines": {
       "count": 1
-    },
-    "declaration-property-value-disallowed-list": {
-      "count": 2
     },
     "property-disallowed-list": {
       "count": 4
@@ -653,9 +556,6 @@
   },
   "src/routes/welcome/welcome-route.css": {
     "cube/block-max-lines": {
-      "count": 1
-    },
-    "declaration-property-value-disallowed-list": {
       "count": 1
     },
     "property-disallowed-list": {

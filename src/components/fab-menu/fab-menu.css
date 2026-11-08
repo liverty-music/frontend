@@ -51,6 +51,8 @@
 
 			/* Reset the popover UA box (inset:0 + margin:auto centers it). */
 			margin: 0;
+
+			/* stylelint-disable-next-line declaration-property-value-disallowed-list -- cancels the padding global.css gives every button and form field */
 			padding: 0;
 			border: none;
 			border-radius: var(--fab-radius-collapsed);
@@ -208,7 +210,6 @@
 			inline-size: 0;
 			block-size: 0;
 			margin: 0;
-			padding: 0;
 			border: none;
 
 			color: var(--md-sys-color-on-surface);
@@ -244,9 +245,6 @@
 			inset: 0;
 
 			margin: 0;
-			padding: 0;
-
-			list-style: none;
 		}
 
 		/* Each item travels from the FAB along the arc to its place with the
@@ -298,6 +296,8 @@
 
 			inline-size: var(--_item-size);
 			block-size: var(--_item-size);
+
+			/* stylelint-disable-next-line declaration-property-value-disallowed-list -- cancels the padding global.css gives every button and form field */
 			padding: 0;
 			border: none;
 			border-radius: var(--md-sys-shape-corner-full);

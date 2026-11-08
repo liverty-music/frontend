@@ -4,7 +4,6 @@
 		.confirm-dialog {
 			max-inline-size: min(28rem, calc(100vi - 2 * var(--space-s)));
 			margin: auto;
-			padding: 0;
 			border: 1px solid var(--md-sys-color-outline-variant);
 			border-radius: var(--md-sys-shape-corner-large);
 

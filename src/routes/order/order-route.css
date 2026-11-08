@@ -199,9 +199,6 @@
 			gap: var(--space-s);
 
 			margin: 0;
-			padding: 0;
-
-			list-style: none;
 		}
 
 		/* Individual ticket card */

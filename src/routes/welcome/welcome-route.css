@@ -180,6 +180,8 @@
 
 			inline-size: 100%;
 			max-inline-size: 36rem;
+
+			/* stylelint-disable-next-line declaration-property-value-disallowed-list -- cancels the padding global.css gives every button and form field */
 			padding: 0;
 			border: none;
 

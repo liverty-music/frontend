@@ -56,9 +56,6 @@
 
 			max-block-size: 40dvh;
 			margin: 0;
-			padding: 0;
-
-			list-style: none;
 		}
 
 		/* Upcoming-concert count prefix on each artist chip. */
@@ -134,9 +131,6 @@
 			gap: var(--space-2xs);
 
 			margin: 0;
-			padding: 0;
-
-			list-style: none;
 		}
 
 		/* Forces a wrap: process chips land on the row above the outcome chips. */
@@ -217,6 +211,7 @@
 			align-items: center;
 			justify-content: space-between;
 
+			/* stylelint-disable-next-line declaration-property-value-disallowed-list -- cancels the padding global.css gives every button and form field */
 			padding: 0;
 			border: none;
 
