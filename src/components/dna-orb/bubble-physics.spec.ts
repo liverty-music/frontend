@@ -4,7 +4,11 @@ import { describe, expect, it } from 'vitest'
 import type { Artist } from '../../entities/artist'
 import { MAX_BUBBLES } from '../../services/bubble-invariants'
 import type { BubbleArtistParams, PhysicsBubble } from './bubble-physics'
-import { BubblePhysics, findClosestBubble } from './bubble-physics'
+import {
+	BubblePhysics,
+	findClosestBubble,
+	SPAWNS_PER_FRAME,
+} from './bubble-physics'
 
 function mockBubble(
 	id: string,
@@ -211,11 +215,15 @@ describe('BubblePhysics.reconcile', () => {
 		physics.reconcile(params(['a', 'b']), {
 			placements: new Map([['b', { x: 123, y: 45 }]]),
 		})
+		// Queued: it leaves the tap point on the next update.
+		expect(physics.pendingSpawnParams().map((p) => p.artist.id)).toEqual(['b'])
+		physics.update(16)
 
 		const b = physics.getBubbles().find((x) => x.artist.id === 'b')
 		expect(b?.isSpawning).toBe(true)
-		expect(b?.body.position.x).toBeCloseTo(123)
-		expect(b?.body.position.y).toBeCloseTo(45)
+		// One step from the tap point, pushed outward.
+		expect(b?.body.position.x).toBeCloseTo(123, -1)
+		expect(b?.body.position.y).toBeCloseTo(45, -1)
 		// An unplaced add stays instant (no spawn animation).
 		const a = physics.getBubbles().find((x) => x.artist.id === 'a')
 		expect(a?.isSpawning).toBe(false)
@@ -443,5 +451,135 @@ describe('revealed names fade in on real time', () => {
 
 		expect(bubble?.scale).toBe(0)
 		expect(bubble?.revealInPlace).toBeFalsy()
+	})
+})
+
+describe('bubbles at rest sleep until the field changes', () => {
+	/** A bubble `top` resting on a bubble `bottom`, both settled and asleep. */
+	async function stackAtRest(): Promise<{
+		physics: BubblePhysics
+		top: PhysicsBubble
+	}> {
+		const physics = await mkPhysics()
+		// The floor's top edge is at y = 470 on a 400 × 600 canvas.
+		physics.addBubbles([
+			{ artist: artist('bottom'), radius: 40, position: { x: 200, y: 430 } },
+			{ artist: artist('top'), radius: 40, position: { x: 200, y: 350 } },
+		])
+		for (let i = 0; i < 1500; i++) physics.update(16)
+		const top = physics.getBubbles().find((b) => b.artist.id === 'top')
+		if (!top) throw new Error('no top bubble')
+		return { physics, top }
+	}
+
+	// @spec components/infrastructure/fan/web/route/discovery "Bubbles at rest stay where they are"
+	it('keeps bubbles at rest in place, asleep, while nothing changes', async () => {
+		const { physics, top } = await stackAtRest()
+		expect(physics.getBubbles().every((b) => b.body.isSleeping)).toBe(true)
+		const before = physics.getBubbles().map((b) => ({ ...b.body.position }))
+
+		for (let i = 0; i < 300; i++) physics.update(16)
+
+		expect(physics.getBubbles().map((b) => ({ ...b.body.position }))).toEqual(
+			before,
+		)
+		expect(top.body.isSleeping).toBe(true)
+	})
+
+	// @spec components/infrastructure/fan/web/route/discovery "Field change wakes the bubbles at rest"
+	it('wakes the bubbles when one is removed, so none stays floating where it was held up', async () => {
+		const { physics, top } = await stackAtRest()
+		const restingY = top.body.position.y
+
+		physics.removeBubble('bottom')
+		for (let i = 0; i < 120; i++) physics.update(16)
+
+		expect(top.body.position.y).toBeGreaterThan(restingY + 40)
+	})
+
+	it('wakes the bubbles when one is added', async () => {
+		const { physics } = await stackAtRest()
+
+		physics.addBubbles(params(['new']))
+
+		expect(physics.getBubbles().some((b) => b.body.isSleeping)).toBe(false)
+	})
+
+	it('wakes the bubbles when the walls are rebuilt on resize', async () => {
+		const { physics } = await stackAtRest()
+
+		await physics.init(400, 500)
+
+		expect(physics.getBubbles().some((b) => b.body.isSleeping)).toBe(false)
+	})
+})
+
+describe('a tap top-up enters a few bubbles per frame', () => {
+	it('lets a 30-artist top-up leave the tap point over 10 updates', async () => {
+		const physics = await mkPhysics()
+		physics.addBubbles(params(['a']))
+		const added = ids('n', 30)
+		physics.reconcile(params(['a', ...added]), {
+			placements: new Map(added.map((id) => [id, { x: 200, y: 200 }])),
+		})
+
+		const entered: number[] = []
+		for (let i = 0; i < 10; i++) {
+			entered.push(physics.bubbleCount - 1)
+			physics.update(16)
+		}
+
+		expect(SPAWNS_PER_FRAME).toBe(3)
+		expect(entered).toEqual([0, 3, 6, 9, 12, 15, 18, 21, 24, 27])
+		expect(physics.bubbleCount - 1).toBe(30)
+		expect(physics.pendingSpawnParams()).toEqual([])
+	})
+
+	it('drops a queued spawn that leaves the target before it enters', async () => {
+		const physics = await mkPhysics()
+		physics.addBubbles(params(['a']))
+		physics.reconcile(params(['a', 'b', 'c']), {
+			placements: new Map([
+				['b', { x: 200, y: 200 }],
+				['c', { x: 200, y: 200 }],
+			]),
+		})
+
+		physics.reconcile(params(['a', 'c']))
+		physics.update(16)
+
+		expect(liveIds(physics)).toEqual(['a', 'c'])
+	})
+})
+
+describe('fading bubbles stop colliding', () => {
+	it('stops a fading body from pushing the others and restores it when revived', async () => {
+		const physics = await mkPhysics()
+		physics.addBubbles(params(['a', 'b']))
+		const a = physics.getBubbles().find((b) => b.artist.id === 'a')
+
+		physics.reconcile(params(['b']))
+		expect(a?.isFadingOut).toBe(true)
+		expect(a?.body.collisionFilter.mask).toBe(0)
+
+		physics.reconcile(params(['a', 'b']))
+		expect(a?.isFadingOut).toBe(false)
+		expect(a?.body.collisionFilter.mask).toBe(0xffffffff)
+	})
+
+	it('lets a bubble resting on a fading one fall through it', async () => {
+		const physics = await mkPhysics()
+		physics.addBubbles([
+			{ artist: artist('bottom'), radius: 40, position: { x: 200, y: 430 } },
+			{ artist: artist('top'), radius: 40, position: { x: 200, y: 350 } },
+		])
+		for (let i = 0; i < 1500; i++) physics.update(16)
+		const top = physics.getBubbles().find((b) => b.artist.id === 'top')
+		const restingY = top?.body.position.y ?? 0
+
+		physics.fadeOutBubble('bottom')
+		for (let i = 0; i < 10; i++) physics.update(16)
+
+		expect(top?.body.position.y).toBeGreaterThan(restingY)
 	})
 })

@@ -96,6 +96,12 @@ export interface IAudioEngine {
 	readonly muted: boolean
 	readonly volume: number
 	unlock(): void
+	/**
+	 * Build the audio graph (context, master gain, noise buffer) ahead of the
+	 * first tap, outside a gesture. The context stays suspended until
+	 * `unlock()` resumes it inside a gesture.
+	 */
+	prepare(): void
 	suspend(): void
 	resume(): void
 	playTap(hue: number): void
@@ -156,6 +162,11 @@ export class AudioEngine implements IAudioEngine {
 
 	public get volume(): number {
 		return this._volume
+	}
+
+	public prepare(): void {
+		this.ensureContext()
+		this.ensureNoiseBuffer()
 	}
 
 	/** Create/resume the AudioContext. MUST be called from a user gesture. */

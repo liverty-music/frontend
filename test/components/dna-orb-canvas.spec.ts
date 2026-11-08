@@ -1,5 +1,7 @@
 import { INode, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { SpriteRequest } from '../../src/components/dna-orb/sprite-paint'
+import type { SpriteResult } from '../../src/components/dna-orb/sprite-worker'
 import type { Artist } from '../../src/entities/artist'
 import { createTestContainer } from '../helpers/create-container'
 
@@ -35,6 +37,63 @@ vi.mock('matter-js', () => ({
 const { DnaOrbCanvas } = await import(
 	'../../src/components/dna-orb/dna-orb-canvas'
 )
+const { BubbleSprites } = await import(
+	'../../src/components/dna-orb/bubble-sprites'
+)
+
+/** A sprite worker double that answers only when the test says so. */
+class FakeSpriteWorker {
+	public posted: SpriteRequest[][] = []
+	public answered = 0
+	public onmessage: ((e: MessageEvent<SpriteResult[]>) => void) | null = null
+	public onerror: (() => void) | null = null
+	public onmessageerror: (() => void) | null = null
+	public readonly terminate = vi.fn()
+
+	postMessage(batch: SpriteRequest[]): void {
+		this.posted.push(batch)
+	}
+
+	/** Answer every request not answered yet; returns the bitmaps sent. */
+	answerAll(): { close: ReturnType<typeof vi.fn> }[] {
+		const requests = this.posted.flat().slice(this.answered)
+		this.answered += requests.length
+		const bitmaps = requests.map(() => ({ close: vi.fn() }))
+		this.onmessage?.({
+			data: requests.map((r, i) => ({
+				key: r.key,
+				gen: r.gen,
+				half: r.kind === 'label' ? r.radius : r.radius * 1.6,
+				bitmap: bitmaps[i] as unknown as ImageBitmap,
+			})),
+		} as MessageEvent<SpriteResult[]>)
+		return bitmaps
+	}
+}
+
+/**
+ * Give the canvas sprites painted by a worker double, which never answers on
+ * its own (jsdom has no Worker or canvas 2D).
+ */
+function installSprites(
+	sut: InstanceType<typeof DnaOrbCanvas>,
+): FakeSpriteWorker {
+	const worker = new FakeSpriteWorker()
+	;(sut as any).sprites = new BubbleSprites({
+		createWorker: () => worker as unknown as Worker,
+		createCanvas: () =>
+			({ getContext: () => null }) as unknown as HTMLCanvasElement,
+	})
+	;(sut as any).sprites.start()
+	return worker
+}
+
+function setVisibility(state: DocumentVisibilityState): void {
+	Object.defineProperty(document, 'visibilityState', {
+		configurable: true,
+		get: () => state,
+	})
+}
 
 function makeArtist(id: string, name: string): Artist {
 	return { id, name, mbid: '' }
@@ -422,7 +481,7 @@ describe('DnaOrbCanvas', () => {
 	})
 
 	describe('bubble label layout', () => {
-		function spawningBubble(scale: number) {
+		function fullSizeBubble(scale: number) {
 			return {
 				body: { position: { x: 120, y: 80 } },
 				artist: makeArtist('a1', 'Little Glee Monster'),
@@ -436,14 +495,14 @@ describe('DnaOrbCanvas', () => {
 			}
 		}
 
-		it('lays a label out once per bubble, not on every spawn frame', () => {
+		it('lays a label out once per bubble, not on every frame it is drawn directly', () => {
 			;(sut as any).ctx = mockCtx
 			const measure = mockCtx.measureText as ReturnType<typeof vi.fn>
 
-			;(sut as any).renderBubble(spawningBubble(0.82), false)
+			;(sut as any).renderBubble(fullSizeBubble(1.04), false)
 			const afterFirst = measure.mock.calls.length
-			for (const scale of [0.9, 1.04, 1.08, 1.02, 1]) {
-				;(sut as any).renderBubble(spawningBubble(scale), false)
+			for (const scale of [1.08, 1.02, 1, 1]) {
+				;(sut as any).renderBubble(fullSizeBubble(scale), false)
 			}
 
 			expect(afterFirst).toBeGreaterThan(0)
@@ -451,20 +510,404 @@ describe('DnaOrbCanvas', () => {
 			expect((sut as any).labelLayouts.size).toBe(1)
 		})
 
-		it('draws the label scaled about the center while spawning and unscaled at full size', () => {
+		it('draws a direct label scaled about the center during the overshoot and unscaled at full size', () => {
 			;(sut as any).ctx = mockCtx
 			const fillText = mockCtx.fillText as ReturnType<typeof vi.fn>
 
-			;(sut as any).renderBubble(spawningBubble(0.9), false)
+			;(sut as any).renderBubble(fullSizeBubble(1.04), false)
 			expect(mockCtx.translate).toHaveBeenCalledWith(120, 80)
-			expect(mockCtx.scale).toHaveBeenCalledWith(0.9, 0.9)
+			expect(mockCtx.scale).toHaveBeenCalledWith(1.04, 1.04)
 			expect(fillText.mock.calls.every((c) => c[1] === 0)).toBe(true)
 
 			fillText.mockClear()
 			;(mockCtx.translate as ReturnType<typeof vi.fn>).mockClear()
-			;(sut as any).renderBubble(spawningBubble(1), false)
+			;(sut as any).renderBubble(fullSizeBubble(1), false)
 			expect(mockCtx.translate).not.toHaveBeenCalled()
 			expect(fillText.mock.calls.every((c) => c[1] === 120)).toBe(true)
+		})
+	})
+
+	describe('bubble sprites', () => {
+		function bubble(
+			name: string,
+			opts: { scale?: number; opacity?: number; ghost?: boolean } = {},
+		) {
+			return {
+				body: { position: { x: 120, y: 80 } },
+				artist: opts.ghost
+					? { id: `__ghost__${name}`, name: '', mbid: '', isGhost: true }
+					: makeArtist(name, name),
+				radius: 40,
+				scale: opts.scale ?? 1,
+				opacity: opts.opacity ?? 1,
+				isSpawning: false,
+				spawnProgress: 1,
+				isFadingOut: false,
+				fadeOutProgress: 0,
+			}
+		}
+
+		function drawn() {
+			const calls = (fn: unknown) =>
+				(fn as ReturnType<typeof vi.fn>).mock.calls.length
+			return {
+				images: calls(mockCtx.drawImage),
+				texts: calls(mockCtx.fillText),
+			}
+		}
+
+		it('draws a full-size bubble directly until its sprites arrive, then pastes them', () => {
+			const worker = installSprites(sut)
+			;(sut as any).ctx = mockCtx
+
+			expect((sut as any).renderBubble(bubble('Ado'), false)).toBe(
+				'body-and-name',
+			)
+			expect(mockCtx.fillText).toHaveBeenCalledWith(
+				'Ado',
+				120,
+				expect.any(Number),
+				64,
+			)
+			expect(drawn().images).toBe(0)
+
+			;(sut as any).sprites.flush()
+			worker.answerAll()
+			;(mockCtx.fillText as ReturnType<typeof vi.fn>).mockClear()
+			expect((sut as any).renderBubble(bubble('Ado'), false)).toBe(
+				'body-and-name',
+			)
+
+			// Body and label sprites, centered on the bubble.
+			expect(mockCtx.drawImage).toHaveBeenCalledTimes(2)
+			expect(mockCtx.drawImage).toHaveBeenLastCalledWith(
+				expect.anything(),
+				80,
+				40,
+				80,
+				80,
+			)
+			expect(mockCtx.fillText).not.toHaveBeenCalled()
+		})
+
+		it('draws nothing for a bubble popping from a tap until its sprites arrive, and asks for them', () => {
+			const worker = installSprites(sut)
+			;(sut as any).ctx = mockCtx
+
+			expect(
+				(sut as any).renderBubble(bubble('Ado', { scale: 0.5 }), false),
+			).toBe('nothing')
+			expect(mockCtx.arc).not.toHaveBeenCalled()
+			expect(mockCtx.fillText).not.toHaveBeenCalled()
+
+			;(sut as any).sprites.flush()
+			expect(worker.posted.flat().map((r) => r.kind)).toEqual(['body', 'label'])
+			worker.answerAll()
+			expect(
+				(sut as any).renderBubble(bubble('Ado', { scale: 0.5 }), false),
+			).toBe('body-and-name')
+			// Pasted at half size.
+			expect(mockCtx.drawImage).toHaveBeenLastCalledWith(
+				expect.anything(),
+				100,
+				60,
+				40,
+				40,
+			)
+		})
+
+		it('draws a ghost from its sprite once painted, and directly before', () => {
+			const worker = installSprites(sut)
+			;(sut as any).ctx = mockCtx
+
+			expect(
+				(sut as any).renderBubble(bubble('g', { ghost: true }), false),
+			).toBe('body')
+			expect(mockCtx.arc).toHaveBeenCalled()
+			;(sut as any).sprites.flush()
+			worker.answerAll()
+			;(sut as any).renderBubble(bubble('g', { ghost: true }), false)
+			expect(mockCtx.drawImage).toHaveBeenCalledOnce()
+		})
+
+		it('asks for the sprites of every bubble on the field and queued to enter it when the field changes', async () => {
+			const worker = installSprites(sut)
+			await sut.attached()
+			vi.spyOn((sut as any).physics, 'pendingSpawnParams').mockReturnValue([
+				{ artist: makeArtist('q1', 'Queued'), radius: 33 },
+			])
+
+			sut.artistsChanged([makeArtist('a1', 'One'), makeArtist('a2', 'Two')])
+
+			const labels = worker.posted
+				.flat()
+				.filter((r) => r.kind === 'label')
+				.map((r) => r.name)
+			expect(labels).toEqual(expect.arrayContaining(['One', 'Two', 'Queued']))
+		})
+
+		it('starts the worker on attach and terminates it, releasing the sprites, on detach', async () => {
+			const worker = installSprites(sut)
+			await sut.attached()
+			expect((sut as any).sprites.offMainThread).toBe(true)
+			sut.artistsChanged([makeArtist('a1', 'One')])
+			const [first] = worker.answerAll()
+
+			sut.detaching()
+
+			expect(worker.terminate).toHaveBeenCalledOnce()
+			expect(first.close).toHaveBeenCalledOnce()
+		})
+
+		it('lets the absorbing bubble paste its name sprite, scaled, and reports when there is none', () => {
+			const worker = installSprites(sut)
+			;(sut as any).ctx = mockCtx
+			const drawLabel = (sut as any).absorptionAnimator.drawLabel
+
+			expect(drawLabel('Ado', 10, 20, 40, 0.5)).toBe(false)
+			;(sut as any).renderBubble(bubble('Ado', { scale: 0.5 }), false)
+			;(sut as any).sprites.flush()
+			worker.answerAll()
+
+			expect(drawLabel('Ado', 10, 20, 40, 0.5)).toBe(true)
+			expect(mockCtx.drawImage).toHaveBeenLastCalledWith(
+				expect.anything(),
+				-10,
+				0,
+				40,
+				40,
+			)
+		})
+	})
+
+	describe('cold-load reveal with sprites', () => {
+		function revealed(name: string) {
+			return {
+				body: { position: { x: 120, y: 80 } },
+				artist: makeArtist(name, name),
+				radius: 40,
+				scale: 1,
+				opacity: 0.9,
+				isSpawning: true,
+				spawnProgress: 0.8,
+				revealInPlace: true,
+				isFadingOut: false,
+				fadeOutProgress: 0,
+			}
+		}
+
+		function prepareFrame(bubbles: unknown[]) {
+			;(sut as any).ctx = mockCtx
+			;(sut as any).sizeCanvas()
+			;(sut as any).placeholders = bubbles
+		}
+
+		const marks = () =>
+			dispatchedEvents
+				.filter((e) => e.type === 'reveal-mark')
+				.map((e) => e.detail.mark)
+
+		// @spec components/infrastructure/fan/web/route/discovery "Name preparation has not finished"
+		it('draws a revealed name in the same frame before its sprite is painted, and the sprite shows the same text', () => {
+			installSprites(sut)
+			prepareFrame([revealed('Ado')])
+
+			;(sut as any).render()
+
+			// Drawn directly, so the name marks fire in this frame.
+			expect(marks()).toEqual(['ghosts', 'first-name', 'all-names'])
+			const direct = (mockCtx.fillText as ReturnType<typeof vi.fn>).mock.calls
+			expect(direct.map((c) => c[0])).toEqual(['Ado'])
+
+			// The sprite painted later carries the same text, font and offsets.
+			const paints: { font: string; calls: unknown[][] } = {
+				font: '',
+				calls: [],
+			}
+			const spriteCtx = {
+				...createMockCanvasContext(),
+				fillText: vi.fn((...args: unknown[]) => {
+					paints.font = spriteCtx.font
+					paints.calls.push(args)
+				}),
+			} as unknown as CanvasRenderingContext2D
+			const mainThread = new BubbleSprites({
+				createWorker: () => null,
+				createCanvas: () =>
+					({ getContext: () => spriteCtx }) as unknown as HTMLCanvasElement,
+			})
+			mainThread.label('Ado', 40)
+			mainThread.flush()
+			expect(paints.calls.map((c) => [c[0], c[2], c[3]])).toEqual(
+				direct.map((c) => [c[0], (c[2] as number) - 80, c[3]]),
+			)
+			expect(paints.calls.map((c) => c[1])).toEqual(direct.map(() => 0))
+			expect(paints.font).toBe((sut as any).labelLayout('Ado', 40).font)
+		})
+
+		// @spec components/infrastructure/fan/web/route/discovery "A name appears after its bubble"
+		it('marks the names in the frames that put them on screen', () => {
+			const worker = installSprites(sut)
+			// A bubble popping in is not full size: it waits for its sprites.
+			prepareFrame([{ ...revealed('Ado'), scale: 0.9, revealInPlace: false }])
+
+			;(sut as any).render()
+			expect(marks()).toEqual([])
+
+			worker.answerAll()
+			;(sut as any).render()
+			expect(marks()).toEqual(['ghosts', 'first-name', 'all-names'])
+		})
+	})
+
+	describe('canvas size', () => {
+		it('reads the element size on layout, never in a frame', async () => {
+			vi.spyOn(globalThis, 'requestAnimationFrame').mockReturnValue(1)
+			await sut.attached()
+			const rect = mockElement.getBoundingClientRect as ReturnType<typeof vi.fn>
+			rect.mockClear()
+
+			;(sut as any).loop(performance.now() + 16)
+			;(sut as any).loop(performance.now() + 32)
+
+			expect(rect).not.toHaveBeenCalled()
+			expect(mockCtx.clearRect).toHaveBeenCalledWith(0, 0, 400, 600)
+		})
+	})
+
+	describe('audio graph', () => {
+		it('builds the audio graph within 1 s of attach, outside the first tap', async () => {
+			const prepare = vi.spyOn((sut as any).audio, 'prepare')
+			await sut.attached()
+			expect(prepare).not.toHaveBeenCalled()
+
+			await vi.advanceTimersByTimeAsync(1000)
+
+			expect(prepare).toHaveBeenCalledOnce()
+		})
+
+		it('cancels the pending preparation when detached first', async () => {
+			const prepare = vi.spyOn((sut as any).audio, 'prepare')
+			await sut.attached()
+
+			sut.detaching()
+			await vi.advanceTimersByTimeAsync(1000)
+
+			expect(prepare).not.toHaveBeenCalled()
+		})
+	})
+
+	describe('frame timings', () => {
+		let analytics: { capture: ReturnType<typeof vi.fn> }
+		let now: number
+
+		beforeEach(async () => {
+			analytics = (sut as any).analytics
+			vi.spyOn(globalThis, 'requestAnimationFrame').mockReturnValue(1)
+			installSprites(sut)
+			await sut.attached()
+			now = performance.now()
+		})
+
+		/** Run `n` frames of the loop, `ms` apart. */
+		function frames(n: number, ms: number) {
+			for (let i = 0; i < n; i++) {
+				now += ms
+				;(sut as any).loop(now)
+			}
+		}
+
+		const frameEvents = () =>
+			analytics.capture.mock.calls.filter(
+				(c) => c[0] === 'perf.discovery_frames',
+			)
+
+		// @spec components/infrastructure/fan/web/route/discovery "Fan leaves Discovery after browsing bubbles"
+		it('sends one event with the frame figures when the fan leaves Discovery', () => {
+			frames(1, 16)
+			frames(597, 16)
+			frames(2, 120)
+
+			sut.detaching()
+
+			expect(frameEvents()).toEqual([
+				[
+					'perf.discovery_frames',
+					{
+						frames: 599,
+						interval_p50_ms: 16,
+						interval_p95_ms: 16,
+						longest_ms: 120,
+						over_50ms: 2,
+						bubbles: expect.any(Number),
+						names_off_main_thread: true,
+					},
+				],
+			])
+		})
+
+		// @spec components/infrastructure/fan/web/route/discovery "Paused time is left out"
+		it('leaves out the time the field is paused', () => {
+			frames(100, 16)
+			sut.pause()
+			now += 20_000
+			sut.resume()
+			frames(100, 16)
+
+			sut.detaching()
+
+			const [[, props]] = frameEvents()
+			// The first frame after each (re)start is not an interval.
+			expect(props.frames).toBe(198)
+			expect(props.longest_ms).toBe(16)
+		})
+
+		// @spec components/infrastructure/fan/web/route/discovery "Visit too short to measure"
+		it('sends nothing for a visit shorter than 30 frames', () => {
+			frames(20, 16)
+
+			sut.detaching()
+
+			expect(frameEvents()).toEqual([])
+		})
+
+		// @spec components/infrastructure/fan/web/route/discovery "One event per visit"
+		it('sends once, when the page is hidden, even if the fan comes back and leaves later', () => {
+			frames(100, 16)
+			setVisibility('hidden')
+			document.dispatchEvent(new Event('visibilitychange'))
+			expect(frameEvents()).toHaveLength(1)
+
+			setVisibility('visible')
+			document.dispatchEvent(new Event('visibilitychange'))
+			frames(100, 16)
+			sut.detaching()
+
+			expect(frameEvents()).toHaveLength(1)
+			expect(frameEvents()[0][1].frames).toBe(99)
+		})
+
+		it('ends the measurement when the route switches to the All Nearby view', () => {
+			frames(100, 16)
+
+			sut.endFrameMeasurement()
+			sut.pause()
+			sut.resume()
+			frames(100, 16)
+			sut.detaching()
+
+			expect(frameEvents()).toHaveLength(1)
+		})
+
+		it('removes its page-visibility listener on detach', () => {
+			frames(100, 16)
+			sut.detaching()
+			analytics.capture.mockClear()
+
+			setVisibility('hidden')
+			document.dispatchEvent(new Event('visibilitychange'))
+
+			expect(frameEvents()).toEqual([])
 		})
 	})
 

@@ -339,6 +339,33 @@ describe('AnalyticsService', () => {
 			).toBeLessThan(posthogStub.capture.mock.invocationCallOrder[revealCall])
 		})
 
+		it('hands the frame-timing event only to an SDK that is opted out when analytics is off', async () => {
+			// @spec components/infrastructure/fan/web/route/discovery "Analytics off"
+			mockConsent.analytics = false
+			const sut = new AnalyticsService()
+
+			sut.capture(Events.DiscoveryFrames, {
+				frames: 600,
+				interval_p50_ms: 16.7,
+				interval_p95_ms: 33.4,
+				longest_ms: 120,
+				over_50ms: 2,
+				bubbles: 50,
+				names_off_main_thread: true,
+			})
+			await sut._waitForInitForTests()
+
+			expect(posthogStub.opt_out_capturing).toHaveBeenCalled()
+			expect(posthogStub.opt_in_capturing).not.toHaveBeenCalled()
+			const framesCall = posthogStub.capture.mock.calls.findIndex(
+				(c) => c[0] === Events.DiscoveryFrames,
+			)
+			expect(framesCall).toBeGreaterThanOrEqual(0)
+			expect(
+				posthogStub.opt_out_capturing.mock.invocationCallOrder[0],
+			).toBeLessThan(posthogStub.capture.mock.invocationCallOrder[framesCall])
+		})
+
 		it('severs the identity link when the user signs out', async () => {
 			const sut = new AnalyticsService()
 			await sut._waitForInitForTests()

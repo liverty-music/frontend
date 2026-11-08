@@ -155,6 +155,7 @@ describe('DiscoveryRoute', () => {
 		route.dnaOrbCanvas = {
 			pause: vi.fn(),
 			resume: vi.fn(),
+			endFrameMeasurement: vi.fn(),
 			spawnAndAbsorbAfterSearch: vi.fn(),
 			bubbleCount: 0,
 			canvasRect: { width: 400, height: 600 },
@@ -870,6 +871,22 @@ describe('DiscoveryRoute', () => {
 			await sut.refreshField()
 
 			expect(mockArtistClient.listSimilar).toHaveBeenCalled()
+		})
+	})
+
+	describe('switch to the All Nearby view', () => {
+		// @spec components/infrastructure/fan/web/route/discovery "Fan leaves Discovery after browsing bubbles"
+		it('ends the frame measurement of the visit and pauses the bubbles', () => {
+			;(sut as any).viewChanged('nearby')
+
+			expect(sut.dnaOrbCanvas.endFrameMeasurement).toHaveBeenCalledOnce()
+			expect(sut.dnaOrbCanvas.pause).toHaveBeenCalled()
+		})
+
+		it('does not end it when switching back to the bubbles', () => {
+			;(sut as any).viewChanged('artists')
+
+			expect(sut.dnaOrbCanvas.endFrameMeasurement).not.toHaveBeenCalled()
 		})
 	})
 

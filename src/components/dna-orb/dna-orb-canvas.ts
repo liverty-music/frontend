@@ -8,6 +8,8 @@ import {
 } from 'aurelia'
 import { artistHue as hashArtistHue } from '../../adapter/view/artist-color'
 import type { Artist } from '../../entities/artist'
+import { IAnalyticsService } from '../../lib/analytics/analytics-service'
+import { Events } from '../../services/analytics-events'
 import { IAudioEngine } from '../../services/audio-engine'
 import { displayCapacityFor } from '../../services/bubble-invariants'
 import { IHapticService } from '../../services/haptic-service'
@@ -23,9 +25,31 @@ import {
 	type PhysicsBubble,
 	randomSpawnPoint,
 } from './bubble-physics'
+import { BubbleSprites, type Sprite } from './bubble-sprites'
+import { FrameTimings } from './frame-timings'
 import { OrbRenderer } from './orb-renderer'
-import { LABEL_OPACITY_THRESHOLD, RevealMarks } from './reveal-marks'
+import {
+	LABEL_OPACITY_THRESHOLD,
+	type RevealFrame,
+	RevealMarks,
+} from './reveal-marks'
+import {
+	computeLabelLayout,
+	type LabelLayout,
+	paintBubbleBody,
+	paintGhostBody,
+	paintLabel,
+} from './sprite-paint'
 import { TapEffects } from './tap-effects'
+
+export {
+	computeLabelLayout,
+	type LabelLayout,
+	wrapText,
+} from './sprite-paint'
+
+/** What `renderBubble` put on screen for one bubble. */
+type Drawn = 'nothing' | 'body' | 'body-and-name'
 
 @useShadowDOM()
 export class DnaOrbCanvas {
@@ -78,8 +102,21 @@ export class DnaOrbCanvas {
 	private tapEffects = new TapEffects()
 	// Cold-load reveal milestones; a fresh component per mount starts a fresh set.
 	private revealMarks = new RevealMarks()
+	// Each bubble's body and name, painted once and pasted every frame.
+	private readonly sprites = new BubbleSprites()
+	// Frame intervals of this visit, sent once as `perf.discovery_frames`.
+	private readonly frameTimings = new FrameTimings()
+	// The next frame follows a (re)start of the loop: its interval is not a frame.
+	private loopRestarted = true
+	// Pending `audio.prepare()` (an idle callback id, or a timer id as a fallback).
+	private audioPrepareHandle = 0
+	private audioPrepareIsTimer = false
+	// The canvas size in CSS px, read on layout only (never per frame).
+	private viewWidth = 0
+	private viewHeight = 0
 
 	private readonly audio = resolve(IAudioEngine)
+	private readonly analytics = resolve(IAnalyticsService)
 	private readonly haptic = resolve(IHapticService)
 	private readonly logger = resolve(ILogger).scopeTo('DnaOrbCanvas')
 	private reducedMotionUnsub: (() => void) | null = null
@@ -125,6 +162,17 @@ export class DnaOrbCanvas {
 	private frameTimes: number[] = []
 	private qualityScale = 1.0 // 1.0 = full, 0.5 = reduced
 
+	public constructor() {
+		// The absorbing bubble pastes its own name sprite, scaled, instead of
+		// laying its name out again at a new size every frame.
+		this.absorptionAnimator.drawLabel = (name, x, y, radius, scale) => {
+			const sprite = this.sprites.label(name, radius)
+			if (!sprite) return false
+			this.drawSprite(sprite, x, y, scale)
+			return true
+		}
+	}
+
 	public get bubbleCount(): number {
 		return this.physics.bubbleCount
 	}
@@ -162,6 +210,7 @@ export class DnaOrbCanvas {
 		// An all-ghost field is the cold-visit placeholder: paint it as is.
 		if (real.length === 0 && shown.length > 0) {
 			this.physics.addBubbles(shown.map((a) => toBubbleParams(a)))
+			this.requestFieldSprites()
 			return
 		}
 		// Reconcile the rendered bodies to the field's real members: the physics
@@ -182,6 +231,26 @@ export class DnaOrbCanvas {
 				{ dropped },
 			)
 		}
+		this.requestFieldSprites()
+	}
+
+	/**
+	 * Ask for the sprites of every bubble on the field or queued to enter it,
+	 * so they are painted before the bubbles need them. With a worker they are
+	 * sent at once; on the main thread the frames paint a few at a time.
+	 */
+	private requestFieldSprites(): void {
+		const want = (artist: Artist, radius: number) => {
+			if (artist.isGhost) {
+				this.sprites.ghost(radius)
+				return
+			}
+			this.sprites.body(radius, this.artistHue(artist))
+			this.sprites.label(artist.name, radius)
+		}
+		for (const b of this.physics.getBubbles()) want(b.artist, b.radius)
+		for (const p of this.physics.pendingSpawnParams()) want(p.artist, p.radius)
+		if (this.sprites.offMainThread) this.sprites.flush()
 	}
 
 	public async attached(): Promise<void> {
@@ -192,6 +261,11 @@ export class DnaOrbCanvas {
 			return
 		}
 		this.ctx = ctx
+		// Start the sprite worker now, so its module has loaded by the time the
+		// artists arrive.
+		this.sprites.start()
+		this.scheduleAudioPrepare()
+		document.addEventListener('visibilitychange', this.onVisibilityChange)
 
 		// Honor prefers-reduced-motion for the visual micro-interactions only;
 		// audio is gated solely by the SE setting / device mute switch. React to
@@ -219,6 +293,7 @@ export class DnaOrbCanvas {
 			.filter((a) => a.isGhost)
 			.map((a) => placeholderBubble(a, width, height))
 		this.lastTime = performance.now()
+		this.loopRestarted = true
 		this.animFrameId = requestAnimationFrame(this.loop)
 
 		await this.initPhysics(width, height)
@@ -248,7 +323,53 @@ export class DnaOrbCanvas {
 			this.artistsChanged(this.artists)
 		} else {
 			this.physics.addBubbles(shown.map((a) => toBubbleParams(a)))
+			this.requestFieldSprites()
 		}
+	}
+
+	/**
+	 * Build the audio graph within 1 s of opening Discovery, off the first
+	 * tap's handler. The context stays suspended until the tap's `unlock()`.
+	 */
+	private scheduleAudioPrepare(): void {
+		const prepare = () => {
+			this.audioPrepareHandle = 0
+			this.audio.prepare()
+		}
+		if (typeof requestIdleCallback === 'function') {
+			this.audioPrepareIsTimer = false
+			this.audioPrepareHandle = requestIdleCallback(prepare, { timeout: 1000 })
+		} else {
+			this.audioPrepareIsTimer = true
+			this.audioPrepareHandle = window.setTimeout(prepare, 1000)
+		}
+	}
+
+	private cancelAudioPrepare(): void {
+		if (!this.audioPrepareHandle) return
+		if (this.audioPrepareIsTimer) window.clearTimeout(this.audioPrepareHandle)
+		else cancelIdleCallback(this.audioPrepareHandle)
+		this.audioPrepareHandle = 0
+	}
+
+	/** Hiding the page ends the visit's frame measurement. */
+	private readonly onVisibilityChange = (): void => {
+		if (document.visibilityState === 'hidden') this.endFrameMeasurement()
+	}
+
+	/**
+	 * End this visit's frame measurement and send its frame timings, once per
+	 * visit and only when enough frames were measured. Called when the fan
+	 * leaves Discovery, hides the page, or switches to the All Nearby view.
+	 */
+	public endFrameMeasurement(): void {
+		const summary = this.frameTimings.finish()
+		if (!summary) return
+		this.analytics.capture(Events.DiscoveryFrames, {
+			...summary,
+			bubbles: this.physics.bubbleCount,
+			names_off_main_thread: this.sprites.offMainThread,
+		})
 	}
 
 	/**
@@ -283,9 +404,13 @@ export class DnaOrbCanvas {
 	}
 
 	public detaching(): void {
+		this.endFrameMeasurement()
 		this.detached = true
 		this.settleSizeWait()
 		cancelAnimationFrame(this.animFrameId)
+		this.cancelAudioPrepare()
+		document.removeEventListener('visibilitychange', this.onVisibilityChange)
+		this.sprites.stop()
 		this.layoutObserver?.disconnect()
 		this.layoutObserver = null
 		window.clearTimeout(this.resizeTimeout)
@@ -328,6 +453,7 @@ export class DnaOrbCanvas {
 		if (!this.paused) return
 		this.paused = false
 		this.lastTime = performance.now()
+		this.loopRestarted = true
 		this.animFrameId = requestAnimationFrame(this.loop)
 		this.logger.info('Physics resumed')
 	}
@@ -410,6 +536,10 @@ export class DnaOrbCanvas {
 		this.canvas.style.width = `${rect.width}px`
 		this.canvas.style.height = `${rect.height}px`
 		this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+		// Read here, on layout, so a frame never forces one.
+		this.viewWidth = rect.width
+		this.viewHeight = rect.height
+		this.sprites.setDpr(dpr)
 
 		this.floorInset = this.readFloorInset()
 		this.orbRenderer.init(rect.width, rect.height, this.floorInset)
@@ -587,6 +717,9 @@ export class DnaOrbCanvas {
 		const elapsed = time - this.lastTime
 		const delta = Math.min(elapsed, 32) // Cap at ~30fps min to prevent physics explosions on tab-switch/GC pauses
 		this.lastTime = time
+		// The first frame after a (re)start measures the wait for it, not a frame.
+		if (this.loopRestarted) this.loopRestarted = false
+		else this.frameTimings.record(elapsed)
 
 		this.monitorPerformance(delta)
 
@@ -624,11 +757,9 @@ export class DnaOrbCanvas {
 	private render(): void {
 		// Other layers (absorption labels) set their own fonts while drawing.
 		this.measureFont = ''
-		const rect = this.element.getBoundingClientRect()
-		if (!rect || rect.width === 0 || rect.height === 0) return
-
-		const w = rect.width
-		const h = rect.height
+		const w = this.viewWidth
+		const h = this.viewHeight
+		if (w === 0 || h === 0) return
 
 		this.ctx.clearRect(0, 0, w, h)
 
@@ -642,10 +773,19 @@ export class DnaOrbCanvas {
 		const bubbles = this.physicsReady
 			? this.physics.getBubbles()
 			: this.placeholders
+		const counting = !this.revealMarks.done
+		const frame: RevealFrame = { drawn: 0, named: 0, live: 0, liveNamed: 0 }
 		for (let i = 0; i < bubbles.length; i++) {
-			this.renderBubble(bubbles[i], i === this.focusedBubbleIndex)
+			const drawn = this.renderBubble(bubbles[i], i === this.focusedBubbleIndex)
+			if (!counting) continue
+			const named = drawn === 'body-and-name'
+			if (drawn !== 'nothing') frame.drawn++
+			if (named) frame.named++
+			if (bubbles[i].isFadingOut) continue
+			frame.live++
+			if (named) frame.liveNamed++
 		}
-		this.reportRevealMarks(bubbles)
+		if (counting) this.reportRevealMarks(frame)
 
 		// Layer 2.5: Tap ripples + squash-and-stretch press ghosts
 		this.tapEffects.render(this.ctx)
@@ -664,6 +804,9 @@ export class DnaOrbCanvas {
 
 		// Layer 8: Strobe flash (single-frame overlay, self-clearing)
 		this.orbRenderer.renderStrobeFlash(this.ctx)
+
+		// The sprites this frame asked for: to the worker, or a few painted here.
+		this.sprites.flush()
 	}
 
 	/**
@@ -671,8 +814,8 @@ export class DnaOrbCanvas {
 	 * `discovery:<mark>` performance mark and report it to the route through a
 	 * `reveal-mark` event carrying the mark's time (ms since `timeOrigin`).
 	 */
-	private reportRevealMarks(bubbles: readonly PhysicsBubble[]): void {
-		for (const mark of this.revealMarks.observe(bubbles)) {
+	private reportRevealMarks(frame: RevealFrame): void {
+		for (const mark of this.revealMarks.observe(frame)) {
 			const time = performance.mark(`discovery:${mark}`).startTime
 			this.element.dispatchEvent(
 				new CustomEvent('reveal-mark', {
@@ -693,110 +836,94 @@ export class DnaOrbCanvas {
 		return hue
 	}
 
-	private renderBubble(bubble: PhysicsBubble, focused: boolean): void {
+	/**
+	 * Draw one bubble: its body and name pasted from sprites, scaled during the
+	 * spawn. Until a sprite has been painted, a full-size bubble (a ghost
+	 * turning into an artist) is drawn directly with the same paint code, so
+	 * its name is never late; a bubble popping from a tap starts tiny and
+	 * waits for its sprites. Returns what reached the screen.
+	 */
+	private renderBubble(bubble: PhysicsBubble, focused: boolean): Drawn {
 		const { body, artist, radius, scale, opacity } = bubble
 		const x = body.position.x
 		const y = body.position.y
 		const r = radius * scale
-		const artistName = artist.name
 
-		if (r < 1 || opacity < 0.01) return
+		if (r < 1 || opacity < 0.01) return 'nothing'
 
-		this.ctx.save()
+		const ctx = this.ctx
+		const direct = scale >= 1
 
 		// Ghost bubbles: translucent placeholder shown during loading — no label.
 		if (artist.isGhost) {
-			this.ctx.globalAlpha = opacity * GHOST_OPACITY
-			const ghostGrad = this.ctx.createRadialGradient(
-				x - r * 0.25,
-				y - r * 0.25,
-				0,
-				x,
-				y,
-				r,
-			)
-			ghostGrad.addColorStop(0, 'hsla(260, 40%, 65%, 0.6)')
-			ghostGrad.addColorStop(0.7, 'hsla(250, 30%, 45%, 0.4)')
-			ghostGrad.addColorStop(1, 'hsla(240, 20%, 30%, 0.2)')
-			this.ctx.fillStyle = ghostGrad
-			this.ctx.beginPath()
-			this.ctx.arc(x, y, r, 0, Math.PI * 2)
-			this.ctx.fill()
-			this.ctx.save()
-			this.ctx.shadowBlur = r * 0.35
-			this.ctx.shadowColor = 'rgba(180, 160, 255, 0.25)'
-			this.ctx.strokeStyle = 'rgba(180, 160, 255, 0.05)'
-			this.ctx.lineWidth = 2
-			this.ctx.beginPath()
-			this.ctx.arc(x, y, r, 0, Math.PI * 2)
-			this.ctx.stroke()
-			this.ctx.restore()
-			this.ctx.restore()
-			return
+			const sprite = this.sprites.ghost(radius)
+			if (!sprite && !direct) return 'nothing'
+			ctx.save()
+			ctx.globalAlpha = opacity * GHOST_OPACITY
+			if (sprite) this.drawSprite(sprite, x, y, scale)
+			else paintGhostBody(ctx, x, y, r)
+			ctx.restore()
+			return 'body'
 		}
 
-		this.ctx.globalAlpha = opacity
+		const hue = this.artistHue(artist)
+		const bodySprite = this.sprites.body(radius, hue)
+		// Asked for together with the body, so the name is not a round trip later.
+		const labelSprite = this.sprites.label(artist.name, radius)
+		if (!bodySprite && !direct) return 'nothing'
+
+		ctx.save()
+		ctx.globalAlpha = opacity
 
 		// Focus ring for keyboard navigation
 		if (focused) {
-			this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)'
-			this.ctx.lineWidth = 3
-			this.ctx.setLineDash([4, 4])
-			this.ctx.beginPath()
-			this.ctx.arc(x, y, r + 4, 0, Math.PI * 2)
-			this.ctx.stroke()
-			this.ctx.setLineDash([])
+			ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)'
+			ctx.lineWidth = 3
+			ctx.setLineDash([4, 4])
+			ctx.beginPath()
+			ctx.arc(x, y, r + 4, 0, Math.PI * 2)
+			ctx.stroke()
+			ctx.setLineDash([])
 		}
 
-		// Per-artist color bubble gradient
-		const hue = this.artistHue(artist)
-		const grad = this.ctx.createRadialGradient(
-			x - r * 0.3,
-			y - r * 0.3,
-			0,
-			x,
-			y,
-			r,
-		)
-		grad.addColorStop(0, `hsla(${hue}, 60%, 75%, 0.9)`)
-		grad.addColorStop(0.7, `hsla(${hue}, 50%, 55%, 0.8)`)
-		grad.addColorStop(1, `hsla(${(hue + 20) % 360}, 40%, 40%, 0.6)`)
-		this.ctx.fillStyle = grad
-		this.ctx.beginPath()
-		this.ctx.arc(x, y, r, 0, Math.PI * 2)
-		this.ctx.fill()
+		if (bodySprite) this.drawSprite(bodySprite, x, y, scale)
+		else paintBubbleBody(ctx, x, y, r, hue)
 
 		// Artist name fades in during the second half of the spawn so color
 		// fills the bubble before text bleeds through.
+		let drawn: Drawn = 'body'
 		if (opacity > LABEL_OPACITY_THRESHOLD) {
-			this.ctx.globalAlpha = Math.min(
-				1,
-				(opacity - LABEL_OPACITY_THRESHOLD) / 0.45,
-			)
-			this.renderBubbleText(artistName, x, y, radius, scale)
-			this.ctx.globalAlpha = opacity
+			if (labelSprite || direct) {
+				ctx.globalAlpha = Math.min(
+					1,
+					(opacity - LABEL_OPACITY_THRESHOLD) / 0.45,
+				)
+				if (labelSprite) this.drawSprite(labelSprite, x, y, scale)
+				else this.renderBubbleText(artist.name, x, y, radius, scale)
+				drawn = 'body-and-name'
+			}
 		}
 
-		// Soft bubble rim: shadowBlur blooms the stroke outward, mimicking the
-		// way a real soap bubble has a glowing, blurry edge rather than a hard line.
-		this.ctx.save()
-		this.ctx.shadowBlur = r * 0.35
-		this.ctx.shadowColor = 'rgba(255, 255, 255, 0.35)'
-		this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)'
-		this.ctx.lineWidth = 2
-		this.ctx.beginPath()
-		this.ctx.arc(x, y, r, 0, Math.PI * 2)
-		this.ctx.stroke()
-		this.ctx.restore()
+		ctx.restore()
+		return drawn
+	}
 
-		this.ctx.restore()
+	/** Paste `sprite` centered on (`x`, `y`), scaled by `scale`. */
+	private drawSprite(
+		sprite: Sprite,
+		x: number,
+		y: number,
+		scale: number,
+	): void {
+		const half = sprite.half * scale
+		this.ctx.drawImage(sprite.image, x - half, y - half, half * 2, half * 2)
 	}
 
 	/**
-	 * Draw a bubble's label laid out for its full `radius`. While the bubble
-	 * spawns (`scale` ≠ 1) the same layout is drawn scaled about the center, so
-	 * the label is laid out once per bubble instead of once per spawn frame;
-	 * at full size it is drawn unscaled, pixel for pixel as laid out.
+	 * Draw a bubble's label laid out for its full `radius`, directly (no
+	 * sprite yet). While the bubble is not at its full size the same layout is
+	 * drawn scaled about the center; at full size it is drawn unscaled, pixel
+	 * for pixel as laid out.
 	 */
 	private renderBubbleText(
 		name: string,
@@ -806,28 +933,16 @@ export class DnaOrbCanvas {
 		scale: number,
 	): void {
 		const layout = this.labelLayout(name, radius)
-
-		this.ctx.fillStyle = 'rgba(255, 255, 255, 0.95)'
-		this.ctx.textAlign = 'center'
-		this.ctx.textBaseline = 'middle'
-		this.ctx.font = layout.font
 		this.measureFont = ''
-
-		const scaled = scale !== 1
-		if (scaled) {
-			this.ctx.save()
-			this.ctx.translate(cx, cy)
-			this.ctx.scale(scale, scale)
+		if (scale === 1) {
+			paintLabel(this.ctx, layout, radius, cx, cy)
+			return
 		}
-		const ox = scaled ? 0 : cx
-		const oy = scaled ? 0 : cy
-		const { lines, lineHeight } = layout
-		const usableWidth = radius * 1.6
-		for (let i = 0; i < lines.length; i++) {
-			const offsetY = lineHeight * (i - (lines.length - 1) / 2)
-			this.ctx.fillText(lines[i], ox, oy + offsetY, usableWidth)
-		}
-		if (scaled) this.ctx.restore()
+		this.ctx.save()
+		this.ctx.translate(cx, cy)
+		this.ctx.scale(scale, scale)
+		paintLabel(this.ctx, layout, radius, 0, 0)
+		this.ctx.restore()
 	}
 
 	/** Cached `computeLabelLayout`, keyed by name and full radius. */
@@ -855,93 +970,6 @@ const MAX_CANVAS_DPR = 2
 
 // Bound on cached label layouts over a long session of taps.
 const LABEL_LAYOUT_CACHE_LIMIT = 1000
-
-// Font size labels are measured at before scaling to the size tried.
-const LABEL_REF_SIZE = 100
-
-/** The canvas font of a bubble label at `size` px. */
-function labelFont(size: number): string {
-	return `bold ${size}px system-ui, sans-serif`
-}
-
-/** How a bubble label is drawn: its font, its wrapped lines and line spacing. */
-export interface LabelLayout {
-	font: string
-	lines: string[]
-	lineHeight: number
-}
-
-/**
- * Lay out a bubble's artist name: wrap it to 1.6× the radius, shrinking the
- * font by 0.5 px from `radius * 0.38` (min 10 px) until every line fits and
- * there are at most 3 lines; then truncate to 3 lines.
- *
- * @param measure - rendered width of `text` in `font` (e.g. ctx.measureText)
- */
-export function computeLabelLayout(
-	name: string,
-	radius: number,
-	measure: (text: string, font: string) => number,
-): LabelLayout {
-	const usableWidth = radius * 1.6
-	const minFont = 10
-	const maxLines = 3
-
-	// The sizes the shrink loop steps through: from `radius * 0.38` (at least
-	// the floor) down by 0.5 px, ending at the first size at or below the
-	// floor, which is used whether or not the label fits. Built by repeated
-	// subtraction so every size is the exact float the loop would try.
-	const sizes: number[] = []
-	for (let size = Math.max(minFont, radius * 0.38); ; size -= 0.5) {
-		sizes.push(size)
-		if (size <= minFont) break
-	}
-
-	// Every string is measured once, at one reference size, and scaled to the
-	// size being tried: text width grows in proportion to the font size, and
-	// switching the canvas font for each size was the costly part (561 ms of
-	// measureText for a guest's 30 labels at 4x CPU throttling).
-	const refWidths = new Map<string, number>()
-	const refWidth = (text: string): number => {
-		let w = refWidths.get(text)
-		if (w === undefined) {
-			w = measure(text, labelFont(LABEL_REF_SIZE))
-			refWidths.set(text, w)
-		}
-		return w
-	}
-	const layoutAt = (fontSize: number) => {
-		const scale = fontSize / LABEL_REF_SIZE
-		const width = (t: string) => refWidth(t) * scale
-		const lines = wrapText(name, usableWidth, width)
-		const fits =
-			lines.length <= maxLines &&
-			lines.every((line) => width(line) <= usableWidth)
-		return { font: labelFont(fontSize), lines, fits }
-	}
-
-	// The largest size that fits, by binary search over the steps instead of
-	// trying them one by one. Text width grows with the font size, so "fits"
-	// holds from some step on and the search lands on the step the one-by-one
-	// loop would stop at (checked by the parity test). The last step is the
-	// floor.
-	let lo = 0
-	let hi = sizes.length - 1
-	while (lo < hi) {
-		const mid = (lo + hi) >> 1
-		if (layoutAt(sizes[mid]).fits) hi = mid
-		else lo = mid + 1
-	}
-	const fontSize = sizes[lo]
-	let { font, lines } = layoutAt(fontSize)
-
-	// Truncate to maxLines if still exceeded after font floor
-	if (lines.length > maxLines) {
-		lines = lines.slice(0, maxLines)
-	}
-
-	return { font, lines, lineHeight: fontSize * 1.25 }
-}
 
 /**
  * The index the keyboard focus moves to from `from` in direction `step`,
@@ -993,76 +1021,4 @@ function toBubbleParams(artist: Artist): BubbleArtistParams {
 		artist,
 		radius: 30 + Math.random() * 15,
 	}
-}
-
-/**
- * Wrap text to fit within maxWidth, supporting both space-delimited
- * and character-boundary wrapping for long words.
- *
- * @param measureFn - returns the rendered width of a string (e.g. ctx.measureText(t).width)
- */
-export function wrapText(
-	text: string,
-	maxWidth: number,
-	measureFn: (text: string) => number,
-): string[] {
-	if (!text) return [text]
-
-	// Split by whitespace first
-	const words = text.split(/\s+/)
-
-	const lines: string[] = []
-	let current = ''
-
-	for (let w = 0; w < words.length; w++) {
-		const word = words[w]
-		const separator = current ? ' ' : ''
-		const trial = current + separator + word
-
-		if (measureFn(trial) <= maxWidth) {
-			current = trial
-		} else {
-			// Current line is full — push it if non-empty
-			if (current) lines.push(current)
-
-			// If this single word exceeds maxWidth, break by character
-			if (measureFn(word) > maxWidth) {
-				let charLine = ''
-				for (const ch of word) {
-					const charTrial = charLine + ch
-					if (charLine && measureFn(charTrial) > maxWidth) {
-						lines.push(charLine)
-						charLine = ch
-					} else {
-						charLine = charTrial
-					}
-				}
-				current = charLine
-			} else {
-				current = word
-			}
-		}
-	}
-	if (current) lines.push(current)
-
-	// Anti-orphan: if the last line has 1-2 characters, merge back from previous line
-	if (lines.length >= 2) {
-		const lastLine = lines[lines.length - 1]
-		const lastCharCount = [...lastLine].length
-		if (lastCharCount <= 2) {
-			const prev = lines[lines.length - 2]
-			const prevChars = [...prev]
-			// Move enough characters from prev to make last line >= 3 chars
-			const moveCount = Math.min(3 - lastCharCount, prevChars.length - 1)
-			if (moveCount > 0) {
-				lines[lines.length - 2] = prevChars
-					.slice(0, prevChars.length - moveCount)
-					.join('')
-				lines[lines.length - 1] =
-					prevChars.slice(prevChars.length - moveCount).join('') + lastLine
-			}
-		}
-	}
-
-	return lines.length > 0 ? lines : [text]
 }

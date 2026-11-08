@@ -324,6 +324,29 @@ export type DiscoveryRevealProps = {
 	all_names_ms: number
 }
 
+/**
+ * The frames of Discovery's artist bubbles over one visit: one event when the
+ * visit ends (the fan leaves Discovery, switches to the All Nearby view, or
+ * hides the page), over the frames in which the field was shown and running.
+ * Not sent for a visit with fewer than 30 measured frames.
+ */
+export type DiscoveryFramesProps = {
+	/** Frames measured. */
+	frames: number
+	/** Median interval between frames, in ms. */
+	interval_p50_ms: number
+	/** 95th-percentile interval between frames, in ms. */
+	interval_p95_ms: number
+	/** The longest frame interval, in ms. */
+	longest_ms: number
+	/** Frames whose interval was longer than 50 ms. */
+	over_50ms: number
+	/** Bubbles in the field when the visit ended. */
+	bubbles: number
+	/** Whether bubble names were painted off the main thread on this device. */
+	names_off_main_thread: boolean
+}
+
 // -- Name catalogue and type-level wiring --------------------------------------
 
 /**
@@ -364,6 +387,7 @@ export const Events = {
 	SlowInteraction: 'perf.slow_interaction',
 	RpcCallTelemetry: 'perf.rpc_call_telemetry',
 	DiscoveryReveal: 'perf.discovery_reveal',
+	DiscoveryFrames: 'perf.discovery_frames',
 } as const satisfies Record<string, string>
 
 /** The union of every valid event-name literal. */
@@ -400,6 +424,7 @@ export type EventPropsMap = {
 	'perf.slow_interaction': SlowInteractionProps
 	'perf.rpc_call_telemetry': RpcCallTelemetryProps
 	'perf.discovery_reveal': DiscoveryRevealProps
+	'perf.discovery_frames': DiscoveryFramesProps
 }
 
 /**
