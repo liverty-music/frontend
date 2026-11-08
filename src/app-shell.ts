@@ -6,6 +6,7 @@ import {
 	route,
 } from '@aurelia/router'
 import { type IDisposable, ILogger, resolve, watch } from 'aurelia'
+import { createRouteModules } from './route-modules'
 import { IAuthService } from './services/auth-service'
 import { IBottomSheetTracker } from './services/bottom-sheet-tracker'
 import { IErrorBoundaryService } from './services/error-boundary-service'
@@ -37,6 +38,11 @@ export interface ShellRouteData {
 	section?: string
 }
 
+// Routes off the bottom navigation import their module when first navigated
+// to (see `createRouteModules`); the others are imported once the first route
+// is on screen.
+const { lazyRoute, prefetch: prefetchRouteModules } = createRouteModules()
+
 // Route table. The router's `nav` defaults to true, so `withNavDefault` below
 // flips it: only the four tab routes opt in with `nav: true`, and the bottom
 // nav shows them in their order here (Home, Discovery, My Artists, Tickets),
@@ -48,19 +54,21 @@ const routeTable = [
 	},
 	{
 		path: 'welcome',
-		component: import('./routes/welcome/welcome-route'),
+		component: lazyRoute(() => import('./routes/welcome/welcome-route')),
 		title: 'Welcome',
 		data: { auth: false, chrome: false },
 	},
 	{
 		path: 'about',
-		component: import('./routes/about/about-route'),
+		component: lazyRoute(() => import('./routes/about/about-route')),
 		title: 'About',
 		data: { auth: false },
 	},
 	{
 		path: 'auth/callback',
-		component: import('./routes/auth-callback/auth-callback-route'),
+		component: lazyRoute(
+			() => import('./routes/auth-callback/auth-callback-route'),
+		),
 		title: 'Signing In',
 		data: { auth: false, chrome: false },
 	},
@@ -70,7 +78,9 @@ const routeTable = [
 		// token; OpenSpec changes `fan-passkey-recovery-and-management` D3 and
 		// `delete-fan-accounts` D4).
 		path: 'auth/passkeys-callback',
-		component: import('./routes/passkeys-callback/passkeys-callback-route'),
+		component: lazyRoute(
+			() => import('./routes/passkeys-callback/passkeys-callback-route'),
+		),
 		title: 'Passkeys',
 		data: { auth: false, chrome: false },
 	},
@@ -78,7 +88,9 @@ const routeTable = [
 		// The "can't sign in" screen: guests and signed-in fans ask for an email
 		// link that registers a new passkey.
 		path: 'passkey-recovery',
-		component: import('./routes/passkey-recovery/passkey-recovery-route'),
+		component: lazyRoute(
+			() => import('./routes/passkey-recovery/passkey-recovery-route'),
+		),
 		title: "Can't Sign In",
 		data: { auth: false, titleKey: 'passkeyRecovery.title' },
 	},
@@ -87,7 +99,9 @@ const routeTable = [
 		// without sign-in; the fan confirms the address with one tap
 		// (OpenSpec change `fan-email-verification-in-app`, design D4).
 		path: 'verify-email',
-		component: import('./routes/verify-email/verify-email-route'),
+		component: lazyRoute(
+			() => import('./routes/verify-email/verify-email-route'),
+		),
 		title: 'Verify Email',
 		data: { auth: false, titleKey: 'verifyEmail.title' },
 	},
@@ -110,7 +124,7 @@ const routeTable = [
 		// from shared links, so it does not wait for auth readiness. It belongs
 		// to Home: the dashboard's first-party cards open it.
 		path: 'events/:id',
-		component: import('./routes/event/event-route'),
+		component: lazyRoute(() => import('./routes/event/event-route')),
 		title: 'Event',
 		data: { auth: false, section: 'dashboard' },
 	},
@@ -119,7 +133,7 @@ const routeTable = [
 		// first-come sale. Signed-in fans only; a guest is sent through sign-up
 		// from the Event page.
 		path: 'events/:id/checkout/:stockId',
-		component: import('./routes/checkout/checkout-route'),
+		component: lazyRoute(() => import('./routes/checkout/checkout-route')),
 		title: 'Checkout',
 		data: { titleKey: 'checkout.title', section: 'dashboard' },
 	},
@@ -148,7 +162,7 @@ const routeTable = [
 	},
 	{
 		path: 'consent',
-		component: import('./routes/consent/consent-route'),
+		component: lazyRoute(() => import('./routes/consent/consent-route')),
 		title: 'Privacy & Analytics',
 		// Public, directly-linkable privacy/analytics screen. No longer part
 		// of the onboarding step machine (removed); consent application logic
@@ -161,7 +175,9 @@ const routeTable = [
 	// No `data: { auth: false }` — the AuthHook guards this route.
 	{
 		path: 'verify/callback',
-		component: import('./routes/verify-callback/verify-callback-route'),
+		component: lazyRoute(
+			() => import('./routes/verify-callback/verify-callback-route'),
+		),
 		title: 'Identity Verification',
 	},
 	// The lottery entry of one TicketStock (seat type) of an Event in a
@@ -169,7 +185,9 @@ const routeTable = [
 	// only; a guest is sent through sign-up from the Event page.
 	{
 		path: 'events/:id/lottery/:saleId/:stockId',
-		component: import('./routes/lottery-entry/lottery-entry-route'),
+		component: lazyRoute(
+			() => import('./routes/lottery-entry/lottery-entry-route'),
+		),
 		title: 'Lottery Entry',
 		data: { titleKey: 'lotteryEntry.title', section: 'dashboard' },
 	},
@@ -177,8 +195,8 @@ const routeTable = [
 	// Reached from the entry screen once the entry is made.
 	{
 		path: 'events/:id/lottery/:saleId/:stockId/entry',
-		component: import(
-			'./routes/lottery-entry-status/lottery-entry-status-route'
+		component: lazyRoute(
+			() => import('./routes/lottery-entry-status/lottery-entry-status-route'),
 		),
 		title: 'My Lottery Entry',
 		data: { titleKey: 'lotteryEntryStatus.title', section: 'dashboard' },
@@ -188,14 +206,18 @@ const routeTable = [
 	// Signed-in fans only; a guest is sent through sign-up from the Event page.
 	{
 		path: 'events/:id/resale/:stockId',
-		component: import('./routes/resale-entry/resale-entry-route'),
+		component: lazyRoute(
+			() => import('./routes/resale-entry/resale-entry-route'),
+		),
 		title: 'Official Resale Entry',
 		data: { titleKey: 'resaleEntry.title', section: 'dashboard' },
 	},
 	// The fan's resale entries and their states; the resale emails link here.
 	{
 		path: 'resale-entries',
-		component: import('./routes/resale-entries/resale-entries-route'),
+		component: lazyRoute(
+			() => import('./routes/resale-entries/resale-entries-route'),
+		),
 		title: 'My Resale Entries',
 		data: { titleKey: 'resaleEntries.title', section: 'dashboard' },
 	},
@@ -221,7 +243,7 @@ const routeTable = [
 	// the four tab pages (`isTabRoute`), and highlights no tab.
 	{
 		path: 'settings',
-		component: import('./routes/settings/settings-route'),
+		component: lazyRoute(() => import('./routes/settings/settings-route')),
 		title: 'Settings',
 		data: { titleKey: 'nav.settings' },
 	},
@@ -229,7 +251,7 @@ const routeTable = [
 	// fans only; its canLoad requires the passkey-management token.
 	{
 		path: 'settings/passkeys',
-		component: import('./routes/passkeys/passkeys-route'),
+		component: lazyRoute(() => import('./routes/passkeys/passkeys-route')),
 		title: 'Passkeys',
 		data: { titleKey: 'passkeys.title' },
 	},
@@ -238,7 +260,9 @@ const routeTable = [
 	// management before it deletes (OpenSpec change `delete-fan-accounts`).
 	{
 		path: 'settings/delete-account',
-		component: import('./routes/delete-account/delete-account-route'),
+		component: lazyRoute(
+			() => import('./routes/delete-account/delete-account-route'),
+		),
 		title: 'Delete Account',
 		data: { titleKey: 'deleteAccount.title' },
 	},
@@ -247,7 +271,7 @@ const routeTable = [
 	// link from My Tickets; NOT wired into the bottom nav.
 	{
 		path: 'orders/:orderId',
-		component: import('./routes/order/order-route'),
+		component: lazyRoute(() => import('./routes/order/order-route')),
 		title: 'Order Detail',
 		data: { titleKey: 'nav.order' },
 	},
@@ -259,19 +283,19 @@ const routeTable = [
 	// the Settings routing context (`/settings/legal/terms` → AUR3174).
 	{
 		path: 'legal/terms',
-		component: import('./routes/legal/terms-route'),
+		component: lazyRoute(() => import('./routes/legal/terms-route')),
 		title: 'Terms of Service',
 		data: { auth: false },
 	},
 	{
 		path: 'legal/privacy',
-		component: import('./routes/legal/privacy-route'),
+		component: lazyRoute(() => import('./routes/legal/privacy-route')),
 		title: 'Privacy Policy',
 		data: { auth: false },
 	},
 	{
 		path: 'legal/licenses',
-		component: import('./routes/legal/licenses-route'),
+		component: lazyRoute(() => import('./routes/legal/licenses-route')),
 		title: 'OSS Licenses',
 		data: { auth: false },
 	},
@@ -368,6 +392,7 @@ export class AppShell {
 	// Updated on every navigation-end via route data `chrome: false`.
 	// Defaults to true so authenticated routes show the nav bar immediately.
 	public showNav = true
+	private routeModulesPrefetched = false
 
 	/** The bell in the header opens the notification center. */
 	public openNotifications(): void {
@@ -443,6 +468,11 @@ export class AppShell {
 
 		this.subscriptions.push(
 			this.routerEvents.subscribe('au:router:navigation-end', () => {
+				if (!this.routeModulesPrefetched) {
+					// The first route is on screen: import the others when idle.
+					this.routeModulesPrefetched = true
+					prefetchRouteModules()
+				}
 				const node = this.router.routeTree.root.children[0]
 				this.showNav = (node?.data as ShellRouteData)?.chrome !== false
 				const name = node?.path ?? 'unknown'
