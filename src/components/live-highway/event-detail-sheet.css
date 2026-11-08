@@ -78,7 +78,7 @@
 
 		.detail-icon {
 			margin-block-start: var(--space-3xs);
-			color: var(--color-text-muted);
+			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.detail-primary {
@@ -176,7 +176,7 @@
 		.journey-arrow {
 			align-self: center;
 			font-size: var(--step-0);
-			color: var(--color-text-muted);
+			color: var(--md-sys-color-on-surface-variant);
 
 			&::before {
 				content: "\203a"; /* > */

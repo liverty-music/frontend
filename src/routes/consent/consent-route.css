@@ -105,7 +105,7 @@
 		.consent-row-description {
 			font-size: var(--step--1);
 			line-height: var(--leading-relaxed);
-			color: var(--color-text-muted);
+			color: var(--md-sys-color-on-surface-variant);
 			text-wrap: pretty;
 			word-break: auto-phrase;
 		}
@@ -118,7 +118,7 @@
 
 		.consent-policy-line {
 			font-size: var(--step--1);
-			color: var(--color-text-muted);
+			color: var(--md-sys-color-on-surface-variant);
 			text-align: center;
 		}
 

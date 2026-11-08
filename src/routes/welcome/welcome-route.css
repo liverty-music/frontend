@@ -231,7 +231,7 @@
 
 		.welcome-demo-hint {
 			font-size: var(--step-0);
-			color: var(--color-text-muted);
+			color: var(--md-sys-color-on-surface-variant);
 			text-align: center;
 
 			/* Delay the invite until after the card has dropped in. */
@@ -316,7 +316,7 @@
 		.welcome-guest-friendly {
 			margin-block-end: var(--space-2xs);
 			font-size: var(--step--1);
-			color: var(--color-text-muted);
+			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.welcome-action-group {

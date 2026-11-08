@@ -64,11 +64,11 @@
 		/* "Choose an area" reads as a prompt, not a value. */
 		.row-value[data-empty] {
 			font-weight: normal;
-			color: var(--color-text-muted);
+			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.row-caret {
-			color: var(--color-text-muted);
+			color: var(--md-sys-color-on-surface-variant);
 		}
 	}
 }

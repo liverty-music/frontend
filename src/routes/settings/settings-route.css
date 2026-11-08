@@ -41,7 +41,7 @@
 
 			font-size: var(--step--1);
 			font-weight: 600;
-			color: var(--color-text-muted);
+			color: var(--md-sys-color-on-surface-variant);
 			text-transform: uppercase;
 			letter-spacing: 0.05em;
 		}

@@ -15,7 +15,7 @@
 			inline-size: 2.5rem;
 			block-size: 2.5rem;
 			margin-block-end: var(--space-xs);
-			color: var(--color-text-muted);
+			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.inline-error-message {

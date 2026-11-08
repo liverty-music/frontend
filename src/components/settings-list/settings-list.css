@@ -128,7 +128,7 @@
 		.settings-chevron {
 			inline-size: 1rem;
 			block-size: 1rem;
-			color: var(--color-text-muted);
+			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.settings-row-label {
@@ -242,7 +242,7 @@
 		.settings-expand-caret {
 			inline-size: 1rem;
 			block-size: 1rem;
-			color: var(--color-text-muted);
+			color: var(--md-sys-color-on-surface-variant);
 			transition: transform var(--transition-normal);
 		}
 
@@ -269,7 +269,7 @@
 		.settings-toggle-desc {
 			font-size: var(--step--1);
 			line-height: var(--leading-relaxed);
-			color: var(--color-text-muted);
+			color: var(--md-sys-color-on-surface-variant);
 			text-wrap: pretty;
 		}
 

@@ -48,7 +48,7 @@
 		.facet-heading {
 			font-size: var(--step--1);
 			font-weight: 600;
-			color: var(--color-text-muted);
+			color: var(--md-sys-color-on-surface-variant);
 			text-transform: uppercase;
 			letter-spacing: 0.05em;
 		}
@@ -71,7 +71,7 @@
 		.artist-count {
 			font-weight: 600;
 			font-variant-numeric: tabular-nums;
-			color: var(--color-text-muted);
+			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.artist-chip:has(input:checked) .artist-count {
@@ -238,7 +238,7 @@
 		}
 
 		.date-facet-caret {
-			color: var(--color-text-muted);
+			color: var(--md-sys-color-on-surface-variant);
 			transition: transform var(--transition-fast);
 
 			&[data-expanded="true"] {
