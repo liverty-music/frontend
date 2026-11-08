@@ -80,11 +80,6 @@
 			oklch(from var(--color-brand-primary) l c h / 30%);
 		--shadow-soft: 0 2px 8px oklch(0% 0 0deg / 20%);
 
-		/* Container query breakpoints */
-		--container-sm: 320px;
-		--container-md: 480px;
-		--container-lg: 640px;
-
 		/* Near-instant: reduced-motion fallback that still fires transitionend. */
 		--md-duration-instant: 1ms;
 
