@@ -235,7 +235,9 @@ const routeTable = [
 	// The notification center opens from the bell in the header; not a tab.
 	{
 		path: 'notifications',
-		component: import('./routes/notifications/notifications-route'),
+		component: lazyRoute(
+			() => import('./routes/notifications/notifications-route'),
+		),
 		title: 'Notifications',
 		data: { titleKey: 'notifications.title' },
 	},

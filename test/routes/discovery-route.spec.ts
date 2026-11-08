@@ -875,7 +875,7 @@ describe('DiscoveryRoute', () => {
 	})
 
 	describe('switch to the All Nearby view', () => {
-		// @spec components/infrastructure/fan/web/route/discovery "Fan leaves Discovery after browsing bubbles"
+		// The event itself is checked in test/components/dna-orb-canvas.spec.ts.
 		it('ends the frame measurement of the visit and pauses the bubbles', () => {
 			;(sut as any).viewChanged('nearby')
 
