@@ -3,6 +3,7 @@ import {
 	type Meta,
 	type StoryObj,
 } from '@aurelia/storybook'
+import { expect } from 'storybook/test'
 import {
 	ELEVATION_SAMPLES,
 	expectEmphasizedOneStepHeavier,
@@ -55,5 +56,37 @@ export const SharedSystemTokens = {
 		expectSharedStateAndMotion(document.documentElement)
 		// @spec components/infrastructure/fan/web/global/design-tokens "Colors stay per app"
 		expectOwnSurface(document.documentElement, fanTokens)
+	},
+} satisfies Story
+
+export const HeadingLevels = {
+	render: () =>
+		defineAureliaStory({
+			template: `
+				<div style="display:grid; gap:8px; padding:16px; background:var(--md-sys-color-surface); color:var(--md-sys-color-on-surface)">
+					<h2 class="md-typescale-title-large" data-sample="sheet-heading">エリアと期間</h2>
+					<h3 class="md-typescale-title-large" data-sample="section-heading">チケット</h3>
+					<h1 data-sample="plain-heading">Heading with no type style</h1>
+					<p data-sample="body">Body text 本文</p>
+				</div>
+			`,
+		}),
+	play: async ({ canvasElement }) => {
+		const look = (name: string) => {
+			const el = canvasElement.querySelector(`[data-sample="${name}"]`)
+			if (!el) throw new Error(`no sample ${name}`)
+			const s = getComputedStyle(el)
+			return [
+				s.fontSize,
+				s.lineHeight,
+				s.fontWeight,
+				s.fontFamily,
+				s.letterSpacing,
+			]
+		}
+		// @spec components/infrastructure/fan/web/global/design-tokens "Heading level does not decide the look"
+		await expect(look('section-heading')).toEqual(look('sheet-heading'))
+		// A heading given no type style reads as the text around it, not by level.
+		await expect(look('plain-heading')).toEqual(look('body'))
 	},
 } satisfies Story
