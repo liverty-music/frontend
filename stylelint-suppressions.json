@@ -8,9 +8,6 @@
     "cube/block-max-lines": {
       "count": 1
     },
-    "declaration-property-custom-property-allowed-list": {
-      "count": 3
-    },
     "declaration-property-value-disallowed-list": {
       "count": 3
     },
@@ -19,9 +16,6 @@
     }
   },
   "organizer/concerts/concerts-route.css": {
-    "declaration-property-custom-property-allowed-list": {
-      "count": 1
-    },
     "property-disallowed-list": {
       "count": 3
     }
@@ -29,9 +23,6 @@
   "organizer/concert-editor/concert-editor-route.css": {
     "cube/block-max-lines": {
       "count": 1
-    },
-    "declaration-property-custom-property-allowed-list": {
-      "count": 4
     },
     "declaration-property-value-disallowed-list": {
       "count": 4
@@ -41,25 +32,16 @@
     }
   },
   "organizer/denied/denied-route.css": {
-    "declaration-property-custom-property-allowed-list": {
-      "count": 1
-    },
     "property-disallowed-list": {
       "count": 1
     }
   },
   "organizer/find-organizer/find-organizer-route.css": {
-    "declaration-property-custom-property-allowed-list": {
-      "count": 1
-    },
     "property-disallowed-list": {
       "count": 1
     }
   },
   "organizer/home/home-route.css": {
-    "declaration-property-custom-property-allowed-list": {
-      "count": 1
-    },
     "declaration-property-value-disallowed-list": {
       "count": 2
     },
@@ -68,27 +50,16 @@
     }
   },
   "organizer/landing/landing-route.css": {
-    "declaration-property-custom-property-allowed-list": {
-      "count": 1
-    },
     "property-disallowed-list": {
       "count": 1
     }
   },
   "organizer/lottery-sale-editor/lottery-sale-editor-route.css": {
-    "declaration-property-custom-property-allowed-list": {
-      "count": 1
-    },
     "declaration-property-value-disallowed-list": {
       "count": 2
     },
     "property-disallowed-list": {
       "count": 5
-    }
-  },
-  "organizer/sale-editor/sale-editor-route.css": {
-    "declaration-property-custom-property-allowed-list": {
-      "count": 1
     }
   },
   "organizer/organizer-shell/organizer-shell.css": {
@@ -108,9 +79,6 @@
     }
   },
   "organizer/ticket-sale-editor/ticket-sale-editor-route.css": {
-    "declaration-property-custom-property-allowed-list": {
-      "count": 1
-    },
     "declaration-property-value-disallowed-list": {
       "count": 2
     },
@@ -125,7 +93,7 @@
   },
   "src/styles/button.css": {
     "declaration-property-custom-property-allowed-list": {
-      "count": 6
+      "count": 4
     },
     "property-disallowed-list": {
       "count": 4
@@ -141,9 +109,6 @@
   },
   "organizer/event/sales-tab/sales-tab.css": {
     "cube/block-max-lines": {
-      "count": 1
-    },
-    "declaration-property-custom-property-allowed-list": {
       "count": 1
     },
     "declaration-property-value-disallowed-list": {
@@ -163,7 +128,7 @@
   },
   "organizer/shell/console-navigation/console-navigation.css": {
     "declaration-property-custom-property-allowed-list": {
-      "count": 2
+      "count": 1
     },
     "property-disallowed-list": {
       "count": 2
@@ -174,7 +139,7 @@
       "count": 1
     },
     "declaration-property-custom-property-allowed-list": {
-      "count": 5
+      "count": 1
     },
     "declaration-property-value-disallowed-list": {
       "count": 1
@@ -193,7 +158,7 @@
       "count": 1
     },
     "declaration-property-custom-property-allowed-list": {
-      "count": 8
+      "count": 6
     },
     "declaration-property-value-allowed-list": {
       "count": 2
@@ -206,18 +171,12 @@
     }
   },
   "organizer/ui/confirm-dialog/confirm-dialog.css": {
-    "declaration-property-custom-property-allowed-list": {
-      "count": 1
-    },
     "property-disallowed-list": {
       "count": 5
     }
   },
   "organizer/ui/console-button/console-button.css": {
     "cube/block-max-lines": {
-      "count": 1
-    },
-    "declaration-property-custom-property-allowed-list": {
       "count": 1
     },
     "property-disallowed-list": {
@@ -229,7 +188,7 @@
       "count": 1
     },
     "declaration-property-custom-property-allowed-list": {
-      "count": 4
+      "count": 2
     },
     "declaration-property-value-allowed-list": {
       "count": 1
@@ -243,7 +202,7 @@
   },
   "organizer/ui/console-snackbar/console-snackbar.css": {
     "declaration-property-custom-property-allowed-list": {
-      "count": 2
+      "count": 1
     },
     "property-disallowed-list": {
       "count": 3
@@ -263,9 +222,6 @@
     }
   },
   "organizer/ui/copy-field/copy-field.css": {
-    "declaration-property-custom-property-allowed-list": {
-      "count": 1
-    },
     "property-disallowed-list": {
       "count": 3
     }
@@ -285,22 +241,14 @@
   },
   "organizer/ui/extended-fab/extended-fab.css": {
     "declaration-property-custom-property-allowed-list": {
-      "count": 3
+      "count": 2
     },
     "property-disallowed-list": {
       "count": 1
     }
   },
   "organizer/ui/icon-button/icon-button.css": {
-    "declaration-property-custom-property-allowed-list": {
-      "count": 1
-    },
     "declaration-property-value-disallowed-list": {
-      "count": 1
-    }
-  },
-  "organizer/ui/linear-progress/linear-progress.css": {
-    "declaration-property-custom-property-allowed-list": {
       "count": 1
     }
   },
@@ -311,7 +259,7 @@
   },
   "organizer/ui/overflow-menu/overflow-menu.css": {
     "declaration-property-custom-property-allowed-list": {
-      "count": 3
+      "count": 1
     },
     "declaration-property-value-disallowed-list": {
       "count": 1
@@ -321,25 +269,16 @@
     }
   },
   "organizer/ui/prerequisite-callout/prerequisite-callout.css": {
-    "declaration-property-custom-property-allowed-list": {
-      "count": 3
-    },
     "property-disallowed-list": {
       "count": 6
     }
   },
   "organizer/ui/stat-tile/stat-tile.css": {
-    "declaration-property-custom-property-allowed-list": {
-      "count": 1
-    },
     "property-disallowed-list": {
       "count": 3
     }
   },
   "organizer/ui/status-badge/status-badge.css": {
-    "declaration-property-custom-property-allowed-list": {
-      "count": 2
-    },
     "property-disallowed-list": {
       "count": 1
     }
@@ -349,7 +288,7 @@
       "count": 1
     },
     "declaration-property-custom-property-allowed-list": {
-      "count": 5
+      "count": 2
     },
     "declaration-property-value-allowed-list": {
       "count": 1
@@ -366,7 +305,7 @@
       "count": 1
     },
     "declaration-property-custom-property-allowed-list": {
-      "count": 5
+      "count": 2
     },
     "declaration-property-value-allowed-list": {
       "count": 1
@@ -378,9 +317,6 @@
   "src/components/artist-filter-bar/artist-filter-bar.css": {
     "cube/block-max-lines": {
       "count": 1
-    },
-    "declaration-property-custom-property-allowed-list": {
-      "count": 3
     },
     "declaration-property-value-disallowed-list": {
       "count": 5
@@ -394,7 +330,7 @@
       "count": 1
     },
     "declaration-property-custom-property-allowed-list": {
-      "count": 5
+      "count": 4
     },
     "declaration-property-value-disallowed-list": {
       "count": 1
@@ -426,9 +362,6 @@
     }
   },
   "src/components/confirm-dialog/confirm-dialog.css": {
-    "declaration-property-custom-property-allowed-list": {
-      "count": 1
-    },
     "declaration-property-value-disallowed-list": {
       "count": 1
     },
@@ -438,9 +371,6 @@
   },
   "src/components/discovery-swap-button/discovery-swap-button.css": {
     "cube/block-max-lines": {
-      "count": 1
-    },
-    "declaration-property-custom-property-allowed-list": {
       "count": 1
     },
     "declaration-property-value-allowed-list": {
@@ -467,9 +397,6 @@
     }
   },
   "src/components/event-date-tabs/event-date-tabs.css": {
-    "declaration-property-custom-property-allowed-list": {
-      "count": 2
-    },
     "property-disallowed-list": {
       "count": 4
     }
@@ -479,7 +406,7 @@
       "count": 1
     },
     "declaration-property-custom-property-allowed-list": {
-      "count": 6
+      "count": 4
     },
     "declaration-property-value-allowed-list": {
       "count": 1
@@ -503,7 +430,7 @@
   },
   "src/components/notification-mock/notification-mock-card.css": {
     "declaration-property-custom-property-allowed-list": {
-      "count": 3
+      "count": 1
     },
     "property-disallowed-list": {
       "count": 7
@@ -514,7 +441,7 @@
       "count": 1
     },
     "declaration-property-custom-property-allowed-list": {
-      "count": 5
+      "count": 1
     },
     "declaration-property-value-allowed-list": {
       "count": 4
@@ -528,7 +455,7 @@
       "count": 1
     },
     "declaration-property-custom-property-allowed-list": {
-      "count": 5
+      "count": 4
     },
     "declaration-property-value-disallowed-list": {
       "count": 2
@@ -542,7 +469,7 @@
       "count": 1
     },
     "declaration-property-custom-property-allowed-list": {
-      "count": 9
+      "count": 7
     },
     "declaration-property-value-allowed-list": {
       "count": 1
@@ -554,9 +481,6 @@
   "src/components/live-highway/event-detail-sheet.css": {
     "cube/block-max-lines": {
       "count": 1
-    },
-    "declaration-property-custom-property-allowed-list": {
-      "count": 4
     },
     "property-disallowed-list": {
       "count": 37
@@ -571,9 +495,6 @@
     "cube/block-max-lines": {
       "count": 1
     },
-    "declaration-property-custom-property-allowed-list": {
-      "count": 3
-    },
     "declaration-property-value-disallowed-list": {
       "count": 3
     },
@@ -582,18 +503,12 @@
     }
   },
   "src/components/post-signup-dialog/post-signup-dialog.css": {
-    "declaration-property-custom-property-allowed-list": {
-      "count": 1
-    },
     "property-disallowed-list": {
       "count": 9
     }
   },
   "src/components/pwa-install-banner/pwa-install-banner.css": {
     "cube/block-max-lines": {
-      "count": 1
-    },
-    "declaration-property-custom-property-allowed-list": {
       "count": 1
     },
     "declaration-property-value-disallowed-list": {
@@ -608,7 +523,7 @@
       "count": 1
     },
     "declaration-property-custom-property-allowed-list": {
-      "count": 4
+      "count": 1
     },
     "declaration-property-value-disallowed-list": {
       "count": 4
@@ -627,24 +542,18 @@
   },
   "src/components/toast/toast.css": {
     "declaration-property-custom-property-allowed-list": {
-      "count": 2
+      "count": 1
     },
     "property-disallowed-list": {
       "count": 1
     }
   },
   "src/components/user-home-selector/user-home-selector.css": {
-    "declaration-property-custom-property-allowed-list": {
-      "count": 1
-    },
     "property-disallowed-list": {
       "count": 16
     }
   },
   "src/routes/about/about-route.css": {
-    "declaration-property-custom-property-allowed-list": {
-      "count": 1
-    },
     "property-disallowed-list": {
       "count": 4
     }
@@ -658,9 +567,6 @@
     "cube/block-max-lines": {
       "count": 1
     },
-    "declaration-property-custom-property-allowed-list": {
-      "count": 2
-    },
     "property-disallowed-list": {
       "count": 26
     }
@@ -670,7 +576,7 @@
       "count": 1
     },
     "declaration-property-custom-property-allowed-list": {
-      "count": 4
+      "count": 1
     },
     "declaration-property-value-disallowed-list": {
       "count": 1
@@ -685,9 +591,6 @@
     }
   },
   "src/routes/delete-account/delete-account-route.css": {
-    "declaration-property-custom-property-allowed-list": {
-      "count": 1
-    },
     "property-disallowed-list": {
       "count": 8
     }
@@ -695,9 +598,6 @@
   "src/routes/discovery/discovery-route.css": {
     "cube/block-max-lines": {
       "count": 1
-    },
-    "declaration-property-custom-property-allowed-list": {
-      "count": 6
     },
     "declaration-property-value-disallowed-list": {
       "count": 4
@@ -715,9 +615,6 @@
     "cube/block-max-lines": {
       "count": 1
     },
-    "declaration-property-custom-property-allowed-list": {
-      "count": 4
-    },
     "property-disallowed-list": {
       "count": 26
     }
@@ -726,17 +623,11 @@
     "cube/block-max-lines": {
       "count": 1
     },
-    "declaration-property-custom-property-allowed-list": {
-      "count": 3
-    },
     "property-disallowed-list": {
       "count": 19
     }
   },
   "src/routes/legal/licenses-route.css": {
-    "declaration-property-custom-property-allowed-list": {
-      "count": 3
-    },
     "property-disallowed-list": {
       "count": 14
     }
@@ -745,9 +636,6 @@
     "cube/block-max-lines": {
       "count": 1
     },
-    "declaration-property-custom-property-allowed-list": {
-      "count": 3
-    },
     "property-disallowed-list": {
       "count": 17
     }
@@ -755,9 +643,6 @@
   "src/routes/my-artists/my-artists-route.css": {
     "cube/block-max-lines": {
       "count": 1
-    },
-    "declaration-property-custom-property-allowed-list": {
-      "count": 6
     },
     "declaration-property-value-allowed-list": {
       "count": 3
@@ -770,9 +655,6 @@
     }
   },
   "src/routes/not-found/not-found-route.css": {
-    "declaration-property-custom-property-allowed-list": {
-      "count": 1
-    },
     "property-disallowed-list": {
       "count": 7
     }
@@ -780,9 +662,6 @@
   "src/routes/order/order-route.css": {
     "cube/block-max-lines": {
       "count": 1
-    },
-    "declaration-property-custom-property-allowed-list": {
-      "count": 7
     },
     "declaration-property-value-disallowed-list": {
       "count": 2
@@ -792,18 +671,12 @@
     }
   },
   "src/routes/passkey-recovery/passkey-recovery-route.css": {
-    "declaration-property-custom-property-allowed-list": {
-      "count": 2
-    },
     "property-disallowed-list": {
       "count": 12
     }
   },
   "src/routes/passkeys/passkeys-route.css": {
     "cube/block-max-lines": {
-      "count": 1
-    },
-    "declaration-property-custom-property-allowed-list": {
       "count": 1
     },
     "property-disallowed-list": {
@@ -816,9 +689,6 @@
     }
   },
   "src/routes/resale-entries/resale-entries-route.css": {
-    "declaration-property-custom-property-allowed-list": {
-      "count": 1
-    },
     "property-disallowed-list": {
       "count": 10
     }
@@ -826,9 +696,6 @@
   "src/routes/resale-entry/resale-entry-route.css": {
     "cube/block-max-lines": {
       "count": 1
-    },
-    "declaration-property-custom-property-allowed-list": {
-      "count": 3
     },
     "property-disallowed-list": {
       "count": 23
@@ -840,26 +707,17 @@
     }
   },
   "src/routes/settings/language-selector.css": {
-    "declaration-property-custom-property-allowed-list": {
-      "count": 1
-    },
     "property-disallowed-list": {
       "count": 7
     }
   },
   "src/routes/settings/personal-details.css": {
-    "declaration-property-custom-property-allowed-list": {
-      "count": 1
-    },
     "property-disallowed-list": {
       "count": 7
     }
   },
   "src/routes/settings/settings-route.css": {
     "cube/block-max-lines": {
-      "count": 1
-    },
-    "declaration-property-custom-property-allowed-list": {
       "count": 1
     },
     "property-disallowed-list": {
@@ -870,17 +728,11 @@
     "cube/block-max-lines": {
       "count": 1
     },
-    "declaration-property-custom-property-allowed-list": {
-      "count": 7
-    },
     "property-disallowed-list": {
       "count": 32
     }
   },
   "src/routes/verify-email/verify-email-route.css": {
-    "declaration-property-custom-property-allowed-list": {
-      "count": 1
-    },
     "property-disallowed-list": {
       "count": 5
     }
@@ -888,9 +740,6 @@
   "src/routes/welcome/welcome-route.css": {
     "cube/block-max-lines": {
       "count": 1
-    },
-    "declaration-property-custom-property-allowed-list": {
-      "count": 2
     },
     "declaration-property-value-disallowed-list": {
       "count": 1
@@ -903,9 +752,6 @@
     "cube/block-max-lines": {
       "count": 1
     },
-    "declaration-property-custom-property-allowed-list": {
-      "count": 2
-    },
     "property-disallowed-list": {
       "count": 16
     }
@@ -916,9 +762,6 @@
     }
   },
   "src/components/all-nearby/nearby-filter-sheet.css": {
-    "declaration-property-custom-property-allowed-list": {
-      "count": 1
-    },
     "property-disallowed-list": {
       "count": 8
     }

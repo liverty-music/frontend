@@ -132,7 +132,7 @@
 
 			padding-block: var(--space-2xs);
 			padding-inline: var(--space-s);
-			border-radius: var(--md-shape-extra-small);
+			border-radius: var(--md-sys-shape-corner-extra-small);
 
 			font-family: var(--snack-bar-font-family, var(--font-display));
 			font-weight: var(--snack-bar-font-weight, 600);
@@ -201,7 +201,7 @@
 			margin-inline-end: calc(-1 * var(--space-2xs));
 			padding: 0;
 			border: none;
-			border-radius: var(--md-shape-full);
+			border-radius: var(--md-sys-shape-corner-full);
 
 			color: inherit;
 

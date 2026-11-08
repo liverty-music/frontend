@@ -23,7 +23,7 @@
 			justify-content: end;
 
 			padding: var(--space-xs);
-			border-radius: var(--radius-card);
+			border-radius: var(--md-sys-shape-corner-large);
 
 			/* No entrance animation. The previous one ran on every card at once,
 			   so off-screen cards burned it long before the fan scrolled to them
@@ -47,7 +47,7 @@
 			&[data-lane="away"] {
 				margin-block-end: var(--space-3xs);
 				padding: var(--space-2xs);
-				border-radius: var(--radius-button);
+				border-radius: var(--md-sys-shape-corner-medium);
 			}
 		}
 

@@ -96,7 +96,7 @@
 			   + text); no shape morph — a squircle→pill radius tween reads as
 			   janky because roundness saturates well before a full pill, so most
 			   of the tween is visually inert. */
-			border-radius: var(--radius-full);
+			border-radius: var(--md-sys-shape-corner-full);
 
 			font-size: var(--step--1);
 			color: var(--md-sys-color-on-surface-variant);
@@ -165,7 +165,7 @@
 			border: 1px solid var(--md-sys-color-outline);
 
 			/* Pill throughout (see .artist-chip) — selection is color, not shape. */
-			border-radius: var(--radius-full);
+			border-radius: var(--md-sys-shape-corner-full);
 
 			font-size: var(--step--1);
 			color: var(--md-sys-color-on-surface-variant);
@@ -261,7 +261,7 @@
 		.date-field-input {
 			padding: var(--space-3xs) var(--space-s);
 			border: 1px solid var(--md-sys-color-outline);
-			border-radius: var(--radius-button);
+			border-radius: var(--md-sys-shape-corner-medium);
 
 			font-size: var(--step--1);
 			color: var(--md-sys-color-on-surface);

@@ -210,7 +210,7 @@
 			&:focus-visible {
 				outline: 2px solid var(--color-brand-primary);
 				outline-offset: 4px;
-				border-radius: var(--radius-card);
+				border-radius: var(--md-sys-shape-corner-large);
 			}
 		}
 
@@ -357,7 +357,7 @@
 
 		.welcome-lang-text {
 			padding: var(--space-3xs) var(--space-xs);
-			border-radius: var(--radius-button);
+			border-radius: var(--md-sys-shape-corner-medium);
 
 			font-size: var(--step--1);
 			color: var(--md-sys-color-on-surface-variant);

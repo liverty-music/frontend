@@ -30,7 +30,7 @@
 			padding-block: var(--button-padding-block, var(--space-2xs));
 			padding-inline: var(--button-padding-inline, var(--space-m));
 			border: 2px solid transparent;
-			border-radius: var(--radius-button);
+			border-radius: var(--md-sys-shape-corner-medium);
 
 			/* Outfit, the display fallback, because Righteous has no bold
 			   weight. */
@@ -49,7 +49,10 @@
 		/* The `pressable` morph, restated here: this block's own radius would
 		   otherwise outrank the utility layer. */
 		:scope:active:not(:disabled) {
-			border-radius: var(--press-morph-radius, var(--md-shape-large-increased));
+			border-radius: var(
+				--press-morph-radius,
+				var(--md-sys-shape-corner-large-increased)
+			);
 		}
 
 		/* Hover and keyboard focus raise the `pressable` state layer. */

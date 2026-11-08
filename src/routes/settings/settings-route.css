@@ -84,7 +84,7 @@
 
 			padding: var(--space-m) var(--space-s);
 			border: 1px solid oklch(from var(--color-brand-primary) l c h / 30%);
-			border-radius: var(--radius-card);
+			border-radius: var(--md-sys-shape-corner-large);
 
 			background: oklch(from var(--color-brand-primary) l c h / 12%);
 		}

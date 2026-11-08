@@ -11,7 +11,7 @@
 			align-self: center;
 			inline-size: 4rem;
 			block-size: 4rem;
-			border-radius: var(--radius-card);
+			border-radius: var(--md-sys-shape-corner-large);
 		}
 
 		.post-signup-title {

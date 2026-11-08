@@ -102,7 +102,7 @@
 			aspect-ratio: 1;
 			inline-size: 100%;
 			max-inline-size: 360px;
-			border-radius: var(--md-shape-medium);
+			border-radius: var(--md-sys-shape-corner-medium);
 
 			object-fit: cover;
 		}
@@ -154,7 +154,7 @@
 
 			min-block-size: var(--md-target-size);
 			padding-inline: var(--space-2xs);
-			border-radius: var(--md-shape-small);
+			border-radius: var(--md-sys-shape-corner-small);
 
 			color: var(--md-sys-color-on-surface);
 
@@ -186,7 +186,7 @@
 
 			.supporting {
 				padding: var(--space-s);
-				border-radius: var(--md-shape-large);
+				border-radius: var(--md-sys-shape-corner-large);
 				background: var(--md-sys-color-surface-container-low);
 			}
 		}

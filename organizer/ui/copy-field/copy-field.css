@@ -19,7 +19,7 @@
 		align-items: center;
 
 		padding-inline-start: var(--space-s);
-		border-radius: var(--md-shape-extra-small);
+		border-radius: var(--md-sys-shape-corner-extra-small);
 
 		background: var(--md-sys-color-surface-container-highest);
 	}

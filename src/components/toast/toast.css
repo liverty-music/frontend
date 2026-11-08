@@ -17,7 +17,7 @@
 			margin: 0;
 			padding: var(--space-s);
 			border: 1px solid var(--md-sys-color-outline-variant);
-			border-radius: var(--radius-card);
+			border-radius: var(--md-sys-shape-corner-large);
 
 			color: inherit;
 

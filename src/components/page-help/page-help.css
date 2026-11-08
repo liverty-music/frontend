@@ -96,7 +96,7 @@
 		.page-help-chip {
 			padding: var(--space-3xs) var(--space-xs);
 			border: 1px solid var(--_white-15);
-			border-radius: var(--radius-full);
+			border-radius: var(--md-sys-shape-corner-full);
 
 			font-family: var(--font-display);
 			font-size: var(--step--1);
@@ -127,7 +127,7 @@
 
 			margin-block: var(--space-s);
 			padding: var(--space-s);
-			border-radius: var(--radius-card);
+			border-radius: var(--md-sys-shape-corner-large);
 
 			background: oklch(
 				from var(--md-sys-color-surface-container-high) calc(l + 0.04) c h
@@ -171,7 +171,7 @@
 
 			margin-block: var(--space-s);
 			padding: var(--space-s);
-			border-radius: var(--radius-card);
+			border-radius: var(--md-sys-shape-corner-large);
 
 			list-style: none;
 

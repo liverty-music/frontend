@@ -17,7 +17,7 @@
 			margin: 0;
 			padding: 0;
 			border: 1px solid color-mix(in oklch, var(--color-white) 10%, transparent);
-			border-radius: var(--radius-card);
+			border-radius: var(--md-sys-shape-corner-large);
 
 			list-style: none;
 
@@ -284,7 +284,7 @@
 
 			inline-size: var(--toggle-track-inline);
 			block-size: var(--toggle-track-block);
-			border-radius: var(--radius-full);
+			border-radius: var(--md-sys-shape-corner-full);
 
 			transition: background var(--transition-normal);
 		}
@@ -296,7 +296,7 @@
 
 			inline-size: var(--toggle-thumb-size);
 			block-size: var(--toggle-thumb-size);
-			border-radius: var(--radius-full);
+			border-radius: var(--md-sys-shape-corner-full);
 
 			background: var(--_thumb-bg);
 			box-shadow: var(--shadow-soft);

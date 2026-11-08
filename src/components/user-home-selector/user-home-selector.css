@@ -50,7 +50,7 @@
 		.selector-option {
 			padding: var(--space-2xs);
 			border: 1px solid var(--_border-light);
-			border-radius: var(--radius-button);
+			border-radius: var(--md-sys-shape-corner-medium);
 
 			font-family: var(--font-display);
 			font-size: var(--step--1);

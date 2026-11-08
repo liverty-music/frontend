@@ -16,7 +16,7 @@
 		block-size: var(--md-target-size);
 		padding: 0;
 		border: none;
-		border-radius: var(--md-shape-full);
+		border-radius: var(--md-sys-shape-corner-full);
 
 		color: var(--md-sys-color-on-surface-variant);
 
@@ -31,7 +31,7 @@
 		margin: 0;
 		padding-block: var(--space-2xs);
 		border: none;
-		border-radius: var(--md-shape-extra-small);
+		border-radius: var(--md-sys-shape-corner-extra-small);
 
 		color: var(--md-sys-color-on-surface);
 

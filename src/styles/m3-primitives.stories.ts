@@ -54,7 +54,7 @@ export const SelectionMorph = {
 		defineAureliaStory({
 			template: `
 				<div style="display:flex; gap:1rem; padding:1rem; background:var(--md-sys-color-surface); color:var(--md-sys-color-on-surface)">
-					<span data-selected-morph style="padding:0.5rem 1rem; border-radius:var(--md-shape-large)">Unselected</span>
+					<span data-selected-morph style="padding:0.5rem 1rem; border-radius:var(--md-sys-shape-corner-large)">Unselected</span>
 					<span data-selected-morph data-selected style="padding:0.5rem 1rem">Selected</span>
 				</div>
 			`,
@@ -129,7 +129,7 @@ export const ColorRoles = {
 				<div style="display:flex; flex-direction:column; gap:0.5rem; inline-size:22rem; padding:1rem">
 					${ROLE_PAIRS.map(
 						(p) =>
-							`<div data-role-pair="${p.label}" style="padding:0.75rem 1rem; border-radius:var(--md-shape-small); background:var(${p.fill}); color:var(${p.on})">${p.label}</div>`,
+							`<div data-role-pair="${p.label}" style="padding:0.75rem 1rem; border-radius:var(--md-sys-shape-corner-small); background:var(${p.fill}); color:var(${p.on})">${p.label}</div>`,
 					).join('')}
 				</div>
 			`,

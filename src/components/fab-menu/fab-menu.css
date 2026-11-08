@@ -295,7 +295,7 @@
 			block-size: var(--_item-size);
 			padding: 0;
 			border: none;
-			border-radius: var(--radius-full);
+			border-radius: var(--md-sys-shape-corner-full);
 
 			font-family: var(--font-body);
 			font-size: var(--step--1);
@@ -320,7 +320,7 @@
 			max-inline-size: 7.5rem;
 			padding-block: var(--space-3xs);
 			padding-inline: var(--space-2xs);
-			border-radius: var(--radius-sm);
+			border-radius: var(--md-sys-shape-corner-small);
 
 			line-height: var(--leading-tight);
 			color: var(--md-sys-color-on-surface);

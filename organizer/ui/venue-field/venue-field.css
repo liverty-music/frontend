@@ -26,7 +26,7 @@
 		min-block-size: 56px;
 		padding-inline: var(--space-s);
 		border: 1px solid var(--md-sys-color-outline);
-		border-radius: var(--md-shape-extra-small);
+		border-radius: var(--md-sys-shape-corner-extra-small);
 
 		background: var(--md-sys-color-surface);
 
@@ -66,7 +66,7 @@
 	   list is never clipped by the form and the page scrolls to it. */
 	.popup {
 		overflow: hidden;
-		border-radius: var(--md-shape-extra-small);
+		border-radius: var(--md-sys-shape-corner-extra-small);
 		background: var(--md-sys-color-surface-container);
 		box-shadow: var(--md-elevation-2);
 	}
@@ -147,7 +147,7 @@
 
 		min-block-size: 56px;
 		padding-inline-start: var(--space-s);
-		border-radius: var(--md-shape-small);
+		border-radius: var(--md-sys-shape-corner-small);
 
 		background: var(--md-sys-color-surface-container);
 	}

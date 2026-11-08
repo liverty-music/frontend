@@ -13,7 +13,7 @@
 		block-size: var(--md-target-size);
 		padding: 0;
 		border: none;
-		border-radius: var(--md-shape-full);
+		border-radius: var(--md-sys-shape-corner-full);
 
 		color: var(--md-sys-color-on-surface-variant);
 

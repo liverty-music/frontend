@@ -7,7 +7,7 @@
 			gap: var(--space-3xs);
 
 			padding: var(--space-3xs);
-			border-radius: var(--radius-full);
+			border-radius: var(--md-sys-shape-corner-full);
 
 			background: var(--md-sys-color-surface-container);
 		}
@@ -19,7 +19,7 @@
 			/* 44px tap target minimum, 4 tabs fit a 360px viewport. */
 			min-block-size: 44px;
 			padding-inline: var(--space-3xs);
-			border-radius: var(--radius-full);
+			border-radius: var(--md-sys-shape-corner-full);
 
 			font-size: var(--step--1);
 			font-weight: 600;

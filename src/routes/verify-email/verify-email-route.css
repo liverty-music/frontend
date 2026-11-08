@@ -36,7 +36,7 @@
 
 			padding: var(--space-s);
 			border: 1px solid color-mix(in oklch, var(--color-white) 10%, transparent);
-			border-radius: var(--radius-card);
+			border-radius: var(--md-sys-shape-corner-large);
 
 			text-align: center;
 

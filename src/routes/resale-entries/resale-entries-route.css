@@ -40,7 +40,7 @@
 			margin-inline: auto;
 			padding: var(--space-m);
 			border: 1px solid var(--md-sys-color-outline-variant);
-			border-radius: var(--radius-card);
+			border-radius: var(--md-sys-shape-corner-large);
 
 			background: var(--md-sys-color-surface-container);
 		}

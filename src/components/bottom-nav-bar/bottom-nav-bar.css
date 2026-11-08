@@ -114,7 +114,7 @@
 		.nav-tab[data-active="true"] {
 			/* Rounder shape (spring-morphed via the transition above) + a persistent
 			   selected state layer, per the M3 selection treatment. */
-			border-radius: var(--md-shape-large-increased);
+			border-radius: var(--md-sys-shape-corner-large-increased);
 			color: var(--color-brand-accent);
 			background: color-mix(
 				in oklab,
@@ -132,7 +132,8 @@
 				inset-inline: 25%;
 
 				block-size: 2px;
-				border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+				border-radius: 0 0 var(--md-sys-shape-corner-small)
+					var(--md-sys-shape-corner-small);
 
 				background: var(--color-brand-accent);
 			}

@@ -150,7 +150,7 @@
 			display: block;
 			block-size: 44px;
 			margin-block-end: var(--space-2xs);
-			border-radius: var(--radius-card);
+			border-radius: var(--md-sys-shape-corner-large);
 		}
 
 		.month-separator {

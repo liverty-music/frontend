@@ -25,7 +25,7 @@
 		min-block-size: 56px;
 		padding-inline: var(--space-s);
 		border: 1px solid var(--md-sys-color-outline);
-		border-radius: var(--md-shape-extra-small);
+		border-radius: var(--md-sys-shape-corner-extra-small);
 
 		background: var(--md-sys-color-surface);
 
@@ -82,7 +82,7 @@
 	::picker(select) {
 		padding-block: var(--space-2xs);
 		border: none;
-		border-radius: var(--md-shape-extra-small);
+		border-radius: var(--md-sys-shape-corner-extra-small);
 
 		color: var(--md-sys-color-on-surface);
 

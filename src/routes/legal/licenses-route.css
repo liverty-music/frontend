@@ -30,7 +30,7 @@
 		.licenses-item {
 			padding: var(--space-xs);
 			border: 1px solid var(--md-sys-color-outline-variant);
-			border-radius: var(--radius-card);
+			border-radius: var(--md-sys-shape-corner-large);
 			background: var(--md-sys-color-surface-container);
 		}
 
@@ -59,7 +59,7 @@
 		.licenses-license {
 			margin-inline-start: auto;
 			padding: var(--space-3xs) var(--space-2xs);
-			border-radius: var(--radius-sm);
+			border-radius: var(--md-sys-shape-corner-small);
 
 			font-size: var(--step--2);
 
@@ -86,7 +86,7 @@
 			max-block-size: 24rem;
 			margin-block-start: var(--space-2xs);
 			padding: var(--space-2xs);
-			border-radius: var(--radius-sm);
+			border-radius: var(--md-sys-shape-corner-small);
 
 			font-size: var(--step--2);
 			overflow-wrap: anywhere;

@@ -32,7 +32,7 @@
 
 			padding: var(--space-xs) var(--space-s);
 			border: 1px solid color-mix(in oklch, var(--color-white) 10%, transparent);
-			border-radius: var(--radius-button);
+			border-radius: var(--md-sys-shape-corner-medium);
 
 			font-family: var(--font-display);
 			font-size: var(--step--1);

@@ -62,11 +62,7 @@
 		--space-3xl: clamp(6rem, calc(5.48rem + 2.61vi), 7.5rem);
 
 		/* Radius */
-		--radius-sm: 0.5rem;
-		--radius-card: 1rem;
-		--radius-button: 0.75rem;
 		--radius-sheet: 1.5rem;
-		--radius-full: 9999px;
 
 		/* Toggle / switch control geometry (shared by the settings + consent
 		   toggle rows, which render identical switches in separate @scopes). */
@@ -281,14 +277,7 @@
 		   LOGICAL radius properties (border-start-start-radius, …) so directional
 		   rounding mirrors correctly under RTL. Radius must match component size:
 		   small controls → small, sheets → extra-large, pills/avatars → full. */
-		--md-shape-extra-small: 0.25rem; /* 4px — snackbars, small chips */
-		--md-shape-small: var(--radius-sm); /* 8px — chips, small cards */
-		--md-shape-medium: var(--radius-button); /* 12px — buttons */
-		--md-shape-large: var(--radius-card); /* 16px — cards, FABs */
-		--md-shape-large-increased: 1.25rem; /* 20px — Expressive emphasis */
 		--md-shape-extra-large: var(--radius-sheet); /* 24px — sheets */
-		--md-shape-extra-large-increased: 2rem; /* 32px — Expressive emphasis */
-		--md-shape-full: var(--radius-full); /* pills, avatars */
 
 		/* ── FAB launcher layout + interaction tokens ── */
 		--fab-size: 3.5rem; /* 56px M3 FAB */
@@ -317,8 +306,10 @@
 		   the tile. */
 		--discovery-floor: calc(var(--fab-notch-radius) + var(--space-2xs));
 		--swap-tile-size: 3.875rem;
-		--fab-radius-collapsed: var(--radius-full); /* round FAB */
-		--fab-radius-expanded: var(--radius-card); /* rounded-rect panel */
+		--fab-radius-collapsed: var(--md-sys-shape-corner-full); /* round FAB */
+		--fab-radius-expanded: var(
+			--md-sys-shape-corner-large
+		); /* rounded-rect panel */
 
 		/* M3 state-layer opacities, overlaid on each element's on-role color. */
 		--fab-state-hover: 8%;

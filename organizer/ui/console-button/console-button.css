@@ -15,7 +15,7 @@
 		min-block-size: 40px;
 		padding-inline: var(--space-m);
 		border: 1px solid transparent;
-		border-radius: var(--md-shape-full);
+		border-radius: var(--md-sys-shape-corner-full);
 
 		font: var(--md-type-label-large);
 

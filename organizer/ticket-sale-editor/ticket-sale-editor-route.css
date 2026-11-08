@@ -73,7 +73,7 @@
 			align-items: flex-start;
 
 			padding: var(--space-xs) var(--space-s);
-			border-radius: var(--md-shape-medium);
+			border-radius: var(--md-sys-shape-corner-medium);
 
 			color: var(--md-sys-color-on-error-container);
 

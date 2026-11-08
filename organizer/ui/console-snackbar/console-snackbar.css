@@ -24,7 +24,7 @@
 			padding-block: var(--space-3xs);
 			padding-inline: var(--space-2xs);
 			border: none;
-			border-radius: var(--md-shape-full);
+			border-radius: var(--md-sys-shape-corner-full);
 
 			font: var(--md-type-label-large);
 			font-weight: 600;

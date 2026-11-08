@@ -13,7 +13,7 @@
 
 		min-block-size: 24px;
 		padding-inline: var(--space-2xs);
-		border-radius: var(--md-shape-small);
+		border-radius: var(--md-sys-shape-corner-small);
 
 		font: var(--md-type-label-medium);
 		color: var(--_on-container);
@@ -25,7 +25,7 @@
 	.dot {
 		inline-size: 8px;
 		block-size: 8px;
-		border-radius: var(--md-shape-full);
+		border-radius: var(--md-sys-shape-corner-full);
 		background: currentcolor;
 	}
 

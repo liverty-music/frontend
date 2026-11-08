@@ -11,7 +11,7 @@
 		overflow: hidden;
 
 		block-size: 4px;
-		border-radius: var(--md-shape-full);
+		border-radius: var(--md-sys-shape-corner-full);
 
 		background: var(--md-sys-color-secondary-container);
 	}

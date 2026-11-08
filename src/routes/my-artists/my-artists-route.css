@@ -7,7 +7,7 @@
 			--_black-60: oklch(0% 0 0deg / 60%);
 			--_danger: oklch(60% 0.2 25deg);
 			--_danger-10: oklch(60% 0.2 25deg / 10%);
-			--_radius-sm: var(--radius-sm);
+			--_radius-sm: var(--md-sys-shape-corner-small);
 
 			display: grid;
 			grid-template-areas: "content";
@@ -171,14 +171,14 @@
 
 			& th:first-child {
 				border-inline-start: 1px solid var(--_white-10);
-				border-start-start-radius: var(--radius-card);
-				border-end-start-radius: var(--radius-card);
+				border-start-start-radius: var(--md-sys-shape-corner-large);
+				border-end-start-radius: var(--md-sys-shape-corner-large);
 			}
 
 			& td:last-child {
 				border-inline-end: 1px solid var(--_white-10);
-				border-start-end-radius: var(--radius-card);
-				border-end-end-radius: var(--radius-card);
+				border-start-end-radius: var(--md-sys-shape-corner-large);
+				border-end-end-radius: var(--md-sys-shape-corner-large);
 			}
 		}
 
@@ -202,7 +202,7 @@
 			inline-size: 8px;
 			block-size: 8px;
 			margin-inline-end: var(--space-xs);
-			border-radius: var(--radius-full);
+			border-radius: var(--md-sys-shape-corner-full);
 
 			vertical-align: middle;
 
@@ -269,7 +269,7 @@
 			inline-size: 8px;
 			block-size: 8px;
 			border: none;
-			border-radius: var(--radius-full);
+			border-radius: var(--md-sys-shape-corner-full);
 
 			background: var(--md-sys-color-outline-variant, oklch(100% 0 0deg / 20%));
 

@@ -52,7 +52,7 @@
 
 			overflow: hidden;
 			border: 1px solid var(--_card-border);
-			border-radius: var(--radius-card);
+			border-radius: var(--md-sys-shape-corner-large);
 			background: var(--_card-bg);
 		}
 
@@ -160,7 +160,7 @@
 
 			inline-size: var(--toggle-track-inline);
 			block-size: var(--toggle-track-block);
-			border-radius: var(--radius-full);
+			border-radius: var(--md-sys-shape-corner-full);
 
 			transition: background var(--transition-normal);
 
@@ -180,7 +180,7 @@
 
 			inline-size: var(--toggle-thumb-size);
 			block-size: var(--toggle-thumb-size);
-			border-radius: var(--radius-full);
+			border-radius: var(--md-sys-shape-corner-full);
 
 			background: var(--color-white);
 			box-shadow: var(--shadow-soft);

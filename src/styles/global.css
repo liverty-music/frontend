@@ -44,7 +44,7 @@
 		padding-block: var(--space-2xs);
 		padding-inline: var(--space-s);
 		border: none;
-		border-radius: var(--radius-button);
+		border-radius: var(--md-sys-shape-corner-medium);
 
 		font-family: var(--font-display);
 		font-weight: 600;
@@ -93,7 +93,7 @@
 		padding-block: var(--space-2xs);
 		padding-inline: var(--space-xs);
 		border: 1px solid var(--md-sys-color-outline-variant);
-		border-radius: var(--radius-button);
+		border-radius: var(--md-sys-shape-corner-medium);
 
 		accent-color: var(--color-brand-primary);
 		background: var(--md-sys-color-surface-container);
