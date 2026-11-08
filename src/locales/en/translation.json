@@ -429,6 +429,21 @@
 			}
 		}
 	},
+	"notifications": {
+		"signInRequired": "Sign in to see your notifications.",
+		"title": "Notifications",
+		"loading": "Loading…",
+		"error": "Could not load your notifications.",
+		"retry": "Try again",
+		"empty": "No notifications yet.",
+		"unread": "Unread",
+		"justNow": "Just now",
+		"minutesAgo_one": "{{count}} minute ago",
+		"minutesAgo_other": "{{count}} minutes ago",
+		"hoursAgo_one": "{{count}} hour ago",
+		"hoursAgo_other": "{{count}} hours ago",
+		"bell": "Notifications ({{count}} unread)"
+	},
 	"nav": {
 		"home": "Timetable",
 		"discovery": "Discovery",

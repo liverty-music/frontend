@@ -40,13 +40,6 @@ export const StorageKeys = {
  * desired behavior.
  */
 export const SessionKeys = {
-	// Set after the first successful backfill of users.preferred_language
-	// in the current tab. Prevents the hydration task from firing the
-	// backfill RPC on every cold start when the network is flaky. A second
-	// tab opened in the same session will re-attempt once per its own
-	// lifetime — acceptable since the RPC is idempotent on a non-NULL row
-	// (server returns the existing value unchanged).
-	languageBackfillAttempted: 'lang.backfillAttempted',
 	// Set after the follow-reconcile task runs in the current tab so the
 	// receipt-keyed reconcile fires at most once per tab. Cleared again if the
 	// reconcile defers (no user id yet) so the next start retries. Per-tab

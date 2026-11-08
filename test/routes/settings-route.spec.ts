@@ -308,9 +308,7 @@ describe('SettingsRoute', () => {
 		})
 
 		it('falls back to normalized i18n.getLocale() when preferredLanguage is absent', () => {
-			// Hydration race window: user row exists but preferred_language is
-			// NULL on the wire (legacy row pending backfill, or the
-			// UpdatePreferredLanguage RPC is still in flight). The getter
+			// A response without a language must not blank the row: the getter
 			// must surface the active i18n locale rather than empty string —
 			// otherwise no selector option would highlight.
 			mockUser.current = { id: 'user-uuid-1' }

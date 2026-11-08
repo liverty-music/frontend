@@ -1,0 +1,72 @@
+@layer block {
+	@scope (notifications-route) {
+		:scope {
+			overflow-y: auto;
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-m);
+
+			block-size: 100%;
+			padding-block: var(--space-s);
+			padding-inline: var(--space-m);
+		}
+
+		.notifications-list {
+			--wrapper-max: 36rem;
+			--gutter: 0;
+
+			display: flex;
+			flex-direction: column;
+			inline-size: 100%;
+		}
+
+		.notifications-item {
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-3xs);
+			align-items: flex-start;
+
+			inline-size: 100%;
+			padding-block: var(--space-xs);
+			padding-inline: var(--space-s);
+			border: none;
+			border-block-end: 1px solid
+				color-mix(in oklch, currentcolor 15%, transparent);
+
+			text-align: start;
+
+			background: transparent;
+
+			&[data-read="true"] {
+				opacity: 0.6;
+			}
+		}
+
+		.notifications-item-head {
+			display: flex;
+			gap: var(--space-2xs);
+			align-items: center;
+		}
+
+		/* A dot, not a shape role: no shape token is round yet. */
+		.notifications-unread {
+			--_dot-radius: 50%;
+
+			flex: none;
+
+			inline-size: 0.5rem;
+			block-size: 0.5rem;
+			border-radius: var(--_dot-radius);
+
+			background: var(--color-brand-primary);
+		}
+
+		.notifications-item-body {
+			white-space: pre-line;
+		}
+
+		.notifications-item-time {
+			opacity: 0.8;
+		}
+	}
+}
