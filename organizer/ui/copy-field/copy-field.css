@@ -4,7 +4,10 @@
 	}
 
 	.copy-field {
+		/* One column no wider than the field: the value is a single unwrapped
+		   line, and an auto track would grow to its full length. */
 		display: grid;
+		grid-template-columns: minmax(0, 1fr);
 		gap: var(--space-3xs);
 	}
 
