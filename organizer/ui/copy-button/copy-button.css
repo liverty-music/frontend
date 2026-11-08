@@ -4,6 +4,6 @@
 	}
 
 	icon-button[data-copied="true"] {
-		color: var(--md-color-success);
+		color: var(--md-sys-color-success);
 	}
 }

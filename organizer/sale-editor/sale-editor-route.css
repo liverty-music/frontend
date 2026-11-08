@@ -10,11 +10,11 @@
 			justify-items: start;
 
 			padding: var(--space-m) var(--space-s);
-			border-radius: var(--md-shape-medium);
+			border-radius: var(--md-sys-shape-corner-medium);
 
-			color: var(--md-color-on-surface-variant);
+			color: var(--md-sys-color-on-surface-variant);
 
-			background: var(--md-color-surface-container-low);
+			background: var(--md-sys-color-surface-container-low);
 		}
 	}
 }

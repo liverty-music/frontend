@@ -263,7 +263,7 @@ export async function shownTime(
 /**
  * The labels of the visible controls (links and buttons, inside the console
  * components' shadow roots too) whose text or background is in a brand role
- * (`--md-color-primary` or `--md-color-primary-container`), the logo
+ * (`--md-sys-color-primary` or `--md-sys-color-primary-container`), the logo
  * excluded. Design-tokens "The brand color marks only the primary action,
  * focus and the logo": a page lists its one primary action here and nothing
  * else, so a brand-colored text button shows up as an extra label.
@@ -272,16 +272,17 @@ export async function brandColoredControls(page: Page): Promise<string[]> {
 	return page.evaluate(() => {
 		const main = document.querySelector('organizer-shell main')
 		if (!main) throw new Error('organizer-shell main not rendered')
-		const brand = ['--md-color-primary', '--md-color-primary-container'].map(
-			(role) => {
-				const probe = document.createElement('div')
-				probe.style.background = `var(${role})`
-				main.append(probe)
-				const color = getComputedStyle(probe).backgroundColor
-				probe.remove()
-				return color
-			},
-		)
+		const brand = [
+			'--md-sys-color-primary',
+			'--md-sys-color-primary-container',
+		].map((role) => {
+			const probe = document.createElement('div')
+			probe.style.background = `var(${role})`
+			main.append(probe)
+			const color = getComputedStyle(probe).backgroundColor
+			probe.remove()
+			return color
+		})
 		if (brand.includes('rgba(0, 0, 0, 0)')) {
 			throw new Error('a brand role is not defined')
 		}

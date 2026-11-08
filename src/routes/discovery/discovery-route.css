@@ -160,7 +160,7 @@
 			margin: var(--space-xs) var(--space-s) 0;
 			padding: var(--space-2xs) var(--space-s);
 			border: 1px solid var(--_white-12);
-			border-radius: var(--radius-full);
+			border-radius: var(--md-sys-shape-corner-full);
 
 			background: var(--_white-8);
 			backdrop-filter: blur(12px);
@@ -204,7 +204,7 @@
 			margin-inline-start: var(--space-2xs);
 			padding: 0;
 			border: none;
-			border-radius: var(--radius-full);
+			border-radius: var(--md-sys-shape-corner-full);
 
 			color: var(--_white-70);
 
@@ -256,7 +256,7 @@
 
 			padding: var(--space-3xs);
 			border: 1px solid var(--_white-15);
-			border-radius: var(--radius-full);
+			border-radius: var(--md-sys-shape-corner-full);
 
 			/* Match the genre chips' fluid height: 1lh + padding + border,
 			   derived from the same font step so the row stays aligned. */
@@ -266,8 +266,8 @@
 			background: var(--_white-8);
 
 			transition:
-				border-color var(--transition-normal),
-				color var(--transition-normal);
+				border-color var(--md-sys-motion-duration-short4),
+				color var(--md-sys-motion-duration-short4);
 
 			& svg {
 				inline-size: 1rem;
@@ -289,7 +289,7 @@
 
 			padding: var(--space-3xs) var(--space-xs);
 			border: 1px solid var(--_white-15);
-			border-radius: var(--radius-full);
+			border-radius: var(--md-sys-shape-corner-full);
 
 			font-family: var(--font-display);
 			font-size: var(--step--1);
@@ -300,9 +300,9 @@
 			background: var(--_white-8);
 
 			transition:
-				background var(--transition-normal),
-				color var(--transition-normal),
-				border-color var(--transition-normal);
+				background var(--md-sys-motion-duration-short4),
+				color var(--md-sys-motion-duration-short4),
+				border-color var(--md-sys-motion-duration-short4);
 
 			&:hover {
 				color: var(--color-white);
@@ -374,11 +374,11 @@
 
 			min-block-size: 48px;
 			padding: var(--space-xs);
-			border-radius: var(--radius-button);
+			border-radius: var(--md-sys-shape-corner-medium);
 
 			background: var(--_white-5);
 
-			transition: background var(--transition-fast);
+			transition: background var(--md-sys-motion-duration-short3);
 
 			&:hover {
 				background: var(--_white-10);
@@ -403,7 +403,7 @@
 			display: grid;
 			place-items: center;
 
-			border-radius: var(--radius-full);
+			border-radius: var(--md-sys-shape-corner-full);
 
 			font-family: var(--font-display);
 			font-size: var(--step-0);
@@ -429,7 +429,7 @@
 		.followed-check {
 			inline-size: 1.25rem;
 			block-size: 1.25rem;
-			color: color-mix(in oklch, var(--md-color-primary) 90%, transparent);
+			color: color-mix(in oklch, var(--md-sys-color-primary) 90%, transparent);
 		}
 
 		/* State-driven visibility (after base selectors to avoid descending specificity) */

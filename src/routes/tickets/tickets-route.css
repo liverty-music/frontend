@@ -12,7 +12,7 @@
 			padding-block: var(--space-l);
 			padding-inline: var(--space-m);
 
-			background: var(--color-surface-base);
+			background: var(--md-sys-color-surface);
 		}
 
 		.tickets-title {
@@ -20,7 +20,7 @@
 			font-size: var(--step-2);
 			font-weight: normal;
 			line-height: var(--leading-snug);
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 			text-wrap: balance;
 		}
 
@@ -31,10 +31,10 @@
 			max-inline-size: 36rem;
 			margin-inline: auto;
 			padding: var(--space-m);
-			border: 1px solid var(--color-border-subtle);
-			border-radius: var(--radius-card);
+			border: 1px solid var(--md-sys-color-outline-variant);
+			border-radius: var(--md-sys-shape-corner-large);
 
-			background: var(--color-surface-raised);
+			background: var(--md-sys-color-surface-container);
 		}
 
 		.tickets-list {
@@ -52,13 +52,13 @@
 		.tickets-step-title {
 			font-size: var(--step-1);
 			font-weight: 600;
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 		}
 
 		.tickets-lead {
 			font-size: var(--step--1);
 			line-height: var(--leading-relaxed);
-			color: var(--color-text-secondary);
+			color: var(--md-sys-color-on-surface-variant);
 			text-wrap: pretty;
 		}
 
@@ -81,9 +81,9 @@
 			--flow-space: var(--space-s);
 
 			padding: var(--space-m);
-			border: 1px solid var(--color-border-subtle);
-			border-radius: var(--radius-card);
-			background: var(--color-surface-raised);
+			border: 1px solid var(--md-sys-color-outline-variant);
+			border-radius: var(--md-sys-shape-corner-large);
+			background: var(--md-sys-color-surface-container);
 		}
 
 		.tickets-event-head {
@@ -93,7 +93,7 @@
 		.tickets-event-title {
 			font-size: var(--step-1);
 			font-weight: 700;
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 			text-wrap: balance;
 		}
 
@@ -102,9 +102,9 @@
 			--flow-space: var(--space-xs);
 
 			padding: var(--space-s);
-			border: 1px solid var(--color-border-subtle);
-			border-radius: var(--radius-card);
-			background: var(--color-surface-base);
+			border: 1px solid var(--md-sys-color-outline-variant);
+			border-radius: var(--md-sys-shape-corner-large);
+			background: var(--md-sys-color-surface);
 
 			/* Void and entered tickets are de-emphasised */
 			&[data-state="void"],
@@ -120,24 +120,24 @@
 		.tickets-number {
 			font-size: var(--step--1);
 			font-weight: 600;
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 		}
 
 		.tickets-admitted {
 			font-size: var(--step--1);
-			color: var(--color-text-secondary);
+			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		/* State badge: 未入場 / 入場済み / 無効 */
 		.tickets-status {
 			padding-block: var(--space-3xs);
 			padding-inline: var(--space-xs);
-			border: 1px solid var(--color-border-subtle);
-			border-radius: var(--radius-button);
+			border: 1px solid var(--md-sys-color-outline-variant);
+			border-radius: var(--md-sys-shape-corner-medium);
 
 			font-size: var(--step--1);
 			font-weight: 600;
-			color: var(--color-text-secondary);
+			color: var(--md-sys-color-on-surface-variant);
 
 			&[data-state="not-entered"] {
 				border-color: color-mix(
@@ -162,14 +162,14 @@
 			max-inline-size: 36rem;
 			margin-inline: auto;
 			padding: var(--space-s);
-			border: 1px solid var(--color-border-subtle);
-			border-radius: var(--radius-card);
+			border: 1px solid var(--md-sys-color-outline-variant);
+			border-radius: var(--md-sys-shape-corner-large);
 
 			font-size: var(--step--1);
 			line-height: var(--leading-relaxed);
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 
-			background: var(--color-surface-raised);
+			background: var(--md-sys-color-surface-container);
 
 			&[data-tone="warning"] {
 				border-color: color-mix(
@@ -190,13 +190,13 @@
 
 		.tickets-code-event {
 			font-weight: 600;
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 		}
 
 		.tickets-code-count {
 			font-family: var(--font-display);
 			font-size: var(--step-3);
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 		}
 
 		.tickets-code-figure {
@@ -206,7 +206,7 @@
 			aspect-ratio: 1;
 			inline-size: min(100%, 20rem);
 			margin-inline: auto;
-			border-radius: var(--radius-card);
+			border-radius: var(--md-sys-shape-corner-large);
 
 			/* High contrast whatever the theme; the SVG carries its own quiet zone */
 			background: var(--color-white);
@@ -226,7 +226,7 @@
 		.tickets-code-tickets {
 			--cluster-gap: var(--space-xs);
 
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 		}
 
 		/* Summary definition list */
@@ -236,8 +236,8 @@
 			gap: var(--space-2xs);
 
 			padding: var(--space-s);
-			border: 1px solid var(--color-border-subtle);
-			border-radius: var(--radius-card);
+			border: 1px solid var(--md-sys-color-outline-variant);
+			border-radius: var(--md-sys-shape-corner-large);
 		}
 
 		.tickets-summary-row {
@@ -249,23 +249,23 @@
 		.tickets-summary-key {
 			font-size: var(--step--1);
 			font-weight: 600;
-			color: var(--color-text-secondary);
+			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.tickets-summary-val {
 			font-size: var(--step-0);
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 			text-align: end;
 		}
 
 		/* 特定興行入場券 resale-prohibition notice */
 		.tickets-resale-notice {
 			padding: var(--space-xs);
-			border-inline-start: 2px solid var(--color-border-subtle);
+			border-inline-start: 2px solid var(--md-sys-color-outline-variant);
 
 			font-size: var(--step--2);
 			line-height: var(--leading-relaxed);
-			color: var(--color-text-secondary);
+			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.tickets-error {

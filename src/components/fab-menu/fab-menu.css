@@ -67,10 +67,12 @@
 
 			/* Spatial spring for the sink and the press cue. */
 			transition:
-				translate var(--md-spring-spatial-duration) var(--md-spring-spatial),
-				scale var(--md-spring-spatial-duration) var(--md-spring-spatial),
-				transform var(--md-spring-spatial-fast-duration)
-				var(--md-spring-spatial-fast);
+				translate var(--md-sys-motion-spring-spatial-duration)
+				var(--md-sys-motion-spring-spatial),
+				scale var(--md-sys-motion-spring-spatial-duration)
+				var(--md-sys-motion-spring-spatial),
+				transform var(--md-sys-motion-spring-spatial-fast-duration)
+				var(--md-sys-motion-spring-spatial-fast);
 
 			/* Named while a route animates part of itself in a View
 			   Transition (global.css), so the FAB keeps its own snapshot above
@@ -95,20 +97,20 @@
 			opacity: 0;
 			background: var(--color-white);
 
-			transition: opacity var(--md-spring-effects-duration)
-				var(--md-spring-effects);
+			transition: opacity var(--md-sys-motion-spring-effects-duration)
+				var(--md-sys-motion-spring-effects);
 		}
 
 		.fab-toggle:hover::after {
-			opacity: var(--fab-state-hover);
+			opacity: var(--md-sys-state-hover-opacity);
 		}
 
 		.fab-toggle:focus-visible::after {
-			opacity: var(--fab-state-focus);
+			opacity: var(--md-sys-state-focus-opacity);
 		}
 
 		.fab-toggle:active::after {
-			opacity: var(--fab-state-pressed);
+			opacity: var(--md-sys-state-pressed-opacity);
 		}
 
 		/* ── Glyph: equalizer ↔ close ── */
@@ -123,9 +125,10 @@
 			inline-size: var(--fab-icon-size);
 			block-size: var(--fab-icon-size);
 			transition:
-				opacity var(--md-spring-effects-duration) var(--md-spring-effects),
-				rotate var(--md-spring-spatial-fast-duration)
-				var(--md-spring-spatial-fast);
+				opacity var(--md-sys-motion-spring-effects-duration)
+				var(--md-sys-motion-spring-effects),
+				rotate var(--md-sys-motion-spring-spatial-fast-duration)
+				var(--md-sys-motion-spring-spatial-fast);
 		}
 
 		.fab-equalizer {
@@ -162,8 +165,9 @@
 		/* The bars bounce once, only as the launcher opens; idle, they are
 		   still. Each bar starts a little later than the one before it. */
 		.fab-glyph[data-open="true"] .fab-bar {
-			animation: fab-bar-bounce var(--md-spring-spatial-fast-duration)
-				var(--md-spring-effects) 1;
+			animation: fab-bar-bounce
+				var(--md-sys-motion-spring-spatial-fast-duration)
+				var(--md-sys-motion-spring-effects) 1;
 		}
 
 		.fab-glyph[data-open="true"] .fab-bar:nth-child(2) {
@@ -207,13 +211,13 @@
 			padding: 0;
 			border: none;
 
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 
 			background: transparent;
 
 			transition:
-				display var(--md-spring-spatial-duration) allow-discrete,
-				overlay var(--md-spring-spatial-duration) allow-discrete;
+				display var(--md-sys-motion-spring-spatial-duration) allow-discrete,
+				overlay var(--md-sys-motion-spring-spatial-duration) allow-discrete;
 		}
 
 		/* Animated scrim behind the open arc. It covers the viewport and takes
@@ -223,12 +227,12 @@
 			position: fixed;
 			inset: 0;
 			background: transparent;
-			transition: background var(--md-spring-effects-duration)
-				var(--md-spring-effects);
+			transition: background var(--md-sys-motion-spring-effects-duration)
+				var(--md-sys-motion-spring-effects);
 		}
 
 		.fab-panel:popover-open .fab-scrim {
-			background: var(--md-color-scrim);
+			background: var(--md-sys-color-scrim);
 
 			@starting-style {
 				background: transparent;
@@ -261,9 +265,10 @@
 			opacity: 0;
 
 			transition:
-				offset-distance var(--md-spring-spatial-duration)
-				var(--md-spring-spatial),
-				opacity var(--md-spring-effects-duration) var(--md-spring-effects);
+				offset-distance var(--md-sys-motion-spring-spatial-duration)
+				var(--md-sys-motion-spring-spatial),
+				opacity var(--md-sys-motion-spring-effects-duration)
+				var(--md-sys-motion-spring-effects);
 			transition-delay: calc(var(--i) * 40ms);
 
 			offset-anchor: center;
@@ -295,14 +300,14 @@
 			block-size: var(--_item-size);
 			padding: 0;
 			border: none;
-			border-radius: var(--radius-full);
+			border-radius: var(--md-sys-shape-corner-full);
 
 			font-family: var(--font-body);
 			font-size: var(--step--1);
 			font-weight: 500;
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 
-			background: var(--md-color-menu-surface);
+			background: var(--md-sys-color-menu-surface);
 			box-shadow: var(--shadow-soft);
 		}
 
@@ -320,13 +325,13 @@
 			max-inline-size: 7.5rem;
 			padding-block: var(--space-3xs);
 			padding-inline: var(--space-2xs);
-			border-radius: var(--radius-sm);
+			border-radius: var(--md-sys-shape-corner-small);
 
 			line-height: var(--leading-tight);
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 			text-align: end;
 
-			background: var(--md-color-menu-surface);
+			background: var(--md-sys-color-menu-surface);
 			box-shadow: var(--shadow-soft);
 		}
 
@@ -344,28 +349,28 @@
 			opacity: 0;
 			background: currentcolor;
 
-			transition: opacity var(--md-spring-effects-duration)
-				var(--md-spring-effects);
+			transition: opacity var(--md-sys-motion-spring-effects-duration)
+				var(--md-sys-motion-spring-effects);
 		}
 
 		.fab-item:hover::after {
-			opacity: var(--fab-state-hover);
+			opacity: var(--md-sys-state-hover-opacity);
 		}
 
 		.fab-item:focus-visible::after {
-			opacity: var(--fab-state-focus);
+			opacity: var(--md-sys-state-focus-opacity);
 		}
 
 		.fab-item:active::after {
-			opacity: var(--fab-state-pressed);
+			opacity: var(--md-sys-state-pressed-opacity);
 		}
 
 		/* Selected/active item = filled brand container (the M3 "on" treatment).
 		   Covers the beam toggle (aria-pressed) and the filter command (data-active). */
 		.fab-item[aria-pressed="true"],
 		.fab-item[data-active="true"] {
-			color: var(--md-color-on-primary-container);
-			background: var(--md-color-primary-container);
+			color: var(--md-sys-color-on-primary-container);
+			background: var(--md-sys-color-primary-container);
 		}
 
 		/* Left-handed: the arc mirrors to curve up and to the left, and the

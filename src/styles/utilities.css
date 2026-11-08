@@ -161,7 +161,7 @@
 		block-size: 1rem;
 		border: 1.5px solid oklch(from var(--color-brand-accent) l c h / 30%);
 		border-block-start-color: var(--color-brand-accent);
-		border-radius: var(--radius-full);
+		border-radius: var(--md-sys-shape-corner-full);
 
 		animation: busy-spin 0.8s linear infinite;
 	}
@@ -192,10 +192,12 @@
 		position: relative;
 
 		transition:
-			border-radius var(--md-spring-spatial-fast-duration)
-			var(--md-spring-spatial-fast),
-			background-color var(--md-duration-short3) var(--md-easing-standard),
-			transform var(--md-duration-short3) var(--md-easing-standard);
+			border-radius var(--md-sys-motion-spring-spatial-fast-duration)
+			var(--md-sys-motion-spring-spatial-fast),
+			background-color var(--md-sys-motion-duration-short3)
+			var(--md-sys-motion-easing-standard),
+			transform var(--md-sys-motion-duration-short3)
+			var(--md-sys-motion-easing-standard);
 	}
 
 	/* stylelint-disable-next-line cube/utility-single-property -- the state layer takes several properties together */
@@ -211,15 +213,19 @@
 		opacity: 0;
 		background: currentcolor;
 
-		transition: opacity var(--md-duration-short3) var(--md-easing-standard);
+		transition: opacity var(--md-sys-motion-duration-short3)
+			var(--md-sys-motion-easing-standard);
 	}
 
 	.pressable:active {
-		border-radius: var(--press-morph-radius, var(--md-shape-large-increased));
+		border-radius: var(
+			--press-morph-radius,
+			var(--md-sys-shape-corner-large-increased)
+		);
 	}
 
 	.pressable:active::after {
-		opacity: var(--md-state-pressed);
+		opacity: var(--md-sys-state-pressed-opacity);
 	}
 
 	/* ── Skeleton loading placeholder (M3) ──
@@ -238,13 +244,13 @@
 
 	/* stylelint-disable-next-line cube/utility-single-property -- the shimmer takes several properties together */
 	.skeleton {
-		border-radius: var(--md-shape-small);
+		border-radius: var(--md-sys-shape-corner-small);
 
-		background-color: var(--md-color-surface-container-high);
+		background-color: var(--md-sys-color-surface-container-high);
 		background-image: linear-gradient(
 			100deg,
 			transparent 30%,
-			color-mix(in oklab, var(--md-color-on-surface) 8%, transparent) 50%,
+			color-mix(in oklab, var(--md-sys-color-on-surface) 8%, transparent) 50%,
 			transparent 70%
 		);
 		background-size: 200% 100%;
@@ -259,14 +265,16 @@
 	   components layer their own selected color on top. */
 	[data-selected-morph] {
 		transition:
-			background-color var(--md-duration-medium1) var(--md-spring-effects),
-			border-radius var(--md-duration-medium1) var(--md-spring-spatial);
+			background-color var(--md-sys-motion-duration-medium1)
+			var(--md-sys-motion-spring-effects),
+			border-radius var(--md-sys-motion-duration-medium1)
+			var(--md-sys-motion-spring-spatial);
 	}
 
 	[data-selected-morph][aria-selected="true"],
 	[data-selected-morph][aria-pressed="true"],
 	[data-selected-morph][data-selected] {
-		border-radius: var(--md-shape-large-increased);
+		border-radius: var(--md-sys-shape-corner-large-increased);
 		background: color-mix(
 			in oklab,
 			currentcolor var(--md-state-selected),
@@ -282,7 +290,12 @@
 		[data-selected]
 	):hover {
 		background-image: linear-gradient(
-			color-mix(in oklab, currentcolor var(--md-state-hover), transparent) 0 0
+			color-mix(
+					in oklab,
+					currentcolor calc(var(--md-sys-state-hover-opacity) * 100%),
+					transparent
+				)
+				0 0
 		);
 	}
 

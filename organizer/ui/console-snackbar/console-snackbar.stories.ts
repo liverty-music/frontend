@@ -23,8 +23,8 @@ type Story = StoryObj<typeof meta>
 const render: Story['render'] = () =>
 	defineAureliaStory({
 		template: `
-			<main style="min-block-size:100vh; background:var(--md-color-surface); color:var(--md-color-on-surface)">
-				<nav data-testid="nav-bar" style="position:fixed; inset-inline:0; inset-block-end:0; block-size:80px; background:var(--md-color-surface-container)" aria-label="ナビゲーション"></nav>
+			<main style="min-block-size:100vh; background:var(--md-sys-color-surface); color:var(--md-sys-color-on-surface)">
+				<nav data-testid="nav-bar" style="position:fixed; inset-inline:0; inset-block-end:0; block-size:80px; background:var(--md-sys-color-surface-container)" aria-label="ナビゲーション"></nav>
 				<console-snackbar></console-snackbar>
 			</main>
 		`,

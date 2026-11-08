@@ -53,7 +53,7 @@ function resolved(
 export const Catalog = {
 	render: () =>
 		defineAureliaStory({
-			template: `<div style="display:flex; flex-direction:column; gap:0.5rem; padding:1rem; background:var(--color-surface-base)">${VARIANTS.map(row).join('')}</div>`,
+			template: `<div style="display:flex; flex-direction:column; gap:0.5rem; padding:1rem; background:var(--md-sys-color-surface)">${VARIANTS.map(row).join('')}</div>`,
 		}),
 	play: async ({ canvasElement }) => {
 		const buttons = (name: string) =>
@@ -74,7 +74,7 @@ export const Catalog = {
 		const primary = resolved(
 			canvasElement,
 			'backgroundColor',
-			'var(--md-color-primary)',
+			'var(--md-sys-color-primary)',
 		)
 		const white = resolved(canvasElement, 'color', 'var(--color-white)')
 		for (const el of buttons('filled')) {
@@ -98,7 +98,7 @@ export const Catalog = {
 		const red = resolved(
 			canvasElement,
 			'backgroundColor',
-			'var(--md-color-error-container)',
+			'var(--md-sys-color-error-container)',
 		)
 		for (const el of buttons('danger')) {
 			await expect(getComputedStyle(el).backgroundColor).toBe(red)

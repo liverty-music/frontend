@@ -29,7 +29,7 @@
 			font-family: var(--font-display);
 			font-size: var(--step-0);
 			font-weight: normal;
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 		}
 
 		/* ── Facet section: heading + chip group ── */
@@ -48,7 +48,7 @@
 		.facet-heading {
 			font-size: var(--step--1);
 			font-weight: 600;
-			color: var(--color-text-muted);
+			color: var(--md-sys-color-on-surface-variant);
 			text-transform: uppercase;
 			letter-spacing: 0.05em;
 		}
@@ -71,11 +71,11 @@
 		.artist-count {
 			font-weight: 600;
 			font-variant-numeric: tabular-nums;
-			color: var(--color-text-muted);
+			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.artist-chip:has(input:checked) .artist-count {
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 		}
 
 		/* ── Individual chip ──
@@ -90,23 +90,26 @@
 			align-items: center;
 
 			padding: var(--space-3xs) var(--space-s);
-			border: 1px solid var(--color-border-muted);
+			border: 1px solid var(--md-sys-color-outline);
 
 			/* Pill throughout. Selection is signalled by color (border + background
 			   + text); no shape morph — a squircle→pill radius tween reads as
 			   janky because roundness saturates well before a full pill, so most
 			   of the tween is visually inert. */
-			border-radius: var(--radius-full);
+			border-radius: var(--md-sys-shape-corner-full);
 
 			font-size: var(--step--1);
-			color: var(--color-text-secondary);
+			color: var(--md-sys-color-on-surface-variant);
 
-			background: var(--color-surface-raised);
+			background: var(--md-sys-color-surface-container);
 
 			transition:
-				border-color var(--md-duration-short4) var(--md-easing-standard),
-				background var(--md-duration-short4) var(--md-easing-standard),
-				color var(--md-duration-short4) var(--md-easing-standard);
+				border-color var(--md-sys-motion-duration-short4)
+				var(--md-sys-motion-easing-standard),
+				background var(--md-sys-motion-duration-short4)
+				var(--md-sys-motion-easing-standard),
+				color var(--md-sys-motion-duration-short4)
+				var(--md-sys-motion-easing-standard);
 
 			&:hover {
 				border-color: color-mix(
@@ -124,11 +127,11 @@
 			/* checked state */
 			&:has(input:checked) {
 				border-color: var(--color-brand-primary);
-				color: var(--color-text-primary);
+				color: var(--md-sys-color-on-surface);
 				background: color-mix(
 					in oklch,
 					var(--color-brand-primary) 18%,
-					var(--color-surface-raised)
+					var(--md-sys-color-surface-container)
 				);
 			}
 		}
@@ -162,20 +165,23 @@
 			align-items: center;
 
 			padding: var(--space-3xs) var(--space-s);
-			border: 1px solid var(--color-border-muted);
+			border: 1px solid var(--md-sys-color-outline);
 
 			/* Pill throughout (see .artist-chip) — selection is color, not shape. */
-			border-radius: var(--radius-full);
+			border-radius: var(--md-sys-shape-corner-full);
 
 			font-size: var(--step--1);
-			color: var(--color-text-secondary);
+			color: var(--md-sys-color-on-surface-variant);
 
-			background: var(--color-surface-raised);
+			background: var(--md-sys-color-surface-container);
 
 			transition:
-				border-color var(--md-duration-short4) var(--md-easing-standard),
-				background var(--md-duration-short4) var(--md-easing-standard),
-				color var(--md-duration-short4) var(--md-easing-standard);
+				border-color var(--md-sys-motion-duration-short4)
+				var(--md-sys-motion-easing-standard),
+				background var(--md-sys-motion-duration-short4)
+				var(--md-sys-motion-easing-standard),
+				color var(--md-sys-motion-duration-short4)
+				var(--md-sys-motion-easing-standard);
 
 			&[data-journey-status="tracking"] {
 				--_hue: var(--journey-hue-tracking);
@@ -238,8 +244,8 @@
 		}
 
 		.date-facet-caret {
-			color: var(--color-text-muted);
-			transition: transform var(--transition-fast);
+			color: var(--md-sys-color-on-surface-variant);
+			transition: transform var(--md-sys-motion-duration-short3);
 
 			&[data-expanded="true"] {
 				transform: rotate(90deg);
@@ -255,18 +261,18 @@
 
 		.date-field-label {
 			font-size: var(--step--1);
-			color: var(--color-text-secondary);
+			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.date-field-input {
 			padding: var(--space-3xs) var(--space-s);
-			border: 1px solid var(--color-border-muted);
-			border-radius: var(--radius-button);
+			border: 1px solid var(--md-sys-color-outline);
+			border-radius: var(--md-sys-shape-corner-medium);
 
 			font-size: var(--step--1);
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 
-			background: var(--color-surface-raised);
+			background: var(--md-sys-color-surface-container);
 
 			&:focus-visible {
 				outline: 2px solid var(--color-brand-primary);

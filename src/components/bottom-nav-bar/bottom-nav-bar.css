@@ -24,7 +24,7 @@
 			block-size: var(--bottom-nav-height);
 			padding-block-end: var(--_safe-area-bottom);
 
-			background: var(--color-surface-raised);
+			background: var(--md-sys-color-surface-container);
 
 			/* Gradient top border via pseudo-element (avoids border-image + border-radius conflict) */
 			&::before {
@@ -62,10 +62,14 @@
 			   [data-selected-morph] utility) because the component's own
 			   transition would otherwise clobber the utility's. */
 			transition:
-				color var(--md-duration-medium1) var(--md-spring-effects),
-				box-shadow var(--md-duration-medium1) var(--md-spring-effects),
-				border-radius var(--md-spring-spatial-duration) var(--md-spring-spatial),
-				transform var(--md-duration-medium1) var(--md-easing-standard);
+				color var(--md-sys-motion-duration-medium1)
+				var(--md-sys-motion-spring-effects),
+				box-shadow var(--md-sys-motion-duration-medium1)
+				var(--md-sys-motion-spring-effects),
+				border-radius var(--md-sys-motion-spring-spatial-duration)
+				var(--md-sys-motion-spring-spatial),
+				transform var(--md-sys-motion-duration-medium1)
+				var(--md-sys-motion-easing-standard);
 		}
 
 		/* While the FAB is shown, cut a notch around it in the bar's top edge.
@@ -114,7 +118,7 @@
 		.nav-tab[data-active="true"] {
 			/* Rounder shape (spring-morphed via the transition above) + a persistent
 			   selected state layer, per the M3 selection treatment. */
-			border-radius: var(--md-shape-large-increased);
+			border-radius: var(--md-sys-shape-corner-large-increased);
 			color: var(--color-brand-accent);
 			background: color-mix(
 				in oklab,
@@ -132,7 +136,8 @@
 				inset-inline: 25%;
 
 				block-size: 2px;
-				border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+				border-radius: 0 0 var(--md-sys-shape-corner-small)
+					var(--md-sys-shape-corner-small);
 
 				background: var(--color-brand-accent);
 			}
@@ -143,12 +148,12 @@
 		}
 
 		.nav-tab[data-active="false"] {
-			color: var(--color-text-muted);
+			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.nav-tab[data-dimmed] {
 			opacity: 0.3;
-			transition: opacity var(--transition-normal);
+			transition: opacity var(--md-sys-motion-duration-short4);
 		}
 
 		/* Reduced motion: drop the press scale, acknowledge the tap with a brief

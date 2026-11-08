@@ -17,14 +17,14 @@
 			font-family: var(--font-display);
 			font-size: var(--step-1);
 			font-weight: normal;
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 		}
 
 		.selector-desc {
 			margin-block-end: var(--space-l);
 			font-size: var(--step--1);
 			line-height: var(--leading-relaxed);
-			color: var(--color-text-secondary);
+			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.selector-section {
@@ -36,7 +36,7 @@
 
 			font-size: var(--step--1);
 			font-weight: 600;
-			color: var(--color-text-muted);
+			color: var(--md-sys-color-on-surface-variant);
 			text-transform: uppercase;
 			letter-spacing: 0.05em;
 		}
@@ -50,14 +50,14 @@
 		.selector-option {
 			padding: var(--space-2xs);
 			border: 1px solid var(--_border-light);
-			border-radius: var(--radius-button);
+			border-radius: var(--md-sys-shape-corner-medium);
 
 			font-family: var(--font-display);
 			font-size: var(--step--1);
 			font-weight: 600;
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 
-			background: var(--color-surface-overlay);
+			background: var(--md-sys-color-surface-container-high);
 
 			transition:
 				background-color 150ms ease-out,

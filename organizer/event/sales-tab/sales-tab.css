@@ -16,11 +16,11 @@
 
 		.section-title {
 			font: var(--md-type-title-large);
-			color: var(--md-color-on-surface);
+			color: var(--md-sys-color-on-surface);
 		}
 
 		.note {
-			color: var(--md-color-on-surface-variant);
+			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.sales,
@@ -42,10 +42,10 @@
 			gap: var(--space-xs);
 
 			padding: var(--space-s);
-			border: 1px solid var(--md-color-outline-variant);
-			border-radius: var(--md-shape-medium);
+			border: 1px solid var(--md-sys-color-outline-variant);
+			border-radius: var(--md-sys-shape-corner-medium);
 
-			background: var(--md-color-surface);
+			background: var(--md-sys-color-surface);
 		}
 
 		.sale-heading,
@@ -60,24 +60,24 @@
 		.sale-name,
 		.stock-name {
 			font: var(--md-type-title-medium);
-			color: var(--md-color-on-surface);
+			color: var(--md-sys-color-on-surface);
 		}
 
 		.window,
 		.terms,
 		.locked {
 			font-variant-numeric: tabular-nums;
-			color: var(--md-color-on-surface-variant);
+			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.method {
 			font: var(--md-type-label-large);
-			color: var(--md-color-on-surface);
+			color: var(--md-sys-color-on-surface);
 		}
 
 		.countdown {
 			font: var(--md-type-title-small);
-			color: var(--md-color-on-surface);
+			color: var(--md-sys-color-on-surface);
 		}
 
 		.stats {
@@ -99,7 +99,7 @@
 
 		.form-title {
 			font: var(--md-type-title-small);
-			color: var(--md-color-on-surface);
+			color: var(--md-sys-color-on-surface);
 		}
 
 		.row {
@@ -113,7 +113,7 @@
 		}
 
 		.oversubscribed {
-			color: var(--md-color-on-surface);
+			color: var(--md-sys-color-on-surface);
 		}
 
 		.verification {
@@ -128,18 +128,18 @@
 
 		.referrals-title {
 			font: var(--md-type-title-medium);
-			color: var(--md-color-on-surface);
+			color: var(--md-sys-color-on-surface);
 		}
 
 		.referrals-note {
-			color: var(--md-color-on-surface-variant);
+			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.message {
 			display: grid;
 			gap: var(--space-xs);
 			justify-items: start;
-			color: var(--md-color-on-surface-variant);
+			color: var(--md-sys-color-on-surface-variant);
 		}
 	}
 }

@@ -1,8 +1,8 @@
+import type { Order as ProtoOrder } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/order_pb.js'
 import {
 	type ResaleEntry as ProtoResaleEntry,
 	ResaleEntryState as ProtoResaleEntryState,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/resale_entry_pb.js'
-import type { Order as ProtoOrder } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/order_pb.js'
 import { timestampDate } from '@bufbuild/protobuf/wkt'
 import type {
 	ResaleEntry,

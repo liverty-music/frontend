@@ -45,7 +45,7 @@
 	/* Keyboard focus shows a ring in the brand color; a pointer click does not
 	   (`:focus-visible`). */
 	:where(:focus-visible) {
-		outline: var(--focus-ring-width) solid var(--md-color-primary);
+		outline: var(--focus-ring-width) solid var(--md-sys-color-primary);
 		outline-offset: var(--focus-ring-offset);
 	}
 

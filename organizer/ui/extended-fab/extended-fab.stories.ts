@@ -25,7 +25,7 @@ type Story = StoryObj<typeof meta>
 const render: Story['render'] = (args) =>
 	defineAureliaStory({
 		template: `
-			<main style="--nav-bar-clearance: 0px; min-block-size:100vh; background:var(--md-color-surface); color:var(--md-color-on-surface)">
+			<main style="--nav-bar-clearance: 0px; min-block-size:100vh; background:var(--md-sys-color-surface); color:var(--md-sys-color-on-surface)">
 				<extended-fab icon.bind="icon" href.bind="href">公演をつくる</extended-fab>
 			</main>
 		`,

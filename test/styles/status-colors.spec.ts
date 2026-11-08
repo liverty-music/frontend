@@ -64,7 +64,10 @@ describe('success color', () => {
 		expect(success.h).toBeLessThanOrEqual(170)
 	})
 
-	for (const surface of ['--color-surface-base', '--color-surface-raised']) {
+	for (const surface of [
+		'--md-sys-color-surface',
+		'--md-sys-color-surface-container',
+	]) {
 		// The Settings badge colors its label text, so body text's 4.5:1 applies;
 		// it also covers the 3:1 for icons and large text.
 		it(`reaches 4.5:1 on ${surface}`, () => {
@@ -99,7 +102,7 @@ describe('status marks use the token of their meaning', () => {
 			colorOf(languageSelectorCss, '.language-check'),
 		]
 		for (const color of selected) {
-			expect(color).toContain('var(--md-color-primary)')
+			expect(color).toContain('var(--md-sys-color-primary)')
 			expect(color).not.toContain('success')
 		}
 	})

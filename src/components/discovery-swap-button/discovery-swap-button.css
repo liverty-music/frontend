@@ -4,9 +4,9 @@
 			--_swap-duration: 620ms;
 			--_swap-easing: cubic-bezier(0.34, 1.5, 0.64, 1);
 			--_tile-size: var(--swap-tile-size);
-			--_tile-surface: oklch(from var(--color-surface-base) l c h / 90%);
+			--_tile-surface: oklch(from var(--md-sys-color-surface) l c h / 90%);
 			--_shadow: oklch(0% 0 0deg / 50%);
-			--_ink: var(--color-surface-base);
+			--_ink: var(--md-sys-color-surface);
 			--_white: var(--color-white);
 
 			display: block;
@@ -18,8 +18,8 @@
 
 			inline-size: var(--_tile-size);
 			block-size: var(--_tile-size);
-			border: 1.5px solid var(--color-border-subtle);
-			border-radius: var(--radius-card);
+			border: 1.5px solid var(--md-sys-color-outline-variant);
+			border-radius: var(--md-sys-shape-corner-large);
 
 			background: var(--_tile-surface);
 			backdrop-filter: blur(6px);

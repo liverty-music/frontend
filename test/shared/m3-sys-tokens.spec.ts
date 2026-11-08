@@ -60,29 +60,18 @@ describe('shared M3 system tokens', () => {
 		)
 		expect(redefined).toEqual([])
 
-		// The fan app's own names are aliases of the shared tokens, so the fan
-		// components follow an edit of the shared file.
-		const fan = new Map(
-			declarations(appCss['/src/styles/tokens.css']).map((d) => [
-				d.name,
-				d.value,
-			]),
-		)
-		const aliases: Record<string, string> = {
-			'--md-state-hover': '--md-sys-state-hover-opacity',
-			'--md-state-focus': '--md-sys-state-focus-opacity',
-			'--md-state-pressed': '--md-sys-state-pressed-opacity',
-			'--md-state-dragged': '--md-sys-state-dragged-opacity',
-			'--md-easing-standard': '--md-sys-motion-easing-standard',
-			'--md-easing-emphasized-accelerate':
-				'--md-sys-motion-easing-emphasized-accelerate',
-			'--md-duration-short1': '--md-sys-motion-duration-short1',
-			'--md-duration-medium2': '--md-sys-motion-duration-medium2',
-			'--md-duration-long4': '--md-sys-motion-duration-long4',
-		}
-		for (const [fanName, sharedName] of Object.entries(aliases)) {
-			expect(fan.get(fanName), fanName).toContain(`var(${sharedName})`)
-		}
+		// The fan app keeps no motion or state value of its own beside the
+		// shared ones, so its components follow an edit of the shared file. The
+		// two it keeps have no Material 3 token: a 1 ms duration that still
+		// fires transitionend, and the selected opacity Material 3 does not set.
+		const own = declarations(appCss['/src/styles/tokens.css'])
+			.map((d) => d.name)
+			.filter((name) =>
+				/^--(md-(state|easing|duration|spring)|transition|fab-state)-/.test(
+					name,
+				),
+			)
+		expect(own).toEqual(['--md-duration-instant', '--md-state-selected'])
 	})
 
 	it('@spec components/infrastructure/fan/web/global/design-tokens "Colors stay per app"', () => {
@@ -111,14 +100,11 @@ describe('shared M3 system tokens', () => {
 		// navy surface, the console's light/dark pair. Neither reaches the other.
 		const roleIn = (file: string, name: string) =>
 			declarations(appCss[file]).find((d) => d.name === name)?.value
-		expect(roleIn('/src/styles/tokens.css', '--color-surface-base')).toBe(
+		expect(roleIn('/src/styles/tokens.css', '--md-sys-color-surface')).toBe(
 			'oklch(18% 0.04 275deg)',
 		)
-		expect(roleIn('/src/styles/tokens.css', '--md-color-surface')).toBe(
-			'var(--color-surface-base)',
-		)
-		expect(roleIn('/organizer/styles/tokens.css', '--md-color-surface')).toBe(
-			'light-dark(oklch(99% 0.003 285deg), oklch(18% 0.01 285deg))',
-		)
+		expect(
+			roleIn('/organizer/styles/tokens.css', '--md-sys-color-surface'),
+		).toBe('light-dark(oklch(99% 0.003 285deg), oklch(18% 0.01 285deg))')
 	})
 })

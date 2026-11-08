@@ -32,7 +32,7 @@ export const StaysAtTheBottom = {
 	render: () =>
 		defineAureliaStory({
 			template: `
-				<div data-testid="scroller" style="block-size:300px; overflow:auto; background:var(--md-color-surface); color:var(--md-color-on-surface)">
+				<div data-testid="scroller" style="block-size:300px; overflow:auto; background:var(--md-sys-color-surface); color:var(--md-sys-color-on-surface)">
 					<div style="block-size:800px; padding:16px">フォーム</div>
 					<action-bar>
 						<console-button variant="text">やめる</console-button>

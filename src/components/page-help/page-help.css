@@ -9,7 +9,7 @@
 		}
 
 		bottom-sheet {
-			--sheet-bg: var(--color-surface-overlay);
+			--sheet-bg: var(--md-sys-color-surface-container-high);
 		}
 
 		/* The `?` trigger moved to the FAB action launcher; only the sheet
@@ -37,7 +37,7 @@
 
 			margin-block-end: var(--space-s);
 			padding-block-end: var(--space-xs);
-			border-block-end: 1px solid var(--color-border-subtle);
+			border-block-end: 1px solid var(--md-sys-color-outline-variant);
 		}
 
 		.page-help-icon {
@@ -56,7 +56,7 @@
 		.page-help-desc {
 			margin-block-end: var(--space-s);
 			line-height: var(--leading-relaxed);
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 		}
 
 		/* ── Tip list (with brand-accent bullets) ───────────────────────── */
@@ -68,7 +68,7 @@
 			margin-block-start: var(--space-s);
 			padding: 0;
 
-			color: var(--color-text-secondary);
+			color: var(--md-sys-color-on-surface-variant);
 			list-style: none;
 		}
 
@@ -96,7 +96,7 @@
 		.page-help-chip {
 			padding: var(--space-3xs) var(--space-xs);
 			border: 1px solid var(--_white-15);
-			border-radius: var(--radius-full);
+			border-radius: var(--md-sys-shape-corner-full);
 
 			font-family: var(--font-display);
 			font-size: var(--step--1);
@@ -110,7 +110,7 @@
 		/* Highlight one chip as "active" so the demo shows the toggle state */
 		.page-help-chip[data-active] {
 			border-color: var(--color-brand-accent);
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 			background: oklch(from var(--color-brand-accent) l c h / 18%);
 		}
 
@@ -127,9 +127,11 @@
 
 			margin-block: var(--space-s);
 			padding: var(--space-s);
-			border-radius: var(--radius-card);
+			border-radius: var(--md-sys-shape-corner-large);
 
-			background: oklch(from var(--color-surface-overlay) calc(l + 0.04) c h);
+			background: oklch(
+				from var(--md-sys-color-surface-container-high) calc(l + 0.04) c h
+			);
 		}
 
 		.page-help-lanes dt {
@@ -169,11 +171,13 @@
 
 			margin-block: var(--space-s);
 			padding: var(--space-s);
-			border-radius: var(--radius-card);
+			border-radius: var(--md-sys-shape-corner-large);
 
 			list-style: none;
 
-			background: oklch(from var(--color-surface-overlay) calc(l + 0.04) c h);
+			background: oklch(
+				from var(--md-sys-color-surface-container-high) calc(l + 0.04) c h
+			);
 		}
 
 		/* Each row spans the shared grid through subgrid, so its cells align
@@ -203,14 +207,14 @@
 		.help-hype-desc {
 			align-self: center;
 			margin: 0;
-			color: var(--color-text-secondary);
+			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		/* ── Note (footnote / caption) ──────────────────────────────────── */
 		.page-help-note {
 			margin-block-start: var(--space-s);
 			font-size: var(--step--1);
-			color: var(--color-text-muted);
+			color: var(--md-sys-color-on-surface-variant);
 		}
 	}
 }

@@ -13,21 +13,21 @@
 		margin: auto;
 		padding: var(--space-m);
 		border: none;
-		border-radius: var(--md-shape-extra-large);
+		border-radius: var(--md-sys-shape-corner-extra-large);
 
-		color: var(--md-color-on-surface-variant);
+		color: var(--md-sys-color-on-surface-variant);
 
-		background: var(--md-color-surface-container-high);
+		background: var(--md-sys-color-surface-container-high);
 
 		&::backdrop {
-			background: var(--md-color-scrim);
+			background: var(--md-sys-color-scrim);
 		}
 	}
 
 	.heading {
 		margin-block-end: var(--space-s);
 		font: var(--md-type-headline-small);
-		color: var(--md-color-on-surface);
+		color: var(--md-sys-color-on-surface);
 	}
 
 	.body {

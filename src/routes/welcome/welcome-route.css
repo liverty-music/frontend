@@ -18,9 +18,9 @@
 
 			background: linear-gradient(
 				to bottom,
-				var(--color-surface-base),
+				var(--md-sys-color-surface),
 				color-mix(in oklch, var(--color-brand-primary) 10%, transparent),
-				var(--color-surface-base)
+				var(--md-sys-color-surface)
 			);
 		}
 
@@ -107,7 +107,7 @@
 			font-size: var(--step-3);
 			font-weight: normal;
 			line-height: var(--leading-snug);
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 
 			text-wrap: balance;
 			word-break: auto-phrase;
@@ -119,7 +119,7 @@
 
 			font-size: var(--step-0);
 			line-height: var(--leading-relaxed);
-			color: var(--color-text-secondary);
+			color: var(--md-sys-color-on-surface-variant);
 
 			text-wrap: balance;
 			word-break: auto-phrase;
@@ -210,7 +210,7 @@
 			&:focus-visible {
 				outline: 2px solid var(--color-brand-primary);
 				outline-offset: 4px;
-				border-radius: var(--radius-card);
+				border-radius: var(--md-sys-shape-corner-large);
 			}
 		}
 
@@ -219,7 +219,8 @@
 		   in the scroll motion. `both` holds the hidden pre-state during the delay.
 		   A heads-up push slides down from above and settles with an overshoot. */
 		.welcome-demo[data-entered] .welcome-notification-trigger {
-			animation: notif-enter 700ms 500ms var(--md-spring-spatial) both;
+			animation: notif-enter 700ms 500ms var(--md-sys-motion-spring-spatial)
+				both;
 		}
 
 		/* Exit: the notification dismisses upward and fades. The VM holds this state
@@ -231,7 +232,7 @@
 
 		.welcome-demo-hint {
 			font-size: var(--step-0);
-			color: var(--color-text-muted);
+			color: var(--md-sys-color-on-surface-variant);
 			text-align: center;
 
 			/* Delay the invite until after the card has dropped in. */
@@ -304,7 +305,7 @@
 				background: linear-gradient(
 					to bottom,
 					transparent,
-					var(--color-surface-base)
+					var(--md-sys-color-surface)
 				);
 			}
 		}
@@ -316,7 +317,7 @@
 		.welcome-guest-friendly {
 			margin-block-end: var(--space-2xs);
 			font-size: var(--step--1);
-			color: var(--color-text-muted);
+			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.welcome-action-group {
@@ -338,7 +339,7 @@
 			min-block-size: 44px;
 
 			font-size: var(--step--1);
-			color: var(--color-text-secondary);
+			color: var(--md-sys-color-on-surface-variant);
 			text-decoration: underline;
 		}
 
@@ -357,17 +358,17 @@
 
 		.welcome-lang-text {
 			padding: var(--space-3xs) var(--space-xs);
-			border-radius: var(--radius-button);
+			border-radius: var(--md-sys-shape-corner-medium);
 
 			font-size: var(--step--1);
-			color: var(--color-text-secondary);
+			color: var(--md-sys-color-on-surface-variant);
 
 			transition: color 200ms;
 		}
 
 		.welcome-lang-label:has(input:checked) > .welcome-lang-text {
 			font-weight: 600;
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 			text-decoration: underline;
 			text-underline-offset: 4px;
 		}

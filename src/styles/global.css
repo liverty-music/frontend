@@ -3,15 +3,15 @@
 		font-family: var(--font-body);
 		font-size: var(--step-0);
 		line-height: var(--leading-relaxed);
-		color: var(--color-text-primary);
+		color: var(--md-sys-color-on-surface);
 
-		background: var(--color-surface-base);
+		background: var(--md-sys-color-surface);
 	}
 
 	/* Top-layer elements inherit from <html>, not <body>.
 	   Restore the app's text color for all popovers and dialogs. */
 	:where([popover], dialog) {
-		color: var(--color-text-primary);
+		color: var(--md-sys-color-on-surface);
 	}
 
 	:where(h1, h2, h3, h4, h5, h6) {
@@ -44,7 +44,7 @@
 		padding-block: var(--space-2xs);
 		padding-inline: var(--space-s);
 		border: none;
-		border-radius: var(--radius-button);
+		border-radius: var(--md-sys-shape-corner-medium);
 
 		font-family: var(--font-display);
 		font-weight: 600;
@@ -52,9 +52,9 @@
 		background: transparent;
 
 		transition:
-			background-color var(--transition-fast) ease-out,
-			opacity var(--transition-fast) ease-out,
-			transform var(--transition-fast) ease-out;
+			background-color var(--md-sys-motion-duration-short3) ease-out,
+			opacity var(--md-sys-motion-duration-short3) ease-out,
+			transform var(--md-sys-motion-duration-short3) ease-out;
 	}
 
 	/* App-wide state-layer baseline: hover and keyboard focus composite the M3
@@ -66,7 +66,7 @@
 	:where(button:hover:not(:disabled)) {
 		background: color-mix(
 			in oklab,
-			currentcolor var(--md-state-hover),
+			currentcolor calc(var(--md-sys-state-hover-opacity) * 100%),
 			transparent
 		);
 	}
@@ -74,7 +74,7 @@
 	:where(button:focus-visible) {
 		background: color-mix(
 			in oklab,
-			currentcolor var(--md-state-focus),
+			currentcolor calc(var(--md-sys-state-focus-opacity) * 100%),
 			transparent
 		);
 	}
@@ -92,11 +92,11 @@
 	:where(input, textarea, select) {
 		padding-block: var(--space-2xs);
 		padding-inline: var(--space-xs);
-		border: 1px solid var(--color-border-subtle);
-		border-radius: var(--radius-button);
+		border: 1px solid var(--md-sys-color-outline-variant);
+		border-radius: var(--md-sys-shape-corner-medium);
 
 		accent-color: var(--color-brand-primary);
-		background: var(--color-surface-raised);
+		background: var(--md-sys-color-surface-container);
 	}
 
 	:where(svg) {
@@ -107,13 +107,11 @@
 	/* View Transitions API for route animations — pseudo-elements cannot be wrapped in :where() */
 	/* stylelint-disable cube/prefer-where-in-reset -- view transition pseudo-elements cannot be wrapped in :where() */
 	::view-transition-old(root) {
-		animation: var(--transition-route-duration) var(--transition-route-easing)
-			both fade-out;
+		animation: var(--md-sys-motion-duration-short4) ease-out both fade-out;
 	}
 
 	::view-transition-new(root) {
-		animation: var(--transition-route-duration) var(--transition-route-easing)
-			both fade-in;
+		animation: var(--md-sys-motion-duration-short4) ease-out both fade-in;
 	}
 
 	/* In-place list edits (e.g. my-artists unfollow) set `vt-suppress-root` so

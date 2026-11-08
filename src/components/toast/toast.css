@@ -16,12 +16,12 @@
 			max-block-size: none;
 			margin: 0;
 			padding: var(--space-s);
-			border: 1px solid var(--color-border-subtle);
-			border-radius: var(--radius-card);
+			border: 1px solid var(--md-sys-color-outline-variant);
+			border-radius: var(--md-sys-shape-corner-large);
 
 			color: inherit;
 
-			background: var(--color-surface-raised);
+			background: var(--md-sys-color-surface-container);
 			box-shadow: var(--shadow-card-glow);
 
 			transition:

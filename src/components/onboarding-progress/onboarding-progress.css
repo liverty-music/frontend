@@ -62,13 +62,13 @@
 			position: relative;
 
 			block-size: var(--_meter-size);
-			border-radius: var(--radius-full);
+			border-radius: var(--md-sys-shape-corner-full);
 
 			background: var(--_track);
 			box-shadow: inset 0 0 0 1px var(--_track-edge);
 
-			transition: --progress var(--md-spring-spatial-slow-duration)
-				var(--md-spring-spatial-slow);
+			transition: --progress var(--md-sys-motion-spring-spatial-slow-duration)
+				var(--md-sys-motion-spring-spatial-slow);
 		}
 
 		.onboarding-progress-fill {
@@ -97,18 +97,18 @@
 
 			inline-size: var(--_spark-size);
 			block-size: var(--_spark-size);
-			border-radius: var(--radius-full);
+			border-radius: var(--md-sys-shape-corner-full);
 
 			opacity: calc(min(var(--progress), 1));
 			background: radial-gradient(circle, var(--_spark), transparent 70%);
 		}
 
 		.onboarding-progress-meter[data-rise="0"] .onboarding-progress-spark {
-			animation: spark-flare-a 700ms var(--md-spring-effects);
+			animation: spark-flare-a 700ms var(--md-sys-motion-spring-effects);
 		}
 
 		.onboarding-progress-meter[data-rise="1"] .onboarding-progress-spark {
-			animation: spark-flare-b 700ms var(--md-spring-effects);
+			animation: spark-flare-b 700ms var(--md-sys-motion-spring-effects);
 		}
 
 		@keyframes progress-sheen {
@@ -142,7 +142,7 @@
 			min-block-size: 2.75rem;
 			padding-inline: var(--space-s);
 			border: 2px solid transparent;
-			border-radius: var(--radius-full);
+			border-radius: var(--md-sys-shape-corner-full);
 
 			font-family: var(--font-display);
 			font-size: var(--step-0);
@@ -151,7 +151,10 @@
 			text-decoration: none;
 
 			background:
-				linear-gradient(var(--md-color-primary), var(--md-color-primary))
+				linear-gradient(
+					var(--md-sys-color-primary),
+					var(--md-sys-color-primary)
+				)
 				padding-box,
 				conic-gradient(
 					from var(--_ready-angle),
@@ -164,8 +167,10 @@
 			box-shadow: 0 0 1.25rem var(--_glow);
 
 			transition:
-				opacity var(--md-spring-effects-duration) var(--md-spring-effects),
-				scale var(--md-spring-spatial-duration) var(--md-spring-spatial);
+				opacity var(--md-sys-motion-spring-effects-duration)
+				var(--md-sys-motion-spring-effects),
+				scale var(--md-sys-motion-spring-spatial-duration)
+				var(--md-sys-motion-spring-spatial);
 			animation: ready-turn 3s linear infinite;
 
 			@starting-style {
@@ -192,10 +197,10 @@
 
 			inline-size: 2rem;
 			block-size: 2rem;
-			border-radius: var(--radius-full);
+			border-radius: var(--md-sys-shape-corner-full);
 
 			font-size: var(--step--1);
-			color: var(--md-color-primary);
+			color: var(--md-sys-color-primary);
 
 			background: var(--color-white);
 
@@ -210,7 +215,8 @@
 
 				box-shadow: 0 0 0 2px var(--color-brand-accent);
 
-				animation: ready-beacon 1.6s var(--md-spring-effects) infinite;
+				animation: ready-beacon 1.6s var(--md-sys-motion-spring-effects)
+					infinite;
 			}
 		}
 

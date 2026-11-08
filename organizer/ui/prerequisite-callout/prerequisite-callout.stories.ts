@@ -43,7 +43,7 @@ export const WithAction = {
 	render: (args) =>
 		defineAureliaStory({
 			template: `
-				<div style="inline-size:390px; padding:16px; background:var(--md-color-surface)">
+				<div style="inline-size:390px; padding:16px; background:var(--md-sys-color-surface)">
 					<prerequisite-callout heading.bind="heading" action-label.bind="actionLabel" action-href.bind="actionHref" level.bind="level">
 						販売を始めるには、特定商取引法に基づく表記に使う事業者情報が必要です。
 					</prerequisite-callout>
@@ -111,7 +111,7 @@ export const ButtonAction = {
 	render: (args) =>
 		defineAureliaStory({
 			template: `
-				<div style="inline-size:390px; padding:16px; background:var(--md-color-surface)">
+				<div style="inline-size:390px; padding:16px; background:var(--md-sys-color-surface)">
 					<prerequisite-callout heading.bind="heading" action-label.bind="actionLabel" action-href.bind="actionHref" level.bind="level" action.trigger="pressed = pressed + 1">
 						公開すると、チケットの販売を始められます。
 					</prerequisite-callout>
@@ -149,7 +149,7 @@ export const WithFixAndGuide = {
 	render: (args) =>
 		defineAureliaStory({
 			template: `
-				<div style="inline-size:390px; padding:16px; background:var(--md-color-surface)">
+				<div style="inline-size:390px; padding:16px; background:var(--md-sys-color-surface)">
 					<prerequisite-callout heading.bind="heading" action-label.bind="actionLabel" action-href.bind="actionHref" guide-chapter.bind="guideChapter" level.bind="level">
 						販売を始めるには、公演日の開始時刻が必要です。
 					</prerequisite-callout>

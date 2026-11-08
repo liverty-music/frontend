@@ -53,8 +53,8 @@ export const SelectionMorph = {
 	render: () =>
 		defineAureliaStory({
 			template: `
-				<div style="display:flex; gap:1rem; padding:1rem; background:var(--md-color-surface); color:var(--md-color-on-surface)">
-					<span data-selected-morph style="padding:0.5rem 1rem; border-radius:var(--md-shape-large)">Unselected</span>
+				<div style="display:flex; gap:1rem; padding:1rem; background:var(--md-sys-color-surface); color:var(--md-sys-color-on-surface)">
+					<span data-selected-morph style="padding:0.5rem 1rem; border-radius:var(--md-sys-shape-corner-large)">Unselected</span>
 					<span data-selected-morph data-selected style="padding:0.5rem 1rem">Selected</span>
 				</div>
 			`,
@@ -63,47 +63,55 @@ export const SelectionMorph = {
 
 // ── Color roles: fill + on-* pairs, contrast-enforced ────────────────────────
 const ROLE_PAIRS: ReadonlyArray<{ label: string; fill: string; on: string }> = [
-	{ label: 'primary', fill: '--md-color-primary', on: '--md-color-on-primary' },
+	{
+		label: 'primary',
+		fill: '--md-sys-color-primary',
+		on: '--md-sys-color-on-primary',
+	},
 	{
 		label: 'secondary',
-		fill: '--md-color-secondary',
-		on: '--md-color-on-secondary',
+		fill: '--md-sys-color-secondary',
+		on: '--md-sys-color-on-secondary',
 	},
 	{
 		label: 'tertiary',
-		fill: '--md-color-tertiary',
-		on: '--md-color-on-tertiary',
+		fill: '--md-sys-color-tertiary',
+		on: '--md-sys-color-on-tertiary',
 	},
-	{ label: 'error', fill: '--md-color-error', on: '--md-color-on-error' },
+	{
+		label: 'error',
+		fill: '--md-sys-color-error',
+		on: '--md-sys-color-on-error',
+	},
 	{
 		label: 'primary-container',
-		fill: '--md-color-primary-container',
-		on: '--md-color-on-primary-container',
+		fill: '--md-sys-color-primary-container',
+		on: '--md-sys-color-on-primary-container',
 	},
 	{
 		label: 'secondary-container',
-		fill: '--md-color-secondary-container',
-		on: '--md-color-on-secondary-container',
+		fill: '--md-sys-color-secondary-container',
+		on: '--md-sys-color-on-secondary-container',
 	},
 	{
 		label: 'tertiary-container',
-		fill: '--md-color-tertiary-container',
-		on: '--md-color-on-tertiary-container',
+		fill: '--md-sys-color-tertiary-container',
+		on: '--md-sys-color-on-tertiary-container',
 	},
 	{
 		label: 'error-container',
-		fill: '--md-color-error-container',
-		on: '--md-color-on-error-container',
+		fill: '--md-sys-color-error-container',
+		on: '--md-sys-color-on-error-container',
 	},
 	{
 		label: 'surface / on-surface',
-		fill: '--md-color-surface',
-		on: '--md-color-on-surface',
+		fill: '--md-sys-color-surface',
+		on: '--md-sys-color-on-surface',
 	},
 	{
 		label: 'surface / on-surface-variant',
-		fill: '--md-color-surface',
-		on: '--md-color-on-surface-variant',
+		fill: '--md-sys-color-surface',
+		on: '--md-sys-color-on-surface-variant',
 	},
 ]
 
@@ -121,7 +129,7 @@ export const ColorRoles = {
 				<div style="display:flex; flex-direction:column; gap:0.5rem; inline-size:22rem; padding:1rem">
 					${ROLE_PAIRS.map(
 						(p) =>
-							`<div data-role-pair="${p.label}" style="padding:0.75rem 1rem; border-radius:var(--md-shape-small); background:var(${p.fill}); color:var(${p.on})">${p.label}</div>`,
+							`<div data-role-pair="${p.label}" style="padding:0.75rem 1rem; border-radius:var(--md-sys-shape-corner-small); background:var(${p.fill}); color:var(${p.on})">${p.label}</div>`,
 					).join('')}
 				</div>
 			`,
@@ -142,7 +150,7 @@ export const ColorRoles = {
 		// The fill keeps brand-primary's hue and chroma; only the tone differs.
 		const [, brandC, brandH] = oklch(brand)
 		const [fillL, fillC, fillH] = oklch(
-			resolveColor(pair, 'var(--md-color-primary)'),
+			resolveColor(pair, 'var(--md-sys-color-primary)'),
 		)
 		await expect(fillC).toBeCloseTo(brandC, 3)
 		await expect(fillH).toBeCloseTo(brandH, 1)

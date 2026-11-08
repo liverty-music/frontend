@@ -30,7 +30,7 @@ export const Copy = {
 	render: (args) =>
 		defineAureliaStory({
 			template: `
-				<div style="padding:16px; background:var(--md-color-surface); color:var(--md-color-on-surface)">
+				<div style="padding:16px; background:var(--md-sys-color-surface); color:var(--md-sys-color-on-surface)">
 					<copy-button label.bind="label" value.bind="value"></copy-button>
 					<console-snackbar></console-snackbar>
 				</div>

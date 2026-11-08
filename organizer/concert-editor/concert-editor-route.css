@@ -30,17 +30,17 @@
 
 		.section-title {
 			font: var(--md-type-title-large);
-			color: var(--md-color-on-surface);
+			color: var(--md-sys-color-on-surface);
 		}
 
 		.note {
-			color: var(--md-color-on-surface-variant);
+			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.legend {
 			margin-block-end: var(--space-2xs);
 			font: var(--md-type-title-medium);
-			color: var(--md-color-on-surface);
+			color: var(--md-sys-color-on-surface);
 		}
 
 		.series-type {
@@ -66,12 +66,12 @@
 
 			min-block-size: var(--md-target-size);
 			padding-inline: var(--space-s);
-			border-radius: var(--md-shape-small);
+			border-radius: var(--md-sys-shape-corner-small);
 
 			& input {
 				inline-size: 20px;
 				block-size: 20px;
-				accent-color: var(--md-color-primary);
+				accent-color: var(--md-sys-color-primary);
 			}
 		}
 
@@ -97,15 +97,15 @@
 
 			min-block-size: var(--md-target-size);
 			padding: var(--space-xs) var(--space-s);
-			border-radius: var(--md-shape-small);
+			border-radius: var(--md-sys-shape-corner-small);
 
-			background: var(--md-color-surface-container-low);
+			background: var(--md-sys-color-surface-container-low);
 
 			& input {
 				inline-size: 20px;
 				block-size: 20px;
 				margin-block-start: var(--space-3xs);
-				accent-color: var(--md-color-primary);
+				accent-color: var(--md-sys-color-primary);
 			}
 		}
 
@@ -120,12 +120,12 @@
 
 		.visibility-label {
 			font: var(--md-type-title-small);
-			color: var(--md-color-on-surface);
+			color: var(--md-sys-color-on-surface);
 		}
 
 		.visibility-effect {
 			font: var(--md-type-body-small);
-			color: var(--md-color-on-surface-variant);
+			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.performers,
@@ -147,12 +147,12 @@
 
 			min-block-size: var(--md-target-size);
 			padding-inline: var(--space-s);
-			border-radius: var(--md-shape-small);
+			border-radius: var(--md-sys-shape-corner-small);
 
 			& input {
 				inline-size: 20px;
 				block-size: 20px;
-				accent-color: var(--md-color-primary);
+				accent-color: var(--md-sys-color-primary);
 			}
 		}
 
@@ -171,7 +171,7 @@
 
 		.event-title {
 			font: var(--md-type-title-medium);
-			color: var(--md-color-on-surface);
+			color: var(--md-sys-color-on-surface);
 		}
 
 		.fixed-venue {
@@ -181,7 +181,7 @@
 
 		.label {
 			font: var(--md-type-label-large);
-			color: var(--md-color-on-surface-variant);
+			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.error {
@@ -190,7 +190,7 @@
 			align-items: center;
 
 			font: var(--md-type-body-small);
-			color: var(--md-color-error);
+			color: var(--md-sys-color-error);
 		}
 
 		.cover {
@@ -202,7 +202,7 @@
 		.cover-image {
 			inline-size: 240px;
 			max-inline-size: 100%;
-			border-radius: var(--md-shape-medium);
+			border-radius: var(--md-sys-shape-corner-medium);
 			object-fit: cover;
 		}
 

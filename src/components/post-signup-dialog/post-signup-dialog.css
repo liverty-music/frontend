@@ -11,7 +11,7 @@
 			align-self: center;
 			inline-size: 4rem;
 			block-size: 4rem;
-			border-radius: var(--radius-card);
+			border-radius: var(--md-sys-shape-corner-large);
 		}
 
 		.post-signup-title {
@@ -24,7 +24,7 @@
 		.post-signup-body {
 			font-size: var(--step-0);
 			line-height: var(--leading-relaxed);
-			color: var(--color-text-secondary);
+			color: var(--md-sys-color-on-surface-variant);
 			text-wrap: pretty;
 			word-break: auto-phrase;
 		}

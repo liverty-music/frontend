@@ -25,7 +25,7 @@ type Story = StoryObj<typeof meta>
 export const Default = {
 	render: (args) =>
 		defineAureliaStory({
-			template: `<div style="padding:16px; background:var(--md-color-surface)"><icon-button icon.bind="icon" label.bind="label" disabled.bind="disabled"></icon-button></div>`,
+			template: `<div style="padding:16px; background:var(--md-sys-color-surface)"><icon-button icon.bind="icon" label.bind="label" disabled.bind="disabled"></icon-button></div>`,
 			props: args,
 		}),
 	play: async ({ canvasElement }) => {

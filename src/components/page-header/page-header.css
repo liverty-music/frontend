@@ -16,7 +16,7 @@
 
 			background: linear-gradient(
 				to right,
-				var(--color-surface-raised),
+				var(--md-sys-color-surface-container),
 				oklch(from var(--color-brand-primary) l c h / 8%)
 			);
 
@@ -26,7 +26,7 @@
 				font-family: var(--font-display);
 				font-size: var(--step-2);
 				font-weight: 600;
-				color: var(--color-text-primary);
+				color: var(--md-sys-color-on-surface);
 				letter-spacing: -0.01em;
 			}
 		}

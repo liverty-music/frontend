@@ -8,11 +8,14 @@ import {
 	expectEmphasizedOneStepHeavier,
 	expectLargerBrowserTextSize,
 	expectNamedElevationLevels,
+	expectOwnSurface,
+	expectSharedStateAndMotion,
 	expectTitleAtAnyWidth,
 	TYPE_SAMPLES,
 } from '../../.storybook/m3-foundations'
 import { consoleStoryParameters } from '../ui/story-support'
 import sharedStyles from './shared.css?inline'
+import consoleTokens from './tokens.css?raw'
 
 /**
  * The Material 3 type styles and elevation levels shared with the fan app
@@ -59,5 +62,21 @@ export const ElevationLevels = {
 		const root = consoleShadowRoot(canvasElement, ELEVATION_SAMPLES)
 		// @spec components/infrastructure/organizer/web/global/design-tokens "A floating surface at a named level"
 		expectNamedElevationLevels(root)
+	},
+} satisfies Story
+
+export const SharedSystemTokens = {
+	// Runs with motion reduced too, where the durations are the reduced ones.
+	tags: ['reduced-motion'],
+	render: () => defineAureliaStory({ template: '' }),
+	play: async ({ canvasElement }) => {
+		// Read inside a console shadow root, where every console component renders.
+		const root = consoleShadowRoot(canvasElement, '<p>console</p>')
+		const inside = root.querySelector('p')
+		if (!inside) throw new Error('no element in the shadow root')
+		// @spec components/infrastructure/fan/web/global/design-tokens "One edit applies to both apps"
+		expectSharedStateAndMotion(inside)
+		// @spec components/infrastructure/fan/web/global/design-tokens "Colors stay per app"
+		expectOwnSurface(inside, consoleTokens)
 	},
 } satisfies Story

@@ -38,7 +38,7 @@ const render =
 	() =>
 		defineAureliaStory({
 			template: `
-				<div style="display:flex; justify-content:flex-end; padding:16px; min-block-size:200px; background:var(--md-color-surface); color:var(--md-color-on-surface)">
+				<div style="display:flex; justify-content:flex-end; padding:16px; min-block-size:200px; background:var(--md-sys-color-surface); color:var(--md-sys-color-on-surface)">
 					<overflow-menu items.bind="items" select.trigger="chosen = $event.detail"></overflow-menu>
 				</div>
 				<output data-testid="chosen">\${chosen}</output>

@@ -8,22 +8,22 @@
 		display: grid;
 		gap: var(--space-3xs);
 		padding-block: var(--space-xs);
-		border-block-end: 1px solid var(--md-color-outline-variant);
+		border-block-end: 1px solid var(--md-sys-color-outline-variant);
 	}
 
 	dt {
 		font: var(--md-type-label-large);
-		color: var(--md-color-on-surface-variant);
+		color: var(--md-sys-color-on-surface-variant);
 	}
 
 	dd {
 		margin: 0;
 		font: var(--md-type-body-large);
-		color: var(--md-color-on-surface);
+		color: var(--md-sys-color-on-surface);
 		overflow-wrap: anywhere;
 
 		&[data-empty="true"] {
-			color: var(--md-color-on-surface-variant);
+			color: var(--md-sys-color-on-surface-variant);
 		}
 	}
 

@@ -74,3 +74,46 @@ export const OpenThenDismiss = {
 		await waitFor(() => expect(closed).toBe(true), { timeout: 2000 })
 	},
 } satisfies Story
+
+// The sheet's top corners take the extra-large corner shape (28 px), and only
+// the top edge is rounded, also when the page reads right to left. The
+// logical properties are what makes that hold for any rounding; a physical
+// longhand such as `border-top-left-radius` is rejected by stylelint
+// (`property-layout-mappings`). Closes the sheet at the end, as above.
+export const RoundedTopCorners = {
+	render: (args) =>
+		defineAureliaStory({
+			template: `<div dir="rtl">${template}</div>`,
+			props: args,
+			register: [BottomSheet],
+		}),
+	args: { open: true, dismissable: true },
+	play: async ({ canvasElement }) => {
+		const body = canvasElement.querySelector<HTMLElement>('.sheet-body')
+		await expect(body).toBeTruthy()
+		const style = getComputedStyle(body as HTMLElement)
+		const extraLarge = getComputedStyle(document.documentElement)
+			.getPropertyValue('--md-sys-shape-corner-extra-large')
+			.trim()
+
+		// @spec components/infrastructure/fan/web/global/design-tokens "Radius matches component size"
+		await expect(extraLarge).toBe('28px')
+		await expect(style.borderStartStartRadius).toBe(extraLarge)
+
+		// @spec components/infrastructure/fan/web/global/design-tokens "Directional rounding is RTL-safe"
+		await expect(style.direction).toBe('rtl')
+		await expect(style.borderTopRightRadius).toBe(extraLarge)
+		await expect(style.borderTopLeftRadius).toBe(extraLarge)
+		await expect(style.borderBottomRightRadius).toBe('0px')
+		await expect(style.borderBottomLeftRadius).toBe('0px')
+
+		let closed = false
+		canvasElement.addEventListener('sheet-closed', () => {
+			closed = true
+		})
+		await userEvent.click(
+			canvasElement.querySelector<HTMLElement>('.dismiss-zone') as HTMLElement,
+		)
+		await waitFor(() => expect(closed).toBe(true), { timeout: 2000 })
+	},
+} satisfies Story

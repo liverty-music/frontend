@@ -24,6 +24,8 @@ const COLOUR_TOKENS = [
 	'--color-error',
 	'--color-warning',
 	'--color-success',
+	// White has no Material 3 role: text on a coloured fill, a translucent veil.
+	'--color-white',
 	LOCAL_TOKEN,
 ]
 
@@ -127,12 +129,10 @@ export default {
 		// replaces a rule's value rather than merging it, so these repeat the base
 		// config's entries.
 		//
-		// The allowed names are the target of adopt-m3-cube-ui-foundation: the
-		// `--md-sys-color-*`, `--md-sys-shape-*` and `--md-sys-elevation-*` tokens and
-		// the type classes are added by its later steps, which rename today's
-		// `--md-color-*`, `--md-shape-*` and `--md-elevation-*`. Until then their uses
-		// are recorded in stylelint-suppressions.json. Admin and reception are outside
-		// that change and keep their own rules.
+		// The allowed names are the target of adopt-m3-cube-ui-foundation, whose
+		// later steps move today's `--md-shape-*`, `--md-elevation-*` and fonts onto
+		// them; until then those uses are recorded in stylelint-suppressions.json.
+		// Admin and reception are outside that change and keep their own rules.
 		{
 			files: [
 				'src/components/**/*.css',

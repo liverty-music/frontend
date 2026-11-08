@@ -49,7 +49,7 @@ const SCAFFOLD_STYLE = `
 		.story-card {
 			margin: 0;
 			padding: var(--space-m) var(--space-2xs);
-			border-radius: var(--radius-card);
+			border-radius: var(--md-sys-shape-corner-large);
 			color: oklch(15% 0 0deg);
 			background: oklch(85% 0.15 var(--artist-hue));
 		}

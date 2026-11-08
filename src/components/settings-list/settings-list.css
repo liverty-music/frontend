@@ -17,11 +17,11 @@
 			margin: 0;
 			padding: 0;
 			border: 1px solid color-mix(in oklch, var(--color-white) 10%, transparent);
-			border-radius: var(--radius-card);
+			border-radius: var(--md-sys-shape-corner-large);
 
 			list-style: none;
 
-			background: var(--color-surface-raised);
+			background: var(--md-sys-color-surface-container);
 		}
 
 		/* Row components render their row inside a host that takes no box. */
@@ -58,7 +58,7 @@
 			   centred text would drift to the middle of the column. */
 			text-align: start;
 
-			transition: background var(--transition-normal);
+			transition: background var(--md-sys-motion-duration-short4);
 
 			/* Only a row that is itself the control (a <button> or <a>) reacts
 			   to the pointer; a row holding its own action button does not. */
@@ -83,7 +83,7 @@
 			grid-column: 1;
 			inline-size: 1.25rem;
 			block-size: 1.25rem;
-			color: var(--color-text-secondary);
+			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.settings-row-label,
@@ -128,17 +128,17 @@
 		.settings-chevron {
 			inline-size: 1rem;
 			block-size: 1rem;
-			color: var(--color-text-muted);
+			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.settings-row-label {
 			font-size: var(--step--1);
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 		}
 
 		.settings-row-value {
 			font-size: var(--step--1);
-			color: var(--color-text-secondary);
+			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		/* Rows of the route itself that opt out of the 3-column model and span
@@ -242,8 +242,8 @@
 		.settings-expand-caret {
 			inline-size: 1rem;
 			block-size: 1rem;
-			color: var(--color-text-muted);
-			transition: transform var(--transition-normal);
+			color: var(--md-sys-color-on-surface-variant);
+			transition: transform var(--md-sys-motion-duration-short4);
 		}
 
 		/* Switch control: the trailing (col3) cell for split consent rows. A
@@ -269,7 +269,7 @@
 		.settings-toggle-desc {
 			font-size: var(--step--1);
 			line-height: var(--leading-relaxed);
-			color: var(--color-text-muted);
+			color: var(--md-sys-color-on-surface-variant);
 			text-wrap: pretty;
 		}
 
@@ -284,9 +284,9 @@
 
 			inline-size: var(--toggle-track-inline);
 			block-size: var(--toggle-track-block);
-			border-radius: var(--radius-full);
+			border-radius: var(--md-sys-shape-corner-full);
 
-			transition: background var(--transition-normal);
+			transition: background var(--md-sys-motion-duration-short4);
 		}
 
 		.settings-toggle-thumb {
@@ -296,12 +296,12 @@
 
 			inline-size: var(--toggle-thumb-size);
 			block-size: var(--toggle-thumb-size);
-			border-radius: var(--radius-full);
+			border-radius: var(--md-sys-shape-corner-full);
 
 			background: var(--_thumb-bg);
 			box-shadow: var(--shadow-soft);
 
-			transition: transform var(--transition-normal);
+			transition: transform var(--md-sys-motion-duration-short4);
 		}
 
 		/* A label longer than the row (an email address) breaks between words,

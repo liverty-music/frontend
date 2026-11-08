@@ -11,7 +11,7 @@
 			font-family: var(--font-display);
 			font-size: var(--step-0);
 			font-weight: normal;
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 		}
 
 		.section-label {
@@ -19,7 +19,7 @@
 
 			font-size: var(--step--1);
 			font-weight: 600;
-			color: var(--color-text-muted);
+			color: var(--md-sys-color-on-surface-variant);
 			text-transform: uppercase;
 			letter-spacing: 0.05em;
 		}
@@ -34,18 +34,18 @@
 			min-block-size: 2.75rem;
 			padding-block: var(--space-3xs);
 			padding-inline: var(--space-s);
-			border: 1px solid var(--color-border-muted);
-			border-radius: var(--radius-full);
+			border: 1px solid var(--md-sys-color-outline);
+			border-radius: var(--md-sys-shape-corner-full);
 
 			font-size: var(--step--1);
-			color: var(--color-text-secondary);
+			color: var(--md-sys-color-on-surface-variant);
 
-			background: var(--color-surface-raised);
+			background: var(--md-sys-color-surface-container);
 
 			transition:
-				border-color var(--transition-fast),
-				background var(--transition-fast),
-				color var(--transition-fast);
+				border-color var(--md-sys-motion-duration-short3),
+				background var(--md-sys-motion-duration-short3),
+				color var(--md-sys-motion-duration-short3);
 
 			&:hover {
 				border-color: color-mix(
@@ -62,11 +62,11 @@
 
 			&[data-active="true"] {
 				border-color: var(--color-brand-primary);
-				color: var(--color-text-primary);
+				color: var(--md-sys-color-on-surface);
 				background: color-mix(
 					in oklch,
 					var(--color-brand-primary) 18%,
-					var(--color-surface-raised)
+					var(--md-sys-color-surface-container)
 				);
 			}
 		}
@@ -83,20 +83,20 @@
 			gap: var(--space-3xs);
 
 			font-size: var(--step--2);
-			color: var(--color-text-muted);
+			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.custom-input {
 			min-block-size: 2.75rem;
 			padding-block: var(--space-3xs);
 			padding-inline: var(--space-2xs);
-			border: 1px solid var(--color-border-subtle);
-			border-radius: var(--radius-sm);
+			border: 1px solid var(--md-sys-color-outline-variant);
+			border-radius: var(--md-sys-shape-corner-small);
 
 			font-size: var(--step--1);
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 
-			background: var(--color-surface-raised);
+			background: var(--md-sys-color-surface-container);
 
 			&:focus-visible {
 				outline: 2px solid var(--color-brand-primary);
@@ -108,7 +108,7 @@
 			display: block;
 			margin-block-start: var(--space-2xs);
 			font-size: var(--step--2);
-			color: var(--color-text-muted);
+			color: var(--md-sys-color-on-surface-variant);
 
 			&[data-invalid="true"] {
 				color: var(--color-error);

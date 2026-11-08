@@ -15,7 +15,7 @@
 		min-block-size: 40px;
 		padding-inline: var(--space-m);
 		border: 1px solid transparent;
-		border-radius: var(--md-shape-full);
+		border-radius: var(--md-sys-shape-corner-full);
 
 		font: var(--md-type-label-large);
 
@@ -24,7 +24,7 @@
 		   (design-tokens). on-surface-variant keeps 4.5:1 on every surface in both
 		   themes and reads one step below the outlined variant's on-surface. The
 		   state layer follows currentColor. */
-		color: var(--md-color-on-surface-variant);
+		color: var(--md-sys-color-on-surface-variant);
 		text-decoration: none;
 		white-space: nowrap;
 
@@ -38,38 +38,38 @@
 
 	button:disabled {
 		cursor: not-allowed;
-		color: color-mix(in oklch, var(--md-color-on-surface) 38%, transparent);
+		color: color-mix(in oklch, var(--md-sys-color-on-surface) 38%, transparent);
 	}
 
 	[data-variant="filled"] {
-		color: var(--md-color-on-primary);
-		background: var(--md-color-primary);
+		color: var(--md-sys-color-on-primary);
+		background: var(--md-sys-color-primary);
 	}
 
 	[data-variant="tonal"] {
-		color: var(--md-color-on-secondary-container);
-		background: var(--md-color-secondary-container);
+		color: var(--md-sys-color-on-secondary-container);
+		background: var(--md-sys-color-secondary-container);
 	}
 
 	[data-variant="outlined"] {
-		border-color: var(--md-color-outline);
-		color: var(--md-color-on-surface);
+		border-color: var(--md-sys-color-outline);
+		color: var(--md-sys-color-on-surface);
 	}
 
 	[data-variant="danger"] {
-		color: var(--md-color-on-error);
-		background: var(--md-color-error);
+		color: var(--md-sys-color-on-error);
+		background: var(--md-sys-color-error);
 	}
 
 	[data-variant]:is(:disabled) {
 		border-color: color-mix(
 			in oklch,
-			var(--md-color-on-surface) 12%,
+			var(--md-sys-color-on-surface) 12%,
 			transparent
 		);
 		background: color-mix(
 			in oklch,
-			var(--md-color-on-surface) 12%,
+			var(--md-sys-color-on-surface) 12%,
 			transparent
 		);
 	}

@@ -26,14 +26,14 @@
 @layer global {
 	:where(body) {
 		font: var(--md-type-body-medium);
-		color: var(--md-color-on-surface);
-		background: var(--md-color-surface);
+		color: var(--md-sys-color-on-surface);
+		background: var(--md-sys-color-surface);
 	}
 
 	/* Each screen's title. */
 	:where(.page-title) {
 		font: var(--md-type-headline-small);
-		color: var(--md-color-on-surface);
+		color: var(--md-sys-color-on-surface);
 	}
 }
 

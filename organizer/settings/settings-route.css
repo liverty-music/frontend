@@ -20,7 +20,7 @@
 
 		.section-title {
 			font: var(--md-type-title-large);
-			color: var(--md-color-on-surface);
+			color: var(--md-sys-color-on-surface);
 		}
 
 		.artists {
@@ -36,7 +36,7 @@
 		.artist {
 			padding-block: var(--space-xs);
 			font: var(--md-type-body-large);
-			color: var(--md-color-on-surface);
+			color: var(--md-sys-color-on-surface);
 		}
 
 		.status {
@@ -47,16 +47,16 @@
 
 		.status-term {
 			font: var(--md-type-label-large);
-			color: var(--md-color-on-surface-variant);
+			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.note {
-			color: var(--md-color-on-surface-variant);
+			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.explain {
 			max-inline-size: 65ch;
-			color: var(--md-color-on-surface);
+			color: var(--md-sys-color-on-surface);
 		}
 
 		.message {

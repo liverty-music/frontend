@@ -14,11 +14,11 @@
 
 			max-inline-size: 560px;
 			padding: var(--space-m);
-			border-radius: var(--md-shape-large);
+			border-radius: var(--md-sys-shape-corner-large);
 
-			color: var(--md-color-on-surface-variant);
+			color: var(--md-sys-color-on-surface-variant);
 
-			background: var(--md-color-surface-container);
+			background: var(--md-sys-color-surface-container);
 		}
 	}
 }

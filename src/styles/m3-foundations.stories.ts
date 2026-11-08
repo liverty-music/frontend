@@ -8,9 +8,12 @@ import {
 	expectEmphasizedOneStepHeavier,
 	expectLargerBrowserTextSize,
 	expectNamedElevationLevels,
+	expectOwnSurface,
+	expectSharedStateAndMotion,
 	expectTitleAtAnyWidth,
 	TYPE_SAMPLES,
 } from '../../.storybook/m3-foundations'
+import fanTokens from './tokens.css?raw'
 
 /**
  * The Material 3 type styles and elevation levels shared with the organizer
@@ -40,5 +43,17 @@ export const ElevationLevels = {
 	play: async ({ canvasElement }) => {
 		// @spec components/infrastructure/fan/web/global/design-tokens "A floating surface at a named level"
 		expectNamedElevationLevels(canvasElement)
+	},
+} satisfies Story
+
+export const SharedSystemTokens = {
+	// Runs with motion reduced too, where the durations are the reduced ones.
+	tags: ['reduced-motion'],
+	render: () => defineAureliaStory({ template: TYPE_SAMPLES }),
+	play: async () => {
+		// @spec components/infrastructure/fan/web/global/design-tokens "One edit applies to both apps"
+		expectSharedStateAndMotion(document.documentElement)
+		// @spec components/infrastructure/fan/web/global/design-tokens "Colors stay per app"
+		expectOwnSurface(document.documentElement, fanTokens)
 	},
 } satisfies Story

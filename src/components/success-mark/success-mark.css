@@ -5,9 +5,9 @@
 @layer block {
 	@scope (success-mark) {
 		:scope {
-			--_ring: var(--md-duration-long2);
-			--_check: var(--md-duration-medium2);
-			--_pulse: var(--md-duration-medium4);
+			--_ring: var(--md-sys-motion-duration-long2);
+			--_check: var(--md-sys-motion-duration-medium2);
+			--_pulse: var(--md-sys-motion-duration-medium4);
 
 			/* The check starts while the ring is finishing. */
 			--_check-delay: calc(var(--_ring) * 0.7);
@@ -24,7 +24,8 @@
 			inline-size: 100%;
 			block-size: 100%;
 			animation: success-mark-pulse var(--_pulse)
-				var(--md-easing-emphasized-decelerate) var(--_pulse-delay) both;
+				var(--md-sys-motion-easing-emphasized-decelerate) var(--_pulse-delay)
+				both;
 		}
 
 		/* The global reset (`:where(svg) { fill: currentcolor }`) beats the
@@ -42,13 +43,14 @@
 		.success-mark-ring {
 			stroke-width: 3;
 			animation: success-mark-draw var(--_ring)
-				var(--md-easing-emphasized-decelerate) both;
+				var(--md-sys-motion-easing-emphasized-decelerate) both;
 		}
 
 		.success-mark-check {
 			stroke-width: 4;
 			animation: success-mark-draw var(--_check)
-				var(--md-easing-emphasized-decelerate) var(--_check-delay) both;
+				var(--md-sys-motion-easing-emphasized-decelerate) var(--_check-delay)
+				both;
 		}
 
 		@keyframes success-mark-draw {

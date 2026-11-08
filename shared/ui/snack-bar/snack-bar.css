@@ -11,11 +11,11 @@
 	@scope (snack-bar) {
 		:scope {
 			/* The fan app's severity gradients come from the token layer
-			   (--md-color-snack-*, each at 4.5:1 for the white message and the
+			   (--md-sys-color-snack-*, each at 4.5:1 for the white message and the
 			   on-container action); an app without them sets
 			   --snack-bar-container instead. */
-			--_bg-from: var(--md-color-snack-info-from);
-			--_bg-to: var(--md-color-snack-info-to);
+			--_bg-from: var(--md-sys-color-snack-info-from);
+			--_bg-to: var(--md-sys-color-snack-info-to);
 			--_action-bg-hover: var(
 				--snack-bar-action-hover,
 				oklch(100% 0 0deg / 18%)
@@ -132,7 +132,7 @@
 
 			padding-block: var(--space-2xs);
 			padding-inline: var(--space-s);
-			border-radius: var(--md-shape-extra-small);
+			border-radius: var(--md-sys-shape-corner-extra-small);
 
 			font-family: var(--snack-bar-font-family, var(--font-display));
 			font-weight: var(--snack-bar-font-weight, 600);
@@ -147,13 +147,13 @@
 
 		/* Severity recolors the container gradient (info keeps the brand hues). */
 		.snack-item[data-severity="warning"] {
-			--_bg-from: var(--md-color-snack-warning);
-			--_bg-to: var(--md-color-snack-warning);
+			--_bg-from: var(--md-sys-color-snack-warning);
+			--_bg-to: var(--md-sys-color-snack-warning);
 		}
 
 		.snack-item[data-severity="error"] {
-			--_bg-from: var(--md-color-snack-error-from);
-			--_bg-to: var(--md-color-snack-error-to);
+			--_bg-from: var(--md-sys-color-snack-error-from);
+			--_bg-to: var(--md-sys-color-snack-error-to);
 		}
 
 		.snack-icon {
@@ -201,7 +201,7 @@
 			margin-inline-end: calc(-1 * var(--space-2xs));
 			padding: 0;
 			border: none;
-			border-radius: var(--md-shape-full);
+			border-radius: var(--md-sys-shape-corner-full);
 
 			color: inherit;
 

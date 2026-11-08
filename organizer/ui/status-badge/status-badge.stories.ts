@@ -28,7 +28,7 @@ export const Tones = {
 	render: () =>
 		defineAureliaStory({
 			template: `
-				<div style="display:flex; flex-wrap:wrap; gap:8px; padding:16px; background:var(--md-color-surface)">
+				<div style="display:flex; flex-wrap:wrap; gap:8px; padding:16px; background:var(--md-sys-color-surface)">
 					<status-badge tone="success" label="公開中"></status-badge>
 					<status-badge tone="neutral" label="下書き"></status-badge>
 					<status-badge tone="warning" label="受付前"></status-badge>
@@ -50,7 +50,7 @@ export const Tones = {
 export const Published = {
 	render: (args) =>
 		defineAureliaStory({
-			template: `<div style="padding:16px; background:var(--md-color-surface)"><status-badge tone.bind="tone" label.bind="label"></status-badge></div>`,
+			template: `<div style="padding:16px; background:var(--md-sys-color-surface)"><status-badge tone.bind="tone" label.bind="label"></status-badge></div>`,
 			props: args,
 		}),
 	play: async ({ canvasElement }) => {

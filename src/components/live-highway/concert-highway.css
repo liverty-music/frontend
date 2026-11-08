@@ -2,7 +2,10 @@
 	@scope (concert-highway) {
 		--_border-light: oklch(100% 0 0deg / 10%);
 		--_border-faint: oklch(100% 0 0deg / 5%);
-		--_muted-faint: oklch(from var(--color-text-muted) l c h / 30%);
+		--_muted-faint: oklch(
+			from var(--md-sys-color-on-surface-variant) l c h /
+			30%
+		);
 
 		:scope {
 			/* Single source of truth for the lane columns. The stage header still
@@ -59,17 +62,17 @@
 			}
 
 			& > [data-stage="home"] {
-				color: var(--color-surface-base);
+				color: var(--md-sys-color-surface);
 				background: var(--color-stage-home);
 			}
 
 			& > [data-stage="near"] {
-				color: var(--color-surface-base);
+				color: var(--md-sys-color-surface);
 				background: var(--color-stage-near);
 			}
 
 			& > [data-stage="away"] {
-				color: var(--color-surface-base);
+				color: var(--md-sys-color-surface);
 				background: var(--color-stage-away);
 			}
 		}
@@ -147,7 +150,7 @@
 			display: block;
 			block-size: 44px;
 			margin-block-end: var(--space-2xs);
-			border-radius: var(--radius-card);
+			border-radius: var(--md-sys-shape-corner-large);
 		}
 
 		.month-separator {
@@ -161,7 +164,7 @@
 
 			font-size: var(--step--2);
 			font-weight: 600;
-			color: var(--color-text-muted);
+			color: var(--md-sys-color-on-surface-variant);
 			text-transform: uppercase;
 			letter-spacing: 0.06em;
 

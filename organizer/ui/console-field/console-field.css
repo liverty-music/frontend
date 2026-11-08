@@ -10,11 +10,11 @@
 
 	.label {
 		font: var(--md-type-label-large);
-		color: var(--md-color-on-surface-variant);
+		color: var(--md-sys-color-on-surface-variant);
 	}
 
 	.required {
-		color: var(--md-color-error);
+		color: var(--md-sys-color-error);
 	}
 
 	.control {
@@ -24,14 +24,14 @@
 
 		min-block-size: 56px;
 		padding-inline: var(--space-s);
-		border: 1px solid var(--md-color-outline);
-		border-radius: var(--md-shape-extra-small);
+		border: 1px solid var(--md-sys-color-outline);
+		border-radius: var(--md-sys-shape-corner-extra-small);
 
-		background: var(--md-color-surface);
+		background: var(--md-sys-color-surface);
 
 		&:focus-within {
-			border-color: var(--md-color-primary);
-			box-shadow: inset 0 0 0 1px var(--md-color-primary);
+			border-color: var(--md-sys-color-primary);
+			box-shadow: inset 0 0 0 1px var(--md-sys-color-primary);
 		}
 	}
 
@@ -46,7 +46,7 @@
 		border: none;
 
 		font: var(--md-type-body-large);
-		color: var(--md-color-on-surface);
+		color: var(--md-sys-color-on-surface);
 
 		background: transparent;
 
@@ -75,18 +75,18 @@
 		align-items: center;
 
 		&::picker-icon {
-			color: var(--md-color-on-surface-variant);
+			color: var(--md-sys-color-on-surface-variant);
 		}
 	}
 
 	::picker(select) {
 		padding-block: var(--space-2xs);
 		border: none;
-		border-radius: var(--md-shape-extra-small);
+		border-radius: var(--md-sys-shape-corner-extra-small);
 
-		color: var(--md-color-on-surface);
+		color: var(--md-sys-color-on-surface);
 
-		background: var(--md-color-surface-container);
+		background: var(--md-sys-color-surface-container);
 		box-shadow: var(--md-elevation-2);
 	}
 
@@ -97,21 +97,21 @@
 		padding-inline: var(--space-s);
 
 		font: var(--md-type-body-large);
-		color: var(--md-color-on-surface);
+		color: var(--md-sys-color-on-surface);
 
-		background: var(--md-color-surface-container);
+		background: var(--md-sys-color-surface-container);
 
 		&:is(:hover, :focus-visible) {
 			background: color-mix(
 				in oklch,
-				var(--md-color-on-surface) 8%,
-				var(--md-color-surface-container)
+				var(--md-sys-color-on-surface) 8%,
+				var(--md-sys-color-surface-container)
 			);
 		}
 
 		&:checked {
-			color: var(--md-color-on-secondary-container);
-			background: var(--md-color-secondary-container);
+			color: var(--md-sys-color-on-secondary-container);
+			background: var(--md-sys-color-secondary-container);
 		}
 	}
 
@@ -123,7 +123,7 @@
 
 	.affix {
 		font: var(--md-type-body-large);
-		color: var(--md-color-on-surface-variant);
+		color: var(--md-sys-color-on-surface-variant);
 	}
 
 	.supporting,
@@ -133,20 +133,20 @@
 	}
 
 	.supporting {
-		color: var(--md-color-on-surface-variant);
+		color: var(--md-sys-color-on-surface-variant);
 	}
 
 	.error,
 	.error-icon {
-		color: var(--md-color-error);
+		color: var(--md-sys-color-error);
 	}
 
 	.field[data-invalid="true"] .control {
-		border-color: var(--md-color-error);
+		border-color: var(--md-sys-color-error);
 	}
 
 	.field[data-invalid="true"] .label {
-		color: var(--md-color-error);
+		color: var(--md-sys-color-error);
 	}
 
 	.field[data-disabled="true"] {
@@ -155,11 +155,11 @@
 
 	/* A fixed value stays readable: no editable border and no focus emphasis. */
 	.field[data-readonly="true"] .control {
-		border-color: var(--md-color-outline-variant);
-		background: var(--md-color-surface-container-low);
+		border-color: var(--md-sys-color-outline-variant);
+		background: var(--md-sys-color-surface-container-low);
 
 		&:focus-within {
-			border-color: var(--md-color-outline-variant);
+			border-color: var(--md-sys-color-outline-variant);
 			box-shadow: none;
 		}
 	}

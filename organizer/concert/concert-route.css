@@ -42,7 +42,7 @@
 
 		.section-title {
 			font: var(--md-type-title-large);
-			color: var(--md-color-on-surface);
+			color: var(--md-sys-color-on-surface);
 		}
 
 		.seat-types {
@@ -50,7 +50,7 @@
 		}
 
 		.note {
-			color: var(--md-color-on-surface-variant);
+			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.seat-type-list {
@@ -74,7 +74,7 @@
 
 		.seat-type-name {
 			font: var(--md-type-title-small);
-			color: var(--md-color-on-surface);
+			color: var(--md-sys-color-on-surface);
 		}
 
 		.seat-type-form {
@@ -85,7 +85,7 @@
 
 		.form-title {
 			font: var(--md-type-title-small);
-			color: var(--md-color-on-surface);
+			color: var(--md-sys-color-on-surface);
 		}
 
 		.row {
@@ -102,7 +102,7 @@
 			aspect-ratio: 1;
 			inline-size: 100%;
 			max-inline-size: 360px;
-			border-radius: var(--md-shape-medium);
+			border-radius: var(--md-sys-shape-corner-medium);
 
 			object-fit: cover;
 		}
@@ -111,7 +111,7 @@
 		.cover-note {
 			max-inline-size: 360px;
 			font: var(--md-type-body-medium);
-			color: var(--md-color-on-surface-variant);
+			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.summary {
@@ -126,13 +126,13 @@
 
 			& dt {
 				font: var(--md-type-label-large);
-				color: var(--md-color-on-surface-variant);
+				color: var(--md-sys-color-on-surface-variant);
 			}
 
 			& dd {
 				margin: 0;
 				font: var(--md-type-body-large);
-				color: var(--md-color-on-surface);
+				color: var(--md-sys-color-on-surface);
 			}
 		}
 
@@ -154,14 +154,14 @@
 
 			min-block-size: var(--md-target-size);
 			padding-inline: var(--space-2xs);
-			border-radius: var(--md-shape-small);
+			border-radius: var(--md-sys-shape-corner-small);
 
-			color: var(--md-color-on-surface);
+			color: var(--md-sys-color-on-surface);
 
 			& input {
 				inline-size: 20px;
 				block-size: 20px;
-				accent-color: var(--md-color-primary);
+				accent-color: var(--md-sys-color-primary);
 			}
 		}
 
@@ -186,8 +186,8 @@
 
 			.supporting {
 				padding: var(--space-s);
-				border-radius: var(--md-shape-large);
-				background: var(--md-color-surface-container-low);
+				border-radius: var(--md-sys-shape-corner-large);
+				background: var(--md-sys-color-surface-container-low);
 			}
 		}
 	}

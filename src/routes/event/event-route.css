@@ -8,7 +8,7 @@
 			padding-block: var(--space-m) var(--space-xl);
 			padding-inline: var(--space-m);
 
-			background: var(--color-surface-base);
+			background: var(--md-sys-color-surface);
 		}
 
 		.event-page {
@@ -21,7 +21,7 @@
 
 		.event-status,
 		.event-empty {
-			color: var(--color-text-secondary);
+			color: var(--md-sys-color-on-surface-variant);
 			text-align: center;
 		}
 
@@ -36,14 +36,14 @@
 			font-family: var(--font-display);
 			font-size: var(--step-2);
 			font-weight: normal;
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 		}
 
 		.event-cover {
 			overflow: hidden;
 			aspect-ratio: 16 / 9;
-			border-radius: var(--radius-card);
-			background: var(--color-surface-raised);
+			border-radius: var(--md-sys-shape-corner-large);
+			background: var(--md-sys-color-surface-container);
 		}
 
 		.event-cover-img {
@@ -59,7 +59,7 @@
 			block-size: 100%;
 
 			font-size: var(--step-4);
-			color: var(--color-text-secondary);
+			color: var(--md-sys-color-on-surface-variant);
 
 			background: linear-gradient(
 				135deg,
@@ -74,9 +74,9 @@
 
 			padding: var(--space-s);
 			border: 1px solid var(--color-warning);
-			border-radius: var(--radius-card);
+			border-radius: var(--md-sys-shape-corner-large);
 
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 
 			background: oklch(from var(--color-warning) l c h / 12%);
 		}
@@ -91,7 +91,7 @@
 			font-size: var(--step-3);
 			font-weight: normal;
 			line-height: var(--leading-snug);
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 			text-wrap: balance;
 		}
 
@@ -110,14 +110,14 @@
 		.event-performer-name {
 			font-size: var(--step-1);
 			font-weight: 600;
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 		}
 
 		.event-follow {
 			min-block-size: 44px;
 			padding-inline: var(--space-s);
 			border: 1px solid var(--color-brand-primary);
-			border-radius: var(--radius-button);
+			border-radius: var(--md-sys-shape-corner-medium);
 
 			font-weight: 600;
 			color: var(--color-brand-primary);
@@ -125,8 +125,8 @@
 			background: transparent;
 
 			&[data-followed="true"] {
-				color: var(--md-color-on-primary);
-				background: var(--md-color-primary);
+				color: var(--md-sys-color-on-primary);
+				background: var(--md-sys-color-primary);
 			}
 		}
 
@@ -143,17 +143,17 @@
 		}
 
 		.event-detail-icon {
-			color: var(--color-text-secondary);
+			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.event-detail-primary {
 			font-weight: 600;
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 		}
 
 		.event-detail-secondary,
 		.event-times {
-			color: var(--color-text-secondary);
+			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.event-times {
@@ -163,14 +163,14 @@
 		}
 
 		.event-description {
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 			white-space: pre-line;
 		}
 
 		.event-section-title {
 			font-size: var(--step-0);
 			font-weight: 600;
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 		}
 
 		.event-tickets,
@@ -179,9 +179,9 @@
 			gap: var(--space-xs);
 
 			padding: var(--space-s);
-			border-radius: var(--radius-card);
+			border-radius: var(--md-sys-shape-corner-large);
 
-			background: var(--color-surface-raised);
+			background: var(--md-sys-color-surface-container);
 		}
 
 		.event-sale,
@@ -197,7 +197,7 @@
 		/* Each seat type after the first is set off by a rule. */
 		.event-stock + .event-stock {
 			padding-block-start: var(--space-s);
-			border-block-start: 1px solid var(--color-border-subtle);
+			border-block-start: 1px solid var(--md-sys-color-outline-variant);
 		}
 
 		.event-stock-head {
@@ -208,12 +208,12 @@
 		.event-stock-name {
 			font-size: var(--step-1);
 			font-weight: 600;
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 		}
 
 		.event-sale-held {
 			font-weight: 600;
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 		}
 
 		.event-resale {
@@ -222,14 +222,14 @@
 
 		.event-sale-name {
 			font-weight: 600;
-			color: var(--color-text-secondary);
+			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.event-sale-price,
 		.event-sale-status {
 			font-size: var(--step-1);
 			font-weight: 600;
-			color: var(--color-text-primary);
+			color: var(--md-sys-color-on-surface);
 		}
 
 		.event-sale-low {
@@ -245,7 +245,7 @@
 		.event-date-status {
 			margin-inline-start: var(--space-2xs);
 			font-weight: 600;
-			color: var(--color-text-secondary);
+			color: var(--md-sys-color-on-surface-variant);
 		}
 	}
 }

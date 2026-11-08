@@ -30,7 +30,7 @@
 			padding-block: var(--button-padding-block, var(--space-2xs));
 			padding-inline: var(--button-padding-inline, var(--space-m));
 			border: 2px solid transparent;
-			border-radius: var(--radius-button);
+			border-radius: var(--md-sys-shape-corner-medium);
 
 			/* Outfit, the display fallback, because Righteous has no bold
 			   weight. */
@@ -38,27 +38,30 @@
 			font-size: var(--button-font-size, max(var(--step-0), 1.1875rem));
 			font-weight: 700;
 			line-height: var(--leading-tight);
-			color: var(--md-color-on-primary);
+			color: var(--md-sys-color-on-primary);
 			text-align: center;
 			text-decoration: none;
 
-			background: var(--md-color-primary);
+			background: var(--md-sys-color-primary);
 			box-shadow: var(--shadow-button);
 		}
 
 		/* The `pressable` morph, restated here: this block's own radius would
 		   otherwise outrank the utility layer. */
 		:scope:active:not(:disabled) {
-			border-radius: var(--press-morph-radius, var(--md-shape-large-increased));
+			border-radius: var(
+				--press-morph-radius,
+				var(--md-sys-shape-corner-large-increased)
+			);
 		}
 
 		/* Hover and keyboard focus raise the `pressable` state layer. */
 		:scope:focus-visible::after {
-			opacity: var(--md-state-focus);
+			opacity: var(--md-sys-state-focus-opacity);
 		}
 
 		:scope:hover:not(:disabled)::after {
-			opacity: var(--md-state-hover);
+			opacity: var(--md-sys-state-hover-opacity);
 		}
 
 		:scope:disabled {
@@ -71,14 +74,14 @@
 
 @layer exception {
 	.button[data-variant="outlined"] {
-		border-color: var(--color-border-subtle);
-		color: var(--color-text-primary);
+		border-color: var(--md-sys-color-outline-variant);
+		color: var(--md-sys-color-on-surface);
 		background: transparent;
 		box-shadow: none;
 	}
 
 	.button[data-variant="danger"] {
-		background: var(--md-color-error-container);
+		background: var(--md-sys-color-error-container);
 		box-shadow: none;
 	}
 

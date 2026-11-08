@@ -66,7 +66,7 @@ export const Default = {
 		const arc = arcOf(canvasElement)
 		await expect(renderedStrokeWidth(arc)).toBeCloseTo(4, 5)
 		await expect(getComputedStyle(arc).stroke).toBe(
-			resolvedColor(canvasElement, 'var(--md-color-primary)'),
+			resolvedColor(canvasElement, 'var(--md-sys-color-primary)'),
 		)
 	},
 } satisfies Story
@@ -91,11 +91,11 @@ export const InsideButton = {
 			template: `
 				<div style="display:flex; gap:1rem; padding:1rem">
 					<button type="button" data-testid="idle"
-						style="display:inline-grid; place-items:center; padding:0.625rem 1.5rem; border:none; border-radius:999px; color:var(--md-color-on-primary); background:var(--md-color-primary)">
+						style="display:inline-grid; place-items:center; padding:0.625rem 1.5rem; border:none; border-radius:999px; color:var(--md-sys-color-on-primary); background:var(--md-sys-color-primary)">
 						<span style="grid-area:1/1">保存する</span>
 					</button>
 					<button type="button" data-testid="pending" aria-busy="true" aria-label="保存する"
-						style="display:inline-grid; place-items:center; padding:0.625rem 1.5rem; border:none; border-radius:999px; color:var(--md-color-on-primary); background:var(--md-color-primary)">
+						style="display:inline-grid; place-items:center; padding:0.625rem 1.5rem; border:none; border-radius:999px; color:var(--md-sys-color-on-primary); background:var(--md-sys-color-primary)">
 						<span style="grid-area:1/1; visibility:hidden">保存する</span>
 						<circular-progress size="small" style="grid-area:1/1"></circular-progress>
 					</button>

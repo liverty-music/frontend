@@ -13,15 +13,19 @@
 		block-size: var(--md-target-size);
 		padding: 0;
 		border: none;
-		border-radius: var(--md-shape-full);
+		border-radius: var(--md-sys-shape-corner-full);
 
-		color: var(--md-color-on-surface-variant);
+		color: var(--md-sys-color-on-surface-variant);
 
 		background: transparent;
 
 		&:disabled {
 			cursor: not-allowed;
-			color: color-mix(in oklch, var(--md-color-on-surface) 38%, transparent);
+			color: color-mix(
+				in oklch,
+				var(--md-sys-color-on-surface) 38%,
+				transparent
+			);
 		}
 	}
 }

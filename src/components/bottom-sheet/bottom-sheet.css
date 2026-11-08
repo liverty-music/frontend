@@ -189,9 +189,12 @@
 			overflow-y: auto;
 
 			max-block-size: 90svh;
-			border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
 
-			background: var(--sheet-bg, var(--color-surface-raised));
+			/* Only the top edge is rounded; logical corners mirror under RTL. */
+			border-start-start-radius: var(--md-sys-shape-corner-extra-large);
+			border-start-end-radius: var(--md-sys-shape-corner-extra-large);
+
+			background: var(--sheet-bg, var(--md-sys-color-surface-container));
 			box-shadow: var(--shadow-sheet);
 
 			/* Focus target on open; suppress the focus ring on the container
@@ -220,7 +223,7 @@
 
 				inline-size: 2.5rem;
 				block-size: 0.25rem;
-				border-radius: var(--radius-full);
+				border-radius: var(--md-sys-shape-corner-full);
 
 				background: var(--_handle-bg);
 			}

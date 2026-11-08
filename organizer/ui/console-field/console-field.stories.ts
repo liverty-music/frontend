@@ -58,7 +58,7 @@ type Story = StoryObj<typeof meta>
 const render: Story['render'] = (args) =>
 	defineAureliaStory({
 		template: `
-			<div style="inline-size:360px; padding:16px; background:var(--md-color-surface)">
+			<div style="inline-size:360px; padding:16px; background:var(--md-sys-color-surface)">
 				<console-field
 					type.bind="type" label.bind="label" value.bind="value" error.bind="error"
 					hint.bind="hint" required.bind="required" disabled.bind="disabled" readonly.bind="readonly" options.bind="options"
@@ -138,7 +138,7 @@ const renderSelect =
 	(args) =>
 		defineAureliaStory({
 			template: `
-				<div style="color-scheme:${scheme}; inline-size:360px; padding:16px; background:var(--md-color-surface)">
+				<div style="color-scheme:${scheme}; inline-size:360px; padding:16px; background:var(--md-sys-color-surface)">
 					<console-field type="select" label="本人確認" value.bind="value" options.bind="options"></console-field>
 				</div>
 			`,
@@ -168,7 +168,7 @@ async function checkOpenPicker(canvasElement: HTMLElement): Promise<void> {
 	// The options sit on the console's surface container, not the browser's
 	// own list: an option neither chosen nor hovered has its color.
 	const probe = document.createElement('span')
-	probe.style.background = 'var(--md-color-surface-container)'
+	probe.style.background = 'var(--md-sys-color-surface-container)'
 	canvasElement.firstElementChild?.append(probe)
 	await expect(getComputedStyle(options[1]).backgroundColor).toBe(
 		getComputedStyle(probe).backgroundColor,
@@ -197,7 +197,7 @@ export const SelectChange = {
 	render: (args) =>
 		defineAureliaStory({
 			template: `
-				<div style="inline-size:360px; padding:16px; background:var(--md-color-surface)">
+				<div style="inline-size:360px; padding:16px; background:var(--md-sys-color-surface)">
 					<console-field type="select" label="本人確認" value.to-view="value" options.bind="options" change.trigger="chosen = $event.detail.value"></console-field>
 					<output data-testid="chosen">\${chosen}</output>
 				</div>
