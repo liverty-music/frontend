@@ -162,7 +162,7 @@
 			block-size: var(--toggle-track-block);
 			border-radius: var(--md-sys-shape-corner-full);
 
-			transition: background var(--transition-normal);
+			transition: background var(--md-sys-motion-duration-short4);
 
 			&[data-on="true"] {
 				background: var(--color-brand-primary);
@@ -185,7 +185,7 @@
 			background: var(--color-white);
 			box-shadow: var(--shadow-soft);
 
-			transition: transform var(--transition-normal);
+			transition: transform var(--md-sys-motion-duration-short4);
 
 			&[data-on="true"] {
 				transform: translateX(var(--toggle-thumb-translate));

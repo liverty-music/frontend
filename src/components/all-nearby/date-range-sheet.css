@@ -43,9 +43,9 @@
 			background: var(--md-sys-color-surface-container);
 
 			transition:
-				border-color var(--transition-fast),
-				background var(--transition-fast),
-				color var(--transition-fast);
+				border-color var(--md-sys-motion-duration-short3),
+				background var(--md-sys-motion-duration-short3),
+				color var(--md-sys-motion-duration-short3);
 
 			&:hover {
 				border-color: color-mix(

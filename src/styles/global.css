@@ -52,9 +52,9 @@
 		background: transparent;
 
 		transition:
-			background-color var(--transition-fast) ease-out,
-			opacity var(--transition-fast) ease-out,
-			transform var(--transition-fast) ease-out;
+			background-color var(--md-sys-motion-duration-short3) ease-out,
+			opacity var(--md-sys-motion-duration-short3) ease-out,
+			transform var(--md-sys-motion-duration-short3) ease-out;
 	}
 
 	/* App-wide state-layer baseline: hover and keyboard focus composite the M3
@@ -107,13 +107,11 @@
 	/* View Transitions API for route animations — pseudo-elements cannot be wrapped in :where() */
 	/* stylelint-disable cube/prefer-where-in-reset -- view transition pseudo-elements cannot be wrapped in :where() */
 	::view-transition-old(root) {
-		animation: var(--transition-route-duration) var(--transition-route-easing)
-			both fade-out;
+		animation: var(--md-sys-motion-duration-short4) ease-out both fade-out;
 	}
 
 	::view-transition-new(root) {
-		animation: var(--transition-route-duration) var(--transition-route-easing)
-			both fade-in;
+		animation: var(--md-sys-motion-duration-short4) ease-out both fade-in;
 	}
 
 	/* In-place list edits (e.g. my-artists unfollow) set `vt-suppress-root` so

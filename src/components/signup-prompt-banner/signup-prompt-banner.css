@@ -82,8 +82,8 @@
 			/* On the banner, not the host: the host stays mounted while the
 			   banner is hidden, and the entrance plays when the banner appears. */
 			.signup-banner {
-				animation: banner-enter var(--md-duration-medium3)
-					var(--md-easing-emphasized-decelerate);
+				animation: banner-enter var(--md-sys-motion-duration-medium3)
+					var(--md-sys-motion-easing-emphasized-decelerate);
 			}
 
 			/* The attention cue: a light runs along the brand line, then across

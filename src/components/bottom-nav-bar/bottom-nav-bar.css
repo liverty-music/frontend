@@ -62,10 +62,14 @@
 			   [data-selected-morph] utility) because the component's own
 			   transition would otherwise clobber the utility's. */
 			transition:
-				color var(--md-duration-medium1) var(--md-spring-effects),
-				box-shadow var(--md-duration-medium1) var(--md-spring-effects),
-				border-radius var(--md-spring-spatial-duration) var(--md-spring-spatial),
-				transform var(--md-duration-medium1) var(--md-easing-standard);
+				color var(--md-sys-motion-duration-medium1)
+				var(--md-sys-motion-spring-effects),
+				box-shadow var(--md-sys-motion-duration-medium1)
+				var(--md-sys-motion-spring-effects),
+				border-radius var(--md-sys-motion-spring-spatial-duration)
+				var(--md-sys-motion-spring-spatial),
+				transform var(--md-sys-motion-duration-medium1)
+				var(--md-sys-motion-easing-standard);
 		}
 
 		/* While the FAB is shown, cut a notch around it in the bar's top edge.
@@ -149,7 +153,7 @@
 
 		.nav-tab[data-dimmed] {
 			opacity: 0.3;
-			transition: opacity var(--transition-normal);
+			transition: opacity var(--md-sys-motion-duration-short4);
 		}
 
 		/* Reduced motion: drop the press scale, acknowledge the tap with a brief

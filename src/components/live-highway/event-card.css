@@ -200,7 +200,8 @@
 			opacity: 0;
 			background: var(--color-white);
 
-			transition: opacity var(--md-duration-short3) var(--md-easing-standard);
+			transition: opacity var(--md-sys-motion-duration-short3)
+				var(--md-sys-motion-easing-standard);
 		}
 
 		.event-card[data-matched]:active::after,

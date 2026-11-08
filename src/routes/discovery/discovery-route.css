@@ -266,8 +266,8 @@
 			background: var(--_white-8);
 
 			transition:
-				border-color var(--transition-normal),
-				color var(--transition-normal);
+				border-color var(--md-sys-motion-duration-short4),
+				color var(--md-sys-motion-duration-short4);
 
 			& svg {
 				inline-size: 1rem;
@@ -300,9 +300,9 @@
 			background: var(--_white-8);
 
 			transition:
-				background var(--transition-normal),
-				color var(--transition-normal),
-				border-color var(--transition-normal);
+				background var(--md-sys-motion-duration-short4),
+				color var(--md-sys-motion-duration-short4),
+				border-color var(--md-sys-motion-duration-short4);
 
 			&:hover {
 				color: var(--color-white);
@@ -378,7 +378,7 @@
 
 			background: var(--_white-5);
 
-			transition: background var(--transition-fast);
+			transition: background var(--md-sys-motion-duration-short3);
 
 			&:hover {
 				background: var(--_white-10);

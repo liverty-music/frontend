@@ -104,9 +104,12 @@
 			background: var(--md-sys-color-surface-container);
 
 			transition:
-				border-color var(--md-duration-short4) var(--md-easing-standard),
-				background var(--md-duration-short4) var(--md-easing-standard),
-				color var(--md-duration-short4) var(--md-easing-standard);
+				border-color var(--md-sys-motion-duration-short4)
+				var(--md-sys-motion-easing-standard),
+				background var(--md-sys-motion-duration-short4)
+				var(--md-sys-motion-easing-standard),
+				color var(--md-sys-motion-duration-short4)
+				var(--md-sys-motion-easing-standard);
 
 			&:hover {
 				border-color: color-mix(
@@ -173,9 +176,12 @@
 			background: var(--md-sys-color-surface-container);
 
 			transition:
-				border-color var(--md-duration-short4) var(--md-easing-standard),
-				background var(--md-duration-short4) var(--md-easing-standard),
-				color var(--md-duration-short4) var(--md-easing-standard);
+				border-color var(--md-sys-motion-duration-short4)
+				var(--md-sys-motion-easing-standard),
+				background var(--md-sys-motion-duration-short4)
+				var(--md-sys-motion-easing-standard),
+				color var(--md-sys-motion-duration-short4)
+				var(--md-sys-motion-easing-standard);
 
 			&[data-journey-status="tracking"] {
 				--_hue: var(--journey-hue-tracking);
@@ -239,7 +245,7 @@
 
 		.date-facet-caret {
 			color: var(--md-sys-color-on-surface-variant);
-			transition: transform var(--transition-fast);
+			transition: transform var(--md-sys-motion-duration-short3);
 
 			&[data-expanded="true"] {
 				transform: rotate(90deg);

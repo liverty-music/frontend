@@ -58,7 +58,7 @@
 			   centred text would drift to the middle of the column. */
 			text-align: start;
 
-			transition: background var(--transition-normal);
+			transition: background var(--md-sys-motion-duration-short4);
 
 			/* Only a row that is itself the control (a <button> or <a>) reacts
 			   to the pointer; a row holding its own action button does not. */
@@ -243,7 +243,7 @@
 			inline-size: 1rem;
 			block-size: 1rem;
 			color: var(--md-sys-color-on-surface-variant);
-			transition: transform var(--transition-normal);
+			transition: transform var(--md-sys-motion-duration-short4);
 		}
 
 		/* Switch control: the trailing (col3) cell for split consent rows. A
@@ -286,7 +286,7 @@
 			block-size: var(--toggle-track-block);
 			border-radius: var(--md-sys-shape-corner-full);
 
-			transition: background var(--transition-normal);
+			transition: background var(--md-sys-motion-duration-short4);
 		}
 
 		.settings-toggle-thumb {
@@ -301,7 +301,7 @@
 			background: var(--_thumb-bg);
 			box-shadow: var(--shadow-soft);
 
-			transition: transform var(--transition-normal);
+			transition: transform var(--md-sys-motion-duration-short4);
 		}
 
 		/* A label longer than the row (an email address) breaks between words,

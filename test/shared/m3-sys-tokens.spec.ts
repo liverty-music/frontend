@@ -60,25 +60,18 @@ describe('shared M3 system tokens', () => {
 		)
 		expect(redefined).toEqual([])
 
-		// The fan app's own names are aliases of the shared tokens, so the fan
-		// components follow an edit of the shared file.
-		const fan = new Map(
-			declarations(appCss['/src/styles/tokens.css']).map((d) => [
-				d.name,
-				d.value,
-			]),
-		)
-		const aliases: Record<string, string> = {
-			'--md-easing-standard': '--md-sys-motion-easing-standard',
-			'--md-easing-emphasized-accelerate':
-				'--md-sys-motion-easing-emphasized-accelerate',
-			'--md-duration-short1': '--md-sys-motion-duration-short1',
-			'--md-duration-medium2': '--md-sys-motion-duration-medium2',
-			'--md-duration-long4': '--md-sys-motion-duration-long4',
-		}
-		for (const [fanName, sharedName] of Object.entries(aliases)) {
-			expect(fan.get(fanName), fanName).toContain(`var(${sharedName})`)
-		}
+		// The fan app keeps no motion or state value of its own beside the
+		// shared ones, so its components follow an edit of the shared file. The
+		// two it keeps have no Material 3 token: a 1 ms duration that still
+		// fires transitionend, and the selected opacity Material 3 does not set.
+		const own = declarations(appCss['/src/styles/tokens.css'])
+			.map((d) => d.name)
+			.filter((name) =>
+				/^--(md-(state|easing|duration|spring)|transition|fab-state)-/.test(
+					name,
+				),
+			)
+		expect(own).toEqual(['--md-duration-instant', '--md-state-selected'])
 	})
 
 	it('@spec components/infrastructure/fan/web/global/design-tokens "Colors stay per app"', () => {

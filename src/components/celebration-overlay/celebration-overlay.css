@@ -76,8 +76,8 @@
 			text-wrap: balance;
 			word-break: auto-phrase;
 
-			animation: headline-enter 700ms var(--md-easing-emphasized-decelerate)
-				both;
+			animation: headline-enter 700ms
+				var(--md-sys-motion-easing-emphasized-decelerate) both;
 		}
 
 		.celebration-sub-text,
@@ -99,8 +99,8 @@
 			text-wrap: balance;
 			word-break: auto-phrase;
 
-			animation: line-enter 500ms var(--md-easing-emphasized-decelerate) 250ms
-				both;
+			animation: line-enter 500ms
+				var(--md-sys-motion-easing-emphasized-decelerate) 250ms both;
 		}
 
 		.celebration-hint {

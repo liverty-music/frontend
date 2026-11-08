@@ -67,8 +67,8 @@
 			background: var(--_track);
 			box-shadow: inset 0 0 0 1px var(--_track-edge);
 
-			transition: --progress var(--md-spring-spatial-slow-duration)
-				var(--md-spring-spatial-slow);
+			transition: --progress var(--md-sys-motion-spring-spatial-slow-duration)
+				var(--md-sys-motion-spring-spatial-slow);
 		}
 
 		.onboarding-progress-fill {
@@ -104,11 +104,11 @@
 		}
 
 		.onboarding-progress-meter[data-rise="0"] .onboarding-progress-spark {
-			animation: spark-flare-a 700ms var(--md-spring-effects);
+			animation: spark-flare-a 700ms var(--md-sys-motion-spring-effects);
 		}
 
 		.onboarding-progress-meter[data-rise="1"] .onboarding-progress-spark {
-			animation: spark-flare-b 700ms var(--md-spring-effects);
+			animation: spark-flare-b 700ms var(--md-sys-motion-spring-effects);
 		}
 
 		@keyframes progress-sheen {
@@ -167,8 +167,10 @@
 			box-shadow: 0 0 1.25rem var(--_glow);
 
 			transition:
-				opacity var(--md-spring-effects-duration) var(--md-spring-effects),
-				scale var(--md-spring-spatial-duration) var(--md-spring-spatial);
+				opacity var(--md-sys-motion-spring-effects-duration)
+				var(--md-sys-motion-spring-effects),
+				scale var(--md-sys-motion-spring-spatial-duration)
+				var(--md-sys-motion-spring-spatial);
 			animation: ready-turn 3s linear infinite;
 
 			@starting-style {
@@ -213,7 +215,8 @@
 
 				box-shadow: 0 0 0 2px var(--color-brand-accent);
 
-				animation: ready-beacon 1.6s var(--md-spring-effects) infinite;
+				animation: ready-beacon 1.6s var(--md-sys-motion-spring-effects)
+					infinite;
 			}
 		}
 

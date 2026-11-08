@@ -192,10 +192,12 @@
 		position: relative;
 
 		transition:
-			border-radius var(--md-spring-spatial-fast-duration)
-			var(--md-spring-spatial-fast),
-			background-color var(--md-duration-short3) var(--md-easing-standard),
-			transform var(--md-duration-short3) var(--md-easing-standard);
+			border-radius var(--md-sys-motion-spring-spatial-fast-duration)
+			var(--md-sys-motion-spring-spatial-fast),
+			background-color var(--md-sys-motion-duration-short3)
+			var(--md-sys-motion-easing-standard),
+			transform var(--md-sys-motion-duration-short3)
+			var(--md-sys-motion-easing-standard);
 	}
 
 	/* stylelint-disable-next-line cube/utility-single-property -- the state layer takes several properties together */
@@ -211,7 +213,8 @@
 		opacity: 0;
 		background: currentcolor;
 
-		transition: opacity var(--md-duration-short3) var(--md-easing-standard);
+		transition: opacity var(--md-sys-motion-duration-short3)
+			var(--md-sys-motion-easing-standard);
 	}
 
 	.pressable:active {
@@ -262,8 +265,10 @@
 	   components layer their own selected color on top. */
 	[data-selected-morph] {
 		transition:
-			background-color var(--md-duration-medium1) var(--md-spring-effects),
-			border-radius var(--md-duration-medium1) var(--md-spring-spatial);
+			background-color var(--md-sys-motion-duration-medium1)
+			var(--md-sys-motion-spring-effects),
+			border-radius var(--md-sys-motion-duration-medium1)
+			var(--md-sys-motion-spring-spatial);
 	}
 
 	[data-selected-morph][aria-selected="true"],

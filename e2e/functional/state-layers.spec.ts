@@ -15,7 +15,7 @@ const FIXTURE = `
 		<button id="plain-next" type="button">Next</button>
 		<button id="selected" type="button" data-selected-morph aria-pressed="true">Selected</button>
 		<button id="pressable" type="button" class="pressable">Press</button>
-		<span id="leaving" style="transition: opacity var(--md-duration-short4) var(--md-easing-emphasized-accelerate)">Leaving</span>
+		<span id="leaving" style="transition: opacity var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-emphasized-accelerate)">Leaving</span>
 	</section>
 `
 
