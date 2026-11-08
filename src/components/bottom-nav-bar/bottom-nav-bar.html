@@ -7,6 +7,6 @@
     data-active.bind="tab.isActive || tab.id === section"
   >
     <svg-icon name.bind="tab.data.icon" class="nav-icon"></svg-icon>
-    <span class="nav-label" t.bind="tab.data.labelKey"></span>
+    <span class="[ nav-label ] [ md-typescale-label-medium${tab.isActive || tab.id === section ? '-emphasized' : ''} ]" t.bind="tab.data.labelKey"></span>
   </a>
 </nav>

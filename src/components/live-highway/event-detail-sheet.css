@@ -50,16 +50,11 @@
 		}
 
 		.sheet-artist-name {
-			font-family: var(--font-display);
-			font-size: var(--step-2);
-			font-weight: normal;
-			line-height: var(--leading-snug);
 			color: var(--color-white);
 		}
 
 		.sheet-event-title {
 			margin-block-start: var(--space-3xs);
-			font-size: var(--step--1);
 			color: var(--_event-title-color);
 		}
 
@@ -82,17 +77,14 @@
 		}
 
 		.detail-primary {
-			font-weight: 500;
 			color: var(--md-sys-color-on-surface);
 		}
 
 		.detail-secondary {
-			font-size: var(--step--1);
 			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.detail-link {
-			font-size: var(--step--1);
 			color: var(--color-brand-accent);
 
 			&:hover {
@@ -113,7 +105,6 @@
 		}
 
 		.out-of-range-text {
-			font-size: var(--step--1);
 			color: var(--md-sys-color-on-surface-variant);
 			text-wrap: pretty;
 			word-break: auto-phrase;
@@ -121,8 +112,6 @@
 
 		/* The place words, larger and highlighted */
 		.reach-words {
-			font-size: var(--step-1);
-			font-weight: 700;
 			color: var(--color-brand-accent);
 		}
 
@@ -138,8 +127,6 @@
 		}
 
 		.journey-heading {
-			font-size: var(--step--1);
-			font-weight: 500;
 			color: var(--md-sys-color-on-surface-variant);
 		}
 
@@ -175,7 +162,6 @@
 
 		.journey-arrow {
 			align-self: center;
-			font-size: var(--step-0);
 			color: var(--md-sys-color-on-surface-variant);
 
 			&::before {
@@ -197,9 +183,6 @@
 			padding-inline: var(--space-2xs);
 			border: 1px solid var(--_border-light);
 			border-radius: var(--md-sys-shape-corner-medium);
-
-			font-size: var(--step--1);
-			font-weight: 500;
 			color: var(--md-sys-color-on-surface-variant);
 
 			transition:
@@ -223,15 +206,9 @@
 			background: var(--_bg-hover);
 		}
 
-		.journey-node-cue {
-			font-size: var(--step-0);
-			line-height: var(--leading-none);
-		}
-
 		/* Pressed: the single solid-filled status */
 		.journey-node[aria-pressed="true"] {
 			border-color: var(--_node-fill);
-			font-weight: 700;
 			color: var(--_node-on);
 			background: var(--_node-fill);
 		}
@@ -265,8 +242,6 @@
 			flex-wrap: wrap;
 			gap: var(--space-2xs);
 			align-items: center;
-
-			font-size: var(--step--1);
 			color: var(--md-sys-color-on-surface-variant);
 			text-wrap: pretty;
 			word-break: auto-phrase;
@@ -296,9 +271,6 @@
 			inline-size: 100%;
 			margin: 0;
 			padding-block: var(--space-2xs);
-
-			font-size: var(--step--1);
-			font-weight: 600;
 			color: var(--color-brand-primary);
 		}
 
@@ -313,9 +285,6 @@
 			padding: var(--space-2xs) var(--space-s);
 			border: 1px solid oklch(from var(--color-brand-accent) l c h / 35%);
 			border-radius: var(--md-sys-shape-corner-medium);
-
-			font-size: var(--step--1);
-			font-weight: 500;
 			color: var(--color-brand-accent);
 			text-align: center;
 			text-wrap: balance;

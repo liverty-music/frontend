@@ -61,8 +61,8 @@
 
 			min-inline-size: 0;
 
-			font-size: var(--_banner-text);
-			font-weight: 500;
+			/* stylelint-disable-next-line property-disallowed-list -- sized to the banner's width so the copy fits one line (ui-primitives, bottom banners); no type style is fluid */
+			font: 500 var(--_banner-text) / 1.6 var(--md-ref-typeface-plain);
 			color: var(--md-sys-color-on-surface);
 			white-space: nowrap;
 		}
@@ -73,7 +73,9 @@
 			--button-min-size: 2.25rem;
 			--button-padding-block: var(--space-3xs);
 			--button-padding-inline: var(--space-s);
-			--button-font-size: var(--_banner-text);
+
+			/* The banner's own text size, the same as the message (ui-primitives). */
+			--button-font: 500 var(--_banner-text) / 1.1 var(--md-ref-typeface-plain);
 
 			white-space: nowrap;
 		}

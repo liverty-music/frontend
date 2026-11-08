@@ -4,10 +4,10 @@
   <svg-icon name.bind="icon" class="settings-icon"></svg-icon>
   <button type="button" click.trigger="toggleExpanded()" aria-expanded.bind="expanded" class="settings-expand">
     <span class="settings-expand-head">
-      <span class="settings-row-label">${label}</span>
+      <span class="[ settings-row-label ] [ md-typescale-body-large ]">${label}</span>
       <svg-icon name="chevron-right" class="settings-expand-caret" data-expanded.bind="expanded"></svg-icon>
     </span>
-    <span if.bind="expanded" class="settings-toggle-desc">${description}</span>
+    <span if.bind="expanded" class="[ settings-toggle-desc ] [ md-typescale-body-medium ]">${description}</span>
   </button>
   <button
     type="button"

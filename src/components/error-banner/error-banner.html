@@ -2,11 +2,11 @@
 
 <bottom-sheet open.to-view="errorBoundary.currentError" dismissable.bind="false" t="[aria-label]errorBanner.label">
   <section class="error-content">
-    <h2 class="error-title" t="errorBanner.title"></h2>
+    <h2 class="[ error-title ] [ md-typescale-title-large ]" t="errorBanner.title"></h2>
     <!-- Fixed copy: neither the captured error's message nor its Error ID is
          shown; both stay in the report email, and the message in the console
          log (spec global/error-banner). -->
-    <p class="error-message" t="errorBanner.message"></p>
+    <p class="[ error-message ] [ md-typescale-body-medium ]" t="errorBanner.message"></p>
 
     <footer class="error-actions">
       <button
@@ -16,7 +16,7 @@
       ></button>
       <p
         if.bind="emailTapped"
-        class="error-email-fallback"
+        class="[ error-email-fallback ] [ md-typescale-body-medium ]"
         role="status"
         t="errorBanner.emailFallback"
         t-params.bind="{ address: emailAddress }"

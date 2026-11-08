@@ -17,8 +17,8 @@
         css="--_dx: ${piece.dx}; --_dy: ${piece.dy}; --_size: ${piece.size}; --_spin: ${piece.spin}; --_duration: ${piece.duration}; --_delay: ${piece.delay}; --_color: ${piece.color}"
       ></span>
     </div>
-    <p class="celebration-text">${message}</p>
-    <p class="celebration-sub-text" if.bind="subMessage">${subMessage}</p>
-    <p class="celebration-hint" if.bind="hint">${hint}</p>
+    <p class="[ celebration-text ] [ md-typescale-display-small ]">${message}</p>
+    <p class="[ celebration-sub-text ] [ md-typescale-title-large ]" if.bind="subMessage">${subMessage}</p>
+    <p class="[ celebration-hint ] [ md-typescale-body-medium ]" if.bind="hint">${hint}</p>
   </output>
 </template>

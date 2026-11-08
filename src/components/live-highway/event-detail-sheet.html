@@ -24,10 +24,10 @@
         style="--artist-hue: ${event.artistHue}"
         class="sheet-artist-header hype-home"
       >
-        <h2 id="sheet-artist-name" class="sheet-artist-name">
+        <h2 id="sheet-artist-name" class="[ sheet-artist-name ] [ md-typescale-headline-small ]">
           ${event.artistName}
         </h2>
-        <p class="sheet-event-title">${event.title}</p>
+        <p class="[ sheet-event-title ] [ md-typescale-body-medium ]">${event.title}</p>
       </header>
 
       <!-- Event details -->
@@ -36,9 +36,9 @@
         <div class="detail-row">
           <span class="detail-icon"><svg-icon name="calendar" size="md"></svg-icon></span>
           <div>
-            <time datetime.bind="event.date.toISOString()" class="detail-primary">${event.date | date:'long'}</time>
+            <time datetime.bind="event.date.toISOString()" class="[ detail-primary ] [ md-typescale-title-medium ]">${event.date | date:'long'}</time>
             <p
-              class="detail-secondary"
+              class="[ detail-secondary ] [ md-typescale-body-medium ]"
               t="eventDetail.openStart"
               t-params.bind="{ open: openTimeOrFallback, start: event.startTime }"
             ></p>
@@ -46,7 +46,7 @@
               href.bind="calendarUrl"
               target="_blank"
               rel="noopener noreferrer"
-              class="detail-link"
+              class="[ detail-link ] [ md-typescale-body-medium ]"
               data-testid="add-to-calendar"
               click.trigger="onCalendarOpened()"
               t="eventDetail.addToCalendar"
@@ -58,13 +58,13 @@
         <div class="detail-row">
           <span class="detail-icon"><svg-icon name="map-pin" size="md"></svg-icon></span>
           <div>
-            <p class="detail-primary">${event.venueName}</p>
-            <p if.bind="event.locationLabel" class="detail-secondary">${event.locationLabel}</p>
+            <p class="[ detail-primary ] [ md-typescale-title-medium ]">${event.venueName}</p>
+            <p if.bind="event.locationLabel" class="[ detail-secondary ] [ md-typescale-body-medium ]">${event.locationLabel}</p>
             <a
               href.bind="googleMapsUrl"
               target="_blank"
               rel="noopener noreferrer"
-              class="detail-link"
+              class="[ detail-link ] [ md-typescale-body-medium ]"
               t="eventDetail.openInGoogleMaps"
             ></a>
           </div>
@@ -73,7 +73,7 @@
 
       <!-- Out-of-range notice: the fan's hype level does not match the concert -->
       <section if.bind="outOfRange" class="sheet-out-of-range" data-testid="out-of-range">
-        <p if.bind="!outOfRange.saved" class="out-of-range-text">
+        <p if.bind="!outOfRange.saved" class="[ out-of-range-text ] [ md-typescale-body-medium ]">
           <span if.bind="outOfRange.currentPlaces" t="[html]eventDetail.outOfRange.current" t-params.bind="{ places: outOfRange.currentPlaces }"></span>
           <span else t="eventDetail.outOfRange.none"></span>
         </p>
@@ -85,7 +85,7 @@
           disabled.bind="hypeUpdating"
           click.trigger="widenHype()"
         >${outOfRange.actionLabel}</button>
-        <p if.bind="outOfRange.saved" class="out-of-range-text" t.bind="'[html]' + outOfRange.savedKey" t-params.bind="{ places: outOfRange.savedPlaces }"></p>
+        <p if.bind="outOfRange.saved" class="[ out-of-range-text ] [ md-typescale-body-medium ]" t.bind="'[html]' + outOfRange.savedKey" t-params.bind="{ places: outOfRange.savedPlaces }"></p>
         <button
           if.bind="outOfRange.saved && pushAction"
           type="button"
@@ -98,7 +98,7 @@
       <!-- Optional inline hint (landing page only). A real coach-mark overlay
            can't point into this top-layer dialog, so the guidance rides inline,
            right above the actions it describes. -->
-      <p if.bind="actionsHint" class="sheet-actions-hint" role="note">
+      <p if.bind="actionsHint" class="[ sheet-actions-hint ] [ md-typescale-body-medium ]" role="note">
         <svg-icon name="info" size="md"></svg-icon>
         <span>${actionsHint}</span>
       </p>
@@ -106,7 +106,7 @@
       <!-- Ticket section: the notification button, the other four statuses,
            the push line and the official site button -->
       <section class="sheet-tickets" data-testid="sheet-journey" aria-labelledby="ticket-section-heading">
-        <h3 id="ticket-section-heading" class="journey-heading" t="eventDetail.ticketSection"></h3>
+        <h3 id="ticket-section-heading" class="[ journey-heading ] [ md-typescale-title-small ]" t="eventDetail.ticketSection"></h3>
 
         <button
           if.bind="showNotifyButton"
@@ -133,25 +133,25 @@
             <span if.bind="config.status === 'lost'" class="journey-separator" aria-hidden="true"></span>
             <button
               type="button"
-              class="journey-node"
+              class="[ journey-node ] [ md-typescale-label-large${status === config.status ? '-emphasized' : ''} ]"
               data-testid="journey-btn"
               data-journey-status.bind="config.status"
               aria-pressed.bind="status === config.status ? 'true' : 'false'"
               disabled.bind="journeyUpdating"
               click.trigger="onStatusPressed(config.status)"
             >
-              <span class="journey-node-cue" aria-hidden="true">${config.icon}</span>
+              <span class="[ journey-node-cue ] [ md-typescale-body-large ]" aria-hidden="true">${config.icon}</span>
               <span class="journey-node-label" t.bind="config.labelKey"></span>
             </button>
             <span
               if.bind="config.status === 'applied' || config.status === 'unpaid'"
-              class="journey-arrow"
+              class="[ journey-arrow ] [ md-typescale-body-large ]"
               aria-hidden="true"
             ></span>
           </template>
         </div>
 
-        <p if.bind="pushLine" class="push-line" data-testid="push-line">
+        <p if.bind="pushLine" class="[ push-line ] [ md-typescale-body-medium ]" data-testid="push-line">
           <span t.bind="pushLine.key"></span>
           <button
             if.bind="pushLine.offer && pushAction"
@@ -189,7 +189,7 @@
         ></button>
         <p
           else
-          class="follow-state"
+          class="[ follow-state ] [ md-typescale-label-large ]"
           data-testid="all-nearby-following"
           t="allNearby.follow.following"
         ></p>

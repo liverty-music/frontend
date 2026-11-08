@@ -182,7 +182,7 @@
       <!-- Sound volume: a sub-row of Sound Effects, so no divider above it. -->
       <li if.bind="soundEnabled" class="[ settings-list-item ] [ settings-list-subitem ]">
         <div class="settings-row settings-volume-row">
-          <label for="se-volume" t="settings.soundVolume" class="settings-row-label"></label>
+          <label for="se-volume" t="settings.soundVolume" class="[ settings-row-label ] [ md-typescale-body-large ]"></label>
           <input
             id="se-volume"
             type="range"
@@ -307,7 +307,7 @@
            to the support address. -->
       <li class="settings-list-item">
         <a href="mailto:${supportEmail}" class="settings-row" data-testid="settings-contact">
-          <span t="settings.contact" class="settings-row-label"></span>
+          <span t="settings.contact" class="[ settings-row-label ] [ md-typescale-body-large ]"></span>
           <span class="settings-row-end">
             <svg-icon name="chevron-right" class="settings-chevron"></svg-icon>
           </span>
@@ -341,7 +341,7 @@
           aria-busy.bind="signingOut || null"
           class="settings-row settings-sign-out"
         >
-          <span t="settings.signOut" class="settings-sign-out-text"></span>
+          <span t="settings.signOut" class="[ settings-sign-out-text ] [ md-typescale-label-large ]"></span>
         </button>
       </li>
     </ul>

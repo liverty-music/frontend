@@ -301,10 +301,6 @@
 			padding: 0;
 			border: none;
 			border-radius: var(--md-sys-shape-corner-full);
-
-			font-family: var(--font-body);
-			font-size: var(--step--1);
-			font-weight: 500;
 			color: var(--md-sys-color-on-surface);
 
 			background: var(--md-sys-color-menu-surface);
@@ -326,8 +322,6 @@
 			padding-block: var(--space-3xs);
 			padding-inline: var(--space-2xs);
 			border-radius: var(--md-sys-shape-corner-small);
-
-			line-height: var(--leading-tight);
 			color: var(--md-sys-color-on-surface);
 			text-align: end;
 

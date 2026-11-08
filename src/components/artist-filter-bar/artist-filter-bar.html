@@ -14,7 +14,7 @@
 >
   <div class="filter-sheet-content">
     <div class="sheet-header">
-      <h2 class="sheet-title" id="filter-sheet-title">絞り込み</h2>
+      <h2 class="[ sheet-title ] [ md-typescale-title-large ]" id="filter-sheet-title">絞り込み</h2>
       <button
         type="button"
         class="[ button ] [ pressable ]"
@@ -26,17 +26,17 @@
 
     <!-- Artist facet -->
     <section class="filter-facet" aria-labelledby="filter-artist-heading">
-      <h3 class="facet-heading" id="filter-artist-heading">アーティスト</h3>
+      <h3 class="[ facet-heading ] [ md-typescale-title-small ]" id="filter-artist-heading">アーティスト</h3>
       <ul class="artists-list" aria-labelledby="filter-artist-heading">
         <li repeat.for="artist of countedArtists" key.bind="artist.id">
-          <label class="artist-chip">
+          <label class="[ artist-chip ] [ md-typescale-label-large ]">
             <input
               type="checkbox"
               class="visually-hidden"
               checked.bind="pendingIds"
               model.bind="artist.id"
             />
-            <span class="artist-count">${artist.count}</span>
+            <span class="[ artist-count ] [ md-typescale-label-large-emphasized ]">${artist.count}</span>
             <span>${artist.name}</span>
           </label>
         </li>
@@ -49,11 +49,11 @@
       class="filter-facet"
       aria-labelledby="filter-journey-heading"
     >
-      <h3 class="facet-heading" id="filter-journey-heading" t="eventDetail.ticketStatus"></h3>
+      <h3 class="[ facet-heading ] [ md-typescale-title-small ]" id="filter-journey-heading" t="eventDetail.ticketStatus"></h3>
       <ul class="journey-list" aria-labelledby="filter-journey-heading">
         <!-- Process phase: tracking -> applied -->
         <li repeat.for="config of processStatuses" key.bind="config.status">
-          <label class="journey-chip" data-journey-status.bind="config.status">
+          <label class="[ journey-chip ] [ md-typescale-label-large ]" data-journey-status.bind="config.status">
             <input
               type="checkbox"
               class="visually-hidden"
@@ -68,7 +68,7 @@
         <li class="journey-list-break" aria-hidden="true"></li>
         <!-- Outcome phase: unpaid, paid, lost -->
         <li repeat.for="config of outcomeStatuses" key.bind="config.status">
-          <label class="journey-chip" data-journey-status.bind="config.status">
+          <label class="[ journey-chip ] [ md-typescale-label-large ]" data-journey-status.bind="config.status">
             <input
               type="checkbox"
               class="visually-hidden"
@@ -94,15 +94,15 @@
         aria-expanded.bind="isDateFacetExpanded"
         aria-controls="filter-date-field"
       >
-        <h3 class="facet-heading" id="filter-date-heading">過去のコンサートも表示</h3>
+        <h3 class="[ facet-heading ] [ md-typescale-title-small ]" id="filter-date-heading">過去のコンサートも表示</h3>
         <svg-icon name="chevron-right" size="xs" class="date-facet-caret" data-expanded.bind="isDateFacetExpanded"></svg-icon>
       </button>
       <div if.bind="isDateFacetExpanded" id="filter-date-field" class="date-facet-field">
-        <label class="date-field-label" for="filter-from-input">この日付以降を表示</label>
+        <label class="[ date-field-label ] [ md-typescale-body-medium ]" for="filter-from-input">この日付以降を表示</label>
         <input
           id="filter-from-input"
           type="date"
-          class="date-field-input"
+          class="[ date-field-input ] [ md-typescale-body-large ]"
           value.bind="pendingFrom"
         />
       </div>

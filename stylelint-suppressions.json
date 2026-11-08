@@ -86,16 +86,8 @@
       "count": 5
     }
   },
-  "src/components/auth-status.css": {
-    "property-disallowed-list": {
-      "count": 1
-    }
-  },
   "src/styles/button.css": {
     "declaration-property-custom-property-allowed-list": {
-      "count": 4
-    },
-    "property-disallowed-list": {
       "count": 4
     }
   },
@@ -309,9 +301,6 @@
     },
     "declaration-property-value-allowed-list": {
       "count": 1
-    },
-    "property-disallowed-list": {
-      "count": 4
     }
   },
   "src/components/artist-filter-bar/artist-filter-bar.css": {
@@ -322,7 +311,7 @@
       "count": 5
     },
     "property-disallowed-list": {
-      "count": 22
+      "count": 10
     }
   },
   "src/components/bottom-sheet/bottom-sheet.css": {
@@ -350,7 +339,7 @@
       "count": 1
     },
     "property-disallowed-list": {
-      "count": 8
+      "count": 5
     }
   },
   "src/components/celebration-overlay/celebration-overlay.css": {
@@ -358,7 +347,7 @@
       "count": 1
     },
     "property-disallowed-list": {
-      "count": 11
+      "count": 2
     }
   },
   "src/components/confirm-dialog/confirm-dialog.css": {
@@ -366,7 +355,7 @@
       "count": 1
     },
     "property-disallowed-list": {
-      "count": 5
+      "count": 1
     }
   },
   "src/components/discovery-swap-button/discovery-swap-button.css": {
@@ -380,7 +369,7 @@
       "count": 1
     },
     "property-disallowed-list": {
-      "count": 6
+      "count": 3
     }
   },
   "src/components/error-banner/error-banner.css": {
@@ -388,17 +377,12 @@
       "count": 2
     },
     "property-disallowed-list": {
-      "count": 7
+      "count": 2
     }
   },
   "src/components/dna-orb/dna-orb-canvas.css": {
     "property-disallowed-list": {
       "count": 2
-    }
-  },
-  "src/components/event-date-tabs/event-date-tabs.css": {
-    "property-disallowed-list": {
-      "count": 4
     }
   },
   "src/components/fab-menu/fab-menu.css": {
@@ -415,25 +399,22 @@
       "count": 5
     },
     "property-disallowed-list": {
-      "count": 7
+      "count": 3
     }
   },
   "src/components/inline-error/inline-error.css": {
     "property-disallowed-list": {
-      "count": 3
+      "count": 2
     }
   },
   "src/components/legal-document/legal-document.css": {
     "property-disallowed-list": {
-      "count": 10
+      "count": 1
     }
   },
   "src/components/notification-mock/notification-mock-card.css": {
     "declaration-property-custom-property-allowed-list": {
       "count": 1
-    },
-    "property-disallowed-list": {
-      "count": 7
     }
   },
   "src/components/onboarding-progress/onboarding-progress.css": {
@@ -445,9 +426,6 @@
     },
     "declaration-property-value-allowed-list": {
       "count": 4
-    },
-    "property-disallowed-list": {
-      "count": 6
     }
   },
   "src/components/live-highway/concert-highway.css": {
@@ -461,7 +439,7 @@
       "count": 2
     },
     "property-disallowed-list": {
-      "count": 13
+      "count": 5
     }
   },
   "src/components/live-highway/event-card.css": {
@@ -475,7 +453,7 @@
       "count": 1
     },
     "property-disallowed-list": {
-      "count": 11
+      "count": 3
     }
   },
   "src/components/live-highway/event-detail-sheet.css": {
@@ -483,12 +461,7 @@
       "count": 1
     },
     "property-disallowed-list": {
-      "count": 37
-    }
-  },
-  "src/components/page-header/page-header.css": {
-    "property-disallowed-list": {
-      "count": 4
+      "count": 13
     }
   },
   "src/components/page-help/page-help.css": {
@@ -499,12 +472,12 @@
       "count": 3
     },
     "property-disallowed-list": {
-      "count": 24
+      "count": 10
     }
   },
   "src/components/post-signup-dialog/post-signup-dialog.css": {
     "property-disallowed-list": {
-      "count": 9
+      "count": 2
     }
   },
   "src/components/pwa-install-banner/pwa-install-banner.css": {
@@ -513,9 +486,6 @@
     },
     "declaration-property-value-disallowed-list": {
       "count": 2
-    },
-    "property-disallowed-list": {
-      "count": 7
     }
   },
   "src/components/settings-list/settings-list.css": {
@@ -529,15 +499,12 @@
       "count": 4
     },
     "property-disallowed-list": {
-      "count": 8
+      "count": 1
     }
   },
   "src/components/signup-prompt-banner/signup-prompt-banner.css": {
     "cube/block-max-lines": {
       "count": 1
-    },
-    "property-disallowed-list": {
-      "count": 2
     }
   },
   "src/components/toast/toast.css": {
@@ -550,7 +517,7 @@
   },
   "src/components/user-home-selector/user-home-selector.css": {
     "property-disallowed-list": {
-      "count": 16
+      "count": 5
     }
   },
   "src/routes/about/about-route.css": {
@@ -753,17 +720,17 @@
       "count": 1
     },
     "property-disallowed-list": {
-      "count": 16
+      "count": 6
     }
   },
   "src/components/all-nearby/nearby-concerts.css": {
     "property-disallowed-list": {
-      "count": 5
+      "count": 1
     }
   },
   "src/components/all-nearby/nearby-filter-sheet.css": {
     "property-disallowed-list": {
-      "count": 8
+      "count": 2
     }
   },
   "src/app-shell.css": {

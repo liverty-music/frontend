@@ -2,20 +2,20 @@
 
 <article class="[ legal-document ] [ flow ]">
   <header class="[ legal-header ] [ flow ]">
-    <h1 class="legal-title" t.bind="titleKey"></h1>
-    <p class="legal-updated">
+    <h1 class="[ legal-title ] [ md-typescale-headline-small ]" t.bind="titleKey"></h1>
+    <p class="[ legal-updated ] [ md-typescale-body-small ]">
       <span t="legal.lastUpdatedLabel"></span>
       <span t.bind="lastUpdatedKey"></span>
     </p>
   </header>
 
-  <p class="legal-intro" t.bind="introKey"></p>
+  <p class="[ legal-intro ] [ md-typescale-body-large ]" t.bind="introKey"></p>
 
   <section
     class="[ legal-section ] [ flow ]"
     repeat.for="section of sections & signal: 'aurelia-translation-signal'"
   >
-    <h2 class="legal-section-heading">${section.heading}</h2>
+    <h2 class="[ legal-section-heading ] [ md-typescale-title-large-emphasized ]">${section.heading}</h2>
     <p
       class="legal-section-body"
       repeat.for="paragraph of section.body"

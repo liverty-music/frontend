@@ -8,16 +8,16 @@
   aria-labelledby="date-range-sheet-title"
 >
   <div class="[ date-range-sheet ] [ flow ]">
-    <h2 class="sheet-title" id="date-range-sheet-title" t="allNearby.dateRange.title"></h2>
+    <h2 class="[ sheet-title ] [ md-typescale-title-large ]" id="date-range-sheet-title" t="allNearby.dateRange.title"></h2>
 
     <!-- Quick presets: apply-and-close in one tap -->
     <section class="preset-section">
-      <p class="section-label" t="allNearby.dateRange.presetsLabel"></p>
+      <p class="[ section-label ] [ md-typescale-title-small ]" t="allNearby.dateRange.presetsLabel"></p>
       <div class="[ preset-group ] [ cluster ]" role="group" t="[aria-label]allNearby.datePreset.groupLabel">
         <button
           repeat.for="p of presets"
           type="button"
-          class="preset-chip"
+          class="[ preset-chip ] [ md-typescale-label-large ]"
           data-active.bind="isPresetActive(p)"
           aria-pressed.bind="isPresetActive(p)"
           click.trigger="selectPreset(p)"
@@ -28,22 +28,22 @@
 
     <!-- Editable custom range: keeps the sheet open while editing -->
     <section class="custom-section">
-      <p class="section-label" t="allNearby.dateRange.customLabel"></p>
+      <p class="[ section-label ] [ md-typescale-title-small ]" t="allNearby.dateRange.customLabel"></p>
       <div class="[ custom-range ] [ cluster ]">
-        <label class="custom-field">
+        <label class="[ custom-field ] [ md-typescale-body-medium ]">
           <span class="custom-field-label" t="allNearby.datePreset.from"></span>
           <input
             type="date"
-            class="custom-input"
+            class="[ custom-input ] [ md-typescale-body-large ]"
             value.bind="draftFrom"
             change.trigger="onDraftChanged()"
           />
         </label>
-        <label class="custom-field">
+        <label class="[ custom-field ] [ md-typescale-body-medium ]">
           <span class="custom-field-label" t="allNearby.datePreset.to"></span>
           <input
             type="date"
-            class="custom-input"
+            class="[ custom-input ] [ md-typescale-body-large ]"
             value.bind="draftTo"
             min.bind="toMin"
             max.bind="toMax"
@@ -51,7 +51,7 @@
           />
         </label>
       </div>
-      <output class="range-hint" data-invalid.bind="!isDraftValid">${hint}</output>
+      <output class="[ range-hint ] [ md-typescale-body-small ]" data-invalid.bind="!isDraftValid">${hint}</output>
     </section>
 
     <div class="apply-row">

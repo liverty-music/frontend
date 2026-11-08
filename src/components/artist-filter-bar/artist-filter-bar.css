@@ -26,9 +26,6 @@
 		}
 
 		.sheet-title {
-			font-family: var(--font-display);
-			font-size: var(--step-0);
-			font-weight: normal;
 			color: var(--md-sys-color-on-surface);
 		}
 
@@ -46,11 +43,8 @@
 		}
 
 		.facet-heading {
-			font-size: var(--step--1);
-			font-weight: 600;
 			color: var(--md-sys-color-on-surface-variant);
 			text-transform: uppercase;
-			letter-spacing: 0.05em;
 		}
 
 		/* ── Artist chip list (flex wrap — single-axis wrapping flow) ── */
@@ -69,7 +63,6 @@
 
 		/* Upcoming-concert count prefix on each artist chip. */
 		.artist-count {
-			font-weight: 600;
 			font-variant-numeric: tabular-nums;
 			color: var(--md-sys-color-on-surface-variant);
 		}
@@ -97,8 +90,6 @@
 			   janky because roundness saturates well before a full pill, so most
 			   of the tween is visually inert. */
 			border-radius: var(--md-sys-shape-corner-full);
-
-			font-size: var(--step--1);
 			color: var(--md-sys-color-on-surface-variant);
 
 			background: var(--md-sys-color-surface-container);
@@ -169,8 +160,6 @@
 
 			/* Pill throughout (see .artist-chip) — selection is color, not shape. */
 			border-radius: var(--md-sys-shape-corner-full);
-
-			font-size: var(--step--1);
 			color: var(--md-sys-color-on-surface-variant);
 
 			background: var(--md-sys-color-surface-container);
@@ -220,10 +209,6 @@
 			}
 		}
 
-		.journey-chip-icon {
-			line-height: var(--leading-none);
-		}
-
 		/* ── Date facet: collapsible "過去のコンサートも表示" affordance ── */
 		.date-facet-toggle {
 			cursor: pointer;
@@ -260,7 +245,6 @@
 		}
 
 		.date-field-label {
-			font-size: var(--step--1);
 			color: var(--md-sys-color-on-surface-variant);
 		}
 
@@ -268,8 +252,6 @@
 			padding: var(--space-3xs) var(--space-s);
 			border: 1px solid var(--md-sys-color-outline);
 			border-radius: var(--md-sys-shape-corner-medium);
-
-			font-size: var(--step--1);
 			color: var(--md-sys-color-on-surface);
 
 			background: var(--md-sys-color-surface-container);

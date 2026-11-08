@@ -149,12 +149,12 @@
 			"guest": "アカウントを作ると、販売開始をプッシュ通知で受け取れます"
 		},
 		"outOfRange": {
-			"current": "今は<strong class=\"reach-words\">{{places}}</strong>の新着ライブだけプッシュ通知対象です",
+			"current": "今は<strong class=\"[ reach-words ] [ md-typescale-title-large-emphasized ]\">{{places}}</strong>の新着ライブだけプッシュ通知対象です",
 			"none": "今は新着ライブをプッシュ通知していません",
 			"widen": "{{places}}の新着ライブを受け取る",
 			"widenAlso": "{{places}}の新着ライブも受け取る",
-			"savedOn": "<strong class=\"reach-words\">{{places}}</strong>の新着ライブをプッシュ通知します🔔",
-			"savedOff": "<strong class=\"reach-words\">{{places}}</strong>の新着ライブをプッシュ通知で受け取ろう🔔",
+			"savedOn": "<strong class=\"[ reach-words ] [ md-typescale-title-large-emphasized ]\">{{places}}</strong>の新着ライブをプッシュ通知します🔔",
+			"savedOff": "<strong class=\"[ reach-words ] [ md-typescale-title-large-emphasized ]\">{{places}}</strong>の新着ライブをプッシュ通知で受け取ろう🔔",
 			"failed": "変更できませんでした。もう一度お試しください。"
 		},
 		"ticketStatus": "チケット状況",
