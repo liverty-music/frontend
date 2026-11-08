@@ -80,7 +80,10 @@ export async function expectCompactFilledButton(
 	).toBeGreaterThanOrEqual(WCAG_AA)
 	await expect(action.getBoundingClientRect().height).toBe(36)
 	await expect(style.borderTopLeftRadius).toBe('12px')
-	await expect(style.fontWeight).toBe('700')
+	// The shared buttons' one label weight (ui-primitives).
+	await expect(style.fontWeight).toBe(
+		defaultButtonLabel(action.parentElement ?? action).weight,
+	)
 	const size = Number.parseFloat(style.fontSize)
 	await expect(size).toBe(Number.parseFloat(getComputedStyle(message).fontSize))
 	await expect(size).toBeGreaterThanOrEqual(12)
@@ -174,4 +177,22 @@ export async function expectBannerMotion(
 		await expect(box()).toEqual(rest)
 	}
 	for (const a of cue) a.play()
+}
+
+/** The label size and weight of a default text button, measured beside `near`. */
+export function defaultButtonLabel(near: Element): {
+	size: number
+	weight: string
+} {
+	const probe = document.createElement('button')
+	probe.className = 'button'
+	probe.textContent = 'OK'
+	near.append(probe)
+	const style = getComputedStyle(probe)
+	const label = {
+		size: Number.parseFloat(style.fontSize),
+		weight: style.fontWeight,
+	}
+	probe.remove()
+	return label
 }

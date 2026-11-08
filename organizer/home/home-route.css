@@ -31,7 +31,6 @@
 		/* M3 list subheader. */
 		.subheader {
 			padding: var(--space-2xs) var(--space-s) 0;
-			font: var(--md-type-title-small);
 			color: var(--md-sys-color-on-surface-variant);
 		}
 
@@ -39,10 +38,6 @@
 			margin: 0;
 			padding: 0;
 			list-style: none;
-		}
-
-		.trailing {
-			font: var(--md-type-label-large);
 		}
 
 		.all-clear {

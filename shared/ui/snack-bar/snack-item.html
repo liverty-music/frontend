@@ -16,7 +16,7 @@
     pointerdown.trigger="onPointerDown()"
   >
     <svg-icon if.bind="icons && snack.icon" name.bind="snack.icon" class="snack-icon" data-icon.bind="snack.icon"></svg-icon>
-    <span class="snack-message"><au-slot name="message">${snack.message}</au-slot></span>
+    <span class="[ snack-message ] [ md-typescale-body-medium ]"><au-slot name="message">${snack.message}</au-slot></span>
     <!-- The fan app styles the action with its shared button (on-container,
          on the coloured snack); the organizer console, which has no shared
          button, styles `.snack-action-btn` itself. -->
@@ -24,7 +24,7 @@
       if.bind="snack.action"
       type="button"
       click.trigger="onAction()"
-      class="[ snack-action-btn button ] [ pressable ]"
+      class="[ snack-action-btn button ] [ pressable md-typescale-label-large ]"
       data-variant="on-container"
       data-attention.bind="snack.attention || null"
     ><au-slot name="action">${snack.action.label}</au-slot></button>

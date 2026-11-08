@@ -9,10 +9,6 @@
 
 		.about-title {
 			margin-block-end: var(--space-2xs);
-
-			font-family: var(--font-display);
-			font-size: var(--step-1);
-			font-weight: 600;
 			color: var(--md-sys-color-on-surface);
 		}
 

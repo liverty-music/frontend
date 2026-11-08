@@ -5,10 +5,10 @@
 
     <!-- Step 1: notifications -->
     <template if.bind="step === 'notify'">
-      <h2 class="post-signup-title" t="postSignup.notify.title"></h2>
-      <p if.bind="followedCount > 0" class="post-signup-body" t="postSignup.notify.body" t-params.bind="{ count: followedCount }"></p>
-      <p else class="post-signup-body" t="postSignup.notify.bodyNoFollows"></p>
-      <p if.bind="notifyProblem" class="post-signup-problem" role="status" t.bind="notifyProblem === 'blocked' ? 'postSignup.notify.blocked' : 'postSignup.notify.failed'"></p>
+      <h2 class="[ post-signup-title ] [ md-typescale-headline-small ]" t="postSignup.notify.title"></h2>
+      <p if.bind="followedCount > 0" class="[ post-signup-body ] [ md-typescale-body-medium ]" t="postSignup.notify.body" t-params.bind="{ count: followedCount }"></p>
+      <p else class="[ post-signup-body ] [ md-typescale-body-medium ]" t="postSignup.notify.bodyNoFollows"></p>
+      <p if.bind="notifyProblem" class="[ post-signup-problem ] [ md-typescale-body-medium ]" role="status" t.bind="notifyProblem === 'blocked' ? 'postSignup.notify.blocked' : 'postSignup.notify.failed'"></p>
       <div class="post-signup-actions">
         <button
           if.bind="!notifyProblem"
@@ -38,9 +38,9 @@
     <!-- Step 2: add to the home screen -->
     <template if.bind="step === 'install'">
       <img class="post-signup-app-icon" src="/icons/icon-192x192.png" alt="" width="64" height="64">
-      <h2 class="post-signup-title" t="postSignup.install.title"></h2>
-      <p class="post-signup-body" t="postSignup.install.body"></p>
-      <ol if.bind="installGuideShown" class="post-signup-steps">
+      <h2 class="[ post-signup-title ] [ md-typescale-headline-small ]" t="postSignup.install.title"></h2>
+      <p class="[ post-signup-body ] [ md-typescale-body-medium ]" t="postSignup.install.body"></p>
+      <ol if.bind="installGuideShown" class="[ post-signup-steps ] [ md-typescale-body-medium ]">
         <li t="postSignup.install.step1"></li>
         <li t="postSignup.install.step2"></li>
         <li t="postSignup.install.step3"></li>
@@ -73,9 +73,9 @@
 
     <!-- iOS / iPadOS: add to the home screen to receive notifications -->
     <template if.bind="step === 'iosGuide'">
-      <h2 class="post-signup-title" t="postSignup.notify.title"></h2>
-      <p class="post-signup-body" t="postSignup.ios.body"></p>
-      <ol class="post-signup-steps">
+      <h2 class="[ post-signup-title ] [ md-typescale-headline-small ]" t="postSignup.notify.title"></h2>
+      <p class="[ post-signup-body ] [ md-typescale-body-medium ]" t="postSignup.ios.body"></p>
+      <ol class="[ post-signup-steps ] [ md-typescale-body-medium ]">
         <li t="postSignup.ios.step1"></li>
         <li t="postSignup.ios.step2"></li>
         <li t="postSignup.ios.step3"></li>

@@ -34,15 +34,10 @@
 
 		.nearby-empty-title {
 			margin-block-end: var(--space-3xs);
-
-			font-family: var(--font-display);
-			font-size: var(--step-0);
-			font-weight: normal;
 			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.nearby-empty-subtitle {
-			font-size: var(--step--1);
 			color: var(--md-sys-color-on-surface-variant);
 		}
 	}

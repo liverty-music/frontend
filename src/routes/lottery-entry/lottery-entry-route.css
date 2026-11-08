@@ -16,10 +16,6 @@
 		}
 
 		.lottery-entry-title {
-			font-family: var(--font-display);
-			font-size: var(--step-2);
-			font-weight: normal;
-			line-height: var(--leading-snug);
 			color: var(--md-sys-color-on-surface);
 			text-wrap: balance;
 		}
@@ -39,14 +35,10 @@
 
 		.lottery-entry-step-title,
 		.lottery-entry-seat-type {
-			font-size: var(--step-1);
-			font-weight: 600;
 			color: var(--md-sys-color-on-surface);
 		}
 
 		.lottery-entry-lead {
-			font-size: var(--step--1);
-			line-height: var(--leading-relaxed);
 			color: var(--md-sys-color-on-surface-variant);
 			text-wrap: pretty;
 		}
@@ -58,8 +50,6 @@
 		}
 
 		.lottery-entry-label {
-			font-size: var(--step--1);
-			font-weight: 600;
 			color: var(--md-sys-color-on-surface);
 		}
 
@@ -70,8 +60,6 @@
 			padding-inline: var(--space-s);
 			border: 1px solid var(--md-sys-color-outline-variant);
 			border-radius: var(--md-sys-shape-corner-medium);
-
-			font-size: var(--step-0);
 			color: var(--md-sys-color-on-surface);
 
 			background: var(--md-sys-color-surface);
@@ -85,12 +73,7 @@
 		}
 
 		.lottery-entry-total {
-			font-size: var(--step-0);
 			color: var(--md-sys-color-on-surface);
-
-			& strong {
-				font-size: var(--step-1);
-			}
 		}
 
 		.lottery-entry-terms {
@@ -100,9 +83,6 @@
 			border: 1px solid
 				color-mix(in oklch, var(--color-brand-primary) 25%, transparent);
 			border-radius: var(--md-sys-shape-corner-large);
-
-			font-size: var(--step--1);
-			line-height: var(--leading-relaxed);
 			color: var(--md-sys-color-on-surface-variant);
 
 			background: color-mix(
@@ -145,7 +125,6 @@
 		}
 
 		.lottery-entry-error {
-			font-size: var(--step--1);
 			color: var(--color-error);
 		}
 

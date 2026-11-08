@@ -5,9 +5,9 @@
     <a
       repeat.for="tab of tabs; key.bind: tab.id"
       href="/events/${tab.id}"
-      class="date-tab"
+      class="[ date-tab ] [ md-typescale-title-small ]"
       data-selected.bind="tab.selected"
       aria-current.bind="tab.selected ? 'page' : null"
-    >${tab.label}<span if.bind="tab.cancelled" class="date-tab-status">${cancelledLabel}</span></a>
+    >${tab.label}<span if.bind="tab.cancelled" class="[ date-tab-status ] [ md-typescale-label-small ]">${cancelledLabel}</span></a>
   </nav>
 </template>

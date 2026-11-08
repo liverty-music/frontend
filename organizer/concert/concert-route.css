@@ -41,7 +41,6 @@
 		}
 
 		.section-title {
-			font: var(--md-type-title-large);
 			color: var(--md-sys-color-on-surface);
 		}
 
@@ -73,7 +72,6 @@
 		}
 
 		.seat-type-name {
-			font: var(--md-type-title-small);
 			color: var(--md-sys-color-on-surface);
 		}
 
@@ -84,7 +82,6 @@
 		}
 
 		.form-title {
-			font: var(--md-type-title-small);
 			color: var(--md-sys-color-on-surface);
 		}
 
@@ -110,7 +107,6 @@
 		/* The processing note under a picked cover (design D9a). */
 		.cover-note {
 			max-inline-size: 360px;
-			font: var(--md-type-body-medium);
 			color: var(--md-sys-color-on-surface-variant);
 		}
 
@@ -125,13 +121,11 @@
 			gap: var(--space-3xs);
 
 			& dt {
-				font: var(--md-type-label-large);
 				color: var(--md-sys-color-on-surface-variant);
 			}
 
 			& dd {
 				margin: 0;
-				font: var(--md-type-body-large);
 				color: var(--md-sys-color-on-surface);
 			}
 		}

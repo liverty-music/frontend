@@ -15,7 +15,6 @@
 		}
 
 		.section-title {
-			font: var(--md-type-title-large);
 			color: var(--md-sys-color-on-surface);
 		}
 
@@ -59,7 +58,6 @@
 
 		.sale-name,
 		.stock-name {
-			font: var(--md-type-title-medium);
 			color: var(--md-sys-color-on-surface);
 		}
 
@@ -71,12 +69,10 @@
 		}
 
 		.method {
-			font: var(--md-type-label-large);
 			color: var(--md-sys-color-on-surface);
 		}
 
 		.countdown {
-			font: var(--md-type-title-small);
 			color: var(--md-sys-color-on-surface);
 		}
 
@@ -98,7 +94,6 @@
 		}
 
 		.form-title {
-			font: var(--md-type-title-small);
 			color: var(--md-sys-color-on-surface);
 		}
 
@@ -127,7 +122,6 @@
 		}
 
 		.referrals-title {
-			font: var(--md-type-title-medium);
 			color: var(--md-sys-color-on-surface);
 		}
 

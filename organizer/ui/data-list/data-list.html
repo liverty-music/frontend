@@ -45,20 +45,20 @@
   </li>
 </ul>
 
-<table class="table">
+<table class="[ table ] [ md-typescale-body-medium ]">
   <caption class="visually-hidden">${label}</caption>
   <thead>
     <tr>
-      <th repeat.for="column of columns" scope="col" data-numeric.bind="isNumeric(column)">${column.labelKey & t}</th>
+      <th class="md-typescale-label-large" repeat.for="column of columns" scope="col" data-numeric.bind="isNumeric(column)">${column.labelKey & t}</th>
     </tr>
   </thead>
   <tbody>
     <tr repeat.for="row of rows; key: id" data-link.bind="!!row.href">
       <template repeat.for="column of columns">
-        <th if.bind="column === primary" scope="row">
+        <th class="md-typescale-body-medium-emphasized" if.bind="column === primary" scope="row">
           <a if.bind="row.href" href.bind="row.href" class="row-link"><cell-text value.bind="row.cells[column.key]"></cell-text></a>
           <cell-text else value.bind="row.cells[column.key]"></cell-text>
-          <span if.bind="row.subtitle" class="subtitle"><cell-text value.bind="row.subtitle"></cell-text></span>
+          <span if.bind="row.subtitle" class="[ subtitle ] [ md-typescale-body-small ]"><cell-text value.bind="row.subtitle"></cell-text></span>
         </th>
         <td else data-numeric.bind="isNumeric(column)"><data-cell kind.bind="column.kind" value.bind="row.cells[column.key]"></data-cell></td>
       </template>

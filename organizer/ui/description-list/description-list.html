@@ -3,7 +3,7 @@
 
 <dl class="list">
   <div repeat.for="item of items" class="row">
-    <dt>${item.termKey & t}</dt>
-    <dd data-empty.bind="!item.value">${item.value || emptyLabel}</dd>
+    <dt class="md-typescale-label-large">${item.termKey & t}</dt>
+    <dd class="md-typescale-body-large" data-empty.bind="!item.value">${item.value || emptyLabel}</dd>
   </div>
 </dl>

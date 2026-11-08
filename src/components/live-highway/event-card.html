@@ -16,20 +16,20 @@
     <span class="artist-name">
       ${event.artistName}
     </span>
-    <span if.bind="showLocation" class="location-label">
+    <span if.bind="showLocation" class="[ location-label ] [ md-typescale-body-medium ]">
       ${displayedLocation}
     </span>
     <span
       if.bind="journeyConfig"
       data-journey-status.bind="event.journeyStatus"
-      class="journey-badge"
+      class="[ journey-badge ] [ md-typescale-label-medium ]"
       data-testid="journey-badge"
       role="img"
       aria-label.bind="journeyConfig.labelKey | t"
     >${journeyConfig.icon}</span>
     <span
       if.bind="isPurchased"
-      class="journey-badge"
+      class="[ journey-badge ] [ md-typescale-label-medium ]"
       data-testid="purchased-badge"
       role="img"
       t="[aria-label]eventCard.purchased"

@@ -55,6 +55,8 @@ export default defineConfig({
         'e2e/functional/artist-image-ui.spec.ts',
         // Covered by webkit-repro / chromium-control projects (engine-specific)
         'e2e/functional/page-help-sheet-webkit.spec.ts',
+        // Covered by the typefaces-* projects (phone profiles)
+        'e2e/functional/typefaces.spec.ts',
       ],
       use: {
         ...devices['Desktop Chrome'],
@@ -112,6 +114,26 @@ export default defineConfig({
       use: {
         ...devices['iPhone 14'],
         browserName: 'webkit',
+        baseURL: 'http://localhost:9000',
+      },
+    },
+    // The fan app's typefaces as drawn, on the two phone profiles the
+    // design-tokens spec names. Both run Chromium: only its DevTools protocol
+    // reports which font drew each glyph.
+    {
+      name: 'typefaces-pixel7',
+      testMatch: 'e2e/functional/typefaces.spec.ts',
+      use: {
+        ...devices['Pixel 7'],
+        baseURL: 'http://localhost:9000',
+      },
+    },
+    {
+      name: 'typefaces-iphone',
+      testMatch: 'e2e/functional/typefaces.spec.ts',
+      use: {
+        ...devices['iPhone 14'],
+        browserName: 'chromium',
         baseURL: 'http://localhost:9000',
       },
     },

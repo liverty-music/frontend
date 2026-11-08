@@ -13,14 +13,14 @@
        important action for an unauthenticated user, lifted out of the
        bottom ACCOUNT list so it reads as a primary CTA rather than a link. -->
   <section if.bind="!auth.isAuthenticated" class="settings-guest-hero">
-    <h2 t="settings.guestHero.heading" class="settings-guest-hero-heading"></h2>
-    <p t="settings.guestHero.body" class="settings-guest-hero-body"></p>
+    <h2 t="settings.guestHero.heading" class="[ settings-guest-hero-heading ] [ md-typescale-title-large-emphasized ]"></h2>
+    <p t="settings.guestHero.body" class="[ settings-guest-hero-body ] [ md-typescale-body-medium ]"></p>
     <div class="settings-guest-hero-actions">
       <button click.trigger="signIn()" t="settings.signIn" class="[ button ] [ pressable ]" data-testid="settings-sign-in"></button>
       <button click.trigger="signUp()" t="settings.signUp" class="[ button ] [ pressable ]" data-variant="outlined" data-testid="settings-sign-up"></button>
     </div>
     <!-- Sign-in help for a fan who can use none of their passkeys. -->
-    <a href="/passkey-recovery" t="settings.guestHero.cantSignIn" class="settings-guest-hero-help" data-testid="settings-cant-sign-in"></a>
+    <a href="/passkey-recovery" t="settings.guestHero.cantSignIn" class="[ settings-guest-hero-help ] [ md-typescale-body-medium ]" data-testid="settings-cant-sign-in"></a>
   </section>
 
   <!-- The sections follow a fixed order: Account, Name on your tickets,
@@ -36,7 +36,7 @@
        guest sign-in / sign-up entry lives in the top hero, so this section is
        hidden entirely for guests. -->
   <section if.bind="auth.isAuthenticated">
-    <h2 t="settings.account" class="settings-section-title"></h2>
+    <h2 t="settings.account" class="[ settings-section-title ] [ md-typescale-title-small ]"></h2>
 
     <ul class="settings-card" role="list">
       <!-- Email Verification. The badge is a polite live region associated
@@ -84,7 +84,7 @@
           <p
             if.bind="identityFailureKey"
             id="identity-verification-failure"
-            class="settings-identity-verification-failure"
+            class="[ settings-identity-verification-failure ] [ md-typescale-body-medium ]"
             data-testid="identity-verification-failure"
           >
             <span t.bind="identityFailureKey"></span>
@@ -93,7 +93,7 @@
             </span>
           </p>
           <!-- Method + dedupe strength, verified-only. -->
-          <span if.bind="isVerified && verificationMethodKey" class="settings-identity-verification-detail">
+          <span if.bind="isVerified && verificationMethodKey" class="[ settings-identity-verification-detail ] [ md-typescale-body-medium ]">
             <span t="settings.identityVerification.methodPrefix"></span>
             <span t.bind="verificationMethodKey"></span>
             <span t.bind="dedupeStrengthKey" class="settings-identity-verification-dedupe"></span>
@@ -120,7 +120,7 @@
        and prefilled at lottery entry and checkout. One row shows them; tapping
        it opens the form in a bottom sheet (below). -->
   <section if.bind="auth.isAuthenticated" aria-labelledby="personal-details-title">
-    <h2 id="personal-details-title" t="settings.personalDetails.title" class="settings-section-title"></h2>
+    <h2 id="personal-details-title" t="settings.personalDetails.title" class="[ settings-section-title ] [ md-typescale-title-small ]"></h2>
     <ul class="settings-card" role="list">
       <!-- The saved name, or 「未設定」 while none is saved. -->
       <li class="settings-list-item">
@@ -142,12 +142,12 @@
         ></settings-link-row>
       </li>
     </ul>
-    <p t="settings.personalDetails.note" class="settings-section-note"></p>
+    <p t="settings.personalDetails.note" class="[ settings-section-note ] [ md-typescale-body-medium ]"></p>
   </section>
 
   <!-- NOTIFICATIONS AND SOUND Section. -->
   <section>
-    <h2 t="settings.sections.notificationsSound" class="settings-section-title"></h2>
+    <h2 t="settings.sections.notificationsSound" class="[ settings-section-title ] [ md-typescale-title-small ]"></h2>
     <ul class="settings-card" role="list">
       <!-- Push Notifications (whole row is the switch). Without the VAPID key
            the row is unavailable and its description says why.
@@ -182,7 +182,7 @@
       <!-- Sound volume: a sub-row of Sound Effects, so no divider above it. -->
       <li if.bind="soundEnabled" class="[ settings-list-item ] [ settings-list-subitem ]">
         <div class="settings-row settings-volume-row">
-          <label for="se-volume" t="settings.soundVolume" class="settings-row-label"></label>
+          <label for="se-volume" t="settings.soundVolume" class="[ settings-row-label ] [ md-typescale-body-large ]"></label>
           <input
             id="se-volume"
             type="range"
@@ -201,7 +201,7 @@
 
   <!-- DISPLAY AND CONTROLS Section. -->
   <section>
-    <h2 t="settings.sections.displayControls" class="settings-section-title"></h2>
+    <h2 t="settings.sections.displayControls" class="[ settings-section-title ] [ md-typescale-title-small ]"></h2>
     <ul class="settings-card" role="list">
       <!-- My Home Area -->
       <li class="settings-list-item">
@@ -240,8 +240,8 @@
 
   <!-- HELP IMPROVE THE SERVICE Section: the analytics opt-out toggles. -->
   <section aria-labelledby="analytics-title">
-    <h2 id="analytics-title" t="settings.analytics.sectionTitle" class="settings-section-title"></h2>
-    <p t="settings.analytics.intro" class="settings-section-intro"></p>
+    <h2 id="analytics-title" t="settings.analytics.sectionTitle" class="[ settings-section-title ] [ md-typescale-title-small ]"></h2>
+    <p t="settings.analytics.intro" class="[ settings-section-intro ] [ md-typescale-body-medium ]"></p>
     <ul class="settings-card" role="list">
       <!-- Analytics consent: the label opens its description; the switch is
            a separate control. -->
@@ -272,7 +272,7 @@
          processor and the cross-border purpose; the About section holds the
          only Privacy Policy row. The router's href attribute loads the
          absolute path from the root, like openLegal does for the rows. -->
-    <p class="settings-section-note" data-testid="settings-analytics-policy-note">
+    <p class="[ settings-section-note ] [ md-typescale-body-medium ]" data-testid="settings-analytics-policy-note">
       <span t="settings.analytics.policyNotePrefix"></span><a
         href="/legal/privacy"
         t="settings.analytics.policyNoteLink"
@@ -285,7 +285,7 @@
   <!-- ABOUT Section. Iconless rows: the label still lands in the content
        column, so it lines up with the icon rows' labels above. -->
   <section>
-    <h2 t="settings.about" class="settings-section-title"></h2>
+    <h2 t="settings.about" class="[ settings-section-title ] [ md-typescale-title-small ]"></h2>
     <ul class="settings-card" role="list">
       <!-- Terms of Service. Navigates via the VM's root router (openLegal), not
            a load/href attribute — see SettingsRoute.openLegal for why. -->
@@ -307,7 +307,7 @@
            to the support address. -->
       <li class="settings-list-item">
         <a href="mailto:${supportEmail}" class="settings-row" data-testid="settings-contact">
-          <span t="settings.contact" class="settings-row-label"></span>
+          <span t="settings.contact" class="[ settings-row-label ] [ md-typescale-body-large ]"></span>
           <span class="settings-row-end">
             <svg-icon name="chevron-right" class="settings-chevron"></svg-icon>
           </span>
@@ -341,7 +341,7 @@
           aria-busy.bind="signingOut || null"
           class="settings-row settings-sign-out"
         >
-          <span t="settings.signOut" class="settings-sign-out-text"></span>
+          <span t="settings.signOut" class="[ settings-sign-out-text ] [ md-typescale-label-large ]"></span>
         </button>
       </li>
     </ul>
@@ -390,23 +390,23 @@
     novalidate
     data-testid="settings-personal-details"
   >
-    <h2 t="settings.personalDetails.title" class="selector-title"></h2>
-    <p id="personal-details-note" t="settings.personalDetails.note" class="settings-personal-details-note"></p>
+    <h2 t="settings.personalDetails.title" class="[ selector-title ] [ md-typescale-title-large ]"></h2>
+    <p id="personal-details-note" t="settings.personalDetails.note" class="[ settings-personal-details-note ] [ md-typescale-body-medium ]"></p>
     <label class="settings-field">
-      <span t="settings.personalDetails.name" class="settings-field-label"></span>
+      <span t="settings.personalDetails.name" class="[ settings-field-label ] [ md-typescale-label-large ]"></span>
       <input
         type="text"
         autocomplete="name"
         value.bind="fullName"
         aria-invalid.bind="nameInvalid"
         aria-describedby="personal-details-note settings-name-error"
-        class="settings-field-input"
+        class="[ settings-field-input ] [ md-typescale-body-large ]"
         data-testid="settings-full-name"
       />
     </label>
-    <p id="settings-name-error" if.bind="nameInvalid" t="settings.personalDetails.nameRequired" class="settings-field-error"></p>
+    <p id="settings-name-error" if.bind="nameInvalid" t="settings.personalDetails.nameRequired" class="[ settings-field-error ] [ md-typescale-body-medium ]"></p>
     <label class="settings-field">
-      <span t="settings.personalDetails.phone" class="settings-field-label"></span>
+      <span t="settings.personalDetails.phone" class="[ settings-field-label ] [ md-typescale-label-large ]"></span>
       <input
         type="tel"
         inputmode="tel"
@@ -414,11 +414,11 @@
         value.bind="phoneNumber"
         aria-invalid.bind="phoneInvalid"
         aria-describedby="personal-details-note settings-phone-error"
-        class="settings-field-input"
+        class="[ settings-field-input ] [ md-typescale-body-large ]"
         data-testid="settings-phone-number"
       />
     </label>
-    <p id="settings-phone-error" if.bind="phoneInvalid" t="settings.personalDetails.phoneInvalid" class="settings-field-error"></p>
+    <p id="settings-phone-error" if.bind="phoneInvalid" t="settings.personalDetails.phoneInvalid" class="[ settings-field-error ] [ md-typescale-body-medium ]"></p>
     <button
       type="submit"
       disabled.bind="!personalDetailsChanged"
@@ -448,14 +448,14 @@
      exactly one may be chosen (the check icon + data-selected are visual only). -->
 <bottom-sheet open.bind="languageSelectorOpen" sheet-closed.trigger="languageSelectorOpen = false" aria-label="Select language">
   <div class="selector-content">
-    <h2 id="language-selector-title" t="settings.language" class="selector-title"></h2>
+    <h2 id="language-selector-title" t="settings.language" class="[ selector-title ] [ md-typescale-title-large ]"></h2>
     <div class="[ language-list ] [ stack ]" role="radiogroup" aria-labelledby="language-selector-title">
       <button
         repeat.for="lang of supportedLanguages"
         busy-on-click.bind="() => selectLanguage(lang)"
         role="radio"
         aria-checked.bind="currentLocale === lang"
-        class="language-option"
+        class="[ language-option ] [ md-typescale-body-large ]"
         data-selected.bind="currentLocale === lang"
       >
         <span t.bind="'languages.' + lang"></span>

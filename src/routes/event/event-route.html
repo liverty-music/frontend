@@ -7,7 +7,7 @@
 
   <!-- No event page: identical for every reason (unknown, discovered, draft, unlisted). -->
   <section if.bind="state === 'not-found'" class="event-empty" data-testid="event-not-found">
-    <h1 class="event-empty-title" t="eventPage.notFound.title"></h1>
+    <h1 class="[ event-empty-title ] [ md-typescale-headline-small ]" t="eventPage.notFound.title"></h1>
     <p t="eventPage.notFound.body"></p>
     <a href="/dashboard" class="[ button ] [ pressable ]" t="eventPage.notFound.toDashboard"></a>
   </section>
@@ -30,14 +30,14 @@
         class="event-cover-img"
         data-testid="event-cover"
       />
-      <div else class="event-cover-placeholder" data-testid="event-cover-placeholder" role="presentation">
+      <div else class="[ event-cover-placeholder ] [ md-typescale-display-small ]" data-testid="event-cover-placeholder" role="presentation">
         <svg-icon name="music" size="md"></svg-icon>
       </div>
     </figure>
 
     <!-- Cancelled banner -->
     <div if.bind="isCancelled" class="event-banner" data-testid="event-cancelled" role="note">
-      <p class="event-banner-title" t="eventPage.cancelled.title"></p>
+      <p class="[ event-banner-title ] [ md-typescale-title-large-emphasized ]" t="eventPage.cancelled.title"></p>
       <p t="eventPage.cancelled.noSale"></p>
       <p t="eventPage.cancelled.refund"></p>
       <a href.bind="otherConcertsUrl" class="event-link" t="eventPage.cancelled.otherConcerts"></a>
@@ -56,16 +56,16 @@
     ></event-date-tabs>
 
     <header class="event-header">
-      <h1 class="event-title" data-testid="event-title">${event.title}</h1>
+      <h1 class="[ event-title ] [ md-typescale-headline-small ]" data-testid="event-title">${event.title}</h1>
     </header>
 
     <!-- Performers with follow controls -->
     <ul class="event-performers" role="list">
       <li repeat.for="performer of event.performers; key.bind: performer.id" class="event-performer">
-        <span class="event-performer-name">${performer.name}</span>
+        <span class="[ event-performer-name ] [ md-typescale-title-large-emphasized ]">${performer.name}</span>
         <button
           type="button"
-          class="[ event-follow ] [ pressable ]"
+          class="[ event-follow ] [ pressable md-typescale-label-large ]"
           data-followed.bind="followedIds.has(performer.id)"
           aria-pressed.bind="followedIds.has(performer.id)"
           disabled.bind="!followsLoaded || followUpdatingId === performer.id"
@@ -81,7 +81,7 @@
       <div class="event-detail-row">
         <svg-icon name="calendar" size="md" class="event-detail-icon"></svg-icon>
         <div>
-          <time datetime.bind="event.dateKey" class="event-detail-primary" data-testid="event-date">${dateLabel}</time>
+          <time datetime.bind="event.dateKey" class="[ event-detail-primary ] [ md-typescale-title-medium ]" data-testid="event-date">${dateLabel}</time>
           <p class="event-times" data-testid="event-times">
             <span if.bind="openTimeLabel"><span t="eventPage.open"></span> ${openTimeLabel}</span>
             <span if.bind="startTimeLabel"><span t="eventPage.start"></span> ${startTimeLabel}</span>
@@ -93,7 +93,7 @@
       <div class="event-detail-row">
         <svg-icon name="map-pin" size="md" class="event-detail-icon"></svg-icon>
         <div>
-          <p class="event-detail-primary" data-testid="event-venue">${event.venueName}</p>
+          <p class="[ event-detail-primary ] [ md-typescale-title-medium ]" data-testid="event-venue">${event.venueName}</p>
           <p if.bind="prefecture" class="event-detail-secondary" data-testid="event-prefecture">${prefecture}</p>
           <a
             href.bind="mapsUrl"
@@ -124,24 +124,24 @@
 
     <!-- Ticket section (none once the event has ended) -->
     <section if.bind="showTicketSection" class="event-tickets" data-testid="event-tickets" aria-labelledby="event-tickets-title">
-      <h2 id="event-tickets-title" class="event-section-title" t="eventPage.tickets.title"></h2>
+      <h2 id="event-tickets-title" class="[ event-section-title ] [ md-typescale-title-medium ]" t="eventPage.tickets.title"></h2>
       <p if.bind="purchasedCount > 0" data-testid="event-purchased">
         <span t="eventPage.tickets.purchased" t-params.bind="{ count: purchasedCount }"></span>
         <a href="/tickets" class="event-link" t="eventPage.tickets.toTickets"></a>
       </p>
       <!-- The current sale and each seat type of the event; never a count -->
       <div if.bind="shownSale" class="[ event-sale ] [ flow ]" data-testid="event-sale" data-sale-method.bind="shownSale.method">
-        <p class="event-sale-name" data-testid="event-sale-name">${shownSale.name}</p>
+        <p class="[ event-sale-name ] [ md-typescale-title-medium ]" data-testid="event-sale-name">${shownSale.name}</p>
         <template if.bind="shownSale.method === 'firstCome'">
-          <p if.bind="isSaleUpcoming" class="event-sale-status" data-testid="event-sale-opens" t="eventPage.tickets.sale.opens" t-params.bind="{ start: saleStartLabel }"></p>
-          <p if.bind="isSaleEnded" class="event-sale-status" data-testid="event-sale-ended" t="eventPage.tickets.sale.ended"></p>
+          <p if.bind="isSaleUpcoming" class="[ event-sale-status ] [ md-typescale-title-medium ]" data-testid="event-sale-opens" t="eventPage.tickets.sale.opens" t-params.bind="{ start: saleStartLabel }"></p>
+          <p if.bind="isSaleEnded" class="[ event-sale-status ] [ md-typescale-title-medium ]" data-testid="event-sale-ended" t="eventPage.tickets.sale.ended"></p>
         </template>
         <template else>
-          <p class="event-sale-status" data-testid="event-sale-window" t="eventPage.tickets.lottery.window" t-params.bind="{ start: saleStartLabel, end: saleEndLabel }"></p>
-          <p if.bind="isSaleEnded" class="event-sale-status" data-testid="event-sale-ended" t="eventPage.tickets.lottery.ended"></p>
+          <p class="[ event-sale-status ] [ md-typescale-title-medium ]" data-testid="event-sale-window" t="eventPage.tickets.lottery.window" t-params.bind="{ start: saleStartLabel, end: saleEndLabel }"></p>
+          <p if.bind="isSaleEnded" class="[ event-sale-status ] [ md-typescale-title-medium ]" data-testid="event-sale-ended" t="eventPage.tickets.lottery.ended"></p>
         </template>
         <p if.bind="perAccountLimit > 0" data-testid="event-sale-limit" t="eventPage.tickets.limit" t-params.bind="{ limit: perAccountLimit }"></p>
-        <p if.bind="heldStock" class="event-sale-held" data-testid="event-sale-held" t="eventPage.tickets.held" t-params.bind="{ seatType: heldStock.seatTypeName }"></p>
+        <p if.bind="heldStock" class="[ event-sale-held ] [ md-typescale-body-large-emphasized ]" data-testid="event-sale-held" t="eventPage.tickets.held" t-params.bind="{ seatType: heldStock.seatTypeName }"></p>
 
         <ul class="[ event-stocks ] [ flow ]" role="list">
           <li
@@ -151,25 +151,25 @@
             data-stock-state.bind="row.stock.state"
           >
             <p class="[ event-stock-head ] [ cluster ]">
-              <span class="event-stock-name" data-testid="event-stock-name">${row.stock.seatTypeName}</span>
-              <span class="event-sale-price" data-testid="event-sale-price" t="eventPage.tickets.sale.price" t-params.bind="{ price: row.price }"></span>
+              <span class="[ event-stock-name ] [ md-typescale-title-large-emphasized ]" data-testid="event-stock-name">${row.stock.seatTypeName}</span>
+              <span class="[ event-sale-price ] [ md-typescale-title-large-emphasized ]" data-testid="event-sale-price" t="eventPage.tickets.sale.price" t-params.bind="{ price: row.price }"></span>
             </p>
             <!-- First come, within the window: the stock's state -->
             <template if.bind="shownSale.method === 'firstCome' && isSaleOpen">
               <template switch.bind="row.stock.state">
                 <template case="available">
-                  <p if.bind="row.stock.lowStock" class="event-sale-low" data-testid="event-sale-low" t="eventPage.tickets.sale.lowStock"></p>
+                  <p if.bind="row.stock.lowStock" class="[ event-sale-low ] [ md-typescale-body-large-emphasized ]" data-testid="event-sale-low" t="eventPage.tickets.sale.lowStock"></p>
                   <template if.bind="row.offered">
                     <a if.bind="!isGuest" href.bind="row.actionUrl" class="[ button ] [ pressable ]" data-testid="event-buy" t="eventPage.tickets.sale.buy"></a>
                     <button else type="button" class="[ button ] [ pressable ]" click.trigger="signUp()" data-testid="event-buy" t="eventPage.tickets.sale.buy"></button>
                   </template>
                 </template>
                 <template case="allHeld">
-                  <p class="event-sale-status" data-testid="event-sale-sold-out" t="eventPage.tickets.sale.soldOut"></p>
+                  <p class="[ event-sale-status ] [ md-typescale-title-medium ]" data-testid="event-sale-sold-out" t="eventPage.tickets.sale.soldOut"></p>
                   <p data-testid="event-sale-all-held" t="eventPage.tickets.sale.allHeldNote"></p>
                 </template>
                 <template case="soldOut">
-                  <p class="event-sale-status" data-testid="event-sale-sold-out" t="eventPage.tickets.sale.soldOut"></p>
+                  <p class="[ event-sale-status ] [ md-typescale-title-medium ]" data-testid="event-sale-sold-out" t="eventPage.tickets.sale.soldOut"></p>
                 </template>
               </template>
             </template>
@@ -180,7 +180,7 @@
             </template>
             <!-- Official resale of a sold-out seat type, whichever sale is shown; never a count -->
             <div if.bind="row.stock.resaleOpen" class="[ event-resale ] [ flow ]" data-testid="event-resale">
-              <p class="event-sale-name" t="eventPage.tickets.resale.title"></p>
+              <p class="[ event-sale-name ] [ md-typescale-title-medium ]" t="eventPage.tickets.resale.title"></p>
               <p data-testid="event-resale-listing" t="eventPage.tickets.resale.listing"></p>
               <p data-testid="event-resale-draw" t="eventPage.tickets.resale.draw"></p>
               <template if.bind="!isGuest">
@@ -200,11 +200,11 @@
 
     <!-- Other dates (more than 4 Events) -->
     <section if.bind="dateNav === 'list'" class="event-other-dates" data-testid="event-other-dates" aria-labelledby="event-other-dates-title">
-      <h2 id="event-other-dates-title" class="event-section-title" t="eventPage.dates.others"></h2>
+      <h2 id="event-other-dates-title" class="[ event-section-title ] [ md-typescale-title-medium ]" t="eventPage.dates.others"></h2>
       <ul role="list">
         <li repeat.for="d of otherDates; key.bind: d.id">
           <a href="/events/${d.id}" class="event-link">${d.label}</a>
-          <span if.bind="d.cancelled" class="event-date-status" t="eventPage.dates.cancelled"></span>
+          <span if.bind="d.cancelled" class="[ event-date-status ] [ md-typescale-label-large ]" t="eventPage.dates.cancelled"></span>
         </li>
       </ul>
     </section>

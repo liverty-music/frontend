@@ -26,8 +26,10 @@
 }
 
 @layer global {
-	:where(h1, h2, h3) {
-		font-weight: 400;
+	/* A heading's look comes from the type style it is given, not its level. */
+	:where(h1, h2, h3, h4, h5, h6) {
+		font: inherit;
+		letter-spacing: inherit;
 	}
 
 	/* Counts, prices, dates and times line up in columns: every digit in the
@@ -109,5 +111,13 @@
 		white-space: nowrap;
 
 		clip-path: inset(50%);
+	}
+}
+
+@layer utility {
+	/* Monospaced text (a copyable code, a scanner id): the face only, so the
+	   size and line come from the type style around it. */
+	.typeface-mono {
+		font-family: var(--md-ref-typeface-mono);
 	}
 }

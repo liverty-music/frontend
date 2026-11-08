@@ -7,12 +7,12 @@
 
 <!-- Screen 1: Hero-only hook screen -->
 <header class="[ welcome-hero ]">
-  <p class="welcome-brand">
+  <p class="[ welcome-brand ] [ md-typescale-headline-small ]">
     Liverty Music
   </p>
-  <h1 t="welcome.hero.title" class="welcome-title"></h1>
-  <p t="welcome.hero.subtitlePain" class="welcome-subtitle"></p>
-  <p t="[html]welcome.hero.subtitleAction" class="welcome-subtitle welcome-subtitle-action"></p>
+  <h1 t="welcome.hero.title" class="[ welcome-title ] [ md-typescale-headline-large ]"></h1>
+  <p t="welcome.hero.subtitlePain" class="[ welcome-subtitle ] [ md-typescale-body-large ]"></p>
+  <p t="[html]welcome.hero.subtitleAction" class="[ welcome-subtitle welcome-subtitle-action ] [ md-typescale-body-large ]"></p>
 
   <fieldset class="welcome-lang">
     <legend class="[ visually-hidden ]">Language</legend>
@@ -25,7 +25,7 @@
         checked.to-view="currentLocale"
         change.trigger="selectLanguage(lang)"
       >
-      <span class="welcome-lang-text">${lang === 'ja' ? '日本語' : 'EN'}</span>
+      <span class="[ welcome-lang-text ] [ md-typescale-label-large ]" md-typescale-label-large-emphasized.class="lang === currentLocale">${lang === 'ja' ? '日本語' : 'EN'}</span>
     </label>
   </fieldset>
 
@@ -51,7 +51,7 @@
        guest-friendly note rides above the CTA group per the landing-page spec
        so the no-account-required message stays visible without scrolling. -->
   <div else class="[ welcome-hero-fallback ]">
-    <p t="welcome.guestFriendly" class="welcome-guest-friendly"></p>
+    <p t="welcome.guestFriendly" class="[ welcome-guest-friendly ] [ md-typescale-body-medium ]"></p>
     <div class="[ welcome-action-group welcome-hero-fallback-action-group ]">
       <button
         busy-on-click.bind="() => handleGetStarted()"
@@ -66,7 +66,7 @@
         data-testid="welcome-login"
         t="welcome.cta.login"
       ></button>
-      <a href="/passkey-recovery" class="welcome-help-link" data-testid="welcome-cant-sign-in" t="welcome.cta.cantSignIn"></a>
+      <a href="/passkey-recovery" class="[ welcome-help-link ] [ md-typescale-body-medium ]" data-testid="welcome-cant-sign-in" t="welcome.cta.cantSignIn"></a>
     </div>
   </div>
 </header>
@@ -92,7 +92,7 @@
     data-exiting.bind="demoExiting || undefined"
     data-testid="welcome-demo-notification"
   >
-    <p t="welcome.demo.notificationLead" class="welcome-demo-lead"></p>
+    <p t="welcome.demo.notificationLead" class="[ welcome-demo-lead ] [ md-typescale-headline-small ]"></p>
     <button
       type="button"
       class="[ welcome-notification-trigger ]"
@@ -101,7 +101,7 @@
     >
       <notification-mock-card></notification-mock-card>
     </button>
-    <p t="welcome.demo.notificationTap" class="welcome-demo-hint"></p>
+    <p t="welcome.demo.notificationTap" class="[ welcome-demo-hint ] [ md-typescale-body-large ]"></p>
   </div>
 
   <!-- S2 — interactive timetable (the auto-collection pillar). Cards are NOT
@@ -116,7 +116,7 @@
     class="[ welcome-demo-timetable ]"
     data-testid="welcome-timetable"
   >
-    <p t="welcome.preview.label" class="welcome-section-tagline"></p>
+    <p t="welcome.preview.label" class="[ welcome-section-tagline ] [ md-typescale-headline-small ]"></p>
     <div class="[ welcome-preview ]" data-testid="welcome-preview">
       <concert-highway
         date-groups.bind="dateGroups"
@@ -125,7 +125,7 @@
       ></concert-highway>
     </div>
     <footer class="[ welcome-actions ]">
-      <p t="welcome.guestFriendly" class="welcome-guest-friendly"></p>
+      <p t="welcome.guestFriendly" class="[ welcome-guest-friendly ] [ md-typescale-body-medium ]"></p>
       <div class="welcome-action-group">
         <button
           busy-on-click.bind="() => handleGetStarted()"
@@ -140,7 +140,7 @@
           data-testid="welcome-login"
           t="welcome.cta.login"
         ></button>
-        <a href="/passkey-recovery" class="welcome-help-link" data-testid="welcome-cant-sign-in" t="welcome.cta.cantSignIn"></a>
+        <a href="/passkey-recovery" class="[ welcome-help-link ] [ md-typescale-body-medium ]" data-testid="welcome-cant-sign-in" t="welcome.cta.cantSignIn"></a>
       </div>
     </footer>
   </div>

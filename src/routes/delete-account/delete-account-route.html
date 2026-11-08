@@ -4,15 +4,15 @@
 <main class="[ delete-account ] [ stack ]">
   <!-- After deletion: the session is gone; only the way to Welcome remains. -->
   <section if.bind="deletionState === 'deleted'" class="[ delete-account-done ] [ stack ]" role="status" data-testid="delete-account-deleted">
-    <h2 t="deleteAccount.deleted.title" class="delete-account-heading"></h2>
-    <p t="deleteAccount.deleted.body" class="delete-account-text"></p>
+    <h2 t="deleteAccount.deleted.title" class="[ delete-account-heading ] [ md-typescale-title-large-emphasized ]"></h2>
+    <p t="deleteAccount.deleted.body" class="[ delete-account-text ] [ md-typescale-body-medium ]"></p>
     <a href="/welcome" t="deleteAccount.deleted.toWelcome" class="delete-account-link" data-testid="delete-account-to-welcome"></a>
   </section>
 
-  <output if.bind="deletionState === 'deleting'" class="delete-account-status" aria-busy="true" t="deleteAccount.deleting" data-testid="delete-account-deleting"></output>
+  <output if.bind="deletionState === 'deleting'" class="[ delete-account-status ] [ md-typescale-body-large ]" aria-busy="true" t="deleteAccount.deleting" data-testid="delete-account-deleting"></output>
 
   <template if.bind="deletionState !== 'deleted' && deletionState !== 'deleting'">
-    <p t="deleteAccount.lead" class="delete-account-lead"></p>
+    <p t="deleteAccount.lead" class="[ delete-account-lead ] [ md-typescale-body-medium ]"></p>
 
     <p if.bind="deletionState === 'notDeleted'" role="alert" t="deleteAccount.notDeleted" class="delete-account-notice" data-testid="delete-account-not-deleted"></p>
 
@@ -21,7 +21,7 @@
       <button type="button" busy-on-click.bind="() => retryDelete()" class="[ button ] [ pressable ]" data-variant="outlined" t="deleteAccount.retry" data-testid="delete-account-retry-delete"></button>
     </section>
 
-    <output if.bind="blockersState === 'loading'" class="delete-account-status" aria-busy="true" t="deleteAccount.loading"></output>
+    <output if.bind="blockersState === 'loading'" class="[ delete-account-status ] [ md-typescale-body-large ]" aria-busy="true" t="deleteAccount.loading"></output>
 
     <section if.bind="blockersState === 'error'" class="[ delete-account-error ] [ stack ]" role="alert" data-testid="delete-account-load-error">
       <p t="deleteAccount.loadFailed"></p>
@@ -30,17 +30,17 @@
 
     <!-- What blocks deletion, each kind with its count. -->
     <section if.bind="blockersState === 'ready' && blockers.length > 0" class="[ delete-account-blockers ] [ stack ]" data-testid="delete-account-blockers">
-      <h2 t="deleteAccount.blockers.title" class="delete-account-heading"></h2>
+      <h2 t="deleteAccount.blockers.title" class="[ delete-account-heading ] [ md-typescale-title-large-emphasized ]"></h2>
       <ul class="delete-account-card" role="list">
         <li repeat.for="blocker of blockers" class="delete-account-item" data-testid="delete-account-blocker" t.bind="blocker.key" t-params.bind="{ count: blocker.count }"></li>
       </ul>
-      <p t="deleteAccount.blockers.note" class="delete-account-text"></p>
+      <p t="deleteAccount.blockers.note" class="[ delete-account-text ] [ md-typescale-body-medium ]"></p>
     </section>
 
     <!-- What deletion means, stated before the delete control. -->
     <section if.bind="canDelete" class="[ delete-account-statements ] [ stack ]" data-testid="delete-account-statements">
-      <h2 t="deleteAccount.statements.title" class="delete-account-heading"></h2>
-      <ul class="[ delete-account-list ] [ stack ]" role="list">
+      <h2 t="deleteAccount.statements.title" class="[ delete-account-heading ] [ md-typescale-title-large-emphasized ]"></h2>
+      <ul class="[ delete-account-list ] [ stack ] [ md-typescale-body-medium ]" role="list">
         <li t="deleteAccount.statements.removed" data-testid="delete-account-statement"></li>
         <li t="deleteAccount.statements.history" data-testid="delete-account-statement"></li>
         <li t="deleteAccount.statements.irreversible" data-testid="delete-account-statement"></li>

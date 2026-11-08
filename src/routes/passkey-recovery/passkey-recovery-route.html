@@ -1,7 +1,7 @@
 <!-- The page title is owned by the shell-hosted <page-header> (data.titleKey). -->
 <main class="[ passkey-recovery ] [ stack ]">
-  <p t="passkeyRecovery.lead" class="passkey-recovery-lead"></p>
-  <ul class="[ passkey-recovery-notes ] [ stack ]" role="list">
+  <p t="passkeyRecovery.lead" class="[ passkey-recovery-lead ] [ md-typescale-body-large ]"></p>
+  <ul class="[ passkey-recovery-notes ] [ stack ] [ md-typescale-body-medium ]" role="list">
     <li t="passkeyRecovery.noteValidity"></li>
     <li t="passkeyRecovery.noteDevice"></li>
   </ul>
@@ -16,7 +16,7 @@
     data-testid="passkey-recovery-form"
   >
     <label class="passkey-recovery-field">
-      <span t="passkeyRecovery.emailLabel" class="passkey-recovery-label"></span>
+      <span t="passkeyRecovery.emailLabel" class="[ passkey-recovery-label ] [ md-typescale-label-large ]"></span>
       <input
         type="email"
         inputmode="email"
@@ -24,13 +24,13 @@
         value.bind="email"
         aria-invalid.bind="emailInvalid"
         aria-describedby="passkey-recovery-email-error"
-        class="passkey-recovery-input"
+        class="[ passkey-recovery-input ] [ md-typescale-body-large ]"
         data-testid="passkey-recovery-email"
       />
     </label>
-    <p id="passkey-recovery-email-error" if.bind="emailInvalid" t="passkeyRecovery.emailInvalid" class="passkey-recovery-error"></p>
-    <p if.bind="error === 'tooMany'" role="alert" t="passkeyRecovery.tooMany" class="passkey-recovery-error" data-testid="passkey-recovery-too-many"></p>
-    <p if.bind="error === 'failed'" role="alert" t="passkeyRecovery.failed" class="passkey-recovery-error" data-testid="passkey-recovery-failed"></p>
+    <p id="passkey-recovery-email-error" if.bind="emailInvalid" t="passkeyRecovery.emailInvalid" class="[ passkey-recovery-error ] [ md-typescale-body-medium ]"></p>
+    <p if.bind="error === 'tooMany'" role="alert" t="passkeyRecovery.tooMany" class="[ passkey-recovery-error ] [ md-typescale-body-medium ]" data-testid="passkey-recovery-too-many"></p>
+    <p if.bind="error === 'failed'" role="alert" t="passkeyRecovery.failed" class="[ passkey-recovery-error ] [ md-typescale-body-medium ]" data-testid="passkey-recovery-failed"></p>
     <button
       type="submit"
       aria-busy.bind="sending"
@@ -45,7 +45,7 @@
 
   <section if.bind="sent" class="[ passkey-recovery-sent ] [ stack ]" aria-live="polite" data-testid="passkey-recovery-sent">
     <svg-icon name="check" class="passkey-recovery-icon"></svg-icon>
-    <p t="passkeyRecovery.sent" class="passkey-recovery-sent-message"></p>
+    <p t="passkeyRecovery.sent" class="[ passkey-recovery-sent-message ] [ md-typescale-body-large ]"></p>
     <button
       type="button"
       busy-on-click.bind="() => send()"

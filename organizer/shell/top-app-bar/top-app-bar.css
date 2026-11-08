@@ -46,8 +46,6 @@
 			flex: 1 1 auto;
 
 			min-inline-size: 0;
-
-			font: var(--md-type-title-large);
 			color: var(--md-sys-color-on-surface);
 			text-overflow: ellipsis;
 			white-space: nowrap;
@@ -80,13 +78,10 @@
 		}
 
 		.brand-mark {
-			font: var(--md-type-title-small);
-			font-weight: 700;
 			color: var(--md-sys-color-primary);
 		}
 
 		.brand-product {
-			font: var(--md-type-label-medium);
 			color: var(--md-sys-color-on-surface-variant);
 		}
 
@@ -112,13 +107,11 @@
 
 		.organizer-name {
 			padding-inline: var(--space-xs) var(--space-3xs);
-			font: var(--md-type-label-medium);
 			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.context > .artist-name {
 			padding-inline: var(--space-xs) var(--space-3xs);
-			font: var(--md-type-label-large);
 			color: var(--md-sys-color-on-surface);
 		}
 
@@ -137,8 +130,6 @@
 			padding-inline: var(--space-xs) var(--space-3xs);
 			border: none;
 			border-radius: var(--md-sys-shape-corner-full);
-
-			font: var(--md-type-label-large);
 			color: var(--md-sys-color-on-surface);
 
 			background: transparent;
@@ -183,7 +174,6 @@
 
 		.menu-heading {
 			padding: var(--space-2xs) var(--space-s) var(--space-3xs);
-			font: var(--md-type-label-medium);
 			color: var(--md-sys-color-on-surface-variant);
 		}
 
@@ -202,8 +192,6 @@
 			min-block-size: var(--md-target-size);
 			padding-inline: var(--space-s);
 			border: none;
-
-			font: var(--md-type-label-large);
 			color: inherit;
 			text-align: start;
 
@@ -263,13 +251,15 @@
 				align-items: center;
 			}
 
+			/* stylelint-disable property-disallowed-list -- the brand and the organizer name grow with the window class, which a template cannot see */
 			.brand-mark {
-				font: var(--md-type-title-medium);
-				font-weight: 700;
+				font: var(--md-sys-typescale-title-medium-emphasized);
+				letter-spacing: var(--md-sys-typescale-title-medium-tracking);
 			}
 
 			.brand-product {
-				font: var(--md-type-title-medium);
+				font: var(--md-sys-typescale-title-medium);
+				letter-spacing: var(--md-sys-typescale-title-medium-tracking);
 			}
 
 			.context {
@@ -280,9 +270,12 @@
 
 			.organizer-name {
 				flex: 0 1 auto;
-				font: var(--md-type-title-small);
+
+				font: var(--md-sys-typescale-title-small);
+				letter-spacing: var(--md-sys-typescale-title-small-tracking);
 				color: var(--md-sys-color-on-surface);
 			}
+			/* stylelint-enable property-disallowed-list */
 
 			.artist-button {
 				min-block-size: var(--md-target-size);

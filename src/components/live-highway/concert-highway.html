@@ -25,9 +25,9 @@
        `dateGroups.length` withheld the frame for exactly the window it is there
        to fill. -->
   <header class="[ stage-header ]">
-    <span data-stage="home">HOME STAGE</span>
-    <span data-stage="near">NEAR STAGE</span>
-    <span if.bind="!hideAway" data-stage="away">AWAY STAGE</span>
+    <span data-stage="home" class="md-typescale-headline-small" t="dashboard.lane.home"></span>
+    <span data-stage="near" class="md-typescale-headline-small" t="dashboard.lane.near"></span>
+    <span if.bind="!hideAway" data-stage="away" class="md-typescale-headline-small" t="dashboard.lane.away"></span>
   </header>
 
   <ol class="[ concert-scroll ] [ date-group-list ]" data-testid="concert-scroll">
@@ -47,9 +47,9 @@
         <span class="skeleton skeleton-date"></span>
       </header>
       <ol class="[ lane-grid ]">
-        <li class="[ lane ]" data-lane="home"><span class="skeleton skeleton-card"></span></li>
-        <li class="[ lane ]" data-lane="near"><span class="skeleton skeleton-card"></span></li>
-        <li if.bind="!hideAway" class="[ lane ]" data-lane="away"><span class="skeleton skeleton-card"></span></li>
+        <li class="[ lane ] [ md-typescale-body-medium ]" data-lane="home"><span class="skeleton skeleton-card"></span></li>
+        <li class="[ lane ] [ md-typescale-body-medium ]" data-lane="near"><span class="skeleton skeleton-card"></span></li>
+        <li if.bind="!hideAway" class="[ lane ] [ md-typescale-body-medium ]" data-lane="away"><span class="skeleton skeleton-card"></span></li>
       </ol>
     </li>
     </template>
@@ -66,15 +66,15 @@
       repeat.for="group of visibleGroups; key.bind: group.dateKey"
       data-date-key.bind="group.dateKey"
     >
-      <div if.bind="group.isFirstOfMonth" class="[ month-separator ]" aria-hidden="true">
+      <div if.bind="group.isFirstOfMonth" class="[ month-separator ] [ md-typescale-label-small ]" aria-hidden="true">
         ${group.monthSeparatorLabel}
       </div>
       <header class="[ date-separator ]">
-        <time datetime.bind="group.dateKey">${group.label}</time>
+        <time class="md-typescale-title-large" datetime.bind="group.dateKey">${group.label}</time>
       </header>
 
       <ol class="[ lane-grid ]" aria-label="Concerts">
-        <li class="[ lane ]" data-lane="home" data-empty.bind="group.home.length === 0">
+        <li class="[ lane ] [ md-typescale-body-medium ]" data-lane="home" data-empty.bind="group.home.length === 0">
           <event-card
             repeat.for="ev of group.home; key.bind: ev.id"
             event.bind="ev"
@@ -83,7 +83,7 @@
             show-venue-always.bind="showVenueAlways"
           ></event-card>
         </li>
-        <li class="[ lane ]" data-lane="near" data-empty.bind="group.nearby.length === 0">
+        <li class="[ lane ] [ md-typescale-body-medium ]" data-lane="near" data-empty.bind="group.nearby.length === 0">
           <event-card
             repeat.for="ev of group.nearby; key.bind: ev.id"
             event.bind="ev"
@@ -92,7 +92,7 @@
             show-venue-always.bind="showVenueAlways"
           ></event-card>
         </li>
-        <li if.bind="!hideAway" class="[ lane ]" data-lane="away" data-empty.bind="group.away.length === 0">
+        <li if.bind="!hideAway" class="[ lane ] [ md-typescale-body-medium ]" data-lane="away" data-empty.bind="group.away.length === 0">
           <event-card
             repeat.for="ev of group.away; key.bind: ev.id"
             event.bind="ev"

@@ -20,7 +20,7 @@
       <svg-icon name="search" class="search-icon"></svg-icon>
       <input
         type="text"
-        class="search-input"
+        class="[ search-input ] [ md-typescale-body-large ]"
         placeholder.bind="$this.i18n?.tr('discovery.searchPlaceholder') ?? ''"
         value.bind="search.searchQuery"
         aria-label.bind="$this.i18n?.tr('discovery.searchPlaceholder') ?? ''"
@@ -39,7 +39,7 @@
     <div class="genre-bar">
       <button
         type="button"
-        class="reset-chip"
+        class="[ reset-chip ] [ md-typescale-label-large ]"
         click.trigger="onReset()"
         disabled.bind="genre.isLoadingTag"
         aria-label.bind="$this.i18n?.tr('discovery.resetBubbles') ?? ''"
@@ -49,7 +49,7 @@
       <fieldset class="genre-chips">
         <button
           repeat.for="tag of genre.genreTags; key.bind: tag"
-          class="genre-chip" data-active.bind="genre.activeTag === tag"
+          class="[ genre-chip ] [ md-typescale-label-large ]" data-active.bind="genre.activeTag === tag"
           click.trigger="onGenreSelected(tag)"
           disabled.bind="genre.isLoadingTag"
           aria-pressed.bind="genre.activeTag === tag"
@@ -83,10 +83,10 @@
 
     <!-- Search results (shown during search) -->
     <section class="search-results">
-      <p if.bind="search.isSearching" class="search-status" t="discovery.searching">
+      <p if.bind="search.isSearching" class="[ search-status ] [ md-typescale-body-medium ]" t="discovery.searching">
       </p>
 
-      <p if.bind="!search.isSearching && search.isSearchMode && search.searchResults.length === 0 && search.searchQuery.trim().length > 0" class="search-status" t="discovery.noResults">
+      <p if.bind="!search.isSearching && search.isSearchMode && search.searchResults.length === 0 && search.searchQuery.trim().length > 0" class="[ search-status ] [ md-typescale-body-medium ]" t="discovery.noResults">
       </p>
 
       <ul class="results-list" role="list">
@@ -99,10 +99,10 @@
           aria-disabled.bind="followedIds.has(artist.id)"
           aria-label.bind="followedIds.has(artist.id) ? ($this.i18n?.tr('discovery.alreadyFollowing', { name: artist.name }) ?? '') : ($this.i18n?.tr('discovery.followArtist', { name: artist.name }) ?? '')"
         >
-          <div class="result-avatar">
+          <div class="[ result-avatar ] [ md-typescale-title-large ]">
             ${artist.name.charAt(0)}
           </div>
-          <span class="result-name">${artist.name}</span>
+          <span class="[ result-name ] [ md-typescale-body-large ]">${artist.name}</span>
           <svg-icon if.bind="followedIds.has(artist.id)" name="check" class="followed-check"></svg-icon>
         </li>
       </ul>

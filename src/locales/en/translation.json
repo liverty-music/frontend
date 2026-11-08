@@ -56,7 +56,7 @@
 	"userHome": {
 		"saveFailed": "Couldn't save your area. Please try again in a moment.",
 		"title": "Select Your Home Area",
-		"description": "HOME STAGE shows lives in the area you select. Where do you live?",
+		"description": "The HOME lane shows lives in the area you select. Where do you live?",
 		"quickSelect": "Quick Select",
 		"selectByRegion": "Select by Region",
 		"selectPrefecture": "Select your prefecture.",
@@ -149,12 +149,12 @@
 			"guest": "Create an account to get ticket sale notifications."
 		},
 		"outOfRange": {
-			"current": "Right now only new concerts <strong class=\"reach-words\">{{places}}</strong> are pushed",
+			"current": "Right now only new concerts <strong class=\"[ reach-words ] [ md-typescale-title-large-emphasized ]\">{{places}}</strong> are pushed",
 			"none": "Right now no new concerts are pushed",
 			"widen": "Get new concerts {{places}}",
 			"widenAlso": "Also get new concerts {{places}}",
-			"savedOn": "We'll push new concerts <strong class=\"reach-words\">{{places}}</strong> 🔔",
-			"savedOff": "Get new concerts <strong class=\"reach-words\">{{places}}</strong> by push 🔔",
+			"savedOn": "We'll push new concerts <strong class=\"[ reach-words ] [ md-typescale-title-large-emphasized ]\">{{places}}</strong> 🔔",
+			"savedOff": "Get new concerts <strong class=\"[ reach-words ] [ md-typescale-title-large-emphasized ]\">{{places}}</strong> by push 🔔",
 			"failed": "Couldn't change it. Please try again."
 		},
 		"ticketStatus": "Ticket Status",
@@ -173,9 +173,9 @@
 	},
 	"dashboard": {
 		"lane": {
-			"home": "HOME STAGE",
-			"near": "NEAR STAGE",
-			"away": "AWAY STAGE"
+			"home": "HOME",
+			"near": "NEAR",
+			"away": "AWAY"
 		},
 		"coachMark": {
 			"viewArtists": "Check out your artist list too!"

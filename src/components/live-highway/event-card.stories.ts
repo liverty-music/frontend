@@ -89,6 +89,15 @@ export const Unmatched = {
 		await expect(style.animationName).toBe('none')
 		await expect(grain.animationName).toBe('none')
 
+		// @spec components/infrastructure/fan/web/global/live-highway "Dynamic artist name font sizing"
+		{
+			const name = canvasElement.querySelector<HTMLElement>('.artist-name')
+			if (!name) throw new Error('no artist name')
+			const size = Number.parseFloat(getComputedStyle(name).fontSize)
+			await expect(size).toBeGreaterThanOrEqual(12)
+			await expect(size).toBeLessThanOrEqual(32)
+			await expect(getComputedStyle(name).overflowWrap).toBe('break-word')
+		}
 		// @spec components/infrastructure/fan/web/global/live-highway "Artist name centered on the card"
 		// The name is text, centered across the card, and no logo image is shown.
 		await expect(name.textContent?.trim()).toBe('VAUNDY')

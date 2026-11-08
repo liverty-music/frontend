@@ -35,12 +35,10 @@
 		}
 
 		.callback-status {
-			font-size: var(--step-0);
 			color: var(--md-sys-color-on-surface);
 		}
 
 		.callback-error {
-			font-weight: 700;
 			color: var(--color-error);
 			white-space: pre-wrap;
 		}

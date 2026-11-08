@@ -5,11 +5,11 @@
 <section class="callout" aria-labelledby.bind="headingId">
   <console-icon name="info" class="icon"></console-icon>
   <div class="content">
-    <h2 if.bind="level === 2" class="heading" id.bind="headingId">${heading}</h2>
-    <h3 else class="heading" id.bind="headingId">${heading}</h3>
-    <div class="body"><slot></slot></div>
-    <a if.bind="actionHref" href.bind="actionHref" class="action state-layer">${actionLabel}</a>
-    <button if.bind="actionLabel && !actionHref" type="button" class="action state-layer" click.trigger="act()">${actionLabel}</button>
-    <a if.bind="guideChapter" href.bind="guideHref" external target="_blank" rel="noopener" class="guide state-layer">${'common.learnMore' & t}</a>
+    <h2 if.bind="level === 2" class="[ heading ] [ md-typescale-title-small ]" id.bind="headingId">${heading}</h2>
+    <h3 else class="[ heading ] [ md-typescale-title-small ]" id.bind="headingId">${heading}</h3>
+    <div class="[ body ] [ md-typescale-body-medium ]"><slot></slot></div>
+    <a if.bind="actionHref" href.bind="actionHref" class="[ action state-layer ] [ md-typescale-label-large ]">${actionLabel}</a>
+    <button if.bind="actionLabel && !actionHref" type="button" class="[ action state-layer ] [ md-typescale-label-large ]" click.trigger="act()">${actionLabel}</button>
+    <a if.bind="guideChapter" href.bind="guideHref" external target="_blank" rel="noopener" class="[ guide state-layer ] [ md-typescale-body-medium ]">${'common.learnMore' & t}</a>
   </div>
 </section>

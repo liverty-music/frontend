@@ -27,8 +27,6 @@
 			justify-content: center;
 
 			min-inline-size: var(--md-target-size);
-
-			font: var(--md-type-label-medium);
 			color: var(--md-sys-color-on-surface-variant);
 			text-decoration: none;
 		}
@@ -46,7 +44,6 @@
 		}
 
 		.item[aria-current="page"] {
-			font-weight: 700;
 			color: var(--md-sys-color-on-surface);
 
 			& .indicator {

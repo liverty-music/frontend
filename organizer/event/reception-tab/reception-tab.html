@@ -42,7 +42,7 @@
             <status-badge tone.bind="row.tone" label.bind="row.statusKey & t"></status-badge>
             <span if.bind="row.boundSince">${'reception.since' & t} ${row.boundSince | jstDateTime}</span>
           </span>
-          <span if.bind="row.url" slot="supporting" class="url">${row.url}</span>
+          <span if.bind="row.url" slot="supporting" class="[ url ] [ typeface-mono ]">${row.url}</span>
           <span if.bind="row.url || row.canRevoke" slot="trailing">
             <copy-button if.bind="row.url" label.bind="'reception.label' & t:{ number: row.number }" value.bind="row.url"></copy-button>
             <overflow-menu if.bind="row.canRevoke" items.bind="menuOf(row)" select.trigger="onMenu(row, $event.detail)"></overflow-menu>

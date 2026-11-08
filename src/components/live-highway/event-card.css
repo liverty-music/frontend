@@ -53,11 +53,8 @@
 
 		/* --- Artist name --- */
 		.artist-name {
-			font-family: var(--font-display);
-			/* stylelint-disable-next-line cube/require-token-variables -- container-query clamp cannot be tokenized */
-			font-size: clamp(14px, 8cqi, 32px);
-			font-weight: normal;
-			line-height: var(--leading-snug);
+			/* stylelint-disable-next-line property-disallowed-list -- the artist name is sized to its lane (design-tokens, the one exception to type styles) */
+			font: 400 clamp(14px, 8cqi, 32px) / 1.2 var(--md-ref-typeface-brand);
 			color: var(--color-white);
 			overflow-wrap: break-word;
 
@@ -66,7 +63,6 @@
 
 		.location-label {
 			margin-block-start: var(--space-3xs);
-			font-size: var(--step--1);
 			color: var(--_label-color);
 		}
 
@@ -80,9 +76,6 @@
 			inset-block-start: var(--space-3xs);
 			inset-inline-end: var(--space-3xs);
 			translate: 40% -40%;
-
-			font-size: var(--step--1);
-			line-height: var(--leading-none);
 		}
 
 		/* =============================================
@@ -240,10 +233,6 @@
 			.event-card-responsive {
 				min-block-size: 140px;
 				padding: var(--space-m);
-			}
-
-			.event-card-responsive .event-card-title {
-				font-size: var(--step-3);
 			}
 		}
 

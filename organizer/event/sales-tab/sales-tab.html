@@ -34,7 +34,7 @@
 
     <!-- 席種と枚数: shown whatever the prerequisites; every sale of the date sells these. -->
     <section class="[ stocks ] [ flow ]" aria-labelledby="stocks-title" data-testid="ticket-stocks">
-      <h2 id="stocks-title" class="section-title">${'stock.title' & t}</h2>
+      <h2 id="stocks-title" class="[ section-title ] [ md-typescale-title-large ]">${'stock.title' & t}</h2>
       <p class="note">${'stock.note' & t}</p>
 
       <div if.bind="!seatTypes.length" class="message">
@@ -45,7 +45,7 @@
       <ul if.bind="stocks.length" class="stock-list" aria-labelledby="stocks-title">
         <li repeat.for="stock of stocks; key: id" class="stock" data-stock.bind="stock.id">
           <div class="stock-heading">
-            <h3 class="stock-name">${stock.name}</h3>
+            <h3 class="[ stock-name ] [ md-typescale-title-medium ]">${stock.name}</h3>
             <status-badge tone.bind="stock.tone" label.bind="stock.stateKey & t"></status-badge>
           </div>
           <p class="terms">${stock.price | yen} ${'stock.taxIncluded' & t} · ${'sale.quantity' & t:{ tickets: stock.quantity }}</p>
@@ -62,7 +62,7 @@
       <p if.bind="!stocks.length && seatTypes.length" class="message">${'stock.empty' & t}</p>
 
       <form if.bind="canStock && unstockedSeatTypes.length" class="stock-form" novalidate submit.trigger="false">
-        <h3 class="form-title">${'stock.add' & t}</h3>
+        <h3 class="[ form-title ] [ md-typescale-title-small ]">${'stock.add' & t}</h3>
         <div class="row">
           <console-field
             type="select"
@@ -90,7 +90,7 @@
     </section>
 
     <section class="[ sales-section ] [ flow ]" aria-labelledby="sales-title">
-      <h2 id="sales-title" class="section-title">${'sale.title' & t}</h2>
+      <h2 id="sales-title" class="[ section-title ] [ md-typescale-title-large ]">${'sale.title' & t}</h2>
       <p if.bind="stocks.length" class="note">${'sale.sharedStocks' & t:{ limit: perAccountLimit }}</p>
       <p if.bind="!sales.length" class="message">${'sale.empty' & t}</p>
 
@@ -103,14 +103,14 @@
       <ul if.bind="sales.length" class="sales" aria-label.bind="'event.tab.sales' & t">
         <li repeat.for="sale of sales; key: id" class="sale" data-sale.bind="sale.id" data-state.bind="sale.state">
           <div class="sale-heading">
-            <h3 class="sale-name">${sale.name}</h3>
+            <h3 class="[ sale-name ] [ md-typescale-title-medium ]">${sale.name}</h3>
             <status-badge tone.bind="sale.tone" label.bind="sale.stateKey & t"></status-badge>
           </div>
           <p class="window">
-            <span class="method">${`sale.method.${sale.method}` & t}</span> · ${sale | jstRange}
+            <span class="[ method ] [ md-typescale-label-large ]">${`sale.method.${sale.method}` & t}</span> · ${sale | jstRange}
           </p>
 
-          <p if.bind="sale.countdown" class="countdown">
+          <p if.bind="sale.countdown" class="[ countdown ] [ md-typescale-title-small ]">
             <template if.bind="sale.countdown.days">${'sale.countdown.days' & t:{ days: sale.countdown.days, hours: sale.countdown.hours }}</template>
             <template else>${'sale.countdown.hours' & t:{ hours: sale.countdown.hours, minutes: sale.countdown.minutes }}</template>
           </p>
@@ -122,7 +122,7 @@
           </div>
           <ul if.bind="sale.lottery && (sale.state === 'open' || sale.state === 'awaitingDraw')" class="lottery-stocks">
             <li repeat.for="stock of sale.lottery.stocks; key: id" class="lottery-stock" data-lottery-stock.bind="stock.id">
-              <h4 class="stock-name">${stock.name}</h4>
+              <h4 class="[ stock-name ] [ md-typescale-title-medium ]">${stock.name}</h4>
               <div class="stats">
                 <stat-tile label.bind="'sale.stats.entries' & t" value.bind="stock.entries | count"></stat-tile>
                 <stat-tile label.bind="'sale.stats.requested' & t" value.bind="stock.requested | count"></stat-tile>
@@ -157,7 +157,7 @@
 
     <!-- Purchases per referral code: only once the event has a sale. Read-only. -->
     <section if.bind="sales.length" class="[ referrals ] [ flow ]" aria-labelledby="referrals-title" data-testid="referrals">
-      <h2 id="referrals-title" class="referrals-title">${'sale.referral.title' & t}</h2>
+      <h2 id="referrals-title" class="[ referrals-title ] [ md-typescale-title-medium ]">${'sale.referral.title' & t}</h2>
       <p class="referrals-note">${'sale.referral.note' & t}</p>
       <data-list
         if.bind="referralRows.length"

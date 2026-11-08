@@ -10,8 +10,9 @@
    Every variant shares the shape, padding and label weight below. A surface
    that needs a compact button (the action on a snack bar or a bottom banner)
    sets the size hooks --button-min-size, --button-padding-block,
-   --button-padding-inline and --button-font-size on it; the radius and
-   weight stay shared. The press
+   --button-padding-inline, and --button-font with --button-tracking (a
+   smaller type style) on it; the radius and weight stay shared. The label
+   is set here, not by the templates: label-large is the button's role. The press
    morph and pressed state layer come from the `pressable` utility, the pending
    state from the `busy-on-click` attribute. A page keeps its own block class
    only for layout the button does not own (e.g. `inline-size: 100%`).
@@ -32,12 +33,11 @@
 			border: 2px solid transparent;
 			border-radius: var(--md-sys-shape-corner-medium);
 
-			/* Outfit, the display fallback, because Righteous has no bold
-			   weight. */
-			font-family: Outfit, var(--font-display);
-			font-size: var(--button-font-size, max(var(--step-0), 1.1875rem));
-			font-weight: 700;
-			line-height: var(--leading-tight);
+			font: var(--button-font, var(--md-sys-typescale-label-large));
+			letter-spacing: var(
+				--button-tracking,
+				var(--md-sys-typescale-label-large-tracking)
+			);
 			color: var(--md-sys-color-on-primary);
 			text-align: center;
 			text-decoration: none;

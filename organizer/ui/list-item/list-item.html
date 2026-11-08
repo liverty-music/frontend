@@ -3,17 +3,17 @@
 
 <a if.bind="href" href.bind="href" class="item state-layer">
   <span class="content">
-    <slot name="overline"></slot>
-    <slot class="headline"></slot>
-    <slot name="supporting"></slot>
+    <slot name="overline" class="md-typescale-label-medium"></slot>
+    <slot class="[ headline ] [ md-typescale-body-large ]"></slot>
+    <slot name="supporting" class="md-typescale-body-medium"></slot>
   </span>
-  <slot name="trailing"></slot>
+  <slot name="trailing" class="md-typescale-label-medium"></slot>
 </a>
 <div else class="item">
   <span class="content">
-    <slot name="overline"></slot>
-    <slot class="headline"></slot>
-    <slot name="supporting"></slot>
+    <slot name="overline" class="md-typescale-label-medium"></slot>
+    <slot class="[ headline ] [ md-typescale-body-large ]"></slot>
+    <slot name="supporting" class="md-typescale-body-medium"></slot>
   </span>
-  <slot name="trailing"></slot>
+  <slot name="trailing" class="md-typescale-label-medium"></slot>
 </div>

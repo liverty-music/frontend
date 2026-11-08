@@ -6,7 +6,7 @@
     <a
       repeat.for="tab of tabs; key: id"
       href.bind="tab.href"
-      class="tab state-layer"
+      class="[ tab state-layer ] [ md-typescale-title-small ]"
       aria-current.bind="tab.id === active ? 'page' : null"
       data-tab.bind="tab.id"
     >${tab.labelKey & t}</a>

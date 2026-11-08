@@ -5,6 +5,7 @@ import {
 } from '@aurelia/storybook'
 import { bindable, customElement, IEventAggregator, resolve } from 'aurelia'
 import { expect, userEvent, waitFor, within } from 'storybook/test'
+import { defaultButtonLabel } from '../../../.storybook/bottom-banner'
 import {
 	composite,
 	contrast,
@@ -278,8 +279,11 @@ export const UpdateAction = {
 		// Smaller than the default button, with the same radius and weight, so
 		// the message keeps the row (the e2e checks one line at 360px).
 		await expect(Number.parseFloat(style.minHeight)).toBe(36)
-		await expect(Number.parseFloat(style.fontSize)).toBeLessThan(19)
-		await expect(style.fontWeight).toBe('700')
+		const defaultLabel = defaultButtonLabel(canvasElement)
+		await expect(Number.parseFloat(style.fontSize)).toBeLessThan(
+			defaultLabel.size,
+		)
+		await expect(style.fontWeight).toBe(defaultLabel.weight)
 
 		// After the glow (or with none), both projects render the same still
 		// frame.

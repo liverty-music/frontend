@@ -26,12 +26,7 @@
 
 	.heading {
 		margin-block-end: var(--space-s);
-		font: var(--md-type-headline-small);
 		color: var(--md-sys-color-on-surface);
-	}
-
-	.body {
-		font: var(--md-type-body-medium);
 	}
 
 	.actions {

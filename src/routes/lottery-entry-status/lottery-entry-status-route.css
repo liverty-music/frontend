@@ -16,10 +16,6 @@
 		}
 
 		.lottery-entry-status-title {
-			font-family: var(--font-display);
-			font-size: var(--step-2);
-			font-weight: normal;
-			line-height: var(--leading-snug);
 			color: var(--md-sys-color-on-surface);
 			text-wrap: balance;
 		}
@@ -38,14 +34,10 @@
 		}
 
 		.lottery-entry-status-step-title {
-			font-size: var(--step-1);
-			font-weight: 600;
 			color: var(--md-sys-color-on-surface);
 		}
 
 		.lottery-entry-status-lead {
-			font-size: var(--step--1);
-			line-height: var(--leading-relaxed);
 			color: var(--md-sys-color-on-surface-variant);
 			text-wrap: pretty;
 
@@ -55,14 +47,10 @@
 		}
 
 		.lottery-entry-status-note {
-			font-size: var(--step--1);
 			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.lottery-entry-status-status-label {
-			font-family: var(--font-display);
-			font-size: var(--step-2);
-			font-weight: 600;
 			color: var(--md-sys-color-on-surface);
 		}
 
@@ -127,19 +115,15 @@
 		}
 
 		.lottery-entry-status-summary-key {
-			font-size: var(--step--1);
-			font-weight: 600;
 			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.lottery-entry-status-summary-val {
-			font-size: var(--step-0);
 			color: var(--md-sys-color-on-surface);
 			text-align: end;
 		}
 
 		.lottery-entry-status-error {
-			font-size: var(--step--1);
 			color: var(--color-error);
 		}
 

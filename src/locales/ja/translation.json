@@ -56,7 +56,7 @@
 	"userHome": {
 		"saveFailed": "居住エリアを保存できませんでした。少し時間を置いてもう一度お試しください。",
 		"title": "ホームエリアを選択",
-		"description": "HOME STAGEには選択したエリアのライブが並びます。あなたの居住エリアはどこですか？",
+		"description": "HOMEのレーンには、選んだエリアのライブが並びます。あなたの居住エリアはどこですか？",
 		"quickSelect": "主要都市",
 		"selectByRegion": "地方から選ぶ",
 		"selectPrefecture": "都道府県を選んでください。",
@@ -149,12 +149,12 @@
 			"guest": "アカウントを作ると、販売開始をプッシュ通知で受け取れます"
 		},
 		"outOfRange": {
-			"current": "今は<strong class=\"reach-words\">{{places}}</strong>の新着ライブだけプッシュ通知対象です",
+			"current": "今は<strong class=\"[ reach-words ] [ md-typescale-title-large-emphasized ]\">{{places}}</strong>の新着ライブだけプッシュ通知対象です",
 			"none": "今は新着ライブをプッシュ通知していません",
 			"widen": "{{places}}の新着ライブを受け取る",
 			"widenAlso": "{{places}}の新着ライブも受け取る",
-			"savedOn": "<strong class=\"reach-words\">{{places}}</strong>の新着ライブをプッシュ通知します🔔",
-			"savedOff": "<strong class=\"reach-words\">{{places}}</strong>の新着ライブをプッシュ通知で受け取ろう🔔",
+			"savedOn": "<strong class=\"[ reach-words ] [ md-typescale-title-large-emphasized ]\">{{places}}</strong>の新着ライブをプッシュ通知します🔔",
+			"savedOff": "<strong class=\"[ reach-words ] [ md-typescale-title-large-emphasized ]\">{{places}}</strong>の新着ライブをプッシュ通知で受け取ろう🔔",
 			"failed": "変更できませんでした。もう一度お試しください。"
 		},
 		"ticketStatus": "チケット状況",
@@ -173,9 +173,9 @@
 	},
 	"dashboard": {
 		"lane": {
-			"home": "HOME STAGE",
-			"near": "NEAR STAGE",
-			"away": "AWAY STAGE"
+			"home": "HOME",
+			"near": "NEAR",
+			"away": "AWAY"
 		},
 		"coachMark": {
 			"viewArtists": "アーティスト一覧も見てみよう！"

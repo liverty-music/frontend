@@ -16,8 +16,6 @@
 		min-inline-size: 90px;
 		min-block-size: var(--md-target-size);
 		padding-inline: var(--space-s);
-
-		font: var(--md-type-title-small);
 		color: var(--md-sys-color-on-surface-variant);
 		text-decoration: none;
 

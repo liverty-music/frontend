@@ -2,22 +2,22 @@
 
 <article class="[ licenses-route ] [ flow ]">
   <header class="[ licenses-header ] [ flow ]">
-    <h1 class="licenses-title" t="legal.licenses.title"></h1>
-    <p class="licenses-intro" t="legal.licenses.intro"></p>
+    <h1 class="[ licenses-title ] [ md-typescale-headline-small ]" t="legal.licenses.title"></h1>
+    <p class="[ licenses-intro ] [ md-typescale-body-large ]" t="legal.licenses.intro"></p>
   </header>
 
   <ul class="[ licenses-list ] [ flow ]" role="list">
     <li class="[ licenses-item ] [ flow ]" repeat.for="pkg of packages">
       <div class="licenses-item-head">
-        <span class="licenses-name">${pkg.name}</span>
-        <span class="licenses-version">${pkg.version}</span>
-        <span class="licenses-license">${pkg.license}</span>
+        <span class="[ licenses-name ] [ md-typescale-title-medium ]">${pkg.name}</span>
+        <span class="[ licenses-version ] [ md-typescale-label-small ]">${pkg.version}</span>
+        <span class="[ licenses-license ] [ md-typescale-label-small ]">${pkg.license}</span>
       </div>
 
-      <p class="licenses-publisher" if.bind="pkg.publisher">${pkg.publisher}</p>
+      <p class="[ licenses-publisher ] [ md-typescale-body-medium ]" if.bind="pkg.publisher">${pkg.publisher}</p>
 
       <a
-        class="licenses-repository"
+        class="[ licenses-repository ] [ md-typescale-body-medium ]"
         if.bind="pkg.repository"
         href.bind="pkg.repository"
         target="_blank"
@@ -25,7 +25,7 @@
         t="legal.licenses.sourceLabel"
       ></a>
 
-      <details class="licenses-text" if.bind="pkg.licenseText">
+      <details class="[ licenses-text ] [ md-typescale-body-medium ]" if.bind="pkg.licenseText">
         <summary t="legal.licenses.viewLicenseText"></summary>
         <pre class="licenses-text-body">${pkg.licenseText}</pre>
       </details>

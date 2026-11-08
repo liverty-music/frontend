@@ -48,14 +48,10 @@
 
 		.help-section-title {
 			margin: 0;
-			font-family: var(--font-display);
-			font-size: var(--step-1);
-			font-weight: 700;
 		}
 
 		.page-help-desc {
 			margin-block-end: var(--space-s);
-			line-height: var(--leading-relaxed);
 			color: var(--md-sys-color-on-surface);
 		}
 
@@ -81,7 +77,6 @@
 		.page-help-tips li::before {
 			content: "▸";
 			flex-shrink: 0;
-			font-weight: bold;
 			color: var(--color-brand-accent);
 		}
 
@@ -97,10 +92,6 @@
 			padding: var(--space-3xs) var(--space-xs);
 			border: 1px solid var(--_white-15);
 			border-radius: var(--md-sys-shape-corner-full);
-
-			font-family: var(--font-display);
-			font-size: var(--step--1);
-			font-weight: 500;
 			color: var(--_white-70);
 			white-space: nowrap;
 
@@ -132,10 +123,6 @@
 			background: oklch(
 				from var(--md-sys-color-surface-container-high) calc(l + 0.04) c h
 			);
-		}
-
-		.page-help-lanes dt {
-			font-weight: 700;
 		}
 
 		.page-help-lanes dd {
@@ -191,16 +178,12 @@
 
 		.help-hype-icon {
 			align-self: center;
-			font-size: var(--step-0);
-			line-height: var(--leading-none);
 			text-align: center;
 			white-space: nowrap;
 		}
 
 		.help-hype-label {
 			align-self: center;
-			font-family: var(--font-display);
-			font-weight: 700;
 			white-space: nowrap;
 		}
 
@@ -213,7 +196,6 @@
 		/* ── Note (footnote / caption) ──────────────────────────────────── */
 		.page-help-note {
 			margin-block-start: var(--space-s);
-			font-size: var(--step--1);
 			color: var(--md-sys-color-on-surface-variant);
 		}
 	}

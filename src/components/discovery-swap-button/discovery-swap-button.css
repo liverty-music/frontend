@@ -38,8 +38,6 @@
 
 			padding: 0;
 			border: 0;
-
-			font: inherit;
 			color: inherit;
 
 			background: none;
@@ -160,8 +158,8 @@
 		/* About 7px on screen: bold enough to read, with no outline to fill
 		   the counters in. */
 		.swap-ticket-text {
-			font-family: var(--font-display);
-			font-weight: 700;
+			/* stylelint-disable-next-line property-disallowed-list -- lettering inside the ticket drawing, sized by the SVG, not a line of text */
+			font-family: var(--md-ref-typeface-brand);
 			fill: oklch(25% 0.06 45deg);
 		}
 

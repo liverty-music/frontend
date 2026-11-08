@@ -50,11 +50,11 @@
       data-field="name"
     ></console-field>
     <div else class="fixed">
-      <span class="label">${'lotteryEditor.name' & t}</span>
+      <span class="[ label ] [ md-typescale-label-large ]">${'lotteryEditor.name' & t}</span>
       <span>${model.name}</span>
     </div>
 
-    <h2 class="section-title">${'lotteryEditor.sections.window' & t}</h2>
+    <h2 class="[ section-title ] [ md-typescale-title-large ]">${'lotteryEditor.sections.window' & t}</h2>
     <div class="row">
       <console-field
         type="date"
@@ -92,11 +92,11 @@
     </div>
 
     <section class="tickets" aria-labelledby="lottery-tickets">
-      <h2 id="lottery-tickets" class="section-title">${'lotteryEditor.sections.tickets' & t}</h2>
+      <h2 id="lottery-tickets" class="[ section-title ] [ md-typescale-title-large ]">${'lotteryEditor.sections.tickets' & t}</h2>
       <p class="note">${'saleEditor.drawsEveryStock' & t:{ limit: perAccountLimit }}</p>
       <ul class="stock-list">
         <li repeat.for="stock of stocks; key: id" class="stock" data-stock.bind="stock.id">
-          <span class="stock-name">${stock.name}</span>
+          <span class="[ stock-name ] [ md-typescale-title-small ]">${stock.name}</span>
           <span>${stock.price | yen} ${'stock.taxIncluded' & t} · ${'sale.quantity' & t:{ tickets: stock.quantity }}</span>
         </li>
       </ul>

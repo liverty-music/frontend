@@ -17,8 +17,6 @@
 		border: 1px solid transparent;
 		border-radius: var(--md-sys-shape-corner-full);
 
-		font: var(--md-type-label-large);
-
 		/* The text variant (and the base every variant overrides) is neutral: the
 		   brand color marks only the primary action, focus and the logo
 		   (design-tokens). on-surface-variant keeps 4.5:1 on every surface in both

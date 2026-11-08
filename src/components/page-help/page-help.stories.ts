@@ -5,6 +5,7 @@ import {
 } from '@aurelia/storybook'
 import { Registration } from 'aurelia'
 import { expect, waitFor } from 'storybook/test'
+import { resolveColor } from '../../../.storybook/contrast'
 import { IOnboardingService } from '../../services/onboarding-service'
 import { PageHelp } from './page-help'
 
@@ -61,6 +62,25 @@ export const MyArtists = {
 					),
 				),
 			)
+
+		// @spec components/infrastructure/fan/web/global/page-help "Sheet background, title font, and muted text rendering"
+		const sheetBody = doc.querySelector<HTMLElement>('bottom-sheet .sheet-body')
+		if (!sheetBody) throw new Error('no sheet body')
+		await expect(getComputedStyle(sheetBody).backgroundColor).toBe(
+			resolveColor(sheetBody, 'var(--md-sys-color-surface-container-high)'),
+		)
+		const title = doc.querySelector<HTMLElement>('.help-section-title')
+		if (!title) throw new Error('no section title')
+		await expect(
+			getComputedStyle(title).fontFamily.startsWith('Righteous'),
+		).toBe(true)
+		await expect(getComputedStyle(title).fontSize).toBe('24px')
+		const note = doc.querySelector<HTMLElement>('.page-help-note')
+		if (!note) throw new Error('no note')
+		await expect(getComputedStyle(note).color).toBe(
+			resolveColor(note, 'var(--md-sys-color-on-surface-variant)'),
+		)
+		await expect(getComputedStyle(note).opacity).toBe('1')
 
 		// @spec components/infrastructure/fan/web/global/page-help "Column alignment"
 		await expect(edges('.help-hype-icon', 'right').size).toBe(1)

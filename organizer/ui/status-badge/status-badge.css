@@ -14,8 +14,6 @@
 		min-block-size: 24px;
 		padding-inline: var(--space-2xs);
 		border-radius: var(--md-sys-shape-corner-small);
-
-		font: var(--md-type-label-medium);
 		color: var(--_on-container);
 		white-space: nowrap;
 

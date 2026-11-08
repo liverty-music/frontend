@@ -68,7 +68,7 @@ async function openSignupBanner(page: Page, language: Language) {
  */
 async function expectFitsOneLine(page: Page, banner: Banner) {
 	// Measured once the web fonts are in: the button label's fallback font is
-	// wider than Outfit.
+	// wider than Noto Sans JP.
 	await page.evaluate(() => document.fonts.ready)
 	const fit = await page.evaluate(({ message, action }) => {
 		const read = (selector: string) => {

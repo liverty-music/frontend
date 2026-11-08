@@ -169,6 +169,18 @@ export default {
 				'cube/block-max-lines': [true, { max: 100 }],
 			},
 		},
+		// The shared button owns its label: label-large is the role of every
+		// text button, so the 126 buttons in templates carry no type class.
+		{
+			files: ['src/styles/button.css'],
+			rules: {
+				'property-disallowed-list': [
+					...PROPERTY_DISALLOWED,
+					'/^margin/',
+					'/^outline/',
+				],
+			},
+		},
 		// Each self-contained entry declares its own tokens.
 		{
 			files: ['src/**/*.css', 'shared/**/*.css'],

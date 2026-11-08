@@ -17,14 +17,7 @@
 		}
 
 		.licenses-title {
-			font-family: var(--font-display);
-			font-size: var(--step-3);
-			font-weight: 700;
 			color: var(--md-sys-color-on-surface);
-		}
-
-		.licenses-intro {
-			font-size: var(--step-0);
 		}
 
 		.licenses-item {
@@ -42,7 +35,6 @@
 		}
 
 		.licenses-name {
-			font-weight: 600;
 			color: var(--md-sys-color-on-surface);
 
 			/* Long scoped names (e.g. @buf/bufbuild_protovalidate.connectrpc_es)
@@ -52,7 +44,6 @@
 		}
 
 		.licenses-version {
-			font-size: var(--step--2);
 			color: var(--md-sys-color-on-surface-variant);
 		}
 
@@ -61,23 +52,15 @@
 			padding: var(--space-3xs) var(--space-2xs);
 			border-radius: var(--md-sys-shape-corner-small);
 
-			font-size: var(--step--2);
-
 			background: var(--md-sys-color-surface-container-high);
 		}
 
-		.licenses-publisher {
-			font-size: var(--step--1);
-		}
-
 		.licenses-repository {
-			font-size: var(--step--1);
 			color: var(--md-sys-color-on-surface);
 		}
 
 		.licenses-text > summary {
 			cursor: pointer;
-			font-size: var(--step--1);
 		}
 
 		.licenses-text-body {
@@ -87,8 +70,6 @@
 			margin-block-start: var(--space-2xs);
 			padding: var(--space-2xs);
 			border-radius: var(--md-sys-shape-corner-small);
-
-			font-size: var(--step--2);
 			overflow-wrap: anywhere;
 			white-space: pre-wrap;
 

@@ -34,17 +34,14 @@
 
 	/* Slots are `display: contents`: what they hold inherits their type. */
 	slot[name="overline"] {
-		font: var(--md-type-label-medium);
 		color: var(--md-sys-color-on-surface-variant);
 	}
 
 	.headline {
-		font: var(--md-type-body-large);
 		color: var(--md-sys-color-on-surface);
 	}
 
 	slot[name="supporting"] {
-		font: var(--md-type-body-medium);
 		color: var(--md-sys-color-on-surface-variant);
 	}
 
@@ -54,7 +51,6 @@
 	}
 
 	slot[name="trailing"] {
-		font: var(--md-type-label-medium);
 		color: var(--md-sys-color-on-surface-variant);
 	}
 

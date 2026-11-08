@@ -14,7 +14,6 @@
 		display: none;
 		border-collapse: collapse;
 		inline-size: 100%;
-		font: var(--md-type-body-medium);
 	}
 
 	.table th,
@@ -25,12 +24,10 @@
 	}
 
 	.table thead th {
-		font: var(--md-type-label-large);
 		color: var(--md-sys-color-on-surface-variant);
 	}
 
 	.table tbody th {
-		font-weight: 500;
 		color: var(--md-sys-color-on-surface);
 	}
 
@@ -40,7 +37,6 @@
 
 	.subtitle {
 		display: block;
-		font: var(--md-type-body-small);
 		color: var(--md-sys-color-on-surface-variant);
 	}
 

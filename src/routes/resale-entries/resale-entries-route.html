@@ -1,16 +1,16 @@
 <template class="[ resale-entries-route ] [ flow ]">
 	<header class="resale-entries-header">
-		<h1 class="resale-entries-title" t="resaleEntries.title"></h1>
+		<h1 class="[ resale-entries-title ] [ md-typescale-headline-small ]" t="resaleEntries.title"></h1>
 	</header>
 
-	<p if.bind="state === 'loading'" class="resale-entries-lead" role="status" t="resaleEntries.loading"></p>
+	<p if.bind="state === 'loading'" class="[ resale-entries-lead ] [ md-typescale-body-medium ]" role="status" t="resaleEntries.loading"></p>
 
 	<section if.bind="state === 'error'" class="[ resale-entries-panel ] [ flow ]" data-testid="resale-entries-error">
-		<p class="resale-entries-lead" t="resaleEntries.error"></p>
+		<p class="[ resale-entries-lead ] [ md-typescale-body-medium ]" t="resaleEntries.error"></p>
 		<button type="button" class="[ button ] [ pressable ]" click.trigger="load()" t="resaleEntries.retry"></button>
 	</section>
 
-	<p if.bind="state === 'ready' && rows.length === 0" class="resale-entries-lead" data-testid="resale-entries-empty" t="resaleEntries.empty"></p>
+	<p if.bind="state === 'ready' && rows.length === 0" class="[ resale-entries-lead ] [ md-typescale-body-medium ]" data-testid="resale-entries-empty" t="resaleEntries.empty"></p>
 
 	<ul if.bind="state === 'ready' && rows.length > 0" class="[ resale-entries-list ] [ flow ]" role="list">
 		<li
@@ -19,17 +19,17 @@
 			data-testid="resale-entries-entry"
 			data-entry-state.bind="row.entry.state"
 		>
-			<p class="resale-entries-event" data-testid="resale-entries-event">
+			<p class="[ resale-entries-event ] [ md-typescale-body-medium ]" data-testid="resale-entries-event">
 				<template if.bind="row.event">${row.event.title}<br />${dateLabel(row)} · ${row.event.venueName}</template>
 			</p>
-			<p class="resale-entries-seat" data-testid="resale-entries-seat" t="resaleEntries.seat" t-params.bind="{ seatType: row.stock.seatTypeName, count: row.entry.ticketCount }"></p>
-			<p class="resale-entries-state" data-testid="resale-entries-state" t="resaleEntries.state.${row.entry.state}"></p>
+			<p class="[ resale-entries-seat ] [ md-typescale-title-medium ]" data-testid="resale-entries-seat" t="resaleEntries.seat" t-params.bind="{ seatType: row.stock.seatTypeName, count: row.entry.ticketCount }"></p>
+			<p class="[ resale-entries-state ] [ md-typescale-title-medium ]" data-testid="resale-entries-state" t="resaleEntries.state.${row.entry.state}"></p>
 
 			<template switch.bind="row.entry.state">
 				<template case="entered">
-					<p if.bind="nextDrawLabel(row)" class="resale-entries-lead" data-testid="resale-entries-next-draw" t="resaleEntry.nextDraw" t-params.bind="{ time: nextDrawLabel(row) }"></p>
+					<p if.bind="nextDrawLabel(row)" class="[ resale-entries-lead ] [ md-typescale-body-medium ]" data-testid="resale-entries-next-draw" t="resaleEntry.nextDraw" t-params.bind="{ time: nextDrawLabel(row) }"></p>
 					<template if.bind="confirmingId === row.entry.id">
-						<p class="resale-entries-lead" role="alert" data-testid="resale-entries-withdraw-confirm" t="resaleEntries.withdraw.confirm"></p>
+						<p class="[ resale-entries-lead ] [ md-typescale-body-medium ]" role="alert" data-testid="resale-entries-withdraw-confirm" t="resaleEntries.withdraw.confirm"></p>
 						<div class="[ resale-entries-actions ] [ cluster ]">
 							<button type="button" class="[ button ] [ pressable ]" data-variant="outlined" click.trigger="cancelWithdraw()" disabled.bind="withdrawingId === row.entry.id" t="resaleEntries.withdraw.keep"></button>
 							<button type="button" class="[ button ] [ pressable ]" click.trigger="withdraw(row)" disabled.bind="withdrawingId === row.entry.id" data-testid="resale-entries-withdraw-do" t="resaleEntries.withdraw.do"></button>
@@ -41,14 +41,14 @@
 					<a href="/tickets" class="[ button ] [ pressable ]" data-testid="resale-entries-to-tickets" t="resaleEntries.toTickets"></a>
 				</template>
 				<template case="lapsed">
-					<p class="resale-entries-lead" data-testid="resale-entries-note" t="resaleEntries.note.lapsed"></p>
+					<p class="[ resale-entries-lead ] [ md-typescale-body-medium ]" data-testid="resale-entries-note" t="resaleEntries.note.lapsed"></p>
 				</template>
 				<template case="withdrawn">
-					<p class="resale-entries-lead" data-testid="resale-entries-note" t="resaleEntries.note.withdrawn"></p>
+					<p class="[ resale-entries-lead ] [ md-typescale-body-medium ]" data-testid="resale-entries-note" t="resaleEntries.note.withdrawn"></p>
 				</template>
 			</template>
 			<a if.bind="canApplyAgain(row)" href.bind="applyUrl(row)" class="[ button ] [ pressable ]" data-testid="resale-entries-apply-again" t="resaleEntries.applyAgain"></a>
-			<p if.bind="message && message.entryId === row.entry.id" class="resale-entries-error" role="alert" data-testid="resale-entries-message" t.bind="message.key"></p>
+			<p if.bind="message && message.entryId === row.entry.id" class="[ resale-entries-error ] [ md-typescale-body-medium ]" role="alert" data-testid="resale-entries-message" t.bind="message.key"></p>
 		</li>
 	</ul>
 </template>

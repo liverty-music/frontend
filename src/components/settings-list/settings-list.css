@@ -132,12 +132,10 @@
 		}
 
 		.settings-row-label {
-			font-size: var(--step--1);
 			color: var(--md-sys-color-on-surface);
 		}
 
 		.settings-row-value {
-			font-size: var(--step--1);
 			color: var(--md-sys-color-on-surface-variant);
 		}
 
@@ -172,8 +170,6 @@
 		}
 
 		.settings-sign-out-text {
-			font-size: var(--step--1);
-			font-weight: 600;
 			color: var(--color-error);
 		}
 
@@ -267,8 +263,6 @@
 		/* Collapsible toggle description. Decoupled from `.settings-row-hint`'s
 		   icon-alignment indent so it can use the full column width. */
 		.settings-toggle-desc {
-			font-size: var(--step--1);
-			line-height: var(--leading-relaxed);
 			color: var(--md-sys-color-on-surface-variant);
 			text-wrap: pretty;
 		}
@@ -324,7 +318,6 @@
 			display: inline-flex;
 			gap: var(--space-3xs);
 			align-items: center;
-			font-size: var(--step--1);
 		}
 
 		.settings-verification-icon {
@@ -340,7 +333,8 @@
 			--button-min-size: 2.25rem;
 			--button-padding-block: var(--space-3xs);
 			--button-padding-inline: var(--space-s);
-			--button-font-size: var(--step--1);
+			--button-font: var(--md-sys-typescale-label-medium);
+			--button-tracking: var(--md-sys-typescale-label-medium-tracking);
 
 			white-space: nowrap;
 		}

@@ -20,10 +20,6 @@
 		}
 
 		.checkout-title {
-			font-family: var(--font-display);
-			font-size: var(--step-2);
-			font-weight: normal;
-			line-height: var(--leading-snug);
 			color: var(--md-sys-color-on-surface);
 			text-wrap: balance;
 		}
@@ -39,17 +35,14 @@
 		}
 
 		.checkout-event-title {
-			font-weight: 600;
 			color: var(--md-sys-color-on-surface);
 		}
 
 		.checkout-event-meta {
-			font-size: var(--step--1);
 			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.checkout-countdown {
-			font-size: var(--step--1);
 			font-variant-numeric: tabular-nums;
 			color: var(--md-sys-color-on-surface);
 		}
@@ -64,14 +57,10 @@
 		}
 
 		.checkout-step-title {
-			font-size: var(--step-1);
-			font-weight: 600;
 			color: var(--md-sys-color-on-surface);
 		}
 
 		.checkout-note {
-			font-size: var(--step--1);
-			line-height: var(--leading-relaxed);
 			color: var(--md-sys-color-on-surface-variant);
 			text-wrap: pretty;
 		}
@@ -83,8 +72,6 @@
 		}
 
 		.checkout-label {
-			font-size: var(--step--1);
-			font-weight: 600;
 			color: var(--md-sys-color-on-surface);
 		}
 
@@ -95,8 +82,6 @@
 			padding-inline: var(--space-s);
 			border: 1px solid var(--md-sys-color-outline-variant);
 			border-radius: var(--md-sys-shape-corner-medium);
-
-			font-size: var(--step-0);
 			color: var(--md-sys-color-on-surface);
 
 			background: var(--md-sys-color-surface);
@@ -110,8 +95,6 @@
 		}
 
 		.checkout-seat-type {
-			font-size: var(--step-1);
-			font-weight: 600;
 			color: var(--md-sys-color-on-surface);
 		}
 
@@ -120,22 +103,13 @@
 		}
 
 		.checkout-total {
-			font-size: var(--step-1);
-			font-weight: 600;
 			color: var(--md-sys-color-on-surface);
 		}
 
 		.checkout-terms {
 			display: grid;
 			gap: var(--space-2xs) var(--space-s);
-
-			font-size: var(--step--1);
-			line-height: var(--leading-relaxed);
 			color: var(--md-sys-color-on-surface);
-
-			& dt {
-				font-weight: 600;
-			}
 
 			& dd {
 				margin-block-end: var(--space-xs);
@@ -149,7 +123,6 @@
 		}
 
 		.checkout-error {
-			font-size: var(--step--1);
 			color: var(--color-error);
 		}
 

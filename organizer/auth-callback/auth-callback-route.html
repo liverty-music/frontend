@@ -3,7 +3,7 @@
 <main class="[ organizer-callback-layout ]">
   <div if.bind="!failed" class="organizer-callback-loading" role="status">
     <circular-progress label.bind="'authCallback.verifying' & t"></circular-progress>
-    <p class="organizer-callback-status">${'authCallback.verifying' & t}</p>
+    <p class="[ organizer-callback-status ] [ md-typescale-body-large ]">${'authCallback.verifying' & t}</p>
   </div>
   <section if.bind="failed" class="organizer-callback-error" role="alert">
     <p>${'authCallback.failed' & t}</p>

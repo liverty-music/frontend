@@ -2,10 +2,10 @@
  * Styled for the fan app by default. An app can restyle it by setting these on
  * an ancestor: --snack-bar-container, --snack-bar-on-container,
  * --snack-bar-action-hover (the close button's hover layer),
- * --snack-bar-shadow, --snack-bar-font-family, --snack-bar-font-weight, and
- * --bottom-nav-height for the clearance above a bottom navigation bar. The
- * action button takes the fan app's shared button (`button` block); an app
- * without it styles `.snack-action-btn` itself.
+ * --snack-bar-shadow, and --bottom-nav-height for the clearance above a
+ * bottom navigation bar. The message is body-medium. The action button takes
+ * the fan app's shared button (`button` block); an app without it styles
+ * `.snack-action-btn` itself.
  */
 @layer block {
 	@scope (snack-bar) {
@@ -134,8 +134,6 @@
 			padding-inline: var(--space-s);
 			border-radius: var(--md-sys-shape-corner-extra-small);
 
-			font-family: var(--snack-bar-font-family, var(--font-display));
-			font-weight: var(--snack-bar-font-weight, 600);
 			color: var(--snack-bar-on-container, var(--color-white));
 
 			background: var(
@@ -171,7 +169,8 @@
 			--button-min-size: 2.25rem;
 			--button-padding-block: var(--space-3xs);
 			--button-padding-inline: var(--space-s);
-			--button-font-size: var(--step--1);
+			--button-font: var(--md-sys-typescale-label-medium);
+			--button-tracking: var(--md-sys-typescale-label-medium-tracking);
 
 			flex-shrink: 0;
 			margin-inline-start: auto;

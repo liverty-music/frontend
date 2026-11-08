@@ -81,7 +81,7 @@ describe('page help content', () => {
 		expect(
 			[...host.querySelectorAll('.page-help-lanes dt')].map((dt) => [
 				dt.textContent,
-				dt.className,
+				[...dt.classList].find((c) => c.startsWith('stage-')),
 			]),
 		).toEqual([
 			['HOME', 'stage-home'],

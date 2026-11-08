@@ -105,13 +105,6 @@
 			block-size: 1.25rem;
 		}
 
-		.nav-label {
-			/* Compact-only exception: nav labels stay tight (see tokens.css). */
-			font-size: var(--step--2);
-			font-weight: 500;
-			line-height: var(--leading-none);
-		}
-
 		/* Active tab: 3-layer treatment so "current page" reads instantly:
 		   1) brand-accent color, 2) bolder label weight,
 		   3) a 2px accent bar at the top edge as a visual anchor. */
@@ -140,10 +133,6 @@
 					var(--md-sys-shape-corner-small);
 
 				background: var(--color-brand-accent);
-			}
-
-			& .nav-label {
-				font-weight: 700;
 			}
 		}
 

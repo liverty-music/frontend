@@ -26,8 +26,6 @@
 		padding-inline: var(--space-s) 20px;
 		border: none;
 		border-radius: var(--md-sys-shape-corner-large);
-
-		font: var(--md-type-label-large);
 		color: var(--md-sys-color-on-primary-container);
 		text-decoration: none;
 		white-space: nowrap;
