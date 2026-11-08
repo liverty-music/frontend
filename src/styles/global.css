@@ -5,10 +5,10 @@
 		font-synthesis-weight: none;
 	}
 
+	/* Body text is body-large unless a template gives it another type style. */
 	:where(body) {
-		font-family: var(--font-body);
-		font-size: var(--step-0);
-		line-height: var(--leading-relaxed);
+		font: var(--md-sys-typescale-body-large);
+		letter-spacing: var(--md-sys-typescale-body-large-tracking);
 		color: var(--md-sys-color-on-surface);
 
 		background: var(--md-sys-color-surface);
@@ -18,27 +18,6 @@
 	   Restore the app's text color for all popovers and dialogs. */
 	:where([popover], dialog) {
 		color: var(--md-sys-color-on-surface);
-	}
-
-	:where(h1, h2, h3, h4, h5, h6) {
-		font-family: var(--font-display);
-		line-height: var(--leading-snug);
-	}
-
-	:where(h1) {
-		font-size: var(--step-4);
-	}
-
-	:where(h2) {
-		font-size: var(--step-3);
-	}
-
-	:where(h3) {
-		font-size: var(--step-2);
-	}
-
-	:where(h4) {
-		font-size: var(--step-1);
 	}
 
 	:where(a) {
@@ -51,9 +30,6 @@
 		padding-inline: var(--space-s);
 		border: none;
 		border-radius: var(--md-sys-shape-corner-medium);
-
-		font-family: var(--font-display);
-		font-weight: 600;
 
 		background: transparent;
 

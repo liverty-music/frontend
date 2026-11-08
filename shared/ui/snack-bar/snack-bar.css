@@ -171,7 +171,8 @@
 			--button-min-size: 2.25rem;
 			--button-padding-block: var(--space-3xs);
 			--button-padding-inline: var(--space-s);
-			--button-font-size: var(--step--1);
+			--button-font: var(--md-sys-typescale-label-medium);
+			--button-tracking: var(--md-sys-typescale-label-medium-tracking);
 
 			flex-shrink: 0;
 			margin-inline-start: auto;

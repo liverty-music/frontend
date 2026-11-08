@@ -53,7 +53,11 @@
 		border: none;
 	}
 
+	/* A heading's look comes from the type style it is given, not its level
+	   (design-tokens "Heading level does not decide the look"). */
 	:where(h1, h2, h3, h4, h5, h6) {
+		font: inherit;
+		letter-spacing: inherit;
 		text-wrap: balance;
 		overflow-wrap: break-word;
 	}
