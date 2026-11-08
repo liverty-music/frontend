@@ -25,9 +25,10 @@
 		--journey-hue-paid: 160deg; /* success — the hue of --color-success */
 		--journey-hue-lost: 25deg; /* failure — red */
 
-		/* Typography — festival display + clean body */
-		--font-display: "Righteous", "Outfit", system-ui, sans-serif;
-		--font-body: "Poppins", system-ui, -apple-system, sans-serif;
+		/* The typefaces of shared/styles/m3-sys.css and --md-ref-typeface-brand
+		   below, until every block takes a type style instead (task 4.2). */
+		--font-display: var(--md-ref-typeface-brand);
+		--font-body: var(--md-ref-typeface-plain);
 
 		/* Fluid type scale (generated via utopia.fyi) */
 

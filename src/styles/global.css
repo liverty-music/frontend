@@ -1,4 +1,10 @@
 @layer global {
+	/* No faked bold: Righteous has one weight, so an emphasized headline stays
+	   400 in Latin letters and is heavier only where Noto Sans JP draws it. */
+	:where(html) {
+		font-synthesis-weight: none;
+	}
+
 	:where(body) {
 		font-family: var(--font-body);
 		font-size: var(--step-0);

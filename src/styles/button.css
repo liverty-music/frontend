@@ -32,9 +32,8 @@
 			border: 2px solid transparent;
 			border-radius: var(--md-sys-shape-corner-medium);
 
-			/* Outfit, the display fallback, because Righteous has no bold
-			   weight. */
-			font-family: Outfit, var(--font-display);
+			/* The plain typeface: Righteous, the brand face, has no bold. */
+			font-family: var(--md-ref-typeface-plain);
 			font-size: var(--button-font-size, max(var(--step-0), 1.1875rem));
 			font-weight: 700;
 			line-height: var(--leading-tight);

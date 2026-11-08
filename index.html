@@ -45,8 +45,11 @@
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Righteous&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Noto Sans JP sets every style; Righteous only display and headline,
+       falling back to Noto Sans JP for the characters it lacks. Google Fonts
+       splits Noto Sans JP by Unicode range, so a page fetches only the
+       subsets its text uses. -->
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@100..900&family=Righteous&display=swap" rel="stylesheet">
   <script src="/config-prefetch.js"></script>
   <script type="module" src="/src/main.ts"></script>
   <base href="/">
