@@ -3,9 +3,9 @@ import type { Page } from '../support/test'
 import { expect, test } from '../support/test'
 
 /**
- * The organizer console's type: fixed sizes on any window, tabular figures,
- * and Noto Sans JP on every device, as drawn. Which font drew the text is read
- * from Chromium's DevTools protocol (`CSS.getPlatformFontsForNode`), so this
+ * The organizer console's type: fixed sizes on any window, and Noto Sans JP
+ * on every device, as drawn. Which font drew the text is read from
+ * Chromium's DevTools protocol (`CSS.getPlatformFontsForNode`), so this
  * runs in the Chromium `functional` project.
  */
 
@@ -86,31 +86,6 @@ test(`@spec ${CAPABILITY} "Same size on PC and phone"`, async ({ page }) => {
 
 	expect(pc).toEqual({ title: '24px', body: '14px' })
 	expect(phone).toEqual(pc)
-})
-
-test(`@spec ${CAPABILITY} "Counts line up"`, async ({ page }) => {
-	await openConcerts(page, 1440)
-
-	// Inside a console component's shadow root, where the counts render: the
-	// console's shared rules make every digit the same width.
-	const widths = await page.evaluate(() => {
-		const host = [...document.querySelectorAll('*')].find((el) => el.shadowRoot)
-		const root = host?.shadowRoot
-		if (!root) throw new Error('no console shadow root')
-		const measure = (text: string) => {
-			const span = document.createElement('span')
-			span.className = 'md-typescale-body-medium'
-			span.textContent = text
-			root.append(span)
-			const width = span.getBoundingClientRect().width
-			const numeric = getComputedStyle(span).fontVariantNumeric
-			span.remove()
-			return { width, numeric }
-		}
-		return { ones: measure('1111'), zeros: measure('0000') }
-	})
-	expect(widths.ones.numeric).toBe('tabular-nums')
-	expect(widths.ones.width).toBeCloseTo(widths.zeros.width, 1)
 })
 
 test(`@spec ${CAPABILITY} "Same typeface on Windows and on a Mac"`, async ({

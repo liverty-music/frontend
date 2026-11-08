@@ -30,7 +30,6 @@ export const Default = {
 		const h1 = canvas.getByRole('heading', { level: 1 })
 		await expect(h1).toBeInTheDocument()
 
-		// @spec components/infrastructure/fan/web/global/page-header "Visual consistency across routes"
 		// Every route renders this one component, so each shares what it sets:
 		// the headline-small title, the --space-xs padding, the 10 % white
 		// border and the surface-container background (with its brand tint).

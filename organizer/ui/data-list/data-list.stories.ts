@@ -144,6 +144,17 @@ export const Table = {
 			entries[1].getBoundingClientRect().right,
 			0,
 		)
+		// Every digit is as wide as any other, so a count that changes in
+		// place keeps its width.
+		const count = entries[0]
+		const widthOf = (digits: string) => {
+			count.textContent = digits
+			return count.getBoundingClientRect().width
+		}
+		const ones = widthOf('111')
+		const eights = widthOf('888')
+		count.textContent = '412'
+		await expect(ones).toBeCloseTo(eights, 1)
 		const cells = deepQueryAll(canvasElement, 'td[data-numeric="true"]')
 		for (const cell of cells) {
 			await expect(getComputedStyle(cell).textAlign).toBe('end')
