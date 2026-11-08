@@ -59,9 +59,10 @@ export const Partial = {
 		const fill = canvasElement.querySelector('.onboarding-progress-fill')
 		if (!fill) throw new Error('no fill')
 		const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches
-		await expect(getComputedStyle(fill).animationName).toBe(
-			reduced ? 'none' : 'progress-sheen',
-		)
+		// The sheen moves on the compositor: a transformed band over the fill.
+		const sheen = getComputedStyle(fill, '::before')
+		await expect(sheen.animationName).toBe(reduced ? 'none' : 'progress-sheen')
+		await expect(getComputedStyle(fill).animationName).toBe('none')
 	},
 } satisfies Story
 
