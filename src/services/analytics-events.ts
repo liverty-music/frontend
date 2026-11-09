@@ -134,7 +134,6 @@ export type AuthStartSource =
 	| 'my_artists_prompt'
 	| 'ticket_notify'
 	| 'settings'
-	| 'auth_status'
 
 /**
  * The app sent the person to hosted login. Paired with the account events

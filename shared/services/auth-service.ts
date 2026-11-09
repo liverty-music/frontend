@@ -512,8 +512,8 @@ export class AuthService {
 		this.logger.info('Starting sign-out flow')
 		// Publish BEFORE the redirect so every store can self-clear (guest
 		// follows, user-specific caches) while the app is still alive. This is
-		// the single publish point for the two sign-out call sites
-		// (settings-route, auth-status); each store subscribes and clears
+		// the single publish point for sign-out (called from settings-route);
+		// each store subscribes and clears
 		// idempotently, replacing the old guest-service clearAll() responsibility.
 		this.ea.publish(new SignedOut())
 		await this.userManager.signoutRedirect()

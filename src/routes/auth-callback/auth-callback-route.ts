@@ -63,7 +63,7 @@ export class AuthCallbackRoute {
 			// Request guest-follow migration on EVERY successful authenticated
 			// callback (sign-up AND returning sign-in), not only on sign-up. A
 			// returning user who browsed anonymously (accumulating guest follows)
-			// and then signs in via Settings / auth-status — paths that do NOT
+			// and then signs in via Settings — a path that does NOT
 			// clearAll — would otherwise lose those follows in-session until a
 			// cold-boot reconcile healed them. FollowStore.migrateGuestFollows is
 			// receipt-guarded, idempotent, and a no-op on an empty queue, so firing
