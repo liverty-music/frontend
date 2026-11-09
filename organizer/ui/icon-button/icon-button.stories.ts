@@ -107,6 +107,24 @@ export const Focused = {
 	},
 } satisfies Story
 
+/** A toggle that is on: `aria-pressed="true"` and the icon in `primary`. */
+export const Pressed = {
+	args: { pressed: true },
+	render,
+	play: async ({ canvasElement }) => {
+		const button = buttonOf(canvasElement)
+		await expectShape(button)
+		await expect(button).toHaveAttribute('aria-pressed', 'true')
+		await expect(getComputedStyle(button).color).toBe(
+			roleColor(canvasElement, '--md-sys-color-primary'),
+		)
+		await expectScreenshot(
+			canvasElement.firstElementChild ?? canvasElement,
+			'console-icon-button-pressed',
+		)
+	},
+} satisfies Story
+
 export const Disabled = {
 	args: { disabled: true },
 	render,
