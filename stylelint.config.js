@@ -141,6 +141,7 @@ export default {
 				'src/app-shell.css',
 				'src/styles/button.css',
 				'src/styles/text-field.css',
+				'src/styles/chip.css',
 				'organizer/!(styles)/**/*.css',
 			],
 			rules: {

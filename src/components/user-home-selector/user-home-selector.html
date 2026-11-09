@@ -17,7 +17,7 @@
           <button
             repeat.for="city of quickCities; key.bind: city.code"
             busy-on-click.bind="() => selectQuickCity(city.code)"
-            class="[ selector-option ] [ md-typescale-label-large ]"
+            class="[ chip selector-option ] [ pressable ] [ md-typescale-label-large ]"
             data-selected.bind="city.code === currentCode"
             aria-current.bind="city.code === currentCode"
           >
@@ -33,7 +33,7 @@
           <button
             repeat.for="region of regions; key.bind: region.key"
             click.trigger="selectRegion(region)"
-            class="[ selector-option ] [ md-typescale-label-large ]"
+            class="[ chip selector-option ] [ pressable ] [ md-typescale-label-large ]"
           >
             <span t.bind="'userHome.regions.' + region.key"></span>
           </button>
@@ -62,7 +62,7 @@
         <button
           repeat.for="pref of selectedRegion.prefectures; key.bind: pref.code"
           busy-on-click.bind="() => selectPrefecture(pref.code)"
-          class="[ selector-option ] [ md-typescale-label-large ]"
+          class="[ chip selector-option ] [ pressable ] [ md-typescale-label-large ]"
           data-selected.bind="pref.code === currentCode"
           aria-current.bind="pref.code === currentCode"
         >

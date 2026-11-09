@@ -41,88 +41,29 @@
 			text-transform: uppercase;
 		}
 
-		/* ── Artist chip list (flex wrap — single-axis wrapping flow) ── */
+		/* ── Artist chip list (flex wrap — single-axis wrapping flow) ──
+		   Rows of chips stay a target apart (src/styles/chip.css); the block
+		   padding keeps the first and last rows' targets inside the scroller. */
 		.artists-list {
 			overflow-y: auto;
 			display: flex;
 			flex-wrap: wrap;
-			gap: var(--space-2xs);
+			gap: var(--space-s) var(--space-2xs);
 
 			max-block-size: 40dvh;
+			padding-block: var(--space-2xs);
 		}
 
 		/* Upcoming-concert count prefix on each artist chip. */
 		.artist-count {
 			font-variant-numeric: tabular-nums;
-			color: var(--md-sys-color-on-surface-variant);
-		}
-
-		.artist-chip:has(input:checked) .artist-count {
-			color: var(--md-sys-color-on-surface);
-		}
-
-		/* ── Individual chip ──
-		   input is visually-hidden; :has() drives checked state. Selection is
-		   signalled by color alone (border + background + text) — no check icon,
-		   which only padded the chip width without adding information. */
-		.artist-chip {
-			cursor: pointer;
-
-			display: flex;
-			gap: var(--space-3xs);
-			align-items: center;
-
-			padding: var(--space-3xs) var(--space-s);
-			border: 1px solid var(--md-sys-color-outline);
-
-			/* Pill throughout. Selection is signalled by color (border + background
-			   + text); no shape morph — a squircle→pill radius tween reads as
-			   janky because roundness saturates well before a full pill, so most
-			   of the tween is visually inert. */
-			border-radius: var(--md-sys-shape-corner-full);
-
-			color: var(--md-sys-color-on-surface-variant);
-
-			background: var(--md-sys-color-surface-container);
-
-			transition:
-				border-color var(--md-sys-motion-duration-short4)
-				var(--md-sys-motion-easing-standard),
-				background var(--md-sys-motion-duration-short4)
-				var(--md-sys-motion-easing-standard),
-				color var(--md-sys-motion-duration-short4)
-				var(--md-sys-motion-easing-standard);
-
-			&:hover {
-				border-color: color-mix(
-					in oklch,
-					var(--color-brand-primary) 40%,
-					transparent
-				);
-			}
-
-			&:focus-within {
-				outline: 2px solid var(--color-brand-primary);
-				outline-offset: 2px;
-			}
-
-			/* checked state */
-			&:has(input:checked) {
-				border-color: var(--color-brand-primary);
-				color: var(--md-sys-color-on-surface);
-				background: color-mix(
-					in oklch,
-					var(--color-brand-primary) 18%,
-					var(--md-sys-color-surface-container)
-				);
-			}
 		}
 
 		/* ── Journey-status chip group ── */
 		.journey-list {
 			display: flex;
 			flex-wrap: wrap;
-			gap: var(--space-2xs);
+			gap: var(--space-s) var(--space-2xs);
 		}
 
 		/* Forces a wrap: process chips land on the row above the outcome chips. */
@@ -131,33 +72,12 @@
 			block-size: 0;
 		}
 
-		/* Unselected: neutral outline retaining icon + label (non-colour cue).
-		   Selected: filled with the status's semantic hue via :has(input:checked).
-		   --_hue is set per status below so one rule body covers every chip. */
+		/* Selected: filled with the status's semantic hue (artist-filter-bar
+		   spec, "Chip selected state"), with a white label at 4.5:1 or more;
+		   unselected chips keep the shared neutral look, icon and label. */
 		.journey-chip {
-			cursor: pointer;
-
-			display: flex;
-			gap: var(--space-3xs);
-			align-items: center;
-
-			padding: var(--space-3xs) var(--space-s);
-			border: 1px solid var(--md-sys-color-outline);
-
-			/* Pill throughout (see .artist-chip) — selection is color, not shape. */
-			border-radius: var(--md-sys-shape-corner-full);
-
-			color: var(--md-sys-color-on-surface-variant);
-
-			background: var(--md-sys-color-surface-container);
-
-			transition:
-				border-color var(--md-sys-motion-duration-short4)
-				var(--md-sys-motion-easing-standard),
-				background var(--md-sys-motion-duration-short4)
-				var(--md-sys-motion-easing-standard),
-				color var(--md-sys-motion-duration-short4)
-				var(--md-sys-motion-easing-standard);
+			--chip-selected-container: oklch(52% 0.16 var(--_hue));
+			--chip-selected-on-container: var(--color-white);
 
 			&[data-journey-status="tracking"] {
 				--_hue: var(--journey-hue-tracking);
@@ -177,22 +97,6 @@
 
 			&[data-journey-status="lost"] {
 				--_hue: var(--journey-hue-lost);
-			}
-
-			&:hover {
-				border-color: oklch(65% 0.14 var(--_hue) / 60%);
-			}
-
-			&:focus-within {
-				outline: 2px solid var(--color-brand-primary);
-				outline-offset: 2px;
-			}
-
-			/* Selected: fill with the status hue, label flips to high-contrast. */
-			&:has(input:checked) {
-				border-color: oklch(65% 0.16 var(--_hue));
-				color: var(--color-white);
-				background: oklch(52% 0.16 var(--_hue));
 			}
 		}
 
