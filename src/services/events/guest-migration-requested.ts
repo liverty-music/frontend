@@ -9,7 +9,7 @@
  *
  * Fires on any authentication — not only sign-up — because a returning user who
  * browsed anonymously (accumulating guest follows) and then SIGNS IN via
- * Settings / auth-status (paths that do NOT clearAll) would otherwise lose those
+ * Settings (a path that does NOT clearAll) would otherwise lose those
  * follows in-session until a cold-boot reconcile healed them. `FollowStore`'s
  * `migrateGuestFollows` is receipt-guarded, idempotent, and a no-op on an empty
  * queue, so publishing unconditionally on a successful callback is safe: an

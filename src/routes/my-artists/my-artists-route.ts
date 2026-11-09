@@ -272,7 +272,7 @@ export class MyArtistsRoute {
 		// Block unfollow during onboarding
 		if (this.isOnboarding) return
 
-		// Dismiss any previous undo toast (commits that unfollow)
+		// Dismiss any previous undo snack (commits that unfollow)
 		this.undoHandle?.dismiss()
 
 		const artistId = this.artistId(artist)
@@ -310,7 +310,7 @@ export class MyArtistsRoute {
 
 		this.logger.info('Artist unfollowed (pending)', { name: artistName })
 
-		const toast = new Snack(
+		const snack = new Snack(
 			this.i18n.tr('myArtists.unfollowed', { name: artistName }),
 			'info',
 			{
@@ -328,8 +328,8 @@ export class MyArtistsRoute {
 				},
 			},
 		)
-		this.ea.publish(toast)
-		this.undoHandle = toast.handle
+		this.ea.publish(snack)
+		this.undoHandle = snack.handle
 	}
 
 	private undo(): void {

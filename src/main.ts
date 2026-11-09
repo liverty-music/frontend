@@ -45,7 +45,6 @@ import { SignupPromptBanner } from './components/signup-prompt-banner/signup-pro
 import { StatePlaceholder } from './components/state-placeholder/state-placeholder'
 import { SuccessMark } from './components/success-mark/success-mark'
 import { SvgIcon } from './components/svg-icon/svg-icon'
-import { Toast } from './components/toast/toast'
 import { UserHomeSelector } from './components/user-home-selector/user-home-selector'
 import {
 	type AppConfig,
@@ -106,13 +105,13 @@ import {
 import { IUserStore } from './services/user-store'
 import { DateValueConverter } from './value-converters/date'
 
-// Stored after Aurelia.start() so the PWA update toast can publish via EA + I18N.
+// Stored after Aurelia.start() so the PWA update snack can publish via EA + I18N.
 let _pwaEa: IEventAggregator | null = null
 let _pwaI18n: I18N | null = null
 // Set to true if onNeedRefresh fires before bootstrap() completes (EA/I18N not
-// yet available). bootstrap() flushes it via _showUpdateToast after au.start().
+// yet available). bootstrap() flushes it via _showUpdateSnack after au.start().
 let _pendingRefresh = false
-let _showUpdateToast: (() => void) | null = null
+let _showUpdateSnack: (() => void) | null = null
 
 function resolveLogLevel(configLogLevel: AppConfig['logLevel']): LogLevel {
 	const map: Record<AppConfig['logLevel'], LogLevel> = {
@@ -275,7 +274,6 @@ async function bootstrap(): Promise<void> {
 	au.register(NotificationMockCard)
 	au.register(LegalDocument)
 	au.register(SignupPromptBanner)
-	au.register(Toast)
 	au.register(PageHeader)
 	au.register(PageHelp)
 	au.register(PostSignupDialog)
@@ -300,7 +298,7 @@ async function bootstrap(): Promise<void> {
 	await au.start()
 	callbackLoading?.remove()
 
-	// Store EA + I18N so the PWA onNeedRefresh callback can publish the update toast.
+	// Store EA + I18N so the PWA onNeedRefresh callback can publish the update snack.
 	_pwaEa = au.container.get(IEventAggregator)
 	_pwaI18n = au.container.get(I18N)
 
@@ -309,7 +307,7 @@ async function bootstrap(): Promise<void> {
 	registerPerfObservers(au.container.get(IAnalyticsService))
 	// Flush any SW update notification that arrived before bootstrap completed.
 	if (_pendingRefresh) {
-		_showUpdateToast?.()
+		_showUpdateSnack?.()
 		_pendingRefresh = false
 	}
 
@@ -338,7 +336,7 @@ async function bootstrap(): Promise<void> {
 	}
 
 	// Test-only bridge: expose EA publish for snack-bar E2E tests.
-	// This allows Playwright to trigger real snack toasts without needing
+	// This allows Playwright to trigger real snacks without needing
 	// to access Aurelia internals. Stripped by tree-shaking in production
 	// builds because the reference is guarded by the dev env check.
 	if (import.meta.env.DEV) {
@@ -374,11 +372,11 @@ bootstrap().catch(showStaticErrorPage)
 // single-shot location.reload() internally, so NO manual controllerchange
 // listener should be added here (double-reload risk per design D1).
 if (!import.meta.env.DEV) {
-	// Active update Snack handle — non-null while a toast is showing. Used to
-	// dismiss and replace before publishing a second onNeedRefresh toast.
+	// Active update Snack handle — non-null while the snack is showing. Used to
+	// dismiss and replace before publishing a second onNeedRefresh snack.
 	let activeUpdateSnackHandle: SnackHandle | null = null
 
-	const showUpdateToast = () => {
+	const showUpdateSnack = () => {
 		if (!_pwaEa || !_pwaI18n) return
 		if (activeUpdateSnackHandle !== null) {
 			activeUpdateSnackHandle.dismiss()
@@ -396,7 +394,7 @@ if (!import.meta.env.DEV) {
 		_pwaEa.publish(snack)
 		activeUpdateSnackHandle = snack.handle
 	}
-	_showUpdateToast = showUpdateToast
+	_showUpdateSnack = showUpdateSnack
 
 	const updateSW = registerSW({
 		onNeedRefresh() {
@@ -405,7 +403,7 @@ if (!import.meta.env.DEV) {
 				_pendingRefresh = true
 				return
 			}
-			showUpdateToast()
+			showUpdateSnack()
 		},
 		onRegisteredSW(_url, registration) {
 			if (!registration) return

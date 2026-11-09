@@ -649,23 +649,6 @@ test.describe('Onboarding flow (single-flag model)', () => {
 		await expect(page.locator('.celebration-overlay')).toHaveCount(0)
 	})
 
-	test('Toast popover has no white background gap', async ({ page }) => {
-		await page.addInitScript(seedCompleted)
-		await page.goto('http://localhost:9000/dashboard')
-
-		await page.evaluate(() => {
-			const popover = document.querySelector('[popover].toast-popover')
-			if (popover) {
-				const style = getComputedStyle(popover)
-				if (style.backgroundColor !== 'rgba(0, 0, 0, 0)') {
-					throw new Error(
-						`Toast popover has non-transparent background: ${style.backgroundColor}`,
-					)
-				}
-			}
-		})
-	})
-
 	// -------------------------------------------------------------------------
 	// My Artists (hype fully decoupled from onboarding)
 	// -------------------------------------------------------------------------
