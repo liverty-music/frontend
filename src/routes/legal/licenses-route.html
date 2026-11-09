@@ -18,7 +18,8 @@
         <p class="[ licenses-publisher ] [ md-typescale-body-medium ]" if.bind="pkg.publisher">${pkg.publisher}</p>
 
         <a
-          class="[ licenses-repository ] [ md-typescale-body-medium ]"
+          class="[ text-link ] [ md-typescale-body-medium ]"
+          data-variant="standalone"
           if.bind="pkg.repository"
           href.bind="pkg.repository"
           target="_blank"

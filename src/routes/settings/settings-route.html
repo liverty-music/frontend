@@ -20,7 +20,7 @@
       <button click.trigger="signUp()" t="settings.signUp" class="[ button ] [ pressable ]" data-variant="outlined" data-testid="settings-sign-up"></button>
     </div>
     <!-- Sign-in help for a fan who can use none of their passkeys. -->
-    <a href="/passkey-recovery" t="settings.guestHero.cantSignIn" class="[ settings-guest-hero-help ] [ md-typescale-body-medium ]" data-testid="settings-cant-sign-in"></a>
+    <a href="/passkey-recovery" t="settings.guestHero.cantSignIn" class="[ text-link settings-guest-hero-help ] [ md-typescale-body-medium ]" data-variant="standalone" data-testid="settings-cant-sign-in"></a>
   </section>
 
   <!-- The sections follow a fixed order: Account, Name on your tickets,
@@ -89,7 +89,7 @@
           >
             <span t.bind="identityFailureKey"></span>
             <span if.bind="identityFailureNeedsSupport">
-              <span t="verifyCallback.error.contact"></span><a href="mailto:${supportEmail}">${supportEmail}</a>
+              <span t="verifyCallback.error.contact"></span><a href="mailto:${supportEmail}" class="text-link">${supportEmail}</a>
             </span>
           </p>
           <!-- Method + dedupe strength, verified-only. -->
@@ -276,7 +276,7 @@
       <span t="settings.analytics.policyNotePrefix"></span><a
         href="/legal/privacy"
         t="settings.analytics.policyNoteLink"
-        class="settings-inline-link"
+        class="text-link"
         data-testid="settings-analytics-policy-link"
       ></a><span t="settings.analytics.policyNoteSuffix"></span>
     </p>

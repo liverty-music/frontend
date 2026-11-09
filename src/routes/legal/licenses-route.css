@@ -55,10 +55,6 @@
 			background: var(--md-sys-color-surface-container-high);
 		}
 
-		.licenses-repository {
-			color: var(--md-sys-color-on-surface);
-		}
-
 		.licenses-text > summary {
 			cursor: pointer;
 		}

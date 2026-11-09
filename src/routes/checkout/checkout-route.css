@@ -61,11 +61,6 @@
 			color: var(--color-error);
 		}
 
-		.checkout-link {
-			color: var(--color-brand-accent);
-			text-decoration: underline;
-		}
-
 		.checkout-actions {
 			--cluster-gap: var(--space-s);
 		}

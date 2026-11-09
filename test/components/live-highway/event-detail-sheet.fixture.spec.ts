@@ -189,7 +189,7 @@ describe('EventDetailSheet (fixture)', () => {
 		// @spec components/infrastructure/fan/web/route/dashboard "Google Maps link"
 		const fixture = await render(event())
 		const link = fixture.appHost.querySelector(
-			'a.detail-link[href*="google.com/maps"]',
+			'a.text-link[href*="google.com/maps"]',
 		) as HTMLAnchorElement
 		expect(link.href).toBe(
 			`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent('Zepp Haneda 東京都')}`,

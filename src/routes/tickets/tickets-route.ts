@@ -716,6 +716,16 @@ export class TicketsRoute {
 		return this.i18n.tr(`tickets.state.${shownState(ticket, listings)}`)
 	}
 
+	/** Tone of the state label: 未入場 is the ticket the fan can still use. */
+	public stateTone(
+		ticket: WalletTicket,
+		listings: readonly ResaleListing[] = this.listings,
+	): 'positive' | 'neutral' {
+		return shownState(ticket, listings) === 'not-entered'
+			? 'positive'
+			: 'neutral'
+	}
+
 	public eventDate(group: WalletEventGroup): string {
 		return group.event
 			? formatEventDate(group.event, this.userStore.currentLanguage)

@@ -40,7 +40,7 @@
       <p class="[ event-banner-title ] [ md-typescale-title-large-emphasized ]" t="eventPage.cancelled.title"></p>
       <p t="eventPage.cancelled.noSale"></p>
       <p t="eventPage.cancelled.refund"></p>
-      <a href.bind="otherConcertsUrl" class="event-link" t="eventPage.cancelled.otherConcerts"></a>
+      <a href.bind="otherConcertsUrl" class="text-link" data-variant="standalone" t="eventPage.cancelled.otherConcerts"></a>
     </div>
 
     <!-- Ended notice -->
@@ -99,7 +99,8 @@
             href.bind="mapsUrl"
             target="_blank"
             rel="noopener noreferrer"
-            class="event-link"
+            class="text-link"
+            data-variant="standalone"
             data-testid="event-maps"
             t="eventDetail.openInGoogleMaps"
           ></a>
@@ -127,7 +128,7 @@
       <h2 id="event-tickets-title" class="[ event-section-title ] [ md-typescale-title-medium ]" t="eventPage.tickets.title"></h2>
       <p if.bind="purchasedCount > 0" data-testid="event-purchased">
         <span t="eventPage.tickets.purchased" t-params.bind="{ count: purchasedCount }"></span>
-        <a href="/tickets" class="event-link" t="eventPage.tickets.toTickets"></a>
+        <a href="/tickets" class="text-link" t="eventPage.tickets.toTickets"></a>
       </p>
       <!-- The current sale and each seat type of the event; never a count -->
       <div if.bind="shownSale" class="[ event-sale ] [ flow ]" data-testid="event-sale" data-sale-method.bind="shownSale.method">
@@ -203,7 +204,7 @@
       <h2 id="event-other-dates-title" class="[ event-section-title ] [ md-typescale-title-medium ]" t="eventPage.dates.others"></h2>
       <ul role="list">
         <li repeat.for="d of otherDates; key.bind: d.id">
-          <a href="/events/${d.id}" class="event-link">${d.label}</a>
+          <a href="/events/${d.id}" class="text-link" data-variant="standalone">${d.label}</a>
           <span if.bind="d.cancelled" class="[ event-date-status ] [ md-typescale-label-large ]" t="eventPage.dates.cancelled"></span>
         </li>
       </ul>

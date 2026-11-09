@@ -29,10 +29,6 @@
 
 		.callback-home-link {
 			--flow-space: var(--space-s);
-
-			display: block;
-			color: var(--color-brand-primary);
-			text-decoration: underline;
 		}
 	}
 }

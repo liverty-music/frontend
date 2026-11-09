@@ -50,15 +50,9 @@
 			list-style: disc;
 		}
 
+		/* The `text-link` block draws the link; it starts the column. */
 		.delete-account-link {
-			display: inline-flex;
-			align-items: center;
 			align-self: start;
-
-			min-block-size: 44px;
-
-			color: var(--color-brand-primary);
-			text-decoration: underline;
 		}
 	}
 }

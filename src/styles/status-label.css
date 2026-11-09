@@ -1,0 +1,50 @@
+/* The fan app's status label: the state of a record (an order's payment, a
+   ticket, a lottery entry) as a short word on a tinted container, e.g.
+   `<output class="[ status-label ] [ md-typescale-label-large ]"
+   data-tone="positive">`. Material 3 has no component for it: its "badge" is
+   the small count dot on an icon (the notification bell's), which is why this
+   block is not called badge. It follows the M3 container roles instead, the
+   way a filled tonal surface does, with no border:
+   - (none) or neutral  `surface-container-highest` fill, `on-surface-variant`
+                        label: a state that needs nothing from the fan
+                        (pending, refunded, voided, not won)
+   - positive           `primary-container` fill, `on-primary-container`
+                        label: the state the fan is after (paid, issued,
+                        won, a ticket not yet used). The app has no success
+                        container role, and its primary hue is the one the
+                        copies used for these states.
+   - error              `error-container` fill, `on-error-container` label:
+                        a record that failed (a void payment)
+   The template gives the type style, label-large. One size: small (8px)
+   corners and 4px by 12px padding around the label. The tone is a state of
+   the data, so it is a `data-*` attribute rather than a class. */
+@layer block {
+	@scope (.status-label) {
+		:scope {
+			--_container: var(--md-sys-color-surface-container-highest);
+			--_label: var(--md-sys-color-on-surface-variant);
+
+			display: inline-flex;
+			gap: var(--space-3xs);
+			align-items: center;
+
+			padding-block: var(--space-3xs);
+			padding-inline: var(--space-xs);
+			border-radius: var(--md-sys-shape-corner-small);
+
+			color: var(--_label);
+
+			background: var(--_container);
+		}
+
+		:scope[data-tone="positive"] {
+			--_container: var(--md-sys-color-primary-container);
+			--_label: var(--md-sys-color-on-primary-container);
+		}
+
+		:scope[data-tone="error"] {
+			--_container: var(--md-sys-color-error-container);
+			--_label: var(--md-sys-color-on-error-container);
+		}
+	}
+}

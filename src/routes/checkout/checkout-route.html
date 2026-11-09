@@ -11,7 +11,7 @@
 
   <section if.bind="step === 'not-found'" class="[ checkout-panel card ] [ flow ]" data-testid="checkout-not-found">
     <p t="checkout.notFound"></p>
-    <a href="/events/${event.id}" if.bind="event" class="checkout-link" t="checkout.backToEvent"></a>
+    <a href="/events/${event.id}" if.bind="event" class="text-link" data-variant="standalone" t="checkout.backToEvent"></a>
   </section>
 
   <!-- Event summary, shown on every step of the checkout -->

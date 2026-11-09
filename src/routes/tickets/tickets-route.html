@@ -129,7 +129,7 @@
 				>
 					<div class="[ tickets-card-head ] [ cluster ]">
 						<span class="[ tickets-number ] [ md-typescale-label-large ]" t="tickets.ticketN" t-params.bind="{ n: ticketNumber(group, ticket) }"></span>
-						<span class="[ tickets-status ] [ md-typescale-label-large ]" data-state.bind="shownState(ticket, listings)" data-testid="tickets-state">
+						<span class="[ status-label ] [ md-typescale-label-large ]" data-tone.bind="stateTone(ticket, listings)" data-testid="tickets-state">
 							${stateLabel(ticket, listings)}
 						</span>
 						<span class="[ tickets-admitted ] [ md-typescale-body-medium ]" if.bind="ticket.state === 'entered'">
@@ -203,7 +203,8 @@
 					<output class="[ tickets-error ] [ md-typescale-body-medium ]" if.bind="resaleMessageFor(ticket, resaleMessage)" t.bind="resaleMessageFor(ticket, resaleMessage)"></output>
 
 					<a
-						class="[ tickets-order-link ] [ md-typescale-label-large ]"
+						class="[ text-link ] [ md-typescale-label-large ]"
+						data-variant="standalone"
 						href.bind="'/orders/' + ticket.orderId"
 						if.bind="ticket.orderId && !offline"
 						t="tickets.viewOrder"

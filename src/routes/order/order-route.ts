@@ -235,12 +235,32 @@ export class OrderRoute {
 	}
 
 	/**
+	 * Tone of the order status label: paid is the state the fan is after, a
+	 * void order failed, and every other state needs nothing from the fan.
+	 */
+	public get statusTone(): 'positive' | 'error' | 'neutral' {
+		switch (this.order?.statusKind) {
+			case 'paid':
+				return 'positive'
+			case 'void':
+				return 'error'
+			default:
+				return 'neutral'
+		}
+	}
+
+	/**
 	 * Japanese label for the ticket status badge.
 	 */
 	public ticketStatusLabel(ticket: OrderTicketView): string {
 		if (ticket.isIssued) return '発券済み'
 		if (ticket.isVoided) return '無効'
 		return '—'
+	}
+
+	/** Tone of a ticket's status label: an issued ticket is the one to use. */
+	public ticketTone(ticket: OrderTicketView): 'positive' | 'neutral' {
+		return ticket.isIssued ? 'positive' : 'neutral'
 	}
 
 	/**

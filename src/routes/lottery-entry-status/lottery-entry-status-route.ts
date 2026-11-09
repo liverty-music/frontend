@@ -103,6 +103,11 @@ export class LotteryEntryStatusRoute implements IRouteViewModel {
 		}
 	}
 
+	/** Tone of the status label: a win is the result the fan is after. */
+	public get resultTone(): 'positive' | 'neutral' {
+		return this.resultKind === 'won' ? 'positive' : 'neutral'
+	}
+
 	/** i18n key of the state's label. */
 	public get stateLabelKey(): string {
 		const known = ['entered', 'won', 'lost']

@@ -25,50 +25,6 @@
 			color: var(--md-sys-color-on-surface-variant);
 		}
 
-		.lottery-entry-status-status {
-			display: flex;
-			align-items: center;
-			justify-content: center;
-
-			padding-block: var(--space-s);
-			padding-inline: var(--space-m);
-			border: 1px solid var(--md-sys-color-outline-variant);
-			border-radius: var(--md-sys-shape-corner-large);
-
-			text-align: center;
-
-			background: var(--md-sys-color-surface);
-
-			&[data-kind="won"] {
-				border-color: color-mix(
-					in oklch,
-					var(--color-brand-primary) 45%,
-					transparent
-				);
-				background: color-mix(
-					in oklch,
-					var(--color-brand-primary) 10%,
-					transparent
-				);
-
-				& .lottery-entry-status-status-label {
-					color: var(--color-brand-primary);
-				}
-			}
-
-			&[data-kind="lost"] {
-				background: color-mix(
-					in oklch,
-					var(--md-sys-color-on-surface-variant) 8%,
-					transparent
-				);
-
-				& .lottery-entry-status-status-label {
-					color: var(--md-sys-color-on-surface-variant);
-				}
-			}
-		}
-
 		.lottery-entry-status-error {
 			color: var(--color-error);
 		}

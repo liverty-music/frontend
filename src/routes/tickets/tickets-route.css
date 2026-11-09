@@ -41,17 +41,6 @@
 			color: var(--md-sys-color-on-surface-variant);
 		}
 
-		/* Order detail link inside a ticket card */
-		.tickets-order-link {
-			display: inline-block;
-			color: var(--color-brand-primary);
-			text-decoration: none;
-
-			&:hover {
-				text-decoration: underline;
-			}
-		}
-
 		/* One event and its tickets */
 		.tickets-event {
 			--flow-space: var(--space-s);
@@ -83,30 +72,6 @@
 
 		.tickets-admitted {
 			color: var(--md-sys-color-on-surface-variant);
-		}
-
-		/* State badge: 未入場 / 入場済み / 無効 */
-		.tickets-status {
-			padding-block: var(--space-3xs);
-			padding-inline: var(--space-xs);
-			border: 1px solid var(--md-sys-color-outline-variant);
-			border-radius: var(--md-sys-shape-corner-medium);
-
-			color: var(--md-sys-color-on-surface-variant);
-
-			&[data-state="not-entered"] {
-				border-color: color-mix(
-					in oklch,
-					var(--color-brand-primary) 45%,
-					transparent
-				);
-				color: var(--color-brand-primary);
-				background: color-mix(
-					in oklch,
-					var(--color-brand-primary) 10%,
-					transparent
-				);
-			}
 		}
 
 		/* Offline / device notices */

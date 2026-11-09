@@ -95,6 +95,16 @@ describe('LotteryEntryStatusRoute', () => {
 		expect(sut.stateLabelKey).toBe(`lotteryEntryStatus.state.${state}`)
 	})
 
+	it.each([
+		['won', 'positive'],
+		['lost', 'neutral'],
+		['entered', 'neutral'],
+	] as const)('labels a %s entry in the %s tone', async (state, tone) => {
+		mockEntry.listByTicketSale.mockResolvedValue([entry({ state })])
+		const sut = await open()
+		expect(sut.resultTone).toBe(tone)
+	})
+
 	it('shows a state this app does not know as awaiting the draw, unlabelled', async () => {
 		mockEntry.listByTicketSale.mockResolvedValue([entry({ state: 'unknown' })])
 		const sut = await open()

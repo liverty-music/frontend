@@ -92,18 +92,6 @@
 			text-align: center;
 		}
 
-		.consent-policy-link {
-			/* A <button> driving in-app navigation, drawn as an inline text
-			   link. */
-			color: var(--color-brand-accent);
-			text-decoration: underline;
-			text-underline-offset: 3px;
-
-			&:hover {
-				color: var(--md-sys-color-on-surface);
-			}
-		}
-
 		.consent-actions {
 			--gutter: 0;
 			--wrapper-max: 28rem;

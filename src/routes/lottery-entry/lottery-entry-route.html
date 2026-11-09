@@ -12,12 +12,12 @@
 
 	<section class="[ lottery-entry-panel card ] [ flow wrapper ]" if.bind="step === 'not-found'" data-testid="lottery-entry-not-found">
 		<p class="[ lottery-entry-lead ] [ md-typescale-body-medium ]" t="lotteryEntry.notFound"></p>
-		<a href="/events/${event.id}" if.bind="event" t="lotteryEntry.backToEvent"></a>
+		<a href="/events/${event.id}" if.bind="event" class="text-link" data-variant="standalone" t="lotteryEntry.backToEvent"></a>
 	</section>
 
 	<section class="[ lottery-entry-panel card ] [ flow wrapper ]" if.bind="step === 'closed'" data-testid="lottery-entry-closed">
 		<p class="[ lottery-entry-lead ] [ md-typescale-body-medium ]" t="lotteryEntry.closed"></p>
-		<a href="/events/${event.id}" if.bind="event" t="lotteryEntry.backToEvent"></a>
+		<a href="/events/${event.id}" if.bind="event" class="text-link" data-variant="standalone" t="lotteryEntry.backToEvent"></a>
 	</section>
 
 	<!-- What is entered: the sale's name, the event, the seat type, its price and the limit -->
@@ -131,7 +131,7 @@
 		<p class="[ lottery-entry-lead ] [ md-typescale-body-medium ]" t="lotteryEntry.refused.notCharged"></p>
 		<a href.bind="entryStatusUrl" if.bind="alreadyEntered" class="[ button lottery-entry-action ] [ pressable ]" data-testid="lottery-entry-to-status" t="lotteryEntry.done.toStatus"></a>
 		<button type="button" if.bind="canTryAgain" class="[ button lottery-entry-action ] [ pressable ]" click.trigger="tryAgain()" data-testid="lottery-entry-try-again" t="lotteryEntry.refused.tryAgain"></button>
-		<a href="/events/${event.id}" if.bind="event" t="lotteryEntry.backToEvent"></a>
+		<a href="/events/${event.id}" if.bind="event" class="text-link" data-variant="standalone" t="lotteryEntry.backToEvent"></a>
 	</section>
 
 	<!-- The entry was made (Confirm succeeded) -->
