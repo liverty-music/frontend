@@ -1,6 +1,6 @@
 /* The fan app's text field, a Material 3 outlined text field:
    `class="[ text-field ] [ md-typescale-body-large ]"` on the native <input>,
-   <select> or <textarea> itself. The label and any error text are siblings
+   or <select> itself. The label and any error text are siblings
    the page lays out (a `stack` around them); the template gives the type
    style. The values are the organizer console's field
    (`organizer/ui/console-field/console-field.css`):
@@ -40,12 +40,6 @@
 
 		:scope[aria-invalid="true"] {
 			--_indicator: var(--md-sys-color-error);
-		}
-
-		/* A single-line control centres its text in the 56px; a textarea's
-		   lines start below the top edge instead. */
-		:scope:is(textarea) {
-			padding-block: var(--space-xs);
 		}
 
 		:scope:disabled {
