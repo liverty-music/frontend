@@ -1,0 +1,129 @@
+/* The fan app's chip, a Material 3 filter chip: `class="[ chip ] [ pressable ]
+   [ md-typescale-label-large ]"` on the native <button> itself, or on the
+   <label> around a visually hidden checkbox. The template gives the type
+   style; `pressable` gives the hover, focus and press state layer.
+   - unselected  32px tall, small (8px) corners, a 1px `outline-variant`
+                 border, no fill, `on-surface-variant` label
+   - selected    `aria-pressed="true"`, `aria-checked="true"`, a checked
+                 checkbox inside, or `data-selected="true"` (a picture of a
+                 chip, which has no state): `secondary-container` fill,
+                 `on-secondary-container` label, no border. A chip whose
+                 selection means a category with its own colour sets
+                 --chip-selected-container and --chip-selected-on-container.
+   - disabled    on-surface at 38% for the label, at 12% for the border (and
+                 for the fill of a selected chip)
+   A leading icon carries the `chip-icon` class and takes 8px before it; an
+   svg-icon in the chip is 18px (the M3 chip icon) unless it sets its own
+   `size`. A filter chip shows a `check` icon only while selected, in place
+   of any other leading icon (the template renders it with `if`). The
+   tap target is 48px tall (and at
+   least 48px wide) through a transparent ::before centred on the chip, so a
+   group of chips leaves var(--space-s) between rows: two targets never
+   overlap. A label's hidden checkbox comes before its leading icon. Hover
+   and keyboard focus raise the `pressable` state layer; the press restates
+   its opacity, which the hover rule would otherwise outrank from this
+   layer. A label chip's checkbox is visually hidden, so the chip draws the
+   focus ring for it, and a button chip draws the same one. The disabled rule
+   comes before the selected one, so a selected chip reads its dimmed
+   hooks. */
+@layer block {
+	@scope (.chip) {
+		:scope {
+			--_container: transparent;
+			--_label: var(--md-sys-color-on-surface-variant);
+			--_outline: var(--md-sys-color-outline-variant);
+			--icon-size: 1.125rem;
+			--_disabled: color-mix(
+				in oklch,
+				var(--md-sys-color-on-surface) 12%,
+				transparent
+			);
+			--_dim: color-mix(
+				in oklch,
+				var(--md-sys-color-on-surface) 38%,
+				transparent
+			);
+
+			cursor: pointer;
+
+			position: relative;
+
+			display: inline-flex;
+			gap: var(--space-2xs);
+			align-items: center;
+			justify-content: center;
+
+			min-block-size: 2rem;
+			padding-inline: var(--space-s);
+			border: 1px solid var(--_outline);
+			border-radius: var(--md-sys-shape-corner-small);
+
+			color: var(--_label);
+			white-space: nowrap;
+
+			background: var(--_container);
+		}
+
+		:scope:has(> .chip-icon:first-child, > input:first-child + .chip-icon) {
+			padding-inline-start: var(--space-2xs);
+		}
+
+		:scope::before {
+			content: "";
+
+			position: absolute;
+			inset-block-start: 50%;
+			inset-inline-start: 50%;
+			translate: -50% -50%;
+
+			inline-size: max(100%, var(--md-sys-target-size));
+			block-size: max(100%, var(--md-sys-target-size));
+		}
+
+		:scope:is(:focus-visible, :has(> input:focus-visible))::after {
+			opacity: var(--md-sys-state-focus-opacity);
+		}
+
+		:scope:hover:not(:disabled, :has(> input:disabled))::after {
+			opacity: var(--md-sys-state-hover-opacity);
+		}
+
+		:scope:active:not(:disabled, :has(> input:disabled))::after {
+			opacity: var(--md-sys-state-pressed-opacity);
+		}
+
+		:scope:is(:focus-visible, :has(> input:focus-visible)) {
+			/* stylelint-disable property-disallowed-list -- the checkbox a label chip stands for is visually hidden, so the chip must show its keyboard focus ring (no global fan ring exists yet, task 6.1) */
+			outline: var(--md-sys-state-focus-indicator-thickness) solid
+				var(--color-brand-primary);
+			outline-offset: var(--md-sys-state-focus-indicator-outer-offset);
+			/* stylelint-enable property-disallowed-list */
+		}
+
+		:scope:is(:disabled, :has(> input:disabled)) {
+			--_label: var(--_dim);
+			--_outline: var(--_disabled);
+			--chip-selected-container: var(--_disabled);
+			--chip-selected-on-container: var(--_dim);
+
+			cursor: not-allowed;
+		}
+
+		:scope:is(
+				[aria-pressed="true"],
+				[aria-checked="true"],
+				[data-selected="true"],
+				:has(> input:checked)
+			) {
+			--_container: var(
+				--chip-selected-container,
+				var(--md-sys-color-secondary-container)
+			);
+			--_label: var(
+				--chip-selected-on-container,
+				var(--md-sys-color-on-secondary-container)
+			);
+			--_outline: transparent;
+		}
+	}
+}

@@ -1,13 +1,5 @@
 @layer block {
 	@scope (page-help) {
-		:scope {
-			/* Local alpha-on-white tokens, consistent with discovery-route's
-			   chip vocabulary so the inline chip demo matches reality. */
-			--_white-8: oklch(100% 0 0deg / 8%);
-			--_white-15: oklch(100% 0 0deg / 15%);
-			--_white-70: oklch(100% 0 0deg / 70%);
-		}
-
 		bottom-sheet {
 			--sheet-bg: var(--md-sys-color-surface-container-high);
 		}
@@ -72,27 +64,14 @@
 			color: var(--color-brand-accent);
 		}
 
-		/* ── Inline genre-chip demo (mimics .genre-chip on discovery) ──── */
+		/* ── Inline genre-chip demo: the shared chip Discovery uses ──── */
 		.page-help-chip-demo {
-			--cluster-gap: var(--space-2xs);
+			--cluster-gap: var(--space-s) var(--space-2xs);
 		}
 
-		.page-help-chip {
-			padding: var(--space-3xs) var(--space-xs);
-			border: 1px solid var(--_white-15);
-			border-radius: var(--md-sys-shape-corner-full);
-
-			color: var(--_white-70);
-			white-space: nowrap;
-
-			background: var(--_white-8);
-		}
-
-		/* Highlight one chip as "active" so the demo shows the toggle state */
-		.page-help-chip[data-active] {
-			border-color: var(--color-brand-accent);
-			color: var(--md-sys-color-on-surface);
-			background: oklch(from var(--color-brand-accent) l c h / 18%);
+		/* A picture of a chip: nothing to press. */
+		.page-help-chip-demo > .chip {
+			cursor: default;
 		}
 
 		/* ── Stage lanes block (HOME / NEAR / AWAY) ─────────────────────── */

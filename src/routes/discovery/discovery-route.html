@@ -39,22 +39,24 @@
     <div class="genre-bar">
       <button
         type="button"
-        class="[ reset-chip ] [ md-typescale-label-large ]"
+        class="[ chip reset-chip ] [ pressable ] [ md-typescale-label-large ]"
         click.trigger="onReset()"
         disabled.bind="genre.isLoadingTag"
         aria-label.bind="$this.i18n?.tr('discovery.resetBubbles') ?? ''"
       >
-        <svg-icon name="rotate-ccw" size="md"></svg-icon>
+        <svg-icon name="rotate-ccw" size="sm" class="chip-icon"></svg-icon>
       </button>
       <fieldset class="genre-chips">
         <button
           repeat.for="tag of genre.genreTags; key.bind: tag"
-          class="[ genre-chip ] [ md-typescale-label-large ]" data-active.bind="genre.activeTag === tag"
+          type="button"
+          class="[ chip ] [ pressable ] [ md-typescale-label-large ]"
           click.trigger="onGenreSelected(tag)"
           disabled.bind="genre.isLoadingTag"
           aria-pressed.bind="genre.activeTag === tag"
         >
-          ${tag}
+          <svg-icon if.bind="genre.activeTag === tag" name="check" class="chip-icon"></svg-icon>
+          <span>${tag}</span>
         </button>
       </fieldset>
     </div>

@@ -23,48 +23,9 @@
 			--flow-space: var(--space-2xs);
 		}
 
+		/* Rows of chips stay a target apart (src/styles/chip.css). */
 		.preset-group {
-			--cluster-gap: var(--space-2xs);
-		}
-
-		.preset-chip {
-			min-block-size: 2.75rem;
-			padding-block: var(--space-3xs);
-			padding-inline: var(--space-s);
-			border: 1px solid var(--md-sys-color-outline);
-			border-radius: var(--md-sys-shape-corner-full);
-
-			color: var(--md-sys-color-on-surface-variant);
-
-			background: var(--md-sys-color-surface-container);
-
-			transition:
-				border-color var(--md-sys-motion-duration-short3),
-				background var(--md-sys-motion-duration-short3),
-				color var(--md-sys-motion-duration-short3);
-
-			&:hover {
-				border-color: color-mix(
-					in oklch,
-					var(--color-brand-primary) 40%,
-					transparent
-				);
-			}
-
-			&:focus-visible {
-				outline: 2px solid var(--color-brand-primary);
-				outline-offset: 2px;
-			}
-
-			&[data-active="true"] {
-				border-color: var(--color-brand-primary);
-				color: var(--md-sys-color-on-surface);
-				background: color-mix(
-					in oklch,
-					var(--color-brand-primary) 18%,
-					var(--md-sys-color-surface-container)
-				);
-			}
+			--cluster-gap: var(--space-s) var(--space-2xs);
 		}
 
 		.custom-range {

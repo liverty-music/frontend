@@ -53,15 +53,15 @@ describe('ticket journey labels', () => {
 		})
 
 		it(`a selected ${status} filter chip reaches 4.5:1`, () => {
-			const block = ruleOf(
-				chipCss.slice(chipCss.indexOf('.journey-chip {')),
-				'&:has(input:checked)',
+			// The chip's selected hooks (src/styles/chip.css).
+			const block = ruleOf(chipCss, '.journey-chip {')
+			expect(block).toContain(
+				'--chip-selected-on-container: var(--color-white)',
 			)
-			expect(block).toContain('color: var(--color-white)')
 			expect(
 				contrast(
 					parseOklch('oklch(100% 0 0deg)'),
-					hued(block, 'background', journeyHue(status)),
+					hued(block, '--chip-selected-container', journeyHue(status)),
 				),
 			).toBeGreaterThanOrEqual(4.5)
 		})

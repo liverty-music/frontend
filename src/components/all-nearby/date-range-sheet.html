@@ -17,12 +17,13 @@
         <button
           repeat.for="p of presets"
           type="button"
-          class="[ preset-chip ] [ md-typescale-label-large ]"
-          data-active.bind="isPresetActive(p)"
+          class="[ chip ] [ pressable ] [ md-typescale-label-large ]"
           aria-pressed.bind="isPresetActive(p)"
           click.trigger="selectPreset(p)"
-          t.bind="'allNearby.datePreset.' + p"
-        ></button>
+        >
+          <svg-icon if.bind="isPresetActive(p)" name="check" class="chip-icon"></svg-icon>
+          <span t.bind="'allNearby.datePreset.' + p"></span>
+        </button>
       </div>
     </section>
 

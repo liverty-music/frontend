@@ -13,7 +13,6 @@
 			--_white-50: oklch(100% 0 0deg / 50%);
 			--_white-70: oklch(100% 0 0deg / 70%);
 			--_brand-60: oklch(58.5% 0.204 277deg / 60%);
-			--_brand-80: oklch(58.5% 0.204 277deg / 80%);
 			--_magenta-60: oklch(62.7% 0.233 304deg / 60%);
 			--_star-img:
 				radial-gradient(
@@ -227,12 +226,12 @@
 			gap: var(--space-2xs);
 			align-items: center;
 
-			/* Vertical padding lives here (not the fieldset) so the reset chip
-			   and the scrollable chips share one centered baseline. */
-			padding-block: var(--space-xs) var(--space-3xs);
+			padding-block: var(--space-3xs) 0;
 			padding-inline-start: var(--space-s);
 		}
 
+		/* The scroller's block padding holds the chips' 48px targets
+		   (src/styles/chip.css), which it would otherwise clip. */
 		fieldset {
 			scrollbar-width: none;
 
@@ -241,74 +240,15 @@
 			flex: 1;
 			gap: var(--space-2xs);
 
+			padding-block: var(--space-2xs);
 			padding-inline: 0 var(--space-s);
 		}
 
-		.reset-chip {
-			/* As tall as a genre chip: one line box (1lh) plus the same block
-			   padding and border, so the row stays aligned. */
-			display: grid;
-			grid-auto-columns: 1lh;
-			grid-auto-rows: 1lh;
+		/* An icon alone: 8px on both sides of it. Two classes outrank the
+		   chip's own padding, whose @scope root is nearer. */
+		.genre-bar > .reset-chip {
 			flex-shrink: 0;
-			place-items: center;
-
-			padding: var(--space-3xs);
-			border: 1px solid var(--_white-15);
-			border-radius: var(--md-sys-shape-corner-full);
-
-			color: var(--_white-70);
-
-			background: var(--_white-8);
-
-			transition:
-				border-color var(--md-sys-motion-duration-short4),
-				color var(--md-sys-motion-duration-short4);
-
-			& svg {
-				inline-size: 1rem;
-				block-size: 1rem;
-			}
-
-			&:hover {
-				border-color: var(--_white-25);
-				color: var(--color-white);
-			}
-
-			&:disabled {
-				opacity: 0.5;
-			}
-		}
-
-		.genre-chip {
-			padding: var(--space-3xs) var(--space-xs);
-			border: 1px solid var(--_white-15);
-			border-radius: var(--md-sys-shape-corner-full);
-
-			color: var(--_white-70);
-			white-space: nowrap;
-
-			background: var(--_white-8);
-
-			transition:
-				background var(--md-sys-motion-duration-short4),
-				color var(--md-sys-motion-duration-short4),
-				border-color var(--md-sys-motion-duration-short4);
-
-			&:hover {
-				color: var(--color-white);
-				background: var(--_white-15);
-			}
-
-			&[data-active="true"] {
-				border-color: var(--_brand-80);
-				color: var(--color-white);
-				background: var(--_brand-60);
-			}
-
-			&:disabled {
-				opacity: 0.5;
-			}
+			padding-inline: var(--space-2xs);
 		}
 
 		.progress-row {

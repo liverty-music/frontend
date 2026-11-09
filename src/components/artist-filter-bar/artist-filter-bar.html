@@ -29,13 +29,14 @@
       <h3 class="[ facet-heading ] [ md-typescale-title-small ]" id="filter-artist-heading">アーティスト</h3>
       <ul class="artists-list" aria-labelledby="filter-artist-heading">
         <li repeat.for="artist of countedArtists" key.bind="artist.id">
-          <label class="[ artist-chip ] [ md-typescale-label-large ]">
+          <label class="[ chip artist-chip ] [ pressable ] [ md-typescale-label-large ]">
             <input
               type="checkbox"
               class="visually-hidden"
               checked.bind="pendingIds"
               model.bind="artist.id"
             />
+            <svg-icon if.bind="pendingIds.includes(artist.id)" name="check" class="chip-icon"></svg-icon>
             <span class="[ artist-count ] [ md-typescale-label-large-emphasized ]">${artist.count}</span>
             <span>${artist.name}</span>
           </label>
@@ -53,14 +54,15 @@
       <ul class="journey-list" aria-labelledby="filter-journey-heading">
         <!-- Process phase: tracking -> applied -->
         <li repeat.for="config of processStatuses" key.bind="config.status">
-          <label class="[ journey-chip ] [ md-typescale-label-large ]" data-journey-status.bind="config.status">
+          <label class="[ chip journey-chip ] [ pressable ] [ md-typescale-label-large ]" data-journey-status.bind="config.status">
             <input
               type="checkbox"
               class="visually-hidden"
               checked.bind="pendingStatuses"
               model.bind="config.status"
             />
-            <span class="journey-chip-icon" aria-hidden="true">${config.icon}</span>
+            <svg-icon if.bind="pendingStatuses.includes(config.status)" name="check" class="chip-icon"></svg-icon>
+            <span else class="chip-icon" aria-hidden="true">${config.icon}</span>
             <span t.bind="config.labelKey"></span>
           </label>
         </li>
@@ -68,14 +70,15 @@
         <li class="journey-list-break" aria-hidden="true"></li>
         <!-- Outcome phase: unpaid, paid, lost -->
         <li repeat.for="config of outcomeStatuses" key.bind="config.status">
-          <label class="[ journey-chip ] [ md-typescale-label-large ]" data-journey-status.bind="config.status">
+          <label class="[ chip journey-chip ] [ pressable ] [ md-typescale-label-large ]" data-journey-status.bind="config.status">
             <input
               type="checkbox"
               class="visually-hidden"
               checked.bind="pendingStatuses"
               model.bind="config.status"
             />
-            <span class="journey-chip-icon" aria-hidden="true">${config.icon}</span>
+            <svg-icon if.bind="pendingStatuses.includes(config.status)" name="check" class="chip-icon"></svg-icon>
+            <span else class="chip-icon" aria-hidden="true">${config.icon}</span>
             <span t.bind="config.labelKey"></span>
           </label>
         </li>

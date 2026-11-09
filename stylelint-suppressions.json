@@ -122,7 +122,7 @@
       "count": 1
     },
     "property-disallowed-list": {
-      "count": 6
+      "count": 2
     }
   },
   "src/components/bottom-sheet/bottom-sheet.css": {
@@ -289,11 +289,6 @@
     "cube/block-max-lines": {
       "count": 1
     },
-    "property-disallowed-list": {
-      "count": 2
-    }
-  },
-  "src/components/all-nearby/date-range-sheet.css": {
     "property-disallowed-list": {
       "count": 2
     }
