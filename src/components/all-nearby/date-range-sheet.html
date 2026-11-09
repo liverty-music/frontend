@@ -20,8 +20,10 @@
           class="[ chip ] [ pressable ] [ md-typescale-label-large ]"
           aria-pressed.bind="isPresetActive(p)"
           click.trigger="selectPreset(p)"
-          t.bind="'allNearby.datePreset.' + p"
-        ></button>
+        >
+          <svg-icon if.bind="isPresetActive(p)" name="check" class="chip-icon"></svg-icon>
+          <span t.bind="'allNearby.datePreset.' + p"></span>
+        </button>
       </div>
     </section>
 

@@ -69,6 +69,11 @@
 			--cluster-gap: var(--space-s) var(--space-2xs);
 		}
 
+		/* A picture of a chip: nothing to press. */
+		.page-help-chip-demo > .chip {
+			cursor: default;
+		}
+
 		/* ── Stage lanes block (HOME / NEAR / AWAY) ─────────────────────── */
 
 		/* Grid keeps the dt label column at intrinsic max-width (HOME

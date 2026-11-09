@@ -55,7 +55,8 @@
           disabled.bind="genre.isLoadingTag"
           aria-pressed.bind="genre.activeTag === tag"
         >
-          ${tag}
+          <svg-icon if.bind="genre.activeTag === tag" name="check" class="chip-icon"></svg-icon>
+          <span>${tag}</span>
         </button>
       </fieldset>
     </div>

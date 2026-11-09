@@ -12,7 +12,10 @@
                  --chip-selected-container and --chip-selected-on-container.
    - disabled    on-surface at 38% for the label, at 12% for the border (and
                  for the fill of a selected chip)
-   A leading icon carries the `chip-icon` class and takes 8px before it. The
+   A leading icon carries the `chip-icon` class and takes 8px before it; an
+   svg-icon in the chip is 18px (the M3 chip icon) unless it sets its own
+   `size`. A filter chip shows a `check` icon only while selected, in place
+   of any other leading icon (the template renders it with `if`). The
    tap target is 48px tall (and at
    least 48px wide) through a transparent ::before centred on the chip, so a
    group of chips leaves var(--space-s) between rows: two targets never
@@ -29,6 +32,7 @@
 			--_container: transparent;
 			--_label: var(--md-sys-color-on-surface-variant);
 			--_outline: var(--md-sys-color-outline-variant);
+			--icon-size: 1.125rem;
 			--_disabled: color-mix(
 				in oklch,
 				var(--md-sys-color-on-surface) 12%,
@@ -39,6 +43,8 @@
 				var(--md-sys-color-on-surface) 38%,
 				transparent
 			);
+
+			cursor: pointer;
 
 			position: relative;
 
@@ -56,10 +62,6 @@
 			white-space: nowrap;
 
 			background: var(--_container);
-		}
-
-		:scope:is(label) {
-			cursor: pointer;
 		}
 
 		:scope:has(> .chip-icon:first-child, > input:first-child + .chip-icon) {

@@ -36,6 +36,7 @@
               checked.bind="pendingIds"
               model.bind="artist.id"
             />
+            <svg-icon if.bind="pendingIds.includes(artist.id)" name="check" class="chip-icon"></svg-icon>
             <span class="[ artist-count ] [ md-typescale-label-large-emphasized ]">${artist.count}</span>
             <span>${artist.name}</span>
           </label>
@@ -60,7 +61,8 @@
               checked.bind="pendingStatuses"
               model.bind="config.status"
             />
-            <span class="chip-icon" aria-hidden="true">${config.icon}</span>
+            <svg-icon if.bind="pendingStatuses.includes(config.status)" name="check" class="chip-icon"></svg-icon>
+            <span else class="chip-icon" aria-hidden="true">${config.icon}</span>
             <span t.bind="config.labelKey"></span>
           </label>
         </li>
@@ -75,7 +77,8 @@
               checked.bind="pendingStatuses"
               model.bind="config.status"
             />
-            <span class="chip-icon" aria-hidden="true">${config.icon}</span>
+            <svg-icon if.bind="pendingStatuses.includes(config.status)" name="check" class="chip-icon"></svg-icon>
+            <span else class="chip-icon" aria-hidden="true">${config.icon}</span>
             <span t.bind="config.labelKey"></span>
           </label>
         </li>

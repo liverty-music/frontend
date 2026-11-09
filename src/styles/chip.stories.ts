@@ -147,6 +147,70 @@ export const Selected = {
 	},
 } satisfies Story
 
+/**
+ * Filter chips the way the sheets bind them: a check icon is rendered as the
+ * leading icon only while a chip is selected, and on the journey chip it
+ * takes the place of the status icon.
+ */
+export const SelectedWithCheck = {
+	render: () =>
+		defineAureliaStory({
+			template: row(`
+				<button repeat.for="g of genres" type="button" ${CLASS}
+					aria-pressed.bind="active === g" click.trigger="active = g">
+					<svg-icon if.bind="active === g" name="check" class="chip-icon"></svg-icon>
+					<span>\${g}</span>
+				</button>
+				<label ${CLASS}>
+					<input type="checkbox" class="visually-hidden" checked.bind="paid" />
+					<svg-icon if.bind="paid" name="check" class="chip-icon"></svg-icon>
+					<span else class="chip-icon" aria-hidden="true">🎟️</span>
+					<span>入金済み</span>
+				</label>`),
+			props: { genres: ['Rock', 'Pop', 'Jazz'], active: 'Pop', paid: false },
+		}),
+	play: async ({ canvasElement }) => {
+		const all = chips(canvasElement)
+		const checks = () =>
+			all.map((el) => el.querySelector('svg-icon.chip-icon') !== null)
+		const selected = () =>
+			all.map(
+				(el) =>
+					el.getAttribute('aria-pressed') === 'true' ||
+					el.querySelector<HTMLInputElement>('input')?.checked === true,
+			)
+		await waitFor(() => expect(checks()).toEqual([false, true, false, false]))
+		await expect(checks()).toEqual(selected())
+
+		// The check is the 18px leading icon, 8px from the chip's edge.
+		const pop = all[1]
+		const icon = pop.querySelector<HTMLElement>('svg-icon')
+		if (!icon) throw new Error('no check icon')
+		await expect(icon.getBoundingClientRect().width).toBe(18)
+		await expect(getComputedStyle(pop).paddingInlineStart).toBe('8px')
+		await expect(getComputedStyle(all[0]).paddingInlineStart).toBe('16px')
+
+		// Selecting moves the check; a journey chip trades its status icon.
+		await userEvent.click(all[0])
+		await userEvent.click(all[3])
+		await waitFor(() => expect(checks()).toEqual([true, false, false, true]))
+		await expect(checks()).toEqual(selected())
+		await expect(all[3].textContent).not.toContain('🎟️')
+		await userEvent.click(all[3])
+		await waitFor(() => expect(checks()).toEqual([true, false, false, false]))
+		await expect(all[3].textContent).toContain('🎟️')
+		await userEvent.click(all[1])
+		await userEvent.unhover(all[1])
+		await waitFor(() => expect(checks()).toEqual([false, true, false, false]))
+		// The baseline shows the selected look, not a focus ring.
+		all[1].blur()
+		await expectScreenshot(
+			canvasElement.firstElementChild ?? canvasElement,
+			'chip-selected-with-check',
+		)
+	},
+} satisfies Story
+
 export const Disabled = {
 	render: () =>
 		defineAureliaStory({
