@@ -191,21 +191,6 @@ export default {
 				],
 			},
 		},
-		// The shared text field draws its own focus: the 2px primary border is
-		// the indicator, so it replaces the browser's ring with a transparent
-		// outline that only forced-colours mode paints.
-		{
-			files: ['src/styles/text-field.css'],
-			rules: {
-				'property-disallowed-list': [
-					...PROPERTY_DISALLOWED,
-					'/^margin/',
-					'/^font(-family|-size|-weight|-style)?$/',
-					'line-height',
-					'letter-spacing',
-				],
-			},
-		},
 		// Each self-contained entry declares its own tokens.
 		{
 			files: ['src/**/*.css', 'shared/**/*.css'],

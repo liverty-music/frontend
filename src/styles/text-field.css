@@ -31,8 +31,10 @@
 			--_indicator: var(--md-sys-color-primary);
 			--_indicator-inner: inset 0 0 0 1px var(--_indicator);
 
+			/* stylelint-disable property-disallowed-list -- the 2px primary border is the focus indicator; a transparent outline keeps one in forced-colours mode, which does not draw box-shadow */
 			outline: 2px solid transparent;
 			outline-offset: -2px;
+			/* stylelint-enable property-disallowed-list */
 			box-shadow: var(--_indicator-inner);
 		}
 
