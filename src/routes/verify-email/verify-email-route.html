@@ -16,18 +16,18 @@
     </button>
   </template>
 
-  <section if.bind="state === 'verified'" class="[ verify-email-result ] [ stack ]" aria-live="polite" data-testid="verify-email-verified">
+  <section if.bind="state === 'verified'" class="[ verify-email-result card ] [ stack ]" aria-live="polite" data-testid="verify-email-verified">
     <success-mark></success-mark>
     <p t="verifyEmail.verified" class="[ verify-email-message ] [ md-typescale-body-large ]"></p>
     <a load="/" class="[ button ] [ pressable ]" t="verifyEmail.openApp" data-testid="verify-email-open-app"></a>
   </section>
 
-  <section if.bind="state === 'invalid'" class="[ verify-email-result ] [ stack ]" aria-live="polite" data-testid="verify-email-invalid">
+  <section if.bind="state === 'invalid'" class="[ verify-email-result card ] [ stack ]" aria-live="polite" data-testid="verify-email-invalid">
     <p t="verifyEmail.invalid" class="[ verify-email-message ] [ md-typescale-body-large ]"></p>
     <p t="verifyEmail.invalidNext" class="[ verify-email-hint ] [ md-typescale-body-medium ]"></p>
   </section>
 
-  <section if.bind="state === 'tooMany'" class="[ verify-email-result ] [ stack ]" aria-live="polite" data-testid="verify-email-too-many">
+  <section if.bind="state === 'tooMany'" class="[ verify-email-result card ] [ stack ]" aria-live="polite" data-testid="verify-email-too-many">
     <p t="verifyEmail.tooMany" class="[ verify-email-message ] [ md-typescale-body-large ]"></p>
   </section>
 </main>

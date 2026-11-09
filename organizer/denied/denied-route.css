@@ -9,6 +9,7 @@
 			padding-block: var(--space-xl);
 		}
 
+		/* The `card` block draws the card; the route sets its width. */
 		.denied {
 			display: grid;
 			gap: var(--space-s);
@@ -16,10 +17,6 @@
 
 			inline-size: 100%;
 			max-inline-size: var(--card-max-inline-size);
-			padding: var(--space-m);
-			border-radius: var(--md-sys-shape-corner-large);
-
-			background: var(--md-sys-color-surface-container);
 		}
 
 		.brand,

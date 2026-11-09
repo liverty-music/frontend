@@ -95,14 +95,11 @@
 			}
 		}
 
-		/* Out-of-range notice: what the fan's hype level pushes, under the venue */
+		/* Out-of-range notice: what the fan's hype level pushes, under the
+		   venue. The `card` block draws it. */
 		.sheet-out-of-range {
 			--flow-space: var(--space-s);
 			--stack-gap: var(--space-2xs);
-
-			padding: var(--space-xs) var(--space-s);
-			border: 1px solid var(--_border-light);
-			border-radius: var(--md-sys-shape-corner-large);
 		}
 
 		.out-of-range-text {

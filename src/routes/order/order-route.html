@@ -5,7 +5,7 @@
 
 	<!-- Loading -->
 	<section
-		class="[ order-panel ] [ wrapper ]"
+		class="[ order-panel card ] [ wrapper ]"
 		if.bind="step === 'loading'"
 	>
 		<p class="[ order-lead ] [ md-typescale-body-medium ]" t="order.loading"></p>
@@ -13,7 +13,7 @@
 
 	<!-- Not found: non-revealing — order not the caller's or does not exist -->
 	<section
-		class="[ order-panel ] [ flow wrapper ]"
+		class="[ order-panel card ] [ flow wrapper ]"
 		if.bind="step === 'notfound'"
 	>
 		<h2 class="[ order-step-title ] [ md-typescale-title-large-emphasized ]" t="order.notFound.title"></h2>
@@ -22,7 +22,7 @@
 
 	<!-- Error -->
 	<section
-		class="[ order-panel ] [ flow wrapper ]"
+		class="[ order-panel card ] [ flow wrapper ]"
 		if.bind="step === 'error'"
 	>
 		<h2 class="[ order-step-title ] [ md-typescale-title-large-emphasized ]" t="order.error.title"></h2>
@@ -51,7 +51,7 @@
 		</output>
 
 		<!-- §5.1 Payment result card -->
-		<article class="[ order-panel ] [ flow wrapper ]">
+		<article class="[ order-panel card ] [ flow wrapper ]">
 			<h2 class="[ order-section-title ] [ md-typescale-title-medium ]" t="order.payment.title"></h2>
 
 			<!-- Payment status badge -->
@@ -63,33 +63,30 @@
 			</output>
 
 			<!-- Payment summary -->
-			<dl class="[ order-summary ] [ stack ]">
+			<dl class="summary-list">
 				<!-- Tax-inclusive total (総額表示; §6 per-fee breakdown is deferred) -->
-				<div class="order-summary-row">
-					<dt class="[ order-summary-key ] [ md-typescale-label-large ]" t="order.payment.amount"></dt>
+				<div>
+					<dt class="md-typescale-label-large" t="order.payment.amount"></dt>
 					<dd class="[ order-summary-amount ] [ md-typescale-title-large-emphasized ]">${order.amountFormatted}<span class="[ order-tax-label ] [ md-typescale-label-small ]" t="order.payment.taxIncluded"></span></dd>
 				</div>
 
 				<!-- Paid date -->
-				<div class="order-summary-row" if.bind="order.payTime">
-					<dt class="[ order-summary-key ] [ md-typescale-label-large ]" t="order.payment.payTime"></dt>
-					<dd class="[ order-summary-val ] [ md-typescale-body-large ]">${formatDate(order.payTime)}</dd>
+				<div if.bind="order.payTime">
+					<dt class="md-typescale-label-large" t="order.payment.payTime"></dt>
+					<dd class="md-typescale-body-large">${formatDate(order.payTime)}</dd>
 				</div>
 
 				<!-- Card brand + last4 (shown when available) -->
-				<div
-					class="order-summary-row"
-					if.bind="order.cardLast4"
-				>
-					<dt class="[ order-summary-key ] [ md-typescale-label-large ]" t="order.payment.card"></dt>
-					<dd class="[ order-summary-val ] [ md-typescale-body-large ]">${order.cardBrand} •••• ${order.cardLast4}</dd>
+				<div if.bind="order.cardLast4">
+					<dt class="md-typescale-label-large" t="order.payment.card"></dt>
+					<dd class="md-typescale-body-large">${order.cardBrand} •••• ${order.cardLast4}</dd>
 				</div>
 			</dl>
 		</article>
 
 		<!-- §5.1 Issued tickets for this order -->
 		<article
-			class="[ order-panel ] [ flow wrapper ]"
+			class="[ order-panel card ] [ flow wrapper ]"
 			if.bind="tickets.length > 0"
 		>
 			<h2 class="[ order-section-title ] [ md-typescale-title-medium ]" t="order.tickets.title"></h2>
@@ -110,19 +107,19 @@
 					</output>
 
 					<!-- Ticket details -->
-					<dl class="[ order-ticket-summary ] [ stack ]">
-						<div class="order-ticket-summary-row">
-							<dt class="[ order-ticket-summary-key ] [ md-typescale-label-large ]" t="order.tickets.field.eventId"></dt>
+					<dl class="summary-list">
+						<div>
+							<dt class="md-typescale-label-large" t="order.tickets.field.eventId"></dt>
 							<!-- TODO(tickets): resolve event title once a fan-facing event-read RPC exists -->
-							<dd class="[ order-ticket-summary-val ] [ md-typescale-body-large ]">${ticket.eventId}</dd>
+							<dd class="md-typescale-body-large">${ticket.eventId}</dd>
 						</div>
-						<div class="order-ticket-summary-row">
-							<dt class="[ order-ticket-summary-key ] [ md-typescale-label-large ]" t="order.tickets.field.fullName"></dt>
-							<dd class="[ order-ticket-summary-val ] [ md-typescale-body-large ]">${ticket.fullName}</dd>
+						<div>
+							<dt class="md-typescale-label-large" t="order.tickets.field.fullName"></dt>
+							<dd class="md-typescale-body-large">${ticket.fullName}</dd>
 						</div>
-						<div class="order-ticket-summary-row">
-							<dt class="[ order-ticket-summary-key ] [ md-typescale-label-large ]" t="order.tickets.field.issueTime"></dt>
-							<dd class="[ order-ticket-summary-val ] [ md-typescale-body-large ]">${formatDate(ticket.issueTime)}</dd>
+						<div>
+							<dt class="md-typescale-label-large" t="order.tickets.field.issueTime"></dt>
+							<dd class="md-typescale-body-large">${formatDate(ticket.issueTime)}</dd>
 						</div>
 					</dl>
 

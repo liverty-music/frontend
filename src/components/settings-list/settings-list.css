@@ -1,19 +1,16 @@
-/* The Settings list: a card of rows sharing one icon | content | control
-   grid. Used by the Settings route and by the settings-*-row components, so
+/* The Settings list: a `card` of rows sharing one icon | content | control
+   grid. The rows pad themselves, so the card has no padding. Used by the Settings route and by the settings-*-row components, so
    it is scoped to the card, not to a route. Row components keep their host
    out of layout (display: contents), so each row is still a subgrid item of
    the card. */
 @layer block {
 	@scope (.settings-card) {
 		:scope {
+			--card-padding: 0;
+
 			overflow: hidden;
 			display: grid;
 			grid-template-columns: auto 1fr auto;
-
-			border: 1px solid color-mix(in oklch, var(--color-white) 10%, transparent);
-			border-radius: var(--md-sys-shape-corner-large);
-
-			background: var(--md-sys-color-surface-container);
 		}
 
 		/* Row components render their row inside a host that takes no box. */
@@ -44,6 +41,10 @@
 			align-items: center;
 
 			padding: var(--space-xs) var(--space-s);
+
+			/* Square, so the divider above a row runs straight to the card's
+			   edges; the global <button> rule rounds a button row's corners. */
+			border-radius: var(--md-sys-shape-corner-none);
 
 			/* Reset the UA `text-align: center` a <button>.settings-row would
 			   otherwise impose — its label is a stretched col2 grid item, so
@@ -176,8 +177,7 @@
 			+ .settings-list-item:not(.settings-list-subitem)
 			> *
 			> .settings-row {
-			border-block-start: 1px solid
-				color-mix(in oklch, var(--color-white) 5%, transparent);
+			border-block-start: 1px solid var(--md-sys-color-outline-variant);
 		}
 
 		/* Content column (col2) for whole-row toggle buttons: label + optional

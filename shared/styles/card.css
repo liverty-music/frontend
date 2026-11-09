@@ -1,0 +1,26 @@
+/* The card both apps use, a Material 3 outlined card: `class="[ card ] [ … ]"`
+   on the element that frames its content (a section, a list, a dialog's
+   panel). The fan app imports it from `src/styles/main.css`; the organizer
+   console from `organizer/styles/shared.css`, so a console component's shadow
+   root has it too.
+   - fill     `surface-container`
+   - border   1px `outline-variant`
+   - corners  `corner-medium` (12px, M3 card specs)
+   - padding  16px (the M3 card's inner padding). A card whose rows pad
+              themselves (a list of rows edge to edge) sets
+              --card-padding: 0; no other value is expected.
+   The card sets no width, no gap between its children and no type style: the
+   page lays the card out and spaces its content (`flow`, `stack`). A row
+   divider inside a card is a 1px `outline-variant` line too. */
+@layer block {
+	@scope (.card) {
+		:scope {
+			--_padding: var(--card-padding, var(--space-s));
+
+			padding: var(--_padding);
+			border: 1px solid var(--md-sys-color-outline-variant);
+			border-radius: var(--md-sys-shape-corner-medium);
+			background: var(--md-sys-color-surface-container);
+		}
+	}
+}
