@@ -50,7 +50,7 @@
      guidance toward discovery instead of a guard redirect, and toward the
      concerts nearby on Discovery's All Nearby view. -->
 <state-placeholder if.bind="hasSettled && !loadError && showGuestEmptyState && !needsRegion" icon="clock">
-  <div class="[ dashboard-empty ] [ flow ]">
+  <div class="[ dashboard-empty ] [ stack flow ]">
     <p t="dashboard.guestEmpty.title" class="[ dashboard-empty-title ] [ md-typescale-title-large ]"></p>
     <p t="dashboard.guestEmpty.subtitle" class="[ dashboard-empty-subtitle ] [ md-typescale-body-medium ]"></p>
     <div class="[ dashboard-empty-actions ] [ cluster ]">
@@ -64,7 +64,7 @@
      alone is also true before the cached groups have been reflected, which is
      exactly when this must NOT render. -->
 <state-placeholder if.bind="hasSettled && !loadError && !showGuestEmptyState && filteredDateGroups.length === 0" icon="clock">
-  <div class="[ dashboard-empty ] [ flow ]">
+  <div class="[ dashboard-empty ] [ stack flow ]">
     <p t="dashboard.empty.title" class="[ dashboard-empty-title ] [ md-typescale-title-large ]"></p>
     <p t="dashboard.empty.subtitle" class="[ dashboard-empty-subtitle ] [ md-typescale-body-medium ]"></p>
     <div class="[ dashboard-empty-actions ] [ cluster ]">

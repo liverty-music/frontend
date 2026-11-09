@@ -30,7 +30,7 @@
 		<p class="[ resale-entry-lead ] [ md-typescale-body-medium ]" data-testid="resale-entry-event">${event.title}<br />${dateLabel} · ${event.venueName}</p>
 		<p class="[ resale-entry-seat-type ] [ md-typescale-title-large-emphasized ]" data-testid="resale-entry-seat-type">${seatTypeName}</p>
 		<p class="[ resale-entry-lead ] [ md-typescale-body-medium ]" data-testid="resale-entry-price" t="resaleEntry.price" t-params.bind="{ price: yen(price) }"></p>
-		<ul class="resale-entry-terms-list" data-testid="resale-entry-how">
+		<ul class="[ resale-entry-terms-list ] [ stack ]" data-testid="resale-entry-how">
 			<li t="resaleEntry.how.draws"></li>
 			<li t="resaleEntry.how.allOrNothing"></li>
 			<li t="resaleEntry.how.chargedOnWin"></li>
@@ -64,7 +64,7 @@
 	<!-- Step 1: ticket count -->
 	<section class="[ resale-entry-panel ] [ flow wrapper ]" if.bind="step === 'count'" data-testid="resale-entry-count">
 		<h2 class="[ resale-entry-step-title ] [ md-typescale-title-large-emphasized ]" t="resaleEntry.count.title"></h2>
-		<label class="resale-entry-field">
+		<label class="[ resale-entry-field ] [ stack ]">
 			<span class="[ resale-entry-label ] [ md-typescale-label-large ]" t="resaleEntry.count.label" t-params.bind="{ max: countOptions.length }"></span>
 			<select value.bind="ticketCount" class="[ resale-entry-input ] [ md-typescale-body-large ]" data-testid="resale-entry-count-select">
 				<option repeat.for="n of countOptions" model.bind="n">${n}</option>
@@ -79,11 +79,11 @@
 	<section class="[ resale-entry-panel ] [ flow wrapper ]" if.bind="step === 'personal-details'" data-testid="resale-entry-personal-details">
 		<h2 class="[ resale-entry-step-title ] [ md-typescale-title-large-emphasized ]" t="resaleEntry.personalDetails.title"></h2>
 		<p class="[ resale-entry-lead ] [ md-typescale-body-medium ]" t="resaleEntry.personalDetails.note"></p>
-		<label class="resale-entry-field">
+		<label class="[ resale-entry-field ] [ stack ]">
 			<span class="[ resale-entry-label ] [ md-typescale-label-large ]" t="resaleEntry.personalDetails.name"></span>
 			<input type="text" autocomplete="name" value.bind="fullName" class="[ resale-entry-input ] [ md-typescale-body-large ]" data-testid="resale-entry-name" />
 		</label>
-		<label class="resale-entry-field">
+		<label class="[ resale-entry-field ] [ stack ]">
 			<span class="[ resale-entry-label ] [ md-typescale-label-large ]" t="resaleEntry.personalDetails.phone"></span>
 			<input
 				type="tel"

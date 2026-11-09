@@ -1,8 +1,9 @@
 /*
  * Organizer console stylesheet. Self-contained: it does not import the fan
  * style system (`src/styles/*`), which would cross the bundle boundary. The
- * console shares only the M3 system tokens (state layers, motion) with the fan
- * app; its color roles, type scale, shape and space live in `./tokens.css`.
+ * console shares the M3 system tokens, the type styles, the reset and the
+ * compositions with the fan app (`shared/styles/`); its color roles, shape and
+ * space live in `./tokens.css`.
  */
 @layer reset, tokens, global, composition, utility, block;
 
@@ -32,25 +33,9 @@
 		background: var(--md-sys-color-surface);
 	}
 
-	/* Each screen's title. */
+	/* Each screen's title, in the body's color. */
 	:where(.page-title) {
 		font: var(--md-sys-typescale-headline-small);
 		letter-spacing: var(--md-sys-typescale-headline-small-tracking);
-		color: var(--md-sys-color-on-surface);
-	}
-}
-
-@layer composition {
-	/* Every Layout: vertical rhythm via the owl selector. No visual treatment. */
-	.flow > * + * {
-		margin-block-start: var(--flow-space, var(--space-s));
-	}
-
-	/* Every Layout: cluster — wrap items with consistent gap, no width math. */
-	.cluster {
-		display: flex;
-		flex-wrap: wrap;
-		gap: var(--cluster-space, var(--space-s));
-		align-items: center;
 	}
 }

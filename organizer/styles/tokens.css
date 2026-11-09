@@ -167,9 +167,6 @@
 
 		/* ── Layout ── */
 
-		/* Minimum touch target of every control (M3: 48 dp). */
-		--md-target-size: 48px;
-
 		/* Navigation bar (compact windows) and rail (from 600 px). The snackbar
 		   clears the bar by --nav-bar-clearance; the shell sets it to 0 beside
 		   the rail. */
@@ -178,12 +175,23 @@
 		--nav-bar-clearance: var(--nav-bar-height);
 		--safe-area-block-end: env(safe-area-inset-bottom, 0px);
 
-		/* M3 elevation levels 2 (menus), 3 (FAB) and 4 (hovered FAB). */
+		/* The menus' shadow. It differs from the shared level 2
+		   (`--md-sys-elevation-level2`); the FAB uses the shared levels 3 and 4. */
 		--md-elevation-2: 0 2px 6px oklch(0% 0 0deg / 20%);
-		--md-elevation-3:
-			0 1px 3px oklch(0% 0 0deg / 30%), 0 4px 8px 3px oklch(0% 0 0deg / 15%);
-		--md-elevation-4:
-			0 2px 3px oklch(0% 0 0deg / 30%), 0 6px 10px 4px oklch(0% 0 0deg / 15%);
+
+		/* The top app bar's height, which the menus under it clear. */
+		--top-app-bar-block-size: 64px;
+
+		/* The extended FAB's height, which the page and the snackbar clear. */
+		--fab-block-size: 56px;
+
+		/* A text field's height (M3 filled and outlined fields). */
+		--field-block-size: 56px;
+
+		/* A single column of form fields (M3 forms), and a card that stands
+		   alone on a sign-in or error screen. */
+		--form-max-inline-size: 600px;
+		--card-max-inline-size: 560px;
 
 		/* Readable page width on expanded windows. */
 		--page-max-inline-size: 1200px;

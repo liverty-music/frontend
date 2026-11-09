@@ -11,20 +11,13 @@
 			block-size: 100%;
 			padding-block: var(--space-l);
 			padding-inline: var(--space-m);
-
-			background: var(--md-sys-color-surface);
-		}
-
-		.resale-entry-title {
-			color: var(--md-sys-color-on-surface);
-			text-wrap: balance;
 		}
 
 		.resale-entry-panel {
 			--flow-space: var(--space-m);
 
 			inline-size: 100%;
-			max-inline-size: 36rem;
+			max-inline-size: var(--page-max-inline-size);
 			padding: var(--space-m);
 			border: 1px solid var(--md-sys-color-outline-variant);
 			border-radius: var(--md-sys-shape-corner-large);
@@ -32,34 +25,21 @@
 			background: var(--md-sys-color-surface-container);
 		}
 
-		.resale-entry-step-title,
-		.resale-entry-seat-type {
-			color: var(--md-sys-color-on-surface);
-		}
-
 		.resale-entry-lead {
 			color: var(--md-sys-color-on-surface-variant);
-			text-wrap: pretty;
 		}
 
 		.resale-entry-field {
-			display: flex;
-			flex-direction: column;
-			gap: var(--space-2xs);
-		}
-
-		.resale-entry-label {
-			color: var(--md-sys-color-on-surface);
+			--stack-gap: var(--space-2xs);
 		}
 
 		.resale-entry-input {
 			inline-size: 100%;
-			min-block-size: 48px;
+			min-block-size: var(--md-sys-target-size);
 			padding-block: var(--space-2xs);
 			padding-inline: var(--space-s);
 			border: 1px solid var(--md-sys-color-outline-variant);
 			border-radius: var(--md-sys-shape-corner-medium);
-			color: var(--md-sys-color-on-surface);
 
 			background: var(--md-sys-color-surface);
 
@@ -71,51 +51,11 @@
 			}
 		}
 
-		.resale-entry-total {
-			color: var(--md-sys-color-on-surface);
-		}
-
-		.resale-entry-terms {
-			--flow-space: var(--space-s);
-
-			padding: var(--space-s);
-			border: 1px solid
-				color-mix(in oklch, var(--color-brand-primary) 25%, transparent);
-			border-radius: var(--md-sys-shape-corner-large);
-			color: var(--md-sys-color-on-surface-variant);
-
-			background: color-mix(
-				in oklch,
-				var(--color-brand-primary) 6%,
-				transparent
-			);
-		}
-
-		.resale-entry-terms-lead {
-			color: var(--md-sys-color-on-surface);
-			text-wrap: pretty;
-		}
-
 		.resale-entry-terms-list {
-			display: flex;
-			flex-direction: column;
-			gap: var(--space-2xs);
+			--stack-gap: var(--space-2xs);
 
 			padding-inline-start: var(--space-m);
-
 			list-style: disc;
-
-			& strong {
-				color: var(--md-sys-color-on-surface);
-			}
-		}
-
-		.resale-entry-terms-brands {
-			text-wrap: pretty;
-
-			& strong {
-				color: var(--md-sys-color-on-surface);
-			}
 		}
 
 		/* Rows sit --space-2xs apart; each dd also ends --space-xs before the
@@ -124,7 +64,6 @@
 			display: grid;
 			gap: var(--space-2xs) var(--space-s);
 			padding-block-end: var(--space-xs);
-			color: var(--md-sys-color-on-surface);
 
 			& dt {
 				--flow-space: var(--space-xs);

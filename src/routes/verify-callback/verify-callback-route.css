@@ -11,15 +11,12 @@
 
 			block-size: 100dvb;
 			padding: var(--space-l);
-
-			background: var(--md-sys-color-surface);
 		}
 
 		/* Loading cluster: indicator + text side by side. */
 		.verify-loading {
 			--cluster-gap: var(--space-s);
 
-			align-items: center;
 			color: var(--md-sys-color-on-surface-variant);
 		}
 	}

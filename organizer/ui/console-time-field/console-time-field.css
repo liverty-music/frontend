@@ -4,19 +4,11 @@
  * rules make that frame a group of two selects.
  */
 @layer block {
-	/* The field is a fieldset: its own border, padding and minimum width go. */
-	.field {
-		min-inline-size: 0;
-		padding: 0;
-		border: none;
-	}
-
 	/* A floated legend is laid out as a grid item, so the field's gap applies
 	   to it as to the console field's label. */
 	.label {
 		float: inline-start;
 		inline-size: 100%;
-		padding: 0;
 	}
 
 	/* Each select is as wide as its two digits and its picker icon, not the

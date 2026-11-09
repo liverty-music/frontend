@@ -1,14 +1,14 @@
 <import from="./consent-route.css"></import>
 
 <main class="[ consent-route ] [ flow ]">
-  <header class="consent-header">
+  <header class="[ consent-header ] [ stack ]">
     <h1 t="onboarding.consent.title" class="[ consent-title ] [ md-typescale-headline-small ]"></h1>
     <p t="onboarding.consent.intro" class="[ consent-paragraph ] [ md-typescale-body-medium ]"></p>
   </header>
 
   <section class="[ consent-card ] [ flow ]">
     <div class="consent-row">
-      <div class="consent-row-text">
+      <div class="[ consent-row-text ] [ stack ]">
         <div class="consent-row-label-line">
           <svg-icon name="globe" class="consent-row-icon"></svg-icon>
           <span t="onboarding.consent.processor.label" class="[ consent-row-label ] [ md-typescale-body-large ]"></span>
@@ -20,7 +20,7 @@
     <hr class="[ consent-divider ]">
 
     <div class="consent-row">
-      <div class="consent-row-text">
+      <div class="[ consent-row-text ] [ stack ]">
         <div class="consent-row-label-line">
           <svg-icon name="info" class="consent-row-icon"></svg-icon>
           <span t="onboarding.consent.optOut.label" class="[ consent-row-label ] [ md-typescale-body-large ]"></span>
@@ -39,7 +39,7 @@
     ></button>
   </p>
 
-  <footer class="[ consent-actions ] [ wrapper ]">
+  <footer class="[ consent-actions ] [ stack wrapper ]">
     <button
       busy-on-click.bind="() => acknowledge()"
       class="[ button ] [ pressable ]"

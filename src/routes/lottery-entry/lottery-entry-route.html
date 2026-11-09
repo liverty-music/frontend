@@ -44,7 +44,7 @@
 	<!-- Step 1: ticket count -->
 	<section class="[ lottery-entry-panel ] [ flow wrapper ]" if.bind="step === 'count'" data-testid="lottery-entry-count">
 		<h2 class="[ lottery-entry-step-title ] [ md-typescale-title-large-emphasized ]" t="lotteryEntry.count.title"></h2>
-		<label class="lottery-entry-field">
+		<label class="[ lottery-entry-field ] [ stack ]">
 			<span class="[ lottery-entry-label ] [ md-typescale-label-large ]" t="lotteryEntry.count.label" t-params.bind="{ limit: perAccountLimit }"></span>
 			<select value.bind="ticketCount" class="[ lottery-entry-input ] [ md-typescale-body-large ]" data-testid="lottery-entry-count-select">
 				<option repeat.for="n of countOptions" model.bind="n">${n}</option>
@@ -59,11 +59,11 @@
 	<section class="[ lottery-entry-panel ] [ flow wrapper ]" if.bind="step === 'personal-details'" data-testid="lottery-entry-personal-details">
 		<h2 class="[ lottery-entry-step-title ] [ md-typescale-title-large-emphasized ]" t="lotteryEntry.personalDetails.title"></h2>
 		<p class="[ lottery-entry-lead ] [ md-typescale-body-medium ]" t="lotteryEntry.personalDetails.note"></p>
-		<label class="lottery-entry-field">
+		<label class="[ lottery-entry-field ] [ stack ]">
 			<span class="[ lottery-entry-label ] [ md-typescale-label-large ]" t="lotteryEntry.personalDetails.name"></span>
 			<input type="text" autocomplete="name" value.bind="fullName" class="[ lottery-entry-input ] [ md-typescale-body-large ]" data-testid="lottery-entry-name" />
 		</label>
-		<label class="lottery-entry-field">
+		<label class="[ lottery-entry-field ] [ stack ]">
 			<span class="[ lottery-entry-label ] [ md-typescale-label-large ]" t="lotteryEntry.personalDetails.phone"></span>
 			<input
 				type="tel"
@@ -89,7 +89,7 @@
 		<h2 class="[ lottery-entry-step-title ] [ md-typescale-title-large-emphasized ]" t="lotteryEntry.payment.title"></h2>
 		<div class="[ lottery-entry-terms ] [ flow ] [ md-typescale-body-medium ]" role="note">
 			<p class="lottery-entry-terms-lead" t="lotteryEntry.payment.cardAuthorization" t-params.bind="{ total: yen(total), count: ticketCount, price: yen(price) }"></p>
-			<ul class="lottery-entry-terms-list">
+			<ul class="[ lottery-entry-terms-list ] [ stack ]">
 				<li t="lotteryEntry.payment.notCharged"></li>
 				<li t="lotteryEntry.payment.chargedOnWin"></li>
 				<li t="lotteryEntry.payment.releasedOnLoss"></li>

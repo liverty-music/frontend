@@ -1,0 +1,52 @@
+/*
+ * The reset both apps share: the fan app (`src/styles/main.css`) and the
+ * organizer console (`organizer/styles/shared.css`, so every console shadow
+ * root too). Zero specificity, so any layer above it decides.
+ */
+@layer reset {
+	:where(*),
+	::before,
+	::after {
+		box-sizing: border-box;
+		margin: 0;
+		padding: 0;
+	}
+
+	:where(img, picture, video, canvas, svg) {
+		display: block;
+		max-inline-size: 100%;
+		block-size: auto;
+	}
+
+	:where(input, button, textarea, select) {
+		font: inherit;
+		color: inherit;
+	}
+
+	:where(button) {
+		cursor: pointer;
+	}
+
+	:where(ul, ol) {
+		list-style: none;
+	}
+
+	:where(fieldset) {
+		min-inline-size: 0;
+		border: none;
+	}
+
+	/* A heading's look comes from the type style it is given, not its level
+	   (design-tokens "Heading level does not decide the look"). */
+	:where(h1, h2, h3, h4, h5, h6) {
+		font: inherit;
+		letter-spacing: inherit;
+		text-wrap: balance;
+		overflow-wrap: break-word;
+	}
+
+	:where(p) {
+		text-wrap: pretty;
+		overflow-wrap: break-word;
+	}
+}

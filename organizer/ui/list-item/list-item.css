@@ -37,10 +37,6 @@
 		color: var(--md-sys-color-on-surface-variant);
 	}
 
-	.headline {
-		color: var(--md-sys-color-on-surface);
-	}
-
 	slot[name="supporting"] {
 		color: var(--md-sys-color-on-surface-variant);
 	}

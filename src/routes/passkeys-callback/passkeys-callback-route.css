@@ -3,16 +3,9 @@
 @layer block {
 	@scope (passkeys-callback-route) {
 		.passkeys-callback {
-			display: flex;
-			align-items: center;
-			justify-content: center;
-
 			block-size: 100%;
 			padding-inline: var(--space-m);
-
 			text-align: center;
-
-			background: var(--md-sys-color-surface);
 		}
 
 		.passkeys-callback-loading {
@@ -24,13 +17,14 @@
 
 			align-items: center;
 			max-inline-size: 32ch;
-			color: var(--md-sys-color-on-surface);
 		}
 
 		.passkeys-callback-link {
 			display: inline-flex;
 			align-items: center;
+
 			min-block-size: 44px;
+
 			color: var(--color-brand-primary);
 			text-decoration: underline;
 		}

@@ -12,7 +12,7 @@
   sheet-closed.trigger="closeSheet()"
   aria-labelledby="filter-sheet-title"
 >
-  <div class="filter-sheet-content">
+  <div class="[ filter-sheet-content ] [ stack ]">
     <div class="sheet-header">
       <h2 class="[ sheet-title ] [ md-typescale-title-large ]" id="filter-sheet-title">絞り込み</h2>
       <button
@@ -25,7 +25,7 @@
     </div>
 
     <!-- Artist facet -->
-    <section class="filter-facet" aria-labelledby="filter-artist-heading">
+    <section class="[ filter-facet ] [ stack ]" aria-labelledby="filter-artist-heading">
       <h3 class="[ facet-heading ] [ md-typescale-title-small ]" id="filter-artist-heading">アーティスト</h3>
       <ul class="artists-list" aria-labelledby="filter-artist-heading">
         <li repeat.for="artist of countedArtists" key.bind="artist.id">
@@ -46,7 +46,7 @@
     <!-- Journey-status facet (authenticated users only) -->
     <section
       if.bind="showJourneyFacet"
-      class="filter-facet"
+      class="[ filter-facet ] [ stack ]"
       aria-labelledby="filter-journey-heading"
     >
       <h3 class="[ facet-heading ] [ md-typescale-title-small ]" id="filter-journey-heading" t="eventDetail.ticketStatus"></h3>
@@ -86,7 +86,7 @@
          field. Unlike the artist/journey facets it widens the timetable into the
          past (re-fetch on confirm); collapsed by default so the timetable stays
          today-onward. Available even when the timetable is empty. -->
-    <section class="filter-facet filter-facet-date" aria-labelledby="filter-date-heading">
+    <section class="[ filter-facet filter-facet-date ] [ stack ]" aria-labelledby="filter-date-heading">
       <button
         type="button"
         class="date-facet-toggle"
@@ -97,7 +97,7 @@
         <h3 class="[ facet-heading ] [ md-typescale-title-small ]" id="filter-date-heading">過去のコンサートも表示</h3>
         <svg-icon name="chevron-right" size="xs" class="date-facet-caret" data-expanded.bind="isDateFacetExpanded"></svg-icon>
       </button>
-      <div if.bind="isDateFacetExpanded" id="filter-date-field" class="date-facet-field">
+      <div if.bind="isDateFacetExpanded" id="filter-date-field" class="[ date-facet-field ] [ stack ]">
         <label class="[ date-field-label ] [ md-typescale-body-medium ]" for="filter-from-input">この日付以降を表示</label>
         <input
           id="filter-from-input"

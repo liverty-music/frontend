@@ -8,14 +8,12 @@
 
 		.start-actions,
 		.sale-actions {
-			display: flex;
-			flex-wrap: wrap;
-			gap: var(--space-2xs);
-			align-items: center;
+			--cluster-gap: var(--space-2xs);
 		}
 
-		.section-title {
-			color: var(--md-sys-color-on-surface);
+		/* The card's actions sit at its trailing edge. */
+		.sale-actions {
+			justify-content: flex-end;
 		}
 
 		.note {
@@ -27,8 +25,6 @@
 		.lottery-stocks {
 			display: grid;
 			gap: var(--space-s);
-			padding: 0;
-			list-style: none;
 		}
 
 		/* M3 outlined card: a sale, or a seat type's stock, holds several actions. */
@@ -46,30 +42,19 @@
 
 		.sale-heading,
 		.stock-heading {
-			display: flex;
-			flex-wrap: wrap;
-			gap: var(--space-2xs) var(--space-xs);
-			align-items: center;
-			justify-content: space-between;
-		}
+			--cluster-gap: var(--space-2xs) var(--space-xs);
 
-		.sale-name,
-		.stock-name {
-			color: var(--md-sys-color-on-surface);
+			justify-content: space-between;
 		}
 
 		.window,
 		.terms,
 		.locked {
-			font-variant-numeric: tabular-nums;
 			color: var(--md-sys-color-on-surface-variant);
 		}
 
+		/* In the on-surface-variant window line. */
 		.method {
-			color: var(--md-sys-color-on-surface);
-		}
-
-		.countdown {
 			color: var(--md-sys-color-on-surface);
 		}
 
@@ -90,10 +75,6 @@
 			gap: var(--space-xs);
 		}
 
-		.form-title {
-			color: var(--md-sys-color-on-surface);
-		}
-
 		.row {
 			display: flex;
 			flex-wrap: wrap;
@@ -102,10 +83,6 @@
 			& > * {
 				flex: 1 1 200px;
 			}
-		}
-
-		.oversubscribed {
-			color: var(--md-sys-color-on-surface);
 		}
 
 		/* In a sale card the grid gap spaces the rows; the flow composition
@@ -118,15 +95,6 @@
 			--flow-space: var(--space-2xs);
 
 			max-inline-size: 420px;
-		}
-
-		/* The card's actions sit at its trailing edge. */
-		.sale-actions {
-			justify-content: flex-end;
-		}
-
-		.referrals-title {
-			color: var(--md-sys-color-on-surface);
 		}
 
 		.referrals-note {

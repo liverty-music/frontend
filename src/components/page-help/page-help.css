@@ -12,9 +12,6 @@
 			--sheet-bg: var(--md-sys-color-surface-container-high);
 		}
 
-		/* The `?` trigger moved to the FAB action launcher; only the sheet
-		   content styles remain here. */
-
 		/* Each sub-section is a <section class="page-help-content"> block. A
 		   sheet may contain multiple sub-sections rendered in document order;
 		   they share visual treatment via the .page-help-header + .help-section-title
@@ -53,20 +50,12 @@
 		}
 
 		.page-help-icon {
-			display: inline-flex;
-			flex-shrink: 0;
 			color: var(--color-brand-accent);
-		}
-
-		.page-help-desc {
-			color: var(--md-sys-color-on-surface);
 		}
 
 		/* ── Tip list (with brand-accent bullets) ───────────────────────── */
 		.page-help-tips {
-			display: flex;
-			flex-direction: column;
-			gap: var(--space-2xs);
+			--stack-gap: var(--space-2xs);
 
 			color: var(--md-sys-color-on-surface-variant);
 		}
@@ -85,15 +74,14 @@
 
 		/* ── Inline genre-chip demo (mimics .genre-chip on discovery) ──── */
 		.page-help-chip-demo {
-			display: flex;
-			flex-wrap: wrap;
-			gap: var(--space-2xs);
+			--cluster-gap: var(--space-2xs);
 		}
 
 		.page-help-chip {
 			padding: var(--space-3xs) var(--space-xs);
 			border: 1px solid var(--_white-15);
 			border-radius: var(--md-sys-shape-corner-full);
+
 			color: var(--_white-70);
 			white-space: nowrap;
 
@@ -121,9 +109,7 @@
 			padding: var(--space-s);
 			border-radius: var(--md-sys-shape-corner-large);
 
-			background: oklch(
-				from var(--md-sys-color-surface-container-high) calc(l + 0.04) c h
-			);
+			background: var(--md-sys-color-surface-container-highest);
 		}
 
 		.stage-home {
@@ -144,10 +130,9 @@
 		   description (1fr). Auto-sized columns 1 and 2 expand to fit the
 		   widest cell in each column, so label-column and description-column
 		   left edges align across all four tiers regardless of icon width.
-		   Markup is <ul> + <li display:contents>: the <li> participates as a
-		   single grid row container while its children become direct grid
-		   items. The decorative emoji is a plain <span aria-hidden="true">
-		   inside the row so it is NOT promoted to a list term. */
+		   Markup is <ul> + <li>, each <li> a subgrid row (below). The
+		   decorative emoji is a plain <span aria-hidden="true"> inside the row
+		   so it is NOT promoted to a list term. */
 		.help-hype-grid {
 			display: grid;
 			grid-template-columns: auto auto 1fr;
@@ -156,9 +141,7 @@
 			padding: var(--space-s);
 			border-radius: var(--md-sys-shape-corner-large);
 
-			background: oklch(
-				from var(--md-sys-color-surface-container-high) calc(l + 0.04) c h
-			);
+			background: var(--md-sys-color-surface-container-highest);
 		}
 
 		/* Each row spans the shared grid through subgrid, so its cells align

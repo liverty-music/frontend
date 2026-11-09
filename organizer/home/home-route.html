@@ -4,16 +4,16 @@
   <h1 class="page-title">${'home.title' & t}</h1>
 
   <template if.bind="!isLoading">
-    <div if.bind="payoutState === 'error'" class="part-error" role="alert">
+    <div if.bind="payoutState === 'error'" class="[ part-error ] [ cluster ]" role="alert">
       <span>${'home.payoutUnavailable' & t}</span>
       <console-button variant="text" click.trigger="loadPayout()">${'common.retry' & t}</console-button>
     </div>
-    <div if.bind="concertsState === 'error'" class="part-error" role="alert">
+    <div if.bind="concertsState === 'error'" class="[ part-error ] [ cluster ]" role="alert">
       <span>${'home.concertsUnavailable' & t}</span>
       <console-button variant="text" click.trigger="loadConcerts()">${'common.retry' & t}</console-button>
     </div>
 
-    <section if.bind="groups.length" class="groups" aria-label.bind="'home.listLabel' & t" data-testid="home-items">
+    <section if.bind="groups.length" class="[ groups ] [ bleed ]" aria-label.bind="'home.listLabel' & t" data-testid="home-items">
       <section repeat.for="group of groups; key: kind" class="group" data-group.bind="group.kind">
         <h2 class="[ subheader ] [ md-typescale-title-small ]" id.bind="`home-${group.kind}`">${`home.kind.${group.kind}` & t}</h2>
         <ul class="list" aria-labelledby.bind="`home-${group.kind}`">

@@ -4,20 +4,13 @@
 	@scope (verify-email-route) {
 		.verify-email {
 			--stack-gap: var(--space-s);
+			--wrapper-max: var(--page-max-inline-size);
 
-			max-inline-size: 36rem;
 			padding: var(--space-m) var(--space-s);
-		}
-
-		.verify-email-lead,
-		.verify-email-message {
-			color: var(--md-sys-color-on-surface);
-			text-wrap: pretty;
 		}
 
 		.verify-email-hint {
 			color: var(--md-sys-color-on-surface-variant);
-			text-wrap: pretty;
 		}
 
 		.verify-email-error {

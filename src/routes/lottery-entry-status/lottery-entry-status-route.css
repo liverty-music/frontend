@@ -11,20 +11,13 @@
 			block-size: 100%;
 			padding-block: var(--space-l);
 			padding-inline: var(--space-m);
-
-			background: var(--md-sys-color-surface);
-		}
-
-		.lottery-entry-status-title {
-			color: var(--md-sys-color-on-surface);
-			text-wrap: balance;
 		}
 
 		.lottery-entry-status-panel {
 			--flow-space: var(--space-m);
 
 			inline-size: 100%;
-			max-inline-size: 36rem;
+			max-inline-size: var(--page-max-inline-size);
 			padding: var(--space-m);
 			border: 1px solid var(--md-sys-color-outline-variant);
 			border-radius: var(--md-sys-shape-corner-large);
@@ -32,25 +25,8 @@
 			background: var(--md-sys-color-surface-container);
 		}
 
-		.lottery-entry-status-step-title {
-			color: var(--md-sys-color-on-surface);
-		}
-
 		.lottery-entry-status-lead {
 			color: var(--md-sys-color-on-surface-variant);
-			text-wrap: pretty;
-
-			& strong {
-				color: var(--md-sys-color-on-surface);
-			}
-		}
-
-		.lottery-entry-status-note {
-			color: var(--md-sys-color-on-surface-variant);
-		}
-
-		.lottery-entry-status-status-label {
-			color: var(--md-sys-color-on-surface);
 		}
 
 		.lottery-entry-status-status {
@@ -98,9 +74,7 @@
 		}
 
 		.lottery-entry-status-summary {
-			display: flex;
-			flex-direction: column;
-			gap: var(--space-2xs);
+			--stack-gap: var(--space-2xs);
 
 			padding: var(--space-s);
 			border: 1px solid var(--md-sys-color-outline-variant);
@@ -118,7 +92,6 @@
 		}
 
 		.lottery-entry-status-summary-val {
-			color: var(--md-sys-color-on-surface);
 			text-align: end;
 		}
 

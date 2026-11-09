@@ -10,10 +10,7 @@
 			display: flex;
 			flex-wrap: wrap;
 			align-items: center;
-
-			padding: 0;
 			color: var(--md-sys-color-on-surface-variant);
-			list-style: none;
 
 			/* The separator's space: the gap before it, the padding after it,
 			   inside the crumb as before. */
@@ -33,7 +30,7 @@
 				display: inline-flex;
 				align-items: center;
 
-				min-block-size: var(--md-target-size);
+				min-block-size: var(--md-sys-target-size);
 
 				color: var(--md-sys-color-on-surface);
 				text-underline-offset: 3px;

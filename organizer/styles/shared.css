@@ -8,30 +8,17 @@
  * The layer order matches `./main.css`; in a shadow root it puts a
  * component's own `block` rules above these.
  */
-@layer reset, global, utility, block;
+@layer reset, global, composition, utility, block;
 
-/* Type styles, so a console component's template can use the classes. */
+/* The reset, the compositions and the screen-reader utility the fan app
+   uses too, and the type styles, so a console component's template can use
+   the classes. */
+@import "../../shared/styles/reset.css";
+@import "../../shared/styles/compositions.css";
+@import "../../shared/styles/utilities.css";
 @import "../../shared/styles/m3-typescale.css";
 
-@layer reset {
-	:where(*),
-	::before,
-	::after {
-		box-sizing: border-box;
-	}
-
-	:where(*) {
-		margin: 0;
-	}
-}
-
 @layer global {
-	/* A heading's look comes from the type style it is given, not its level. */
-	:where(h1, h2, h3, h4, h5, h6) {
-		font: inherit;
-		letter-spacing: inherit;
-	}
-
 	/* Counts, prices, dates and times line up in columns: every digit in the
 	   console is tabular. `!important` because the `font` shorthand each
 	   component uses for its type role resets `font-variant-numeric`; an
@@ -96,21 +83,22 @@
 		inset-inline-start: 50%;
 		translate: -50% -50%;
 
-		inline-size: max(100%, var(--md-target-size));
-		block-size: max(100%, var(--md-target-size));
+		inline-size: max(100%, var(--md-sys-target-size));
+		block-size: max(100%, var(--md-sys-target-size));
+	}
+}
+
+@layer composition {
+	/* A list that reaches the window edges through the page's inline padding
+	   on a compact window (M3 Lists), and sits inside it from 600 px. */
+	.bleed {
+		margin-inline: calc(-1 * var(--page-inline-padding));
 	}
 
-	:where(.visually-hidden) {
-		position: absolute;
-
-		overflow: hidden;
-
-		inline-size: 1px;
-		block-size: 1px;
-
-		white-space: nowrap;
-
-		clip-path: inset(50%);
+	@container shell (width >= 600px) {
+		.bleed {
+			margin-inline: 0;
+		}
 	}
 }
 

@@ -12,8 +12,7 @@
 		}
 
 		.filter-rows {
-			display: grid;
-			gap: var(--space-2xs);
+			--stack-gap: var(--space-2xs);
 		}
 
 		/* One row per filter: what it is, its value, and a caret to its own
@@ -30,6 +29,7 @@
 			padding-inline: var(--space-s);
 			border: 1px solid var(--md-sys-color-outline-variant);
 			border-radius: var(--md-sys-shape-corner-large);
+
 			color: var(--md-sys-color-on-surface);
 			text-align: start;
 

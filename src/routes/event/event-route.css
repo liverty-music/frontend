@@ -7,16 +7,14 @@
 			block-size: 100%;
 			padding-block: var(--space-m) var(--space-xl);
 			padding-inline: var(--space-m);
-
-			background: var(--md-sys-color-surface);
 		}
 
 		.event-page {
 			--flow-space: var(--space-m);
 			--gutter: 0;
+			--wrapper-max: var(--page-max-inline-size);
 
 			inline-size: 100%;
-			max-inline-size: 36rem;
 		}
 
 		.event-status,
@@ -54,6 +52,7 @@
 			place-items: center;
 
 			block-size: 100%;
+
 			color: var(--md-sys-color-on-surface-variant);
 
 			background: linear-gradient(
@@ -71,14 +70,7 @@
 			border: 1px solid var(--color-warning);
 			border-radius: var(--md-sys-shape-corner-large);
 
-			color: var(--md-sys-color-on-surface);
-
 			background: oklch(from var(--color-warning) l c h / 12%);
-		}
-
-		.event-title {
-			color: var(--md-sys-color-on-surface);
-			text-wrap: balance;
 		}
 
 		.event-performers {
@@ -93,15 +85,12 @@
 			justify-content: space-between;
 		}
 
-		.event-performer-name {
-			color: var(--md-sys-color-on-surface);
-		}
-
 		.event-follow {
 			min-block-size: 44px;
 			padding-inline: var(--space-s);
 			border: 1px solid var(--color-brand-primary);
 			border-radius: var(--md-sys-shape-corner-medium);
+
 			color: var(--color-brand-primary);
 
 			&[data-followed="true"] {
@@ -126,10 +115,6 @@
 			color: var(--md-sys-color-on-surface-variant);
 		}
 
-		.event-detail-primary {
-			color: var(--md-sys-color-on-surface);
-		}
-
 		.event-detail-secondary,
 		.event-times {
 			color: var(--md-sys-color-on-surface-variant);
@@ -142,12 +127,7 @@
 		}
 
 		.event-description {
-			color: var(--md-sys-color-on-surface);
 			white-space: pre-line;
-		}
-
-		.event-section-title {
-			color: var(--md-sys-color-on-surface);
 		}
 
 		.event-tickets,
@@ -179,15 +159,8 @@
 
 		.event-stock-head {
 			--cluster-gap: var(--space-xs);
+
 			align-items: baseline;
-		}
-
-		.event-stock-name {
-			color: var(--md-sys-color-on-surface);
-		}
-
-		.event-sale-held {
-			color: var(--md-sys-color-on-surface);
 		}
 
 		.event-resale {
@@ -196,11 +169,6 @@
 
 		.event-sale-name {
 			color: var(--md-sys-color-on-surface-variant);
-		}
-
-		.event-sale-price,
-		.event-sale-status {
-			color: var(--md-sys-color-on-surface);
 		}
 
 		.event-sale-low {

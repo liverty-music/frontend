@@ -2,7 +2,7 @@
 
 <div class="[ settings-row ] [ settings-row-toggle ]">
   <svg-icon name.bind="icon" class="settings-icon"></svg-icon>
-  <button type="button" click.trigger="toggleExpanded()" aria-expanded.bind="expanded" class="settings-expand">
+  <button type="button" click.trigger="toggleExpanded()" aria-expanded.bind="expanded" class="[ settings-expand ] [ stack ]">
     <span class="settings-expand-head">
       <span class="[ settings-row-label ] [ md-typescale-body-large ]">${label}</span>
       <svg-icon name="chevron-right" class="settings-expand-caret" data-expanded.bind="expanded"></svg-icon>

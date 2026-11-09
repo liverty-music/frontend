@@ -1,7 +1,7 @@
 <import from="./auth-callback-route.css"></import>
 
-<main class="[ organizer-callback-layout ]">
-  <div if.bind="!failed" class="organizer-callback-loading" role="status">
+<main class="[ organizer-callback-layout ] [ stack ]">
+  <div if.bind="!failed" class="[ organizer-callback-loading ] [ stack ]" role="status">
     <circular-progress label.bind="'authCallback.verifying' & t"></circular-progress>
     <p class="[ organizer-callback-status ] [ md-typescale-body-large ]">${'authCallback.verifying' & t}</p>
   </div>

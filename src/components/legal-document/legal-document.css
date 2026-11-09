@@ -1,22 +1,17 @@
 @layer block {
 	@scope (legal-document) {
 		:scope {
+			/* The `wrapper` composition its routes give it centres the column. */
+			--wrapper-max: 70ch;
+			--gutter: var(--space-s);
+
 			display: block;
-
-			/* Centred by the `wrapper` composition its routes give it. */
-			max-inline-size: 70ch;
-			padding: var(--space-s);
-			padding-block-end: var(--space-2xl);
-
+			padding-block: var(--space-s) var(--space-2xl);
 			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.legal-title {
 			color: var(--md-sys-color-on-surface);
-		}
-
-		.legal-updated {
-			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.legal-section-heading {

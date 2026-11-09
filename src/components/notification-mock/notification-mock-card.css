@@ -24,16 +24,14 @@
 
 		.notification-mock-icon {
 			flex-shrink: 0;
-
 			inline-size: 40px;
 			block-size: 40px;
 			border-radius: var(--md-sys-shape-corner-medium);
 		}
 
 		.notification-mock-body {
-			display: flex;
-			flex-direction: column;
-			gap: var(--space-3xs);
+			--stack-gap: var(--space-3xs);
+
 			min-inline-size: 0;
 		}
 

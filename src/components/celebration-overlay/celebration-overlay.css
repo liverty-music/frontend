@@ -10,7 +10,6 @@
 			--_glow-b: oklch(58.5% 0.204 277deg / 30%);
 			--_text-contrast: oklch(0% 0 0deg / 85%);
 			--_confetti-radius: 2px;
-			--_confetti-round: 50%;
 			--_c1: oklch(70% 0.2 30deg);
 			--_c2: oklch(75% 0.15 160deg);
 			--_c3: oklch(70% 0.2 277deg);
@@ -39,7 +38,7 @@
 			background: var(--_scrim);
 			backdrop-filter: blur(var(--_scrim-blur));
 
-			transition: opacity 400ms ease;
+			transition: opacity var(--md-sys-motion-duration-medium4) ease;
 
 			&[data-state="hidden"] {
 				display: none;
@@ -53,7 +52,9 @@
 		.celebration-text {
 			isolation: isolate;
 			position: relative;
-			padding: 0 var(--space-l);
+
+			padding-inline: var(--space-l);
+
 			color: var(--color-white);
 			text-align: center;
 			text-shadow:
@@ -61,15 +62,15 @@
 				0 0 24px var(--_glow-a),
 				0 0 48px var(--_glow-a),
 				0 0 80px var(--_glow-b);
+			text-wrap: balance;
+			word-break: auto-phrase;
 
 			/* The copy breaks the headline where it means to (after 「ようこそ！」);
 			   longer lines balance and break Japanese at phrase boundaries,
 			   never mid-word (graceful no-op where unsupported). */
 			white-space: pre-line;
-			text-wrap: balance;
-			word-break: auto-phrase;
 
-			animation: headline-enter 700ms
+			animation: headline-enter var(--md-sys-motion-duration-extra-long1)
 				var(--md-sys-motion-easing-emphasized-decelerate) both;
 		}
 
@@ -77,21 +78,24 @@
 		.celebration-hint {
 			isolation: isolate;
 			position: relative;
-			padding: 0 var(--space-l);
+
+			padding-inline: var(--space-l);
+
 			color: oklch(from var(--color-white) l c h / 90%);
 			text-align: center;
 			text-shadow: 0 1px 5px var(--_text-contrast);
-			white-space: pre-line;
 			text-wrap: balance;
 			word-break: auto-phrase;
+			white-space: pre-line;
 
-			animation: line-enter 500ms
-				var(--md-sys-motion-easing-emphasized-decelerate) 250ms both;
+			animation: line-enter var(--md-sys-motion-duration-long2)
+				var(--md-sys-motion-easing-emphasized-decelerate)
+				var(--md-sys-motion-duration-medium1) both;
 		}
 
 		.celebration-hint {
 			color: oklch(from var(--color-white) l c h / 70%);
-			animation-delay: 450ms;
+			animation-delay: var(--md-sys-motion-duration-long1);
 		}
 
 		/* Scales up past full size, then settles back to it. */
@@ -149,7 +153,7 @@
 				var(--_delay) forwards;
 
 			&[data-shape="circle"] {
-				border-radius: var(--_confetti-round);
+				border-radius: var(--md-sys-shape-corner-full);
 			}
 
 			&[data-shape="strip"] {

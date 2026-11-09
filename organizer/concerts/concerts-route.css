@@ -2,16 +2,12 @@
 	@scope (concerts-route) {
 		/* Room under the last concert for the floating 公演をつくる. */
 		.concerts {
+			--_fab-room: calc(var(--fab-block-size) + var(--space-s));
+
 			display: grid;
 			grid-template-columns: minmax(0, 1fr);
 			gap: var(--space-s);
-			padding-block-end: calc(56px + var(--space-s));
-		}
-
-		/* The list extends edge to edge on a compact window (M3 Lists). */
-		.collection {
-			/* stylelint-disable-next-line property-disallowed-list -- full bleed: the list reaches past the page's inline padding, which no padding or gap of its own can do */
-			margin-inline: calc(-1 * var(--page-inline-padding));
+			padding-block-end: var(--_fab-room);
 		}
 
 		.message {
@@ -29,13 +25,6 @@
 
 		.message-title {
 			color: var(--md-sys-color-on-surface);
-		}
-
-		@container shell (width >= 600px) {
-			.collection {
-				/* stylelint-disable-next-line property-disallowed-list -- turns off the compact full-bleed margin; only a margin undoes a margin */
-				margin-inline: 0;
-			}
 		}
 	}
 }

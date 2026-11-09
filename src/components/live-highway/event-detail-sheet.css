@@ -22,7 +22,6 @@
 		}
 
 		.sheet-hero img {
-			display: block;
 			aspect-ratio: 16 / 9;
 			inline-size: 100%;
 			object-fit: cover;
@@ -44,12 +43,10 @@
 			);
 		}
 
-		/* Artist header with dynamic color */
 		.sheet-artist-header {
 			--flow-space: var(--space-s);
 
 			padding: var(--space-s);
-			border-radius: var(--md-sys-shape-corner-large);
 		}
 
 		.sheet-artist-name {
@@ -65,10 +62,7 @@
 		/* Event details list */
 		.sheet-details {
 			--flow-space: var(--space-s);
-
-			display: flex;
-			flex-direction: column;
-			gap: var(--space-xs);
+			--stack-gap: var(--space-xs);
 		}
 
 		.detail-row {
@@ -104,10 +98,7 @@
 		/* Out-of-range notice: what the fan's hype level pushes, under the venue */
 		.sheet-out-of-range {
 			--flow-space: var(--space-s);
-
-			display: flex;
-			flex-direction: column;
-			gap: var(--space-2xs);
+			--stack-gap: var(--space-2xs);
 
 			padding: var(--space-xs) var(--space-s);
 			border: 1px solid var(--_border-light);
@@ -116,7 +107,6 @@
 
 		.out-of-range-text {
 			color: var(--md-sys-color-on-surface-variant);
-			text-wrap: pretty;
 			word-break: auto-phrase;
 		}
 
@@ -128,10 +118,7 @@
 		/* Ticket section: notification button, status row, push line, official site */
 		.sheet-tickets {
 			--flow-space: var(--space-s);
-
-			display: flex;
-			flex-direction: column;
-			gap: var(--space-xs);
+			--stack-gap: var(--space-xs);
 
 			padding-block-start: var(--space-s);
 			border-block-start: 1px solid var(--_border-light);
@@ -159,10 +146,7 @@
 		/* The four other statuses in journey order; 落選 after a separator.
 		   Wraps on a narrow screen instead of overflowing. */
 		.journey-row {
-			display: flex;
-			flex-wrap: wrap;
-			gap: var(--space-3xs);
-			align-items: center;
+			--cluster-gap: var(--space-3xs);
 		}
 
 		.journey-separator {
@@ -195,12 +179,13 @@
 			padding-inline: var(--space-2xs);
 			border: 1px solid var(--_border-light);
 			border-radius: var(--md-sys-shape-corner-medium);
+
 			color: var(--md-sys-color-on-surface-variant);
 
 			transition:
-				border-color 150ms ease-out,
-				color 150ms ease-out,
-				background-color 150ms ease-out;
+				border-color var(--md-sys-motion-duration-short3) ease-out,
+				color var(--md-sys-motion-duration-short3) ease-out,
+				background-color var(--md-sys-motion-duration-short3) ease-out;
 
 			&:disabled {
 				opacity: 0.5;
@@ -250,10 +235,8 @@
 
 		/* What the current status brings by push, with the offer beside it */
 		.push-line {
-			display: flex;
-			flex-wrap: wrap;
-			gap: var(--space-2xs);
-			align-items: center;
+			--cluster-gap: var(--space-2xs);
+
 			color: var(--md-sys-color-on-surface-variant);
 			text-wrap: pretty;
 			word-break: auto-phrase;
@@ -283,6 +266,7 @@
 
 			inline-size: 100%;
 			padding-block: var(--space-2xs);
+
 			color: var(--color-brand-primary);
 		}
 
@@ -298,6 +282,7 @@
 			padding: var(--space-2xs) var(--space-s);
 			border: 1px solid oklch(from var(--color-brand-accent) l c h / 35%);
 			border-radius: var(--md-sys-shape-corner-medium);
+
 			color: var(--color-brand-accent);
 			text-align: center;
 			text-wrap: balance;
@@ -305,13 +290,8 @@
 
 			background: oklch(from var(--color-brand-accent) l c h / 10%);
 
-			animation: fade-slide-up 400ms 200ms ease-out both;
-		}
-
-		@media (prefers-reduced-motion: reduce) {
-			.journey-node {
-				transition: none;
-			}
+			animation: fade-slide-up var(--md-sys-motion-duration-medium4)
+				var(--md-sys-motion-duration-short4) ease-out both;
 		}
 	}
 }

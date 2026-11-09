@@ -1,9 +1,8 @@
 @layer block {
 	@scope (auth-callback-route) {
 		.organizer-callback-layout {
-			display: flex;
-			flex-direction: column;
-			gap: var(--space-s);
+			--stack-gap: var(--space-s);
+
 			align-items: center;
 			justify-content: center;
 
@@ -14,14 +13,9 @@
 		}
 
 		.organizer-callback-loading {
-			display: flex;
-			flex-direction: column;
-			gap: var(--space-s);
-			align-items: center;
-		}
+			--stack-gap: var(--space-s);
 
-		.organizer-callback-status {
-			color: var(--md-sys-color-on-surface);
+			align-items: center;
 		}
 
 		.organizer-callback-error {

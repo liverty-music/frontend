@@ -14,7 +14,7 @@
       "count": 1
     },
     "property-disallowed-list": {
-      "count": 2
+      "count": 1
     }
   },
   "src/styles/button.css": {
@@ -85,11 +85,6 @@
       "count": 3
     }
   },
-  "organizer/ui/extended-fab/extended-fab.css": {
-    "declaration-property-custom-property-allowed-list": {
-      "count": 2
-    }
-  },
   "organizer/ui/list-item/list-item.css": {
     "property-disallowed-list": {
       "count": 1
@@ -148,9 +143,6 @@
     }
   },
   "src/components/coach-mark/coach-mark.css": {
-    "cube/block-max-lines": {
-      "count": 1
-    },
     "declaration-property-custom-property-allowed-list": {
       "count": 2
     }
@@ -173,7 +165,7 @@
   },
   "src/components/error-banner/error-banner.css": {
     "declaration-property-custom-property-allowed-list": {
-      "count": 2
+      "count": 1
     }
   },
   "src/components/dna-orb/dna-orb-canvas.css": {
@@ -274,9 +266,6 @@
   "src/routes/consent/consent-route.css": {
     "cube/block-max-lines": {
       "count": 1
-    },
-    "declaration-property-custom-property-allowed-list": {
-      "count": 1
     }
   },
   "src/routes/discovery/discovery-route.css": {
@@ -293,9 +282,6 @@
     }
   },
   "src/routes/lottery-entry/lottery-entry-route.css": {
-    "cube/block-max-lines": {
-      "count": 1
-    },
     "property-disallowed-list": {
       "count": 2
     }
@@ -324,9 +310,6 @@
     }
   },
   "src/routes/resale-entry/resale-entry-route.css": {
-    "cube/block-max-lines": {
-      "count": 1
-    },
     "property-disallowed-list": {
       "count": 2
     }
@@ -334,11 +317,6 @@
   "src/routes/settings/personal-details.css": {
     "property-disallowed-list": {
       "count": 2
-    }
-  },
-  "src/routes/settings/settings-route.css": {
-    "cube/block-max-lines": {
-      "count": 1
     }
   },
   "src/routes/tickets/tickets-route.css": {

@@ -52,7 +52,7 @@
     </section>
 
     <fieldset ref="performersFieldset" class="performers" aria-describedby.bind="submitted && errors.artistIds ? 'performers-error' : null">
-      <legend class="section-legend"><h2 class="[ section-title ] [ md-typescale-title-large ]">${'concertEditor.performers' & t} *</h2></legend>
+      <legend><h2 class="[ section-title ] [ md-typescale-title-large ]">${'concertEditor.performers' & t} *</h2></legend>
       <p if.bind="performers.length === 0" class="note">${'concertEditor.noArtists' & t}</p>
       <label repeat.for="option of performers" class="performer state-layer">
         <input type="checkbox" checked.to-view="option.selected" change.trigger="togglePerformer(option)">
@@ -62,9 +62,9 @@
     </fieldset>
 
     <fieldset class="events">
-      <legend class="section-legend"><h2 class="[ section-title ] [ md-typescale-title-large ]">${'concertEditor.dates' & t}</h2></legend>
+      <legend><h2 class="[ section-title ] [ md-typescale-title-large ]">${'concertEditor.dates' & t}</h2></legend>
       <section repeat.for="row of model.events" class="event" data-row.bind="$index">
-        <header class="event-header">
+        <header class="[ event-header ] [ cluster ]">
           <h3 class="[ event-title ] [ md-typescale-title-medium ]">${'concertEditor.dateN' & t:{ n: $index + 1 }}</h3>
           <status-badge
             tone.bind="row.publishState === PublishState.PUBLISHED ? 'success' : row.publishState === PublishState.CANCELLED ? 'error' : 'neutral'"

@@ -1,0 +1,39 @@
+/*
+ * Layouts both apps share (Every Layout). They place children and set no
+ * visual treatment; each takes a custom property for its spacing.
+ */
+@layer composition {
+	/* Vertical rhythm between siblings. */
+	.flow > * + * {
+		margin-block-start: var(--flow-space, var(--space-s));
+	}
+
+	/* A column with one gap. */
+	.stack {
+		display: flex;
+		flex-direction: column;
+		gap: var(--stack-gap, var(--space-m));
+	}
+
+	/* Items in a row that wraps, centred on the cross axis. */
+	.cluster {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--cluster-gap, var(--space-s));
+		align-items: center;
+	}
+
+	/* Content centred on both axes. */
+	.center {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	/* A centred column with a maximum width and side gutters. */
+	.wrapper {
+		max-inline-size: var(--wrapper-max, 65ch);
+		margin-inline: auto;
+		padding-inline: var(--gutter, var(--space-m));
+	}
+}

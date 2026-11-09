@@ -8,9 +8,8 @@
 	/* Body text is body-large unless a template gives it another type style. */
 	:where(body) {
 		font: var(--md-sys-typescale-body-large);
-		letter-spacing: var(--md-sys-typescale-body-large-tracking);
 		color: var(--md-sys-color-on-surface);
-
+		letter-spacing: var(--md-sys-typescale-body-large-tracking);
 		background: var(--md-sys-color-surface);
 	}
 
@@ -28,9 +27,7 @@
 	:where(button) {
 		border: none;
 		border-radius: var(--md-sys-shape-corner-medium);
-
 		background: transparent;
-
 		transition:
 			background-color var(--md-sys-motion-duration-short3) ease-out,
 			opacity var(--md-sys-motion-duration-short3) ease-out,
@@ -66,7 +63,7 @@
 	:where(button:active:not(:disabled)) {
 		/* Press-in phase: fast ease-in, matching the existing component convention. */
 		transform: scale(0.97);
-		transition: transform 50ms ease-in;
+		transition: transform var(--md-sys-motion-duration-short1) ease-in;
 	}
 
 	:where(input, textarea, select) {

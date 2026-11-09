@@ -15,14 +15,8 @@
 	   interactive and no z-index/backdrop is needed. */
 	.coach-mark-overlay {
 		pointer-events: none;
-
 		position: fixed;
 		inset: 0;
-		border: none;
-
-		color: inherit;
-
-		background: transparent;
 	}
 
 	/* Visual layer: box-shadow creates dark overlay with rounded cutout */
@@ -34,7 +28,8 @@
 			calc(anchor(--coach-target right) + var(--coach-spotlight-outset))
 			calc(anchor(--coach-target bottom) + var(--coach-spotlight-outset))
 			calc(anchor(--coach-target left) + var(--coach-spotlight-outset));
-		border: 2px solid var(--color-brand-accent, oklch(75% 0.15 160deg));
+
+		border: 2px solid var(--color-brand-accent);
 		border-radius: var(--spotlight-radius, 12px);
 
 		box-shadow: var(--coach-overlay-shadow);
@@ -47,13 +42,11 @@
 	   light-dismissed by the document pointerdown listener. */
 	.target-interceptor {
 		pointer-events: auto;
-
 		position: fixed;
 		inset: calc(anchor(--coach-target top) + var(--coach-spotlight-outset))
 			calc(anchor(--coach-target right) + var(--coach-spotlight-outset))
 			calc(anchor(--coach-target bottom) + var(--coach-spotlight-outset))
 			calc(anchor(--coach-target left) + var(--coach-spotlight-outset));
-
 		background-color: transparent;
 	}
 
@@ -63,13 +56,13 @@
 		pointer-events: none;
 
 		position: fixed;
-		position-anchor: --coach-target;
-		position-area: block-end;
-		position-try-fallbacks: flip-block;
 
 		/* The gap from the target; flip-block mirrors it when the tooltip
 		   moves above the target. */
 		inset-block-start: var(--space-s);
+		position-anchor: --coach-target;
+		position-area: block-end;
+		position-try-fallbacks: flip-block;
 
 		display: flex;
 		flex-direction: column;
@@ -79,9 +72,6 @@
 		padding: var(--space-s);
 
 		color: var(--color-white);
-
-		background: transparent;
-		filter: none;
 	}
 
 	.coach-tooltip-message {

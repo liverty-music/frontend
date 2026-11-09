@@ -7,10 +7,6 @@
 			background: color-mix(in oklch, var(--color-white) 5%, transparent);
 		}
 
-		.about-title {
-			color: var(--md-sys-color-on-surface);
-		}
-
 		.about-text {
 			--flow-space: var(--space-2xs);
 

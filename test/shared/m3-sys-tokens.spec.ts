@@ -62,8 +62,8 @@ describe('shared M3 system tokens', () => {
 
 		// The fan app keeps no motion or state value of its own beside the
 		// shared ones, so its components follow an edit of the shared file. The
-		// two it keeps have no Material 3 token: a 1 ms duration that still
-		// fires transitionend, and the selected opacity Material 3 does not set.
+		// one it keeps has no Material 3 token: the selected opacity Material 3
+		// does not set.
 		const own = declarations(appCss['/src/styles/tokens.css'])
 			.map((d) => d.name)
 			.filter((name) =>
@@ -71,7 +71,7 @@ describe('shared M3 system tokens', () => {
 					name,
 				),
 			)
-		expect(own).toEqual(['--md-duration-instant', '--md-state-selected'])
+		expect(own).toEqual(['--md-state-selected'])
 	})
 
 	it('@spec components/infrastructure/fan/web/global/design-tokens "Colors stay per app"', () => {

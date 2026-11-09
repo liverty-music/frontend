@@ -12,10 +12,10 @@
   <!-- Guest sign-in / sign-up hero. Top-of-page, guest-only: the most
        important action for an unauthenticated user, lifted out of the
        bottom ACCOUNT list so it reads as a primary CTA rather than a link. -->
-  <section if.bind="!auth.isAuthenticated" class="[ settings-guest-hero ] [ flow ]">
+  <section if.bind="!auth.isAuthenticated" class="[ settings-guest-hero ] [ stack flow ]">
     <h2 t="settings.guestHero.heading" class="[ settings-guest-hero-heading ] [ md-typescale-title-large-emphasized ]"></h2>
     <p t="settings.guestHero.body" class="[ settings-guest-hero-body ] [ md-typescale-body-medium ]"></p>
-    <div class="settings-guest-hero-actions">
+    <div class="[ settings-guest-hero-actions ] [ stack ]">
       <button click.trigger="signIn()" t="settings.signIn" class="[ button ] [ pressable ]" data-testid="settings-sign-in"></button>
       <button click.trigger="signUp()" t="settings.signUp" class="[ button ] [ pressable ]" data-variant="outlined" data-testid="settings-sign-up"></button>
     </div>
@@ -392,7 +392,7 @@
   >
     <h2 t="settings.personalDetails.title" class="[ selector-title ] [ md-typescale-title-large ]"></h2>
     <p id="personal-details-note" t="settings.personalDetails.note" class="[ settings-personal-details-note ] [ md-typescale-body-medium ]"></p>
-    <label class="settings-field">
+    <label class="[ settings-field ] [ stack ]">
       <span t="settings.personalDetails.name" class="[ settings-field-label ] [ md-typescale-label-large ]"></span>
       <input
         type="text"
@@ -405,7 +405,7 @@
       />
     </label>
     <p id="settings-name-error" if.bind="nameInvalid" t="settings.personalDetails.nameRequired" class="[ settings-field-error ] [ md-typescale-body-medium ]"></p>
-    <label class="settings-field">
+    <label class="[ settings-field ] [ stack ]">
       <span t="settings.personalDetails.phone" class="[ settings-field-label ] [ md-typescale-label-large ]"></span>
       <input
         type="tel"

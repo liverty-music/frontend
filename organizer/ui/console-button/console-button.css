@@ -100,8 +100,4 @@
 	.labels > [aria-hidden="true"] {
 		visibility: hidden;
 	}
-
-	circular-progress {
-		color: inherit;
-	}
 }

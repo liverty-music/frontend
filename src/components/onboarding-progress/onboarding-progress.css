@@ -77,7 +77,10 @@
 			border-radius: inherit;
 
 			background: var(--_band);
-			clip-path: inset(0 calc(100% - var(--progress) * 1%) 0 0 round 999px);
+			clip-path: inset(
+				0 calc(100% - var(--progress) * 1%) 0 0 round
+					var(--md-sys-shape-corner-full)
+			);
 			box-shadow: 0 0 0.75rem var(--_glow);
 
 			/* The sheen: the band again at half the width, screened over the fill
@@ -158,6 +161,7 @@
 			padding-inline: var(--space-s);
 			border: 2px solid transparent;
 			border-radius: var(--md-sys-shape-corner-full);
+
 			color: var(--color-white);
 			text-align: center;
 			text-decoration: none;
@@ -210,6 +214,7 @@
 			inline-size: 2rem;
 			block-size: 2rem;
 			border-radius: var(--md-sys-shape-corner-full);
+
 			color: var(--md-sys-color-primary);
 
 			background: var(--color-white);
@@ -264,20 +269,14 @@
 			}
 		}
 
+		/* The band's fill and the ready row's entrance need no rule here:
+		   their duration tokens are 0 ms under reduced motion. */
 		@media (prefers-reduced-motion: reduce) {
-			.onboarding-progress-meter {
-				transition: none;
-			}
-
 			.onboarding-progress-fill::before,
 			.onboarding-progress-spark,
 			.onboarding-progress-ready,
 			.onboarding-progress-ready-icon::after {
 				animation: none;
-			}
-
-			.onboarding-progress-ready {
-				transition: none;
 			}
 		}
 	}

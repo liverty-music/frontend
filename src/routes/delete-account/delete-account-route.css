@@ -4,32 +4,23 @@
 	@scope (delete-account-route) {
 		.delete-account {
 			--stack-gap: var(--space-s);
+			--wrapper-max: var(--page-max-inline-size);
 
-			max-inline-size: 36rem;
 			padding: var(--space-m) var(--space-s);
 		}
 
 		.delete-account-lead,
-		.delete-account-text {
-			color: var(--md-sys-color-on-surface-variant);
-			text-wrap: pretty;
-		}
-
-		.delete-account-heading {
-			color: var(--md-sys-color-on-surface);
-		}
-
+		.delete-account-text,
 		.delete-account-status {
 			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.delete-account-error,
 		.delete-account-notice {
-			--stack-gap: var(--space-xs);
-
 			color: var(--color-error);
 		}
 
+		.delete-account-error,
 		.delete-account-blockers,
 		.delete-account-statements,
 		.delete-account-done {
@@ -45,11 +36,8 @@
 		.delete-account-item {
 			display: flex;
 			align-items: center;
-
-			min-block-size: 48px;
+			min-block-size: var(--md-sys-target-size);
 			padding: var(--space-2xs) var(--space-s);
-
-			color: var(--md-sys-color-on-surface);
 
 			& + & {
 				border-block-start: 1px solid var(--md-sys-color-outline-variant);
@@ -60,7 +48,6 @@
 			--stack-gap: var(--space-2xs);
 
 			padding-inline-start: var(--space-s);
-			color: var(--md-sys-color-on-surface);
 			list-style: disc;
 		}
 

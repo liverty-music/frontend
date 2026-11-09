@@ -7,18 +7,13 @@
 		}
 
 		.header {
-			display: flex;
-			flex-wrap: wrap;
-			gap: var(--space-xs) var(--space-s);
-			align-items: center;
+			--cluster-gap: var(--space-xs) var(--space-s);
+
 			justify-content: space-between;
 		}
 
 		.actions {
-			display: flex;
-			flex-wrap: wrap;
-			gap: var(--space-2xs);
-			align-items: center;
+			--cluster-gap: var(--space-2xs);
 		}
 
 		/* M3 supporting pane layout: the dates (focus pane), then the summary
@@ -41,16 +36,6 @@
 			--flow-space: 0;
 		}
 
-		/* The dates extend edge to edge on a compact window (M3 Lists). */
-		.dates {
-			/* stylelint-disable-next-line property-disallowed-list -- full bleed: the list reaches past the page's inline padding, which no padding or gap of its own can do */
-			margin-inline: calc(-1 * var(--page-inline-padding));
-		}
-
-		.section-title {
-			color: var(--md-sys-color-on-surface);
-		}
-
 		.seat-types {
 			--flow-space: var(--space-m);
 		}
@@ -67,31 +52,17 @@
 		.seat-type-list {
 			display: grid;
 			gap: var(--space-2xs);
-			padding: 0;
-			list-style: none;
 		}
 
 		/* One seat type per line: name, price, then its action at the end. */
 		.seat-type {
-			display: flex;
-			flex-wrap: wrap;
-			gap: var(--space-2xs) var(--space-s);
-			align-items: center;
-			font-variant-numeric: tabular-nums;
-		}
-
-		.seat-type-name {
-			color: var(--md-sys-color-on-surface);
+			--cluster-gap: var(--space-2xs) var(--space-s);
 		}
 
 		.seat-type-form {
 			display: grid;
 			gap: var(--space-xs);
 			max-inline-size: 600px;
-		}
-
-		.form-title {
-			color: var(--md-sys-color-on-surface);
 		}
 
 		.row {
@@ -131,17 +102,11 @@
 			& dt {
 				color: var(--md-sys-color-on-surface-variant);
 			}
-
-			& dd {
-				color: var(--md-sys-color-on-surface);
-			}
 		}
 
 		.choices {
 			display: grid;
 			gap: var(--space-3xs);
-			padding: 0;
-			border: none;
 		}
 
 		.choice {
@@ -151,7 +116,7 @@
 			gap: var(--space-xs);
 			align-items: center;
 
-			min-block-size: var(--md-target-size);
+			min-block-size: var(--md-sys-target-size);
 			padding-inline: var(--space-2xs);
 			border-radius: var(--md-sys-shape-corner-small);
 
@@ -168,13 +133,6 @@
 			display: grid;
 			gap: var(--space-xs);
 			justify-items: start;
-		}
-
-		@container shell (width >= 600px) {
-			.dates {
-				/* stylelint-disable-next-line property-disallowed-list -- turns off the compact full-bleed margin; only a margin undoes a margin */
-				margin-inline: 0;
-			}
 		}
 
 		/* Expanded window: the summary pane beside the dates. */

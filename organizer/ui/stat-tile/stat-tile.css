@@ -19,7 +19,6 @@
 	}
 
 	.value {
-		font-variant-numeric: tabular-nums;
 		color: var(--md-sys-color-on-surface);
 	}
 

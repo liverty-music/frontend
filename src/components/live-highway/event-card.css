@@ -34,7 +34,7 @@
 			   removing the scroll-driven animation nor disabling containment changed
 			   it. Rather than ship motion that does not run, reveal is deferred to
 			   its own change where the cause can be found. */
-			transition: transform 200ms ease-out;
+			transition: transform var(--md-sys-motion-duration-short4) ease-out;
 
 			&:active {
 				transform: scale(0.97);
@@ -54,7 +54,6 @@
 			font: 400 clamp(14px, 8cqi, 32px) / 1.2 var(--md-ref-typeface-brand);
 			color: var(--color-white);
 			overflow-wrap: break-word;
-
 			filter: drop-shadow(0 2px 4px var(--_drop-shadow));
 		}
 
@@ -212,31 +211,6 @@
 			.event-card[data-matched]::after,
 			.event-card:not([data-matched])::before {
 				transition: none;
-			}
-		}
-
-		/* =============================================
-		   Container query responsive rules
-		   ============================================= */
-		@container (min-width: 320px) {
-			.event-card-responsive {
-				min-block-size: 120px;
-				padding: var(--space-s);
-			}
-		}
-
-		@container (min-width: 480px) {
-			.event-card-responsive {
-				min-block-size: 140px;
-				padding: var(--space-m);
-			}
-		}
-
-		/* Fallback for browsers without Container Queries */
-		@supports not (container-type: inline-size) {
-			.event-card-responsive {
-				min-block-size: 120px;
-				padding: var(--space-s);
 			}
 		}
 	}

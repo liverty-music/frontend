@@ -97,7 +97,7 @@
 		.nav-tab:active {
 			/* Press-in phase: fast ease-in. */
 			transform: scale(0.92);
-			transition: transform 50ms ease-in;
+			transition: transform var(--md-sys-motion-duration-short1) ease-in;
 		}
 
 		.nav-icon {
@@ -146,13 +146,9 @@
 		}
 
 		/* Reduced motion: drop the press scale, acknowledge the tap with a brief
-		   accent-tinted background instead. */
+		   accent-tinted background instead. The selection lands at once: its
+		   duration tokens are 0 ms under reduced motion. */
 		@media (prefers-reduced-motion: reduce) {
-			.nav-tab {
-				/* Land the selection shape/color end state without the spring. */
-				transition-duration: var(--md-duration-instant);
-			}
-
 			.nav-tab:active {
 				transform: none;
 				background: oklch(from var(--color-brand-accent) l c h / 12%);

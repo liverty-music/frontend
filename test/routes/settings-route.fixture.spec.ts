@@ -666,7 +666,7 @@ describe('SettingsRoute Sign Out group (fixture)', () => {
 
 		// The stack's gap is --space-m, 24px, and Settings does not narrow it.
 		const { default: compositions } = await import(
-			'../../src/styles/compositions.css?raw'
+			'../../shared/styles/compositions.css?raw'
 		)
 		const { default: tokens } = await import('../../src/styles/tokens.css?raw')
 		const { default: settingsCss } = await import(

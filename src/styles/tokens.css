@@ -25,6 +25,10 @@
 		--journey-hue-paid: 160deg; /* success — the hue of --color-success */
 		--journey-hue-lost: 25deg; /* failure — red */
 
+		/* The reading width of a single-column screen (checkout, tickets, order
+		   and the other panel screens), set as the wrapper's --wrapper-max. */
+		--page-max-inline-size: 36rem;
+
 		/* Spacing: Material 3's 4 px grid, the same on any width. The steps the
 		   organizer console shares have its values. */
 		--space-3xs: 4px;
@@ -37,8 +41,7 @@
 		--space-2xl: 64px;
 		--space-3xl: 96px;
 
-		/* Toggle / switch control geometry (shared by the settings + consent
-		   toggle rows, which render identical switches in separate @scopes). */
+		/* Toggle / switch control geometry (the settings list's switch). */
 		--toggle-track-inline: 2.75rem;
 		--toggle-track-block: 1.5rem;
 		--toggle-thumb-size: 1.25rem;
@@ -52,9 +55,6 @@
 		--shadow-button: 0 4px 16px -2px
 			oklch(from var(--color-brand-primary) l c h / 30%);
 		--shadow-soft: 0 2px 8px oklch(0% 0 0deg / 20%);
-
-		/* Near-instant: reduced-motion fallback that still fires transitionend. */
-		--md-duration-instant: 1ms;
 
 		/* ── Material 3 role tokens (mapped onto the oklch brand palette) ──
 		   Single dark ("stage-lit") theme; roles are encoded (not raw colors)
@@ -162,17 +162,15 @@
 		/* ── M3 state-layer opacities ──
 		   A single scale, overlaid as the element's on-* role at the given
 		   opacity, replacing per-component one-off opacities. Selected is a
-		   persistent layer that stacks under hover/press. (The --fab-state-*
-		   tokens above are the launcher's pre-existing local copy.) Hover, focus,
-		   pressed and dragged alias the shared system opacities in
-		   shared/styles/m3-sys.css, as percentages for color-mix(). */
+		   persistent layer that stacks under hover/press. Hover, focus, pressed
+		   and dragged are the shared system opacities in shared/styles/m3-sys.css
+		   (--md-sys-state-*). */
 
 		/* Fan-local: M3 publishes no selected opacity (StateTokens.kt). */
 		--md-state-selected: 12%;
 
 		/* ── FAB launcher layout + interaction tokens ── */
 		--fab-size: 3.5rem; /* 56px M3 FAB */
-		--fab-inset: var(--space-s);
 
 		/* The FAB sits in a notch at the centre of the bottom navigation bar.
 		   The notch leaves --fab-notch-gap around the FAB, and the bar keeps a
@@ -198,11 +196,6 @@
 		--discovery-floor: calc(var(--fab-notch-radius) + var(--space-2xs));
 		--swap-tile-size: 3.875rem;
 		--fab-radius-collapsed: var(--md-sys-shape-corner-full); /* round FAB */
-		--fab-radius-expanded: var(
-			--md-sys-shape-corner-large
-		); /* rounded-rect panel */
-
-		/* M3 state-layer opacities, overlaid on each element's on-role color. */
 
 		/* Rendered height of the bottom navigation bar. Single source of truth:
 		   bottom-nav-bar sizes itself from this, and the FAB launcher offsets

@@ -19,7 +19,7 @@
   </div>
 
   <template if.bind="state === 'ready'">
-    <data-list if.bind="rows.length" columns.bind="columns" rows.bind="rows" label.bind="'concerts.title' & t" class="collection"></data-list>
+    <data-list if.bind="rows.length" columns.bind="columns" rows.bind="rows" label.bind="'concerts.title' & t" class="[ collection ] [ bleed ]"></data-list>
     <div else class="message">
       <p>${'concerts.empty' & t}</p>
     </div>

@@ -22,8 +22,6 @@
 			flex-direction: column;
 
 			min-block-size: 0;
-
-			background: var(--md-sys-color-surface);
 		}
 
 		/* Scroll container. `[ stack ]` (composition layer) supplies the
@@ -52,7 +50,6 @@
 		.settings-section-note {
 			padding-inline: var(--space-3xs);
 			color: var(--md-sys-color-on-surface-variant);
-			text-wrap: pretty;
 		}
 
 		/* A link inside a sentence (the Privacy Policy in the consent note). */
@@ -70,33 +67,21 @@
 		   actions sit a further --space-2xs below the body (flow). */
 		.settings-guest-hero {
 			--flow-space: 0;
-
-			display: flex;
-			flex-direction: column;
-			gap: var(--space-2xs);
+			--stack-gap: var(--space-2xs);
 
 			padding: var(--space-m) var(--space-s);
 			border: 1px solid oklch(from var(--color-brand-primary) l c h / 30%);
 			border-radius: var(--md-sys-shape-corner-large);
-
 			background: oklch(from var(--color-brand-primary) l c h / 12%);
-		}
-
-		.settings-guest-hero-heading {
-			color: var(--md-sys-color-on-surface);
 		}
 
 		.settings-guest-hero-body {
 			color: var(--md-sys-color-on-surface-variant);
-			text-wrap: pretty;
 		}
 
 		.settings-guest-hero-actions {
 			--flow-space: var(--space-2xs);
-
-			display: flex;
-			flex-direction: column;
-			gap: var(--space-2xs);
+			--stack-gap: var(--space-2xs);
 		}
 
 		/* Native text link, centred under the actions, with a 44px tap target. */
@@ -106,6 +91,7 @@
 			align-self: center;
 
 			min-block-size: 44px;
+
 			color: var(--md-sys-color-on-surface-variant);
 			text-decoration: underline;
 		}

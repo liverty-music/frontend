@@ -44,7 +44,7 @@
 
       <ul if.bind="stocks.length" class="stock-list" aria-labelledby="stocks-title">
         <li repeat.for="stock of stocks; key: id" class="stock" data-stock.bind="stock.id">
-          <div class="stock-heading">
+          <div class="[ stock-heading ] [ cluster ]">
             <h3 class="[ stock-name ] [ md-typescale-title-medium ]">${stock.name}</h3>
             <status-badge tone.bind="stock.tone" label.bind="stock.stateKey & t"></status-badge>
           </div>
@@ -54,7 +54,7 @@
             <stat-tile label.bind="'sale.stats.held' & t" value.bind="stock.held | count"></stat-tile>
             <stat-tile label.bind="'sale.stats.quantity' & t" value.bind="stock.quantity | count"></stat-tile>
           </div>
-          <div if.bind="stock.deletable && canStock" class="sale-actions">
+          <div if.bind="stock.deletable && canStock" class="[ sale-actions ] [ cluster ]">
             <console-button variant="text" click.trigger="deleteStock(stock)">${'common.delete' & t}</console-button>
           </div>
         </li>
@@ -83,7 +83,7 @@
             data-field="stock-quantity"
           ></console-field>
         </div>
-        <div class="sale-actions">
+        <div class="[ sale-actions ] [ cluster ]">
           <console-button variant="outlined" icon="add" action.bind="() => addStock()" pending-label.bind="'common.saving' & t">${'stock.add' & t}</console-button>
         </div>
       </form>
@@ -94,7 +94,7 @@
       <p if.bind="stocks.length" class="note">${'sale.sharedStocks' & t:{ limit: perAccountLimit }}</p>
       <p if.bind="!sales.length" class="message">${'sale.empty' & t}</p>
 
-      <div if.bind="!prerequisite" class="start-actions">
+      <div if.bind="!prerequisite" class="[ start-actions ] [ cluster ]">
         <console-button variant="outlined" icon="add" href.bind="newLotteryHref">${'sale.startLottery' & t}</console-button>
         <console-button if.bind="!hasFirstCome" variant="outlined" icon="add" href.bind="firstComeHref">${'sale.startFirstCome' & t}</console-button>
       </div>
@@ -102,7 +102,7 @@
       <!-- One card per sale: it holds several different actions (M3 Cards). -->
       <ul if.bind="sales.length" class="sales" aria-label.bind="'event.tab.sales' & t">
         <li repeat.for="sale of sales; key: id" class="[ sale ] [ flow ]" data-sale.bind="sale.id" data-state.bind="sale.state">
-          <div class="sale-heading">
+          <div class="[ sale-heading ] [ cluster ]">
             <h3 class="[ sale-name ] [ md-typescale-title-medium ]">${sale.name}</h3>
             <status-badge tone.bind="sale.tone" label.bind="sale.stateKey & t"></status-badge>
           </div>
@@ -144,7 +144,7 @@
             change.trigger="changeVerification(sale, $event.detail.value)"
           ></console-field>
 
-          <div class="sale-actions">
+          <div class="[ sale-actions ] [ cluster ]">
             <console-button if.bind="sale.editable" variant="text" icon="edit" href.bind="editHref(sale)">${'common.edit' & t}</console-button>
             <template else>
               <span class="locked">${'sale.lockedAfterOpen' & t}</span>

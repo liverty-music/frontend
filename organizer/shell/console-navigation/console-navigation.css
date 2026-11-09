@@ -4,10 +4,7 @@
 		   column on the inline-start edge from the medium window class. */
 		:scope {
 			display: block;
-			block-size: calc(
-				var(--nav-bar-height) +
-				env(safe-area-inset-bottom, 0px)
-			);
+			block-size: calc(var(--nav-bar-height) + var(--safe-area-block-end));
 			padding-block-end: var(--safe-area-block-end);
 			background: var(--md-sys-color-surface-container);
 		}
@@ -26,7 +23,7 @@
 			align-items: center;
 			justify-content: center;
 
-			min-inline-size: var(--md-target-size);
+			min-inline-size: var(--md-sys-target-size);
 			color: var(--md-sys-color-on-surface-variant);
 			text-decoration: none;
 		}

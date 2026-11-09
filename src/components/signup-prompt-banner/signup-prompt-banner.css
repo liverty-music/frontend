@@ -6,8 +6,6 @@
 			   so it is not filled with the brand gradient of the transient snack
 			   bar. */
 			--_surface-bg: oklch(from var(--md-sys-color-surface) l c h / 85%);
-			--_gradient-from: var(--color-brand-primary);
-			--_gradient-to: var(--color-brand-secondary);
 
 			position: fixed;
 			inset-block-end: calc(
@@ -45,8 +43,8 @@
 			border-block-start: 2px solid;
 			border-image: linear-gradient(
 					to right,
-					var(--_gradient-from),
-					var(--_gradient-to)
+					var(--color-brand-primary),
+					var(--color-brand-secondary)
 				)
 				1;
 

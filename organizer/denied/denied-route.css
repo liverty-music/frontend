@@ -15,7 +15,7 @@
 			justify-items: start;
 
 			inline-size: 100%;
-			max-inline-size: 560px;
+			max-inline-size: var(--card-max-inline-size);
 			padding: var(--space-m);
 			border-radius: var(--md-sys-shape-corner-large);
 

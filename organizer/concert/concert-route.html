@@ -12,9 +12,9 @@
   </div>
 
   <template if.bind="state === 'ready'">
-    <header class="header">
+    <header class="[ header ] [ cluster ]">
       <h1 class="page-title">${title}</h1>
-      <div class="actions">
+      <div class="[ actions ] [ cluster ]">
         <console-button
           if.bind="draftDates.length"
           variant="filled"
@@ -33,7 +33,7 @@
     <div class="panes">
       <section class="[ focus ] [ flow ]" aria-labelledby="concert-events-heading">
         <h2 id="concert-events-heading" class="[ section-title ] [ md-typescale-title-large ]">${'concert.events' & t}</h2>
-        <data-list columns.bind="columns" rows.bind="rows" label.bind="'concert.events' & t" class="dates"></data-list>
+        <data-list columns.bind="columns" rows.bind="rows" label.bind="'concert.events' & t" class="[ dates ] [ bleed ]"></data-list>
 
         <section class="[ seat-types ] [ flow ]" aria-labelledby="concert-seat-types-heading" data-testid="seat-types">
           <h2 id="concert-seat-types-heading" class="[ section-title ] [ md-typescale-title-large ]">${'seatType.title' & t}</h2>
@@ -44,7 +44,7 @@
           </div>
           <template if.bind="seatTypeState === 'ready'">
             <ul if.bind="seatTypes.length" class="seat-type-list" aria-labelledby="concert-seat-types-heading">
-              <li repeat.for="seatType of seatTypes; key: id" class="seat-type" data-seat-type.bind="seatType.id">
+              <li repeat.for="seatType of seatTypes; key: id" class="[ seat-type ] [ cluster ]" data-seat-type.bind="seatType.id">
                 <span class="[ seat-type-name ] [ md-typescale-title-small ]">${seatType.name}</span>
                 <span class="seat-type-price">${seatType.price | yen} ${'stock.taxIncluded' & t}</span>
                 <console-button

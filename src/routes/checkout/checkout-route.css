@@ -7,21 +7,14 @@
 			block-size: 100%;
 			padding-block: var(--space-l);
 			padding-inline: var(--space-m);
-
-			background: var(--md-sys-color-surface);
 		}
 
 		.checkout {
 			--flow-space: var(--space-m);
 			--gutter: 0;
+			--wrapper-max: var(--page-max-inline-size);
 
 			inline-size: 100%;
-			max-inline-size: 36rem;
-		}
-
-		.checkout-title {
-			color: var(--md-sys-color-on-surface);
-			text-wrap: balance;
 		}
 
 		.checkout-status {
@@ -34,17 +27,12 @@
 			gap: var(--space-3xs);
 		}
 
-		.checkout-event-title {
-			color: var(--md-sys-color-on-surface);
-		}
-
 		.checkout-event-meta {
 			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.checkout-countdown {
 			font-variant-numeric: tabular-nums;
-			color: var(--md-sys-color-on-surface);
 		}
 
 		.checkout-panel {
@@ -56,33 +44,21 @@
 			background: var(--md-sys-color-surface-container);
 		}
 
-		.checkout-step-title {
-			color: var(--md-sys-color-on-surface);
-		}
-
 		.checkout-note {
 			color: var(--md-sys-color-on-surface-variant);
-			text-wrap: pretty;
 		}
 
 		.checkout-field {
-			display: flex;
-			flex-direction: column;
-			gap: var(--space-2xs);
-		}
-
-		.checkout-label {
-			color: var(--md-sys-color-on-surface);
+			--stack-gap: var(--space-2xs);
 		}
 
 		.checkout-input {
 			inline-size: 100%;
-			min-block-size: 48px;
+			min-block-size: var(--md-sys-target-size);
 			padding-block: var(--space-2xs);
 			padding-inline: var(--space-s);
 			border: 1px solid var(--md-sys-color-outline-variant);
 			border-radius: var(--md-sys-shape-corner-medium);
-			color: var(--md-sys-color-on-surface);
 
 			background: var(--md-sys-color-surface);
 
@@ -94,16 +70,8 @@
 			}
 		}
 
-		.checkout-seat-type {
-			color: var(--md-sys-color-on-surface);
-		}
-
 		.checkout-price {
 			color: var(--md-sys-color-on-surface-variant);
-		}
-
-		.checkout-total {
-			color: var(--md-sys-color-on-surface);
 		}
 
 		/* Rows sit --space-2xs apart; each dd also ends --space-xs before the
@@ -112,7 +80,6 @@
 			display: grid;
 			gap: var(--space-2xs) var(--space-s);
 			padding-block-end: var(--space-xs);
-			color: var(--md-sys-color-on-surface);
 
 			& dt {
 				--flow-space: var(--space-xs);
