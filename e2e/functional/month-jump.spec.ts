@@ -39,11 +39,31 @@ test.describe('month jump', () => {
 		page,
 	}) => {
 		await openDashboard(page)
+		test.skip(
+			!(await page.evaluate(() =>
+				CSS.supports('container-type: scroll-state'),
+			)),
+			'this browser cannot tell whether a list has been scrolled',
+		)
 		await expect(jump(page, 'next')).toBeHidden()
 		await expect(jump(page, 'prev')).toBeHidden()
 
 		await scrollBy(page, 120)
 		await expect(jump(page, 'next')).toBeVisible()
+	})
+
+	test(`@spec ${DASHBOARD} "First display in a browser that cannot tell whether a list has been scrolled"`, async ({
+		page,
+	}) => {
+		await openDashboard(page)
+		test.skip(
+			await page.evaluate(() => CSS.supports('container-type: scroll-state')),
+			'this browser can tell whether a list has been scrolled',
+		)
+		// Unscrolled, at the first loaded date: the capsule shows from the
+		// loaded months alone.
+		await expect(jump(page, 'next')).toBeVisible()
+		await expect(jump(page, 'prev')).toBeHidden()
 	})
 
 	test(`@spec ${DASHBOARD} "Hidden while the FAB is open"`, async ({

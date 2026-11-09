@@ -352,8 +352,9 @@ test.describe('Discovery swap tile', () => {
 		const cards = view.locator('[data-live-card]')
 		await expect(cards.first()).toBeVisible({ timeout: 15_000 })
 		const scroll = view.locator('.concert-scroll')
+		// Instant: the list scrolls smoothly, and the place is read at once.
 		await scroll.evaluate((s) => {
-			s.scrollTop = 40
+			s.scrollTo({ top: 40, behavior: 'instant' })
 		})
 		const scrolled = await scroll.evaluate((s) => s.scrollTop)
 

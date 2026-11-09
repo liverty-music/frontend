@@ -128,6 +128,8 @@
 		   list scrolls; the capsule hangs above it. It stands clear of the FAB,
 		   which rises into the list from the navigation bar's notch. */
 		.month-jump {
+			--_jump-button: 3rem;
+
 			position: sticky;
 			inset-block-end: calc(var(--fab-notch-radius) + var(--space-2xs));
 
@@ -150,8 +152,8 @@
 			display: grid;
 			place-items: center;
 
-			inline-size: 3rem;
-			block-size: 3rem;
+			inline-size: var(--_jump-button);
+			block-size: var(--_jump-button);
 			border-radius: var(--md-sys-shape-corner-full);
 
 			color: var(--md-sys-color-on-surface);
@@ -161,6 +163,18 @@
 		.month-jump[data-has-prev="false"] [data-direction="prev"],
 		.month-jump[data-has-next="false"] [data-direction="next"] {
 			display: none;
+		}
+
+		/* Each button keeps its place on screen whether the other is shown:
+		   alone, the capsule moves half a button toward its own side, so a
+		   fan tapping "next" again after the first jump, when "previous"
+		   appears, still finds it under the thumb. */
+		.month-jump[data-has-prev="false"] .month-jump-capsule {
+			translate: calc(var(--_jump-button) / 2) 0;
+		}
+
+		.month-jump[data-has-next="false"] .month-jump-capsule {
+			translate: calc(var(--_jump-button) / -2) 0;
 		}
 
 		.month-jump[data-has-prev="false"][data-has-next="false"] {

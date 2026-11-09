@@ -762,14 +762,11 @@ export const MonthJumpBoth = {
 		await frames()
 		await expect(shownJumps(canvasElement)).toEqual(['prev', 'next'])
 
-		// @spec components/infrastructure/fan/web/route/dashboard "Named for assistive technology"
-		// Icon-only, named with the target month in the active language (the
-		// stories run in Japanese).
+		// Each button is named with its own target month.
 		const [prev, next] =
 			canvasElement.querySelectorAll<HTMLElement>('.month-jump-button')
 		await expect(prev.getAttribute('aria-label')).toBe('11月へ移動')
 		await expect(next.getAttribute('aria-label')).toBe('1月へ移動')
-		await expect(next.textContent?.trim()).toBe('')
 
 		// The capsule stands clear of where the FAB rises into the list.
 		const capsule = canvasElement.querySelector<HTMLElement>(
@@ -799,6 +796,16 @@ export const MonthJumpNextOnly = {
 	play: async ({ canvasElement }) => {
 		await frames()
 		await expect(shownJumps(canvasElement)).toEqual(['next'])
+
+		// @spec components/infrastructure/fan/web/route/dashboard "Named for assistive technology"
+		// A November date at the top: the next-month button, icon-only, is
+		// named for December in the active language (the stories run in
+		// Japanese).
+		const next = canvasElement.querySelector<HTMLElement>(
+			'.month-jump-button[data-direction="next"]',
+		)
+		await expect(next?.getAttribute('aria-label')).toBe('12月へ移動')
+		await expect(next?.textContent?.trim()).toBe('')
 	},
 } satisfies Story
 
@@ -831,10 +838,18 @@ export const MonthJumpMoves = {
 		const next = canvasElement.querySelector<HTMLElement>(
 			'.month-jump-button[data-direction="next"]',
 		)
-		next?.click()
+		if (!next) throw new Error('no next-month button')
+		const nextAt = next.getBoundingClientRect().left
+		next.click()
 		await settled()
 		await frames()
 		await expect(topKey()).toBe('2026-12-01')
+		// The previous-month button has appeared beside it, and the next-month
+		// button is still where the fan tapped it.
+		await expect(shownJumps(canvasElement)).toEqual(['prev', 'next'])
+		await expect(
+			Math.abs(next.getBoundingClientRect().left - nextAt),
+		).toBeLessThanOrEqual(0.5)
 
 		const prev = canvasElement.querySelector<HTMLElement>(
 			'.month-jump-button[data-direction="prev"]',

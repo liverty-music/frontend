@@ -404,7 +404,6 @@ describe('ConcertHighway', () => {
 			expect(sut.prevMonth).toEqual(new Date(2026, 10))
 		})
 
-		// @spec components/infrastructure/fan/web/route/dashboard "First display in a browser that cannot tell whether a list has been scrolled"
 		it('offers the next month and no previous one on first display', () => {
 			sut.dateGroups = months(['2026-11', 30], ['2026-12', 31])
 			sut.binding()

@@ -1,5 +1,6 @@
 import { openShell, seedSignedInFan, tapTab } from '../support/fan-shell'
 import { expect, type Page, test } from '../support/test'
+import { openDashboard } from '../support/timetable'
 
 // The first page load compiles the app on the dev server; allow for it.
 test.describe.configure({ timeout: 60_000 })
@@ -79,12 +80,12 @@ async function lastFinished(page: Page): Promise<Recorded> {
 	return all[all.length - 1]
 }
 
-test.beforeEach(async ({ page }) => {
-	await seedSignedInFan(page)
-	await recordTransitions(page)
-})
-
 test.describe('tab switches', () => {
+	test.beforeEach(async ({ page }) => {
+		await seedSignedInFan(page)
+		await recordTransitions(page)
+	})
+
 	test(`@spec ${SHELL} "Tab switch"`, async ({ page }) => {
 		await openShell(page, '/dashboard')
 
@@ -138,14 +139,15 @@ test.describe('tab switches', () => {
 		// No View Transition animation runs: the new route shows at once.
 		expect(vt.animations).toEqual([])
 	})
+})
 
-	test(`@spec ${SHELL} "Route change from inside a page"`, async ({ page }) => {
-		// A route opened from inside a page (here the page header's bell, which
-		// opens the notification center) changes without a page transition, as
-		// the timetable's event page does: only a tab tap starts one.
-		await openShell(page, '/dashboard')
-		await page.getByTestId('notification-bell').click()
-		await expect(page).toHaveURL(/\/notifications$/)
-		expect(await transitions(page)).toEqual([])
-	})
+test(`@spec ${SHELL} "Route change from inside a page"`, async ({ page }) => {
+	// A route opened from inside a page changes without a page transition:
+	// only a tab tap starts one. Here a concert on the timetable opens its
+	// event page.
+	await recordTransitions(page)
+	await openDashboard(page)
+	await page.locator('[data-live-card]').first().click()
+	await expect(page).toHaveURL(/\/concerts\//)
+	expect(await transitions(page)).toEqual([])
 })
