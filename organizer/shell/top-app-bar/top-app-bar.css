@@ -28,17 +28,10 @@
 		}
 
 		/* Compact, below a destination: the back arrow and the page title take
-		   the brand's place. */
+		   the brand's place. The arrow is the shared icon button in the
+		   `on-surface` colour of an M3 top app bar's leading icon. */
 		.back {
-			display: inline-grid;
-			flex-shrink: 0;
-			place-items: center;
-
-			inline-size: var(--md-sys-target-size);
-			block-size: var(--md-sys-target-size);
-			border-radius: var(--md-sys-shape-corner-full);
-
-			color: var(--md-sys-color-on-surface);
+			--icon-button-color: var(--md-sys-color-on-surface);
 		}
 
 		.title {
@@ -133,65 +126,22 @@
 			background: transparent;
 		}
 
-		/* 使い方 and the account menu keep their 48 px targets; the names and
-		   the title shrink first. */
-		.help,
-		.account {
-			cursor: pointer;
-
-			display: grid;
-			flex-shrink: 0;
-			place-items: center;
-
-			inline-size: var(--md-sys-target-size);
-			block-size: var(--md-sys-target-size);
-			border: none;
-			border-radius: var(--md-sys-shape-corner-full);
-
-			color: var(--md-sys-color-on-surface-variant);
-
-			background: transparent;
-		}
-
+		/* 使い方 and the account menu are shared icon buttons (`icon-button`,
+		   which does not shrink); the names and the title shrink first. The
+		   menus are the shared `menu` block; these rules only place them. */
 		.menu {
 			position: fixed;
 			inset: var(--top-app-bar-block-size) var(--space-2xs) auto auto;
-
-			min-inline-size: 200px;
-			padding-block: var(--space-2xs);
-			border: none;
-			border-radius: var(--md-sys-shape-corner-extra-small);
-
-			color: var(--md-sys-color-on-surface);
-
-			background: var(--md-sys-color-surface-container);
-			box-shadow: var(--md-elevation-2);
 		}
 
+		/* Lined up with the items' labels. */
 		.menu-heading {
-			padding: var(--space-2xs) var(--space-s) var(--space-3xs);
+			padding: var(--space-2xs) var(--space-xs) var(--space-3xs);
 			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.menu-group {
 			display: grid;
-		}
-
-		.menu-item {
-			cursor: pointer;
-
-			display: flex;
-			gap: var(--space-xs);
-			align-items: center;
-
-			inline-size: 100%;
-			min-block-size: var(--md-sys-target-size);
-			padding-inline: var(--space-s);
-			border: none;
-			color: inherit;
-			text-align: start;
-
-			background: transparent;
 		}
 
 		.menu-check {
@@ -210,10 +160,6 @@
 				position-area: block-end span-inline-end;
 				position-try-fallbacks: flip-inline;
 			}
-		}
-
-		a.menu-item {
-			text-decoration: none;
 		}
 
 		.menu-item[aria-pressed="true"] .menu-check,
@@ -246,7 +192,9 @@
 				padding-inline: var(--space-2xs);
 			}
 
-			.back,
+			/* Two classes: the shared icon button's own `display` (its scope
+			   root is nearer) wins over one. */
+			.top-app-bar .back,
 			.title {
 				display: none;
 			}

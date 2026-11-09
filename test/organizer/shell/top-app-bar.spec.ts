@@ -72,7 +72,9 @@ describe('top app bar help', () => {
 		expect(help.textContent?.trim()).toBe('使い方')
 		expect(help.getAttribute('title')).toBe('使い方')
 		// Next to the account menu, before it.
-		expect(help.nextElementSibling?.classList.contains('account')).toBe(true)
+		expect(help.nextElementSibling?.getAttribute('aria-label')).toBe(
+			'アカウント',
+		)
 		await fixture.tearDown()
 	})
 

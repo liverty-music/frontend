@@ -3,7 +3,9 @@
 		display: inline-flex;
 	}
 
+	/* The check mark after a copy. The colour reaches the button inside
+	   icon-button's shadow root through the shared block's hook. */
 	icon-button[data-copied="true"] {
-		color: var(--md-sys-color-success);
+		--icon-button-color: var(--md-sys-color-success);
 	}
 }

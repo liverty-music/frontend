@@ -132,10 +132,24 @@ test(`@spec ${SHELL_SPEC} "Help on a phone"`, async ({ page }) => {
 	}
 	const last = boxes.at(-1)
 	expect((last?.x ?? 0) + (last?.width ?? 0)).toBeLessThanOrEqual(390)
-	// The targets keep their 48 px.
-	for (const { name, width, height } of boxes) {
+	// The icon buttons are Material 3's 40 px, and each keeps its 48 px
+	// target: a tap 3 px outside the visible circle still lands on it.
+	for (const [name, part] of Object.entries(parts)) {
 		if (name === 'title') continue
-		expect([width, height], name).toEqual([48, 48])
+		const box = boxes.find((b) => b.name === name)
+		expect([box?.width, box?.height], name).toEqual([40, 40])
+		const hits = await part.evaluate((el) => {
+			const r = el.getBoundingClientRect()
+			const cx = r.left + r.width / 2
+			const cy = r.top + r.height / 2
+			return [
+				[r.left - 3, cy],
+				[r.right + 3, cy],
+				[cx, r.top - 3],
+				[cx, r.bottom + 3],
+			].map(([x, y]) => document.elementFromPoint(x, y) === el)
+		})
+		expect(hits, name).toEqual([true, true, true, true])
 	}
 	await expect(parts.help).toHaveAttribute('href', '/guide.html#sell')
 })
