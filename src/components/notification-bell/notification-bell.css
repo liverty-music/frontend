@@ -11,10 +11,7 @@
 
 			inline-size: 2.75rem;
 			block-size: 2.75rem;
-			border: none;
 			border-radius: var(--_round);
-
-			background: transparent;
 		}
 
 		/* The 24 px bell; the badge is placed on its top corner. */

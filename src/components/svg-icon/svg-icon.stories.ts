@@ -191,6 +191,7 @@ const REQUIRED_ICONS = [
 	'x-circle',
 	'x',
 	'chevron-right',
+	'chevron-left',
 	'arrow-left',
 	'trash',
 	'plus',
@@ -222,6 +223,14 @@ export const IconSetCoverage = {
 			.filter((host) => !host.querySelector('svg'))
 			.map((host) => host.dataset.name)
 		await expect(missing).toEqual([])
+		// An outline icon (`fill="none"`) is drawn as an outline: no global
+		// fill paints it into a solid shape.
+		const filledOutlines = [
+			...canvasElement.querySelectorAll<SVGElement>('svg[fill="none"]'),
+		]
+			.filter((svg) => getComputedStyle(svg).fill !== 'none')
+			.map((svg) => svg.closest<HTMLElement>('svg-icon')?.dataset.name)
+		await expect(filledOutlines).toEqual([])
 	},
 } satisfies Story
 

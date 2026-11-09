@@ -109,7 +109,7 @@ describe('UserHomeSelector (fixture)', () => {
 		expect(onHomeSelected).not.toHaveBeenCalled()
 
 		const back = host.querySelector<HTMLButtonElement>('.selector-back')
-		expect(back?.querySelector('svg')).not.toBeNull()
+		expect(back?.querySelector('svg-icon[name="chevron-left"]')).not.toBeNull()
 		// The visible label is the localized key's text and is the only name.
 		expect(back?.textContent?.trim()).toBe(en.userHome.backToRegions)
 		expect(back?.hasAttribute('aria-label')).toBe(false)

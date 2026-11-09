@@ -33,8 +33,6 @@
 
 		/* ── Collapsed FAB, centred in the navigation bar's notch ── */
 		.fab-toggle {
-			cursor: pointer;
-
 			isolation: isolate;
 			position: fixed;
 			inset: auto;
@@ -48,8 +46,6 @@
 
 			inline-size: var(--fab-size);
 			block-size: var(--fab-size);
-
-			border: none;
 			border-radius: var(--fab-radius-collapsed);
 
 			color: var(--color-white);
@@ -126,11 +122,6 @@
 				var(--md-sys-motion-spring-effects),
 				rotate var(--md-sys-motion-spring-spatial-fast-duration)
 				var(--md-sys-motion-spring-spatial-fast);
-		}
-
-		.fab-equalizer {
-			fill: currentcolor;
-			stroke: none;
 		}
 
 		.fab-close {
@@ -278,8 +269,6 @@
 		   the outer side (left of the icon while the arc curves right). The
 		   label is inside the button, so it names it and takes taps too. */
 		.fab-item {
-			cursor: pointer;
-
 			isolation: isolate;
 			position: relative;
 
@@ -288,8 +277,6 @@
 
 			inline-size: var(--_item-size);
 			block-size: var(--_item-size);
-
-			border: none;
 			border-radius: var(--md-sys-shape-corner-full);
 			color: var(--md-sys-color-on-surface);
 

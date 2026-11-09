@@ -79,9 +79,11 @@
 		background: var(--md-sys-color-surface-container);
 	}
 
-	:where(svg) {
+	/* An SVG that declares no fill paints in the text colour; one that does
+	   (`fill="none"` outline icons) keeps its own. SVG's own default stroke,
+	   none, stays. */
+	:where(svg:not([fill])) {
 		fill: currentcolor;
-		stroke: currentcolor;
 	}
 
 	/* View Transitions API for route animations — pseudo-elements cannot be wrapped in :where() */
@@ -216,11 +218,6 @@
 
 		:where(a) {
 			color: LinkText;
-		}
-
-		:where(svg) {
-			fill: CanvasText;
-			stroke: CanvasText;
 		}
 	}
 

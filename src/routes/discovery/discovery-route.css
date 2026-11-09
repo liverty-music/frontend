@@ -196,8 +196,6 @@
 		}
 
 		.clear-button {
-			cursor: pointer;
-
 			display: flex;
 			flex-shrink: 0;
 			align-items: center;
@@ -205,8 +203,6 @@
 
 			inline-size: 1.5rem;
 			block-size: 1.5rem;
-
-			border: none;
 			border-radius: var(--md-sys-shape-corner-full);
 
 			color: var(--_white-70);
@@ -248,8 +244,6 @@
 		}
 
 		.reset-chip {
-			cursor: pointer;
-
 			display: grid;
 			grid-auto-columns: 1lh;
 			grid-auto-rows: 1lh;
@@ -286,8 +280,6 @@
 		}
 
 		.genre-chip {
-			cursor: pointer;
-
 			padding: var(--space-3xs) var(--space-xs);
 			border: 1px solid var(--_white-15);
 			border-radius: var(--md-sys-shape-corner-full);

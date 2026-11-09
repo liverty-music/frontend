@@ -207,8 +207,6 @@
 		   A sibling of `.settings-switch` — never a parent of it (a role="switch"
 		   must not nest another interactive control). */
 		.settings-expand {
-			cursor: pointer;
-
 			display: flex;
 			flex-direction: column;
 			gap: var(--space-3xs);
@@ -216,11 +214,7 @@
 
 			min-inline-size: 0;
 
-			border: 0;
-
 			text-align: start;
-
-			background: transparent;
 		}
 
 		/* Label + expand caret on one line, above the collapsible description. */
@@ -238,20 +232,14 @@
 		}
 
 		/* Switch control: the trailing (col3) cell for split consent rows. A
-		   transparent button wrapping just the track — `padding: 0` so the track
-		   sits flush at col3's end edge, pixel-aligned with every other row's
+		   button wrapping just the track, with no padding, so the track sits
+		   flush at col3's end edge, pixel-aligned with every other row's
 		   trailing control. The track (2.75rem × 1.5rem) is the activation
 		   target: ≥24px on both axes per WCAG 2.5.8 (AA), with the adjacent
 		   disclosure control offering a larger neighbouring target. */
 		.settings-switch {
-			cursor: pointer;
-
 			display: flex;
 			align-items: center;
-
-			border: 0;
-
-			background: transparent;
 		}
 
 		/* Collapsible toggle description. Decoupled from `.settings-row-hint`'s

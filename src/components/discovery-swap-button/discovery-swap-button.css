@@ -36,14 +36,8 @@
 
 		/* The tile alone; its hidden label names where a tap leads. */
 		.discovery-swap-button {
-			cursor: pointer;
-
 			display: grid;
-
-			border: 0;
 			color: inherit;
-
-			background: none;
 
 			-webkit-tap-highlight-color: transparent;
 
@@ -61,17 +55,14 @@
 			}
 		}
 
-		/* No outline by default: the global `svg { stroke: currentcolor }`
-		   would trace every arrow and letter in white. The parts that want a
-		   line (badge, rims, pin, perforation) set their own. */
+		/* The parts that want a line (badge, rims, pin, perforation) set
+		   their own stroke. */
 		.swap-icon {
 			overflow: visible;
 			grid-area: 1 / 1;
 
 			inline-size: var(--_icon-size);
 			block-size: var(--_icon-size);
-
-			stroke: none;
 		}
 
 		/* ── Arrows: a half turn per tap, always the same way ── */

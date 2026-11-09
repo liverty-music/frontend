@@ -104,8 +104,6 @@
 			border-radius: var(--md-sys-shape-corner-medium);
 			color: var(--color-brand-primary);
 
-			background: transparent;
-
 			&[data-followed="true"] {
 				color: var(--md-sys-color-on-primary);
 				background: var(--md-sys-color-primary);
