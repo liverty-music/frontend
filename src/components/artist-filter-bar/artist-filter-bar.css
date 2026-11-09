@@ -208,8 +208,6 @@
 			align-items: center;
 			justify-content: space-between;
 
-			/* stylelint-disable-next-line declaration-property-value-disallowed-list -- cancels the padding global.css gives every button and form field */
-			padding: 0;
 			border: none;
 
 			background: transparent;

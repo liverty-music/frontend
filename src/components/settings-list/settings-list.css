@@ -216,8 +216,6 @@
 
 			min-inline-size: 0;
 
-			/* stylelint-disable-next-line declaration-property-value-disallowed-list -- cancels the padding global.css gives every button and form field */
-			padding: 0;
 			border: 0;
 
 			text-align: start;
@@ -251,8 +249,6 @@
 			display: flex;
 			align-items: center;
 
-			/* stylelint-disable-next-line declaration-property-value-disallowed-list -- cancels the padding global.css gives every button and form field */
-			padding: 0;
 			border: 0;
 
 			background: transparent;

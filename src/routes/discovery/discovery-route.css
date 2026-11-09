@@ -206,8 +206,6 @@
 			inline-size: 1.5rem;
 			block-size: 1.5rem;
 
-			/* stylelint-disable-next-line declaration-property-value-disallowed-list -- cancels the padding global.css gives every button and form field */
-			padding: 0;
 			border: none;
 			border-radius: var(--md-sys-shape-corner-full);
 

@@ -26,8 +26,6 @@
 	}
 
 	:where(button) {
-		padding-block: var(--space-2xs);
-		padding-inline: var(--space-s);
 		border: none;
 		border-radius: var(--md-sys-shape-corner-medium);
 

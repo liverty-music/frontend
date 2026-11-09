@@ -115,10 +115,8 @@
 		}
 
 		.consent-policy-link {
-			/* Rendered as a <button> driving in-app navigation; strip the global
-			   button padding so it reads as the inline text link it replaces. */
-			/* stylelint-disable-next-line declaration-property-value-disallowed-list -- cancels the padding global.css gives every button and form field */
-			padding: 0;
+			/* A <button> driving in-app navigation, drawn as an inline text
+			   link. */
 			color: var(--color-brand-accent);
 			text-decoration: underline;
 			text-underline-offset: 3px;
