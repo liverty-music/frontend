@@ -1447,6 +1447,108 @@ describe('DiscoveryRoute', () => {
 
 			expect(mockAnalytics.capture).not.toHaveBeenCalled()
 		})
+
+		describe('field paused before the reveal completes', () => {
+			function setHidden(hidden: boolean): void {
+				Object.defineProperty(document, 'hidden', {
+					value: hidden,
+					writable: true,
+				})
+			}
+
+			function routeTo(query = ''): never {
+				return { queryParams: new URLSearchParams(query) } as never
+			}
+
+			afterEach(() => {
+				setHidden(false)
+				sut.detaching()
+			})
+
+			// @spec components/infrastructure/fan/web/route/discovery "Field paused before the reveal completes"
+			it('sends nothing when Discovery opens in a hidden page', async () => {
+				setHidden(true)
+				sut.loading()
+				sut.attached()
+				await vi.runAllTimersAsync()
+
+				setHidden(false)
+				document.dispatchEvent(new Event('visibilitychange'))
+				revealAll([100, 200, 300])
+
+				expect(sut.dnaOrbCanvas.resume).toHaveBeenCalled()
+				expect(mockAnalytics.capture).not.toHaveBeenCalled()
+			})
+
+			// @spec components/infrastructure/fan/web/route/discovery "Field paused before the reveal completes"
+			it('sends nothing when the page is hidden during the reveal', async () => {
+				sut.loading()
+				sut.attached()
+				await vi.runAllTimersAsync()
+				sut.onRevealMark(revealMark('ghosts', 100))
+
+				setHidden(true)
+				document.dispatchEvent(new Event('visibilitychange'))
+				setHidden(false)
+				document.dispatchEvent(new Event('visibilitychange'))
+				sut.onRevealMark(revealMark('first-name', 50_000))
+				sut.onRevealMark(revealMark('all-names', 50_100))
+
+				expect(mockAnalytics.capture).not.toHaveBeenCalled()
+			})
+
+			// @spec components/infrastructure/fan/web/route/discovery "Field paused before the reveal completes"
+			it('sends nothing when Discovery opens on the All Nearby view', async () => {
+				sut.loading(undefined, routeTo('view=nearby'))
+				sut.attached()
+				await vi.runAllTimersAsync()
+
+				sut.switchView()
+				expect(sut.view).toBe('artists')
+				revealAll([100, 200, 300])
+
+				expect(mockAnalytics.capture).not.toHaveBeenCalled()
+			})
+
+			// @spec components/infrastructure/fan/web/route/discovery "Field paused before the reveal completes"
+			it('sends nothing when the fan switches to the All Nearby view during the reveal', async () => {
+				sut.loading(undefined, routeTo())
+				sut.attached()
+				await vi.runAllTimersAsync()
+				sut.onRevealMark(revealMark('ghosts', 100))
+
+				sut.switchView()
+				expect(sut.view).toBe('nearby')
+				sut.switchView()
+				expect(sut.view).toBe('artists')
+				sut.onRevealMark(revealMark('first-name', 5000))
+				sut.onRevealMark(revealMark('all-names', 5100))
+
+				expect(mockAnalytics.capture).not.toHaveBeenCalled()
+			})
+
+			// @spec components/infrastructure/fan/web/route/discovery "Field paused before the reveal completes"
+			it('sends nothing when the fan enters search mode during the reveal', async () => {
+				sut.loading()
+				sut.attached()
+				await vi.runAllTimersAsync()
+				sut.onRevealMark(revealMark('ghosts', 100))
+
+				sut.search.searchQuery = 'vau'
+				sut.search.onQueryChanged('vau')
+				expect(sut.search.isSearchMode).toBe(true)
+				sut.search.searchQuery = ''
+				sut.search.onQueryChanged('')
+				expect(sut.search.isSearchMode).toBe(false)
+				sut.onRevealMark(revealMark('first-name', 5000))
+				sut.onRevealMark(revealMark('all-names', 5100))
+
+				expect(mockAnalytics.capture).not.toHaveBeenCalledWith(
+					'perf.discovery_reveal',
+					expect.anything(),
+				)
+			})
+		})
 	})
 
 	describe('launcher actions per view', () => {

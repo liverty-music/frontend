@@ -115,15 +115,15 @@ export class DiscoveryRoute {
 	private abortController = new AbortController()
 	/** Whether this visit already reported the timetable as ready. */
 	private readyReported = false
-	// Cold-load reveal timing of this visit; null on a re-entry, once sent, and
-	// after leaving the route.
+	// Cold-load reveal timing of this visit; null on a re-entry, once sent,
+	// once the bubble field was paused, and after leaving the route.
 	private revealTiming: RevealTiming | null = null
 
 	// Controllers
 	public readonly search = new SearchController(
 		this.artistClient,
 		{
-			onEnterSearchMode: () => this.dnaOrbCanvas?.pause(),
+			onEnterSearchMode: () => this.pauseField(),
 			onExitSearchMode: () => this.dnaOrbCanvas?.resume(),
 			onError: (key) =>
 				this.ea.publish(new Snack(this.i18n.tr(key), 'warning')),
@@ -254,10 +254,13 @@ export class DiscoveryRoute {
 		const cold = this.bubbleStore.prepareEntry()
 		// A page load is measured from the document's start, an in-app entry from
 		// this hook. Only a cold visit (no cached field, so ghosts were prepared)
-		// reports its reveal, even when the artists arrive before a ghost is drawn.
-		this.revealTiming = cold
-			? new RevealTiming(entry, entry === 'page_load' ? 0 : openedAt)
-			: null
+		// reports its reveal, even when the artists arrive before a ghost is drawn,
+		// and only while the field is shown: a paused field draws no frame, so the
+		// paused time would count as time to reveal.
+		this.revealTiming =
+			cold && this.bubblesShown && !document.hidden
+				? new RevealTiming(entry, entry === 'page_load' ? 0 : openedAt)
+				: null
 		void this.refreshField()
 
 		// Resume concert search for pre-seeded follows (fire concurrently)
@@ -301,7 +304,7 @@ export class DiscoveryRoute {
 		// Opened on the All Nearby view: the bubbles are not shown, so they do
 		// not run, and the address names the view.
 		if (this.view === 'nearby') {
-			this.dnaOrbCanvas?.pause()
+			this.pauseField()
 			this.writeViewAddress()
 		}
 		this.resumeRevalidator.register(this.revalidate)
@@ -357,10 +360,19 @@ export class DiscoveryRoute {
 
 	private readonly onVisibilityChange = (): void => {
 		if (document.hidden) {
-			this.dnaOrbCanvas?.pause()
+			this.pauseField()
 		} else if (this.bubblesShown) {
 			this.dnaOrbCanvas?.resume()
 		}
+	}
+
+	/**
+	 * Pause the bubble field. A paused field draws no frame, so the visit's
+	 * reveal timing is dropped: the paused time would count as time to reveal.
+	 */
+	private pauseField(): void {
+		this.revealTiming = null
+		this.dnaOrbCanvas?.pause()
 	}
 
 	/** Whether the bubble field is on screen: the bubbles, outside search. */
@@ -422,7 +434,7 @@ export class DiscoveryRoute {
 		if (view === 'nearby') {
 			// Switching to All Nearby ends the visit's frame measurement.
 			this.dnaOrbCanvas?.endFrameMeasurement()
-			this.dnaOrbCanvas?.pause()
+			this.pauseField()
 		} else if (this.bubblesShown && !document.hidden) {
 			this.dnaOrbCanvas?.resume()
 		}
