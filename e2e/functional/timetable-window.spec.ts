@@ -171,7 +171,7 @@ async function scrollDown(page: Page, screens: number): Promise<void> {
 			const s = document.querySelector(
 				'concert-highway .concert-scroll',
 			) as HTMLElement
-			s.scrollTop += s.clientHeight
+			s.scrollBy({ top: s.clientHeight, behavior: 'instant' })
 		})
 		await settle(page)
 	}
@@ -234,7 +234,10 @@ test.describe('timetable date window', () => {
 			const s = document.querySelector(
 				'concert-highway .concert-scroll',
 			) as HTMLElement
-			s.scrollTop = s.scrollHeight - s.clientHeight * 1.4
+			s.scrollTo({
+				top: s.scrollHeight - s.clientHeight * 1.4,
+				behavior: 'instant',
+			})
 		})
 		await settle(page)
 		expect((await builtKeys(page)).length).toBeGreaterThan(before)
@@ -437,7 +440,7 @@ test.describe('timetable date window', () => {
 				const before = top.getBoundingClientRect().top
 				const firstBefore = groups()[0].dataset.dateKey
 				const scrollBefore = s.scrollTop
-				s.scrollTop -= 150
+				s.scrollBy({ top: -150, behavior: 'instant' })
 				const scrolled = scrollBefore - s.scrollTop
 				await frame()
 				const same = groups().find((g) => g.dataset.dateKey === key)

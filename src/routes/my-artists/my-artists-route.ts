@@ -280,7 +280,7 @@ export class MyArtistsRoute {
 		const index = this.artists.findIndex((a) => a.artist.id === artistId)
 		if (index === -1) return
 
-		// Optimistic removal (with View Transition if available)
+		// Optimistic removal, inside a View Transition.
 		const doRemove = () => {
 			this.artists.splice(index, 1)
 			this.undoArtist = artist
@@ -292,21 +292,18 @@ export class MyArtistsRoute {
 			}
 		}
 
-		if (document.startViewTransition) {
-			// Each `.artist-row` has its own `view-transition-name`, so only the
-			// removed row animates out and the rest reflow. Suppress the default
-			// `root` cross-fade (a route-level effect) for this in-place list edit
-			// — otherwise the header / bottom-nav (unnamed, captured in `root`)
-			// dip in opacity and read as the header "disappearing" while the
-			// unfollow snack appears. The class is cleared when the transition ends.
-			document.documentElement.classList.add('vt-suppress-root')
-			const transition = document.startViewTransition(doRemove)
-			void transition.finished.finally(() => {
-				document.documentElement.classList.remove('vt-suppress-root')
-			})
-		} else {
-			doRemove()
-		}
+		// Each `.artist-row` has its own `view-transition-name`, so only the
+		// removed row animates out and the rest reflow. Suppress the default
+		// `root` cross-fade (a route-level effect) for this in-place list edit
+		// — otherwise the header / bottom-nav (unnamed, captured in `root`)
+		// dip in opacity and read as the header "disappearing" while the
+		// unfollow snack appears. The class is cleared when the transition ends.
+		// Under reduced motion a global rule stops the animation (global.css).
+		document.documentElement.classList.add('vt-suppress-root')
+		const transition = document.startViewTransition(doRemove)
+		void transition.finished.finally(() => {
+			document.documentElement.classList.remove('vt-suppress-root')
+		})
 
 		this.logger.info('Artist unfollowed (pending)', { name: artistName })
 

@@ -79,14 +79,35 @@
 		fill: currentcolor;
 	}
 
-	/* View Transitions API for route animations — pseudo-elements cannot be wrapped in :where() */
+	/* View Transitions. A tab switch (bottom-nav-bar) cross-fades the route
+	   area: the `root` snapshot. The navigation bar, the page header and the
+	   FAB carry their own names, so they are not part of it: their old
+	   snapshot is hidden and the new one shows at once, without a fade (the
+	   header's background is partly transparent, so a visible old snapshot
+	   would show the old title through it). Pseudo-elements cannot be
+	   wrapped in :where(). */
 	/* stylelint-disable cube/prefer-where-in-reset -- view transition pseudo-elements cannot be wrapped in :where() */
 	::view-transition-old(root) {
-		animation: var(--md-sys-motion-duration-short4) ease-out both fade-out;
+		animation: var(--md-sys-motion-duration-medium2) ease-out both fade-out;
 	}
 
 	::view-transition-new(root) {
-		animation: var(--md-sys-motion-duration-short4) ease-out both fade-in;
+		animation: var(--md-sys-motion-duration-medium2) ease-out both fade-in;
+	}
+
+	::view-transition-old(bottom-nav),
+	::view-transition-new(bottom-nav),
+	::view-transition-old(page-header),
+	::view-transition-new(page-header),
+	::view-transition-old(fab-toggle),
+	::view-transition-new(fab-toggle) {
+		animation: none;
+	}
+
+	::view-transition-old(bottom-nav),
+	::view-transition-old(page-header),
+	::view-transition-old(fab-toggle) {
+		opacity: 0;
 	}
 
 	/* In-place list edits (e.g. my-artists unfollow) set `vt-suppress-root` so
@@ -122,18 +143,6 @@
 		animation: 300ms cubic-bezier(0, 0, 0.2, 1) 300ms both discovery-flip-in;
 	}
 
-	@keyframes discovery-flip-out {
-		to {
-			transform: rotateY(90deg);
-		}
-	}
-
-	@keyframes discovery-flip-in {
-		from {
-			transform: rotateY(-90deg);
-		}
-	}
-
 	/* My Artists: the rows' groups nest inside the list's group, which clips
 	   them like the list's scroll box does, so rows scrolled under the header
 	   stay hidden while one row animates out. Nested groups (CSS View
@@ -146,15 +155,6 @@
 	}
 	/* stylelint-enable selector-pseudo-element-no-unknown */
 	/* stylelint-enable cube/prefer-where-in-reset */
-
-	/* A named snapshot paints above the root one, and the FAB overlaps the
-	   route area, so a route that names part of itself (vt-suppress-root)
-	   would draw over the FAB's upper half. Naming the FAB too keeps it on
-	   top: snapshots paint in the order of their elements, and the FAB is in
-	   the top layer. */
-	:where(:root.vt-suppress-root) {
-		--fab-transition-name: fab-toggle;
-	}
 
 	/* While a snack bar is open or a persistent bottom banner (signup prompt or
 	   install banner) is visible, the FAB sinks into the navigation bar's notch
@@ -191,6 +191,21 @@
 		--bottom-banner-height: var(--bottom-banner-block-size);
 	}
 
+	/* Reduced motion stops every View Transition: with no animation running,
+	   the transition ends and the new view shows in the next frame, with no
+	   fade, slide or turn. One rule here, so no call site checks the
+	   preference itself. A `*` argument adds no specificity, so `:root`
+	   lifts the rule above the named ones (root, discovery-view). */
+	/* stylelint-disable cube/prefer-where-in-reset -- view transition pseudo-elements cannot be wrapped in :where() */
+	@media (prefers-reduced-motion: reduce) {
+		:root::view-transition-group(*),
+		:root::view-transition-old(*),
+		:root::view-transition-new(*) {
+			animation: none;
+		}
+	}
+	/* stylelint-enable cube/prefer-where-in-reset */
+
 	/* High contrast: ensure borders and focus rings are visible */
 	@media (prefers-contrast: more) {
 		:where(button, input, textarea, select) {
@@ -222,4 +237,18 @@
 			opacity: 0.7;
 		}
 	}
+
+	/* stylelint-disable cube/prefer-where-in-reset -- keyframe selectors cannot be wrapped in :where() */
+	@keyframes discovery-flip-out {
+		to {
+			transform: rotateY(90deg);
+		}
+	}
+
+	@keyframes discovery-flip-in {
+		from {
+			transform: rotateY(-90deg);
+		}
+	}
+	/* stylelint-enable cube/prefer-where-in-reset */
 }

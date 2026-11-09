@@ -2,6 +2,7 @@
   <a
     repeat.for="tab of tabs; key.bind: tab.id"
     href.bind="tab.path[0]"
+    click.capture="switchTab($event, tab)"
     data-nav.bind="tab.data.icon"
     class="nav-tab"
     data-active.bind="tab.isActive || tab.id === section"

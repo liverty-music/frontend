@@ -209,11 +209,6 @@
 			animation: none;
 		}
 
-		::view-transition-old(root),
-		::view-transition-new(root) {
-			animation: none;
-		}
-
 		/* The shimmer stops. The press and selection transitions need no
 		   rule here: their duration tokens are 0 ms under reduced motion. */
 		.skeleton {

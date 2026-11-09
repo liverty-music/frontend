@@ -265,7 +265,7 @@ test.describe('App shell scroll lock (guest)', () => {
 			const scroll = document.querySelector(
 				'[data-testid="concert-scroll"]',
 			) as HTMLElement
-			scroll.scrollTop = scroll.scrollHeight
+			scroll.scrollTo({ top: scroll.scrollHeight, behavior: 'instant' })
 		})
 		await navIsPinned()
 	})
@@ -323,7 +323,7 @@ test.describe('App shell scroll lock (guest)', () => {
 			const scroll = document.querySelector(
 				'[data-testid="concert-scroll"]',
 			) as HTMLElement
-			scroll.scrollTop = scroll.scrollHeight
+			scroll.scrollTo({ top: scroll.scrollHeight, behavior: 'instant' })
 		})
 		const after = await header.boundingBox()
 		const scrollBox = await page

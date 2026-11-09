@@ -163,7 +163,7 @@ test.describe('beam effect', () => {
 		)
 		await page.evaluate(() => {
 			const scroll = document.querySelector('.concert-scroll') as HTMLElement
-			scroll.scrollTop += 120
+			scroll.scrollBy({ top: 120, behavior: 'instant' })
 		})
 		// The window in which no card may be measured: a delayed scroll handler
 		// would read within it. Read the counter before beamState(), which

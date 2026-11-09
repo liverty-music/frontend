@@ -19,6 +19,10 @@
 				oklch(from var(--color-brand-primary) l c h / 8%)
 			);
 
+			/* Its own View Transition snapshot, so a tab switch fades the
+			   route area and not the header (global.css). */
+			view-transition-name: page-header;
+
 			& h1 {
 				flex: 1;
 				color: var(--md-sys-color-on-surface);

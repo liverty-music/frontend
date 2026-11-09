@@ -78,8 +78,15 @@
 			   unreliable here anyway — so it is off for this list. */
 			overflow-anchor: none;
 
+			/* A programmatic scroll (a month jump) animates; a place restore
+			   passes `behavior: 'instant'` and never does (concert-highway.ts). */
+			scroll-behavior: smooth;
+
 			position: relative;
 
+			/* Lets the month-jump capsule ask whether the list has been
+			   scrolled from its top (`scroll-state(scrollable: top)`). */
+			container: timetable / scroll-state;
 			overflow-block: auto;
 			overflow-inline: hidden;
 
@@ -114,6 +121,64 @@
 		.window-edge {
 			grid-column: 1 / -1;
 			block-size: 0;
+		}
+
+		/* Month jump. A zero-height row at the end of the list, stuck to its
+		   bottom edge, so it takes no room in the list and stays put while the
+		   list scrolls; the capsule hangs above it. It stands clear of the FAB,
+		   which rises into the list from the navigation bar's notch. */
+		.month-jump {
+			position: sticky;
+			inset-block-end: calc(var(--fab-notch-radius) + var(--space-2xs));
+
+			display: flex;
+			grid-column: 1 / -1;
+			align-items: end;
+			justify-content: center;
+
+			block-size: 0;
+		}
+
+		.month-jump-capsule {
+			display: flex;
+			border-radius: var(--md-sys-shape-corner-full);
+			background: var(--md-sys-color-menu-surface);
+			box-shadow: var(--md-sys-elevation-level2);
+		}
+
+		.month-jump-button {
+			display: grid;
+			place-items: center;
+
+			inline-size: 3rem;
+			block-size: 3rem;
+			border-radius: var(--md-sys-shape-corner-full);
+
+			color: var(--md-sys-color-on-surface);
+		}
+
+		/* No month in a direction: that button goes, in every browser. */
+		.month-jump[data-has-prev="false"] [data-direction="prev"],
+		.month-jump[data-has-next="false"] [data-direction="next"] {
+			display: none;
+		}
+
+		.month-jump[data-has-prev="false"][data-has-next="false"] {
+			display: none;
+		}
+
+		/* Not before the fan has scrolled the list. A browser without
+		   scroll-state queries never matches this, so it shows the capsule
+		   from the start. */
+		@container timetable not scroll-state(scrollable: top) {
+			.month-jump {
+				display: none;
+			}
+		}
+
+		/* Not while the FAB's action list is open. */
+		:where(:root:has(.fab-panel:popover-open)) :scope .month-jump {
+			display: none;
 		}
 
 		.skeleton-date {
@@ -365,11 +430,105 @@
 			}
 		}
 
+		/* biome-ignore lint/correctness/noUnknownProperty: scroll-triggered animations (Chromium 145+) are newer than Biome's property list */
+		@supports (timeline-trigger: --t view()) {
+			/* ── Deal-in: a date row's lanes fly in as the row comes into view ──
+
+			   Time-based, and started by the row entering view (a scroll-triggered
+			   animation), so it runs its full length however fast the fan scrolls.
+			   The row is the trigger: it activates once 60% of the row is in view,
+			   from either edge, and once the row has fully left it resets the
+			   animation, so the next entry deals the row in again from the
+			   start, however soon the fan scrolls back. The lanes start one step apart: HOME, NEAR, AWAY.
+			   `sibling-index()` counts only a row's lanes, which are always built
+			   together; it is not used across rows, where it would count every row
+			   already built. The perspective sits on the lanes' parent so the lanes
+			   of a row share one vanishing point. */
+
+			@media (prefers-reduced-motion: no-preference) {
+				.date-group:not(.date-group-skeleton) {
+					/* biome-ignore lint/correctness/noUnknownProperty: scroll-triggered animations (Chromium 145+) are newer than Biome's property list */
+					timeline-trigger: --row view() entry 60% exit 40% / cover;
+
+					/* biome-ignore lint/correctness/noUnknownProperty: scroll-triggered animations (Chromium 145+) are newer than Biome's property list */
+					trigger-scope: --row;
+				}
+
+				.date-group:not(.date-group-skeleton) .lane {
+					animation: deal-in var(--md-sys-motion-duration-extra-long2)
+						var(--md-sys-motion-easing-emphasized-decelerate) both;
+					animation-delay: calc(
+						(sibling-index() - 1) *
+						var(--md-sys-motion-duration-short2)
+					);
+
+					/* biome-ignore lint/correctness/noUnknownProperty: scroll-triggered animations (Chromium 145+) are newer than Biome's property list */
+					animation-trigger: --row play-forwards reset;
+				}
+			}
+		}
+
+		/* biome-ignore lint/correctness/noUnknownProperty: scroll-triggered animations (Chromium 145+) are newer than Biome's property list */
+		@supports not (timeline-trigger: --t view()) {
+			/* Without scroll-triggered animations, the same motion follows the
+			   scroll: each lane's view progress drives it while the row enters
+			   (offset per lane, since a scroll-linked animation ignores delays),
+			   and backwards while the row leaves through the top edge, once 40%
+			   of it has gone, so scrolling back up deals it in from the top. The
+			   exit animation fills forwards only: with `both`, its backwards fill
+			   (the settled keyframe) would override the entry animation, which
+			   comes earlier in the list, for the whole time the row is in view. */
+			@supports (animation-timeline: view()) and (animation-range: entry) {
+				@media (prefers-reduced-motion: no-preference) {
+					.date-group:not(.date-group-skeleton) .lane {
+						--_lag: calc((sibling-index() - 1) * 12%);
+
+						animation:
+							deal-in linear both,
+							deal-in linear forwards reverse;
+						animation-timeline: view(), view();
+						animation-range:
+							entry var(--_lag) entry calc(60% + var(--_lag)),
+							exit 40% exit 100%;
+					}
+				}
+			}
+		}
+
+		.date-group:not(.date-group-skeleton) .lane-grid {
+			perspective: 520px;
+			perspective-origin: 70% 40%;
+		}
+
+		/* No `filter: brightness()` flash: measured on a 4× CPU fling, it
+		   doubled the median frame time (design D4). */
+		@keyframes deal-in {
+			0% {
+				transform: translate3d(140px, -30px, -260px) rotateY(-75deg)
+					rotateZ(14deg);
+				opacity: 0;
+			}
+
+			60% {
+				transform: translate3d(-6px, 0, 20px) rotateY(8deg) rotateZ(-1deg);
+				opacity: 1;
+			}
+
+			100% {
+				transform: none;
+			}
+		}
+
 		/* The beam is decorative: suppressing it changes nothing about what is
-		   shown or when. Nothing else depends on it running. */
+		   shown or when. Nothing else depends on it running. A month jump
+		   lands without scrolling there, and rows appear in place. */
 		@media (prefers-reduced-motion: reduce) {
 			.laser-beam {
 				animation: none;
+			}
+
+			.concert-scroll {
+				scroll-behavior: auto;
 			}
 		}
 

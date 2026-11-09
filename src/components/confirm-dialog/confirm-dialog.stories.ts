@@ -4,7 +4,7 @@ import {
 	type StoryObj,
 } from '@aurelia/storybook'
 import { CustomElement } from 'aurelia'
-import { expect, userEvent, within } from 'storybook/test'
+import { expect, userEvent, waitFor, within } from 'storybook/test'
 import { ConfirmDialog } from './confirm-dialog'
 
 const meta = {
@@ -62,7 +62,8 @@ export const Default = {
 		const dialog = within(canvasElement).getByRole('dialog', {
 			name: 'サインアウトしますか？',
 		})
-		await expect(dialog).toBeVisible()
+		// It fades in from transparent (the open transition).
+		await waitFor(() => expect(dialog).toBeVisible())
 		const cancel = within(dialog).getByRole('button', { name: 'キャンセル' })
 		await expect(cancel).toHaveFocus()
 
@@ -70,7 +71,8 @@ export const Default = {
 			within(dialog).getByRole('button', { name: 'サインアウト' }),
 		)
 		await expect(await answer).toBe(true)
-		await expect(dialog).not.toBeVisible()
+		// It fades out first (the close transition).
+		await waitFor(() => expect(dialog).not.toBeVisible())
 	},
 } satisfies Story
 
@@ -111,7 +113,8 @@ export const EscapeCancels = {
 		).toHaveFocus()
 		;(dialog as HTMLDialogElement & { requestClose(): void }).requestClose()
 		await expect(await answer).toBe(false)
-		await expect(dialog).not.toBeVisible()
+		// It fades out first (the close transition).
+		await waitFor(() => expect(dialog).not.toBeVisible())
 	},
 } satisfies Story
 
@@ -154,5 +157,54 @@ export const OverAnOpenSheet = {
 		)
 		await expect(await answer).toBe(false)
 		sheet?.hidePopover()
+	},
+} satisfies Story
+
+/**
+ * The close: the dialog fades out over the short motion duration and stays in
+ * the top layer, above the page, until it is transparent. Runs in both
+ * storybook projects; under reduced motion the duration is 0 and the dialog
+ * disappears at once.
+ */
+export const FadesOnClose = {
+	tags: ['reduced-motion'],
+	render,
+	play: async ({ canvasElement, globals }) => {
+		const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches
+		if (import.meta.env.MODE === 'test') {
+			await expect(reduce).toBe(globals.reducedMotion)
+		}
+		const answer = ask(canvasElement)
+		const dialog = within(canvasElement).getByRole('dialog')
+		await new Promise((r) => setTimeout(r, 300))
+		await expect(getComputedStyle(dialog).opacity).toBe('1')
+		const durations = getComputedStyle(dialog).transitionDuration
+
+		await userEvent.click(
+			within(dialog).getByRole('button', { name: 'サインアウト' }),
+		)
+		await expect(await answer).toBe(true)
+
+		if (reduce) {
+			// @spec components/infrastructure/fan/web/global/ui-primitives "Reduced motion"
+			await expect(durations).toBe('0s, 0s, 0s')
+			await new Promise((r) => requestAnimationFrame(() => r(null)))
+			await expect(getComputedStyle(dialog).display).toBe('none')
+			return
+		}
+
+		// @spec components/infrastructure/fan/web/global/ui-primitives "Confirmation dialog closes"
+		await expect(durations).toBe('0.2s, 0.2s, 0.2s')
+		// Answered and closed, yet still drawn in the top layer while it fades.
+		await expect(dialog.hasAttribute('open')).toBe(false)
+		await expect(getComputedStyle(dialog).display).not.toBe('none')
+		await expect(dialog.matches(':modal')).toBe(false)
+		const fade = dialog
+			.getAnimations()
+			.find((a) => (a as CSSTransition).transitionProperty === 'opacity')
+		await expect(fade?.playState).toBe('running')
+		await fade?.finished
+		await new Promise((r) => requestAnimationFrame(() => r(null)))
+		await expect(getComputedStyle(dialog).display).toBe('none')
 	},
 } satisfies Story

@@ -27,6 +27,8 @@ const ICON_NAMES = [
 	'shield-check',
 	'chart',
 	'pointer',
+	'skip-up',
+	'skip-down',
 ] as const
 
 const meta = {
@@ -263,5 +265,23 @@ export const ColorInheritance = {
 			).toBeTruthy()
 			await expect(getComputedStyle(svg).color).toBe('rgb(255, 0, 0)')
 		}
+	},
+} satisfies Story
+
+// The timetable's month-jump buttons: previous month (up) and next month
+// (down).
+export const SkipUp = {
+	args: { name: 'skip-up' },
+	play: async ({ canvasElement }) => {
+		await expect(canvasElement.querySelector('svg polygon')).toBeTruthy()
+		await expect(canvasElement.querySelector('svg line')).toBeTruthy()
+	},
+} satisfies Story
+
+export const SkipDown = {
+	args: { name: 'skip-down' },
+	play: async ({ canvasElement }) => {
+		await expect(canvasElement.querySelector('svg polygon')).toBeTruthy()
+		await expect(canvasElement.querySelector('svg line')).toBeTruthy()
 	},
 } satisfies Story

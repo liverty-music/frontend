@@ -26,6 +26,10 @@
 
 			background: var(--md-sys-color-surface-container);
 
+			/* Its own View Transition snapshot, so a tab switch fades the
+			   route area and not the bar (global.css). */
+			view-transition-name: bottom-nav;
+
 			/* Gradient top border via pseudo-element (avoids border-image + border-radius conflict) */
 			&::before {
 				content: "";

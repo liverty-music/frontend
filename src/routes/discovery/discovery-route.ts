@@ -384,8 +384,8 @@ export class DiscoveryRoute {
 
 	/**
 	 * The swap tile was tapped. The view turns over like a card, the same half
-	 * turn as the tile's arrows, inside a View Transition; without the API, or
-	 * with a reduced-motion preference, it changes at once. The callback flushes Aurelia's queue
+	 * turn as the tile's arrows, inside a View Transition; under reduced motion
+	 * a global rule stops it (global.css). The callback flushes Aurelia's queue
 	 * synchronously (`runTasks()`) and returns nothing: the browser suspends
 	 * rAF while it snapshots, so a promise settled on a frame would never
 	 * resolve and the transition would time out.
@@ -396,16 +396,6 @@ export class DiscoveryRoute {
 		// flags the second one still needs.
 		if (this.revealing) return
 		const next: DiscoveryView = this.view === 'nearby' ? 'artists' : 'nearby'
-		const doc = document as Document & {
-			startViewTransition?: (cb: () => void) => { finished: Promise<void> }
-		}
-		const reduce = window.matchMedia?.(
-			'(prefers-reduced-motion: reduce)',
-		).matches
-		if (!doc.startViewTransition || reduce) {
-			this.applyView(next)
-			return
-		}
 		// Name the layout before the old snapshot is taken, so the old and new
 		// views pair up and turn over; the page chrome swaps without a
 		// cross-fade.
@@ -413,7 +403,7 @@ export class DiscoveryRoute {
 		root.classList.add('vt-suppress-root')
 		this.revealing = true
 		runTasks()
-		const transition = doc.startViewTransition(() => {
+		const transition = document.startViewTransition(() => {
 			this.applyView(next)
 			runTasks()
 		})

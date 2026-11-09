@@ -83,8 +83,9 @@ describe('ConcertHighway date window', () => {
 	beforeEach(() => {
 		FakeObserver.current = null
 		vi.stubGlobal('IntersectionObserver', FakeObserver)
-		// jsdom implements neither; the restore path calls it.
+		// jsdom implements neither; the restore path calls them.
 		Element.prototype.scrollIntoView = vi.fn()
+		Element.prototype.scrollBy = vi.fn()
 	})
 
 	afterEach(async () => {
@@ -184,7 +185,8 @@ describe('ConcertHighway date window', () => {
 
 		let steps = 0
 		while (!builtKeys(appHost).includes(groups[59].dateKey)) {
-			observer.reach('.window-edge:last-child')
+			// The bottom edge: the month-jump row follows it.
+			observer.reach('.window-edge:not(:first-child)')
 			steps += 1
 			expect(steps).toBeLessThan(10)
 		}

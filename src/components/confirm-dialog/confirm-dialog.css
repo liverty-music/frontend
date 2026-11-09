@@ -10,10 +10,41 @@
 
 			color: var(--md-sys-color-on-surface);
 
+			/* Fades in on open and out on close. `display` and `overlay` change
+			   at the end of the fade-out (`allow-discrete`), so the closing
+			   dialog stays in the top layer, above the page, until it is fully
+			   transparent. The duration token is 0 ms under reduced motion. */
+			opacity: 0;
 			background: var(--md-sys-color-surface-container);
 
+			transition:
+				opacity var(--md-sys-motion-duration-short4) ease-out,
+				display var(--md-sys-motion-duration-short4) allow-discrete,
+				overlay var(--md-sys-motion-duration-short4) allow-discrete;
+
 			&::backdrop {
+				opacity: 0;
 				background: var(--md-sys-color-scrim);
+				transition:
+					opacity var(--md-sys-motion-duration-short4) ease-out,
+					display var(--md-sys-motion-duration-short4) allow-discrete,
+					overlay var(--md-sys-motion-duration-short4) allow-discrete;
+			}
+
+			&[open] {
+				opacity: 1;
+
+				@starting-style {
+					opacity: 0;
+				}
+			}
+
+			&[open]::backdrop {
+				opacity: 1;
+
+				@starting-style {
+					opacity: 0;
+				}
 			}
 		}
 

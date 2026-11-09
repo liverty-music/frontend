@@ -9,6 +9,21 @@ import { beamTimelineName } from './beam-name'
 export const WINDOW_SIZE = 12
 /** Dates kept above the anchored one, so the fan lands with context above. */
 export const WINDOW_CONTEXT = 2
+/**
+ * How long a month jump waits for the scroll container's `scrollend` before
+ * it lets the window grow again, for a browser that does not fire it.
+ */
+export const JUMP_SETTLE_MS = 600
+
+/** The month of a date key: "2026-11-14" → "2026-11" (sorts as a string). */
+function monthOf(dateKey: string): string {
+	return dateKey.slice(0, 7)
+}
+
+/** The first day of a date key's month, in local time. */
+function firstOfMonth(dateKey: string): Date {
+	return new Date(Number(dateKey.slice(0, 4)), Number(dateKey.slice(5, 7)) - 1)
+}
 
 export class ConcertHighway {
 	@bindable public dateGroups: DateGroup[] = []
@@ -98,6 +113,25 @@ export class ConcertHighway {
 
 	private isAttached = false
 
+	/**
+	 * The months the month-jump buttons lead to, from the date at the top of
+	 * the screen: the first day of the nearest earlier and later month with a
+	 * loaded date, or null when there is none in that direction. Set when a
+	 * window opens and when a scroll ends, not per scroll frame.
+	 */
+	public prevMonth: Date | null = null
+	public nextMonth: Date | null = null
+
+	/**
+	 * While a month jump scrolls, the window does not grow: growing above the
+	 * fan restores their place by writing the scroll position, which would
+	 * cancel the jump's smooth scroll. `endJump` lifts the pause.
+	 */
+	private jumping = false
+	private endJump: (() => void) | null = null
+	private jumpArmed = false
+	private jumpTimer: ReturnType<typeof setTimeout> | undefined
+
 	public binding(): void {
 		this.openWindow(this.initialAnchor?.dateKey ?? null)
 	}
@@ -105,6 +139,7 @@ export class ConcertHighway {
 	public dateGroupsChanged(): void {
 		if (this.isAttached && this.visibleGroups.length > 0) {
 			this.keepingPlace(() => this.keepWindow())
+			this.updateMonthJump(this.scrollAnchor?.dateKey ?? null)
 		} else {
 			this.openWindow(this.initialAnchor?.dateKey ?? null)
 		}
@@ -136,6 +171,100 @@ export class ConcertHighway {
 		this.isAttached = false
 		this.edgeObserver?.disconnect()
 		this.edgeObserver = null
+		this.endJump?.()
+	}
+
+	/**
+	 * Move to the first date of the previous (-1) or next (1) month, counted
+	 * from the month of the date at the top of the screen.
+	 *
+	 * The window is opened afresh at the target, as on re-entry, so the dates
+	 * in between are not built; scrolling up builds them through the usual
+	 * growth. The view is first put, instantly, a little before the target in
+	 * the jump's direction (the top of the new window, or two dates below the
+	 * target), and then scrolled to it without a `behavior`, so the stylesheet
+	 * decides: a short smooth scroll in the jump's direction, or none under
+	 * reduced motion. The URL and history are not touched.
+	 */
+	public jumpToMonth(step: 1 | -1): void {
+		const el = this.scrollEl
+		const top = this.scrollAnchor?.dateKey
+		if (!el || top === undefined) return
+		const target = this.monthTarget(top, step)
+		if (!target) return
+
+		this.pauseGrowth()
+		this.openWindow(target.dateKey)
+
+		const groups = [
+			...el.querySelectorAll<HTMLElement>('.date-group[data-date-key]'),
+		]
+		const at = groups.findIndex((g) => g.dataset.dateKey === target.dateKey)
+		if (at === -1) return
+		if (step === 1) {
+			el.scrollTo({ top: 0, behavior: 'instant' })
+		} else {
+			const below = groups[Math.min(at + WINDOW_CONTEXT, groups.length - 1)]
+			below.scrollIntoView({ block: 'start', behavior: 'instant' })
+		}
+		groups[at].scrollIntoView({ block: 'start', inline: 'nearest' })
+	}
+
+	/** A scroll of the timetable ended (`scrollend` on the scroll container). */
+	public onScrollEnd(): void {
+		if (this.jumpArmed) this.endJump?.()
+		this.updateMonthJump(this.scrollAnchor?.dateKey ?? null)
+	}
+
+	/**
+	 * Hold the window still until the jump's scroll ends. The `scrollend`
+	 * that ends it is taken only from the next frame on: the instant
+	 * placement before the smooth scroll may report one of its own first.
+	 * A browser that fires none, or a jump that does not scroll at all
+	 * (reduced motion), is released by the timeout.
+	 */
+	private pauseGrowth(): void {
+		this.endJump?.()
+		this.jumping = true
+		const frame = requestAnimationFrame(() => {
+			this.jumpArmed = true
+		})
+		this.jumpTimer = setTimeout(() => this.endJump?.(), JUMP_SETTLE_MS)
+		this.endJump = () => {
+			cancelAnimationFrame(frame)
+			clearTimeout(this.jumpTimer)
+			this.endJump = null
+			this.jumpArmed = false
+			this.jumping = false
+			if (this.isAttached) this.reobserveEdges()
+		}
+	}
+
+	/**
+	 * The first date of the month after (1) or before (-1) the given date's
+	 * month, among the loaded dates.
+	 */
+	private monthTarget(dateKey: string, step: 1 | -1): DateGroup | undefined {
+		const month = monthOf(dateKey)
+		if (step === 1) {
+			return this.dateGroups.find((g) => monthOf(g.dateKey) > month)
+		}
+		let previous: string | null = null
+		for (const g of this.dateGroups) {
+			const m = monthOf(g.dateKey)
+			if (m >= month) break
+			previous = m
+		}
+		if (previous === null) return undefined
+		return this.dateGroups.find((g) => monthOf(g.dateKey) === previous)
+	}
+
+	/** Point the month-jump buttons at the months around the given date. */
+	private updateMonthJump(dateKey: string | null): void {
+		const prev = dateKey === null ? undefined : this.monthTarget(dateKey, -1)
+		const next = dateKey === null ? undefined : this.monthTarget(dateKey, 1)
+		this.prevMonth = prev ? firstOfMonth(prev.dateKey) : null
+		this.nextMonth = next ? firstOfMonth(next.dateKey) : null
 	}
 
 	/** First window: from a little above the given date, or from the top. */
@@ -144,6 +273,7 @@ export class ConcertHighway {
 		this.windowStart = Math.max(0, at - WINDOW_CONTEXT)
 		this.windowEnd = this.windowStart + WINDOW_SIZE
 		this.sliceWindow()
+		this.updateMonthJump(this.dateGroups[at]?.dateKey ?? null)
 	}
 
 	/**
@@ -247,6 +377,8 @@ export class ConcertHighway {
 	}
 
 	private onEdgesSeen(entries: IntersectionObserverEntry[]): void {
+		// A month jump is still scrolling; `endJump` reports the edges afresh.
+		if (this.jumping) return
 		let above = false
 		let below = false
 		for (const entry of entries) {
@@ -325,9 +457,17 @@ export class ConcertHighway {
 
 		// `scrollIntoView` rather than arithmetic on `scrollTop`: the browser
 		// resolves where the group is, and only built groups are laid out.
-		group.scrollIntoView({ block: 'start', inline: 'nearest' })
+		// Instant whatever the stylesheet says: the list scrolls smoothly
+		// (`scroll-behavior`), but a restore must not move what the fan sees,
+		// and the offset below has to add to the final position, not to one
+		// part-way through an animation.
+		group.scrollIntoView({
+			block: 'start',
+			inline: 'nearest',
+			behavior: 'instant',
+		})
 		if (group.dataset.dateKey === anchor.dateKey) {
-			el.scrollTop += anchor.offset
+			el.scrollBy({ top: anchor.offset, behavior: 'instant' })
 		}
 	}
 

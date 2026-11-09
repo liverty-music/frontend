@@ -4,7 +4,7 @@ import {
 	IRouter,
 	IRouterEvents,
 } from '@aurelia/router'
-import { type IDisposable, resolve } from 'aurelia'
+import { type IDisposable, resolve, runTasks } from 'aurelia'
 import type { ShellRouteData } from '../../app-shell'
 import { IFabMenuService } from '../../services/fab-menu-service'
 
@@ -60,6 +60,43 @@ export class BottomNavBar {
 	public unbinding(): void {
 		this.subscription?.dispose()
 		this.subscription = null
+	}
+
+	/**
+	 * A tab was tapped. The route change runs inside a View Transition, so the
+	 * route area cross-fades while the bar and the page header, which carry
+	 * their own transition names, stay put (global.css). Bound in the capture
+	 * phase, so it runs before the router's own `href` click handler on the
+	 * same link, which it then stops; the link keeps the router's URL for a
+	 * modified or non-primary click, which is left to the router and the
+	 * browser (a new tab or window).
+	 *
+	 * The update callback settles once the router has swapped the route and
+	 * Aurelia's queue is flushed; it never waits for a frame, which the
+	 * browser does not produce while it captures the old view.
+	 */
+	public switchTab(event: MouseEvent, tab: INavigationRoute): boolean {
+		if (
+			event.button !== 0 ||
+			event.altKey ||
+			event.ctrlKey ||
+			event.metaKey ||
+			event.shiftKey
+		) {
+			return true
+		}
+		event.preventDefault()
+		event.stopPropagation()
+		const path = tab.path[0]
+		if (tab.isActive) {
+			void this.router.load(path)
+			return false
+		}
+		document.startViewTransition(async () => {
+			await this.router.load(path)
+			runTasks()
+		})
+		return false
 	}
 
 	private updateSection(): void {
