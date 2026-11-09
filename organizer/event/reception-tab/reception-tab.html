@@ -38,7 +38,7 @@
       <li repeat.for="row of rows; key: id" class="scanner" data-scanner.bind="row.number" data-new.bind="row.isNew">
         <list-item>
           ${'reception.label' & t:{ number: row.number }}
-          <span slot="supporting" class="state">
+          <span slot="supporting" class="[ state ] [ cluster ]">
             <status-badge tone.bind="row.tone" label.bind="row.statusKey & t"></status-badge>
             <span if.bind="row.boundSince">${'reception.since' & t} ${row.boundSince | jstDateTime}</span>
           </span>

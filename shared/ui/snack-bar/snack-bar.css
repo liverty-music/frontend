@@ -69,8 +69,6 @@
 			overflow: visible;
 
 			inline-size: min(100% - 2 * var(--space-s), 40rem);
-			/* stylelint-disable-next-line declaration-property-value-disallowed-list -- cancels the browser's popover padding, which the organizer console's reset leaves */
-			padding: 0;
 			border: none;
 
 			opacity: 0;
@@ -167,7 +165,6 @@
 		}
 
 		.snack-icon {
-			flex-shrink: 0;
 			inline-size: 1.25rem;
 			block-size: 1.25rem;
 		}
@@ -200,20 +197,14 @@
 
 		/* M3 close affordance: a 24 px icon on a 48 px target. */
 		.snack-close-btn {
-			cursor: pointer;
-
 			display: inline-grid;
 			flex-shrink: 0;
 			place-items: center;
 
 			inline-size: 48px;
 			block-size: 48px;
-			/* stylelint-disable-next-line declaration-property-value-disallowed-list -- cancels the browser's button padding, which the organizer console's reset leaves */
-			padding: 0;
 			border: none;
 			border-radius: var(--md-sys-shape-corner-full);
-
-			color: inherit;
 
 			background: transparent;
 
@@ -246,12 +237,6 @@
 			50% {
 				box-shadow: 0 0 14px 2px
 					color-mix(in oklch, var(--color-white) 55%, transparent);
-			}
-		}
-
-		@media (prefers-reduced-motion: reduce) {
-			.snack-item {
-				transition: none;
 			}
 		}
 	}

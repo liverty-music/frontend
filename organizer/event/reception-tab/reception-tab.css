@@ -21,7 +21,7 @@
 			display: inline-flex;
 			align-items: center;
 
-			min-block-size: var(--md-target-size);
+			min-block-size: var(--md-sys-target-size);
 
 			color: var(--md-sys-color-on-surface);
 			text-underline-offset: 3px;
@@ -30,8 +30,6 @@
 		/* An M3 multi-action list, edge to edge on a compact window. */
 		.scanners {
 			justify-self: stretch;
-			padding: 0;
-			list-style: none;
 		}
 
 		.scanner {
@@ -51,10 +49,7 @@
 		}
 
 		.state {
-			display: flex;
-			flex-wrap: wrap;
-			gap: var(--space-2xs);
-			align-items: center;
+			--cluster-gap: var(--space-2xs);
 
 			padding-block: var(--space-3xs);
 		}

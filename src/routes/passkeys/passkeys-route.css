@@ -4,17 +4,14 @@
 	@scope (passkeys-route) {
 		.passkeys {
 			--stack-gap: var(--space-s);
+			--wrapper-max: var(--page-max-inline-size);
 
-			max-inline-size: 36rem;
 			padding: var(--space-m) var(--space-s);
 		}
 
-		.passkeys-lead {
-			color: var(--md-sys-color-on-surface-variant);
-			text-wrap: pretty;
-		}
-
-		.passkeys-status {
+		.passkeys-lead,
+		.passkeys-status,
+		.passkeys-note {
 			color: var(--md-sys-color-on-surface-variant);
 		}
 
@@ -60,12 +57,6 @@
 
 		.passkeys-name {
 			overflow-wrap: anywhere;
-			color: var(--md-sys-color-on-surface);
-		}
-
-		.passkeys-note {
-			color: var(--md-sys-color-on-surface-variant);
-			text-wrap: pretty;
 		}
 
 		.passkeys-back {
@@ -90,8 +81,8 @@
 		}
 
 		.passkeys-confirm-name {
-			overflow-wrap: anywhere;
 			color: var(--md-sys-color-on-surface);
+			overflow-wrap: anywhere;
 		}
 
 		.passkeys-confirm-error {

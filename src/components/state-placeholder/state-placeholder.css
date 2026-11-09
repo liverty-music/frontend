@@ -10,13 +10,10 @@
 		/* The window margin of a compact window keeps a long message off the
 		   screen edges. (The loading skeleton pads itself.) */
 		.state-center {
-			display: flex;
-			flex-direction: column;
-			gap: var(--space-s);
+			--stack-gap: var(--space-s);
+
 			align-items: center;
-
 			padding-inline: var(--space-s);
-
 			text-align: center;
 		}
 
@@ -32,13 +29,10 @@
 		   the swap to real content is layout-shift-free. Visual (shimmer, radius)
 		   comes from the shared `.skeleton` utility; here we only own layout. */
 		.state-skeleton {
-			display: flex;
-			flex-direction: column;
-			gap: var(--space-s);
+			--stack-gap: var(--space-s);
 
 			inline-size: 100%;
-			padding-block: var(--space-s);
-			padding-inline: var(--space-s);
+			padding: var(--space-s);
 		}
 
 		.skeleton-row {

@@ -11,20 +11,13 @@
 			block-size: 100%;
 			padding-block: var(--space-l);
 			padding-inline: var(--space-m);
-
-			background: var(--md-sys-color-surface);
-		}
-
-		.tickets-title {
-			color: var(--md-sys-color-on-surface);
-			text-wrap: balance;
 		}
 
 		.tickets-panel {
 			--flow-space: var(--space-m);
+			--wrapper-max: var(--page-max-inline-size);
 
 			inline-size: 100%;
-			max-inline-size: 36rem;
 			padding: var(--space-m);
 			border: 1px solid var(--md-sys-color-outline-variant);
 			border-radius: var(--md-sys-shape-corner-large);
@@ -35,13 +28,12 @@
 		.tickets-list {
 			--flow-space: var(--space-m);
 			--gutter: 0;
+			--wrapper-max: var(--page-max-inline-size);
 
 			display: flex;
 			flex-direction: column;
 			gap: var(--space-m);
-
 			inline-size: 100%;
-			max-inline-size: 36rem;
 		}
 
 		.tickets-step-title {
@@ -50,7 +42,6 @@
 
 		.tickets-lead {
 			color: var(--md-sys-color-on-surface-variant);
-			text-wrap: pretty;
 		}
 
 		/* Order detail link inside a ticket card */
@@ -78,11 +69,6 @@
 			--flow-space: var(--space-xs);
 		}
 
-		.tickets-event-title {
-			color: var(--md-sys-color-on-surface);
-			text-wrap: balance;
-		}
-
 		/* Individual ticket card (the covered-ticket face) */
 		.tickets-card {
 			--flow-space: var(--space-xs);
@@ -103,10 +89,6 @@
 			--cluster-gap: var(--space-xs);
 		}
 
-		.tickets-number {
-			color: var(--md-sys-color-on-surface);
-		}
-
 		.tickets-admitted {
 			color: var(--md-sys-color-on-surface-variant);
 		}
@@ -117,6 +99,7 @@
 			padding-inline: var(--space-xs);
 			border: 1px solid var(--md-sys-color-outline-variant);
 			border-radius: var(--md-sys-shape-corner-medium);
+
 			color: var(--md-sys-color-on-surface-variant);
 
 			&[data-state="not-entered"] {
@@ -136,14 +119,14 @@
 
 		/* Offline / device notices */
 		.tickets-notice {
+			--wrapper-max: var(--page-max-inline-size);
+
 			display: block;
 
 			inline-size: 100%;
-			max-inline-size: 36rem;
 			padding: var(--space-s);
 			border: 1px solid var(--md-sys-color-outline-variant);
 			border-radius: var(--md-sys-shape-corner-large);
-			color: var(--md-sys-color-on-surface);
 
 			background: var(--md-sys-color-surface-container);
 
@@ -206,9 +189,7 @@
 
 		/* Summary definition list */
 		.tickets-summary {
-			display: flex;
-			flex-direction: column;
-			gap: var(--space-2xs);
+			--stack-gap: var(--space-2xs);
 
 			padding: var(--space-s);
 			border: 1px solid var(--md-sys-color-outline-variant);

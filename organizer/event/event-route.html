@@ -21,12 +21,12 @@
             <template if.bind="start">${start | jstDateTime}</template>
             <template else>${day | jstDay} · ${'event.noStartTime' & t}</template>
           </h1>
-          <p class="meta">
+          <p class="[ meta ] [ cluster ]">
             <span class="venue">${venue}</span>
             <status-badge tone.bind="badge.tone" label.bind="badge.labelKey & t"></status-badge>
           </p>
         </div>
-        <div if.bind="!cancelled" class="actions">
+        <div if.bind="!cancelled" class="[ actions ] [ cluster ]">
           <console-button
             if.bind="draft"
             variant="filled"

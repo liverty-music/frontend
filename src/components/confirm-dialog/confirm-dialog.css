@@ -23,13 +23,8 @@
 			padding: var(--space-m);
 		}
 
-		.confirm-dialog-heading {
-			color: var(--md-sys-color-on-surface);
-		}
-
 		.confirm-dialog-text {
 			color: var(--md-sys-color-on-surface-variant);
-			text-wrap: pretty;
 
 			/* A caller may put the new values on a line of their own. */
 			white-space: pre-line;

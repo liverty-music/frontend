@@ -4,11 +4,6 @@
 		display: block;
 	}
 
-	.list {
-		padding: 0;
-		list-style: none;
-	}
-
 	.table {
 		display: none;
 		border-collapse: collapse;

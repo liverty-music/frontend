@@ -1,9 +1,6 @@
 @layer block {
 	@scope (pwa-install-banner) {
 		:scope {
-			--_a: var(--color-brand-primary);
-			--_b: var(--color-brand-secondary);
-
 			position: fixed;
 			inset-block-end: calc(
 				var(--bottom-nav-height) +
@@ -43,7 +40,12 @@
 			   screen, so it is not filled with the brand gradient of the
 			   transient snack bar. */
 			border-block-start: 2px solid;
-			border-image: linear-gradient(to right, var(--_a), var(--_b)) 1;
+			border-image: linear-gradient(
+					to right,
+					var(--color-brand-primary),
+					var(--color-brand-secondary)
+				)
+				1;
 
 			background: oklch(from var(--md-sys-color-surface) l c h / 85%);
 			backdrop-filter: blur(12px);
@@ -84,9 +86,7 @@
 
 		/* Guide sheet — manual install instructions */
 		.pwa-banner-sheet {
-			display: flex;
-			flex-direction: column;
-			gap: var(--space-m);
+			--stack-gap: var(--space-m);
 
 			padding-block: var(--space-s) var(--space-l);
 			padding-inline: var(--space-m);
@@ -97,9 +97,7 @@
 		}
 
 		.pwa-banner-sheet-steps {
-			display: flex;
-			flex-direction: column;
-			gap: var(--space-s);
+			--stack-gap: var(--space-s);
 		}
 
 		.pwa-banner-sheet-step {
@@ -110,17 +108,19 @@
 		}
 
 		.pwa-banner-step-num {
-			display: flex;
 			flex-shrink: 0;
-			align-items: center;
-			justify-content: center;
 
 			inline-size: 1.5rem;
 			block-size: 1.5rem;
 			border-radius: var(--md-sys-shape-corner-full);
+
 			color: var(--color-white);
 
-			background: linear-gradient(135deg, var(--_a), var(--_b));
+			background: linear-gradient(
+				135deg,
+				var(--color-brand-primary),
+				var(--color-brand-secondary)
+			);
 		}
 
 		.pwa-banner-sheet-action {

@@ -9,7 +9,7 @@
 			max-inline-size: 28rem;
 			padding: var(--space-m);
 			border: 1px solid var(--_border-light);
-			border-radius: var(--space-s);
+			border-radius: var(--md-sys-shape-corner-large);
 
 			background: var(--md-sys-color-surface-container);
 			box-shadow: var(--shadow-soft);
@@ -30,9 +30,7 @@
 
 		footer {
 			--flow-space: var(--space-xs);
-
-			display: grid;
-			gap: var(--space-3xs);
+			--stack-gap: var(--space-3xs);
 		}
 
 		.error-email-fallback {

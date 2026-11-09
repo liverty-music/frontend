@@ -21,9 +21,8 @@
 		}
 
 		.notifications-item {
-			display: flex;
-			flex-direction: column;
-			gap: var(--space-3xs);
+			--stack-gap: var(--space-3xs);
+
 			align-items: flex-start;
 
 			inline-size: 100%;
@@ -45,15 +44,12 @@
 			align-items: center;
 		}
 
-		/* A dot, not a shape role: no shape token is round yet. */
 		.notifications-unread {
-			--_dot-radius: 50%;
-
 			flex: none;
 
 			inline-size: 0.5rem;
 			block-size: 0.5rem;
-			border-radius: var(--_dot-radius);
+			border-radius: var(--md-sys-shape-corner-full);
 
 			background: var(--color-brand-primary);
 		}

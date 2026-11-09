@@ -12,9 +12,9 @@
   </div>
 
   <template if.bind="state === 'ready'">
-    <header class="header">
+    <header class="[ header ] [ cluster ]">
       <h1 class="page-title">${title}</h1>
-      <div class="actions">
+      <div class="[ actions ] [ cluster ]">
         <console-button
           if.bind="draftDates.length"
           variant="filled"
@@ -44,7 +44,7 @@
           </div>
           <template if.bind="seatTypeState === 'ready'">
             <ul if.bind="seatTypes.length" class="seat-type-list" aria-labelledby="concert-seat-types-heading">
-              <li repeat.for="seatType of seatTypes; key: id" class="seat-type" data-seat-type.bind="seatType.id">
+              <li repeat.for="seatType of seatTypes; key: id" class="[ seat-type ] [ cluster ]" data-seat-type.bind="seatType.id">
                 <span class="[ seat-type-name ] [ md-typescale-title-small ]">${seatType.name}</span>
                 <span class="seat-type-price">${seatType.price | yen} ${'stock.taxIncluded' & t}</span>
                 <console-button

@@ -17,7 +17,7 @@
 
 			display: grid;
 			gap: var(--space-s);
-			max-inline-size: 600px;
+			max-inline-size: var(--form-max-inline-size);
 		}
 
 		.row {
@@ -29,8 +29,6 @@
 		   adds the extra space above a section title. */
 		.section-title {
 			--flow-space: var(--space-m);
-
-			color: var(--md-sys-color-on-surface);
 		}
 
 		.fixed {
@@ -72,19 +70,12 @@
 		.stock-list {
 			display: grid;
 			gap: var(--space-2xs);
-			padding: 0;
-			list-style: none;
 		}
 
 		.stock {
 			display: flex;
 			flex-wrap: wrap;
 			gap: var(--space-3xs) var(--space-s);
-			font-variant-numeric: tabular-nums;
-		}
-
-		.stock-name {
-			color: var(--md-sys-color-on-surface);
 		}
 	}
 }

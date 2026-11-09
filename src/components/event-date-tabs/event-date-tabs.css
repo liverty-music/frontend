@@ -20,6 +20,7 @@
 			min-block-size: 44px;
 			padding-inline: var(--space-3xs);
 			border-radius: var(--md-sys-shape-corner-full);
+
 			color: var(--md-sys-color-on-surface-variant);
 			text-decoration: none;
 			white-space: nowrap;
@@ -29,7 +30,5 @@
 				background: var(--md-sys-color-primary);
 			}
 		}
-
-		/* A cancelled date: its mark sits under the date, inside the 44px target. */
 	}
 }

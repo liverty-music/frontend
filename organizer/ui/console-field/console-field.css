@@ -21,7 +21,7 @@
 		gap: var(--space-2xs);
 		align-items: center;
 
-		min-block-size: 56px;
+		min-block-size: var(--field-block-size);
 		padding-inline: var(--space-s);
 		border: 1px solid var(--md-sys-color-outline);
 		border-radius: var(--md-sys-shape-corner-extra-small);
@@ -40,8 +40,7 @@
 		flex: 1;
 
 		min-inline-size: 0;
-		min-block-size: var(--md-target-size);
-		padding: 0;
+		min-block-size: var(--md-sys-target-size);
 		border: none;
 
 		color: var(--md-sys-color-on-surface);
@@ -91,7 +90,7 @@
 	option {
 		gap: var(--space-xs);
 
-		min-block-size: var(--md-target-size);
+		min-block-size: var(--md-sys-target-size);
 		padding-inline: var(--space-s);
 
 		color: var(--md-sys-color-on-surface);
@@ -101,7 +100,8 @@
 		&:is(:hover, :focus-visible) {
 			background: color-mix(
 				in oklch,
-				var(--md-sys-color-on-surface) 8%,
+				var(--md-sys-color-on-surface)
+					calc(var(--md-sys-state-hover-opacity) * 100%),
 				var(--md-sys-color-surface-container)
 			);
 		}

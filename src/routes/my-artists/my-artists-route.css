@@ -1,13 +1,9 @@
 @layer block {
 	@scope (my-artists-route) {
 		:scope {
-			--_white-5: oklch(100% 0 0deg / 5%);
 			--_white-10: oklch(100% 0 0deg / 10%);
-			--_black-50: oklch(0% 0 0deg / 50%);
-			--_black-60: oklch(0% 0 0deg / 60%);
 			--_danger: oklch(60% 0.2 25deg);
 			--_danger-10: oklch(60% 0.2 25deg / 10%);
-			--_radius-sm: var(--md-sys-shape-corner-small);
 
 			display: grid;
 			grid-template-areas: "content";
@@ -24,33 +20,21 @@
 			flex-direction: column;
 
 			min-block-size: 0;
-
-			background: var(--md-sys-color-surface);
 		}
 
+		/* The placeholder's message column fills the route and centres its
+		   content vertically. */
 		.state-center {
-			display: flex;
 			flex: 1;
-			flex-direction: column;
-			align-items: center;
 			justify-content: center;
-
-			padding-inline: var(--space-m);
-		}
-
-		.empty-icon {
-			inline-size: 4rem;
-			block-size: 4rem;
-			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		/* Title, subtitle and action: the placeholder's own gap, plus a step
 		   more before the subtitle and the action, each centred at its own
 		   width. */
 		.empty-text {
-			display: flex;
-			flex-direction: column;
-			gap: var(--space-s);
+			--stack-gap: var(--space-s);
+
 			align-items: center;
 		}
 
@@ -58,14 +42,11 @@
 			--flow-space: var(--space-3xs);
 
 			color: var(--md-sys-color-on-surface-variant);
-			text-align: center;
 		}
 
 		.empty-action {
 			--flow-space: var(--space-m);
 		}
-
-		/* ── Fieldset reset ── */
 
 		/* The fieldset only sizes the table; the table body is the one scroll
 		   container, so the header never scrolls and no row is drawn over it. */
@@ -73,16 +54,14 @@
 			display: flex;
 			flex: 1;
 			flex-direction: column;
-
 			min-block-size: 0;
-			border: none;
 		}
 
 		/* ── Edit-mode Done bar (fixed above the bottom nav) ── */
 		.edit-action-bar {
 			position: fixed;
 			inset-block-end: calc(
-				var(--bottom-nav-height, 3.5rem) +
+				var(--bottom-nav-height) +
 				env(safe-area-inset-bottom, 0px)
 			);
 			inset-inline: 0;
@@ -148,7 +127,6 @@
 			align-items: center;
 			justify-content: center;
 
-			/* Compact-only exception: dense hype table headers (see tokens.css). */
 			color: var(--md-sys-color-on-surface-variant);
 			text-align: center;
 
@@ -215,6 +193,7 @@
 			overflow: hidden;
 
 			min-inline-size: 0;
+
 			color: var(--md-sys-color-on-surface);
 			text-overflow: ellipsis;
 			white-space: nowrap;
@@ -238,10 +217,7 @@
 				inline-size: calc(3 * 100%);
 				block-size: 2px;
 
-				background: var(
-					--md-sys-color-outline-variant,
-					oklch(100% 0 0deg / 10%)
-				);
+				background: var(--md-sys-color-outline-variant);
 			}
 		}
 
@@ -265,18 +241,17 @@
 
 			inline-size: 8px;
 			block-size: 8px;
-			border: none;
 			border-radius: var(--md-sys-shape-corner-full);
 
-			background: var(--md-sys-color-outline-variant, oklch(100% 0 0deg / 20%));
+			background: var(--md-sys-color-outline-variant);
 
 			transition:
-				inline-size 200ms ease-out,
-				block-size 200ms ease-out,
-				background-color 200ms ease-out,
-				border-color 200ms ease-out,
-				box-shadow 200ms ease-out,
-				opacity 200ms ease-out;
+				inline-size var(--md-sys-motion-duration-short4) ease-out,
+				block-size var(--md-sys-motion-duration-short4) ease-out,
+				background-color var(--md-sys-motion-duration-short4) ease-out,
+				border-color var(--md-sys-motion-duration-short4) ease-out,
+				box-shadow var(--md-sys-motion-duration-short4) ease-out,
+				opacity var(--md-sys-motion-duration-short4) ease-out;
 
 			/* 44px min tap target */
 			&::before {
@@ -293,7 +268,7 @@
 			/* WATCH: minimal */
 			&[data-active="true"][data-level="watch"] {
 				border: 1px solid oklch(100% 0 0deg / 10%);
-				background: var(--md-sys-color-surface, oklch(100% 0 0deg / 5%));
+				background: var(--md-sys-color-surface);
 			}
 
 			/* HOME: subtle glow */
@@ -348,13 +323,13 @@
 			/* 44 px minimum tap target on both pointer types (WCAG 2.5.5). */
 			min-inline-size: 44px;
 			min-block-size: 44px;
-			border-radius: var(--_radius-sm);
+			border-radius: var(--md-sys-shape-corner-small);
 
 			color: oklch(from var(--_danger) l c h / 40%);
 
 			transition:
-				color 150ms ease-out,
-				background-color 150ms ease-out;
+				color var(--md-sys-motion-duration-short3) ease-out,
+				background-color var(--md-sys-motion-duration-short3) ease-out;
 
 			& svg {
 				inline-size: 1rem;

@@ -19,11 +19,8 @@
         />
       </div>
 
-      <!-- Artist name header with dynamic color -->
-      <header
-        style="--artist-hue: ${event.artistHue}"
-        class="[ sheet-artist-header hype-home ] [ flow ]"
-      >
+      <!-- Artist name header -->
+      <header class="[ sheet-artist-header ] [ flow ]">
         <h2 id="sheet-artist-name" class="[ sheet-artist-name ] [ md-typescale-headline-small ]">
           ${event.artistName}
         </h2>
@@ -31,7 +28,7 @@
       </header>
 
       <!-- Event details -->
-      <section class="sheet-details">
+      <section class="[ sheet-details ] [ stack ]">
         <!-- Date & Time, with the add-to-calendar link -->
         <div class="detail-row">
           <span class="detail-icon"><svg-icon name="calendar" size="md"></svg-icon></span>
@@ -72,7 +69,7 @@
       </section>
 
       <!-- Out-of-range notice: the fan's hype level does not match the concert -->
-      <section if.bind="outOfRange" class="sheet-out-of-range" data-testid="out-of-range">
+      <section if.bind="outOfRange" class="[ sheet-out-of-range ] [ stack ]" data-testid="out-of-range">
         <p if.bind="!outOfRange.saved" class="[ out-of-range-text ] [ md-typescale-body-medium ]">
           <span if.bind="outOfRange.currentPlaces" t="[html]eventDetail.outOfRange.current" t-params.bind="{ places: outOfRange.currentPlaces }"></span>
           <span else t="eventDetail.outOfRange.none"></span>
@@ -105,7 +102,7 @@
 
       <!-- Ticket section: the notification button, the other four statuses,
            the push line and the official site button -->
-      <section class="sheet-tickets" data-testid="sheet-journey" aria-labelledby="ticket-section-heading">
+      <section class="[ sheet-tickets ] [ stack ]" data-testid="sheet-journey" aria-labelledby="ticket-section-heading">
         <h3 id="ticket-section-heading" class="[ journey-heading ] [ md-typescale-title-small ]" t="eventDetail.ticketSection"></h3>
 
         <button
@@ -124,7 +121,7 @@
 
         <div
           if.bind="isAuthenticated"
-          class="journey-row"
+          class="[ journey-row ] [ cluster ]"
           role="group"
           aria-labelledby="ticket-section-heading"
           aria-busy.bind="journeyUpdating"
@@ -152,7 +149,7 @@
           </template>
         </div>
 
-        <p if.bind="pushLine" class="[ push-line ] [ md-typescale-body-medium ]" data-testid="push-line">
+        <p if.bind="pushLine" class="[ push-line ] [ cluster ] [ md-typescale-body-medium ]" data-testid="push-line">
           <span t.bind="pushLine.key"></span>
           <button
             if.bind="pushLine.offer && pushAction"

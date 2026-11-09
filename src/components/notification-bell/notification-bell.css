@@ -1,17 +1,12 @@
 @layer block {
 	@scope (notification-bell) {
-		/* Round, not a shape role: no shape token is round yet. */
-		:scope {
-			--_round: 50%;
-		}
-
 		.notification-bell {
 			display: grid;
 			place-items: center;
 
 			inline-size: 2.75rem;
 			block-size: 2.75rem;
-			border-radius: var(--_round);
+			border-radius: var(--md-sys-shape-corner-full);
 		}
 
 		/* The 24 px bell; the badge is placed on its top corner. */
@@ -28,7 +23,6 @@
 		   digits keep round ends. The type comes from md-typescale-label-small. */
 		.notification-bell-badge {
 			--_badge-fill: color-mix(in oklch, var(--color-brand-primary) 65%, black);
-			--_pill: 9999px;
 
 			position: absolute;
 			inset-block-start: -0.25rem;
@@ -40,7 +34,7 @@
 			min-inline-size: 1rem;
 			block-size: 1rem;
 			padding-inline: var(--space-3xs);
-			border-radius: var(--_pill);
+			border-radius: var(--md-sys-shape-corner-full);
 
 			background: var(--_badge-fill);
 		}

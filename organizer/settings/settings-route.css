@@ -18,21 +18,13 @@
 			justify-self: stretch;
 		}
 
-		.section-title {
-			color: var(--md-sys-color-on-surface);
-		}
-
 		.artists {
 			display: grid;
 			justify-self: stretch;
-			padding: 0;
-
-			list-style: none;
 		}
 
 		.artist {
 			padding-block: var(--space-xs);
-			color: var(--md-sys-color-on-surface);
 		}
 
 		.status {
@@ -51,7 +43,6 @@
 
 		.explain {
 			max-inline-size: 65ch;
-			color: var(--md-sys-color-on-surface);
 		}
 
 		.message {

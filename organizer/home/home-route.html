@@ -4,11 +4,11 @@
   <h1 class="page-title">${'home.title' & t}</h1>
 
   <template if.bind="!isLoading">
-    <div if.bind="payoutState === 'error'" class="part-error" role="alert">
+    <div if.bind="payoutState === 'error'" class="[ part-error ] [ cluster ]" role="alert">
       <span>${'home.payoutUnavailable' & t}</span>
       <console-button variant="text" click.trigger="loadPayout()">${'common.retry' & t}</console-button>
     </div>
-    <div if.bind="concertsState === 'error'" class="part-error" role="alert">
+    <div if.bind="concertsState === 'error'" class="[ part-error ] [ cluster ]" role="alert">
       <span>${'home.concertsUnavailable' & t}</span>
       <console-button variant="text" click.trigger="loadConcerts()">${'common.retry' & t}</console-button>
     </div>

@@ -50,9 +50,9 @@
        unauthenticated users can still start onboarding or sign in. The
        guest-friendly note rides above the CTA group per the landing-page spec
        so the no-account-required message stays visible without scrolling. -->
-  <div else class="[ welcome-hero-fallback ]">
+  <div else class="[ welcome-hero-fallback ] [ stack ]">
     <p t="welcome.guestFriendly" class="[ welcome-guest-friendly ] [ md-typescale-body-medium ]"></p>
-    <div class="[ welcome-action-group welcome-hero-fallback-action-group ]">
+    <div class="[ welcome-action-group ] [ stack ]">
       <button
         busy-on-click.bind="() => handleGetStarted()"
         class="[ button ] [ pressable ]"
@@ -88,7 +88,7 @@
        sequential, driven by `data-exiting` + the VM's swap. -->
   <div
     if.bind="demoPhase === 'notification'"
-    class="[ welcome-demo-notification ]"
+    class="[ welcome-demo-notification ] [ stack ]"
     data-exiting.bind="demoExiting || undefined"
     data-testid="welcome-demo-notification"
   >
@@ -124,9 +124,9 @@
         event-selected.trigger="onEventSelected($event)"
       ></concert-highway>
     </div>
-    <footer class="[ welcome-actions ]">
+    <footer class="[ welcome-actions ] [ stack ]">
       <p t="welcome.guestFriendly" class="[ welcome-guest-friendly ] [ md-typescale-body-medium ]"></p>
-      <div class="welcome-action-group">
+      <div class="[ welcome-action-group ] [ stack ]">
         <button
           busy-on-click.bind="() => handleGetStarted()"
           class="[ button ] [ pressable ]"

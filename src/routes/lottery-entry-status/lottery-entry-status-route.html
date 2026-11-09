@@ -23,7 +23,7 @@
 
 		<p class="[ lottery-entry-status-lead ] [ md-typescale-body-medium ]" t.bind="'lotteryEntryStatus.note.' + resultKind"></p>
 
-		<dl class="lottery-entry-status-summary">
+		<dl class="[ lottery-entry-status-summary ] [ stack ]">
 			<div class="lottery-entry-status-summary-row" if.bind="stock">
 				<dt class="[ lottery-entry-status-summary-key ] [ md-typescale-label-large ]" t="lotteryEntryStatus.seatType"></dt>
 				<dd class="[ lottery-entry-status-summary-val ] [ md-typescale-body-large ]" data-testid="lottery-entry-status-seat-type">${stock.seatTypeName}</dd>

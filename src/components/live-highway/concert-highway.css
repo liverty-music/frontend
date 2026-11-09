@@ -1,13 +1,13 @@
 @layer block {
 	@scope (concert-highway) {
-		--_border-light: oklch(100% 0 0deg / 10%);
-		--_border-faint: oklch(100% 0 0deg / 5%);
-		--_muted-faint: oklch(
-			from var(--md-sys-color-on-surface-variant) l c h /
-			30%
-		);
-
 		:scope {
+			--_border-light: oklch(100% 0 0deg / 10%);
+			--_border-faint: oklch(100% 0 0deg / 5%);
+			--_muted-faint: oklch(
+				from var(--md-sys-color-on-surface-variant) l c h /
+				30%
+			);
+
 			/* Single source of truth for the lane columns. The stage header still
 			   subgrids off this, but each date group now declares these columns
 			   itself (see `.concert-scroll > li`), so the token keeps the two
@@ -48,7 +48,7 @@
 
 			& > span {
 				padding: var(--space-2xs);
-
+				color: var(--md-sys-color-surface);
 				text-align: center;
 				text-transform: uppercase;
 			}
@@ -58,23 +58,26 @@
 			}
 
 			& > [data-stage="home"] {
-				color: var(--md-sys-color-surface);
 				background: var(--color-stage-home);
 			}
 
 			& > [data-stage="near"] {
-				color: var(--md-sys-color-surface);
 				background: var(--color-stage-near);
 			}
 
 			& > [data-stage="away"] {
-				color: var(--md-sys-color-surface);
 				background: var(--color-stage-away);
 			}
 		}
 
 		/* ── Row 2: Concert scroll (scrollable subgrid list) ── */
 		.concert-scroll {
+			/* The highway keeps the fan's place itself when dates are added above
+			   (see `keepingPlace` in concert-highway.ts). Browser scroll anchoring
+			   would correct the same change a second time — and measured
+			   unreliable here anyway — so it is off for this list. */
+			overflow-anchor: none;
+
 			position: relative;
 
 			overflow-block: auto;
@@ -83,12 +86,6 @@
 			/* Contain overscroll so a scroll-boundary bounce never chains into the
 			   (root-locked) document. Defense-in-depth alongside the root scroll lock. */
 			overscroll-behavior: contain;
-
-			/* The highway keeps the fan's place itself when dates are added above
-			   (see `keepingPlace` in concert-highway.ts). Browser scroll anchoring
-			   would correct the same change a second time — and measured
-			   unreliable here anyway — so it is off for this list. */
-			overflow-anchor: none;
 			display: grid;
 			grid-column: lane-home / lane-away;
 			grid-template-columns: subgrid;
@@ -96,14 +93,16 @@
 			min-block-size: 0;
 
 			/* Date group — the unit of the date window: only the groups in the
-			   window exist, so nothing here has to skip rendering work.
+			   window exist, so nothing here has to skip rendering work. The
+			   loading placeholder is a date group too, so its lanes land on the
+			   stage header's columns and the swap to concerts moves nothing.
 
 			   Declares its own columns rather than subgridding through this scroll
 			   container. The root columns are equal fractions and the grid has no
 			   column-gap, so repeating them here lands on identical positions
 			   (measured within 0.02px of the subgrid baseline), and `.lane-grid`
 			   can still subgrid because that chain is internal to this element. */
-			& > .date-group:not(.date-group-skeleton) {
+			& > .date-group {
 				display: grid;
 				grid-column: 1 / -1;
 				grid-template-columns: var(--_lane-columns);
@@ -115,23 +114,6 @@
 		.window-edge {
 			grid-column: 1 / -1;
 			block-size: 0;
-		}
-
-		/* Loading placeholder. Shares the date group's grid so the lanes line up
-		   with the stage header exactly as real content does — the swap to
-		   concerts is then a content change, not a layout change. Excluded from
-		   reveal motion: it is short-lived, always on screen, and animating a
-		   placeholder into view only delays the real thing. */
-		.date-group-skeleton {
-			/* Shares the date group's grid so its lanes land on the same columns as
-			   the stage header — that is what makes the swap to real concerts a
-			   content change rather than a layout change. It is deliberately NOT a
-			   `.date-group` for reveal purposes: those selectors
-			   exclude it, because a placeholder is always on screen and animating
-			   one in only delays the content it stands in for. */
-			display: grid;
-			grid-column: 1 / -1;
-			grid-template-columns: var(--_lane-columns);
 		}
 
 		.skeleton-date {
@@ -156,6 +138,7 @@
 
 			padding-block: var(--space-m) var(--space-2xs);
 			padding-inline: var(--space-xs);
+
 			color: var(--md-sys-color-on-surface-variant);
 			text-transform: uppercase;
 
@@ -250,6 +233,7 @@
 				display: block;
 
 				padding-block: var(--space-s);
+
 				color: var(--_muted-faint);
 				text-align: center;
 			}
@@ -264,10 +248,12 @@
 		   that mismatch alone put the beam up to 130px past its card. */
 		.beam-overlay {
 			pointer-events: none;
+
 			position: absolute;
-			grid-row: lane-home / lane-away;
-			grid-column: lane-home / lane-away;
 			inset: 0;
+
+			grid-column: lane-home / lane-away;
+			grid-row: lane-home / lane-away;
 		}
 
 		/* The beam reaches from the top of the lane area down to its concert's card,
@@ -290,8 +276,6 @@
 			position: absolute;
 			inset-block-start: 0;
 			inset-inline: 0;
-
-			block-size: 100%;
 			transform-origin: top;
 
 			/* Collapsed by default, which is also the off-screen state: with no fill
@@ -300,6 +284,8 @@
 			   backwards fill held the opening keyframe — the full-length beam — and
 			   lit every matched concert in the timetable at once. */
 			transform: scaleY(0);
+
+			block-size: 100%;
 
 			background: linear-gradient(
 				to bottom,

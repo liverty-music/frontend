@@ -1,52 +1,38 @@
 @layer block {
 	@scope (consent-route) {
 		:scope {
-			--_card-bg: var(--md-sys-color-surface-container);
-			--_card-border: color-mix(in oklch, var(--color-white) 10%, transparent);
 			--flow-space: var(--space-m);
 
 			overflow-y: auto;
 			display: flex;
 			flex-direction: column;
-			gap: var(--space-m);
 
 			block-size: 100%;
 			padding-block: var(--space-l);
 			padding-inline: var(--space-m);
-
-			background: var(--md-sys-color-surface);
 		}
 
 		.consent-header {
-			display: flex;
-			flex-direction: column;
-			gap: var(--space-s);
+			--stack-gap: var(--space-s);
 		}
 
 		.consent-title {
-			color: var(--md-sys-color-on-surface);
-			text-wrap: balance;
 			word-break: auto-phrase;
 		}
 
 		.consent-paragraph {
-			max-inline-size: 36rem;
+			max-inline-size: var(--page-max-inline-size);
 			color: var(--md-sys-color-on-surface-variant);
-			text-wrap: pretty;
 			word-break: auto-phrase;
-		}
-
-		.consent-paragraph-emphasis {
-			color: var(--md-sys-color-on-surface);
 		}
 
 		.consent-card {
 			--flow-space: 0;
 
 			overflow: hidden;
-			border: 1px solid var(--_card-border);
+			border: 1px solid color-mix(in oklch, var(--color-white) 10%, transparent);
 			border-radius: var(--md-sys-shape-corner-large);
-			background: var(--_card-bg);
+			background: var(--md-sys-color-surface-container);
 		}
 
 		.consent-row {
@@ -60,7 +46,7 @@
 
 			text-align: start;
 
-			transition: background 200ms;
+			transition: background var(--md-sys-motion-duration-short4);
 
 			&:hover {
 				background: color-mix(in oklch, var(--color-white) 5%, transparent);
@@ -68,12 +54,10 @@
 		}
 
 		.consent-row-text {
-			display: flex;
-			flex: 1;
-			flex-direction: column;
-			gap: var(--space-3xs);
-			align-items: flex-start;
+			--stack-gap: var(--space-3xs);
 
+			flex: 1;
+			align-items: flex-start;
 			min-inline-size: 0;
 		}
 
@@ -87,10 +71,6 @@
 			inline-size: 1.1rem;
 			block-size: 1.1rem;
 			color: var(--md-sys-color-on-surface-variant);
-		}
-
-		.consent-row-label {
-			color: var(--md-sys-color-on-surface);
 		}
 
 		.consent-row-description {
@@ -128,57 +108,10 @@
 
 		.consent-actions {
 			--gutter: 0;
-
-			display: flex;
-			flex-direction: column;
-			gap: var(--space-2xs);
+			--wrapper-max: 28rem;
+			--stack-gap: var(--space-2xs);
 
 			inline-size: 100%;
-			max-inline-size: 28rem;
-		}
-
-		/* Reuse settings page toggle track + thumb. The classes are defined
-		   in settings-route.css under @scope (settings-route) so they only
-		   apply on that route. The values are identical here, so we
-		   duplicate just the data-on selectors at this scope to keep the
-		   visual contract self-contained. */
-		.settings-toggle-track {
-			position: relative;
-
-			flex-shrink: 0;
-
-			inline-size: var(--toggle-track-inline);
-			block-size: var(--toggle-track-block);
-			border-radius: var(--md-sys-shape-corner-full);
-
-			transition: background var(--md-sys-motion-duration-short4);
-
-			&[data-on="true"] {
-				background: var(--color-brand-primary);
-			}
-
-			&[data-on="false"] {
-				background: color-mix(in oklch, var(--color-white) 20%, transparent);
-			}
-		}
-
-		.settings-toggle-thumb {
-			position: absolute;
-			inset-block-start: var(--toggle-thumb-inset);
-			inset-inline-start: var(--toggle-thumb-inset);
-
-			inline-size: var(--toggle-thumb-size);
-			block-size: var(--toggle-thumb-size);
-			border-radius: var(--md-sys-shape-corner-full);
-
-			background: var(--color-white);
-			box-shadow: var(--shadow-soft);
-
-			transition: transform var(--md-sys-motion-duration-short4);
-
-			&[data-on="true"] {
-				transform: translateX(var(--toggle-thumb-translate));
-			}
 		}
 	}
 }

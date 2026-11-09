@@ -10,10 +10,10 @@
 			   half the bar's height while sunk so the smaller FAB lies inside the
 			   bar. No hard-coded pixel constant. */
 			--_fab-centre: calc(
-				var(--bottom-nav-height, 3.5rem) +
+				var(--bottom-nav-height) +
 				env(safe-area-inset-bottom) -
 				var(--_sunk) *
-				var(--bottom-nav-height, 3.5rem) /
+				var(--bottom-nav-height) /
 				2
 			);
 
@@ -24,11 +24,6 @@
 			--_arc-left: path("M0 0 C 0 -100, -70 -140, -110 -260");
 			--_item-size: 3rem;
 			--_label-gap: var(--space-3xs);
-
-			/* Near-instant duration for the reduced-motion fallback (lands the end
-			   state without overshoot; not 0 so transition-dependent logic settles).
-			   Matches the bottom-sheet / toast convention. */
-			--_duration-reduced: 0.01ms;
 		}
 
 		/* ── Collapsed FAB, centred in the navigation bar's notch ── */
@@ -278,14 +273,11 @@
 			inline-size: var(--_item-size);
 			block-size: var(--_item-size);
 			border-radius: var(--md-sys-shape-corner-full);
+
 			color: var(--md-sys-color-on-surface);
 
 			background: var(--md-sys-color-menu-surface);
 			box-shadow: var(--shadow-soft);
-		}
-
-		.fab-item-icon {
-			flex-shrink: 0;
 		}
 
 		.fab-item-label {
@@ -299,6 +291,7 @@
 			padding-block: var(--space-3xs);
 			padding-inline: var(--space-2xs);
 			border-radius: var(--md-sys-shape-corner-small);
+
 			color: var(--md-sys-color-on-surface);
 			text-align: end;
 
@@ -355,21 +348,12 @@
 			text-align: start;
 		}
 
-		/* Reduced motion: land the end state near-instantly — no travel,
-		   overshoot, stagger or bounce. Keep the scrim (its fade collapses to
-		   ~instant). Near-instant (not `none`) so any transition-dependent logic
-		   still settles. */
+		/* Reduced motion: land the end state at once — no travel, overshoot,
+		   stagger or bounce. The transitions' duration tokens are 0 ms under
+		   reduced motion; only the items' stagger delay is set here. */
 		@media (prefers-reduced-motion: reduce) {
-			.fab-toggle,
-			.fab-equalizer,
-			.fab-close,
-			.fab-panel,
-			.fab-scrim,
-			.fab-list-item,
-			.fab-item::after,
-			.fab-toggle::after {
+			.fab-list-item {
 				transition-delay: 0ms;
-				transition-duration: var(--_duration-reduced);
 			}
 
 			.fab-glyph[data-open="true"] .fab-bar {

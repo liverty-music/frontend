@@ -6,13 +6,10 @@
 @layer block {
 	@scope (.settings-card) {
 		:scope {
-			--_hover-bg: var(--color-white);
-			--_toggle-off: var(--color-white);
-			--_thumb-bg: var(--color-white);
-
 			overflow: hidden;
 			display: grid;
 			grid-template-columns: auto 1fr auto;
+
 			border: 1px solid color-mix(in oklch, var(--color-white) 10%, transparent);
 			border-radius: var(--md-sys-shape-corner-large);
 
@@ -58,7 +55,7 @@
 			/* Only a row that is itself the control (a <button> or <a>) reacts
 			   to the pointer; a row holding its own action button does not. */
 			&:is(button, a):hover {
-				background: color-mix(in oklch, var(--_hover-bg) 5%, transparent);
+				background: color-mix(in oklch, var(--color-white) 5%, transparent);
 			}
 
 			/* A full-width row reads better with a background-deepen than a scale.
@@ -67,7 +64,7 @@
 			   background-deepen needs no scale to suppress under reduced motion. */
 			&:is(button, a):active {
 				transform: none;
-				background: color-mix(in oklch, var(--_hover-bg) 10%, transparent);
+				background: color-mix(in oklch, var(--color-white) 10%, transparent);
 			}
 		}
 
@@ -148,14 +145,11 @@
 			align-items: center;
 		}
 
-		/* accent-color themes the slider on Chrome/Android. Safari/WebKit does
-		   not support it, so iOS falls back to the native control by design —
-		   the project's CSS rules forbid the vendor-prefixed hand-rolled slider
-		   that a custom WebKit fallback would require. */
+		/* The slider's accent colour comes from global.css (Chrome/Android;
+		   iOS keeps the native control). */
 		.settings-volume-slider {
 			cursor: pointer;
 			flex: 1;
-			accent-color: var(--color-brand-primary);
 		}
 
 		/* Full-width, centred — overrides the subgrid column tracks. */
@@ -165,7 +159,7 @@
 		}
 
 		.settings-sign-out-text {
-			color: var(--color-error);
+			color: var(--md-sys-color-error);
 		}
 
 		/* Inter-row separator. Replaces the former <hr> dividers (an <ul> may not
@@ -189,11 +183,9 @@
 		/* Content column (col2) for whole-row toggle buttons: label + optional
 		   hint/description stacked. */
 		.settings-toggle-col {
-			display: flex;
-			flex-direction: column;
-			gap: var(--space-3xs);
-			align-items: flex-start;
+			--stack-gap: var(--space-3xs);
 
+			align-items: flex-start;
 			min-inline-size: 0;
 		}
 
@@ -207,13 +199,10 @@
 		   A sibling of `.settings-switch` — never a parent of it (a role="switch"
 		   must not nest another interactive control). */
 		.settings-expand {
-			display: flex;
-			flex-direction: column;
-			gap: var(--space-3xs);
+			--stack-gap: var(--space-3xs);
+
 			align-items: flex-start;
-
 			min-inline-size: 0;
-
 			text-align: start;
 		}
 
@@ -274,7 +263,7 @@
 			block-size: var(--toggle-thumb-size);
 			border-radius: var(--md-sys-shape-corner-full);
 
-			background: var(--_thumb-bg);
+			background: var(--color-white);
 			box-shadow: var(--shadow-soft);
 
 			transition: transform var(--md-sys-motion-duration-short4);
@@ -339,7 +328,7 @@
 		}
 
 		.settings-toggle-track[data-on="false"] {
-			background: color-mix(in oklch, var(--_toggle-off) 20%, transparent);
+			background: color-mix(in oklch, var(--color-white) 20%, transparent);
 		}
 
 		.settings-toggle-thumb[data-on="true"] {

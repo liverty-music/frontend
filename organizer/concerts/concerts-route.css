@@ -2,10 +2,12 @@
 	@scope (concerts-route) {
 		/* Room under the last concert for the floating 公演をつくる. */
 		.concerts {
+			--_fab-room: calc(var(--fab-block-size) + var(--space-s));
+
 			display: grid;
 			grid-template-columns: minmax(0, 1fr);
 			gap: var(--space-s);
-			padding-block-end: calc(56px + var(--space-s));
+			padding-block-end: var(--_fab-room);
 		}
 
 		.message {

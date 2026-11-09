@@ -9,8 +9,7 @@
 			gap: var(--space-3xs);
 			align-items: center;
 
-			padding-block: var(--space-xs);
-			padding-inline: var(--space-xs);
+			padding: var(--space-xs);
 			border-block-end: 1px solid
 				color-mix(in oklch, var(--color-white) 10%, transparent);
 

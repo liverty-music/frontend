@@ -22,7 +22,7 @@
 		gap: var(--space-xs);
 		align-items: center;
 
-		min-block-size: 56px;
+		min-block-size: var(--field-block-size);
 		padding-inline: var(--space-s);
 		border: 1px solid var(--md-sys-color-outline);
 		border-radius: var(--md-sys-shape-corner-extra-small);
@@ -43,8 +43,7 @@
 		flex: 1;
 
 		min-inline-size: 0;
-		min-block-size: var(--md-target-size);
-		padding: 0;
+		min-block-size: var(--md-sys-target-size);
 		border: none;
 
 		color: var(--md-sys-color-on-surface);
@@ -70,8 +69,7 @@
 	}
 
 	.listbox {
-		padding: var(--space-3xs) 0;
-		list-style: none;
+		padding-block: var(--space-3xs);
 	}
 
 	.option {
@@ -95,7 +93,6 @@
 		}
 	}
 
-	.option-name,
 	.picked-name {
 		color: var(--md-sys-color-on-surface);
 	}
@@ -137,7 +134,7 @@
 		gap: var(--space-xs);
 		align-items: center;
 
-		min-block-size: 56px;
+		min-block-size: var(--field-block-size);
 		padding-inline-start: var(--space-s);
 		border-radius: var(--md-sys-shape-corner-small);
 

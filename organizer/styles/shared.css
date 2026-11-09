@@ -83,8 +83,8 @@
 		inset-inline-start: 50%;
 		translate: -50% -50%;
 
-		inline-size: max(100%, var(--md-target-size));
-		block-size: max(100%, var(--md-target-size));
+		inline-size: max(100%, var(--md-sys-target-size));
+		block-size: max(100%, var(--md-sys-target-size));
 	}
 }
 

@@ -101,7 +101,7 @@
 					<template if.bind="group.event">${group.event.title}</template>
 					<template else><span t="tickets.event.unknown"></span></template>
 				</h2>
-				<dl class="tickets-summary" if.bind="group.event">
+				<dl class="[ tickets-summary ] [ stack ]" if.bind="group.event">
 					<div class="tickets-summary-row">
 						<dt class="[ tickets-summary-key ] [ md-typescale-label-large ]" t="tickets.event.date"></dt>
 						<dd class="[ tickets-summary-val ] [ md-typescale-body-large ]">${eventDate(group)}</dd>
@@ -138,7 +138,7 @@
 					</div>
 
 					<!-- 特定興行入場券 face: seat type, eligible person's name and phone, no seat, resale notice -->
-					<dl class="tickets-summary">
+					<dl class="[ tickets-summary ] [ stack ]">
 						<div class="tickets-summary-row" if.bind="ticket.seatTypeName">
 							<dt class="[ tickets-summary-key ] [ md-typescale-label-large ]" t="tickets.field.seatType"></dt>
 							<dd class="[ tickets-summary-val ] [ md-typescale-body-large ]" data-testid="tickets-seat-type">${ticket.seatTypeName}</dd>
@@ -178,7 +178,7 @@
 							></button>
 						</template>
 						<template case="resold">
-							<dl class="tickets-summary" data-testid="tickets-resold">
+							<dl class="[ tickets-summary ] [ stack ]" data-testid="tickets-resold">
 								<div class="tickets-summary-row">
 									<dt class="[ tickets-summary-key ] [ md-typescale-label-large ]" t="tickets.resale.refundAmount"></dt>
 									<dd class="[ tickets-summary-val ] [ md-typescale-body-large ]" t="tickets.resale.yen" t-params.bind="{ amount: yen(listingOf(ticket, listings).refundAmount) }"></dd>
@@ -233,7 +233,7 @@
 		<div class="[ tickets-code ] [ flow ]" if.bind="listingTicket" data-testid="tickets-resale-confirm">
 			<h2 class="[ tickets-step-title ] [ md-typescale-title-large-emphasized ]" t="tickets.resale.confirmTitle"></h2>
 			<p class="[ tickets-code-event ] [ md-typescale-title-medium ]">${listingGroup.event?.title}</p>
-			<dl class="tickets-summary">
+			<dl class="[ tickets-summary ] [ stack ]">
 				<div class="tickets-summary-row">
 					<dt class="[ tickets-summary-key ] [ md-typescale-label-large ]" t="tickets.resale.price"></dt>
 					<dd class="[ tickets-summary-val ] [ md-typescale-body-large ]" t="tickets.resale.yen" t-params.bind="{ amount: yen(listingPrice(listingTicket)) }"></dd>

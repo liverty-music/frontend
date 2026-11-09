@@ -165,7 +165,7 @@ describe('Sign-out from the settings screen (fixture)', () => {
 			settingsListCss.indexOf('.settings-sign-out-text {'),
 		)
 		expect(textRule.slice(0, textRule.indexOf('}'))).toContain(
-			'color: var(--color-error)',
+			'color: var(--md-sys-color-error)',
 		)
 
 		signOut?.click()

@@ -1,18 +1,14 @@
 @layer block {
 	@scope (artist-filter-bar) {
-		/* host is transparent — children flow directly into page-header flex context */
+		/* The host takes no box: the component renders only its bottom sheet,
+		   whose <dialog> goes to the top layer. */
 		:scope {
 			display: contents;
 		}
 
-		/* The filter trigger moved to the FAB action launcher; only the bottom
-		   sheet styles remain here. */
-
 		/* ── Bottom sheet content ── */
 		.filter-sheet-content {
-			display: flex;
-			flex-direction: column;
-			gap: var(--space-s);
+			--stack-gap: var(--space-s);
 
 			padding-block: var(--space-s) var(--space-m);
 			padding-inline: var(--space-m);
@@ -31,9 +27,7 @@
 
 		/* ── Facet section: heading + chip group ── */
 		.filter-facet {
-			display: flex;
-			flex-direction: column;
-			gap: var(--space-2xs);
+			--stack-gap: var(--space-2xs);
 		}
 
 		.filter-facet + .filter-facet {
@@ -86,6 +80,7 @@
 			   janky because roundness saturates well before a full pill, so most
 			   of the tween is visually inert. */
 			border-radius: var(--md-sys-shape-corner-full);
+
 			color: var(--md-sys-color-on-surface-variant);
 
 			background: var(--md-sys-color-surface-container);
@@ -151,6 +146,7 @@
 
 			/* Pill throughout (see .artist-chip) — selection is color, not shape. */
 			border-radius: var(--md-sys-shape-corner-full);
+
 			color: var(--md-sys-color-on-surface-variant);
 
 			background: var(--md-sys-color-surface-container);
@@ -222,9 +218,8 @@
 		}
 
 		.date-facet-field {
-			display: flex;
-			flex-direction: column;
-			gap: var(--space-3xs);
+			--stack-gap: var(--space-3xs);
+
 			padding-block-start: var(--space-2xs);
 		}
 
@@ -237,8 +232,6 @@
 			border: 1px solid var(--md-sys-color-outline);
 			border-radius: var(--md-sys-shape-corner-medium);
 			color: var(--md-sys-color-on-surface);
-
-			background: var(--md-sys-color-surface-container);
 
 			&:focus-visible {
 				outline: 2px solid var(--color-brand-primary);

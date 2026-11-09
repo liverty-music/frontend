@@ -4,14 +4,9 @@
 	@scope (passkey-recovery-route) {
 		.passkey-recovery {
 			--stack-gap: var(--space-s);
+			--wrapper-max: var(--page-max-inline-size);
 
-			max-inline-size: 36rem;
 			padding: var(--space-m) var(--space-s);
-		}
-
-		.passkey-recovery-lead {
-			color: var(--md-sys-color-on-surface);
-			text-wrap: pretty;
 		}
 
 		.passkey-recovery-notes {
@@ -19,7 +14,6 @@
 
 			padding-inline-start: var(--space-s);
 			color: var(--md-sys-color-on-surface-variant);
-
 			list-style: disc;
 		}
 
@@ -34,23 +28,16 @@
 		}
 
 		.passkey-recovery-field {
-			display: flex;
-			flex-direction: column;
-			gap: var(--space-3xs);
-		}
-
-		.passkey-recovery-label {
-			color: var(--md-sys-color-on-surface);
+			--stack-gap: var(--space-3xs);
 		}
 
 		.passkey-recovery-input {
 			inline-size: 100%;
-			min-block-size: 48px;
+			min-block-size: var(--md-sys-target-size);
 			padding-block: var(--space-2xs);
 			padding-inline: var(--space-s);
 			border: 1px solid var(--md-sys-color-outline-variant);
 			border-radius: var(--md-sys-shape-corner-medium);
-			color: var(--md-sys-color-on-surface);
 
 			background: var(--md-sys-color-surface);
 
@@ -79,11 +66,6 @@
 			inline-size: var(--space-xl);
 			block-size: var(--space-xl);
 			color: var(--color-success);
-		}
-
-		.passkey-recovery-sent-message {
-			color: var(--md-sys-color-on-surface);
-			text-wrap: pretty;
 		}
 	}
 }

@@ -33,6 +33,7 @@
 			padding-inline: var(--space-s);
 			border: 1px solid var(--md-sys-color-outline);
 			border-radius: var(--md-sys-shape-corner-full);
+
 			color: var(--md-sys-color-on-surface-variant);
 
 			background: var(--md-sys-color-surface-container);
@@ -73,9 +74,8 @@
 		}
 
 		.custom-field {
-			display: flex;
-			flex-direction: column;
-			gap: var(--space-3xs);
+			--stack-gap: var(--space-3xs);
+
 			color: var(--md-sys-color-on-surface-variant);
 		}
 
@@ -85,9 +85,8 @@
 			padding-inline: var(--space-2xs);
 			border: 1px solid var(--md-sys-color-outline-variant);
 			border-radius: var(--md-sys-shape-corner-small);
-			color: var(--md-sys-color-on-surface);
 
-			background: var(--md-sys-color-surface-container);
+			color: var(--md-sys-color-on-surface);
 
 			&:focus-visible {
 				outline: 2px solid var(--color-brand-primary);
@@ -100,7 +99,7 @@
 			color: var(--md-sys-color-on-surface-variant);
 
 			&[data-invalid="true"] {
-				color: var(--color-error);
+				color: var(--md-sys-color-error);
 			}
 		}
 

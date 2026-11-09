@@ -42,7 +42,7 @@
 	>
 		<!-- §5.2 Refund banner (shown prominently before payment details) -->
 		<output
-			class="[ order-status-banner ] [ wrapper ]"
+			class="[ order-status-banner ] [ stack wrapper ]"
 			data-kind.bind="order.statusKind"
 			if.bind="order.statusKind === 'refunded'"
 		>
@@ -63,7 +63,7 @@
 			</output>
 
 			<!-- Payment summary -->
-			<dl class="order-summary">
+			<dl class="[ order-summary ] [ stack ]">
 				<!-- Tax-inclusive total (総額表示; §6 per-fee breakdown is deferred) -->
 				<div class="order-summary-row">
 					<dt class="[ order-summary-key ] [ md-typescale-label-large ]" t="order.payment.amount"></dt>
@@ -94,7 +94,7 @@
 		>
 			<h2 class="[ order-section-title ] [ md-typescale-title-medium ]" t="order.tickets.title"></h2>
 
-			<ul class="order-ticket-list">
+			<ul class="[ order-ticket-list ] [ stack ]">
 				<li
 					class="[ order-ticket-card ] [ flow ]"
 					repeat.for="ticket of tickets"
@@ -110,7 +110,7 @@
 					</output>
 
 					<!-- Ticket details -->
-					<dl class="order-ticket-summary">
+					<dl class="[ order-ticket-summary ] [ stack ]">
 						<div class="order-ticket-summary-row">
 							<dt class="[ order-ticket-summary-key ] [ md-typescale-label-large ]" t="order.tickets.field.eventId"></dt>
 							<!-- TODO(tickets): resolve event title once a fan-facing event-read RPC exists -->

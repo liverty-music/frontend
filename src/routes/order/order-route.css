@@ -11,20 +11,13 @@
 			block-size: 100%;
 			padding-block: var(--space-l);
 			padding-inline: var(--space-m);
-
-			background: var(--md-sys-color-surface);
-		}
-
-		.order-title {
-			color: var(--md-sys-color-on-surface);
-			text-wrap: balance;
 		}
 
 		.order-panel {
 			--flow-space: var(--space-m);
+			--wrapper-max: var(--page-max-inline-size);
 
 			inline-size: 100%;
-			max-inline-size: 36rem;
 			padding: var(--space-m);
 			border: 1px solid var(--md-sys-color-outline-variant);
 			border-radius: var(--md-sys-shape-corner-large);
@@ -35,34 +28,21 @@
 		.order-content {
 			--flow-space: var(--space-m);
 			--gutter: 0;
+			--wrapper-max: var(--page-max-inline-size);
 
 			inline-size: 100%;
-			max-inline-size: 36rem;
-		}
-
-		.order-section-title {
-			color: var(--md-sys-color-on-surface);
-		}
-
-		.order-step-title {
-			color: var(--md-sys-color-on-surface);
 		}
 
 		.order-lead {
 			color: var(--md-sys-color-on-surface-variant);
-			text-wrap: pretty;
 		}
 
 		/* §5.2 Refund / Failed prominent banner */
 		.order-status-banner {
-			--flow-space: var(--space-s);
-
-			display: flex;
-			flex-direction: column;
-			gap: var(--space-xs);
+			--stack-gap: var(--space-xs);
+			--wrapper-max: var(--page-max-inline-size);
 
 			inline-size: 100%;
-			max-inline-size: 36rem;
 			padding: var(--space-m);
 			border: 1px solid var(--md-sys-color-outline-variant);
 			border-radius: var(--md-sys-shape-corner-large);
@@ -87,13 +67,8 @@
 			}
 		}
 
-		.order-status-banner-label {
-			color: var(--md-sys-color-on-surface);
-		}
-
 		.order-status-banner-desc {
 			color: var(--md-sys-color-on-surface-variant);
-			text-wrap: pretty;
 		}
 
 		/* Payment status badge (inline, within the payment card) */
@@ -151,9 +126,7 @@
 
 		/* Summary definition list */
 		.order-summary {
-			display: flex;
-			flex-direction: column;
-			gap: var(--space-2xs);
+			--stack-gap: var(--space-2xs);
 
 			padding: var(--space-s);
 			border: 1px solid var(--md-sys-color-outline-variant);
@@ -173,7 +146,6 @@
 		}
 
 		.order-summary-val {
-			color: var(--md-sys-color-on-surface);
 			text-align: end;
 		}
 
@@ -182,7 +154,6 @@
 			display: flex;
 			gap: var(--space-2xs);
 			align-items: baseline;
-			color: var(--md-sys-color-on-surface);
 			text-align: end;
 		}
 
@@ -192,9 +163,7 @@
 
 		/* Ticket list within the order */
 		.order-ticket-list {
-			display: flex;
-			flex-direction: column;
-			gap: var(--space-s);
+			--stack-gap: var(--space-s);
 		}
 
 		/* Individual ticket card */
@@ -258,9 +227,7 @@
 
 		/* Ticket summary definition list */
 		.order-ticket-summary {
-			display: flex;
-			flex-direction: column;
-			gap: var(--space-2xs);
+			--stack-gap: var(--space-2xs);
 
 			padding: var(--space-s);
 			border: 1px solid var(--md-sys-color-outline-variant);
@@ -278,7 +245,6 @@
 		}
 
 		.order-ticket-summary-val {
-			color: var(--md-sys-color-on-surface);
 			text-align: end;
 		}
 

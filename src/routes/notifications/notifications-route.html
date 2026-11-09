@@ -15,7 +15,7 @@
 		<li repeat.for="notification of store.notifications; key.bind: notification.id">
 			<button
 				type="button"
-				class="[ notifications-item ] [ pressable ]"
+				class="[ notifications-item ] [ stack ] [ pressable ]"
 				data-testid="notifications-item"
 				data-read.bind="!!notification.readTime"
 				click.trigger="open(notification)"

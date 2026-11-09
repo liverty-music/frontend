@@ -30,7 +30,7 @@
 		display: inline-flex;
 		align-items: center;
 
-		min-block-size: var(--md-target-size);
+		min-block-size: var(--md-sys-target-size);
 		/* stylelint-disable-next-line property-disallowed-list -- outset: the hit area and state layer reach past the text by their own padding while the text stays on the callout's text edge */
 		margin-inline: calc(-1 * var(--space-2xs));
 		padding: 0 var(--space-2xs);
@@ -49,7 +49,7 @@
 		display: inline-flex;
 		align-items: center;
 
-		min-block-size: var(--md-target-size);
+		min-block-size: var(--md-sys-target-size);
 		/* stylelint-disable-next-line property-disallowed-list -- outset: the hit area and state layer reach past the text by their own padding while the text stays on the callout's text edge */
 		margin-inline: calc(-1 * var(--space-2xs));
 		padding: 0 var(--space-2xs);

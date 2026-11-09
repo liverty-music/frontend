@@ -1,26 +1,14 @@
 @layer block {
 	@scope (auth-callback-route) {
-		:scope {
-			--_spinner-radius: 50%;
-		}
-
 		.callback-layout {
-			display: flex;
-			align-items: center;
-			justify-content: center;
-
 			block-size: 100%;
 			padding-inline: var(--space-m);
-
 			text-align: center;
-
-			background: var(--md-sys-color-surface);
 		}
 
 		.callback-loading {
-			display: flex;
-			flex-direction: column;
-			gap: var(--space-s);
+			--stack-gap: var(--space-s);
+
 			align-items: center;
 		}
 
@@ -29,13 +17,9 @@
 			block-size: 2rem;
 			border: 2px solid var(--color-brand-primary);
 			border-block-start-color: transparent;
-			border-radius: var(--_spinner-radius);
+			border-radius: var(--md-sys-shape-corner-full);
 
 			animation: spin 1s linear infinite;
-		}
-
-		.callback-status {
-			color: var(--md-sys-color-on-surface);
 		}
 
 		.callback-error {

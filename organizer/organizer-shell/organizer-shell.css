@@ -75,13 +75,13 @@
 		/* An extended FAB floats at the bottom of the window: the snackbar
 		   rises above it (M3 Snackbar). The snack bar reads the distance from
 		   the window's bottom to the FAB's top edge (extended-fab.css places
-		   the 56 px FAB). */
+		   the FAB). */
 		.frame:has(extended-fab) {
 			--bottom-floating-clearance: calc(
-				var(--nav-bar-clearance, 0px) +
-				var(--safe-area-block-end, 0px) +
+				var(--nav-bar-clearance) +
+				var(--safe-area-block-end) +
 				var(--space-s) +
-				56px
+				var(--fab-block-size)
 			);
 		}
 

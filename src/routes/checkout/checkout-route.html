@@ -39,7 +39,7 @@
     <h2 class="[ checkout-step-title ] [ md-typescale-title-large-emphasized ]" t="checkout.count.title"></h2>
     <p if.bind="verificationNoteKey" class="[ checkout-note ] [ md-typescale-body-medium ]" data-testid="checkout-verify-note" t.bind="verificationNoteKey"></p>
     <p class="[ checkout-seat-type ] [ md-typescale-title-large-emphasized ]" data-testid="checkout-seat-type">${seatTypeName}</p>
-    <label class="checkout-field">
+    <label class="[ checkout-field ] [ stack ]">
       <span class="[ checkout-label ] [ md-typescale-label-large ]" t="checkout.count.label" t-params.bind="{ limit: perAccountLimit }"></span>
       <select value.bind="ticketCount" class="[ checkout-input ] [ md-typescale-body-large ]" data-testid="checkout-count-select">
         <option repeat.for="n of countOptions" model.bind="n">${n}</option>
@@ -55,11 +55,11 @@
   <section if.bind="step === 'personal-details'" class="[ checkout-panel ] [ flow ]" data-testid="checkout-personal-details">
     <h2 class="[ checkout-step-title ] [ md-typescale-title-large-emphasized ]" t="checkout.personalDetails.title"></h2>
     <p class="[ checkout-note ] [ md-typescale-body-medium ]" t="checkout.personalDetails.note"></p>
-    <label class="checkout-field">
+    <label class="[ checkout-field ] [ stack ]">
       <span class="[ checkout-label ] [ md-typescale-label-large ]" t="checkout.personalDetails.name"></span>
       <input type="text" autocomplete="name" value.bind="fullName" class="[ checkout-input ] [ md-typescale-body-large ]" data-testid="checkout-name" />
     </label>
-    <label class="checkout-field">
+    <label class="[ checkout-field ] [ stack ]">
       <span class="[ checkout-label ] [ md-typescale-label-large ]" t="checkout.personalDetails.phone"></span>
       <input
         type="tel"

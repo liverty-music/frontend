@@ -4,8 +4,8 @@
 	:host {
 		position: fixed;
 		inset-block-end: calc(
-			var(--nav-bar-clearance, 0px) +
-			var(--safe-area-block-end, 0px) +
+			var(--nav-bar-clearance) +
+			var(--safe-area-block-end) +
 			var(--space-s)
 		);
 		inset-inline-end: var(--space-s);
@@ -22,7 +22,7 @@
 		align-items: center;
 
 		min-inline-size: 80px;
-		block-size: 56px;
+		block-size: var(--fab-block-size);
 		padding-inline: var(--space-s) 20px;
 		border: none;
 		border-radius: var(--md-sys-shape-corner-large);
@@ -31,13 +31,13 @@
 		white-space: nowrap;
 
 		background: var(--md-sys-color-primary-container);
-		box-shadow: var(--md-elevation-3);
+		box-shadow: var(--md-sys-elevation-level3);
 
 		transition: box-shadow var(--md-sys-motion-duration-short4)
 			var(--md-sys-motion-easing-standard);
 
 		&:hover {
-			box-shadow: var(--md-elevation-4);
+			box-shadow: var(--md-sys-elevation-level4);
 		}
 	}
 }
