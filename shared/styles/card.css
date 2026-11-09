@@ -5,7 +5,7 @@
    root has it too.
    - fill     `surface-container`
    - border   1px `outline-variant`
-   - corners  `corner-large` (16px)
+   - corners  `corner-medium` (12px, M3 card specs)
    - padding  16px (the M3 card's inner padding). A card whose rows pad
               themselves (a list of rows edge to edge) sets
               --card-padding: 0; no other value is expected.
@@ -19,7 +19,7 @@
 
 			padding: var(--_padding);
 			border: 1px solid var(--md-sys-color-outline-variant);
-			border-radius: var(--md-sys-shape-corner-large);
+			border-radius: var(--md-sys-shape-corner-medium);
 			background: var(--md-sys-color-surface-container);
 		}
 	}

@@ -9,7 +9,7 @@ import { expectScreenshot } from '../../.storybook/screenshot'
 /**
  * Foundations story for the card both apps share (`shared/styles/card.css`),
  * a Material 3 outlined card, as the fan app draws it. Each story checks the
- * M3 values (`surface-container` fill, a 1px `outline-variant` border, 16px
+ * M3 values (`surface-container` fill, a 1px `outline-variant` border, 12px
  * corners, 16px padding) and axe checks the text contrast on the fill. The
  * console's card is `organizer/styles/card.stories.ts`.
  */
@@ -69,7 +69,7 @@ async function expectFrame(
 	)
 	await expect(style.borderTopWidth).toBe('1px')
 	await expect(style.borderTopStyle).toBe('solid')
-	await expect(style.borderTopLeftRadius).toBe('16px')
+	await expect(style.borderTopLeftRadius).toBe('12px')
 	await expect(style.boxShadow).toBe('none')
 }
 

@@ -13,7 +13,7 @@ import sharedStyles from './shared.css?inline'
  * tokens: the centred card of the landing, access-denied and find-organizer
  * screens, as a route draws it (the page's stylesheet) and inside a console
  * component's shadow root (`shared.css`). Both check the Material 3 outlined
- * card: `surface-container` fill, a 1px `outline-variant` border, 16px corners
+ * card: `surface-container` fill, a 1px `outline-variant` border, 12px corners
  * and 16px padding.
  */
 const meta = {
@@ -57,7 +57,7 @@ async function expectCard(root: ParentNode): Promise<void> {
 		resolved(root, 'borderTopColor', 'var(--md-sys-color-outline-variant)'),
 	)
 	await expect(style.borderTopWidth).toBe('1px')
-	await expect(style.borderTopLeftRadius).toBe('16px')
+	await expect(style.borderTopLeftRadius).toBe('12px')
 	await expect(style.padding).toBe('16px')
 	await expect(el.getBoundingClientRect().width).toBeLessThanOrEqual(560)
 }
