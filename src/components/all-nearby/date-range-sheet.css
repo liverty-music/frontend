@@ -28,8 +28,6 @@
 		}
 
 		.preset-chip {
-			cursor: pointer;
-
 			min-block-size: 2.75rem;
 			padding-block: var(--space-3xs);
 			padding-inline: var(--space-s);

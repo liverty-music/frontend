@@ -36,14 +36,8 @@
 
 		/* The tile alone; its hidden label names where a tap leads. */
 		.discovery-swap-button {
-			cursor: pointer;
-
 			display: grid;
-
-			border: 0;
 			color: inherit;
-
-			background: none;
 
 			-webkit-tap-highlight-color: transparent;
 

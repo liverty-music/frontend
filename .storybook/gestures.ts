@@ -30,3 +30,11 @@ export async function releasePointer(): Promise<void> {
 	const { commands } = await import('vitest/browser')
 	await commands.releasePointer()
 }
+
+/** Moves the real pointer over `element`, so `:hover` matches. */
+export async function hoverPointer(element: Element): Promise<boolean> {
+	if (import.meta.env.MODE !== 'test') return false
+	const { userEvent } = await import('vitest/browser')
+	await userEvent.hover(element)
+	return true
+}

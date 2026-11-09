@@ -3,7 +3,8 @@ import {
 	type Meta,
 	type StoryObj,
 } from '@aurelia/storybook'
-import { expect, within } from 'storybook/test'
+import { expect, waitFor, within } from 'storybook/test'
+import { hoverPointer } from '../../../.storybook/gestures'
 import { NotificationBell } from './notification-bell'
 
 const meta = {
@@ -60,5 +61,18 @@ export const TwoUnread = {
 		await expect(
 			canvasElement.querySelector('[data-testid="notification-bell-icon"] svg'),
 		).toHaveAttribute('fill', 'currentColor')
+	},
+} satisfies Story
+
+/** Pointer over the bell: the shared state layer tints it. */
+export const Hovered = {
+	args: { unreadCount: 0 },
+	play: async ({ canvasElement }) => {
+		const button = canvasElement.querySelector('button') as HTMLButtonElement
+		const rest = getComputedStyle(button).backgroundColor
+		if (!(await hoverPointer(button))) return
+		await waitFor(() =>
+			expect(getComputedStyle(button).backgroundColor).not.toBe(rest),
+		)
 	},
 } satisfies Story

@@ -202,15 +202,9 @@
 
 		/* ── Date facet: collapsible "過去のコンサートも表示" affordance ── */
 		.date-facet-toggle {
-			cursor: pointer;
-
 			display: flex;
 			align-items: center;
 			justify-content: space-between;
-
-			border: none;
-
-			background: transparent;
 
 			&:focus-visible {
 				outline: 2px solid var(--color-brand-primary);

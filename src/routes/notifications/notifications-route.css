@@ -29,13 +29,10 @@
 			inline-size: 100%;
 			padding-block: var(--space-xs);
 			padding-inline: var(--space-s);
-			border: none;
 			border-block-end: 1px solid
 				color-mix(in oklch, currentcolor 15%, transparent);
 
 			text-align: start;
-
-			background: transparent;
 
 			&[data-read="true"] {
 				opacity: 0.6;

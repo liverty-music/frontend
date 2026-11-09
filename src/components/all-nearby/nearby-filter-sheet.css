@@ -19,8 +19,6 @@
 		/* One row per filter: what it is, its value, and a caret to its own
 		   selector. */
 		.filter-row {
-			cursor: pointer;
-
 			display: grid;
 			grid-template-columns: auto auto minmax(0, 1fr) auto;
 			gap: var(--space-xs);

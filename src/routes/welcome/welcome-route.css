@@ -178,14 +178,8 @@
 		}
 
 		.welcome-notification-trigger {
-			cursor: pointer;
-
 			inline-size: 100%;
 			max-inline-size: 36rem;
-
-			border: none;
-
-			background: transparent;
 
 			&:active {
 				scale: 0.99;
