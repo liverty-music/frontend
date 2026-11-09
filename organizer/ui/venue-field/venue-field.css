@@ -1,62 +1,16 @@
+/*
+ * The field frame, the label, the input, the error and the supporting text
+ * come from `../console-field/console-field.css` (imported first by the
+ * template); these rules add the search icon, the candidate list under the
+ * field and the picked venue.
+ */
 @layer block {
-	:host {
-		display: block;
-	}
-
-	.venue-field {
-		display: grid;
-		gap: var(--space-2xs);
-	}
-
-	.label {
-		color: var(--md-sys-color-on-surface-variant);
-	}
-
-	.required,
-	.error {
-		color: var(--md-sys-color-error);
-	}
-
-	.control {
-		display: flex;
-		gap: var(--space-xs);
-		align-items: center;
-
-		min-block-size: var(--field-block-size);
-		padding-inline: var(--space-s);
-		border: 1px solid var(--md-sys-color-outline);
-		border-radius: var(--md-sys-shape-corner-extra-small);
-
-		background: var(--md-sys-color-surface);
-
-		&:focus-within {
-			border-color: var(--md-sys-color-primary);
-			box-shadow: inset 0 0 0 1px var(--md-sys-color-primary);
-		}
-	}
-
 	.leading-icon {
 		color: var(--md-sys-color-on-surface-variant);
 	}
 
-	.control input {
-		flex: 1;
-
-		min-inline-size: 0;
-		min-block-size: var(--md-sys-target-size);
-		border: none;
-
-		color: var(--md-sys-color-on-surface);
-
-		background: transparent;
-
-		&::placeholder {
-			color: var(--md-sys-color-on-surface-variant);
-		}
-
-		&:focus-visible {
-			outline: none;
-		}
+	.control input::placeholder {
+		color: var(--md-sys-color-on-surface-variant);
 	}
 
 	/* The candidates follow the input in the flow (not an overlay), so the
@@ -143,18 +97,5 @@
 
 	.picked-icon {
 		color: var(--md-sys-color-success);
-	}
-
-	.supporting,
-	.error {
-		padding-inline: var(--space-s);
-	}
-
-	.supporting {
-		color: var(--md-sys-color-on-surface-variant);
-	}
-
-	.venue-field[data-invalid="true"] .control {
-		border-color: var(--md-sys-color-error);
 	}
 }

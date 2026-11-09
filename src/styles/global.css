@@ -66,14 +66,10 @@
 		transition: transform var(--md-sys-motion-duration-short1) ease-in;
 	}
 
+	/* Checkboxes, radios and range sliders take the brand colour. A text
+	   field's frame comes from the `text-field` block (`./text-field.css`). */
 	:where(input, textarea, select) {
-		padding-block: var(--space-2xs);
-		padding-inline: var(--space-xs);
-		border: 1px solid var(--md-sys-color-outline-variant);
-		border-radius: var(--md-sys-shape-corner-medium);
-
 		accent-color: var(--color-brand-primary);
-		background: var(--md-sys-color-surface-container);
 	}
 
 	/* An SVG that declares no fill paints in the text colour; one that does

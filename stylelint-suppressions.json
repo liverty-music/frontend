@@ -99,17 +99,11 @@
     }
   },
   "organizer/ui/venue-field/venue-field.css": {
-    "cube/block-max-lines": {
-      "count": 1
-    },
     "declaration-property-custom-property-allowed-list": {
-      "count": 2
-    },
-    "declaration-property-value-allowed-list": {
       "count": 1
     },
     "property-disallowed-list": {
-      "count": 3
+      "count": 2
     }
   },
   "src/components/bottom-nav-bar/bottom-nav-bar.css": {
@@ -128,7 +122,7 @@
       "count": 1
     },
     "property-disallowed-list": {
-      "count": 8
+      "count": 6
     }
   },
   "src/components/bottom-sheet/bottom-sheet.css": {
@@ -250,14 +244,6 @@
       "count": 1
     }
   },
-  "src/routes/checkout/checkout-route.css": {
-    "cube/block-max-lines": {
-      "count": 1
-    },
-    "property-disallowed-list": {
-      "count": 2
-    }
-  },
   "src/routes/consent/consent-route.css": {
     "cube/block-max-lines": {
       "count": 1
@@ -274,11 +260,6 @@
   "src/routes/event/event-route.css": {
     "cube/block-max-lines": {
       "count": 1
-    }
-  },
-  "src/routes/lottery-entry/lottery-entry-route.css": {
-    "property-disallowed-list": {
-      "count": 2
     }
   },
   "src/routes/lottery-entry-status/lottery-entry-status-route.css": {
@@ -299,21 +280,6 @@
       "count": 1
     }
   },
-  "src/routes/passkey-recovery/passkey-recovery-route.css": {
-    "property-disallowed-list": {
-      "count": 2
-    }
-  },
-  "src/routes/resale-entry/resale-entry-route.css": {
-    "property-disallowed-list": {
-      "count": 2
-    }
-  },
-  "src/routes/settings/personal-details.css": {
-    "property-disallowed-list": {
-      "count": 2
-    }
-  },
   "src/routes/tickets/tickets-route.css": {
     "cube/block-max-lines": {
       "count": 1
@@ -328,11 +294,8 @@
     }
   },
   "src/components/all-nearby/date-range-sheet.css": {
-    "cube/block-max-lines": {
-      "count": 1
-    },
     "property-disallowed-list": {
-      "count": 4
+      "count": 2
     }
   },
   "src/components/all-nearby/nearby-filter-sheet.css": {

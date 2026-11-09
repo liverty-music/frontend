@@ -178,9 +178,13 @@
 			color: var(--_white-50);
 		}
 
+		/* A bare input inside the bar's frame: no field border or fill of the
+		   browser's, and the padding that sets the bar's height. */
 		.search-input {
 			flex: 1;
 
+			padding-block: var(--space-2xs);
+			padding-inline: var(--space-xs);
 			border: none;
 
 			color: var(--color-white);

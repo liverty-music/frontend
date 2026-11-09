@@ -1,3 +1,4 @@
+<import from="../console-field/console-field.css"></import>
 <import from="./venue-field.css"></import>
 <import from="../console-icon/console-icon"></import>
 <import from="../console-button/console-button"></import>
@@ -6,7 +7,7 @@
 <import from="../../../shared/ui/circular-progress/circular-progress.css"></import>
 <use-shadow-dom></use-shadow-dom>
 
-<div class="venue-field" data-invalid.bind="!!error">
+<div class="field" data-invalid.bind="!!error">
   <label for.bind="inputId" class="[ label ] [ md-typescale-label-large ]">${label}<span if.bind="required" class="required"> *<span class="visually-hidden">${'common.required' & t}</span></span></label>
 
   <div if.bind="value" class="picked" data-role="picked">

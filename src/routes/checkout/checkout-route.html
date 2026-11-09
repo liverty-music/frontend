@@ -41,7 +41,7 @@
     <p class="[ checkout-seat-type ] [ md-typescale-title-large-emphasized ]" data-testid="checkout-seat-type">${seatTypeName}</p>
     <label class="[ checkout-field ] [ stack ]">
       <span class="[ checkout-label ] [ md-typescale-label-large ]" t="checkout.count.label" t-params.bind="{ limit: perAccountLimit }"></span>
-      <select value.bind="ticketCount" class="[ checkout-input ] [ md-typescale-body-large ]" data-testid="checkout-count-select">
+      <select value.bind="ticketCount" class="[ text-field ] [ md-typescale-body-large ]" data-testid="checkout-count-select">
         <option repeat.for="n of countOptions" model.bind="n">${n}</option>
       </select>
     </label>
@@ -57,7 +57,7 @@
     <p class="[ checkout-note ] [ md-typescale-body-medium ]" t="checkout.personalDetails.note"></p>
     <label class="[ checkout-field ] [ stack ]">
       <span class="[ checkout-label ] [ md-typescale-label-large ]" t="checkout.personalDetails.name"></span>
-      <input type="text" autocomplete="name" value.bind="fullName" class="[ checkout-input ] [ md-typescale-body-large ]" data-testid="checkout-name" />
+      <input type="text" autocomplete="name" value.bind="fullName" class="[ text-field ] [ md-typescale-body-large ]" data-testid="checkout-name" />
     </label>
     <label class="[ checkout-field ] [ stack ]">
       <span class="[ checkout-label ] [ md-typescale-label-large ]" t="checkout.personalDetails.phone"></span>
@@ -68,7 +68,7 @@
         value.bind="phoneNumber"
         aria-invalid.bind="isPhoneInvalid"
         aria-describedby.bind="isPhoneInvalid ? 'checkout-phone-error' : null"
-        class="[ checkout-input ] [ md-typescale-body-large ]"
+        class="[ text-field ] [ md-typescale-body-large ]"
         data-testid="checkout-phone"
       />
     </label>

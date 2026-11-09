@@ -66,7 +66,7 @@
 		<h2 class="[ resale-entry-step-title ] [ md-typescale-title-large-emphasized ]" t="resaleEntry.count.title"></h2>
 		<label class="[ resale-entry-field ] [ stack ]">
 			<span class="[ resale-entry-label ] [ md-typescale-label-large ]" t="resaleEntry.count.label" t-params.bind="{ max: countOptions.length }"></span>
-			<select value.bind="ticketCount" class="[ resale-entry-input ] [ md-typescale-body-large ]" data-testid="resale-entry-count-select">
+			<select value.bind="ticketCount" class="[ text-field ] [ md-typescale-body-large ]" data-testid="resale-entry-count-select">
 				<option repeat.for="n of countOptions" model.bind="n">${n}</option>
 			</select>
 		</label>
@@ -81,7 +81,7 @@
 		<p class="[ resale-entry-lead ] [ md-typescale-body-medium ]" t="resaleEntry.personalDetails.note"></p>
 		<label class="[ resale-entry-field ] [ stack ]">
 			<span class="[ resale-entry-label ] [ md-typescale-label-large ]" t="resaleEntry.personalDetails.name"></span>
-			<input type="text" autocomplete="name" value.bind="fullName" class="[ resale-entry-input ] [ md-typescale-body-large ]" data-testid="resale-entry-name" />
+			<input type="text" autocomplete="name" value.bind="fullName" class="[ text-field ] [ md-typescale-body-large ]" data-testid="resale-entry-name" />
 		</label>
 		<label class="[ resale-entry-field ] [ stack ]">
 			<span class="[ resale-entry-label ] [ md-typescale-label-large ]" t="resaleEntry.personalDetails.phone"></span>
@@ -92,7 +92,7 @@
 				value.bind="phoneNumber"
 				aria-invalid.bind="isPhoneInvalid"
 				aria-describedby.bind="isPhoneInvalid ? 'resale-entry-phone-error' : null"
-				class="[ resale-entry-input ] [ md-typescale-body-large ]"
+				class="[ text-field ] [ md-typescale-body-large ]"
 				data-testid="resale-entry-phone"
 			/>
 		</label>

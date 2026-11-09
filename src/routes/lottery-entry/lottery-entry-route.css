@@ -33,24 +33,6 @@
 			--stack-gap: var(--space-2xs);
 		}
 
-		.lottery-entry-input {
-			inline-size: 100%;
-			min-block-size: var(--md-sys-target-size);
-			padding-block: var(--space-2xs);
-			padding-inline: var(--space-s);
-			border: 1px solid var(--md-sys-color-outline-variant);
-			border-radius: var(--md-sys-shape-corner-medium);
-
-			background: var(--md-sys-color-surface);
-
-			&:focus-visible {
-				border-color: var(--color-brand-primary);
-				outline: 2px solid
-					color-mix(in oklch, var(--color-brand-primary) 40%, transparent);
-				outline-offset: 1px;
-			}
-		}
-
 		.lottery-entry-terms {
 			--flow-space: var(--space-s);
 

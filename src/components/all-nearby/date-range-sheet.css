@@ -73,25 +73,15 @@
 			align-items: flex-end;
 		}
 
+		/* The two dates share a row in equal halves and stack only where a
+		   half would be narrower than a date: a date input's own width is
+		   wider than its text, so the fields grow from a basis instead. */
 		.custom-field {
 			--stack-gap: var(--space-3xs);
 
+			flex: 1 1 9rem;
+			min-inline-size: 0;
 			color: var(--md-sys-color-on-surface-variant);
-		}
-
-		.custom-input {
-			min-block-size: 2.75rem;
-			padding-block: var(--space-3xs);
-			padding-inline: var(--space-2xs);
-			border: 1px solid var(--md-sys-color-outline-variant);
-			border-radius: var(--md-sys-shape-corner-small);
-
-			color: var(--md-sys-color-on-surface);
-
-			&:focus-visible {
-				outline: 2px solid var(--color-brand-primary);
-				outline-offset: 2px;
-			}
 		}
 
 		.range-hint {

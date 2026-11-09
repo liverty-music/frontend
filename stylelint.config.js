@@ -140,6 +140,7 @@ export default {
 				'shared/ui/**/*.css',
 				'src/app-shell.css',
 				'src/styles/button.css',
+				'src/styles/text-field.css',
 				'organizer/!(styles)/**/*.css',
 			],
 			rules: {
