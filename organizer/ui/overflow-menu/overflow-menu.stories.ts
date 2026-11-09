@@ -5,6 +5,7 @@ import {
 } from '@aurelia/storybook'
 import { expect, waitFor } from 'storybook/test'
 import { userEvent } from 'vitest/browser'
+import { expectScreenshot } from '../../../.storybook/screenshot'
 import {
 	canvasOf,
 	consoleStoryParameters,
@@ -49,7 +50,10 @@ const render =
 const menuOf = (canvasElement: HTMLElement) =>
 	deepQuery(canvasElement, '[role="menu"]')
 
-/** Closed: one 48 px icon button named その他の操作. */
+/**
+ * Closed: one icon button named その他の操作, the shared M3 icon button (40 px
+ * round container, 48 px target).
+ */
 export const Closed = {
 	render: render(ITEMS),
 	play: async ({ canvasElement }) => {
@@ -57,8 +61,9 @@ export const Closed = {
 			.getByRole('button', { name: 'その他の操作' })
 			.element()
 		const box = button.getBoundingClientRect()
-		await expect(box.width).toBe(48)
-		await expect(box.height).toBe(48)
+		await expect(box.width).toBe(40)
+		await expect(box.height).toBe(40)
+		await expect(getComputedStyle(button, '::after').height).toBe('48px')
 		await expect(button).toHaveAttribute('aria-haspopup', 'menu')
 		await expect(button).toHaveAttribute('aria-expanded', 'false')
 		await expect(menuOf(canvasElement).matches(':popover-open')).toBe(false)
@@ -67,7 +72,9 @@ export const Closed = {
 
 /**
  * Opening moves focus to the first item; the arrow keys move between items;
- * Escape closes the menu and returns focus to its button.
+ * Escape closes the menu and returns focus to its button. The menu is the
+ * shared M3 menu: 4 px corners, 8 px above and below the items, level-2
+ * elevation, 48 px items with 12 px side padding.
  */
 export const OpenAndClose = {
 	render: render(ITEMS),
@@ -86,11 +93,18 @@ export const OpenAndClose = {
 			'中止する',
 			'公演を編集',
 		])
+		const panel = menu.element()
+		const style = getComputedStyle(panel)
+		await expect(style.borderTopLeftRadius).toBe('4px')
+		await expect(style.paddingTop).toBe('8px')
+		await expect(style.paddingBottom).toBe('8px')
+		await expect(style.minWidth).toBe('112px')
+		await expect(style.boxShadow).not.toBe('none')
 		for (const item of items) {
-			await expect(item.getBoundingClientRect().height).toBeGreaterThanOrEqual(
-				48,
-			)
+			await expect(item.getBoundingClientRect().height).toBe(48)
+			await expect(getComputedStyle(item).paddingInlineStart).toBe('12px')
 		}
+		await expectScreenshot(panel, 'console-overflow-menu-open')
 
 		await userEvent.keyboard('{ArrowDown}')
 		await expect(focusedElement()).toHaveTextContent('公演を編集')
