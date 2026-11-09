@@ -6,7 +6,7 @@
 	<p if.bind="step === 'loading'" class="[ resale-entry-lead ] [ md-typescale-body-medium ]" role="status" t="resaleEntry.loading"></p>
 
 	<!-- Stripe not configured for this environment: fail closed. -->
-	<section class="resale-entry-panel" if.bind="step === 'unavailable'" data-testid="resale-entry-unavailable">
+	<section class="[ resale-entry-panel ] [ wrapper ]" if.bind="step === 'unavailable'" data-testid="resale-entry-unavailable">
 		<p class="[ resale-entry-lead ] [ md-typescale-body-medium ]" t="resaleEntry.unavailable"></p>
 	</section>
 

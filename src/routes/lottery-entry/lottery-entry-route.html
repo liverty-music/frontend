@@ -6,7 +6,7 @@
 	<p if.bind="step === 'loading'" class="[ lottery-entry-lead ] [ md-typescale-body-medium ]" role="status" t="lotteryEntry.loading"></p>
 
 	<!-- Stripe not configured for this environment: fail closed. -->
-	<section class="lottery-entry-panel" if.bind="step === 'unavailable'" data-testid="lottery-entry-unavailable">
+	<section class="[ lottery-entry-panel ] [ wrapper ]" if.bind="step === 'unavailable'" data-testid="lottery-entry-unavailable">
 		<p class="[ lottery-entry-lead ] [ md-typescale-body-medium ]" t="lotteryEntry.unavailable"></p>
 	</section>
 
