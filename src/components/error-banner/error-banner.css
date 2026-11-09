@@ -1,18 +1,9 @@
 @layer block {
 	@scope (error-banner) {
-		:scope {
-			--_border-light: oklch(100% 0 0deg / 10%);
-		}
-
+		/* The `card` block draws the message. */
 		.error-content {
 			inline-size: 100%;
 			max-inline-size: 28rem;
-			padding: var(--space-m);
-			border: 1px solid var(--_border-light);
-			border-radius: var(--md-sys-shape-corner-large);
-
-			background: var(--md-sys-color-surface-container);
-			box-shadow: var(--shadow-soft);
 		}
 
 		.error-title {

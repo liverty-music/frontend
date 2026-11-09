@@ -31,7 +31,7 @@
     <!-- What blocks deletion, each kind with its count. -->
     <section if.bind="blockersState === 'ready' && blockers.length > 0" class="[ delete-account-blockers ] [ stack ]" data-testid="delete-account-blockers">
       <h2 t="deleteAccount.blockers.title" class="[ delete-account-heading ] [ md-typescale-title-large-emphasized ]"></h2>
-      <ul class="delete-account-card" role="list">
+      <ul class="[ delete-account-card card ]" role="list">
         <li repeat.for="blocker of blockers" class="delete-account-item" data-testid="delete-account-blocker" t.bind="blocker.key" t-params.bind="{ count: blocker.count }"></li>
       </ul>
       <p t="deleteAccount.blockers.note" class="[ delete-account-text ] [ md-typescale-body-medium ]"></p>

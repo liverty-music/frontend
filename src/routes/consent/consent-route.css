@@ -26,13 +26,12 @@
 			word-break: auto-phrase;
 		}
 
+		/* A `card` whose rows pad themselves. */
 		.consent-card {
 			--flow-space: 0;
+			--card-padding: 0;
 
 			overflow: hidden;
-			border: 1px solid color-mix(in oklch, var(--color-white) 10%, transparent);
-			border-radius: var(--md-sys-shape-corner-large);
-			background: var(--md-sys-color-surface-container);
 		}
 
 		.consent-row {
@@ -85,8 +84,7 @@
 			position: relative;
 			inset-inline-start: var(--space-s);
 			inline-size: calc(100% - 2 * var(--space-s));
-			border-block-start: 1px solid
-				color-mix(in oklch, var(--color-white) 5%, transparent);
+			border-block-start: 1px solid var(--md-sys-color-outline-variant);
 		}
 
 		.consent-policy-line {

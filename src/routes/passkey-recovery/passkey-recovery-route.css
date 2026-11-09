@@ -17,14 +17,10 @@
 			list-style: disc;
 		}
 
+		/* Both are drawn by the `card` block. */
 		.passkey-recovery-form,
 		.passkey-recovery-sent {
 			--stack-gap: var(--space-xs);
-
-			padding: var(--space-s);
-			border: 1px solid color-mix(in oklch, var(--color-white) 10%, transparent);
-			border-radius: var(--md-sys-shape-corner-large);
-			background: var(--md-sys-color-surface-container);
 		}
 
 		.passkey-recovery-field {

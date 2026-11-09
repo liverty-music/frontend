@@ -69,7 +69,7 @@
       </section>
 
       <!-- Out-of-range notice: the fan's hype level does not match the concert -->
-      <section if.bind="outOfRange" class="[ sheet-out-of-range ] [ stack ]" data-testid="out-of-range">
+      <section if.bind="outOfRange" class="[ sheet-out-of-range card ] [ stack ]" data-testid="out-of-range">
         <p if.bind="!outOfRange.saved" class="[ out-of-range-text ] [ md-typescale-body-medium ]">
           <span if.bind="outOfRange.currentPlaces" t="[html]eventDetail.outOfRange.current" t-params.bind="{ places: outOfRange.currentPlaces }"></span>
           <span else t="eventDetail.outOfRange.none"></span>

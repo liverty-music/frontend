@@ -157,11 +157,6 @@
       "count": 3
     }
   },
-  "src/components/error-banner/error-banner.css": {
-    "declaration-property-custom-property-allowed-list": {
-      "count": 1
-    }
-  },
   "src/components/dna-orb/dna-orb-canvas.css": {
     "property-disallowed-list": {
       "count": 2
@@ -258,11 +253,6 @@
     }
   },
   "src/routes/event/event-route.css": {
-    "cube/block-max-lines": {
-      "count": 1
-    }
-  },
-  "src/routes/lottery-entry-status/lottery-entry-status-route.css": {
     "cube/block-max-lines": {
       "count": 1
     }

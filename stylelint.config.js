@@ -142,6 +142,8 @@ export default {
 				'src/styles/button.css',
 				'src/styles/text-field.css',
 				'src/styles/chip.css',
+				'src/styles/summary-list.css',
+				'shared/styles/card.css',
 				'organizer/!(styles)/**/*.css',
 			],
 			rules: {

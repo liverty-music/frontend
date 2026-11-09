@@ -3,38 +3,38 @@
 		<h1 class="[ lottery-entry-status-title ] [ md-typescale-headline-small ]" t="lotteryEntryStatus.title"></h1>
 	</header>
 
-	<section class="[ lottery-entry-status-panel ] [ wrapper ]" if.bind="step === 'loading'">
+	<section class="[ lottery-entry-status-panel card ] [ wrapper ]" if.bind="step === 'loading'">
 		<p class="[ lottery-entry-status-lead ] [ md-typescale-body-medium ]" role="status" t="lotteryEntryStatus.loading"></p>
 	</section>
 
-	<section class="[ lottery-entry-status-panel ] [ flow wrapper ]" if.bind="step === 'empty'" data-testid="lottery-entry-status-empty">
+	<section class="[ lottery-entry-status-panel card ] [ flow wrapper ]" if.bind="step === 'empty'" data-testid="lottery-entry-status-empty">
 		<p class="[ lottery-entry-status-lead ] [ md-typescale-body-medium ]" t="lotteryEntryStatus.empty"></p>
 	</section>
 
-	<section class="[ lottery-entry-status-panel ] [ flow wrapper ]" if.bind="step === 'error'" data-testid="lottery-entry-status-error">
+	<section class="[ lottery-entry-status-panel card ] [ flow wrapper ]" if.bind="step === 'error'" data-testid="lottery-entry-status-error">
 		<p class="[ lottery-entry-status-error ] [ md-typescale-body-medium ]" t.bind="messageKey"></p>
 		<button type="button" class="[ button lottery-entry-status-action ] [ pressable ]" click.trigger="load()" t="lotteryEntryStatus.reload"></button>
 	</section>
 
-	<section class="[ lottery-entry-status-panel ] [ flow wrapper ]" if.bind="step === 'loaded'" data-testid="lottery-entry-status-entry">
+	<section class="[ lottery-entry-status-panel card ] [ flow wrapper ]" if.bind="step === 'loaded'" data-testid="lottery-entry-status-entry">
 		<output class="lottery-entry-status-status" data-kind.bind="resultKind">
 			<span class="[ lottery-entry-status-status-label ] [ md-typescale-headline-small ]" t.bind="stateLabelKey"></span>
 		</output>
 
 		<p class="[ lottery-entry-status-lead ] [ md-typescale-body-medium ]" t.bind="'lotteryEntryStatus.note.' + resultKind"></p>
 
-		<dl class="[ lottery-entry-status-summary ] [ stack ]">
-			<div class="lottery-entry-status-summary-row" if.bind="stock">
-				<dt class="[ lottery-entry-status-summary-key ] [ md-typescale-label-large ]" t="lotteryEntryStatus.seatType"></dt>
-				<dd class="[ lottery-entry-status-summary-val ] [ md-typescale-body-large ]" data-testid="lottery-entry-status-seat-type">${stock.seatTypeName}</dd>
+		<dl class="summary-list">
+			<div if.bind="stock">
+				<dt class="md-typescale-label-large" t="lotteryEntryStatus.seatType"></dt>
+				<dd class="md-typescale-body-large" data-testid="lottery-entry-status-seat-type">${stock.seatTypeName}</dd>
 			</div>
-			<div class="lottery-entry-status-summary-row">
-				<dt class="[ lottery-entry-status-summary-key ] [ md-typescale-label-large ]" t="lotteryEntryStatus.count"></dt>
-				<dd class="[ lottery-entry-status-summary-val ] [ md-typescale-body-large ]" t="lotteryEntryStatus.countValue" t-params.bind="{ count: entry.ticketCount }"></dd>
+			<div>
+				<dt class="md-typescale-label-large" t="lotteryEntryStatus.count"></dt>
+				<dd class="md-typescale-body-large" t="lotteryEntryStatus.countValue" t-params.bind="{ count: entry.ticketCount }"></dd>
 			</div>
-			<div class="lottery-entry-status-summary-row">
-				<dt class="[ lottery-entry-status-summary-key ] [ md-typescale-label-large ]" t="lotteryEntryStatus.status"></dt>
-				<dd class="[ lottery-entry-status-summary-val ] [ md-typescale-body-large ]" t.bind="stateLabelKey"></dd>
+			<div>
+				<dt class="md-typescale-label-large" t="lotteryEntryStatus.status"></dt>
+				<dd class="md-typescale-body-large" t.bind="stateLabelKey"></dd>
 			</div>
 		</dl>
 	</section>

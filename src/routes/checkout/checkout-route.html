@@ -5,11 +5,11 @@
 
   <p if.bind="step === 'loading'" class="checkout-status" role="status" t="checkout.loading"></p>
 
-  <section if.bind="step === 'unavailable'" class="checkout-panel" data-testid="checkout-unavailable">
+  <section if.bind="step === 'unavailable'" class="[ checkout-panel card ]" data-testid="checkout-unavailable">
     <p t="checkout.unavailable"></p>
   </section>
 
-  <section if.bind="step === 'not-found'" class="[ checkout-panel ] [ flow ]" data-testid="checkout-not-found">
+  <section if.bind="step === 'not-found'" class="[ checkout-panel card ] [ flow ]" data-testid="checkout-not-found">
     <p t="checkout.notFound"></p>
     <a href="/events/${event.id}" if.bind="event" class="checkout-link" t="checkout.backToEvent"></a>
   </section>
@@ -28,14 +28,14 @@
   </section>
 
   <!-- Verification gate: the sale requires a verification the fan lacks -->
-  <section if.bind="step === 'verify-required'" class="[ checkout-panel ] [ flow ]" data-testid="checkout-verify">
+  <section if.bind="step === 'verify-required'" class="[ checkout-panel card ] [ flow ]" data-testid="checkout-verify">
     <h2 class="[ checkout-step-title ] [ md-typescale-title-large-emphasized ]" t="checkout.verify.title"></h2>
     <p data-testid="checkout-verify-body" t.bind="verificationRequirement === 'jpkiOnly' ? 'checkout.verify.bodyJpki' : 'checkout.verify.bodyAny'"></p>
     <button type="button" class="[ button checkout-action ] [ pressable ]" click.trigger="goToVerify()" data-testid="checkout-verify-action" t="checkout.verify.action"></button>
   </section>
 
   <!-- Step 1: count -->
-  <section if.bind="step === 'count'" class="[ checkout-panel ] [ flow ]" data-testid="checkout-count">
+  <section if.bind="step === 'count'" class="[ checkout-panel card ] [ flow ]" data-testid="checkout-count">
     <h2 class="[ checkout-step-title ] [ md-typescale-title-large-emphasized ]" t="checkout.count.title"></h2>
     <p if.bind="verificationNoteKey" class="[ checkout-note ] [ md-typescale-body-medium ]" data-testid="checkout-verify-note" t.bind="verificationNoteKey"></p>
     <p class="[ checkout-seat-type ] [ md-typescale-title-large-emphasized ]" data-testid="checkout-seat-type">${seatTypeName}</p>
@@ -52,7 +52,7 @@
   </section>
 
   <!-- Step 2: 本人確認 -->
-  <section if.bind="step === 'personal-details'" class="[ checkout-panel ] [ flow ]" data-testid="checkout-personal-details">
+  <section if.bind="step === 'personal-details'" class="[ checkout-panel card ] [ flow ]" data-testid="checkout-personal-details">
     <h2 class="[ checkout-step-title ] [ md-typescale-title-large-emphasized ]" t="checkout.personalDetails.title"></h2>
     <p class="[ checkout-note ] [ md-typescale-body-medium ]" t="checkout.personalDetails.note"></p>
     <label class="[ checkout-field ] [ stack ]">
@@ -81,7 +81,7 @@
   </section>
 
   <!-- Step 3: card -->
-  <section if.bind="step === 'payment'" class="[ checkout-panel ] [ flow ]" data-testid="checkout-payment">
+  <section if.bind="step === 'payment'" class="[ checkout-panel card ] [ flow ]" data-testid="checkout-payment">
     <h2 class="[ checkout-step-title ] [ md-typescale-title-large-emphasized ]" t="checkout.payment.title"></h2>
     <p class="[ checkout-note ] [ md-typescale-body-medium ]" t="checkout.payment.notCharged"></p>
     <div class="checkout-payment-element" ref="paymentElementHost"></div>
@@ -96,52 +96,70 @@
   </section>
 
   <!-- Step 4: 特商法 final confirmation -->
-  <section if.bind="step === 'confirm'" class="[ checkout-panel ] [ flow ]" data-testid="checkout-confirm">
+  <section if.bind="step === 'confirm'" class="[ checkout-panel card ] [ flow ]" data-testid="checkout-confirm">
     <h2 class="[ checkout-step-title ] [ md-typescale-title-large-emphasized ]" t="checkout.confirm.title"></h2>
-    <dl class="[ checkout-terms ] [ flow ] [ md-typescale-body-medium ]">
-      <dt class="md-typescale-body-medium-emphasized" t="checkout.confirm.event"></dt>
-      <dd data-testid="checkout-confirm-event">
-        ${event.title}<br />${dateLabel}<br />${event.venueName}
-        <template if.bind="openTimeLabel || startTimeLabel">
-          <br /><span if.bind="openTimeLabel"><span t="eventPage.open"></span> ${openTimeLabel}</span>
-          <span if.bind="startTimeLabel"><span t="eventPage.start"></span> ${startTimeLabel}</span>
-        </template>
-      </dd>
+    <dl class="[ summary-list ] [ md-typescale-body-medium ]" data-variant="stacked">
+      <div>
+        <dt class="md-typescale-body-medium-emphasized" t="checkout.confirm.event"></dt>
+        <dd data-testid="checkout-confirm-event">
+          ${event.title}<br />${dateLabel}<br />${event.venueName}
+          <template if.bind="openTimeLabel || startTimeLabel">
+            <br /><span if.bind="openTimeLabel"><span t="eventPage.open"></span> ${openTimeLabel}</span>
+            <span if.bind="startTimeLabel"><span t="eventPage.start"></span> ${startTimeLabel}</span>
+          </template>
+        </dd>
+      </div>
 
-      <dt class="md-typescale-body-medium-emphasized" t="checkout.confirm.tickets"></dt>
-      <dd data-testid="checkout-confirm-tickets" t="checkout.confirm.ticketsValue" t-params.bind="{ seatType: seatTypeName, count: ticketCount, price: yen(price), total: yen(total) }"></dd>
+      <div>
+        <dt class="md-typescale-body-medium-emphasized" t="checkout.confirm.tickets"></dt>
+        <dd data-testid="checkout-confirm-tickets" t="checkout.confirm.ticketsValue" t-params.bind="{ seatType: seatTypeName, count: ticketCount, price: yen(price), total: yen(total) }"></dd>
+      </div>
 
-      <dt class="md-typescale-body-medium-emphasized" t="checkout.confirm.payment"></dt>
-      <dd data-testid="checkout-confirm-payment">
-        <span t="checkout.confirm.creditCard"></span> ${cardLabel}<br />
-        <span t="checkout.confirm.chargedOnOrder"></span>
-      </dd>
+      <div>
+        <dt class="md-typescale-body-medium-emphasized" t="checkout.confirm.payment"></dt>
+        <dd data-testid="checkout-confirm-payment">
+          <span t="checkout.confirm.creditCard"></span> ${cardLabel}<br />
+          <span t="checkout.confirm.chargedOnOrder"></span>
+        </dd>
+      </div>
 
-      <dt class="md-typescale-body-medium-emphasized" t="checkout.confirm.delivery"></dt>
-      <dd t="checkout.confirm.deliveryValue"></dd>
+      <div>
+        <dt class="md-typescale-body-medium-emphasized" t="checkout.confirm.delivery"></dt>
+        <dd t="checkout.confirm.deliveryValue"></dd>
+      </div>
 
-      <dt class="md-typescale-body-medium-emphasized" t="checkout.confirm.salePeriod"></dt>
-      <dd data-testid="checkout-confirm-period">${salePeriodLabel}</dd>
+      <div>
+        <dt class="md-typescale-body-medium-emphasized" t="checkout.confirm.salePeriod"></dt>
+        <dd data-testid="checkout-confirm-period">${salePeriodLabel}</dd>
+      </div>
 
-      <dt class="md-typescale-body-medium-emphasized" t="checkout.confirm.nameOnTickets"></dt>
-      <dd data-testid="checkout-confirm-full-name">${fullName}</dd>
+      <div>
+        <dt class="md-typescale-body-medium-emphasized" t="checkout.confirm.nameOnTickets"></dt>
+        <dd data-testid="checkout-confirm-full-name">${fullName}</dd>
+      </div>
 
-      <dt class="md-typescale-body-medium-emphasized" t="checkout.confirm.resale"></dt>
-      <dd t="checkout.confirm.resaleValue"></dd>
+      <div>
+        <dt class="md-typescale-body-medium-emphasized" t="checkout.confirm.resale"></dt>
+        <dd t="checkout.confirm.resaleValue"></dd>
+      </div>
 
-      <dt class="md-typescale-body-medium-emphasized" t="checkout.confirm.cancellation"></dt>
-      <dd t="checkout.confirm.cancellationValue"></dd>
+      <div>
+        <dt class="md-typescale-body-medium-emphasized" t="checkout.confirm.cancellation"></dt>
+        <dd t="checkout.confirm.cancellationValue"></dd>
+      </div>
 
-      <dt class="md-typescale-body-medium-emphasized" t="checkout.confirm.businessDetails"></dt>
-      <dd data-testid="checkout-confirm-business-details">
-        <template if.bind="businessDetails">
-          ${businessDetails.legalName}<br />
-          <span t="checkout.confirm.representative"></span> ${businessDetails.representativeName}<br />
-          ${businessDetails.businessAddress}<br />
-          ${businessDetails.businessPhoneNumber}<br />
-          ${businessDetails.contactEmail}
-        </template>
-      </dd>
+      <div>
+        <dt class="md-typescale-body-medium-emphasized" t="checkout.confirm.businessDetails"></dt>
+        <dd data-testid="checkout-confirm-business-details">
+          <template if.bind="businessDetails">
+            ${businessDetails.legalName}<br />
+            <span t="checkout.confirm.representative"></span> ${businessDetails.representativeName}<br />
+            ${businessDetails.businessAddress}<br />
+            ${businessDetails.businessPhoneNumber}<br />
+            ${businessDetails.contactEmail}
+          </template>
+        </dd>
+      </div>
     </dl>
     <p if.bind="message" class="[ checkout-error ] [ md-typescale-body-medium ]" role="alert" data-testid="checkout-message" t.bind="message.key" t-params.bind="message.params"></p>
     <div class="[ checkout-actions ] [ cluster ]">
@@ -152,7 +170,7 @@
   </section>
 
   <!-- Completion -->
-  <section if.bind="step === 'done'" class="[ checkout-panel ] [ flow ]" data-testid="checkout-done">
+  <section if.bind="step === 'done'" class="[ checkout-panel card ] [ flow ]" data-testid="checkout-done">
     <h2 class="[ checkout-step-title ] [ md-typescale-title-large-emphasized ]" t="checkout.done.title"></h2>
     <p data-testid="checkout-done-summary" t="checkout.done.summary" t-params.bind="{ event: event.title, count: ticketCount, total: yen(total) }"></p>
     <a href="/tickets" class="[ button checkout-action ] [ pressable ]" data-testid="checkout-to-tickets" t="checkout.done.toTickets"></a>
@@ -161,7 +179,7 @@
   </section>
 
   <!-- Placing the order failed -->
-  <section if.bind="step === 'outcome'" class="[ checkout-panel ] [ flow ]" data-testid="checkout-outcome" data-outcome.bind="outcome">
+  <section if.bind="step === 'outcome'" class="[ checkout-panel card ] [ flow ]" data-testid="checkout-outcome" data-outcome.bind="outcome">
     <template switch.bind="outcome">
       <template case="hold-ended">
         <p t="checkout.outcome.holdEnded"></p>

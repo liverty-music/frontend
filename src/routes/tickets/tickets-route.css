@@ -13,16 +13,13 @@
 			padding-inline: var(--space-m);
 		}
 
+		/* The `card` block draws the panels, the event groups and the
+		   notices. */
 		.tickets-panel {
 			--flow-space: var(--space-m);
 			--wrapper-max: var(--page-max-inline-size);
 
 			inline-size: 100%;
-			padding: var(--space-m);
-			border: 1px solid var(--md-sys-color-outline-variant);
-			border-radius: var(--md-sys-shape-corner-large);
-
-			background: var(--md-sys-color-surface-container);
 		}
 
 		.tickets-list {
@@ -58,11 +55,6 @@
 		/* One event and its tickets */
 		.tickets-event {
 			--flow-space: var(--space-s);
-
-			padding: var(--space-m);
-			border: 1px solid var(--md-sys-color-outline-variant);
-			border-radius: var(--md-sys-shape-corner-large);
-			background: var(--md-sys-color-surface-container);
 		}
 
 		.tickets-event-head {
@@ -122,13 +114,7 @@
 			--wrapper-max: var(--page-max-inline-size);
 
 			display: block;
-
 			inline-size: 100%;
-			padding: var(--space-s);
-			border: 1px solid var(--md-sys-color-outline-variant);
-			border-radius: var(--md-sys-shape-corner-large);
-
-			background: var(--md-sys-color-surface-container);
 
 			&[data-tone="warning"] {
 				border-color: color-mix(
@@ -187,28 +173,8 @@
 			color: var(--md-sys-color-on-surface);
 		}
 
-		/* Summary definition list */
-		.tickets-summary {
-			--stack-gap: var(--space-2xs);
-
-			padding: var(--space-s);
-			border: 1px solid var(--md-sys-color-outline-variant);
-			border-radius: var(--md-sys-shape-corner-large);
-		}
-
-		.tickets-summary-row {
-			display: flex;
-			gap: var(--space-s);
-			justify-content: space-between;
-		}
-
-		.tickets-summary-key {
+		.tickets-code-who-title {
 			color: var(--md-sys-color-on-surface-variant);
-		}
-
-		.tickets-summary-val {
-			color: var(--md-sys-color-on-surface);
-			text-align: end;
 		}
 
 		/* 特定興行入場券 resale-prohibition notice */

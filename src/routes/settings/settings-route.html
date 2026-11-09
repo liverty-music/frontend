@@ -38,7 +38,7 @@
   <section class="[ settings-section ] [ flow ]" if.bind="auth.isAuthenticated">
     <h2 t="settings.account" class="[ settings-section-title ] [ md-typescale-title-small ]"></h2>
 
-    <ul class="settings-card" role="list">
+    <ul class="[ settings-card card ]" role="list">
       <!-- Email Verification. The badge is a polite live region associated
            with the address, and carries a status icon and text so the state is
            not told by color alone. -->
@@ -121,7 +121,7 @@
        it opens the form in a bottom sheet (below). -->
   <section class="[ settings-section ] [ flow ]" if.bind="auth.isAuthenticated" aria-labelledby="personal-details-title">
     <h2 id="personal-details-title" t="settings.personalDetails.title" class="[ settings-section-title ] [ md-typescale-title-small ]"></h2>
-    <ul class="settings-card" role="list">
+    <ul class="[ settings-card card ]" role="list">
       <!-- The saved name, or 「未設定」 while none is saved. -->
       <li class="settings-list-item">
         <settings-link-row
@@ -148,7 +148,7 @@
   <!-- NOTIFICATIONS AND SOUND Section. -->
   <section class="[ settings-section ] [ flow ]">
     <h2 t="settings.sections.notificationsSound" class="[ settings-section-title ] [ md-typescale-title-small ]"></h2>
-    <ul class="settings-card" role="list">
+    <ul class="[ settings-card card ]" role="list">
       <!-- Push Notifications (whole row is the switch). Without the VAPID key
            the row is unavailable and its description says why.
            Authenticated-only: a push subscription is persisted as a backend
@@ -202,7 +202,7 @@
   <!-- DISPLAY AND CONTROLS Section. -->
   <section class="[ settings-section ] [ flow ]">
     <h2 t="settings.sections.displayControls" class="[ settings-section-title ] [ md-typescale-title-small ]"></h2>
-    <ul class="settings-card" role="list">
+    <ul class="[ settings-card card ]" role="list">
       <!-- My Home Area -->
       <li class="settings-list-item">
         <settings-link-row
@@ -242,7 +242,7 @@
   <section class="[ settings-section ] [ flow ]" aria-labelledby="analytics-title">
     <h2 id="analytics-title" t="settings.analytics.sectionTitle" class="[ settings-section-title ] [ md-typescale-title-small ]"></h2>
     <p t="settings.analytics.intro" class="[ settings-section-intro ] [ md-typescale-body-medium ]"></p>
-    <ul class="settings-card" role="list">
+    <ul class="[ settings-card card ]" role="list">
       <!-- Analytics consent: the label opens its description; the switch is
            a separate control. -->
       <li class="settings-list-item">
@@ -286,7 +286,7 @@
        column, so it lines up with the icon rows' labels above. -->
   <section class="[ settings-section ] [ flow ]">
     <h2 t="settings.about" class="[ settings-section-title ] [ md-typescale-title-small ]"></h2>
-    <ul class="settings-card" role="list">
+    <ul class="[ settings-card card ]" role="list">
       <!-- Terms of Service. Navigates via the VM's root router (openLegal), not
            a load/href attribute — see SettingsRoute.openLegal for why. -->
       <li class="settings-list-item">
@@ -331,7 +331,7 @@
        scroll stack's gap (--space-m, at least 24px), so a tap meant for
        another row never signs the fan out. It asks first. -->
   <section if.bind="auth.isAuthenticated" aria-label.bind="'settings.signOut' | t" data-testid="settings-sign-out-group">
-    <ul class="settings-card" role="list">
+    <ul class="[ settings-card card ]" role="list">
       <li class="settings-list-item">
         <!-- Busy only once the fan has confirmed, not while they decide. -->
         <button
@@ -358,7 +358,7 @@
        by the same scroll stack gap (at least 24px), and opens the withdrawal
        screen, which asks again before anything is deleted. -->
   <section if.bind="auth.isAuthenticated" aria-label.bind="'settings.deleteAccount' | t" data-testid="settings-delete-account-group">
-    <ul class="settings-card" role="list">
+    <ul class="[ settings-card card ]" role="list">
       <li class="settings-list-item">
         <settings-link-row
           icon="trash"

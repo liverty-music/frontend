@@ -1,0 +1,56 @@
+/* The fan app's summary list: `<dl class="[ summary-list ] [ … ]">` whose rows
+   are `<div>`s of one `<dt>` and its `<dd>`s. The template gives the type
+   styles. The list draws no frame: it sits inside the `card` it summarises.
+   - key    `on-surface-variant`, at the row's start
+   - value  `on-surface`, at the row's end; a value too long to sit beside
+            its key wraps onto the lines below, still ending at the end
+   - rows   8px apart
+   `data-variant="stacked"` puts each value under its key, at the start, and
+   the rows 16px apart: for values that are sentences (the legal confirmation
+   before a purchase), where 8px would run one term into the next. */
+@layer block {
+	@scope (.summary-list) {
+		:scope {
+			display: grid;
+			gap: var(--space-2xs);
+		}
+
+		:scope > div {
+			display: flex;
+			flex-wrap: wrap;
+			gap: var(--space-3xs) var(--space-s);
+			align-items: baseline;
+		}
+
+		dt {
+			color: var(--md-sys-color-on-surface-variant);
+		}
+
+		/* A value with no break opportunity (an id) still breaks rather than
+		   overflowing the card. */
+		dd {
+			flex: 1 1 auto;
+
+			min-inline-size: 0;
+
+			color: var(--md-sys-color-on-surface);
+			text-align: end;
+			overflow-wrap: anywhere;
+		}
+	}
+}
+
+@layer exception {
+	.summary-list[data-variant="stacked"] {
+		gap: var(--space-s);
+	}
+
+	.summary-list[data-variant="stacked"] > div {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.summary-list[data-variant="stacked"] dd {
+		text-align: start;
+	}
+}

@@ -32,7 +32,7 @@ export const ROUTE_MARKERS: readonly RouteMarker[] = [
 	{ route: 'tickets', marker: 'tickets-card' },
 	{ route: 'order', marker: 'order-ticket-card' },
 	{ route: 'event', marker: 'event-performer-name' },
-	{ route: 'checkout', marker: 'checkout-terms' },
+	{ route: 'checkout', marker: 'checkout-seat-type' },
 	{ route: 'passkey-recovery', marker: 'passkey-recovery-lead' },
 	{ route: 'verify-email', marker: 'verify-email-lead' },
 	{ route: 'passkeys', marker: 'passkeys-lead' },

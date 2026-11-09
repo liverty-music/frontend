@@ -13,16 +13,12 @@
 			padding-inline: var(--space-m);
 		}
 
+		/* The `card` block draws the panel. */
 		.order-panel {
 			--flow-space: var(--space-m);
 			--wrapper-max: var(--page-max-inline-size);
 
 			inline-size: 100%;
-			padding: var(--space-m);
-			border: 1px solid var(--md-sys-color-outline-variant);
-			border-radius: var(--md-sys-shape-corner-large);
-
-			background: var(--md-sys-color-surface-container);
 		}
 
 		.order-content {
@@ -124,37 +120,12 @@
 			}
 		}
 
-		/* Summary definition list */
-		.order-summary {
-			--stack-gap: var(--space-2xs);
-
-			padding: var(--space-s);
-			border: 1px solid var(--md-sys-color-outline-variant);
-			border-radius: var(--md-sys-shape-corner-large);
-		}
-
-		.order-summary-row {
-			display: flex;
-			gap: var(--space-s);
-			align-items: baseline;
-			justify-content: space-between;
-		}
-
-		.order-summary-key {
-			flex-shrink: 0;
-			color: var(--md-sys-color-on-surface-variant);
-		}
-
-		.order-summary-val {
-			text-align: end;
-		}
-
-		/* Amount row — larger to emphasise the total */
+		/* The total and its tax note, at the end of the summary row. */
 		.order-summary-amount {
 			display: flex;
 			gap: var(--space-2xs);
 			align-items: baseline;
-			text-align: end;
+			justify-content: flex-end;
 		}
 
 		.order-tax-label {
@@ -223,29 +194,6 @@
 					color: var(--md-sys-color-on-surface-variant);
 				}
 			}
-		}
-
-		/* Ticket summary definition list */
-		.order-ticket-summary {
-			--stack-gap: var(--space-2xs);
-
-			padding: var(--space-s);
-			border: 1px solid var(--md-sys-color-outline-variant);
-			border-radius: var(--md-sys-shape-corner-large);
-		}
-
-		.order-ticket-summary-row {
-			display: flex;
-			gap: var(--space-s);
-			justify-content: space-between;
-		}
-
-		.order-ticket-summary-key {
-			color: var(--md-sys-color-on-surface-variant);
-		}
-
-		.order-ticket-summary-val {
-			text-align: end;
 		}
 
 		/* 特定興行入場券 resale-prohibition notice */
