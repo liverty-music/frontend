@@ -1,0 +1,17 @@
+/* Single-purpose classes both apps share. */
+@layer utility {
+	/* Read by screen readers, not drawn. */
+	/* stylelint-disable-next-line cube/utility-single-property -- the screen-reader-only pattern takes several properties */
+	.visually-hidden {
+		position: absolute;
+
+		overflow: hidden;
+
+		inline-size: 1px;
+		block-size: 1px;
+
+		white-space: nowrap;
+
+		clip-path: inset(50%);
+	}
+}

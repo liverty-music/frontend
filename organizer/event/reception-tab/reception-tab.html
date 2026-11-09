@@ -34,7 +34,7 @@
       <console-button variant="tonal" click.trigger="load()">${'common.retry' & t}</console-button>
     </div>
 
-    <ul if.bind="state === 'ready' && rows.length" class="scanners" aria-label.bind="'event.tab.reception' & t">
+    <ul if.bind="state === 'ready' && rows.length" class="[ scanners ] [ bleed ]" aria-label.bind="'event.tab.reception' & t">
       <li repeat.for="row of rows; key: id" class="scanner" data-scanner.bind="row.number" data-new.bind="row.isNew">
         <list-item>
           ${'reception.label' & t:{ number: row.number }}

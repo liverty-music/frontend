@@ -25,8 +25,6 @@
 		.groups {
 			display: grid;
 			gap: var(--space-2xs);
-			/* stylelint-disable-next-line property-disallowed-list -- full bleed: the list reaches past the page's inline padding, which no padding or gap of its own can do */
-			margin-inline: calc(-1 * var(--page-inline-padding));
 		}
 
 		/* M3 list subheader. */
@@ -49,13 +47,6 @@
 
 			color: var(--md-sys-color-on-surface-variant);
 			text-align: center;
-		}
-
-		@container shell (width >= 600px) {
-			.groups {
-				/* stylelint-disable-next-line property-disallowed-list -- turns off the compact full-bleed margin; only a margin undoes a margin */
-				margin-inline: 0;
-			}
 		}
 	}
 }

@@ -166,21 +166,6 @@
 		animation: busy-spin 0.8s linear infinite;
 	}
 
-	/* Accessibility — multi-property utility required for screen-reader-only pattern */
-	/* stylelint-disable-next-line cube/utility-single-property -- the screen-reader-only pattern takes several properties */
-	.visually-hidden {
-		position: absolute;
-
-		overflow: hidden;
-
-		inline-size: 1px;
-		block-size: 1px;
-
-		white-space: nowrap;
-
-		clip-path: inset(50%);
-	}
-
 	/* ── Press state (M3 Expressive): state layer + corner morph ──
 	   Opt in with the `pressable` class. Keyed off `:active` alone, so a control
 	   costs nothing until it is pressed: no script, no listener, no style read

@@ -39,18 +39,3 @@
 		color: var(--md-sys-color-on-surface);
 	}
 }
-
-@layer composition {
-	/* Every Layout: vertical rhythm via the owl selector. No visual treatment. */
-	.flow > * + * {
-		margin-block-start: var(--flow-space, var(--space-s));
-	}
-
-	/* Every Layout: cluster — wrap items with consistent gap, no width math. */
-	.cluster {
-		display: flex;
-		flex-wrap: wrap;
-		gap: var(--cluster-space, var(--space-s));
-		align-items: center;
-	}
-}

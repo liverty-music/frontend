@@ -1,10 +1,13 @@
 @layer reset, tokens, global, composition, utility, block, exception;
 
+@import "../../shared/styles/reset.css";
 @import "./reset.css";
 @import "../../shared/styles/m3-sys.css";
 @import "./tokens.css";
 @import "./global.css";
+@import "../../shared/styles/compositions.css";
 @import "./compositions.css";
+@import "../../shared/styles/utilities.css";
 @import "./utilities.css";
 @import "../../shared/styles/m3-typescale.css";
 @import "./button.css";

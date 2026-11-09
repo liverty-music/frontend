@@ -13,7 +13,7 @@
       <console-button variant="text" click.trigger="loadConcerts()">${'common.retry' & t}</console-button>
     </div>
 
-    <section if.bind="groups.length" class="groups" aria-label.bind="'home.listLabel' & t" data-testid="home-items">
+    <section if.bind="groups.length" class="[ groups ] [ bleed ]" aria-label.bind="'home.listLabel' & t" data-testid="home-items">
       <section repeat.for="group of groups; key: kind" class="group" data-group.bind="group.kind">
         <h2 class="[ subheader ] [ md-typescale-title-small ]" id.bind="`home-${group.kind}`">${`home.kind.${group.kind}` & t}</h2>
         <ul class="list" aria-labelledby.bind="`home-${group.kind}`">
