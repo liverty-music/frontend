@@ -30,30 +30,6 @@
 			color: var(--md-sys-color-on-surface);
 		}
 
-		.settings-field-input {
-			inline-size: 100%;
-			min-block-size: var(--md-sys-target-size);
-			padding-block: var(--space-2xs);
-			padding-inline: var(--space-s);
-			border: 1px solid var(--md-sys-color-outline-variant);
-			border-radius: var(--md-sys-shape-corner-medium);
-
-			color: var(--md-sys-color-on-surface);
-
-			background: var(--md-sys-color-surface);
-
-			&:focus-visible {
-				border-color: var(--color-brand-primary);
-				outline: 2px solid
-					color-mix(in oklch, var(--color-brand-primary) 40%, transparent);
-				outline-offset: 1px;
-			}
-
-			&[aria-invalid="true"] {
-				border-color: var(--color-error);
-			}
-		}
-
 		.settings-field-error {
 			color: var(--color-error);
 		}

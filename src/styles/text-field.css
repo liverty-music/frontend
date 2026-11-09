@@ -1,0 +1,64 @@
+/* The fan app's text field, a Material 3 outlined text field:
+   `class="[ text-field ] [ md-typescale-body-large ]"` on the native <input>,
+   <select> or <textarea> itself. The label and any error text are siblings
+   the page lays out (a `stack` around them); the template gives the type
+   style. The values are the organizer console's field
+   (`organizer/ui/console-field/console-field.css`):
+   - rest      56px tall, a 1px `outline` border, extra-small corners, on the
+               `surface` colour
+   - focused   a 2px `primary` border: the 1px border plus a 1px inset
+               shadow, so the text does not move. It is the keyboard focus
+               indicator, so the browser's ring is replaced by a transparent
+               outline that forced-colours mode draws.
+   - invalid   `aria-invalid="true"` turns the border `error`, focused or not
+   - disabled  on-surface at 38% for the text, at 12% for the border */
+@layer block {
+	@scope (.text-field) {
+		:scope {
+			--_indicator: var(--md-sys-color-outline);
+
+			min-block-size: var(--field-block-size);
+			padding-inline: var(--space-s);
+			border: 1px solid var(--_indicator);
+			border-radius: var(--md-sys-shape-corner-extra-small);
+
+			color: var(--md-sys-color-on-surface);
+
+			background: var(--md-sys-color-surface);
+		}
+
+		:scope:focus {
+			--_indicator: var(--md-sys-color-primary);
+			--_indicator-inner: inset 0 0 0 1px var(--_indicator);
+
+			outline: 2px solid transparent;
+			outline-offset: -2px;
+			box-shadow: var(--_indicator-inner);
+		}
+
+		:scope[aria-invalid="true"] {
+			--_indicator: var(--md-sys-color-error);
+		}
+
+		/* A single-line control centres its text in the 56px; a textarea's
+		   lines start below the top edge instead. */
+		:scope:is(textarea) {
+			padding-block: var(--space-xs);
+		}
+
+		:scope:disabled {
+			--_indicator: color-mix(
+				in oklch,
+				var(--md-sys-color-on-surface) 12%,
+				transparent
+			);
+
+			cursor: not-allowed;
+			color: color-mix(
+				in oklch,
+				var(--md-sys-color-on-surface) 38%,
+				transparent
+			);
+		}
+	}
+}

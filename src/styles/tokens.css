@@ -41,6 +41,10 @@
 		--space-2xl: 64px;
 		--space-3xl: 96px;
 
+		/* A text field's height (M3 outlined text field; the organizer
+		   console's token of the same name). */
+		--field-block-size: 56px;
+
 		/* Toggle / switch control geometry (the settings list's switch). */
 		--toggle-track-inline: 2.75rem;
 		--toggle-track-block: 1.5rem;

@@ -227,18 +227,6 @@
 			color: var(--md-sys-color-on-surface-variant);
 		}
 
-		.date-field-input {
-			padding: var(--space-3xs) var(--space-s);
-			border: 1px solid var(--md-sys-color-outline);
-			border-radius: var(--md-sys-shape-corner-medium);
-			color: var(--md-sys-color-on-surface);
-
-			&:focus-visible {
-				outline: 2px solid var(--color-brand-primary);
-				outline-offset: 2px;
-			}
-		}
-
 		/* ── Confirm button row ── */
 		.confirm-row {
 			display: flex;

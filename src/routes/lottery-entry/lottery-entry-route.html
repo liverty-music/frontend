@@ -46,7 +46,7 @@
 		<h2 class="[ lottery-entry-step-title ] [ md-typescale-title-large-emphasized ]" t="lotteryEntry.count.title"></h2>
 		<label class="[ lottery-entry-field ] [ stack ]">
 			<span class="[ lottery-entry-label ] [ md-typescale-label-large ]" t="lotteryEntry.count.label" t-params.bind="{ limit: perAccountLimit }"></span>
-			<select value.bind="ticketCount" class="[ lottery-entry-input ] [ md-typescale-body-large ]" data-testid="lottery-entry-count-select">
+			<select value.bind="ticketCount" class="[ text-field ] [ md-typescale-body-large ]" data-testid="lottery-entry-count-select">
 				<option repeat.for="n of countOptions" model.bind="n">${n}</option>
 			</select>
 		</label>
@@ -61,7 +61,7 @@
 		<p class="[ lottery-entry-lead ] [ md-typescale-body-medium ]" t="lotteryEntry.personalDetails.note"></p>
 		<label class="[ lottery-entry-field ] [ stack ]">
 			<span class="[ lottery-entry-label ] [ md-typescale-label-large ]" t="lotteryEntry.personalDetails.name"></span>
-			<input type="text" autocomplete="name" value.bind="fullName" class="[ lottery-entry-input ] [ md-typescale-body-large ]" data-testid="lottery-entry-name" />
+			<input type="text" autocomplete="name" value.bind="fullName" class="[ text-field ] [ md-typescale-body-large ]" data-testid="lottery-entry-name" />
 		</label>
 		<label class="[ lottery-entry-field ] [ stack ]">
 			<span class="[ lottery-entry-label ] [ md-typescale-label-large ]" t="lotteryEntry.personalDetails.phone"></span>
@@ -72,7 +72,7 @@
 				value.bind="phoneNumber"
 				aria-invalid.bind="isPhoneInvalid"
 				aria-describedby.bind="isPhoneInvalid ? 'lottery-entry-phone-error' : null"
-				class="[ lottery-entry-input ] [ md-typescale-body-large ]"
+				class="[ text-field ] [ md-typescale-body-large ]"
 				data-testid="lottery-entry-phone"
 			/>
 		</label>
