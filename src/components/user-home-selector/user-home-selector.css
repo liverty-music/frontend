@@ -79,11 +79,5 @@
 			gap: var(--space-2xs);
 			align-items: center;
 		}
-
-		/* The shared `button` (outlined) owns the look; size its chevron. */
-		.selector-back svg {
-			inline-size: 1rem;
-			block-size: 1rem;
-		}
 	}
 }

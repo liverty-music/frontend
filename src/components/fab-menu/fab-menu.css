@@ -128,11 +128,6 @@
 				var(--md-sys-motion-spring-spatial-fast);
 		}
 
-		.fab-equalizer {
-			fill: currentcolor;
-			stroke: none;
-		}
-
 		.fab-close {
 			rotate: -90deg;
 
