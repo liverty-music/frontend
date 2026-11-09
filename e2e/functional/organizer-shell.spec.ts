@@ -533,3 +533,24 @@ test.describe('addresses name the Organizer and the Artist', () => {
 		expect(overflow).toBe(0)
 	})
 })
+
+test('the scrolling page area shows the focus ring when the keyboard reaches it', async ({
+	page,
+}) => {
+	await installConsole(page)
+	await page.goto(SERIES)
+	await expect(page.locator('organizer-shell h1').first()).toBeVisible()
+	const main = page.getByRole('main')
+	// Tab through the shell until the page area holds the focus.
+	for (let i = 0; i < 40; i++) {
+		if (await main.evaluate((el) => el === document.activeElement)) break
+		await page.keyboard.press('Tab')
+	}
+	await expect(main).toBeFocused()
+	const outline = await main.evaluate((el) => {
+		const style = getComputedStyle(el)
+		return { style: style.outlineStyle, width: style.outlineWidth }
+	})
+	expect(outline.style).not.toBe('none')
+	expect(Number.parseFloat(outline.width)).toBeGreaterThan(0)
+})

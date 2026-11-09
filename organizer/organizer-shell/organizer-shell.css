@@ -73,9 +73,16 @@
 		}
 
 		/* An extended FAB floats at the bottom of the window: the snackbar
-		   rises above it (M3 Snackbar). */
+		   rises above it (M3 Snackbar). The snack bar reads the distance from
+		   the window's bottom to the FAB's top edge (extended-fab.css places
+		   the 56 px FAB). */
 		.frame:has(extended-fab) {
-			--bottom-banner-clearance: calc(56px + var(--space-s));
+			--bottom-floating-clearance: calc(
+				var(--nav-bar-clearance, 0px) +
+				var(--safe-area-block-end, 0px) +
+				var(--space-s) +
+				56px
+			);
 		}
 
 		/* Only the page scrolls, so the bar and the rail never cover content. */
@@ -85,8 +92,6 @@
 			grid-area: main;
 			grid-template-columns: minmax(0, var(--page-max-inline-size));
 			place-content: start center;
-
-			outline: none;
 
 			scroll-timeline: --console-page block;
 			view-transition-name: console-main;

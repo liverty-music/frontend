@@ -515,3 +515,32 @@ test.describe("the concert's seat types", () => {
 		await expect(section(page).getByLabel(/席種名/)).toHaveCount(0)
 	})
 })
+
+test('a snack shown on the concerts list sits above the floating button', async ({
+	page,
+}) => {
+	// Removing a concert of drafts only returns to the list with a snack,
+	// where the extended FAB floats at the bottom of a phone window.
+	await page.setViewportSize({ width: 390, height: 844 })
+	await openConcert(page, `${SERIES}/s-tour`, concertServer(DRAFT_TOUR).rpc)
+	await page
+		.locator('concert-route header')
+		.getByRole('button', { name: 'その他の操作' })
+		.click()
+	await page.getByRole('menuitem', { name: '公演を中止' }).click()
+	await confirmDialog(page).getByRole('button', { name: '公演を中止' }).click()
+
+	const snack = page.locator('.snack-surface')
+	await expect(snack).toContainText('下書きの公演を削除しました')
+	const fab = page.locator('extended-fab')
+	await expect(fab).toBeVisible()
+	const fabBox = await fab.boundingBox()
+	if (!fabBox) throw new Error('no FAB box')
+	// The snack rises into place; its settled bottom edge clears the FAB.
+	await expect
+		.poll(async () => {
+			const box = await snack.boundingBox()
+			return box ? fabBox.y - (box.y + box.height) : -1
+		})
+		.toBeGreaterThanOrEqual(0)
+})
