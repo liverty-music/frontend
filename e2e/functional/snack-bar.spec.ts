@@ -6,9 +6,9 @@ import { expect, type Page, test } from '../support/test'
  * E2E tests for snack-bar (renamed from snack-bar) using the Popover API.
  *
  * Covers verification tasks:
- * - 5.1: Multiple toasts appear, animate in, auto-dismiss, no zombies
- * - 5.2: Undo toast with action button on My Artists page
- * - 5.3: Toast appears above open dialog (Top Layer stacking)
+ * - 5.1: Multiple snacks appear, animate in, auto-dismiss, no zombies
+ * - 5.2: Undo snack with action button on My Artists page
+ * - 5.3: Snack appears above open dialog (Top Layer stacking)
  */
 
 /** Mock all Connect-RPC routes with minimal responses. */
@@ -94,14 +94,14 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 }
 
 /**
- * Publish a snack toast via the test bridge exposed by main.ts in DEV mode.
+ * Publish a snack via the test bridge exposed by main.ts in DEV mode.
  *
  * main.ts exposes window.__lm_publishSnack when import.meta.env.DEV is true,
  * which calls ea.publish(new Snack(...)) using the real Aurelia EventAggregator.
  * This is the only reliable way to trigger snack-bar from Playwright without
  * accessing Aurelia internals directly.
  */
-async function publishToastDirect(
+async function publishSnackDirect(
 	page: Page,
 	message: string,
 	severity: 'info' | 'warning' | 'error' = 'info',
@@ -135,10 +135,10 @@ async function publishToastDirect(
 }
 
 // =========================================================================
-// 5.1: Multiple toasts — appear, animate, auto-dismiss, no zombies
+// 5.1: Multiple snacks — appear, animate, auto-dismiss, no zombies
 // =========================================================================
 
-test.describe('Toast notification: multiple rapid toasts (5.1)', () => {
+test.describe('Snack bar: multiple rapid snacks (5.1)', () => {
 	test.use({ viewport: { width: 412, height: 915 } })
 
 	test.beforeEach(async ({ page }) => {
@@ -175,48 +175,48 @@ test.describe('Toast notification: multiple rapid toasts (5.1)', () => {
 	})
 
 	// The snack-bar host is taken out of the shell grid's flow (app-shell.css:
-	// fixed, zero height, overflow hidden); its toasts still show in the top layer.
+	// fixed, zero height, overflow hidden); its snacks still show in the top layer.
 	// @spec components/infrastructure/fan/web/global/app-shell "Overlay elements remain functional"
-	test('3 rapid toasts appear one at a time, then auto-dismiss without zombies', async ({
+	test('3 rapid snacks appear one at a time, then auto-dismiss without zombies', async ({
 		page,
 	}) => {
 		test.setTimeout(30_000)
 
 		for (let i = 1; i <= 3; i++) {
-			await publishToastDirect(page, `Toast ${i}`, 'info', 1000)
+			await publishSnackDirect(page, `Snack ${i}`, 'info', 1000)
 		}
 
 		// One at a time, in the order they were published.
-		const toasts = page.locator('.snack-item')
+		const snacks = page.locator('.snack-item')
 		for (let i = 1; i <= 3; i++) {
 			await expect(page.locator('.snack-item:popover-open')).toHaveText(
-				`Toast ${i}`,
+				`Snack ${i}`,
 				{ timeout: 3000 },
 			)
-			await expect(toasts).toHaveCount(1)
+			await expect(snacks).toHaveCount(1)
 		}
 
-		await expect(toasts).toHaveCount(0, { timeout: 5000 })
+		await expect(snacks).toHaveCount(0, { timeout: 5000 })
 	})
 
 	// @spec components/infrastructure/fan/web/global/snack-bar "Multiple simultaneous snacks"
-	test('a second toast waits until the first has gone', async ({ page }) => {
-		await publishToastDirect(page, 'First toast', 'info', 1500)
-		await publishToastDirect(page, 'Second toast', 'warning', 1500)
+	test('a second snack waits until the first has gone', async ({ page }) => {
+		await publishSnackDirect(page, 'First snack', 'info', 1500)
+		await publishSnackDirect(page, 'Second snack', 'warning', 1500)
 
 		const open = page.locator('.snack-item:popover-open')
-		await expect(open).toHaveText('First toast', { timeout: 3000 })
+		await expect(open).toHaveText('First snack', { timeout: 3000 })
 		await expect(page.locator('.snack-stack .snack-item')).toHaveCount(1)
-		await expect(open).toHaveText('Second toast', { timeout: 5000 })
+		await expect(open).toHaveText('Second snack', { timeout: 5000 })
 		await expect(page.locator('.snack-stack .snack-item')).toHaveCount(1)
 	})
 })
 
 // =========================================================================
-// 5.2: Undo toast on My Artists page
+// 5.2: Undo snack on My Artists page
 // =========================================================================
 
-test.describe('Toast notification: undo toast on My Artists (5.2)', () => {
+test.describe('Snack bar: undo snack on My Artists (5.2)', () => {
 	test.use({ viewport: { width: 412, height: 915 } })
 
 	test.beforeEach(async ({ page }) => {
@@ -260,7 +260,7 @@ test.describe('Toast notification: undo toast on My Artists (5.2)', () => {
 		})
 	})
 
-	test('unfollow shows undo toast with action button', async ({ page }) => {
+	test('unfollow shows undo snack with action button', async ({ page }) => {
 		test.setTimeout(30_000)
 
 		// Unfollow is now reached via Edit mode: tap the Edit toggle first,
@@ -297,22 +297,22 @@ test.describe('Toast notification: undo toast on My Artists (5.2)', () => {
 			btn.click()
 		})
 
-		// Toast should appear
-		const toast = page.locator('.snack-item:popover-open')
-		await expect(toast).toHaveCount(1, { timeout: 5000 })
-		await expect(toast.first()).toBeVisible()
+		// Snack should appear
+		const snack = page.locator('.snack-item:popover-open')
+		await expect(snack).toHaveCount(1, { timeout: 5000 })
+		await expect(snack.first()).toBeVisible()
 
-		// Toast should contain a message
-		const toastText = await toast.first().textContent()
-		expect(toastText).toBeTruthy()
+		// Snack should contain a message
+		const snackText = await snack.first().textContent()
+		expect(snackText).toBeTruthy()
 	})
 })
 
 // =========================================================================
-// 5.3: Toast appears above open dialog (Top Layer stacking)
+// 5.3: Snack appears above open dialog (Top Layer stacking)
 // =========================================================================
 
-test.describe('Toast notification: appears above dialog (5.3)', () => {
+test.describe('Snack bar: appears above dialog (5.3)', () => {
 	test.use({ viewport: { width: 412, height: 915 } })
 
 	test.beforeEach(async ({ page }) => {
@@ -347,7 +347,7 @@ test.describe('Toast notification: appears above dialog (5.3)', () => {
 	})
 
 	// @spec components/infrastructure/fan/web/global/snack-bar "Top Layer stacking with dialogs"
-	test('toast popover renders above an open dialog element', async ({
+	test('snack popover renders above an open dialog element', async ({
 		page,
 	}) => {
 		test.setTimeout(30_000)
@@ -370,27 +370,27 @@ test.describe('Toast notification: appears above dialog (5.3)', () => {
 		const dialog = page.locator('#test-dialog')
 		await expect(dialog).toBeVisible()
 
-		// Now trigger a toast — it should appear above the dialog
+		// Now trigger a snack — it should appear above the dialog
 		// (both are in the Top Layer; later entry is on top)
-		await publishToastDirect(page, 'Toast above dialog', 'info', 5000)
+		await publishSnackDirect(page, 'Snack above dialog', 'info', 5000)
 
-		const toast = page.locator('.snack-item:popover-open')
-		await expect(toast).toHaveCount(1, { timeout: 3000 })
-		await expect(toast.first()).toBeVisible()
+		const snack = page.locator('.snack-item:popover-open')
+		await expect(snack).toHaveCount(1, { timeout: 3000 })
+		await expect(snack.first()).toBeVisible()
 
-		// Verify the toast is rendered above the dialog by checking
-		// the Top Layer order: toast (popover shown after dialog.showModal())
+		// Verify the snack is rendered above the dialog by checking
+		// the Top Layer order: snack (popover shown after dialog.showModal())
 		// should be visually on top
-		const toastBox = await toast.first().boundingBox()
-		expect(toastBox).toBeTruthy()
+		const snackBox = await snack.first().boundingBox()
+		expect(snackBox).toBeTruthy()
 
-		// The toast has non-zero bounding box and is in the popover open state,
+		// The snack has non-zero bounding box and is in the popover open state,
 		// confirming it is rendered in the Top Layer above the dialog.
 		// (elementFromPoint is unreliable across top-layer entries in headless Chromium.)
-		expect(toastBox!.width).toBeGreaterThan(0)
-		expect(toastBox!.height).toBeGreaterThan(0)
+		expect(snackBox!.width).toBeGreaterThan(0)
+		expect(snackBox!.height).toBeGreaterThan(0)
 
-		// Verify the dialog is still open (toast didn't close it)
+		// Verify the dialog is still open (snack didn't close it)
 		await expect(dialog).toBeVisible()
 	})
 })
@@ -489,7 +489,7 @@ test.describe('Snack placement above the navigation', () => {
 
 	test(`@spec ${SNACK_CAPABILITY} "No banner is visible"`, async ({ page }) => {
 		await bootSignedIn(page, 'none')
-		await publishToastDirect(page, 'Saved', 'info', 10_000)
+		await publishSnackDirect(page, 'Saved', 'info', 10_000)
 
 		const gap =
 			(await topOf(page, 'bottom-nav-bar nav')) - (await openSnackBottom(page))
@@ -509,7 +509,7 @@ test.describe('Snack placement above the navigation', () => {
 		await expect(page.locator('pwa-install-banner')).toBeAttached()
 		await expect(page.locator('signup-prompt-banner')).toBeAttached()
 		await expect(page.locator('.pwa-banner, .signup-banner')).toHaveCount(0)
-		await publishToastDirect(page, 'Saved', 'info', 10_000)
+		await publishSnackDirect(page, 'Saved', 'info', 10_000)
 
 		const gap =
 			(await topOf(page, 'bottom-nav-bar nav')) - (await openSnackBottom(page))
@@ -520,7 +520,7 @@ test.describe('Snack placement above the navigation', () => {
 		await bootSignedIn(page, 'visible')
 		await expect(page.locator('.pwa-banner')).toBeVisible()
 		await waitSettled(page, 'pwa-install-banner')
-		await publishToastDirect(page, 'Saved', 'info', 10_000)
+		await publishSnackDirect(page, 'Saved', 'info', 10_000)
 
 		const bannerTop = await topOf(page, '.pwa-banner')
 		const gap = bannerTop - (await openSnackBottom(page))
@@ -538,7 +538,7 @@ test.describe('Snack placement above the navigation', () => {
 		await page.waitForURL('**/my-artists')
 		await expect(page.locator('signup-prompt-banner')).toBeAttached()
 		await waitSettled(page, 'pwa-install-banner')
-		await publishToastDirect(page, 'Saved', 'info', 10_000)
+		await publishSnackDirect(page, 'Saved', 'info', 10_000)
 		const onMyArtists =
 			(await topOf(page, '.pwa-banner')) - (await openSnackBottom(page))
 		expect(onMyArtists).toBeGreaterThan(0)
@@ -550,7 +550,7 @@ test.describe('Snack placement above the navigation', () => {
 		await bootSignedIn(page, 'none')
 		const bottoms: number[] = []
 		for (const severity of ['info', 'warning', 'error'] as const) {
-			await publishToastDirect(page, `A ${severity} snack`, severity, 1500)
+			await publishSnackDirect(page, `A ${severity} snack`, severity, 1500)
 			bottoms.push(await openSnackBottom(page))
 			await expect(page.locator('.snack-item')).toHaveCount(0, {
 				timeout: 5000,

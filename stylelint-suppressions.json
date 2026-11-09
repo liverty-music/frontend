@@ -250,11 +250,6 @@
       "count": 1
     }
   },
-  "src/components/toast/toast.css": {
-    "declaration-property-custom-property-allowed-list": {
-      "count": 1
-    }
-  },
   "src/routes/checkout/checkout-route.css": {
     "cube/block-max-lines": {
       "count": 1

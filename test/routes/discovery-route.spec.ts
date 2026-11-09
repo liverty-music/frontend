@@ -28,7 +28,7 @@ import {
 	createMockConcertService,
 	createMockFollowStore,
 } from '../helpers/mock-rpc-clients'
-import { createMockEventAggregator } from '../helpers/mock-toast'
+import { createMockEventAggregator } from '../helpers/mock-snack'
 
 const mockIArtistStore = DI.createInterface('IArtistStore')
 const mockIFollowStore = DI.createInterface('IFollowStore')
@@ -258,7 +258,7 @@ describe('DiscoveryRoute', () => {
 			expect(mockEa.publish).not.toHaveBeenCalled()
 		})
 
-		it('should show toast on load failure', async () => {
+		it('should show snack on load failure', async () => {
 			;(mockArtistClient.listTop as ReturnType<typeof vi.fn>).mockRejectedValue(
 				new Error('fail'),
 			)
@@ -805,7 +805,7 @@ describe('DiscoveryRoute', () => {
 
 		// @spec components/infrastructure/fan/web/route/discovery "No similar artists found"
 		// @spec components/infrastructure/fan/web/route/discovery "Top artist pool also exhausted"
-		it('should show info toast when no new bubbles are available', async () => {
+		it('should show info snack when no new bubbles are available', async () => {
 			;(
 				mockArtistClient.listSimilar as ReturnType<typeof vi.fn>
 			).mockResolvedValue([])
@@ -830,7 +830,7 @@ describe('DiscoveryRoute', () => {
 		})
 
 		// @spec components/infrastructure/fan/web/route/discovery "ListSimilar RPC failure"
-		it('should show warning toast on fetch failure and evict nothing', async () => {
+		it('should show warning snack on fetch failure and evict nothing', async () => {
 			;(mockArtistClient.listTop as ReturnType<typeof vi.fn>).mockResolvedValue(
 				[makeArtist('kept', 'Kept')],
 			)

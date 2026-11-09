@@ -456,7 +456,7 @@ describe('MyArtistsRoute', () => {
 			expect(sut.artists[1].artist.name).toBe('ONE OK ROCK')
 		})
 
-		it('should commit unfollow RPC when toast is dismissed', async () => {
+		it('should commit unfollow RPC when snack is dismissed', async () => {
 			sut.unfollowArtist(sut.artists[0])
 
 			publishedSnacks[0].options?.onDismiss?.()
