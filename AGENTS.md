@@ -156,6 +156,15 @@ sits above what), which a component story does not render; cf. `src/routes/my-ar
 
 Baseline generation, the pinned container, and the CI job: see the `visual-baselines` skill.
 
+### Layout record (refactors that must not change the layout)
+
+Stories cover components; a CSS refactor can still move something on a screen no story renders.
+Record the box of every element at the end of each e2e test before and after the change, then
+compare: `LAYOUT_DIR=<dir> npx playwright test --project=functional` on the base commit (a
+separate worktree) and on the branch, then `npm run compare-layout -- <before> <after>`. Web fonts
+are blocked while recording so text widths match. Re-run a test whose difference looks like an
+animation frame before treating it as a change (`e2e/support/layout-record.ts`).
+
 ## Build-time-only guards (run locally before release)
 
 Some correctness checks run ONLY inside the Docker image build (`push-image.yaml`), not in `make check`
