@@ -14,7 +14,6 @@
 
 			max-inline-size: none;
 			max-block-size: none;
-			margin: 0;
 			padding: var(--space-s);
 			border: 1px solid var(--md-sys-color-outline-variant);
 			border-radius: var(--md-sys-shape-corner-large);

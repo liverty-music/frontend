@@ -161,7 +161,6 @@
 			inset: 64px var(--space-2xs) auto auto;
 
 			min-inline-size: 200px;
-			margin: 0;
 			padding-block: var(--space-2xs);
 			border: none;
 			border-radius: var(--md-sys-shape-corner-extra-small);
@@ -225,8 +224,18 @@
 			visibility: visible;
 		}
 
+		/* The account menu's items touch; the flow composition spaces only
+		   the divider from its neighbours. */
+		.account-menu {
+			--flow-space: 0;
+		}
+
+		.menu-divider,
+		.menu-divider + * {
+			--flow-space: var(--space-2xs);
+		}
+
 		.menu-divider {
-			margin-block: var(--space-2xs);
 			border: none;
 			border-block-start: 1px solid var(--md-sys-color-outline-variant);
 		}

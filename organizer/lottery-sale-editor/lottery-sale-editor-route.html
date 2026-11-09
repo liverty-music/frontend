@@ -36,7 +36,7 @@
     </div>
   </template>
 
-  <form if.bind="state === 'ready'" class="form" novalidate submit.trigger="false">
+  <form if.bind="state === 'ready'" class="[ form ] [ flow ]" novalidate submit.trigger="false">
     <p class="note">${'lotteryEditor.explain' & t}</p>
     <p class="note">${'common.requiredNote' & t}</p>
 

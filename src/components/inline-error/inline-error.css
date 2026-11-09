@@ -14,12 +14,21 @@
 		.inline-error-icon {
 			inline-size: 2.5rem;
 			block-size: 2.5rem;
-			margin-block-end: var(--space-xs);
 			color: var(--md-sys-color-on-surface-variant);
 		}
 
+		/* The icon and message, a step above the retry button (or the
+		   layout's end padding when there is none). */
+		.inline-error-content {
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-xs);
+			align-items: center;
+
+			padding-block-end: var(--space-s);
+		}
+
 		.inline-error-message {
-			margin-block-end: var(--space-s);
 			color: var(--md-sys-color-on-surface-variant);
 		}
 	}

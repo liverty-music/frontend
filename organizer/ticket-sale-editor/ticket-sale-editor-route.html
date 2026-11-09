@@ -32,7 +32,7 @@
       </prerequisite-callout>
     </div>
 
-    <form if.bind="!blocks.length" class="form" novalidate submit.trigger="false">
+    <form if.bind="!blocks.length" class="[ form ] [ flow ]" novalidate submit.trigger="false">
       <p class="note">${'common.requiredNote' & t}</p>
       <console-field
         if.bind="!sale"

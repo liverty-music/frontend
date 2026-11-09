@@ -7,16 +7,16 @@
 		<p class="[ lottery-entry-status-lead ] [ md-typescale-body-medium ]" role="status" t="lotteryEntryStatus.loading"></p>
 	</section>
 
-	<section class="[ lottery-entry-status-panel ] [ flow ]" if.bind="step === 'empty'" data-testid="lottery-entry-status-empty">
+	<section class="[ lottery-entry-status-panel ] [ flow wrapper ]" if.bind="step === 'empty'" data-testid="lottery-entry-status-empty">
 		<p class="[ lottery-entry-status-lead ] [ md-typescale-body-medium ]" t="lotteryEntryStatus.empty"></p>
 	</section>
 
-	<section class="[ lottery-entry-status-panel ] [ flow ]" if.bind="step === 'error'" data-testid="lottery-entry-status-error">
+	<section class="[ lottery-entry-status-panel ] [ flow wrapper ]" if.bind="step === 'error'" data-testid="lottery-entry-status-error">
 		<p class="[ lottery-entry-status-error ] [ md-typescale-body-medium ]" t.bind="messageKey"></p>
 		<button type="button" class="[ button lottery-entry-status-action ] [ pressable ]" click.trigger="load()" t="lotteryEntryStatus.reload"></button>
 	</section>
 
-	<section class="[ lottery-entry-status-panel ] [ flow ]" if.bind="step === 'loaded'" data-testid="lottery-entry-status-entry">
+	<section class="[ lottery-entry-status-panel ] [ flow wrapper ]" if.bind="step === 'loaded'" data-testid="lottery-entry-status-entry">
 		<output class="lottery-entry-status-status" data-kind.bind="resultKind">
 			<span class="[ lottery-entry-status-status-label ] [ md-typescale-headline-small ]" t.bind="stateLabelKey"></span>
 		</output>

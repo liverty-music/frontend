@@ -9,7 +9,6 @@
 			max-inline-size: 70ch;
 			block-size: 100%;
 			min-block-size: 0;
-			margin-inline: auto;
 			padding: var(--space-s);
 			padding-block-end: var(--space-2xl);
 
@@ -48,6 +47,7 @@
 		}
 
 		.licenses-license {
+			/* stylelint-disable-next-line property-disallowed-list -- the badge ends the row on whichever line it wraps to; justify-content or a grid track would also move or stretch the name and version */
 			margin-inline-start: auto;
 			padding: var(--space-3xs) var(--space-2xs);
 			border-radius: var(--md-sys-shape-corner-small);
@@ -64,10 +64,11 @@
 		}
 
 		.licenses-text-body {
+			--flow-space: var(--space-2xs);
+
 			overflow-x: auto;
 
 			max-block-size: 24rem;
-			margin-block-start: var(--space-2xs);
 			padding: var(--space-2xs);
 			border-radius: var(--md-sys-shape-corner-small);
 			overflow-wrap: anywhere;

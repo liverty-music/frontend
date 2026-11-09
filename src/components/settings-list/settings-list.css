@@ -13,8 +13,6 @@
 			overflow: hidden;
 			display: grid;
 			grid-template-columns: auto 1fr auto;
-
-			margin: 0;
 			border: 1px solid color-mix(in oklch, var(--color-white) 10%, transparent);
 			border-radius: var(--md-sys-shape-corner-large);
 

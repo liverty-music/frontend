@@ -95,6 +95,10 @@
 			   or NARROW_MAX_RADIUS on a canvas narrower than 390px). */
 			--orb-max-r: 90px;
 
+			/* Room above the search bar: an empty first row, inside the area the
+			   All Nearby view covers (it spans every row). */
+			--_search-gap: var(--space-xs);
+
 			isolation: isolate;
 			position: relative;
 
@@ -103,6 +107,7 @@
 			display: grid;
 			grid-area: content;
 			grid-template:
+				"." var(--_search-gap)
 				"search" auto
 				"genre" auto
 				"progress" auto
@@ -133,15 +138,16 @@
 		}
 
 		.sr-only {
-			--_sr-margin: -1px;
+			--_sr-offset: -1px;
 
 			position: absolute;
+			inset-block-start: var(--_sr-offset);
+			inset-inline-start: var(--_sr-offset);
 
 			overflow: hidden;
 
 			inline-size: 1px;
 			block-size: 1px;
-			margin: var(--_sr-margin);
 			border-width: 0;
 
 			white-space: nowrap;
@@ -154,9 +160,12 @@
 
 			display: flex;
 			grid-area: search;
+			gap: var(--space-2xs);
 			align-items: center;
+			justify-self: center;
 
-			margin: var(--space-xs) var(--space-s) 0;
+			inline-size: calc(100% - 2 * var(--space-s));
+
 			padding: var(--space-2xs) var(--space-s);
 			border: 1px solid var(--_white-12);
 			border-radius: var(--md-sys-shape-corner-full);
@@ -175,7 +184,6 @@
 		.search-input {
 			flex: 1;
 
-			margin-inline-start: var(--space-2xs);
 			border: none;
 			color: var(--color-white);
 
@@ -197,7 +205,6 @@
 
 			inline-size: 1.5rem;
 			block-size: 1.5rem;
-			margin-inline-start: var(--space-2xs);
 
 			/* stylelint-disable-next-line declaration-property-value-disallowed-list -- cancels the padding global.css gives every button and form field */
 			padding: 0;
@@ -424,13 +431,15 @@
 
 		/* stylelint-disable-next-line media-feature-name-disallowed-list -- viewport width needed alongside height to isolate SE-class devices (375px) from wider phones; container queries cannot combine with @media height */
 		@media (height <= 700px) and (width < 390px) {
+			/* Symmetric 8px whitespace: the room above the search bar matches
+			   the genre-bar's top padding below, so the search field sits evenly
+			   between the header and the genre chips. */
+			.discovery-layout {
+				--_search-gap: var(--space-2xs);
+			}
+
 			.search-bar {
 				block-size: 2.5rem;
-
-				/* Symmetric 8px whitespace: this top margin matches the genre-bar's
-				   top padding below, so the search field sits evenly between the
-				   header and the genre chips. */
-				margin-block-start: var(--space-2xs);
 			}
 
 			.genre-bar {

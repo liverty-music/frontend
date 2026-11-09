@@ -5,7 +5,7 @@
 
 	<!-- Loading -->
 	<section
-		class="order-panel"
+		class="[ order-panel ] [ wrapper ]"
 		if.bind="step === 'loading'"
 	>
 		<p class="[ order-lead ] [ md-typescale-body-medium ]" t="order.loading"></p>
@@ -13,7 +13,7 @@
 
 	<!-- Not found: non-revealing — order not the caller's or does not exist -->
 	<section
-		class="[ order-panel ] [ flow ]"
+		class="[ order-panel ] [ flow wrapper ]"
 		if.bind="step === 'notfound'"
 	>
 		<h2 class="[ order-step-title ] [ md-typescale-title-large-emphasized ]" t="order.notFound.title"></h2>
@@ -22,7 +22,7 @@
 
 	<!-- Error -->
 	<section
-		class="[ order-panel ] [ flow ]"
+		class="[ order-panel ] [ flow wrapper ]"
 		if.bind="step === 'error'"
 	>
 		<h2 class="[ order-step-title ] [ md-typescale-title-large-emphasized ]" t="order.error.title"></h2>
@@ -37,12 +37,12 @@
 
 	<!-- Loaded -->
 	<section
-		class="[ order-content ] [ flow ]"
+		class="[ order-content ] [ flow wrapper ]"
 		if.bind="step === 'loaded'"
 	>
 		<!-- §5.2 Refund banner (shown prominently before payment details) -->
 		<output
-			class="order-status-banner"
+			class="[ order-status-banner ] [ wrapper ]"
 			data-kind.bind="order.statusKind"
 			if.bind="order.statusKind === 'refunded'"
 		>
@@ -51,7 +51,7 @@
 		</output>
 
 		<!-- §5.1 Payment result card -->
-		<article class="[ order-panel ] [ flow ]">
+		<article class="[ order-panel ] [ flow wrapper ]">
 			<h2 class="[ order-section-title ] [ md-typescale-title-medium ]" t="order.payment.title"></h2>
 
 			<!-- Payment status badge -->
@@ -89,7 +89,7 @@
 
 		<!-- §5.1 Issued tickets for this order -->
 		<article
-			class="[ order-panel ] [ flow ]"
+			class="[ order-panel ] [ flow wrapper ]"
 			if.bind="tickets.length > 0"
 		>
 			<h2 class="[ order-section-title ] [ md-typescale-title-medium ]" t="order.tickets.title"></h2>

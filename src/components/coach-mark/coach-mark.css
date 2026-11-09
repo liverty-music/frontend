@@ -18,8 +18,6 @@
 
 		position: fixed;
 		inset: 0;
-
-		margin: 0;
 		border: none;
 
 		color: inherit;
@@ -32,10 +30,10 @@
 		pointer-events: none;
 
 		position: fixed;
-		inset: anchor(--coach-target top) anchor(--coach-target right)
-			anchor(--coach-target bottom) anchor(--coach-target left);
-
-		margin: var(--coach-spotlight-outset);
+		inset: calc(anchor(--coach-target top) + var(--coach-spotlight-outset))
+			calc(anchor(--coach-target right) + var(--coach-spotlight-outset))
+			calc(anchor(--coach-target bottom) + var(--coach-spotlight-outset))
+			calc(anchor(--coach-target left) + var(--coach-spotlight-outset));
 		border: 2px solid var(--color-brand-accent, oklch(75% 0.15 160deg));
 		border-radius: var(--spotlight-radius, 12px);
 
@@ -51,10 +49,10 @@
 		pointer-events: auto;
 
 		position: fixed;
-		inset: anchor(--coach-target top) anchor(--coach-target right)
-			anchor(--coach-target bottom) anchor(--coach-target left);
-
-		margin: var(--coach-spotlight-outset);
+		inset: calc(anchor(--coach-target top) + var(--coach-spotlight-outset))
+			calc(anchor(--coach-target right) + var(--coach-spotlight-outset))
+			calc(anchor(--coach-target bottom) + var(--coach-spotlight-outset))
+			calc(anchor(--coach-target left) + var(--coach-spotlight-outset));
 
 		background-color: transparent;
 	}
@@ -69,12 +67,15 @@
 		position-area: block-end;
 		position-try-fallbacks: flip-block;
 
+		/* The gap from the target; flip-block mirrors it when the tooltip
+		   moves above the target. */
+		inset-block-start: var(--space-s);
+
 		display: flex;
 		flex-direction: column;
 		align-items: start;
 
 		max-inline-size: min(320px, calc(100dvi - 2 * var(--space-s)));
-		margin-block: var(--space-s) 0;
 		padding: var(--space-s);
 
 		color: var(--color-white);
@@ -84,8 +85,6 @@
 	}
 
 	.coach-tooltip-message {
-		margin: 0;
-
 		/* Break CJK at phrase boundaries + balance line lengths so a token
 		   like「グッズ」never splits mid-word. */
 		text-wrap: balance;

@@ -55,7 +55,6 @@
 			gap: var(--space-2xs);
 
 			max-block-size: 40dvh;
-			margin: 0;
 		}
 
 		/* Upcoming-concert count prefix on each artist chip. */
@@ -129,8 +128,6 @@
 			display: flex;
 			flex-wrap: wrap;
 			gap: var(--space-2xs);
-
-			margin: 0;
 		}
 
 		/* Forces a wrap: process chips land on the row above the outcome chips. */

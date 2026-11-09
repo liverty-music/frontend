@@ -4,14 +4,14 @@
   sheet-closed.trigger="onSheetClosed()"
   aria-label="Select your area"
 >
-  <div class="selector-content">
+  <div class="[ selector-content ] [ flow ]">
     <!-- Step 1: Quick-select cities + Region selection -->
     <template if.bind="!selectedRegion">
       <h2 t="userHome.title" class="[ selector-title ] [ md-typescale-title-large ]"></h2>
       <p t="userHome.description" class="[ selector-desc ] [ md-typescale-body-medium ]"></p>
 
       <!-- Quick-select cities -->
-      <section class="selector-section">
+      <section class="[ selector-section ] [ flow ]">
         <p t="userHome.quickSelect" class="[ selector-label ] [ md-typescale-title-small ]"></p>
         <div class="selector-grid">
           <button
@@ -27,7 +27,7 @@
       </section>
 
       <!-- Region buttons -->
-      <div>
+      <div class="[ selector-section ] [ flow ]">
         <p t="userHome.selectByRegion" class="[ selector-label ] [ md-typescale-title-small ]"></p>
         <div class="selector-grid">
           <button

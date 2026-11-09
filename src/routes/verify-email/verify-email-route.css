@@ -6,7 +6,6 @@
 			--stack-gap: var(--space-s);
 
 			max-inline-size: 36rem;
-			margin-inline: auto;
 			padding: var(--space-m) var(--space-s);
 		}
 

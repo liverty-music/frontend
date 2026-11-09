@@ -49,9 +49,6 @@
 			inline-size: var(--fab-size);
 			block-size: var(--fab-size);
 
-			/* Reset the popover UA box (inset:0 + margin:auto centers it). */
-			margin: 0;
-
 			/* stylelint-disable-next-line declaration-property-value-disallowed-list -- cancels the padding global.css gives every button and form field */
 			padding: 0;
 			border: none;
@@ -209,7 +206,6 @@
 
 			inline-size: 0;
 			block-size: 0;
-			margin: 0;
 			border: none;
 
 			color: var(--md-sys-color-on-surface);
@@ -243,8 +239,6 @@
 		.fab-list {
 			position: absolute;
 			inset: 0;
-
-			margin: 0;
 		}
 
 		/* Each item travels from the FAB along the arc to its place with the

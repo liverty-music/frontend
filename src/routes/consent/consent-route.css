@@ -99,8 +99,12 @@
 			word-break: auto-phrase;
 		}
 
+		/* Inset by --space-s on both sides, so the line stops short of the
+		   rows' full-width hover background. */
 		.consent-divider {
-			margin-inline: var(--space-s);
+			position: relative;
+			inset-inline-start: var(--space-s);
+			inline-size: calc(100% - 2 * var(--space-s));
 			border-block-start: 1px solid
 				color-mix(in oklch, var(--color-white) 5%, transparent);
 		}
@@ -125,13 +129,14 @@
 		}
 
 		.consent-actions {
+			--gutter: 0;
+
 			display: flex;
 			flex-direction: column;
 			gap: var(--space-2xs);
 
 			inline-size: 100%;
 			max-inline-size: 28rem;
-			margin-inline: auto;
 		}
 
 		/* Reuse settings page toggle track + thumb. The classes are defined

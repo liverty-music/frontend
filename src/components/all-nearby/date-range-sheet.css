@@ -12,9 +12,15 @@
 		}
 
 		.section-label {
-			margin-block-end: var(--space-2xs);
 			color: var(--md-sys-color-on-surface-variant);
 			text-transform: uppercase;
+		}
+
+		/* The label's gap below it, inside the section's flow. */
+		.preset-group,
+		.custom-range,
+		.range-hint {
+			--flow-space: var(--space-2xs);
 		}
 
 		.preset-group {
@@ -93,7 +99,6 @@
 
 		.range-hint {
 			display: block;
-			margin-block-start: var(--space-2xs);
 			color: var(--md-sys-color-on-surface-variant);
 
 			&[data-invalid="true"] {

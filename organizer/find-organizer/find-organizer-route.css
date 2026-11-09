@@ -1,11 +1,20 @@
 @layer block {
 	@scope (find-organizer-route) {
+		/* The route centres its card and spaces it from the page's edges. One
+		   column as wide as the page, as in normal flow. */
+		:scope {
+			display: grid;
+			grid-template-columns: minmax(0, 1fr);
+			justify-items: center;
+			padding-block: var(--space-xl);
+		}
+
 		.find-organizer {
 			display: grid;
 			gap: var(--space-s);
 
+			inline-size: 100%;
 			max-inline-size: 560px;
-			margin: var(--space-xl) auto;
 			padding: var(--space-m);
 			border-radius: var(--md-sys-shape-corner-large);
 

@@ -70,7 +70,6 @@
 	}
 
 	.listbox {
-		margin: 0;
 		padding: var(--space-3xs) 0;
 		list-style: none;
 	}

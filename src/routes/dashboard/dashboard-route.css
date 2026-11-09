@@ -46,20 +46,31 @@
 			filter: blur(4px);
 		}
 
-		/* ── Empty state typography ── */
+		/* ── Empty state ──
+		   Title, subtitle and actions: the placeholder's own gap, plus a step
+		   more before the subtitle and the actions, each centred at its own
+		   width. */
+		.dashboard-empty {
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-s);
+			align-items: center;
+		}
+
 		.dashboard-empty-title {
-			margin-block-end: var(--space-3xs);
 			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.dashboard-empty-subtitle {
-			margin-block-end: var(--space-s);
+			--flow-space: var(--space-3xs);
+
 			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		/* Discovery and the concerts nearby, side by side (wrapping when narrow). */
 		.dashboard-empty-actions {
 			--cluster-gap: var(--space-2xs);
+			--flow-space: var(--space-s);
 
 			justify-content: center;
 		}

@@ -3,6 +3,7 @@
 	@scope (confirm-dialog) {
 		.confirm-dialog {
 			max-inline-size: min(28rem, calc(100vi - 2 * var(--space-s)));
+			/* stylelint-disable-next-line property-disallowed-list -- the reset zeroes every margin, and a modal dialog is centred in the top layer only by auto margins against the browser's inset: 0; its height follows its content, so insets alone cannot centre it */
 			margin: auto;
 			border: 1px solid var(--md-sys-color-outline-variant);
 			border-radius: var(--md-sys-shape-corner-large);

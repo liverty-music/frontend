@@ -19,6 +19,7 @@
 			   the journey badge can bleed past the corner without a wrapper. */
 			display: flex;
 			flex-direction: column;
+			row-gap: var(--space-3xs);
 			align-items: center;
 			justify-content: end;
 
@@ -39,13 +40,9 @@
 				transform: scale(0.97);
 			}
 
-			&[data-lane="home"] {
-				margin-block-end: var(--space-2xs);
-			}
-
+			/* The lane spaces the cards (concert-highway.css). */
 			&[data-lane="nearby"],
 			&[data-lane="away"] {
-				margin-block-end: var(--space-3xs);
 				padding: var(--space-2xs);
 				border-radius: var(--md-sys-shape-corner-medium);
 			}
@@ -62,7 +59,6 @@
 		}
 
 		.location-label {
-			margin-block-start: var(--space-3xs);
 			color: var(--_label-color);
 		}
 

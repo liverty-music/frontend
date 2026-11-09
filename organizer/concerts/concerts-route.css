@@ -10,6 +10,7 @@
 
 		/* The list extends edge to edge on a compact window (M3 Lists). */
 		.collection {
+			/* stylelint-disable-next-line property-disallowed-list -- full bleed: the list reaches past the page's inline padding, which no padding or gap of its own can do */
 			margin-inline: calc(-1 * var(--page-inline-padding));
 		}
 
@@ -32,6 +33,7 @@
 
 		@container shell (width >= 600px) {
 			.collection {
+				/* stylelint-disable-next-line property-disallowed-list -- turns off the compact full-bleed margin; only a margin undoes a margin */
 				margin-inline: 0;
 			}
 		}

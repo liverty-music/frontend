@@ -11,13 +11,13 @@
 		}
 
 		.selector-title {
-			margin-block-end: var(--space-s);
 			color: var(--md-sys-color-on-surface);
 		}
 
 		/* Vertical list; layout comes from `[ stack ]` (composition layer).
 		   This tightens the default stack gap to the selector rhythm. */
 		.language-list {
+			--flow-space: var(--space-s);
 			--stack-gap: var(--space-3xs);
 		}
 

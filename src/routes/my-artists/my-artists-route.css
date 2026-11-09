@@ -41,18 +41,28 @@
 		.empty-icon {
 			inline-size: 4rem;
 			block-size: 4rem;
-			margin-block-end: var(--space-xs);
 			color: var(--md-sys-color-on-surface-variant);
 		}
 
-		.empty-title {
-			margin-block-end: var(--space-3xs);
+		/* Title, subtitle and action: the placeholder's own gap, plus a step
+		   more before the subtitle and the action, each centred at its own
+		   width. */
+		.empty-text {
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-s);
+			align-items: center;
 		}
 
 		.empty-subtitle {
-			margin-block-end: var(--space-m);
+			--flow-space: var(--space-3xs);
+
 			color: var(--md-sys-color-on-surface-variant);
 			text-align: center;
+		}
+
+		.empty-action {
+			--flow-space: var(--space-m);
 		}
 
 		/* ── Fieldset reset ── */
@@ -65,7 +75,6 @@
 			flex-direction: column;
 
 			min-block-size: 0;
-			margin: 0;
 			border: none;
 		}
 
@@ -177,6 +186,7 @@
 		/* ── Artist name cell ── */
 		.artist-name-cell {
 			display: flex;
+			gap: var(--space-xs);
 			align-items: center;
 
 			min-inline-size: 0;
@@ -193,7 +203,6 @@
 
 			inline-size: 8px;
 			block-size: 8px;
-			margin-inline-end: var(--space-xs);
 			border-radius: var(--md-sys-shape-corner-full);
 
 			vertical-align: middle;

@@ -10,6 +10,7 @@
 
 		/* The shared reset zeroes every margin; a modal dialog centres itself
 		   in the viewport with `margin: auto`. */
+		/* stylelint-disable-next-line property-disallowed-list -- restores the user agent's `margin: auto` that centres a modal dialog in the top layer, which the shared reset zeroes */
 		margin: auto;
 		padding: var(--space-m);
 		border: none;
@@ -24,8 +25,16 @@
 		}
 	}
 
+	/* The heading and the body, set apart from the actions below. One
+	   column as wide as the dialog, as in normal flow. */
+	.content {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr);
+		gap: var(--space-s);
+		padding-block-end: var(--space-m);
+	}
+
 	.heading {
-		margin-block-end: var(--space-s);
 		color: var(--md-sys-color-on-surface);
 	}
 
@@ -34,7 +43,5 @@
 		flex-wrap: wrap;
 		gap: var(--space-2xs);
 		justify-content: flex-end;
-
-		margin-block-start: var(--space-m);
 	}
 }

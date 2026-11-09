@@ -60,13 +60,15 @@
 			pointer-events: none;
 
 			inset-block: auto var(--_inset-end);
-			inset-inline: 0;
+
+			/* Centred by equal insets: the side gutter, or half the room the
+			   40rem cap leaves, whichever is wider. */
+			inset-inline: max(var(--space-s), (100% - 40rem) / 2);
 			transform: translateY(1rem);
 
 			overflow: visible;
 
 			inline-size: min(100% - 2 * var(--space-s), 40rem);
-			margin-inline: auto;
 			/* stylelint-disable-next-line declaration-property-value-disallowed-list -- cancels the browser's popover padding, which the organizer console's reset leaves */
 			padding: 0;
 			border: none;
@@ -111,6 +113,7 @@
 			grid-auto-columns: 100%;
 			grid-auto-flow: column;
 
+			/* stylelint-disable-next-line property-disallowed-list -- the scroller must reach past the snack's box by the shadow room on every side so the shadow is not clipped, while the snack keeps its size and place; only a negative margin outsets a box without moving or resizing its content */
 			margin: calc(-1 * var(--_shadow-room));
 			padding: var(--_shadow-room);
 		}
@@ -142,6 +145,14 @@
 				linear-gradient(to right, var(--_bg-from), var(--_bg-to))
 			);
 			box-shadow: var(--snack-bar-shadow, var(--shadow-card-glow));
+
+			/* The close button's 48 px target reaches into the end padding, so
+			   its 24 px icon lines up with the row's edge. */
+			&:has(> .snack-close-btn) {
+				--_pad-end: calc(var(--space-s) - var(--space-2xs));
+
+				padding-inline-end: var(--_pad-end);
+			}
 		}
 
 		/* Severity recolors the container gradient (info keeps the brand hues). */
@@ -174,7 +185,6 @@
 			--button-tracking: var(--md-sys-typescale-label-medium-tracking);
 
 			flex-shrink: 0;
-			margin-inline-start: auto;
 		}
 
 		/* A two-line message breaks between phrases, never inside a word, and
@@ -198,7 +208,6 @@
 
 			inline-size: 48px;
 			block-size: 48px;
-			margin-inline-end: calc(-1 * var(--space-2xs));
 			/* stylelint-disable-next-line declaration-property-value-disallowed-list -- cancels the padding global.css gives every button and form field */
 			padding: 0;
 			border: none;

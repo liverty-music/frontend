@@ -4,32 +4,32 @@
 	</header>
 
 	<!-- Saved list shown without a connection -->
-	<output class="[ tickets-notice ] [ md-typescale-body-medium ]" if.bind="offline && step === 'loaded'">
+	<output class="[ tickets-notice ] [ wrapper ] [ md-typescale-body-medium ]" if.bind="offline && step === 'loaded'">
 		<span t="tickets.offline" t-params.bind="{ time: savedAtLabel() }"></span>
 	</output>
 
 	<!-- Device preparation messages -->
 	<output
-		class="[ tickets-notice ] [ md-typescale-body-medium ]"
+		class="[ tickets-notice ] [ wrapper ] [ md-typescale-body-medium ]"
 		data-tone="warning"
 		if.bind="device === 'needs-connection' && step === 'loaded'"
 		t="tickets.device.needsConnection"
 	></output>
 	<output
-		class="[ tickets-notice ] [ md-typescale-body-medium ]"
+		class="[ tickets-notice ] [ wrapper ] [ md-typescale-body-medium ]"
 		data-tone="warning"
 		if.bind="device === 'failed' && step === 'loaded'"
 		t="tickets.device.failed"
 	></output>
 	<output
-		class="[ tickets-notice ] [ md-typescale-body-medium ]"
+		class="[ tickets-notice ] [ wrapper ] [ md-typescale-body-medium ]"
 		if.bind="movedToThisDevice"
 		t="tickets.device.movedHere"
 	></output>
 
 	<!-- The entry QR code is set to another device: offer to move it here -->
 	<section
-		class="[ tickets-notice ] [ flow ] [ md-typescale-body-medium ]"
+		class="[ tickets-notice ] [ flow wrapper ] [ md-typescale-body-medium ]"
 		data-tone="warning"
 		if.bind="device === 'other-device' && step === 'loaded'"
 		aria-labelledby="tickets-other-device"
@@ -67,18 +67,18 @@
 	</section>
 
 	<!-- Loading -->
-	<section class="tickets-panel" if.bind="step === 'loading'">
+	<section class="[ tickets-panel ] [ wrapper ]" if.bind="step === 'loading'">
 		<p class="[ tickets-lead ] [ md-typescale-body-medium ]" t="tickets.loading"></p>
 	</section>
 
 	<!-- Empty: no issued tickets yet -->
-	<section class="[ tickets-panel ] [ flow ]" if.bind="step === 'empty'">
+	<section class="[ tickets-panel ] [ flow wrapper ]" if.bind="step === 'empty'">
 		<h2 class="[ tickets-step-title ] [ md-typescale-title-large-emphasized ]" t="tickets.empty.title"></h2>
 		<p class="[ tickets-lead ] [ md-typescale-body-medium ]" t="tickets.empty.subtitle"></p>
 	</section>
 
 	<!-- Error -->
-	<section class="[ tickets-panel ] [ flow ]" if.bind="step === 'error'">
+	<section class="[ tickets-panel ] [ flow wrapper ]" if.bind="step === 'error'">
 		<h2 class="[ tickets-step-title ] [ md-typescale-title-large-emphasized ]" t="tickets.error.title"></h2>
 		<p class="[ tickets-error ] [ md-typescale-body-medium ]" t="tickets.error.message"></p>
 		<button
@@ -90,7 +90,7 @@
 	</section>
 
 	<!-- Loaded: tickets grouped by event, nearest first -->
-	<div class="[ tickets-list ] [ flow ]" if.bind="step === 'loaded'">
+	<div class="[ tickets-list ] [ flow wrapper ]" if.bind="step === 'loaded'">
 		<section
 			class="[ tickets-event ] [ flow ]"
 			repeat.for="group of groups"
@@ -290,7 +290,7 @@
 				<span t="tickets.code.headCount" t-params.bind="{ count: headCount }"></span>
 			</p>
 
-			<figure class="tickets-code-figure" if.bind="headCount > 0">
+			<figure class="[ tickets-code-figure ] [ wrapper ]" if.bind="headCount > 0">
 				<img
 					class="tickets-code-image"
 					if.bind="codeImage"

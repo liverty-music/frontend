@@ -35,8 +35,13 @@
 			padding: var(--space-m) var(--space-s);
 		}
 
+		/* A titled section: its title, an optional introduction, the card and an
+		   optional note, --space-2xs apart. */
+		.settings-section {
+			--flow-space: var(--space-2xs);
+		}
+
 		.settings-section-title {
-			margin-block-end: var(--space-2xs);
 			padding-inline: var(--space-3xs);
 			color: var(--md-sys-color-on-surface-variant);
 			text-transform: uppercase;
@@ -50,14 +55,6 @@
 			text-wrap: pretty;
 		}
 
-		.settings-section-intro {
-			margin-block-end: var(--space-2xs);
-		}
-
-		.settings-section-note {
-			margin-block-start: var(--space-2xs);
-		}
-
 		/* A link inside a sentence (the Privacy Policy in the consent note). */
 		.settings-inline-link {
 			color: var(--color-brand-primary);
@@ -69,8 +66,11 @@
 		   decides between a row's shared and specific rules. */
 
 		/* Guest sign-in hero. Brand-tinted to stand apart from the plain
-		   raised list cards — this is the primary action for a guest. */
+		   raised list cards — this is the primary action for a guest. Only the
+		   actions sit a further --space-2xs below the body (flow). */
 		.settings-guest-hero {
+			--flow-space: 0;
+
 			display: flex;
 			flex-direction: column;
 			gap: var(--space-2xs);
@@ -92,10 +92,11 @@
 		}
 
 		.settings-guest-hero-actions {
+			--flow-space: var(--space-2xs);
+
 			display: flex;
 			flex-direction: column;
 			gap: var(--space-2xs);
-			margin-block-start: var(--space-2xs);
 		}
 
 		/* Native text link, centred under the actions, with a 44px tap target. */

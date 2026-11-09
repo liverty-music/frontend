@@ -13,6 +13,8 @@
 		/* One column of fields, capped at 600 px (M3 forms); sections are set
 		   apart by their headings and spacing, not dividers. */
 		.form {
+			--flow-space: 0;
+
 			display: grid;
 			gap: var(--space-s);
 			max-inline-size: 600px;
@@ -23,24 +25,26 @@
 			gap: var(--space-s);
 		}
 
+		/* In the form, the grid gap spaces the fields and the flow composition
+		   adds the extra space above a section title. */
 		.section-title {
-			margin-block-start: var(--space-m);
+			--flow-space: var(--space-m);
+
 			color: var(--md-sys-color-on-surface);
 		}
 
-		/* The event's seat types the sale sells: name, then price and quantity. */
+		/* The event's seat types the sale sells: name, then price and quantity.
+		   The padding is the space above the section's title. */
 		.tickets {
 			display: grid;
 			gap: var(--space-xs);
+			padding-block-start: var(--space-m);
 		}
 
 		.stock-list {
 			display: grid;
 			gap: var(--space-2xs);
-
-			margin: 0;
 			padding: 0;
-
 			list-style: none;
 		}
 

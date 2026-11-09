@@ -6,8 +6,10 @@
 @layer block {
 	@scope (settings-route) {
 		/* The sheet is the surface; `[ stack ]` supplies the rhythm between
-		   fields. Gutters match the language selector's. */
+		   fields. Gutters match the language selector's. Only the note sits a
+		   further --space-s below the title (flow). */
 		.settings-personal-details {
+			--flow-space: 0;
 			--stack-gap: var(--space-xs);
 
 			padding-block-end: var(--space-l);
@@ -15,6 +17,8 @@
 		}
 
 		.settings-personal-details-note {
+			--flow-space: var(--space-s);
+
 			color: var(--md-sys-color-on-surface-variant);
 		}
 

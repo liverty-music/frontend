@@ -24,7 +24,6 @@
 		}
 
 		.section-legend {
-			margin-block-end: var(--space-xs);
 			padding: 0;
 		}
 
@@ -37,17 +36,17 @@
 		}
 
 		.legend {
-			margin-block-end: var(--space-2xs);
 			color: var(--md-sys-color-on-surface);
 		}
 
+		/* A fieldset's legend sits in its block-start border, so the space
+		   below the legend is the fieldset's block-start padding. */
 		.series-type {
 			display: flex;
 			flex-wrap: wrap;
 			gap: var(--space-2xs);
 
-			margin: 0;
-			padding: 0;
+			padding: var(--space-2xs) 0 0;
 			border: none;
 
 			& .legend {
@@ -80,9 +79,7 @@
 		.visibility {
 			display: grid;
 			gap: var(--space-2xs);
-
-			margin: 0;
-			padding: 0;
+			padding: var(--space-2xs) 0 0;
 			border: none;
 		}
 
@@ -102,9 +99,15 @@
 			& input {
 				inline-size: 20px;
 				block-size: 20px;
-				margin-block-start: var(--space-3xs);
 				accent-color: var(--md-sys-color-primary);
 			}
+		}
+
+		/* Holds the radio a little lower, level with the label's first line;
+		   the space is outside the radio, so its hit area does not grow. */
+		.visibility-control {
+			display: flex;
+			padding-block-start: var(--space-3xs);
 		}
 
 		.visibility:disabled .visibility-option {
@@ -128,10 +131,16 @@
 		.events {
 			display: grid;
 			gap: var(--space-2xs);
-
-			margin: 0;
-			padding: 0;
+			padding: var(--space-xs) 0 0;
 			border: none;
+		}
+
+		/* Every date is followed by another date or the add button, so each
+		   gap in the list is the date's spacing. */
+		.events {
+			--_gap: calc(var(--space-2xs) + var(--space-m));
+
+			row-gap: var(--_gap);
 		}
 
 		.performer {
@@ -155,7 +164,6 @@
 		.event {
 			display: grid;
 			gap: var(--space-s);
-			margin-block-end: var(--space-m);
 		}
 
 		.event-header {

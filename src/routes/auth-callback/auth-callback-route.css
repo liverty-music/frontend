@@ -44,8 +44,9 @@
 		}
 
 		.callback-home-link {
+			--flow-space: var(--space-s);
+
 			display: block;
-			margin-block-start: var(--space-s);
 			color: var(--color-brand-primary);
 			text-decoration: underline;
 		}
