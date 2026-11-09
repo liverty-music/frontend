@@ -67,59 +67,6 @@
 			color: var(--md-sys-color-on-surface-variant);
 		}
 
-		/* Payment status badge (inline, within the payment card) */
-
-		.order-payment-status {
-			display: inline-flex;
-			align-items: center;
-			justify-content: center;
-
-			padding-block: var(--space-2xs);
-			padding-inline: var(--space-s);
-			border: 1px solid var(--md-sys-color-outline-variant);
-			border-radius: var(--md-sys-shape-corner-medium);
-
-			background: var(--md-sys-color-surface);
-
-			&[data-kind="paid"] {
-				border-color: color-mix(
-					in oklch,
-					var(--color-brand-primary) 45%,
-					transparent
-				);
-				background: color-mix(
-					in oklch,
-					var(--color-brand-primary) 10%,
-					transparent
-				);
-
-				& .order-payment-status-label {
-					color: var(--color-brand-primary);
-				}
-			}
-
-			&[data-kind="refunded"] {
-				background: color-mix(
-					in oklch,
-					var(--md-sys-color-on-surface-variant) 8%,
-					transparent
-				);
-
-				& .order-payment-status-label {
-					color: var(--md-sys-color-on-surface-variant);
-				}
-			}
-
-			&[data-kind="void"] {
-				border-color: color-mix(in oklch, var(--color-error) 45%, transparent);
-				background: color-mix(in oklch, var(--color-error) 10%, transparent);
-
-				& .order-payment-status-label {
-					color: var(--color-error);
-				}
-			}
-		}
-
 		/* The total and its tax note, at the end of the summary row. */
 		.order-summary-amount {
 			display: flex;
@@ -149,50 +96,6 @@
 			/* Voided tickets are visually de-emphasised */
 			&[data-voided="true"] {
 				opacity: 0.55;
-			}
-		}
-
-		/* Ticket status badge */
-
-		.order-ticket-status {
-			display: inline-flex;
-			align-items: center;
-			justify-content: center;
-
-			padding-block: var(--space-2xs);
-			padding-inline: var(--space-s);
-			border: 1px solid var(--md-sys-color-outline-variant);
-			border-radius: var(--md-sys-shape-corner-medium);
-
-			background: var(--md-sys-color-surface-container);
-
-			&[data-issued="true"] {
-				border-color: color-mix(
-					in oklch,
-					var(--color-brand-primary) 45%,
-					transparent
-				);
-				background: color-mix(
-					in oklch,
-					var(--color-brand-primary) 10%,
-					transparent
-				);
-
-				& .order-ticket-status-label {
-					color: var(--color-brand-primary);
-				}
-			}
-
-			&[data-voided="true"] {
-				background: color-mix(
-					in oklch,
-					var(--md-sys-color-on-surface-variant) 8%,
-					transparent
-				);
-
-				& .order-ticket-status-label {
-					color: var(--md-sys-color-on-surface-variant);
-				}
 			}
 		}
 

@@ -6,7 +6,7 @@
   <section if.bind="deletionState === 'deleted'" class="[ delete-account-done ] [ stack ]" role="status" data-testid="delete-account-deleted">
     <h2 t="deleteAccount.deleted.title" class="[ delete-account-heading ] [ md-typescale-title-large-emphasized ]"></h2>
     <p t="deleteAccount.deleted.body" class="[ delete-account-text ] [ md-typescale-body-medium ]"></p>
-    <a href="/welcome" t="deleteAccount.deleted.toWelcome" class="delete-account-link" data-testid="delete-account-to-welcome"></a>
+    <a href="/welcome" t="deleteAccount.deleted.toWelcome" class="[ text-link delete-account-link ]" data-variant="standalone" data-testid="delete-account-to-welcome"></a>
   </section>
 
   <output if.bind="deletionState === 'deleting'" class="[ delete-account-status ] [ md-typescale-body-large ]" aria-busy="true" t="deleteAccount.deleting" data-testid="delete-account-deleting"></output>
@@ -47,7 +47,7 @@
         <li t="deleteAccount.statements.signUpAgain" data-testid="delete-account-statement"></li>
         <li data-testid="delete-account-statement">
           <span t="deleteAccount.statements.records"></span>
-          <a href="/legal/privacy" t="deleteAccount.statements.privacyPolicy" class="delete-account-link" data-testid="delete-account-privacy-link"></a>
+          <a href="/legal/privacy" t="deleteAccount.statements.privacyPolicy" class="text-link" data-testid="delete-account-privacy-link"></a>
         </li>
       </ul>
       <button
@@ -61,7 +61,7 @@
       ></button>
     </section>
 
-    <a href="/settings" t="deleteAccount.backToSettings" class="delete-account-link"></a>
+    <a href="/settings" t="deleteAccount.backToSettings" class="[ text-link delete-account-link ]" data-variant="standalone"></a>
   </template>
 
   <!-- Confirmation. Modal: the platform traps focus and closes on Escape;

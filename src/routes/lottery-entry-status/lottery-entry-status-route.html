@@ -17,9 +17,7 @@
 	</section>
 
 	<section class="[ lottery-entry-status-panel card ] [ flow wrapper ]" if.bind="step === 'loaded'" data-testid="lottery-entry-status-entry">
-		<output class="lottery-entry-status-status" data-kind.bind="resultKind">
-			<span class="[ lottery-entry-status-status-label ] [ md-typescale-headline-small ]" t.bind="stateLabelKey"></span>
-		</output>
+		<output class="[ lottery-entry-status-result ] [ md-typescale-headline-small ]" data-tone.bind="resultTone" t.bind="stateLabelKey"></output>
 
 		<p class="[ lottery-entry-status-lead ] [ md-typescale-body-medium ]" t.bind="'lotteryEntryStatus.note.' + resultKind"></p>
 

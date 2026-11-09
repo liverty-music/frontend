@@ -54,13 +54,8 @@
 		<article class="[ order-panel card ] [ flow wrapper ]">
 			<h2 class="[ order-section-title ] [ md-typescale-title-medium ]" t="order.payment.title"></h2>
 
-			<!-- Payment status badge -->
-			<output
-				class="order-payment-status"
-				data-kind.bind="order.statusKind"
-			>
-				<span class="[ order-payment-status-label ] [ md-typescale-label-large ]">${statusLabel}</span>
-			</output>
+			<!-- Payment status -->
+			<output class="[ status-label ] [ md-typescale-label-large ]" data-tone.bind="statusTone">${statusLabel}</output>
 
 			<!-- Payment summary -->
 			<dl class="summary-list">
@@ -97,14 +92,8 @@
 					repeat.for="ticket of tickets"
 					data-voided.bind="ticket.isVoided"
 				>
-					<!-- Status badge -->
-					<output
-						class="order-ticket-status"
-						data-issued.bind="ticket.isIssued"
-						data-voided.bind="ticket.isVoided"
-					>
-						<span class="[ order-ticket-status-label ] [ md-typescale-label-large ]">${ticketStatusLabel(ticket)}</span>
-					</output>
+					<!-- Ticket status -->
+					<output class="[ status-label ] [ md-typescale-label-large ]" data-tone.bind="ticketTone(ticket)">${ticketStatusLabel(ticket)}</output>
 
 					<!-- Ticket details -->
 					<dl class="summary-list">

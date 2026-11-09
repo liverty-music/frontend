@@ -4,5 +4,5 @@
     <p class="[ callback-status ] [ md-typescale-body-large ]" t="authCallback.verifying"></p>
   </output>
   <section if.bind="failed" class="[ callback-error ] [ md-typescale-body-large-emphasized ]" role="alert" t="authCallback.failed"></section>
-  <a if.bind="failed" load="/" class="callback-home-link" t="authCallback.home"></a>
+  <a if.bind="failed" load="/" class="[ text-link callback-home-link ]" data-variant="standalone" t="authCallback.home"></a>
 </main>

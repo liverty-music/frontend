@@ -294,7 +294,46 @@ describe('OrderRoute', () => {
 		})
 	})
 
+	describe('statusTone', () => {
+		it.each([
+			[OrderStatus.PAID, 'positive'],
+			[OrderStatus.VOID, 'error'],
+			[OrderStatus.REFUNDED, 'neutral'],
+			[OrderStatus.PENDING, 'neutral'],
+			[OrderStatus.UNSPECIFIED, 'neutral'],
+		])('gives status %s the %s tone', async (status, tone) => {
+			mockOrderClient.get.mockResolvedValue(makeOrder({ status }))
+			const sut = await makeSut()
+			expect(sut.statusTone).toBe(tone)
+		})
+
+		it('is neutral when no order is loaded', () => {
+			expect(new OrderRoute().statusTone).toBe('neutral')
+		})
+	})
+
 	// ── ticketStatusLabel helper ───────────────────────────────────────────────
+
+	describe('ticketTone', () => {
+		it.each([
+			[true, false, 'positive'],
+			[false, true, 'neutral'],
+			[false, false, 'neutral'],
+		])('issued %s, voided %s → %s', (isIssued, isVoided, tone) => {
+			expect(
+				new OrderRoute().ticketTone({
+					id: 't-1',
+					eventId: 'e-1',
+					fullName: '山田太郎',
+					phoneNumber: '090',
+					issueTime: null,
+					isIssued,
+					isVoided,
+					resaleWithoutConsentProhibited: false,
+				}),
+			).toBe(tone)
+		})
+	})
 
 	describe('ticketStatusLabel', () => {
 		it('returns 発券済み for an ISSUED ticket', () => {

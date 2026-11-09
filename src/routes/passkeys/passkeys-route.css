@@ -58,15 +58,9 @@
 			overflow-wrap: anywhere;
 		}
 
+		/* The `text-link` block draws the link; it starts the column. */
 		.passkeys-back {
-			display: inline-flex;
-			align-items: center;
 			align-self: start;
-
-			min-block-size: 44px;
-
-			color: var(--color-brand-primary);
-			text-decoration: underline;
 		}
 
 		.passkeys-confirm {

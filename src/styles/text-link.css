@@ -1,0 +1,33 @@
+/* The fan app's text link: `class="text-link"` on an <a> that reads as words,
+   inside a sentence or on a line of its own. Material 3 has no link component,
+   so the block follows its colour roles: one role for every link, always
+   underlined (the underline, not the colour alone, says it is a link), and the
+   same colour once visited.
+   - (none)      inline: a link inside running text, which takes the type
+                 style of the text around it
+   - standalone  `data-variant="standalone"`: a link on a line of its own
+                 (back to settings, can't sign in). The template gives the type
+                 style; the box grows to the 48px target, centring the text,
+                 so the text itself keeps its size.
+   The role is `tertiary`, not `primary`: the app's primary role is a fill
+   tone for white labels (57% lightness), which measures 4.07:1 on the
+   surface and 3.75:1 on a surface container, below the 4.5:1 body text needs.
+   Tertiary is the light tone a dark theme gives link text (11.6:1 on the
+   surface). An <a> drawn as a button carries the `button` block instead.
+   Keyboard focus shows the browser's ring until the app has its own (task
+   6.1). */
+@layer block {
+	@scope (.text-link) {
+		:scope {
+			color: var(--md-sys-color-tertiary);
+			text-decoration-line: underline;
+			text-underline-offset: 0.2em;
+		}
+
+		:scope[data-variant="standalone"] {
+			display: inline-flex;
+			align-items: center;
+			min-block-size: var(--md-sys-target-size);
+		}
+	}
+}

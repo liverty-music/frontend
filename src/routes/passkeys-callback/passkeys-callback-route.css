@@ -18,15 +18,5 @@
 			align-items: center;
 			max-inline-size: 32ch;
 		}
-
-		.passkeys-callback-link {
-			display: inline-flex;
-			align-items: center;
-
-			min-block-size: 44px;
-
-			color: var(--color-brand-primary);
-			text-decoration: underline;
-		}
 	}
 }

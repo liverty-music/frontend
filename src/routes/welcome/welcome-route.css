@@ -289,16 +289,10 @@
 			max-inline-size: 28rem;
 		}
 
-		/* "Can't sign in" text link directly below [Log In]: a native link with
-		   a 44px tap target. */
+		/* "Can't sign in" directly below [Log In], centred; the `text-link` block
+		   draws it. */
 		.welcome-help-link {
-			display: inline-flex;
-			align-items: center;
 			align-self: center;
-
-			min-block-size: 44px;
-			color: var(--md-sys-color-on-surface-variant);
-			text-decoration: underline;
 		}
 
 		.welcome-lang {

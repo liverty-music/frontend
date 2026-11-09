@@ -25,47 +25,17 @@
 			color: var(--md-sys-color-on-surface-variant);
 		}
 
-		.lottery-entry-status-status {
-			display: flex;
-			align-items: center;
-			justify-content: center;
-
-			padding-block: var(--space-s);
-			padding-inline: var(--space-m);
-			border: 1px solid var(--md-sys-color-outline-variant);
-			border-radius: var(--md-sys-shape-corner-large);
-
+		/* The result, the page's main news: large, in the card above the note,
+		   coloured by its tone. Each colour is a role that reads as text on the
+		   card's surface-container (primary measures only 3.75:1 there):
+		   tertiary for a win (10.7:1), on-surface-variant otherwise (9.9:1). */
+		.lottery-entry-status-result {
+			display: block;
+			color: var(--md-sys-color-on-surface-variant);
 			text-align: center;
 
-			background: var(--md-sys-color-surface);
-
-			&[data-kind="won"] {
-				border-color: color-mix(
-					in oklch,
-					var(--color-brand-primary) 45%,
-					transparent
-				);
-				background: color-mix(
-					in oklch,
-					var(--color-brand-primary) 10%,
-					transparent
-				);
-
-				& .lottery-entry-status-status-label {
-					color: var(--color-brand-primary);
-				}
-			}
-
-			&[data-kind="lost"] {
-				background: color-mix(
-					in oklch,
-					var(--md-sys-color-on-surface-variant) 8%,
-					transparent
-				);
-
-				& .lottery-entry-status-status-label {
-					color: var(--md-sys-color-on-surface-variant);
-				}
+			&[data-tone="positive"] {
+				color: var(--md-sys-color-tertiary);
 			}
 		}
 

@@ -87,14 +87,6 @@
 			color: var(--md-sys-color-on-surface-variant);
 		}
 
-		.detail-link {
-			color: var(--color-brand-accent);
-
-			&:hover {
-				text-decoration: underline;
-			}
-		}
-
 		/* Out-of-range notice: what the fan's hype level pushes, under the
 		   venue. The `card` block draws it. */
 		.sheet-out-of-range {

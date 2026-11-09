@@ -52,12 +52,6 @@
 			color: var(--md-sys-color-on-surface-variant);
 		}
 
-		/* A link inside a sentence (the Privacy Policy in the consent note). */
-		.settings-inline-link {
-			color: var(--color-brand-primary);
-			text-decoration: underline;
-		}
-
 		/* The card and every row in it, including the volume and sign-out rows,
 		   are styled by settings-list.css: one scope, so its own source order
 		   decides between a row's shared and specific rules. */
@@ -84,16 +78,10 @@
 			--stack-gap: var(--space-2xs);
 		}
 
-		/* Native text link, centred under the actions, with a 44px tap target. */
+		/* "Can't sign in", centred under the actions; the `text-link` block draws
+		   it. */
 		.settings-guest-hero-help {
-			display: inline-flex;
-			align-items: center;
 			align-self: center;
-
-			min-block-size: 44px;
-
-			color: var(--md-sys-color-on-surface-variant);
-			text-decoration: underline;
 		}
 	}
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import css from '../../src/routes/welcome/welcome-route.css?raw'
 import html from '../../src/routes/welcome/welcome-route.html?raw'
+import css from '../../src/styles/text-link.css?raw'
 
 /** The welcome template, parsed (bindings stay as attributes). */
 function welcomeTemplate(): DocumentFragment {
@@ -26,7 +26,16 @@ describe('Welcome "can\'t sign in" link', () => {
 	})
 
 	it('gives the link a tap target of at least 44px', () => {
-		const rule = css.slice(css.indexOf('.welcome-help-link {'))
-		expect(rule.slice(0, rule.indexOf('}'))).toContain('min-block-size: 44px')
+		// A standalone text link grows its box to the 48px target.
+		for (const link of welcomeTemplate().querySelectorAll(
+			'[data-testid="welcome-cant-sign-in"]',
+		)) {
+			expect(link.classList.contains('text-link')).toBe(true)
+			expect(link.getAttribute('data-variant')).toBe('standalone')
+		}
+		const rule = css.slice(css.indexOf(':scope[data-variant="standalone"] {'))
+		expect(rule.slice(0, rule.indexOf('}'))).toContain(
+			'min-block-size: var(--md-sys-target-size)',
+		)
 	})
 })

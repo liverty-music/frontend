@@ -144,6 +144,8 @@ export default {
 				'src/styles/chip.css',
 				'src/styles/summary-list.css',
 				'shared/styles/card.css',
+				'src/styles/status-label.css',
+				'src/styles/text-link.css',
 				'organizer/!(styles)/**/*.css',
 			],
 			rules: {
