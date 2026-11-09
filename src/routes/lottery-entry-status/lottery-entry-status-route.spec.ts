@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { LotteryEntry } from '../../entities/lottery-entry'
+import css from './lottery-entry-status-route.css?raw'
+import html from './lottery-entry-status-route.html?raw'
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
 
@@ -131,5 +133,28 @@ describe('LotteryEntryStatusRoute', () => {
 		const sut = await open()
 		expect(sut.step).toBe('error')
 		expect(sut.messageKey).toBe('lotteryEntryStatus.error')
+	})
+})
+
+describe('lottery result heading', () => {
+	it('shows the result as the large heading in the card, not a status label', () => {
+		const t = document.createElement('template')
+		t.innerHTML = html
+		// The view is itself a <template>; read its content.
+		const view = t.content.querySelector('template')?.content ?? t.content
+		const result = view.querySelector('.lottery-entry-status-result')
+		expect(result?.classList.contains('md-typescale-headline-small')).toBe(true)
+		expect(result?.getAttribute('data-tone.bind')).toBe('resultTone')
+		expect(view.querySelector('.status-label')).toBeNull()
+	})
+
+	it('colours a win with tertiary and every other result with on-surface-variant', () => {
+		const rule = css.slice(css.indexOf('.lottery-entry-status-result {'))
+		const block = rule.slice(0, rule.indexOf('\n\t\t}\n'))
+		expect(block).toContain('color: var(--md-sys-color-on-surface-variant)')
+		expect(block).toMatch(
+			/\[data-tone="positive"\] \{\s*color: var\(--md-sys-color-tertiary\)/,
+		)
+		expect(block).not.toContain('border')
 	})
 })

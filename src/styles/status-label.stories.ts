@@ -77,7 +77,7 @@ export const Neutral = {
 	render: () =>
 		defineAureliaStory({
 			template: panel(
-				`${label('支払い待ち')}${label('返金済み', 'neutral')}${label('落選', 'neutral')}`,
+				`${label('支払い待ち')}${label('返金済み', 'neutral')}${label('無効', 'neutral')}`,
 			),
 		}),
 	play: async ({ canvasElement }) => {
@@ -97,7 +97,7 @@ export const Positive = {
 	render: () =>
 		defineAureliaStory({
 			template: panel(
-				`${label('支払済み', 'positive')}${label('発券済み', 'positive')}${label('当選', 'positive')}`,
+				`${label('支払済み', 'positive')}${label('発券済み', 'positive')}${label('未入場', 'positive')}`,
 			),
 		}),
 	play: async ({ canvasElement }) => {

@@ -25,6 +25,20 @@
 			color: var(--md-sys-color-on-surface-variant);
 		}
 
+		/* The result, the page's main news: large, in the card above the note,
+		   coloured by its tone. Each colour is a role that reads as text on the
+		   card's surface-container (primary measures only 3.75:1 there):
+		   tertiary for a win (10.7:1), on-surface-variant otherwise (9.9:1). */
+		.lottery-entry-status-result {
+			display: block;
+			color: var(--md-sys-color-on-surface-variant);
+			text-align: center;
+
+			&[data-tone="positive"] {
+				color: var(--md-sys-color-tertiary);
+			}
+		}
+
 		.lottery-entry-status-error {
 			color: var(--color-error);
 		}

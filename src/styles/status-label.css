@@ -1,5 +1,5 @@
 /* The fan app's status label: the state of a record (an order's payment, a
-   ticket, a lottery entry) as a short word on a tinted container, e.g.
+   ticket) as a short word on a tinted container, e.g.
    `<output class="[ status-label ] [ md-typescale-label-large ]"
    data-tone="positive">`. Material 3 has no component for it: its "badge" is
    the small count dot on an icon (the notification bell's), which is why this
@@ -7,10 +7,10 @@
    way a filled tonal surface does, with no border:
    - (none) or neutral  `surface-container-highest` fill, `on-surface-variant`
                         label: a state that needs nothing from the fan
-                        (pending, refunded, voided, not won)
+                        (pending, refunded, voided)
    - positive           `primary-container` fill, `on-primary-container`
                         label: the state the fan is after (paid, issued,
-                        won, a ticket not yet used). The app has no success
+                        a ticket not yet used). The app has no success
                         container role, and its primary hue is the one the
                         copies used for these states.
    - error              `error-container` fill, `on-error-container` label:
