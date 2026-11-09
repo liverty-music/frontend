@@ -3,8 +3,8 @@
 		:scope {
 			display: block;
 
+			/* Centred by the `wrapper` composition its routes give it. */
 			max-inline-size: 70ch;
-			margin-inline: auto;
 			padding: var(--space-s);
 			padding-block-end: var(--space-2xl);
 

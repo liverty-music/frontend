@@ -1,34 +1,36 @@
-<import from="./licenses-route.css"></import>
+<template class="[ wrapper ]">
+  <import from="./licenses-route.css"></import>
 
-<article class="[ licenses-route ] [ flow ]">
-  <header class="[ licenses-header ] [ flow ]">
-    <h1 class="[ licenses-title ] [ md-typescale-headline-small ]" t="legal.licenses.title"></h1>
-    <p class="[ licenses-intro ] [ md-typescale-body-large ]" t="legal.licenses.intro"></p>
-  </header>
+  <article class="[ licenses-route ] [ flow ]">
+    <header class="[ licenses-header ] [ flow ]">
+      <h1 class="[ licenses-title ] [ md-typescale-headline-small ]" t="legal.licenses.title"></h1>
+      <p class="[ licenses-intro ] [ md-typescale-body-large ]" t="legal.licenses.intro"></p>
+    </header>
 
-  <ul class="[ licenses-list ] [ flow ]" role="list">
-    <li class="[ licenses-item ] [ flow ]" repeat.for="pkg of packages">
-      <div class="licenses-item-head">
-        <span class="[ licenses-name ] [ md-typescale-title-medium ]">${pkg.name}</span>
-        <span class="[ licenses-version ] [ md-typescale-label-small ]">${pkg.version}</span>
-        <span class="[ licenses-license ] [ md-typescale-label-small ]">${pkg.license}</span>
-      </div>
+    <ul class="[ licenses-list ] [ flow ]" role="list">
+      <li class="[ licenses-item ] [ flow ]" repeat.for="pkg of packages">
+        <div class="licenses-item-head">
+          <span class="[ licenses-name ] [ md-typescale-title-medium ]">${pkg.name}</span>
+          <span class="[ licenses-version ] [ md-typescale-label-small ]">${pkg.version}</span>
+          <span class="[ licenses-license ] [ md-typescale-label-small ]">${pkg.license}</span>
+        </div>
 
-      <p class="[ licenses-publisher ] [ md-typescale-body-medium ]" if.bind="pkg.publisher">${pkg.publisher}</p>
+        <p class="[ licenses-publisher ] [ md-typescale-body-medium ]" if.bind="pkg.publisher">${pkg.publisher}</p>
 
-      <a
-        class="[ licenses-repository ] [ md-typescale-body-medium ]"
-        if.bind="pkg.repository"
-        href.bind="pkg.repository"
-        target="_blank"
-        rel="noopener noreferrer"
-        t="legal.licenses.sourceLabel"
-      ></a>
+        <a
+          class="[ licenses-repository ] [ md-typescale-body-medium ]"
+          if.bind="pkg.repository"
+          href.bind="pkg.repository"
+          target="_blank"
+          rel="noopener noreferrer"
+          t="legal.licenses.sourceLabel"
+        ></a>
 
-      <details class="[ licenses-text ] [ md-typescale-body-medium ]" if.bind="pkg.licenseText">
-        <summary t="legal.licenses.viewLicenseText"></summary>
-        <pre class="licenses-text-body">${pkg.licenseText}</pre>
-      </details>
-    </li>
-  </ul>
-</article>
+        <details class="[ licenses-text ] [ flow ] [ md-typescale-body-medium ]" if.bind="pkg.licenseText">
+          <summary t="legal.licenses.viewLicenseText"></summary>
+          <pre class="licenses-text-body">${pkg.licenseText}</pre>
+        </details>
+      </li>
+    </ul>
+  </article>
+</template>

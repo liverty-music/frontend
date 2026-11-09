@@ -25,7 +25,6 @@
 
 			inline-size: 100%;
 			max-inline-size: 36rem;
-			margin-inline: auto;
 			padding: var(--space-m);
 			border: 1px solid var(--md-sys-color-outline-variant);
 			border-radius: var(--md-sys-shape-corner-large);
@@ -119,13 +118,21 @@
 			}
 		}
 
+		/* Rows sit --space-2xs apart; each dd also ends --space-xs before the
+		   next dt (flow) and before the list's end (padding). */
 		.resale-entry-confirm {
 			display: grid;
 			gap: var(--space-2xs) var(--space-s);
+			padding-block-end: var(--space-xs);
 			color: var(--md-sys-color-on-surface);
 
+			& dt {
+				--flow-space: var(--space-xs);
+			}
+
 			& dd {
-				margin-block-end: var(--space-xs);
+				--flow-space: 0;
+
 				color: var(--md-sys-color-on-surface-variant);
 			}
 		}

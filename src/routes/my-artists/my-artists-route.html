@@ -19,14 +19,16 @@
     if.bind="!isLoading && artists.length === 0"
     icon="music"
   >
-    <h2 t="myArtists.empty.title" class="[ empty-title ] [ md-typescale-title-large ]"></h2>
-    <p t="myArtists.empty.subtitle" class="[ empty-subtitle ] [ md-typescale-body-medium ]"></p>
-    <a
-      href="/discovery"
-      t="myArtists.empty.discoverButton"
-      class="[ button ] [ pressable ]"
-      data-testid="discover-link"
-    ></a>
+    <div class="[ empty-text ] [ flow ]">
+      <h2 t="myArtists.empty.title" class="[ empty-title ] [ md-typescale-title-large ]"></h2>
+      <p t="myArtists.empty.subtitle" class="[ empty-subtitle ] [ md-typescale-body-medium ]"></p>
+      <a
+        href="/discovery"
+        t="myArtists.empty.discoverButton"
+        class="[ button empty-action ] [ pressable ]"
+        data-testid="discover-link"
+      ></a>
+    </div>
   </state-placeholder>
 
   <!-- Artist hype table -->

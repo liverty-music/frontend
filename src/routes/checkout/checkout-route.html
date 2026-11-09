@@ -1,6 +1,6 @@
 <import from="./checkout-route.css"></import>
 
-<article class="[ checkout ] [ flow ]" data-step.bind="step">
+<article class="[ checkout ] [ flow wrapper ]" data-step.bind="step">
   <h1 class="[ checkout-title ] [ md-typescale-headline-small ]" t="checkout.title"></h1>
 
   <p if.bind="step === 'loading'" class="checkout-status" role="status" t="checkout.loading"></p>
@@ -98,7 +98,7 @@
   <!-- Step 4: 特商法 final confirmation -->
   <section if.bind="step === 'confirm'" class="[ checkout-panel ] [ flow ]" data-testid="checkout-confirm">
     <h2 class="[ checkout-step-title ] [ md-typescale-title-large-emphasized ]" t="checkout.confirm.title"></h2>
-    <dl class="[ checkout-terms ] [ md-typescale-body-medium ]">
+    <dl class="[ checkout-terms ] [ flow ] [ md-typescale-body-medium ]">
       <dt class="md-typescale-body-medium-emphasized" t="checkout.confirm.event"></dt>
       <dd data-testid="checkout-confirm-event">
         ${event.title}<br />${dateLabel}<br />${event.venueName}

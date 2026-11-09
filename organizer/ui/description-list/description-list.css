@@ -16,7 +16,6 @@
 	}
 
 	dd {
-		margin: 0;
 		color: var(--md-sys-color-on-surface);
 		overflow-wrap: anywhere;
 

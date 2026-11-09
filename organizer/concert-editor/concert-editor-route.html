@@ -41,7 +41,7 @@
       <fieldset class="visibility" disabled.bind="isCorrection">
         <legend class="[ legend ] [ md-typescale-title-medium ]">${'concertEditor.visibility' & t}</legend>
         <label repeat.for="option of visibilityChoices" class="visibility-option state-layer">
-          <input type="radio" name="visibility" model.bind="option.value" checked.bind="model.visibility">
+          <span class="visibility-control"><input type="radio" name="visibility" model.bind="option.value" checked.bind="model.visibility"></span>
           <span class="visibility-text">
             <span class="[ visibility-label ] [ md-typescale-title-small ]">${option.labelKey & t}</span>
             <span class="[ visibility-effect ] [ md-typescale-body-small ]">${option.effectKey & t}</span>

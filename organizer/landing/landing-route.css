@@ -1,9 +1,14 @@
 @layer block {
 	@scope (landing-route) {
+		/* The route spaces its content from the page's edges. */
+		:scope {
+			display: block;
+			padding-block: var(--space-xl);
+		}
+
 		.landing {
 			display: grid;
 			justify-items: center;
-			margin: var(--space-xl) auto;
 			padding: var(--space-m);
 		}
 

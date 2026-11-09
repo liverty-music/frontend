@@ -21,17 +21,20 @@
 		.swap-tile-slot {
 			position: relative;
 
+			/* stylelint-disable-next-line no-unknown-custom-properties -- discovery-route.css sets it on .discovery-layout */
+			inset-block-end: var(--orb-floor);
+
 			grid-area: bubbles;
 			place-self: end start;
 
-			/* stylelint-disable-next-line no-unknown-custom-properties -- discovery-route.css sets it on .discovery-layout */
-			margin-block-end: var(--orb-floor);
+			/* stylelint-disable-next-line property-disallowed-list -- a percentage margin resolves against the grid area and also narrows the width the tile may take; a relative inset would move it without that cap */
 			margin-inline-start: calc(50% + var(--orb-max-r) + var(--space-s));
 		}
 
 		/* Left-handed mode (the FAB menu's handedness) mirrors it. */
 		.swap-tile-slot[data-handed="left"] {
 			justify-self: end;
+			/* stylelint-disable-next-line property-disallowed-list -- the mirror of the margin above: a percentage of the grid area that also narrows the width the tile may take */
 			margin-inline: 0 calc(50% + var(--orb-max-r) + var(--space-s));
 		}
 

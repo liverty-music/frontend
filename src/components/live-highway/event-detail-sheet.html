@@ -7,7 +7,7 @@
     sheet-closed.trigger="onSheetClosed()"
     t="[aria-label]eventDetail.ariaLabel"
   >
-    <div if.bind="event" class="sheet-content" aria-labelledby="sheet-artist-name">
+    <div if.bind="event" class="[ sheet-content ] [ flow ]" aria-labelledby="sheet-artist-name">
       <!-- Hero background image -->
       <div if.bind="backgroundUrl" class="sheet-hero" role="presentation">
         <img
@@ -22,7 +22,7 @@
       <!-- Artist name header with dynamic color -->
       <header
         style="--artist-hue: ${event.artistHue}"
-        class="sheet-artist-header hype-home"
+        class="[ sheet-artist-header hype-home ] [ flow ]"
       >
         <h2 id="sheet-artist-name" class="[ sheet-artist-name ] [ md-typescale-headline-small ]">
           ${event.artistName}

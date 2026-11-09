@@ -11,27 +11,34 @@
 			padding-inline: var(--space-l);
 		}
 
+		/* Steps follow one another in the content's flow, and the label and
+		   grid in each section; each element sets the step above it. */
 		.selector-title {
-			margin-block-end: var(--space-2xs);
 			color: var(--md-sys-color-on-surface);
 		}
 
 		.selector-desc {
-			margin-block-end: var(--space-l);
+			--flow-space: var(--space-2xs);
+
 			color: var(--md-sys-color-on-surface-variant);
 		}
 
+		.selector-header-row + .selector-desc {
+			--flow-space: var(--space-3xs);
+		}
+
 		.selector-section {
-			margin-block-end: var(--space-l);
+			--flow-space: var(--space-l);
 		}
 
 		.selector-label {
-			margin-block-end: var(--space-2xs);
 			color: var(--md-sys-color-on-surface-variant);
 			text-transform: uppercase;
 		}
 
 		.selector-grid {
+			--flow-space: var(--space-2xs);
+
 			display: grid;
 			grid-template-columns: repeat(3, 1fr);
 			gap: var(--space-2xs);
@@ -62,12 +69,15 @@
 			}
 		}
 
+		.selector-desc + .selector-grid {
+			--flow-space: var(--space-l);
+		}
+
 		/* Step 2: back button + header row */
 		.selector-header-row {
 			display: flex;
 			gap: var(--space-2xs);
 			align-items: center;
-			margin-block-end: var(--space-3xs);
 		}
 
 		/* The shared `button` (outlined) owns the look; size its chevron. */

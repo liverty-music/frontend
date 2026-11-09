@@ -25,7 +25,6 @@
 
 			inline-size: 100%;
 			max-inline-size: 36rem;
-			margin-inline: auto;
 			padding: var(--space-m);
 			border: 1px solid var(--md-sys-color-outline-variant);
 			border-radius: var(--md-sys-shape-corner-large);
@@ -35,6 +34,7 @@
 
 		.tickets-list {
 			--flow-space: var(--space-m);
+			--gutter: 0;
 
 			display: flex;
 			flex-direction: column;
@@ -42,7 +42,6 @@
 
 			inline-size: 100%;
 			max-inline-size: 36rem;
-			margin-inline: auto;
 		}
 
 		.tickets-step-title {
@@ -141,7 +140,6 @@
 
 			inline-size: 100%;
 			max-inline-size: 36rem;
-			margin-inline: auto;
 			padding: var(--space-s);
 			border: 1px solid var(--md-sys-color-outline-variant);
 			border-radius: var(--md-sys-shape-corner-large);
@@ -175,12 +173,14 @@
 		}
 
 		.tickets-code-figure {
+			--gutter: 0;
+			--wrapper-max: none;
+
 			display: grid;
 			place-items: center;
 
 			aspect-ratio: 1;
 			inline-size: min(100%, 20rem);
-			margin-inline: auto;
 			border-radius: var(--md-sys-shape-corner-large);
 
 			/* High contrast whatever the theme; the SVG carries its own quiet zone */

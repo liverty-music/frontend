@@ -1,7 +1,7 @@
 <import from="../../components/confirm-dialog/confirm-dialog"></import>
 
 <!-- The page title is owned by the shell-hosted <page-header> (data.titleKey). -->
-<main class="[ delete-account ] [ stack ]">
+<main class="[ delete-account ] [ stack wrapper ]">
   <!-- After deletion: the session is gone; only the way to Welcome remains. -->
   <section if.bind="deletionState === 'deleted'" class="[ delete-account-done ] [ stack ]" role="status" data-testid="delete-account-deleted">
     <h2 t="deleteAccount.deleted.title" class="[ delete-account-heading ] [ md-typescale-title-large-emphasized ]"></h2>

@@ -1,5 +1,5 @@
 <!-- The page title is owned by the shell-hosted <page-header> (data.titleKey). -->
-<main class="[ verify-email ] [ stack ]" data-testid="verify-email">
+<main class="[ verify-email ] [ stack wrapper ]" data-testid="verify-email">
   <template if.bind="canConfirm">
     <p t="verifyEmail.lead" class="[ verify-email-lead ] [ md-typescale-body-large ]"></p>
     <p if.bind="state === 'failed'" role="alert" t="verifyEmail.failed" class="[ verify-email-error ] [ md-typescale-body-medium ]" data-testid="verify-email-failed"></p>

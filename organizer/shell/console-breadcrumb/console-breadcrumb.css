@@ -11,14 +11,20 @@
 			flex-wrap: wrap;
 			align-items: center;
 
-			margin: 0;
 			padding: 0;
 			color: var(--md-sys-color-on-surface-variant);
 			list-style: none;
 
+			/* The separator's space: the gap before it, the padding after it,
+			   inside the crumb as before. */
 			& li {
 				display: inline-flex;
+				gap: var(--space-3xs);
 				align-items: center;
+			}
+
+			& li:has(.separator) {
+				padding-inline-end: var(--space-3xs);
 			}
 
 			/* Links in a neutral color: the brand color is kept for the
@@ -37,7 +43,6 @@
 		.separator {
 			inline-size: 18px;
 			block-size: 18px;
-			margin-inline: var(--space-3xs);
 		}
 
 		@container shell (width >= 600px) {

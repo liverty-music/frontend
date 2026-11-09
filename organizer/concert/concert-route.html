@@ -31,7 +31,7 @@
     </header>
 
     <div class="panes">
-      <section class="focus" aria-labelledby="concert-events-heading">
+      <section class="[ focus ] [ flow ]" aria-labelledby="concert-events-heading">
         <h2 id="concert-events-heading" class="[ section-title ] [ md-typescale-title-large ]">${'concert.events' & t}</h2>
         <data-list columns.bind="columns" rows.bind="rows" label.bind="'concert.events' & t" class="dates"></data-list>
 
@@ -108,6 +108,7 @@
 
     <confirm-dialog
       component.ref="publishDialog"
+      class="[ flow ]"
       heading-key="concert.publishConfirmTitle" heading-params.bind="{ title: title }"
       confirm-key="event.publish"
       confirm-disabled.bind="!chosenIds.length"

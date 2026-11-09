@@ -49,9 +49,6 @@
 			inline-size: var(--fab-size);
 			block-size: var(--fab-size);
 
-			/* Reset the popover UA box (inset:0 + margin:auto centers it). */
-			margin: 0;
-			padding: 0;
 			border: none;
 			border-radius: var(--fab-radius-collapsed);
 
@@ -207,8 +204,6 @@
 
 			inline-size: 0;
 			block-size: 0;
-			margin: 0;
-			padding: 0;
 			border: none;
 
 			color: var(--md-sys-color-on-surface);
@@ -242,11 +237,6 @@
 		.fab-list {
 			position: absolute;
 			inset: 0;
-
-			margin: 0;
-			padding: 0;
-
-			list-style: none;
 		}
 
 		/* Each item travels from the FAB along the arc to its place with the
@@ -298,7 +288,7 @@
 
 			inline-size: var(--_item-size);
 			block-size: var(--_item-size);
-			padding: 0;
+
 			border: none;
 			border-radius: var(--md-sys-shape-corner-full);
 			color: var(--md-sys-color-on-surface);

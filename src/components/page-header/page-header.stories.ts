@@ -30,8 +30,9 @@ export const Default = {
 		const h1 = canvas.getByRole('heading', { level: 1 })
 		await expect(h1).toBeInTheDocument()
 
+		// @spec components/infrastructure/fan/web/global/page-header "Visual consistency across routes"
 		// Every route renders this one component, so each shares what it sets:
-		// the headline-small title, the --space-xs padding, the 10 % white
+		// the headline-small title, the 12 px padding, the 10 % white
 		// border and the surface-container background (with its brand tint).
 		const header = canvasElement.querySelector(
 			'page-header header',
@@ -44,16 +45,12 @@ export const Default = {
 		])
 		await expect(head.fontFamily.startsWith('Righteous')).toBe(true)
 		const box = getComputedStyle(header)
-		const spaceXs = getComputedStyle(document.documentElement)
-			.getPropertyValue('--space-xs')
-			.trim()
-		const probe = document.createElement('div')
-		probe.style.paddingBlock = spaceXs
-		canvasElement.append(probe)
-		await expect(box.paddingBlockStart).toBe(
-			getComputedStyle(probe).paddingBlockStart,
-		)
-		probe.remove()
+		await expect([
+			box.paddingBlockStart,
+			box.paddingBlockEnd,
+			box.paddingInlineStart,
+			box.paddingInlineEnd,
+		]).toEqual(['12px', '12px', '12px', '12px'])
 		await expect(box.borderBottomWidth).toBe('1px')
 		await expect(box.backgroundImage).toContain(
 			resolveColor(header, 'var(--md-sys-color-surface-container)'),

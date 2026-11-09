@@ -16,12 +16,12 @@
 		}
 
 		.error-title {
-			margin-block-end: var(--space-3xs);
 			color: var(--md-sys-color-on-surface);
 		}
 
 		.error-message {
-			margin-block-end: var(--space-xs);
+			--flow-space: var(--space-3xs);
+
 			color: var(--md-sys-color-on-surface-variant);
 
 			/* The message is three lines in the catalog. */
@@ -29,6 +29,8 @@
 		}
 
 		footer {
+			--flow-space: var(--space-xs);
+
 			display: grid;
 			gap: var(--space-3xs);
 		}

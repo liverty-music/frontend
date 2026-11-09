@@ -15,16 +15,18 @@
 		}
 
 		.not-found-code {
-			margin-block-end: var(--space-2xs);
 			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.not-found-message {
-			margin-block-end: var(--space-m);
+			--flow-space: var(--space-2xs);
+
 			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.not-found-link {
+			--flow-space: var(--space-m);
+
 			padding: var(--space-2xs) var(--space-s);
 			border: 1px solid var(--md-sys-color-outline-variant);
 			border-radius: var(--md-sys-shape-corner-small);

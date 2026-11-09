@@ -27,10 +27,7 @@
 		.lottery-stocks {
 			display: grid;
 			gap: var(--space-s);
-
-			margin: 0;
 			padding: 0;
-
 			list-style: none;
 		}
 
@@ -111,9 +108,16 @@
 			color: var(--md-sys-color-on-surface);
 		}
 
+		/* In a sale card the grid gap spaces the rows; the flow composition
+		   adds only the extra space above the verification field. */
+		.sale {
+			--flow-space: 0;
+		}
+
 		.verification {
+			--flow-space: var(--space-2xs);
+
 			max-inline-size: 420px;
-			margin-block-start: var(--space-2xs);
 		}
 
 		/* The card's actions sit at its trailing edge. */

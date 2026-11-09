@@ -12,7 +12,7 @@
   <!-- Guest sign-in / sign-up hero. Top-of-page, guest-only: the most
        important action for an unauthenticated user, lifted out of the
        bottom ACCOUNT list so it reads as a primary CTA rather than a link. -->
-  <section if.bind="!auth.isAuthenticated" class="settings-guest-hero">
+  <section if.bind="!auth.isAuthenticated" class="[ settings-guest-hero ] [ flow ]">
     <h2 t="settings.guestHero.heading" class="[ settings-guest-hero-heading ] [ md-typescale-title-large-emphasized ]"></h2>
     <p t="settings.guestHero.body" class="[ settings-guest-hero-body ] [ md-typescale-body-medium ]"></p>
     <div class="settings-guest-hero-actions">
@@ -35,7 +35,7 @@
   <!-- ACCOUNT Section, first for a signed-in fan. Authenticated-only: the
        guest sign-in / sign-up entry lives in the top hero, so this section is
        hidden entirely for guests. -->
-  <section if.bind="auth.isAuthenticated">
+  <section class="[ settings-section ] [ flow ]" if.bind="auth.isAuthenticated">
     <h2 t="settings.account" class="[ settings-section-title ] [ md-typescale-title-small ]"></h2>
 
     <ul class="settings-card" role="list">
@@ -119,7 +119,7 @@
        phone number saved on the User, shown on the face of the fan's tickets
        and prefilled at lottery entry and checkout. One row shows them; tapping
        it opens the form in a bottom sheet (below). -->
-  <section if.bind="auth.isAuthenticated" aria-labelledby="personal-details-title">
+  <section class="[ settings-section ] [ flow ]" if.bind="auth.isAuthenticated" aria-labelledby="personal-details-title">
     <h2 id="personal-details-title" t="settings.personalDetails.title" class="[ settings-section-title ] [ md-typescale-title-small ]"></h2>
     <ul class="settings-card" role="list">
       <!-- The saved name, or 「未設定」 while none is saved. -->
@@ -146,7 +146,7 @@
   </section>
 
   <!-- NOTIFICATIONS AND SOUND Section. -->
-  <section>
+  <section class="[ settings-section ] [ flow ]">
     <h2 t="settings.sections.notificationsSound" class="[ settings-section-title ] [ md-typescale-title-small ]"></h2>
     <ul class="settings-card" role="list">
       <!-- Push Notifications (whole row is the switch). Without the VAPID key
@@ -200,7 +200,7 @@
   </section>
 
   <!-- DISPLAY AND CONTROLS Section. -->
-  <section>
+  <section class="[ settings-section ] [ flow ]">
     <h2 t="settings.sections.displayControls" class="[ settings-section-title ] [ md-typescale-title-small ]"></h2>
     <ul class="settings-card" role="list">
       <!-- My Home Area -->
@@ -239,7 +239,7 @@
   </section>
 
   <!-- HELP IMPROVE THE SERVICE Section: the analytics opt-out toggles. -->
-  <section aria-labelledby="analytics-title">
+  <section class="[ settings-section ] [ flow ]" aria-labelledby="analytics-title">
     <h2 id="analytics-title" t="settings.analytics.sectionTitle" class="[ settings-section-title ] [ md-typescale-title-small ]"></h2>
     <p t="settings.analytics.intro" class="[ settings-section-intro ] [ md-typescale-body-medium ]"></p>
     <ul class="settings-card" role="list">
@@ -284,7 +284,7 @@
 
   <!-- ABOUT Section. Iconless rows: the label still lands in the content
        column, so it lines up with the icon rows' labels above. -->
-  <section>
+  <section class="[ settings-section ] [ flow ]">
     <h2 t="settings.about" class="[ settings-section-title ] [ md-typescale-title-small ]"></h2>
     <ul class="settings-card" role="list">
       <!-- Terms of Service. Navigates via the VM's root router (openLegal), not
@@ -385,7 +385,7 @@
   aria-label.bind="'settings.personalDetails.title' | t"
 >
   <form
-    class="[ settings-personal-details ] [ stack ]"
+    class="[ settings-personal-details ] [ stack flow ]"
     submit.trigger="savePersonalDetails()"
     novalidate
     data-testid="settings-personal-details"
@@ -447,7 +447,7 @@
      expose `aria-checked` so SR users perceive the active language and that
      exactly one may be chosen (the check icon + data-selected are visual only). -->
 <bottom-sheet open.bind="languageSelectorOpen" sheet-closed.trigger="languageSelectorOpen = false" aria-label="Select language">
-  <div class="selector-content">
+  <div class="[ selector-content ] [ flow ]">
     <h2 id="language-selector-title" t="settings.language" class="[ selector-title ] [ md-typescale-title-large ]"></h2>
     <div class="[ language-list ] [ stack ]" role="radiogroup" aria-labelledby="language-selector-title">
       <button

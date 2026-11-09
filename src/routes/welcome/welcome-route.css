@@ -62,10 +62,12 @@
 		}
 
 		.welcome-hero-fallback {
+			--flow-space: var(--space-l);
+
 			display: flex;
 			flex-direction: column;
+			gap: var(--space-2xs);
 			align-items: center;
-			margin-block-start: var(--space-l);
 		}
 
 		.welcome-hero-fallback-action-group {
@@ -74,8 +76,6 @@
 
 		/* Wordmark filled by a moving spotlight gradient clipped to the text. */
 		.welcome-brand {
-			margin-block-end: var(--space-l);
-
 			background: linear-gradient(
 				100deg,
 				var(--color-brand-accent) 0%,
@@ -96,7 +96,8 @@
 		}
 
 		.welcome-title {
-			margin-block-end: var(--space-m);
+			--flow-space: var(--space-l);
+
 			color: var(--md-sys-color-on-surface);
 
 			text-wrap: balance;
@@ -104,8 +105,9 @@
 		}
 
 		.welcome-subtitle {
+			--flow-space: var(--space-m);
+
 			max-inline-size: 28rem;
-			margin-block-end: var(--space-xs);
 			color: var(--md-sys-color-on-surface-variant);
 
 			text-wrap: balance;
@@ -113,7 +115,7 @@
 		}
 
 		.welcome-subtitle-action {
-			margin-block-end: var(--space-xl);
+			--flow-space: var(--space-xs);
 		}
 
 		.welcome-subtitle-action strong {
@@ -126,7 +128,7 @@
 		/* Outlined shared button; it owns only its spacing and the bobbing
 		   arrow. */
 		.welcome-scroll-action {
-			margin-block-start: var(--space-l);
+			--flow-space: var(--space-l);
 		}
 
 		.welcome-scroll-arrow {
@@ -180,7 +182,7 @@
 
 			inline-size: 100%;
 			max-inline-size: 36rem;
-			padding: 0;
+
 			border: none;
 
 			background: transparent;
@@ -241,6 +243,7 @@
 		.welcome-actions {
 			display: flex;
 			flex-direction: column;
+			gap: var(--space-2xs);
 			align-items: center;
 		}
 
@@ -292,7 +295,6 @@
 		}
 
 		.welcome-guest-friendly {
-			margin-block-end: var(--space-2xs);
 			color: var(--md-sys-color-on-surface-variant);
 		}
 
@@ -318,6 +320,8 @@
 		}
 
 		.welcome-lang {
+			--flow-space: var(--space-xl);
+
 			display: flex;
 			gap: var(--space-xs);
 			justify-content: center;

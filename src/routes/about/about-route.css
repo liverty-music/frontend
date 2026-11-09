@@ -8,11 +8,12 @@
 		}
 
 		.about-title {
-			margin-block-end: var(--space-2xs);
 			color: var(--md-sys-color-on-surface);
 		}
 
 		.about-text {
+			--flow-space: var(--space-2xs);
+
 			color: var(--md-sys-color-on-surface-variant);
 		}
 	}

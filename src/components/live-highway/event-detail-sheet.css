@@ -7,6 +7,8 @@
 			--_bg-hover: oklch(100% 0 0deg / 5%);
 		}
 
+		/* The sections follow one another in the content's flow; each sets
+		   the step above it. */
 		.sheet-content {
 			padding-block-end: var(--space-l);
 			padding-inline: var(--space-m);
@@ -15,7 +17,7 @@
 		.sheet-hero {
 			position: relative;
 			overflow: hidden;
-			margin-block-end: var(--space-s);
+			/* stylelint-disable-next-line property-disallowed-list -- the hero bleeds through the content's inline padding to the sheet's edges; the padding stays for every other section, so only a negative margin widens this one */
 			margin-inline: calc(-1 * var(--space-m));
 		}
 
@@ -44,7 +46,8 @@
 
 		/* Artist header with dynamic color */
 		.sheet-artist-header {
-			margin-block-end: var(--space-s);
+			--flow-space: var(--space-s);
+
 			padding: var(--space-s);
 			border-radius: var(--md-sys-shape-corner-large);
 		}
@@ -54,12 +57,15 @@
 		}
 
 		.sheet-event-title {
-			margin-block-start: var(--space-3xs);
+			--flow-space: var(--space-3xs);
+
 			color: var(--_event-title-color);
 		}
 
 		/* Event details list */
 		.sheet-details {
+			--flow-space: var(--space-s);
+
 			display: flex;
 			flex-direction: column;
 			gap: var(--space-xs);
@@ -71,8 +77,11 @@
 			align-items: start;
 		}
 
+		/* Nudged down to the first line of the text beside it; the text is
+		   always taller, so the offset never sets the row's height. */
 		.detail-icon {
-			margin-block-start: var(--space-3xs);
+			position: relative;
+			inset-block-start: var(--space-3xs);
 			color: var(--md-sys-color-on-surface-variant);
 		}
 
@@ -94,11 +103,12 @@
 
 		/* Out-of-range notice: what the fan's hype level pushes, under the venue */
 		.sheet-out-of-range {
+			--flow-space: var(--space-s);
+
 			display: flex;
 			flex-direction: column;
 			gap: var(--space-2xs);
 
-			margin-block-start: var(--space-s);
 			padding: var(--space-xs) var(--space-s);
 			border: 1px solid var(--_border-light);
 			border-radius: var(--md-sys-shape-corner-large);
@@ -117,11 +127,12 @@
 
 		/* Ticket section: notification button, status row, push line, official site */
 		.sheet-tickets {
+			--flow-space: var(--space-s);
+
 			display: flex;
 			flex-direction: column;
 			gap: var(--space-xs);
 
-			margin-block-start: var(--space-s);
 			padding-block-start: var(--space-s);
 			border-block-start: 1px solid var(--_border-light);
 		}
@@ -156,6 +167,7 @@
 
 		.journey-separator {
 			align-self: stretch;
+			/* stylelint-disable-next-line property-disallowed-list -- the separator's box is its 1px rule; the extra room on both sides lies outside that box, and the row's single gap cannot widen around one item, so padding would move the rule and a gap would space every node */
 			margin-inline: var(--space-3xs);
 			border-inline-start: 1px solid var(--_border-light);
 		}
@@ -253,9 +265,10 @@
 
 		/* Follow CTA (All Nearby context) */
 		.sheet-follow {
+			--flow-space: var(--space-m);
+
 			display: flex;
 			justify-content: center;
-			margin-block-start: var(--space-m);
 		}
 
 		.follow-action {
@@ -269,19 +282,19 @@
 			justify-content: center;
 
 			inline-size: 100%;
-			margin: 0;
 			padding-block: var(--space-2xs);
 			color: var(--color-brand-primary);
 		}
 
 		/* Coach-style hint above the actions (landing page only). */
 		.sheet-actions-hint {
+			--flow-space: var(--space-m);
+
 			display: flex;
 			gap: var(--space-3xs);
 			align-items: center;
 			justify-content: center;
 
-			margin-block-start: var(--space-m);
 			padding: var(--space-2xs) var(--space-s);
 			border: 1px solid oklch(from var(--color-brand-accent) l c h / 35%);
 			border-radius: var(--md-sys-shape-corner-medium);

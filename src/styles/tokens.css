@@ -25,16 +25,17 @@
 		--journey-hue-paid: 160deg; /* success — the hue of --color-success */
 		--journey-hue-lost: 25deg; /* failure — red */
 
-		/* Fluid spacing scale (generated via utopia.fyi) */
-		--space-3xs: clamp(0.25rem, calc(0.23rem + 0.11vi), 0.31rem);
-		--space-2xs: clamp(0.5rem, calc(0.46rem + 0.22vi), 0.63rem);
-		--space-xs: clamp(0.75rem, calc(0.68rem + 0.33vi), 0.94rem);
-		--space-s: clamp(1rem, calc(0.91rem + 0.43vi), 1.25rem);
-		--space-m: clamp(1.5rem, calc(1.37rem + 0.65vi), 1.88rem);
-		--space-l: clamp(2rem, calc(1.83rem + 0.87vi), 2.5rem);
-		--space-xl: clamp(3rem, calc(2.74rem + 1.3vi), 3.75rem);
-		--space-2xl: clamp(4rem, calc(3.65rem + 1.74vi), 5rem);
-		--space-3xl: clamp(6rem, calc(5.48rem + 2.61vi), 7.5rem);
+		/* Spacing: Material 3's 4 px grid, the same on any width. The steps the
+		   organizer console shares have its values. */
+		--space-3xs: 4px;
+		--space-2xs: 8px;
+		--space-xs: 12px;
+		--space-s: 16px;
+		--space-m: 24px;
+		--space-l: 32px;
+		--space-xl: 48px;
+		--space-2xl: 64px;
+		--space-3xl: 96px;
 
 		/* Toggle / switch control geometry (shared by the settings + consent
 		   toggle rows, which render identical switches in separate @scopes). */

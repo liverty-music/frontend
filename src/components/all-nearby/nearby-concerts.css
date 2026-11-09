@@ -32,8 +32,18 @@
 			min-block-size: 0;
 		}
 
+		/* The title and subtitle sit a step further apart than the
+		   placeholder's own gap, each centred at its own width. */
+		.nearby-empty-text {
+			--_gap: calc(var(--space-s) + var(--space-3xs));
+
+			display: flex;
+			flex-direction: column;
+			gap: var(--_gap);
+			align-items: center;
+		}
+
 		.nearby-empty-title {
-			margin-block-end: var(--space-3xs);
 			color: var(--md-sys-color-on-surface-variant);
 		}
 

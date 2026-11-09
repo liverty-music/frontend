@@ -30,7 +30,8 @@
 		/* An M3 multi-action list, edge to edge on a compact window. */
 		.scanners {
 			justify-self: stretch;
-			margin: 0 calc(-1 * var(--page-inline-padding));
+			/* stylelint-disable-next-line property-disallowed-list -- full bleed: the list reaches past the page's inline padding, which no padding or gap of its own can do */
+			margin-inline: calc(-1 * var(--page-inline-padding));
 			padding: 0;
 			list-style: none;
 		}
@@ -75,6 +76,7 @@
 
 		@container shell (width >= 600px) {
 			.scanners {
+				/* stylelint-disable-next-line property-disallowed-list -- turns off the compact full-bleed margin; only a margin undoes a margin */
 				margin-inline: 0;
 			}
 		}

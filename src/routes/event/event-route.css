@@ -13,10 +13,10 @@
 
 		.event-page {
 			--flow-space: var(--space-m);
+			--gutter: 0;
 
 			inline-size: 100%;
 			max-inline-size: 36rem;
-			margin-inline: auto;
 		}
 
 		.event-status,
@@ -214,8 +214,10 @@
 			text-decoration: underline;
 		}
 
+		/* Text only (no background or border), so the space before it can be
+		   its own padding. */
 		.event-date-status {
-			margin-inline-start: var(--space-2xs);
+			padding-inline-start: var(--space-2xs);
 			color: var(--md-sys-color-on-surface-variant);
 		}
 	}

@@ -1,7 +1,7 @@
 <import from="./event-route.css"></import>
 <import from="../../components/event-date-tabs/event-date-tabs"></import>
 
-<article class="[ event-page ] [ flow ]" data-state.bind="state">
+<article class="[ event-page ] [ flow wrapper ]" data-state.bind="state">
   <!-- Loading -->
   <p if.bind="state === 'loading'" class="event-status" role="status" t="eventPage.loading"></p>
 

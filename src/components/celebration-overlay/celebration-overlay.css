@@ -53,8 +53,6 @@
 		.celebration-text {
 			isolation: isolate;
 			position: relative;
-
-			margin: 0;
 			padding: 0 var(--space-l);
 			color: var(--color-white);
 			text-align: center;
@@ -79,8 +77,6 @@
 		.celebration-hint {
 			isolation: isolate;
 			position: relative;
-
-			margin: 0;
 			padding: 0 var(--space-l);
 			color: oklch(from var(--color-white) l c h / 90%);
 			text-align: center;

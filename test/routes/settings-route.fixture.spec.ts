@@ -664,8 +664,7 @@ describe('SettingsRoute Sign Out group (fixture)', () => {
 			true,
 		)
 
-		// The stack's gap is --space-m, whose smallest value is 1.5rem (24px),
-		// and Settings does not narrow it.
+		// The stack's gap is --space-m, 24px, and Settings does not narrow it.
 		const { default: compositions } = await import(
 			'../../src/styles/compositions.css?raw'
 		)
@@ -674,7 +673,7 @@ describe('SettingsRoute Sign Out group (fixture)', () => {
 			'../../src/routes/settings/settings-route.css?raw'
 		)
 		expect(compositions).toContain('gap: var(--stack-gap, var(--space-m))')
-		expect(tokens).toMatch(/--space-m:\s*clamp\(1\.5rem,/)
+		expect(tokens).toMatch(/--space-m:\s*24px;/)
 		const scrollRule = settingsCss.slice(
 			settingsCss.indexOf('.settings-scroll {'),
 		)

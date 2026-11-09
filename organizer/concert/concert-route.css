@@ -35,8 +35,15 @@
 			align-content: start;
 		}
 
+		/* The grid gap spaces the pane; the flow composition adds only the
+		   extra space above the seat types. */
+		.focus {
+			--flow-space: 0;
+		}
+
 		/* The dates extend edge to edge on a compact window (M3 Lists). */
 		.dates {
+			/* stylelint-disable-next-line property-disallowed-list -- full bleed: the list reaches past the page's inline padding, which no padding or gap of its own can do */
 			margin-inline: calc(-1 * var(--page-inline-padding));
 		}
 
@@ -45,7 +52,12 @@
 		}
 
 		.seat-types {
-			margin-block-start: var(--space-m);
+			--flow-space: var(--space-m);
+		}
+
+		/* The seat types' own flow keeps its default step. */
+		.seat-types > * {
+			--flow-space: initial;
 		}
 
 		.note {
@@ -55,10 +67,7 @@
 		.seat-type-list {
 			display: grid;
 			gap: var(--space-2xs);
-
-			margin: 0;
 			padding: 0;
-
 			list-style: none;
 		}
 
@@ -113,7 +122,6 @@
 		.summary {
 			display: grid;
 			gap: var(--space-2xs);
-			margin: 0;
 		}
 
 		.summary-row {
@@ -125,7 +133,6 @@
 			}
 
 			& dd {
-				margin: 0;
 				color: var(--md-sys-color-on-surface);
 			}
 		}
@@ -133,8 +140,6 @@
 		.choices {
 			display: grid;
 			gap: var(--space-3xs);
-
-			margin: 0 0 var(--space-s);
 			padding: 0;
 			border: none;
 		}
@@ -167,6 +172,7 @@
 
 		@container shell (width >= 600px) {
 			.dates {
+				/* stylelint-disable-next-line property-disallowed-list -- turns off the compact full-bleed margin; only a margin undoes a margin */
 				margin-inline: 0;
 			}
 		}

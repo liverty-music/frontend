@@ -32,6 +32,59 @@ export const ELEVATION_SAMPLES = `
 	</div>
 `
 
+/** The spacing steps both apps define, with their size in px. */
+const SPACE_STEPS = {
+	'3xs': 4,
+	'2xs': 8,
+	xs: 12,
+	s: 16,
+	m: 24,
+	l: 32,
+	xl: 48,
+} as const
+
+/**
+ * One box per spacing step, each padded by that step. `extra` lists the steps
+ * only one app defines, with their size in px.
+ */
+export const spacingSamples = (extra: Record<string, number> = {}): string => `
+	<div style="display:grid; gap:4px; padding:16px; background:var(--md-sys-color-surface); color:var(--md-sys-color-on-surface)">
+		${Object.keys({ ...SPACE_STEPS, ...extra })
+			.map(
+				(step) =>
+					`<div data-space="${step}" style="padding-inline-start:var(--space-${step}); background:var(--md-sys-color-surface-container)">${step}</div>`,
+			)
+			.join('')}
+	</div>
+`
+
+/**
+ * Every spacing step is the same number of px in a narrow and a wide window.
+ * `extra` is the same as for `spacingSamples`.
+ */
+export async function expectSpacingAtAnyWidth(
+	root: ParentNode,
+	extra: Record<string, number> = {},
+): Promise<void> {
+	const steps: Record<string, number> = { ...SPACE_STEPS, ...extra }
+	const { innerWidth, innerHeight } = window
+	try {
+		for (const width of [360, 1280]) {
+			await page.viewport(width, 800)
+			for (const [step, px] of Object.entries(steps)) {
+				const box = root.querySelector<HTMLElement>(`[data-space="${step}"]`)
+				if (!box) throw new Error(`No spacing sample ${step}`)
+				expect(
+					getComputedStyle(box).paddingInlineStart,
+					`--space-${step} at ${width} px`,
+				).toBe(`${px}px`)
+			}
+		}
+	} finally {
+		await page.viewport(innerWidth, innerHeight)
+	}
+}
+
 const sample = (root: ParentNode, name: string): HTMLElement => {
 	const element = root.querySelector<HTMLElement>(`[data-sample="${name}"]`)
 	if (!element) throw new Error(`No type sample ${name}`)

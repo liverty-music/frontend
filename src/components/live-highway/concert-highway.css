@@ -95,8 +95,6 @@
 
 			min-block-size: 0;
 
-			list-style: none;
-
 			/* Date group — the unit of the date window: only the groups in the
 			   window exist, so nothing here has to skip rendering work.
 
@@ -147,7 +145,6 @@
 		.skeleton-card {
 			display: block;
 			block-size: 44px;
-			margin-block-end: var(--space-2xs);
 			border-radius: var(--md-sys-shape-corner-large);
 		}
 
@@ -198,19 +195,41 @@
 			display: grid;
 			grid-column: 1 / -1;
 			grid-template-columns: subgrid;
-			list-style: none;
 		}
 
+		/* Cards stack with a step between them and below the last one: a
+		   larger step on the home lane, a smaller one on the others. */
 		.lane {
+			--_card-gap: var(--space-3xs);
+
 			container-name: lane;
 			container-type: inline-size;
+			display: flex;
+			flex-direction: column;
+			row-gap: var(--_card-gap);
+
 			padding: var(--space-2xs);
+
+			&:has(> event-card) {
+				--_pad-end: calc(var(--space-2xs) + var(--_card-gap));
+
+				padding-block-end: var(--_pad-end);
+			}
+
+			/* A skeleton card keeps a step of room below it too. */
+			&:has(> .skeleton-card) {
+				--_pad-end: calc(var(--space-2xs) * 2);
+
+				padding-block-end: var(--_pad-end);
+			}
 
 			&:not(:last-child) {
 				border-inline-end: 1px solid var(--_border-faint);
 			}
 
 			&[data-lane="home"] {
+				--_card-gap: var(--space-2xs);
+
 				border-block-start: 2px solid
 					oklch(from var(--color-stage-home) l c h / 40%);
 			}

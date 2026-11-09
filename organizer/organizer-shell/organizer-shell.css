@@ -81,7 +81,10 @@
 		/* Only the page scrolls, so the bar and the rail never cover content. */
 		.main {
 			overflow: auto;
+			display: grid;
 			grid-area: main;
+			grid-template-columns: minmax(0, var(--page-max-inline-size));
+			place-content: start center;
 
 			outline: none;
 
@@ -98,9 +101,6 @@
 		.page {
 			display: grid;
 			gap: var(--space-s);
-
-			max-inline-size: var(--page-max-inline-size);
-			margin-inline: auto;
 			padding: var(--space-2xs) var(--page-inline-padding) var(--space-l);
 		}
 

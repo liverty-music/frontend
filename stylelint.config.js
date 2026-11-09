@@ -169,6 +169,15 @@ export default {
 				'cube/block-max-lines': [true, { max: 100 }],
 			},
 		},
+		// The console's reset zeroes margins only (organizer/styles/shared.css),
+		// so a console stylesheet's `padding: 0` or `list-style: none` undoes a
+		// browser default rather than repeating the reset.
+		{
+			files: ['organizer/!(styles)/**/*.css'],
+			rules: {
+				'declaration-property-value-disallowed-list': VALUE_DISALLOWED,
+			},
+		},
 		// The shared button owns its label: label-large is the role of every
 		// text button, so the 126 buttons in templates carry no type class.
 		{

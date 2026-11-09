@@ -5,17 +5,17 @@
 
 	<p if.bind="state === 'loading'" class="[ resale-entries-lead ] [ md-typescale-body-medium ]" role="status" t="resaleEntries.loading"></p>
 
-	<section if.bind="state === 'error'" class="[ resale-entries-panel ] [ flow ]" data-testid="resale-entries-error">
+	<section if.bind="state === 'error'" class="[ resale-entries-panel ] [ flow wrapper ]" data-testid="resale-entries-error">
 		<p class="[ resale-entries-lead ] [ md-typescale-body-medium ]" t="resaleEntries.error"></p>
 		<button type="button" class="[ button ] [ pressable ]" click.trigger="load()" t="resaleEntries.retry"></button>
 	</section>
 
 	<p if.bind="state === 'ready' && rows.length === 0" class="[ resale-entries-lead ] [ md-typescale-body-medium ]" data-testid="resale-entries-empty" t="resaleEntries.empty"></p>
 
-	<ul if.bind="state === 'ready' && rows.length > 0" class="[ resale-entries-list ] [ flow ]" role="list">
+	<ul if.bind="state === 'ready' && rows.length > 0" class="[ resale-entries-list ] [ flow wrapper ]" role="list">
 		<li
 			repeat.for="row of rows; key.bind: row.entry.id"
-			class="[ resale-entries-panel ] [ flow ]"
+			class="[ resale-entries-panel ] [ flow wrapper ]"
 			data-testid="resale-entries-entry"
 			data-entry-state.bind="row.entry.state"
 		>

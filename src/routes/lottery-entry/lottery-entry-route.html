@@ -6,16 +6,16 @@
 	<p if.bind="step === 'loading'" class="[ lottery-entry-lead ] [ md-typescale-body-medium ]" role="status" t="lotteryEntry.loading"></p>
 
 	<!-- Stripe not configured for this environment: fail closed. -->
-	<section class="lottery-entry-panel" if.bind="step === 'unavailable'" data-testid="lottery-entry-unavailable">
+	<section class="[ lottery-entry-panel ] [ wrapper ]" if.bind="step === 'unavailable'" data-testid="lottery-entry-unavailable">
 		<p class="[ lottery-entry-lead ] [ md-typescale-body-medium ]" t="lotteryEntry.unavailable"></p>
 	</section>
 
-	<section class="[ lottery-entry-panel ] [ flow ]" if.bind="step === 'not-found'" data-testid="lottery-entry-not-found">
+	<section class="[ lottery-entry-panel ] [ flow wrapper ]" if.bind="step === 'not-found'" data-testid="lottery-entry-not-found">
 		<p class="[ lottery-entry-lead ] [ md-typescale-body-medium ]" t="lotteryEntry.notFound"></p>
 		<a href="/events/${event.id}" if.bind="event" t="lotteryEntry.backToEvent"></a>
 	</section>
 
-	<section class="[ lottery-entry-panel ] [ flow ]" if.bind="step === 'closed'" data-testid="lottery-entry-closed">
+	<section class="[ lottery-entry-panel ] [ flow wrapper ]" if.bind="step === 'closed'" data-testid="lottery-entry-closed">
 		<p class="[ lottery-entry-lead ] [ md-typescale-body-medium ]" t="lotteryEntry.closed"></p>
 		<a href="/events/${event.id}" if.bind="event" t="lotteryEntry.backToEvent"></a>
 	</section>
@@ -23,7 +23,7 @@
 	<!-- What is entered: the sale's name, the event, the seat type, its price and the limit -->
 	<section
 		if.bind="sale && event && (step === 'verify-required' || step === 'count' || step === 'personal-details' || step === 'payment' || step === 'submitting')"
-		class="[ lottery-entry-panel ] [ flow ]"
+		class="[ lottery-entry-panel ] [ flow wrapper ]"
 		data-testid="lottery-entry-summary"
 	>
 		<p class="[ lottery-entry-step-title ] [ md-typescale-title-large-emphasized ]" data-testid="lottery-entry-sale-name">${sale.name}</p>
@@ -35,14 +35,14 @@
 	</section>
 
 	<!-- Verification gate: the sale requires a verification the fan lacks. -->
-	<section class="[ lottery-entry-panel ] [ flow ]" if.bind="step === 'verify-required'" data-testid="lottery-entry-verify">
+	<section class="[ lottery-entry-panel ] [ flow wrapper ]" if.bind="step === 'verify-required'" data-testid="lottery-entry-verify">
 		<h2 class="[ lottery-entry-step-title ] [ md-typescale-title-large-emphasized ]" t="lotteryEntry.verify.title"></h2>
 		<p class="[ lottery-entry-lead ] [ md-typescale-body-medium ]" t="lotteryEntry.verify.body"></p>
 		<button type="button" class="[ button lottery-entry-action ] [ pressable ]" click.trigger="goToVerify()" t="lotteryEntry.verify.action"></button>
 	</section>
 
 	<!-- Step 1: ticket count -->
-	<section class="[ lottery-entry-panel ] [ flow ]" if.bind="step === 'count'" data-testid="lottery-entry-count">
+	<section class="[ lottery-entry-panel ] [ flow wrapper ]" if.bind="step === 'count'" data-testid="lottery-entry-count">
 		<h2 class="[ lottery-entry-step-title ] [ md-typescale-title-large-emphasized ]" t="lotteryEntry.count.title"></h2>
 		<label class="lottery-entry-field">
 			<span class="[ lottery-entry-label ] [ md-typescale-label-large ]" t="lotteryEntry.count.label" t-params.bind="{ limit: perAccountLimit }"></span>
@@ -56,7 +56,7 @@
 	</section>
 
 	<!-- Step 2: 本人確認 -->
-	<section class="[ lottery-entry-panel ] [ flow ]" if.bind="step === 'personal-details'" data-testid="lottery-entry-personal-details">
+	<section class="[ lottery-entry-panel ] [ flow wrapper ]" if.bind="step === 'personal-details'" data-testid="lottery-entry-personal-details">
 		<h2 class="[ lottery-entry-step-title ] [ md-typescale-title-large-emphasized ]" t="lotteryEntry.personalDetails.title"></h2>
 		<p class="[ lottery-entry-lead ] [ md-typescale-body-medium ]" t="lotteryEntry.personalDetails.note"></p>
 		<label class="lottery-entry-field">
@@ -85,7 +85,7 @@
 	</section>
 
 	<!-- Step 3: card authorization + 特商法 final confirmation -->
-	<section class="[ lottery-entry-panel ] [ flow ]" if.bind="step === 'payment' || step === 'submitting'" data-testid="lottery-entry-payment">
+	<section class="[ lottery-entry-panel ] [ flow wrapper ]" if.bind="step === 'payment' || step === 'submitting'" data-testid="lottery-entry-payment">
 		<h2 class="[ lottery-entry-step-title ] [ md-typescale-title-large-emphasized ]" t="lotteryEntry.payment.title"></h2>
 		<div class="[ lottery-entry-terms ] [ flow ] [ md-typescale-body-medium ]" role="note">
 			<p class="lottery-entry-terms-lead" t="lotteryEntry.payment.cardAuthorization" t-params.bind="{ total: yen(total), count: ticketCount, price: yen(price) }"></p>
@@ -125,7 +125,7 @@
 	</section>
 
 	<!-- Confirm refused the card authorization: no entry, nothing charged -->
-	<section class="[ lottery-entry-panel ] [ flow ]" if.bind="step === 'refused'" data-testid="lottery-entry-refused">
+	<section class="[ lottery-entry-panel ] [ flow wrapper ]" if.bind="step === 'refused'" data-testid="lottery-entry-refused">
 		<h2 class="[ lottery-entry-step-title ] [ md-typescale-title-large-emphasized ]" t="lotteryEntry.refused.title"></h2>
 		<p class="[ lottery-entry-lead ] [ md-typescale-body-medium ]" role="alert" data-testid="lottery-entry-message" t.bind="message.key" t-params.bind="message.params"></p>
 		<p class="[ lottery-entry-lead ] [ md-typescale-body-medium ]" t="lotteryEntry.refused.notCharged"></p>
@@ -135,7 +135,7 @@
 	</section>
 
 	<!-- The entry was made (Confirm succeeded) -->
-	<section class="[ lottery-entry-panel ] [ flow ]" if.bind="step === 'done'" data-testid="lottery-entry-done">
+	<section class="[ lottery-entry-panel ] [ flow wrapper ]" if.bind="step === 'done'" data-testid="lottery-entry-done">
 		<h2 class="[ lottery-entry-step-title ] [ md-typescale-title-large-emphasized ]" t="lotteryEntry.done.title"></h2>
 		<p class="[ lottery-entry-lead ] [ md-typescale-body-medium ]" t="lotteryEntry.done.body" t-params.bind="{ sale: sale.name, count: entry.ticketCount }"></p>
 		<a href.bind="entryStatusUrl" class="[ button lottery-entry-action ] [ pressable ]" data-testid="lottery-entry-to-status" t="lotteryEntry.done.toStatus"></a>

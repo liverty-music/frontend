@@ -60,7 +60,7 @@ describe('Discovery layout', () => {
 			/\.swap-tile-slot \{[\s\S]*?place-self: end start;[\s\S]*?margin-inline-start: calc\(50% \+ var\(--orb-max-r\) \+ var\(--space-s\)\);/,
 		)
 		expect(swapCss).toMatch(
-			/\.swap-tile-slot\[data-handed="left"\] \{\s*justify-self: end;\s*margin-inline: 0 calc\(50% \+ var\(--orb-max-r\) \+ var\(--space-s\)\);/,
+			/\.swap-tile-slot\[data-handed="left"\] \{\s*justify-self: end;\s*(?:\/\*[^*]*\*\/\s*)?margin-inline: 0 calc\(50% \+ var\(--orb-max-r\) \+ var\(--space-s\)\);/,
 		)
 	})
 })
