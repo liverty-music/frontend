@@ -259,6 +259,11 @@ jobs:
       - name: Install crane
         if: github.event_name == 'release' || (github.event_name == 'push' && steps.decide.outputs.mode == 'inherit')
         uses: imjasonh/setup-crane@feee3b6bb0d4c68370f256a4502498c9227e5c6b # v0.7
+        with:
+          # Pinned: by default the action downloads the latest crane release,
+          # whose Linux tarball (v0.22.1) returned 504 on 2026-11-09 and
+          # failed image builds. Same pin as cloud-provisioning bump-prod-pin.
+          version: v0.22.0
 
       # =====================================================================
       # Push/inherit path: this commit changed nothing build-relevant, so its
@@ -524,6 +529,8 @@ jobs:
       - name: Install crane
         if: github.event_name == 'release' || (github.event_name == 'push' && steps.decide.outputs.mode == 'inherit')
         uses: imjasonh/setup-crane@feee3b6bb0d4c68370f256a4502498c9227e5c6b # v0.7
+        with:
+          version: v0.22.0
 
       - name: Inherit parent dev AR digest (push path, no rebuild)
         if: github.event_name == 'push' && steps.decide.outputs.mode == 'inherit'
@@ -727,6 +734,8 @@ jobs:
       - name: Install crane
         if: github.event_name == 'release' || (github.event_name == 'push' && steps.decide.outputs.mode == 'inherit')
         uses: imjasonh/setup-crane@feee3b6bb0d4c68370f256a4502498c9227e5c6b # v0.7
+        with:
+          version: v0.22.0
 
       - name: Inherit parent dev AR digest (push path, no rebuild)
         if: github.event_name == 'push' && steps.decide.outputs.mode == 'inherit'
@@ -947,6 +956,8 @@ jobs:
       - name: Install crane
         if: github.event_name == 'release' || (github.event_name == 'push' && steps.decide.outputs.mode == 'inherit')
         uses: imjasonh/setup-crane@feee3b6bb0d4c68370f256a4502498c9227e5c6b # v0.7
+        with:
+          version: v0.22.0
 
       - name: Inherit parent dev AR digest (push path, no rebuild)
         if: github.event_name == 'push' && steps.decide.outputs.mode == 'inherit'
