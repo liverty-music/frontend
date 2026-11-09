@@ -25,6 +25,10 @@
 		--journey-hue-paid: 160deg; /* success — the hue of --color-success */
 		--journey-hue-lost: 25deg; /* failure — red */
 
+		/* The reading width of a single-column screen (checkout, tickets, order
+		   and the other panel screens), set as the wrapper's --wrapper-max. */
+		--page-max-inline-size: 36rem;
+
 		/* Spacing: Material 3's 4 px grid, the same on any width. The steps the
 		   organizer console shares have its values. */
 		--space-3xs: 4px;
