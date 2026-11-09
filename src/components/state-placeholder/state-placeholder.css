@@ -1,10 +1,14 @@
 @layer block {
 	@scope (state-placeholder) {
+		/* The window margin of a compact window keeps a long message off the
+		   screen edges. */
 		:scope {
 			display: flex;
 			flex: 1;
 			align-items: center;
 			justify-content: center;
+
+			padding-inline: var(--space-s);
 		}
 
 		.state-center {

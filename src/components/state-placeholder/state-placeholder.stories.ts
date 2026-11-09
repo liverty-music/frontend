@@ -34,6 +34,31 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 // Empty state with an icon and projected copy.
+/** A message longer than a 320 px window: it wraps inside the window margin. */
+export const LongMessage = {
+	render: (args) =>
+		defineAureliaStory({
+			template: `
+				<div style="inline-size: 320px; display: flex">
+					<state-placeholder icon.bind="icon">
+						<p data-testid="long">Follow a few artists and their upcoming shows appear here, every one of them.</p>
+					</state-placeholder>
+				</div>
+			`,
+			props: args,
+			register: [StatePlaceholder],
+		}),
+	play: async ({ canvasElement }) => {
+		const host = canvasElement.querySelector('state-placeholder') as HTMLElement
+		const { left, right } = host.getBoundingClientRect()
+		const text = within(canvasElement)
+			.getByTestId('long')
+			.getBoundingClientRect()
+		await expect(text.left - left).toBeGreaterThanOrEqual(16)
+		await expect(right - text.right).toBeGreaterThanOrEqual(16)
+	},
+} satisfies Story
+
 export const Empty = {
 	render: (args) =>
 		defineAureliaStory({
