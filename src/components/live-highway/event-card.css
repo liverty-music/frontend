@@ -44,8 +44,12 @@
 
 		/* --- Artist name --- */
 		.artist-name {
-			/* stylelint-disable-next-line property-disallowed-list -- the artist name is sized to its lane (design-tokens, the one exception to type styles) */
-			font: 400 clamp(14px, 8cqi, 32px) / 1.2 var(--md-ref-typeface-brand);
+			/* stylelint-disable property-disallowed-list, cube/require-token-variables -- the artist name is sized to its lane (design-tokens, the one exception to type styles) */
+			font-family: var(--md-ref-typeface-brand);
+			font-weight: 400;
+			font-size: clamp(14px, 8cqi, 32px);
+			line-height: 1.2;
+			/* stylelint-enable property-disallowed-list, cube/require-token-variables */
 			color: var(--color-white);
 			overflow-wrap: break-word;
 			filter: drop-shadow(0 2px 4px var(--_drop-shadow));

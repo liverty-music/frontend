@@ -10,8 +10,9 @@
    Every variant shares the shape, padding and label weight below. A surface
    that needs a compact button (the action on a snack bar or a bottom banner)
    sets the size hooks --button-min-size, --button-padding-block,
-   --button-padding-inline, and --button-font with --button-tracking (a
-   smaller type style) on it; the radius and weight stay shared. The label
+   --button-padding-inline, and --button-font-size, --button-line-height and
+   --button-tracking (a smaller type style) on it; the radius, typeface and
+   weight stay shared. The label
    is set here, not by the templates: label-large is the button's role. The press
    morph and pressed state layer come from the `pressable` utility, the pending
    state from the `busy-on-click` attribute. A page keeps its own block class
@@ -33,7 +34,16 @@
 			border: 2px solid transparent;
 			border-radius: var(--md-sys-shape-corner-medium);
 
-			font: var(--button-font, var(--md-sys-typescale-label-large));
+			font-family: var(--md-sys-typescale-label-large-font);
+			font-weight: var(--md-sys-typescale-label-large-weight);
+			font-size: var(
+				--button-font-size,
+				var(--md-sys-typescale-label-large-size)
+			);
+			line-height: var(
+				--button-line-height,
+				var(--md-sys-typescale-label-large-line-height)
+			);
 			letter-spacing: var(
 				--button-tracking,
 				var(--md-sys-typescale-label-large-tracking)

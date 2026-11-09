@@ -98,6 +98,8 @@ export default defineConfig({
         'e2e/functional/fab-menu-top-layer.spec.ts',
         // The timetable's deal-in without scroll-triggered animations.
         'e2e/functional/deal-in.spec.ts',
+        // Safari downloads Noto Sans JP: it draws no local() Noto.
+        'e2e/functional/local-noto.spec.ts',
       ],
       use: {
         ...devices['iPhone 14'],

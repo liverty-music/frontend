@@ -27,7 +27,10 @@
 @layer global {
 	/* Body text is body-medium: a work tool sets denser text than the fan app. */
 	:where(body) {
-		font: var(--md-sys-typescale-body-medium);
+		font-family: var(--md-sys-typescale-body-medium-font);
+		font-weight: var(--md-sys-typescale-body-medium-weight);
+		font-size: var(--md-sys-typescale-body-medium-size);
+		line-height: var(--md-sys-typescale-body-medium-line-height);
 		letter-spacing: var(--md-sys-typescale-body-medium-tracking);
 		color: var(--md-sys-color-on-surface);
 		background: var(--md-sys-color-surface);
@@ -35,7 +38,10 @@
 
 	/* Each screen's title, in the body's color. */
 	:where(.page-title) {
-		font: var(--md-sys-typescale-headline-small);
+		font-family: var(--md-sys-typescale-headline-small-font);
+		font-weight: var(--md-sys-typescale-headline-small-weight);
+		font-size: var(--md-sys-typescale-headline-small-size);
+		line-height: var(--md-sys-typescale-headline-small-line-height);
 		letter-spacing: var(--md-sys-typescale-headline-small-tracking);
 	}
 }

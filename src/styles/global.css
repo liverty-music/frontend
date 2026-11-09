@@ -1,13 +1,31 @@
 @layer global {
 	/* No faked bold: Righteous has one weight, so an emphasized headline stays
-	   400 in Latin letters and is heavier only where Noto Sans JP draws it. */
+	   400 in Latin letters and is heavier only where Noto Sans JP draws it.
+
+	   Japanese text set for reading: proportional widths for kana, kanji and
+	   punctuation (`palt`), a small space between Japanese and Latin letters
+	   or digits (`text-autospace`, Firefox and Safari), strict line-break rules
+	   (no line starts with a small kana or a prolonged sound mark), and breaks
+	   between phrases rather than inside a word (`word-break: auto-phrase`,
+	   Chromium; it reads the `lang` i18n sets on <html>). All inherited, so
+	   every element gets them; a browser without one keeps its default. Type
+	   styles are set as longhands (m3-typescale.css), never with the `font`
+	   shorthand, which would reset `palt`. Headings balance their lines in
+	   reset.css. */
 	:where(html) {
+		font-feature-settings: "palt";
 		font-synthesis-weight: none;
+		text-autospace: normal;
+		word-break: auto-phrase;
+		line-break: strict;
 	}
 
 	/* Body text is body-large unless a template gives it another type style. */
 	:where(body) {
-		font: var(--md-sys-typescale-body-large);
+		font-family: var(--md-sys-typescale-body-large-font);
+		font-weight: var(--md-sys-typescale-body-large-weight);
+		font-size: var(--md-sys-typescale-body-large-size);
+		line-height: var(--md-sys-typescale-body-large-line-height);
 		color: var(--md-sys-color-on-surface);
 		letter-spacing: var(--md-sys-typescale-body-large-tracking);
 		background: var(--md-sys-color-surface);
