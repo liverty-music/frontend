@@ -36,11 +36,6 @@
 			box-shadow:
 				0 8px 22px var(--_shadow),
 				inset 0 1px 0 var(--_rim);
-
-			&:focus-visible {
-				outline: 2px solid var(--color-brand-primary);
-				outline-offset: 3px;
-			}
 		}
 
 		/* The parts that want a line (badge, rims, pin, perforation) set

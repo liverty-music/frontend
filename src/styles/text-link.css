@@ -14,8 +14,7 @@
    surface and 3.75:1 on a surface container, below the 4.5:1 body text needs.
    Tertiary is the light tone a dark theme gives link text (11.6:1 on the
    surface). An <a> drawn as a button carries the `button` block instead.
-   Keyboard focus shows the browser's ring until the app has its own (task
-   6.1). */
+   Keyboard focus shows the app's global ring. */
 @layer block {
 	@scope (.text-link) {
 		:scope {

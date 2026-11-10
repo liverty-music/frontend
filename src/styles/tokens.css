@@ -211,6 +211,11 @@
 		/* Shadow colour of the shared elevation levels. */
 		--md-sys-color-shadow: oklch(0% 0 0deg);
 
+		/* Keyboard focus ring colour; its size is shared (m3-sys.css). The
+		   brand colour, not the darker `primary` role: the ring must reach 3:1
+		   on every surface tier, and primary is darkened for its white label. */
+		--md-sys-color-focus-indicator: var(--color-brand-primary);
+
 		/* Corner shapes at the Material 3 values (ShapeTokens.kt). */
 		--md-sys-shape-corner-none: 0;
 		--md-sys-shape-corner-extra-small: 4px;

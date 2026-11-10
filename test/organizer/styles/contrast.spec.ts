@@ -13,9 +13,16 @@ type Theme = 'light' | 'dark'
 /** Role name → its light and dark color, read from the token file. */
 function readRoles(css: string): Map<string, Record<Theme, Oklch>> {
 	const roles = new Map<string, Record<Theme, Oklch>>()
+	const aliases = new Map<string, string>()
 	const flat = css.replace(/\s+/g, ' ')
 	for (const m of flat.matchAll(/(--md-sys-color-[\w-]+)\s*:\s*([^;]+);/g)) {
 		const value = m[2].trim()
+		// A role that names another role (the focus ring is the primary role).
+		const alias = value.match(/^var\((--md-sys-color-[\w-]+)\)$/)
+		if (alias) {
+			aliases.set(m[1], alias[1])
+			continue
+		}
 		const pair = value.match(
 			/^light-dark\(\s*(oklch\([^)]*\))\s*,\s*(oklch\([^)]*\))\s*\)$/,
 		)
@@ -25,6 +32,11 @@ function readRoles(css: string): Map<string, Record<Theme, Oklch>> {
 			const single = parseOklch(value)
 			roles.set(m[1], { light: single, dark: single })
 		}
+	}
+	for (const [name, target] of aliases) {
+		const resolved = roles.get(target)
+		if (!resolved) throw new Error(`${name} names an undefined role ${target}`)
+		roles.set(name, resolved)
 	}
 	return roles
 }
@@ -67,6 +79,7 @@ const UI_PAIRS: Array<[string, string]> = SURFACES.flatMap(
 	(bg): Array<[string, string]> => [
 		['outline', bg],
 		['primary', bg],
+		['focus-indicator', bg],
 		['success', bg],
 		['warning', bg],
 		['error', bg],

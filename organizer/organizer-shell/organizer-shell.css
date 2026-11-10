@@ -100,7 +100,8 @@
 		/* The scrolling page is reachable from the keyboard (to scroll it with
 		   the arrow keys); its focus ring sits inside the window edge. */
 		.main:focus-visible {
-			outline-offset: calc(-1 * var(--focus-ring-width));
+			/* stylelint-disable-next-line property-disallowed-list -- the page area fills the window, so the global ring is drawn inside its edge */
+			outline-offset: calc(-1 * var(--md-sys-state-focus-indicator-thickness));
 		}
 
 		.page {

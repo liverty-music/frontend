@@ -175,11 +175,6 @@
 			   (`state-layer`) and the focus ring take. Press shows the layer
 			   alone, with no scale (Material 3). */
 			border-radius: var(--md-sys-shape-corner-large);
-
-			&:focus-visible {
-				outline: 2px solid var(--color-brand-primary);
-				outline-offset: 4px;
-			}
 		}
 
 		/* Entrance fires only once the demo scrolls into view (data-entered). The
@@ -314,6 +309,15 @@
 			color: var(--md-sys-color-on-surface-variant);
 
 			transition: color var(--md-sys-motion-duration-short4);
+		}
+
+		/* The radio is visually hidden, so its text shows the focus ring. */
+		.welcome-lang-label:has(input:focus-visible) > .welcome-lang-text {
+			/* stylelint-disable property-disallowed-list -- the radio a language stands for is visually hidden, so its visible text draws the global ring in its place */
+			outline: var(--md-sys-state-focus-indicator-thickness) solid
+				var(--md-sys-color-focus-indicator);
+			outline-offset: var(--md-sys-state-focus-indicator-outer-offset);
+			/* stylelint-enable property-disallowed-list */
 		}
 
 		.welcome-lang-label:has(input:checked) > .welcome-lang-text {

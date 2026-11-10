@@ -12,9 +12,6 @@
   "organizer/organizer-shell/organizer-shell.css": {
     "declaration-property-custom-property-allowed-list": {
       "count": 1
-    },
-    "property-disallowed-list": {
-      "count": 1
     }
   },
   "src/styles/button.css": {
@@ -67,24 +64,6 @@
     },
     "declaration-property-value-allowed-list": {
       "count": 1
-    },
-    "property-disallowed-list": {
-      "count": 1
-    }
-  },
-  "organizer/ui/data-list/data-list.css": {
-    "property-disallowed-list": {
-      "count": 3
-    }
-  },
-  "organizer/ui/list-item/list-item.css": {
-    "property-disallowed-list": {
-      "count": 1
-    }
-  },
-  "organizer/ui/venue-field/venue-field.css": {
-    "property-disallowed-list": {
-      "count": 2
     }
   },
   "src/components/bottom-nav-bar/bottom-nav-bar.css": {
@@ -101,9 +80,6 @@
   "src/components/artist-filter-bar/artist-filter-bar.css": {
     "cube/block-max-lines": {
       "count": 1
-    },
-    "property-disallowed-list": {
-      "count": 2
     }
   },
   "src/components/bottom-sheet/bottom-sheet.css": {
@@ -112,9 +88,6 @@
     },
     "declaration-property-custom-property-allowed-list": {
       "count": 2
-    },
-    "property-disallowed-list": {
-      "count": 1
     }
   },
   "src/components/coach-mark/coach-mark.css": {
@@ -133,14 +106,6 @@
     },
     "declaration-property-value-allowed-list": {
       "count": 1
-    },
-    "property-disallowed-list": {
-      "count": 2
-    }
-  },
-  "src/components/dna-orb/dna-orb-canvas.css": {
-    "property-disallowed-list": {
-      "count": 2
     }
   },
   "src/components/fab-menu/fab-menu.css": {
@@ -192,9 +157,6 @@
   "src/components/live-highway/event-detail-sheet.css": {
     "cube/block-max-lines": {
       "count": 1
-    },
-    "property-disallowed-list": {
-      "count": 2
     }
   },
   "src/components/page-help/page-help.css": {
@@ -212,9 +174,6 @@
   },
   "src/routes/discovery/discovery-route.css": {
     "cube/block-max-lines": {
-      "count": 1
-    },
-    "property-disallowed-list": {
       "count": 1
     }
   },
@@ -244,14 +203,6 @@
   "src/routes/welcome/welcome-route.css": {
     "cube/block-max-lines": {
       "count": 1
-    },
-    "property-disallowed-list": {
-      "count": 2
-    }
-  },
-  "src/components/all-nearby/nearby-filter-sheet.css": {
-    "property-disallowed-list": {
-      "count": 2
     }
   },
   "src/app-shell.css": {

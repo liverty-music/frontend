@@ -32,6 +32,16 @@
 			border-color: var(--md-sys-color-primary);
 			box-shadow: inset 0 0 0 1px var(--md-sys-color-primary);
 		}
+
+		/* The field shows the keyboard focus ring for the control inside
+		   it, which draws none (below). */
+		&:has(:focus-visible) {
+			/* stylelint-disable property-disallowed-list -- the focused control sits inside the field box, so the box draws the global ring in its place (design-tokens "One keyboard focus ring") */
+			outline: var(--md-sys-state-focus-indicator-thickness) solid
+				var(--md-sys-color-focus-indicator);
+			outline-offset: var(--md-sys-state-focus-indicator-outer-offset);
+			/* stylelint-enable property-disallowed-list */
+		}
 	}
 
 	input,
@@ -47,8 +57,9 @@
 
 		background: transparent;
 
-		/* The control's border shows focus; the field box carries the ring. */
+		/* The field box carries the ring (above). */
 		&:focus-visible {
+			/* stylelint-disable-next-line property-disallowed-list -- the field box around the control draws the ring in its place */
 			outline: none;
 		}
 	}

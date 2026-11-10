@@ -20,8 +20,9 @@
    least 48px wide) through a transparent ::after centred on the chip, so a
    group of chips leaves var(--space-s) between rows: two targets never
    overlap. A label's hidden checkbox comes before its leading icon; the
-   state layer reads its focus and disabled state. A label chip's checkbox is visually hidden, so the chip draws the
-   focus ring for it, and a button chip draws the same one. The disabled rule
+   state layer reads its focus and disabled state. A label chip's checkbox is
+   visually hidden, so the chip draws the app's focus ring for it; a button
+   chip gets the global ring itself. The disabled rule
    comes before the selected one, so a selected chip reads its dimmed
    hooks. */
 @layer block {
@@ -78,10 +79,10 @@
 			block-size: max(100%, var(--md-sys-target-size));
 		}
 
-		:scope:is(:focus-visible, :has(> input:focus-visible)) {
-			/* stylelint-disable property-disallowed-list -- the checkbox a label chip stands for is visually hidden, so the chip must show its keyboard focus ring (no global fan ring exists yet, task 6.1) */
+		:scope:has(> input:focus-visible) {
+			/* stylelint-disable property-disallowed-list -- the checkbox a label chip stands for is visually hidden, so the chip draws the global ring in its place */
 			outline: var(--md-sys-state-focus-indicator-thickness) solid
-				var(--color-brand-primary);
+				var(--md-sys-color-focus-indicator);
 			outline-offset: var(--md-sys-state-focus-indicator-outer-offset);
 			/* stylelint-enable property-disallowed-list */
 		}

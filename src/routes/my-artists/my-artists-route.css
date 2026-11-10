@@ -299,6 +299,15 @@
 			}
 		}
 
+		/* The radio is visually hidden, so its dot shows the focus ring. */
+		.hype-label:has(> input:focus-visible) > .hype-dot {
+			/* stylelint-disable property-disallowed-list -- the radio a hype dot stands for is visually hidden, so the dot draws the global ring in its place */
+			outline: var(--md-sys-state-focus-indicator-thickness) solid
+				var(--md-sys-color-focus-indicator);
+			outline-offset: var(--md-sys-state-focus-indicator-outer-offset);
+			/* stylelint-enable property-disallowed-list */
+		}
+
 		/* ── Remove column (edit mode) ── */
 
 		/* In edit mode this cell replaces all hype columns, so the row uses the

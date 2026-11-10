@@ -167,6 +167,15 @@
 
 			background: var(--_white-8);
 			backdrop-filter: blur(12px);
+
+			/* The input inside draws no ring; the bar shows it in its place. */
+			&:has(> .search-input:focus-visible) {
+				/* stylelint-disable property-disallowed-list -- the focused input sits inside the bar's frame, so the bar draws the global ring in its place (design-tokens "One keyboard focus ring") */
+				outline: var(--md-sys-state-focus-indicator-thickness) solid
+					var(--md-sys-color-focus-indicator);
+				outline-offset: var(--md-sys-state-focus-indicator-outer-offset);
+				/* stylelint-enable property-disallowed-list */
+			}
 		}
 
 		.search-icon {
@@ -187,6 +196,8 @@
 			color: var(--color-white);
 
 			background: transparent;
+
+			/* stylelint-disable-next-line property-disallowed-list -- the search bar around the input draws the ring in its place */
 			outline: none;
 
 			&::placeholder {
