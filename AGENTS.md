@@ -101,10 +101,11 @@ a controller to every element it sits on.
 
 ## Component Stories & Testing (Storybook + Vitest)
 
-- `make test` runs `unit` + `scripts` only; both storybook projects (`storybook`, `storybook-reduced-motion`; see `vitest.config.ts`) run in a separate CI job (`storybook-test`).
+- `make test` runs `unit` + `scripts` only; the three storybook projects (`storybook`, `storybook-reduced-motion`, `storybook-more-contrast`; see `vitest.config.ts`) run in a separate CI job (`storybook-test`).
 - A story tagged `reduced-motion` runs in both storybook projects. It reads
   `matchMedia('(prefers-reduced-motion: reduce)')` and asserts the motion that matches, so one story
-  covers both presentations.
+  covers both presentations. A story tagged `more-contrast` does the same with
+  `prefers-contrast: more` in `storybook-more-contrast` (cf. the Foundations `ContrastLevel` stories).
 - Coverage thresholds: statements/functions/lines 70, **branches 60** (Vitest 4's `ast-v8` branch
   remapping counts far more branches than v2 — recalibrated, not a real regression).
 - Node 25's broken Web Storage stub is replaced by a polyfill in `test/setup.ts` (Vitest 4 no longer

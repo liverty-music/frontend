@@ -1,6 +1,7 @@
 import { expect } from 'storybook/test'
 import { page } from 'vitest/browser'
 import sharedTokens from '../shared/styles/m3-sys.css?raw'
+import { composite, contrast } from './contrast'
 
 /**
  * Checks of the shared Material 3 foundations (shared/styles/m3-sys.css and
@@ -243,4 +244,90 @@ export function expectOwnSurface(element: Element, appTokens: string): void {
 	const own = declared(appTokens).get('--md-sys-color-surface')
 	expect(own).toBeTruthy()
 	expect(computed(element, '--md-sys-color-surface')).toBe(own)
+}
+
+/** The surface tiers both apps define, lowest to highest, and the page. */
+const TIERS = [
+	'surface',
+	'surface-container-low',
+	'surface-container',
+	'surface-container-high',
+	'surface-container-highest',
+]
+
+/**
+ * Markup of the contrast samples: on each surface tier, a line of secondary
+ * text and a box drawn with each boundary role.
+ */
+export const CONTRAST_SAMPLES = `
+	<div style="display:grid; gap:4px; padding:16px; background:var(--md-sys-color-surface)">
+		${TIERS.map(
+			(tier) => `
+			<div data-tier="${tier}" style="display:flex; gap:8px; align-items:center; padding:8px; background:var(--md-sys-color-${tier})">
+				<p data-role="on-surface-variant" class="md-typescale-body-medium" style="color:var(--md-sys-color-on-surface-variant)">${tier} 補足テキスト</p>
+				<span data-role="outline" style="inline-size:24px; block-size:24px; border:1px solid var(--md-sys-color-outline)"></span>
+				<span data-role="outline-variant" style="inline-size:24px; block-size:24px; border:1px solid var(--md-sys-color-outline-variant)"></span>
+			</div>`,
+		).join('')}
+	</div>
+`
+
+/** The roles the system's more-contrast setting raises. */
+const RAISED = [
+	'--md-sys-color-on-surface-variant',
+	'--md-sys-color-outline',
+	'--md-sys-color-outline-variant',
+]
+
+/**
+ * With more contrast (the browser context of the `storybook-more-contrast`
+ * project), secondary text reaches 7:1 and boundaries 4.5:1 on every tier.
+ * Without it, the raised roles keep the regular values `appTokens` declares
+ * outside its `prefers-contrast: more` block. `moreContrast` is the
+ * project's global, so a context that fails to emulate the setting fails
+ * here instead of passing on the other branch.
+ */
+export function expectContrastLevel(
+	root: ParentNode,
+	appTokens: string,
+	moreContrast: unknown,
+): void {
+	const more = matchMedia('(prefers-contrast: more)').matches
+	if (import.meta.env.MODE === 'test') {
+		expect(typeof moreContrast).toBe('boolean')
+		expect(more).toBe(moreContrast)
+	}
+	const tiers = [...root.querySelectorAll<HTMLElement>('[data-tier]')]
+	expect(tiers.length).toBe(TIERS.length)
+	if (more) {
+		for (const tier of tiers) {
+			const surface = getComputedStyle(tier).backgroundColor
+			const ratio = (role: string, prop: 'color' | 'borderTopColor') => {
+				const el = tier.querySelector<HTMLElement>(`[data-role="${role}"]`)
+				if (!el) throw new Error(`no ${role} sample`)
+				return contrast(
+					composite(surface, getComputedStyle(el)[prop]),
+					composite(surface),
+				)
+			}
+			const name = tier.dataset.tier
+			expect(ratio('on-surface-variant', 'color'), name).toBeGreaterThanOrEqual(
+				7,
+			)
+			expect(ratio('outline', 'borderTopColor'), name).toBeGreaterThanOrEqual(
+				4.5,
+			)
+			expect(
+				ratio('outline-variant', 'borderTopColor'),
+				name,
+			).toBeGreaterThanOrEqual(4.5)
+		}
+	} else {
+		const start = appTokens.indexOf('@media (prefers-contrast: more)')
+		expect(start).toBeGreaterThan(-1)
+		const regular = declared(appTokens.slice(0, start))
+		for (const name of RAISED) {
+			expect(computed(tiers[0], name), name).toBe(regular.get(name))
+		}
+	}
 }

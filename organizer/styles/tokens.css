@@ -218,4 +218,25 @@
 		--md-ref-typeface-brand: var(--md-ref-typeface-plain);
 		--md-ref-typeface-mono: ui-monospace, "SFMono-Regular", monospace;
 	}
+
+	/* More contrast, when the operating system asks for it (Material 3's high
+	   contrast level: content at 7:1). Secondary text reaches 8:1 or more on
+	   every surface tier in both themes, and control boundaries and dividers
+	   5.5:1 or more. Every other role keeps its regular value. */
+	@media (prefers-contrast: more) {
+		:root {
+			--md-sys-color-on-surface-variant: light-dark(
+				oklch(36% 0.016 285deg),
+				oklch(88% 0.012 285deg)
+			);
+			--md-sys-color-outline: light-dark(
+				oklch(45% 0.014 285deg),
+				oklch(72% 0.014 285deg)
+			);
+			--md-sys-color-outline-variant: light-dark(
+				oklch(45% 0.014 285deg),
+				oklch(72% 0.014 285deg)
+			);
+		}
+	}
 }

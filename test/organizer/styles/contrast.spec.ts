@@ -86,10 +86,22 @@ const UI_PAIRS: Array<[string, string]> = SURFACES.flatMap(
 	],
 )
 
-const roles = readRoles(tokensCss)
+/** The roles the system asks more contrast for override the regular ones. */
+const MORE_CONTRAST = '@media (prefers-contrast: more)'
+const moreStart = tokensCss.indexOf(MORE_CONTRAST)
+const regularCss = moreStart === -1 ? tokensCss : tokensCss.slice(0, moreStart)
+const roles = readRoles(regularCss)
+const moreRoles = new Map([
+	...roles,
+	...(moreStart === -1 ? [] : readRoles(tokensCss.slice(moreStart))),
+])
 
-function role(name: string, theme: Theme): Oklch {
-	const r = roles.get(`--md-sys-color-${name}`)
+function role(
+	name: string,
+	theme: Theme,
+	set: Map<string, Record<Theme, Oklch>> = roles,
+): Oklch {
+	const r = set.get(`--md-sys-color-${name}`)
 	if (!r) throw new Error(`role --md-sys-color-${name} is not defined`)
 	return r[theme]
 }
@@ -132,6 +144,43 @@ describe('console color roles', () => {
 				),
 			).toBeGreaterThanOrEqual(4.5)
 		}
+	})
+
+	for (const theme of ['light', 'dark'] as const) {
+		it(`@spec components/infrastructure/organizer/web/global/design-tokens "Secondary text with more contrast" (${theme})`, () => {
+			// Body and secondary text reach 7:1, control boundaries, dividers and
+			// the focus ring 4.5:1, on every surface tier.
+			const failing = SURFACES.flatMap((bg) => [
+				...['on-surface', 'on-surface-variant'].map((fg) => ({
+					pair: `${fg} on ${bg}`,
+					min: 7,
+					ratio: contrast(
+						role(fg, theme, moreRoles),
+						role(bg, theme, moreRoles),
+					),
+				})),
+				...['outline', 'outline-variant', 'focus-indicator'].map((fg) => ({
+					pair: `${fg} on ${bg}`,
+					min: 4.5,
+					ratio: contrast(
+						role(fg, theme, moreRoles),
+						role(bg, theme, moreRoles),
+					),
+				})),
+			]).filter((p) => p.ratio < p.min)
+			expect(failing).toEqual([])
+		})
+	}
+
+	it('more contrast changes only secondary text, boundaries and dividers', () => {
+		const changed = [...moreRoles.keys()].filter(
+			(name) => moreRoles.get(name) !== roles.get(name),
+		)
+		expect(changed.sort()).toEqual([
+			'--md-sys-color-on-surface-variant',
+			'--md-sys-color-outline',
+			'--md-sys-color-outline-variant',
+		])
 	})
 
 	it('surfaces are light in light and dark in dark, with text on the other end', () => {

@@ -239,4 +239,18 @@
 		   for the characters it lacks. */
 		--md-ref-typeface-brand: "Righteous", var(--md-ref-typeface-plain);
 	}
+
+	/* More contrast, when the operating system asks for it (Material 3's high
+	   contrast level: content at 7:1, m3.material.io/styles/color/system/
+	   how-the-system-works). Secondary text and icons reach 10:1 or more on
+	   every surface tier, and control boundaries and dividers, translucent
+	   at regular contrast, become opaque at 5.5:1 or more. Every other role
+	   keeps its regular value. */
+	@media (prefers-contrast: more) {
+		:root {
+			--md-sys-color-on-surface-variant: oklch(90% 0.02 275deg);
+			--md-sys-color-outline: oklch(72% 0.02 275deg);
+			--md-sys-color-outline-variant: oklch(72% 0.02 275deg);
+		}
+	}
 }

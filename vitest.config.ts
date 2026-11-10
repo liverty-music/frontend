@@ -86,15 +86,19 @@ const scriptsProject = defineProject({
 // matches the context it runs in, so it is checked once with and once without
 // the preference. Each project also passes the preference it emulates as the
 // `reducedMotion` global, so a context that silently fails to emulate it fails
-// the story instead of passing on the other branch.
+// the story instead of passing on the other branch. A third project,
+// `storybook-more-contrast`, does the same for stories tagged `more-contrast`
+// with `prefers-contrast: more` and the `moreContrast` global.
 const storybookProjectFor = ({
 	name,
 	tags,
 	reducedMotion,
+	moreContrast = false,
 }: {
 	name: string
 	tags?: { include: string[] }
 	reducedMotion: boolean
+	moreContrast?: boolean
 }) => ({
 	plugins: [
 		aurelia({
@@ -112,7 +116,7 @@ const storybookProjectFor = ({
 			...(tags ? { tags } : {}),
 			// Tells a story which motion preference this project means to emulate,
 			// so a story can fail when the browser context does not match it.
-			initialGlobals: { reducedMotion },
+			initialGlobals: { reducedMotion, moreContrast },
 		}),
 	],
 	resolve: {
@@ -150,9 +154,12 @@ const storybookProjectFor = ({
 		browser: {
 			enabled: true,
 			headless: true,
-			provider: playwright(
-				reducedMotion ? { contextOptions: { reducedMotion: 'reduce' } } : {},
-			),
+			provider: playwright({
+				contextOptions: {
+					...(reducedMotion ? { reducedMotion: 'reduce' as const } : {}),
+					...(moreContrast ? { contrast: 'more' as const } : {}),
+				},
+			}),
 			instances: [{ browser: 'chromium' }],
 			commands: { parkPointer, pressAndHold, releasePointer, swipeSideways },
 			// One comparison for every visual baseline. pixelmatch's default
@@ -182,6 +189,12 @@ const storybookReducedMotionProject = storybookProjectFor({
 	tags: { include: ['reduced-motion'] },
 	reducedMotion: true,
 })
+const storybookMoreContrastProject = storybookProjectFor({
+	name: 'storybook-more-contrast',
+	tags: { include: ['more-contrast'] },
+	reducedMotion: false,
+	moreContrast: true,
+})
 
 export default defineConfig({
 	test: {
@@ -191,6 +204,7 @@ export default defineConfig({
 			scriptsProject,
 			storybookProject,
 			storybookReducedMotionProject,
+			storybookMoreContrastProject,
 		],
 		// Coverage is aggregated across projects at the root; the `unit` project is
 		// the only instrumented suite. Thresholds are preserved from the pre-Vitest-4
