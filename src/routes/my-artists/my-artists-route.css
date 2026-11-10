@@ -79,7 +79,10 @@
 		   subgrid, so each header label sits over its column of dots. */
 		.artists-table {
 			display: grid;
-			grid-template-columns: auto repeat(4, minmax(44px, 1fr));
+			grid-template-columns: auto repeat(
+					4,
+					minmax(var(--md-sys-target-size), 1fr)
+				);
 			grid-template-rows: auto minmax(0, 1fr);
 			flex: 1;
 
@@ -227,7 +230,9 @@
 			align-items: center;
 			justify-content: center;
 
-			min-block-size: 44px;
+			/* The label is the dot's tap target: at least 48 px square (its
+			   column is at least 48 px wide). */
+			min-block-size: var(--md-sys-target-size);
 		}
 
 		/* ── Hype dot (base) ── */
@@ -249,13 +254,6 @@
 				border-color var(--md-sys-motion-duration-short4) ease-out,
 				box-shadow var(--md-sys-motion-duration-short4) ease-out,
 				opacity var(--md-sys-motion-duration-short4) ease-out;
-
-			/* 44px min tap target */
-			&::before {
-				content: "";
-				position: absolute;
-				inset: -18px;
-			}
 
 			&[data-active="true"] {
 				inline-size: 14px;
@@ -326,9 +324,9 @@
 			align-items: center;
 			justify-content: center;
 
-			/* 44 px minimum tap target on both pointer types (WCAG 2.5.5). */
-			min-inline-size: 44px;
-			min-block-size: 44px;
+			/* The 48 px touch target on both pointer types. */
+			min-inline-size: var(--md-sys-target-size);
+			min-block-size: var(--md-sys-target-size);
 			border-radius: var(--md-sys-shape-corner-small);
 
 			/* Full colour at rest: hover and focus are the shared state layer

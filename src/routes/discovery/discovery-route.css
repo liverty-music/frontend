@@ -161,7 +161,7 @@
 			justify-self: center;
 
 			inline-size: calc(100% - 2 * var(--space-s));
-			padding: var(--space-2xs) var(--space-s);
+			padding: var(--space-3xs) var(--space-s);
 			border: 1px solid var(--_white-12);
 			border-radius: var(--md-sys-shape-corner-full);
 
@@ -188,6 +188,9 @@
 		   browser's, and the padding that sets the bar's height. */
 		.search-input {
 			flex: 1;
+
+			/* The 48 px touch target fills the bar's height. */
+			min-block-size: var(--md-sys-target-size);
 
 			padding-block: var(--space-2xs);
 			padding-inline: var(--space-xs);

@@ -8,6 +8,7 @@ import { CustomElement, Registration } from 'aurelia'
 import { expect, userEvent, waitFor } from 'storybook/test'
 import { expectAriaTree } from '../../../.storybook/aria'
 import { capturePixels, expectScreenshot } from '../../../.storybook/screenshot'
+import { expectTargets } from '../../../.storybook/target-size'
 import { PageHelp } from '../../components/page-help/page-help'
 import { SignupPromptBanner } from '../../components/signup-prompt-banner/signup-prompt-banner'
 import { StatePlaceholder } from '../../components/state-placeholder/state-placeholder'
@@ -330,5 +331,18 @@ export const Widths = {
 		for (const route of canvasElement.querySelectorAll('my-artists-route')) {
 			await expectDotsUnderLabels(route)
 		}
+		// At 320 px the four dots still take a 48 px tap each, side by side
+		// without overlap, and the artist name keeps room to be read.
+		const narrow = canvasElement.querySelector('my-artists-route')
+		if (!narrow) throw new Error('no route rendered')
+		const firstRow = narrow.querySelector<HTMLElement>(
+			'[data-artist-rows] .artist-row',
+		)
+		if (!firstRow) throw new Error('no artist row rendered')
+		// @spec components/infrastructure/fan/web/route/my-artists "Slider renders on each artist row"
+		// @spec components/infrastructure/fan/web/global/design-tokens "Neighbouring controls"
+		expectTargets(firstRow, '.hype-label')
+		const name = firstRow.querySelector('.artist-name-cell')
+		await expect(name?.getBoundingClientRect().width).toBeGreaterThanOrEqual(96)
 	},
 } satisfies Story

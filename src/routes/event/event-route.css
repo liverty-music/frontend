@@ -74,7 +74,7 @@
 		}
 
 		.event-follow {
-			min-block-size: 44px;
+			min-block-size: var(--md-sys-target-size);
 			padding-inline: var(--space-s);
 			border: 1px solid var(--color-brand-primary);
 			border-radius: var(--md-sys-shape-corner-medium);

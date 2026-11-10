@@ -199,7 +199,7 @@ test.describe('press acknowledgement', () => {
 				h: (el as HTMLElement).offsetHeight,
 			}))
 		const resting = await layoutSize()
-		expect(Math.min(resting.w, resting.h)).toBeGreaterThanOrEqual(44)
+		expect(Math.min(resting.w, resting.h)).toBeGreaterThanOrEqual(48)
 
 		await pressCentre(page, card)
 		await expect.poll(() => stateLayer(card)).toBeGreaterThan(0)

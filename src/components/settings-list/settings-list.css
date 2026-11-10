@@ -40,6 +40,7 @@
 			column-gap: var(--space-xs);
 			align-items: center;
 
+			min-block-size: var(--md-sys-target-size);
 			padding: var(--space-xs) var(--space-s);
 
 			/* Square, so the divider above a row runs straight to the card's
@@ -137,6 +138,9 @@
 		.settings-volume-slider {
 			cursor: pointer;
 			flex: 1;
+
+			/* The 48 px touch target; the track stays centred in it. */
+			block-size: var(--md-sys-target-size);
 		}
 
 		/* Full-width, centred — overrides the subgrid column tracks. */
@@ -190,6 +194,27 @@
 			align-items: flex-start;
 			min-inline-size: 0;
 			text-align: start;
+		}
+
+		/* The disclosure and the switch keep their size and take a 48 px tap
+		   through a transparent ::after, which reaches into the row's padding
+		   and stays clear of the 12 px gap between them. */
+		.settings-expand,
+		.settings-switch {
+			position: relative;
+		}
+
+		.settings-expand::after,
+		.settings-switch::after {
+			content: "";
+
+			position: absolute;
+			inset-block-start: 50%;
+			inset-inline-start: 50%;
+			translate: -50% -50%;
+
+			inline-size: max(100%, var(--md-sys-target-size));
+			block-size: max(100%, var(--md-sys-target-size));
 		}
 
 		/* Label + expand caret on one line, above the collapsible description. */

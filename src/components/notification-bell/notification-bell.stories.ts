@@ -5,6 +5,7 @@ import {
 } from '@aurelia/storybook'
 import { expect, waitFor, within } from 'storybook/test'
 import { hoverPointer } from '../../../.storybook/gestures'
+import { expectTargets } from '../../../.storybook/target-size'
 import { NotificationBell } from './notification-bell'
 
 const meta = {
@@ -33,6 +34,7 @@ export const NoUnread = {
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement)
 		await expect(canvas.queryByTestId('notification-bell-badge')).toBeNull()
+		expectTargets(canvasElement, 'button')
 		// Nothing unread: the outline bell.
 		await expect(
 			canvasElement.querySelector('[data-testid="notification-bell-icon"] svg'),

@@ -368,6 +368,7 @@ test.describe('ticket section layout', () => {
 		expect(layout.overflow).toBeLessThanOrEqual(0)
 		expect(layout.rows).toBeGreaterThan(1)
 		expect(layout.right).toBeLessThanOrEqual(320)
-		expect(layout.smallest).toBeGreaterThanOrEqual(44)
+		// @spec components/infrastructure/fan/web/route/dashboard "Canonical presentation kept"
+		expect(layout.smallest).toBeGreaterThanOrEqual(48)
 	})
 })

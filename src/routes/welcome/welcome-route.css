@@ -299,8 +299,23 @@
 			padding-block-start: var(--space-xs);
 		}
 
+		/* The language keeps its size and takes a 48 px tap through a
+		   transparent ::after; the 12 px gap keeps the two apart. */
 		.welcome-lang-label {
 			cursor: pointer;
+			position: relative;
+		}
+
+		.welcome-lang-label::after {
+			content: "";
+
+			position: absolute;
+			inset-block-start: 50%;
+			inset-inline-start: 50%;
+			translate: -50% -50%;
+
+			inline-size: max(100%, var(--md-sys-target-size));
+			block-size: max(100%, var(--md-sys-target-size));
 		}
 
 		.welcome-lang-text {

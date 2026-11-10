@@ -9,7 +9,7 @@
                    on a coloured surface (the snack bar)
    Every variant shares the shape, padding and label below, in one of two
    sizes (`data-size`):
-   - (none)        44px tall, 24px at the sides
+   - (none)        48px tall (the touch target), 24px at the sides
    - compact       the Material 3 extra-small button: 32px tall, 12px from
                    the container edge to the label, label-large
                    (https://m3.material.io/components/buttons/specs, token
@@ -37,7 +37,8 @@
 			align-items: center;
 			justify-content: center;
 
-			min-block-size: 2.75rem;
+			min-inline-size: var(--md-sys-target-size);
+			min-block-size: var(--md-sys-target-size);
 			padding-block: var(--space-2xs);
 			padding-inline: var(--space-m);
 			border: 2px solid transparent;

@@ -16,8 +16,8 @@
 			display: grid;
 			place-items: center;
 
-			/* 44px tap target minimum, 4 tabs fit a 360px viewport. */
-			min-block-size: 44px;
+			/* The 48 px touch target; four tabs fit a 360 px viewport. */
+			min-block-size: var(--md-sys-target-size);
 			padding-inline: var(--space-3xs);
 			border-radius: var(--md-sys-shape-corner-full);
 
