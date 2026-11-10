@@ -11,8 +11,8 @@
  * push delivery confirmation, account state changes) are emitted from the
  * backend through `backend/internal/usecase/analytics_events.go` and are NOT
  * listed here. Paired events such as `notification.requested` (FE) and
- * `notification.subscribed` (BE) intentionally appear in both catalogues to
- * measure the gap between user intent and server-confirmed outcome.
+ * `push_subscription.subscribed` (BE) intentionally appear in both catalogues
+ * to measure the gap between user intent and server-confirmed outcome.
  *
  * Type-safety contract:
  *
@@ -76,7 +76,7 @@ export type TicketLotteryEntryStartedProps = TicketChoiceProps
 
 /**
  * Confirming the lottery entry succeeded. Paired with the backend
- * `ticket.lottery.result` event.
+ * `lottery_entry.won` and `lottery_entry.lost` events.
  */
 export type TicketLotteryEntrySubmittedProps = TicketChoiceProps
 
