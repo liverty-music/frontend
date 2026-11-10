@@ -858,6 +858,10 @@ export const MonthJumpMoves = {
 		await settled()
 		await frames()
 		await expect(topKey()).toBe('2026-11-01')
+		// Back at the first loaded date the list is at its top again, and the
+		// capsule stays, with the next-month button the fan came back with.
+		await expect(scroll.scrollTop).toBe(0)
+		await expect(shownJumps(canvasElement)).toEqual(['next'])
 	},
 } satisfies Story
 

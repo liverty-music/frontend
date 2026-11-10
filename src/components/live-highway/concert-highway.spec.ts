@@ -272,6 +272,17 @@ describe('ConcertHighway', () => {
 			expect(replace).not.toHaveBeenCalled()
 		})
 
+		it('counts a scroll or a jump as the fan having moved the list', () => {
+			openAt(sut, months(['2026-11', 30], ['2026-12', 31]), '2026-11-01')
+			expect(sut.moved).toBe(false)
+			sut.jumpToMonth(1)
+			expect(sut.moved).toBe(true)
+
+			sut.moved = false
+			sut.onScrollEnd()
+			expect(sut.moved).toBe(true)
+		})
+
 		it('gives the cards of the new window their beams', () => {
 			const groups = months(['2026-11', 30], ['2026-12', 31]).map((g) => ({
 				...g,

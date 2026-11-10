@@ -123,6 +123,8 @@ test.describe('month jump', () => {
 			(k) => k.slice(0, 7) === from.slice(0, 7),
 		)
 		await expect.poll(() => topDate(page)).toBe(firstOfFrom)
+		// The fan can go forward again from there.
+		await expect(jump(page, 'next')).toBeVisible()
 		expect(await page.evaluate(() => history.length)).toBe(history)
 	})
 })

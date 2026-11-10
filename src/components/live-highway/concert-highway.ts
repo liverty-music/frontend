@@ -123,6 +123,14 @@ export class ConcertHighway {
 	public nextMonth: Date | null = null
 
 	/**
+	 * Whether the fan has scrolled the list or jumped since it was shown. The
+	 * stylesheet keeps the month-jump capsule hidden while the list is at its
+	 * top and this is false; once true, the capsule stays even back at the
+	 * top, where a previous-month jump to the first loaded date lands.
+	 */
+	public moved = false
+
+	/**
 	 * While a month jump scrolls, the window does not grow: growing above the
 	 * fan restores their place by writing the scroll position, which would
 	 * cancel the jump's smooth scroll. `endJump` lifts the pause.
@@ -193,6 +201,7 @@ export class ConcertHighway {
 		const target = this.monthTarget(top, step)
 		if (!target) return
 
+		this.moved = true
 		this.pauseGrowth()
 		this.openWindow(target.dateKey)
 		// The beams follow the built cards, as after any change of the window.
@@ -214,6 +223,7 @@ export class ConcertHighway {
 
 	/** A scroll of the timetable ended (`scrollend` on the scroll container). */
 	public onScrollEnd(): void {
+		this.moved = true
 		if (this.jumpArmed) this.endJump?.()
 		this.updateMonthJump(this.scrollAnchor?.dateKey ?? null)
 	}

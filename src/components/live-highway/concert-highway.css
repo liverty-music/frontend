@@ -181,11 +181,13 @@
 			display: none;
 		}
 
-		/* Not before the fan has scrolled the list. A browser without
-		   scroll-state queries never matches this, so it shows the capsule
-		   from the start. */
+		/* Not before the fan has scrolled the list: at its top, until the
+		   first scroll or jump (`data-moved`). A jump back to the first loaded
+		   date also ends at the top, and the capsule stays there. A browser
+		   without scroll-state queries never matches this, so it shows the
+		   capsule from the start. */
 		@container timetable not scroll-state(scrollable: top) {
-			.month-jump {
+			.month-jump[data-moved="false"] {
 				display: none;
 			}
 		}
