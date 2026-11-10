@@ -1,6 +1,6 @@
-<import from="./lottery-sale-editor-route.css"></import>
+<import from="../sale-editor/sale-form.css"></import>
 
-<section class="lottery-editor">
+<section class="sale-editor">
   <h1 class="page-title">${(isChange ? 'lotteryEditor.changeTitle' : 'lotteryEditor.newTitle') & t}</h1>
   <p if.bind="event" class="context">
     ${title} · <template if.bind="start">${start | jstDateTime}</template> · ${venue}
