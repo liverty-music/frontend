@@ -301,6 +301,20 @@ test('a fan opens a ticket, is admitted while showing the code, sees the stamp p
 	const cards = page.getByTestId('tickets-card')
 	await expect(cards).toHaveCount(2, { timeout: 30_000 })
 
+	// The list offers the code as before the virtual ticket ("iPhone").
+	await page
+		.locator('.tickets-event')
+		.getByRole('button', { name: '入場用QRコードを表示' })
+		.click()
+	await expect(page.locator('.tickets-code-image')).toBeVisible({
+		timeout: 15_000,
+	})
+	await page
+		.locator('.tickets-code')
+		.getByRole('button', { name: '閉じる' })
+		.click()
+	await expect(page.locator('.tickets-code-image')).toHaveCount(0)
+
 	// Tap the first ticket: its virtual ticket opens with the cover.
 	await cards.first().locator('dl').click()
 	const sheet = page.getByTestId('tickets-virtual')

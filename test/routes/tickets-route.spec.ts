@@ -14,7 +14,12 @@ import {
 import { create } from '@bufbuild/protobuf'
 import { timestampFromDate } from '@bufbuild/protobuf/wkt'
 import { Code, ConnectError } from '@connectrpc/connect'
-import { CustomElement, Registration } from 'aurelia'
+import {
+	CustomElement,
+	type IContainer,
+	IEventAggregator,
+	Registration,
+} from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
 	decodeAdmissionCode,
@@ -45,6 +50,7 @@ import {
 import { AdmissionStamp } from '../../src/routes/tickets/virtual-ticket/admission-stamp'
 import { IShareImage } from '../../src/routes/tickets/virtual-ticket/share-image'
 import { VirtualTicket } from '../../src/routes/tickets/virtual-ticket/virtual-ticket'
+import { SignedOut } from '../../src/services/events/signed-out'
 import { ITicketWallet, TicketWallet } from '../../src/services/ticket-wallet'
 import { IUserStore } from '../../src/services/user-store'
 import { createTestContainer } from '../helpers/create-container'
@@ -205,8 +211,11 @@ describe('TicketsRoute', () => {
 	}
 
 	/** A fresh screen on the same device (same storage). */
+	/** The container of the screen built last (its app-wide services). */
+	let container: IContainer
+
 	function build(): TicketsRoute {
-		const container = createTestContainer(
+		container = createTestContainer(
 			Registration.instance(ITicketRpcClient, ticketClient),
 			Registration.instance(IWalletPublicKeyRpcClient, keyClient),
 			Registration.instance(IConcertRpcClient, concertClient),
@@ -1054,6 +1063,32 @@ describe('TicketsRoute', () => {
 			sut.closeCode()
 		})
 
+		it('opens the virtual ticket with the stamp at rest when admitted with reduced motion', async () => {
+			// @spec components/infrastructure/fan/web/route/tickets "Reduced motion"
+			vi.spyOn(window, 'matchMedia').mockImplementation(
+				(query: string) =>
+					({
+						matches: query.includes('reduce'),
+						media: query,
+					}) as MediaQueryList,
+			)
+			ticketClient.list.mockResolvedValue([protoTicket(1)])
+			const { fixture, sut, $ } = await render()
+			sut.openCode(sut.groups[0])
+			await currentCode(sut)
+
+			await nextPoll([protoTicket(1, { admitted: jst(10, 12, 0, 3) })])
+			await vi.waitFor(() => expect(sut.isTicketOpen).toBe(true))
+			await tasksSettled()
+
+			expect(sut.isCodeOpen).toBe(false)
+			const stamp = $('virtual-ticket-stamp')
+			expect(stamp?.getAttribute('data-stamp')).toBe('rest')
+			expect(stamp?.textContent).toContain('入場済')
+			vi.restoreAllMocks()
+			await fixture.stop(true)
+		})
+
 		it('presses the stamp the first time a ticket admitted elsewhere is opened, and only then', async () => {
 			// @spec components/infrastructure/fan/web/route/tickets "Admitted without the code on screen"
 			// @spec components/infrastructure/fan/web/route/tickets "Opened again"
@@ -1083,14 +1118,23 @@ describe('TicketsRoute', () => {
 			ticketClient.list.mockResolvedValue([
 				protoTicket(1, { admitted: jst(10, 11, 30) }),
 			])
-			storage.stampedIds.add(ticketId(1))
 			const sut = await open()
 			await sut.openTicket(sut.groups[0], sut.groups[0].tickets[0])
-			expect(sut.pressStamp).toBe(false)
-
-			await storage.clear()
-			await sut.openTicket(sut.groups[0], sut.groups[0].tickets[0])
 			expect(sut.pressStamp).toBe(true)
+			sut.onStampPressed()
+			await vi.waitFor(() =>
+				expect(storage.stampedIds.has(ticketId(1))).toBe(true),
+			)
+
+			// Sign-out, as the app publishes it.
+			container.get(IEventAggregator).publish(new SignedOut())
+			await vi.waitFor(() => expect(storage.stampedIds.size).toBe(0))
+			sut.detaching()
+
+			// Signed in again on the same device.
+			const again = await open()
+			await again.openTicket(again.groups[0], again.groups[0].tickets[0])
+			expect(again.pressStamp).toBe(true)
 		})
 
 		it('shares the open face, and says so when the image cannot be made', async () => {

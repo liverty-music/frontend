@@ -95,9 +95,10 @@ export class ShareImage {
 	}
 }
 
-export const IShareImage = DI.createInterface<ShareImage>('IShareImage', (x) =>
+export const IShareImage = DI.createInterface<IShareImage>('IShareImage', (x) =>
 	x.singleton(ShareImage),
 )
+export interface IShareImage extends ShareImage {}
 
 // ── Browser implementation ─────────────────────────────────────────────────
 
