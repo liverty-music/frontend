@@ -194,6 +194,16 @@ const snack = (page: Page, text: string) =>
 /** Open the detail sheet of the concert with this venue name. */
 async function openSheet(page: Page, venue: string) {
 	await page.locator('[data-live-card]').first().waitFor({ timeout: 30_000 })
+	// The cards deal in with a transform; a click while one is still moving
+	// can miss it, so let every deal-in finish first.
+	await page.evaluate(() =>
+		Promise.all(
+			document
+				.getAnimations()
+				.filter((a) => (a as CSSAnimation).animationName === 'deal-in')
+				.map((a) => a.finished),
+		),
+	)
 	await page
 		.locator('[data-live-card]')
 		.filter({ hasText: ARTIST.name })
