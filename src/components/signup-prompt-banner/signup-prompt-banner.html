@@ -1,10 +1,9 @@
-<import from="./signup-prompt-banner.css"></import>
-
 <!-- Persistent for guest users until they complete signup. Per the
      signup-prompt-banner capability spec ("No dismiss control" scenario), the
      banner offers no UI affordance to dismiss — visibility is controlled
-     entirely by the host page via the `visible` bindable. -->
-<aside if.bind="visible" aria-label="Signup prompt" class="[ signup-banner ]">
-  <span class="signup-banner-message">${message}</span>
-  <button class="[ button signup-banner-action ] [ state-layer ]" click.trigger="onSignup()" t="signupBanner.cta"></button>
+     entirely by the host page via the `visible` bindable. The look is the
+     shared bottom banner (src/styles/bottom-banner.css). -->
+<aside if.bind="visible" aria-label="Signup prompt" class="[ bottom-banner ]">
+  <span class="[ bottom-banner-message ]">${message}</span>
+  <button class="[ button bottom-banner-action ] [ state-layer ]" data-size="compact" click.trigger="onSignup()" t="signupBanner.cta"></button>
 </aside>

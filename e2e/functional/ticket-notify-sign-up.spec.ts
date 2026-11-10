@@ -297,7 +297,9 @@ test.describe('a guest request for ticket sale notifications survives sign-up', 
 		await page.unroute(`${OIDC_AUTHORITY}/oauth/v2/authorize**`)
 		await mockIdentityProvider(page)
 		await page.goto('/dashboard')
-		await page.locator('.signup-banner-action').click({ timeout: 30_000 })
+		await page
+			.locator('signup-prompt-banner .bottom-banner-action')
+			.click({ timeout: 30_000 })
 		await page.waitForURL((url) => url.pathname === '/dashboard', {
 			timeout: 30_000,
 		})

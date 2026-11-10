@@ -45,20 +45,19 @@ export const Visible = {
 		}),
 	play: async ({ canvasElement, args }) => {
 		const canvas = within(canvasElement)
-		const host = canvasElement.querySelector<HTMLElement>(
-			'signup-prompt-banner',
+		const surface = canvasElement.querySelector<HTMLElement>(
+			'signup-prompt-banner .bottom-banner',
 		)
-		const surface = canvasElement.querySelector<HTMLElement>('.signup-banner')
 		const message = canvasElement.querySelector<HTMLElement>(
-			'.signup-banner-message',
+			'signup-prompt-banner .bottom-banner-message',
 		)
-		if (!host || !surface || !message) throw new Error('no banner')
+		if (!surface || !message) throw new Error('no banner')
 		const action = canvas.getByRole('button', { name: ja.signupBanner.cta })
 
 		// @spec components/infrastructure/fan/web/global/signup-prompt-banner "Component renders consistently"
 		await expect(message.textContent).toBe(args.message)
-		await expect(getComputedStyle(host).position).toBe('fixed')
-		await expectBannerOffset(host)
+		await expect(getComputedStyle(surface).position).toBe('fixed')
+		await expectBannerOffset(surface)
 
 		// @spec components/infrastructure/fan/web/global/signup-prompt-banner "No dismiss control"
 		await expect(canvas.getAllByRole('button')).toEqual([action])

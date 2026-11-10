@@ -125,3 +125,60 @@ export const Catalog = {
 		await expectScreenshot(canvasElement, 'button-catalog')
 	},
 } satisfies Story
+
+/**
+ * The compact size (`data-size="compact"`), the Material 3 extra-small button
+ * (https://m3.material.io/components/buttons/specs, "Button - Size - Xsmall"):
+ * 32px tall, the label 12px from the container's edge, label-large, and a
+ * 48px tap target around it. Filled, outlined and on-container, the three
+ * variants its users (bottom banner, settings row, snack bar) draw.
+ */
+export const Compact = {
+	render: () =>
+		defineAureliaStory({
+			template: `
+				<div style="display:flex; flex-direction:column; gap:0.5rem; padding:1rem; background:var(--md-sys-color-surface)">
+					<div style="display:flex; gap:0.75rem; align-items:center; padding:0.75rem">
+						<button type="button" class="[ button ] [ state-layer ]" data-size="compact">登録する</button>
+						<button type="button" class="[ button ] [ state-layer ]" data-size="compact" data-variant="outlined">再送する</button>
+					</div>
+					<div style="display:flex; gap:0.75rem; align-items:center; padding:0.75rem; background:linear-gradient(to right, var(--color-brand-primary), var(--color-brand-secondary))">
+						<button type="button" class="[ button ] [ state-layer ]" data-size="compact" data-variant="on-container">更新する</button>
+					</div>
+				</div>`,
+		}),
+	play: async ({ canvasElement }) => {
+		const label = document.createElement('span')
+		label.className = 'md-typescale-label-large'
+		canvasElement.append(label)
+		const labelLarge = getComputedStyle(label)
+		const [size, lineHeight, weight] = [
+			labelLarge.fontSize,
+			labelLarge.lineHeight,
+			labelLarge.fontWeight,
+		]
+		label.remove()
+		for (const el of canvasElement.querySelectorAll<HTMLElement>(
+			'.button[data-size="compact"]',
+		)) {
+			const style = getComputedStyle(el)
+			const box = el.getBoundingClientRect()
+			await expect(box.height).toBe(32)
+			// The label 12px from the container's edge: border + padding.
+			await expect(
+				Number.parseFloat(style.borderLeftWidth) +
+					Number.parseFloat(style.paddingLeft),
+			).toBe(12)
+			await expect(style.fontSize).toBe(size)
+			await expect(style.lineHeight).toBe(lineHeight)
+			await expect(style.fontWeight).toBe(weight)
+			await expect(style.borderTopLeftRadius).toBe('12px')
+			// The tap target: a 48px box centred on the button.
+			const target = getComputedStyle(el, '::after')
+			await expect(target.content).toBe('""')
+			await expect(Number.parseFloat(target.height)).toBe(48)
+			await expect(Number.parseFloat(target.width)).toBeGreaterThanOrEqual(48)
+		}
+		await expectScreenshot(canvasElement, 'button-compact')
+	},
+} satisfies Story

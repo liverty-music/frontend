@@ -77,7 +77,9 @@ test('@spec components/infrastructure/fan/web/global/page-help "Help-seen flags 
 	// Completing sign-up clears them.
 	const signUp = await freshGuest(browser)
 	await signUp.goto('/my-artists')
-	await signUp.locator('.signup-banner-action').click({ timeout: 30_000 })
+	await signUp
+		.locator('signup-prompt-banner .bottom-banner-action')
+		.click({ timeout: 30_000 })
 	await expect(signUp).toHaveURL(/\/dashboard/, { timeout: 30_000 })
 	expect(await helpSeen(signUp)).toEqual([null, null, null])
 	await signUp.context().close()

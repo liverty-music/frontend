@@ -110,7 +110,9 @@ function followFailingFor(ids: string[]): FanRpcAnswer {
 async function signUpFromMyArtists(page: Page): Promise<void> {
 	await mockIdentityProvider(page)
 	await page.goto('/my-artists')
-	await page.locator('.signup-banner-action').click({ timeout: 20_000 })
+	await page
+		.locator('signup-prompt-banner .bottom-banner-action')
+		.click({ timeout: 20_000 })
 	await expect(page).toHaveURL(/\/dashboard/, { timeout: 20_000 })
 }
 
@@ -629,7 +631,9 @@ test.describe('data merge on authentication', () => {
 		})
 		await mockIdentityProvider(page)
 		await page.goto('/my-artists')
-		await page.locator('.signup-banner-action').click({ timeout: 20_000 })
+		await page
+			.locator('signup-prompt-banner .bottom-banner-action')
+			.click({ timeout: 20_000 })
 
 		// Until Create completes the sign-in callback screen shows the loading
 		// indicator and does not navigate.

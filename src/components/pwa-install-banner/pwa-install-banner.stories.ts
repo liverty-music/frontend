@@ -62,7 +62,9 @@ export const Hidden = {
 		await expect(canvasElement.querySelector('pwa-install-banner')).not.toBe(
 			null,
 		)
-		await expect(canvasElement.querySelector('.pwa-banner')).toBe(null)
+		await expect(
+			canvasElement.querySelector('pwa-install-banner .bottom-banner'),
+		).toBe(null)
 		await expect(within(canvasElement).queryAllByRole('button')).toHaveLength(0)
 	},
 } satisfies Story
@@ -85,10 +87,13 @@ export const Visible = {
 		}),
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement)
-		const host = canvasElement.querySelector<HTMLElement>('pwa-install-banner')
-		const surface = canvasElement.querySelector<HTMLElement>('.pwa-banner')
-		const label = canvasElement.querySelector<HTMLElement>('.pwa-banner-label')
-		if (!host || !surface || !label) throw new Error('no banner')
+		const surface = canvasElement.querySelector<HTMLElement>(
+			'pwa-install-banner .bottom-banner',
+		)
+		const label = canvasElement.querySelector<HTMLElement>(
+			'pwa-install-banner .bottom-banner-message',
+		)
+		if (!surface || !label) throw new Error('no banner')
 		const t = ja.pwaInstallBanner
 		const action = canvas.getByRole('button', { name: t.cta })
 
@@ -99,10 +104,10 @@ export const Visible = {
 		await expect(label.textContent).toBe(t.label)
 
 		// @spec components/infrastructure/fan/web/global/pwa-install-banner "Banner is fixed at the bottom above the nav bar"
-		await expect(getComputedStyle(host).position).toBe('fixed')
-		await expectBannerOffset(host)
-		await expect(host.getBoundingClientRect().left).toBe(0)
-		await expect(host.getBoundingClientRect().width).toBe(
+		await expect(getComputedStyle(surface).position).toBe('fixed')
+		await expectBannerOffset(surface)
+		await expect(surface.getBoundingClientRect().left).toBe(0)
+		await expect(surface.getBoundingClientRect().width).toBe(
 			document.documentElement.clientWidth,
 		)
 

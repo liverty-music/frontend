@@ -282,7 +282,7 @@ test(`@spec ${STORY} "Guest taps follow"`, async ({ page }) => {
 	await cardOf(page, ARTISTS.kumamoto.name).click({ timeout: 15_000 })
 	await page.getByRole('button', { name: 'このアーティストをフォロー' }).click()
 
-	const banner = page.locator('.signup-banner')
+	const banner = page.locator('signup-prompt-banner .bottom-banner')
 	await expect(banner).toBeVisible()
 	// Docked on the navigation bar across the full width, as on every other
 	// screen — not anchored to Discovery's layout box.

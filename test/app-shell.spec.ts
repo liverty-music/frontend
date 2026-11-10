@@ -624,7 +624,8 @@ describe('app-shell', () => {
 	})
 
 	describe('install banner', () => {
-		const banner = () => host().querySelector('pwa-install-banner .pwa-banner')
+		const banner = () =>
+			host().querySelector('pwa-install-banner .bottom-banner')
 
 		async function renderAt(state: ShellState): Promise<void> {
 			await fixture.stop(true)

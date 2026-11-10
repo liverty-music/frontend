@@ -141,7 +141,7 @@ describe('PwaInstallBanner', () => {
 	describe('attention cue on each route', () => {
 		it('restarts the cue animations after a navigation completes', () => {
 			const cue = [fakeAnimation('banner-cue'), fakeAnimation('banner-cue')]
-			const entrance = fakeAnimation('pwa-banner-enter')
+			const entrance = fakeAnimation('bottom-banner-enter')
 			fakeElement.getAnimations = vi.fn(() => [
 				...cue,
 				entrance,
