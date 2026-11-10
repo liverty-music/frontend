@@ -310,7 +310,7 @@
 
 			<button
 				type="button"
-				class="[ button tickets-action ] [ pressable ]"
+				class="[ button tickets-action ] [ state-layer ]"
 				data-testid="tickets-virtual-code"
 				if.bind="canShowCode && openedTicket.state === 'not-entered' && offersCode(ticketGroup)"
 				click.trigger="openCodeFromTicket()"
@@ -318,7 +318,7 @@
 			></button>
 			<button
 				type="button"
-				class="[ button tickets-action ] [ pressable ]"
+				class="[ button tickets-action ] [ state-layer ]"
 				data-variant="outlined"
 				data-testid="tickets-virtual-share"
 				disabled.bind="sharing"
@@ -328,7 +328,7 @@
 			<output class="[ tickets-error ] [ md-typescale-body-medium ]" if.bind="shareFailed" t="tickets.virtual.shareFailed"></output>
 			<button
 				type="button"
-				class="[ button tickets-action ] [ pressable ]"
+				class="[ button tickets-action ] [ state-layer ]"
 				data-variant="outlined"
 				data-testid="tickets-virtual-list-for-resale"
 				if.bind="offersListing(openedTicket, listings, resaleByStock, offline)"
@@ -337,7 +337,7 @@
 			></button>
 			<button
 				type="button"
-				class="[ button tickets-action ] [ pressable ]"
+				class="[ button tickets-action ] [ state-layer ]"
 				data-variant="outlined"
 				data-testid="tickets-virtual-withdraw"
 				if.bind="shownState(openedTicket, listings) === 'listed' && !offline"
@@ -348,7 +348,7 @@
 			<output class="[ tickets-error ] [ md-typescale-body-medium ]" if.bind="resaleMessageFor(openedTicket, resaleMessage)" t.bind="resaleMessageFor(openedTicket, resaleMessage)"></output>
 			<button
 				type="button"
-				class="[ button tickets-action ] [ pressable ]"
+				class="[ button tickets-action ] [ state-layer ]"
 				data-variant="outlined"
 				click.trigger="closeTicket()"
 				t="tickets.virtual.close"
