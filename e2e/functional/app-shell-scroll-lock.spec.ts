@@ -280,7 +280,7 @@ test.describe('App shell scroll lock (guest)', () => {
 		await expect(header).toContainText(/near/i)
 		await expect(header).toContainText(/away/i)
 
-		// The rows deal in with a transform; measure the first row once its
+		// The cards deal in with a transform; measure the first row once its
 		// deal-in has settled (rows outside the view wait for theirs).
 		await page.evaluate(() =>
 			Promise.all(

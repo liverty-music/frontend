@@ -2,7 +2,7 @@ import { expect, type Page, test } from '../support/test'
 import { frames, openDashboard, scrollBy } from '../support/timetable'
 
 /**
- * The deal-in of the timetable's date rows on the dashboard. Chromium starts
+ * The deal-in of the timetable's concert cards on the dashboard. Chromium starts
  * it from a scroll trigger, time-based; WebKit (`webkit-shell`), which has no
  * scroll-triggered animations, ties the same motion to the scroll.
  */
@@ -13,16 +13,23 @@ const HIGHWAY = 'components/infrastructure/fan/web/global/live-highway'
 test.describe.configure({ timeout: 60_000 })
 test.use({ viewport: { width: 390, height: 800 } })
 
-interface LaneMotion {
+interface CardMotion {
+	/** The card's lane (0 HOME, 1 NEAR, 2 AWAY) and its place in the lane. */
+	lane: number
+	index: number
+	/** Deal-in animations on the card. */
+	count: number
 	delay: number
 	duration: number
 	currentTime: number
 	playState: string
+	/** Deal-in animations on anything in the row that is not a card. */
+	others: number
 }
 
 /**
  * The deal-in animations of the first row wholly inside the timetable's
- * scroll area, per lane (HOME, NEAR, AWAY), and that row's date.
+ * scroll area, one entry per concert card, and that row's date.
  */
 function rowInView(page: Page) {
 	return page.evaluate(() => {
@@ -37,18 +44,36 @@ function rowInView(page: Page) {
 			return r.top >= box.top && r.bottom <= box.bottom
 		})
 		if (!row) return null
-		const lanes = [...row.querySelectorAll<HTMLElement>('.lane')].map((lane) =>
-			lane
-				.getAnimations()
-				.filter((a) => (a as CSSAnimation).animationName === 'deal-in')
-				.map((a) => ({
-					delay: Number(a.effect?.getTiming().delay ?? 0),
-					duration: Number(a.effect?.getComputedTiming().duration ?? 0),
-					currentTime: Number(a.currentTime ?? 0),
-					playState: a.playState,
-				})),
+		const all = row
+			.getAnimations({ subtree: true })
+			.filter((a) => (a as CSSAnimation).animationName === 'deal-in')
+		const others = all.filter(
+			(a) =>
+				(a.effect as KeyframeEffect).target?.localName !== 'event-card' ||
+				(a.effect as KeyframeEffect).pseudoElement !== null,
+		).length
+		const cards = [...row.querySelectorAll<HTMLElement>('.lane')].flatMap(
+			(lane, laneAt) =>
+				[...lane.querySelectorAll<HTMLElement>('event-card')].map(
+					(card, index) => {
+						const mine = all.filter(
+							(a) => (a.effect as KeyframeEffect).target === card,
+						)
+						const a = mine[0]
+						return {
+							lane: laneAt,
+							index,
+							count: mine.length,
+							delay: Math.round(Number(a?.effect?.getTiming().delay ?? 0)),
+							duration: Number(a?.effect?.getComputedTiming().duration ?? 0),
+							currentTime: Number(a?.currentTime ?? 0),
+							playState: a?.playState ?? 'none',
+							others,
+						}
+					},
+				),
 		)
-		return { key: row.dataset.dateKey ?? '', lanes }
+		return { key: row.dataset.dateKey ?? '', cards }
 	})
 }
 
@@ -74,16 +99,21 @@ function settled(page: Page): Promise<void> {
 	)
 }
 
-/** A row that has just been dealt in: every lane running, early in its run. */
-function expectDealing(lanes: LaneMotion[][]): void {
-	expect(lanes.map((l) => l.length)).toEqual([1, 1, 1])
-	// HOME, then NEAR 100 ms and AWAY 200 ms later.
-	expect(lanes.map((l) => l[0].delay)).toEqual([0, 100, 200])
-	for (const [motion] of lanes) {
-		expect(motion.duration).toBe(800)
-		expect(motion.playState).toBe('running')
+/**
+ * A row that has just been dealt in: only its concert cards move, each
+ * running, early in its run, 100 ms after the card above it in its lane and
+ * 100 ms per lane (HOME, NEAR, AWAY).
+ */
+function expectDealing(cards: CardMotion[]): void {
+	expect(cards.length).toBeGreaterThan(0)
+	for (const card of cards) {
+		expect(card.others).toBe(0)
+		expect(card.count).toBe(1)
+		expect(card.delay).toBe((card.lane + card.index) * 100)
+		expect(card.duration).toBe(800)
+		expect(card.playState).toBe('running')
 		// Early in its run: before the end of its delay and 800 ms.
-		expect(motion.currentTime).toBeLessThan(motion.delay + 800)
+		expect(card.currentTime).toBeLessThan(card.delay + 800)
 	}
 }
 
@@ -95,7 +125,7 @@ test.describe('deal-in, scroll-triggered (Chromium)', () => {
 		await scrollBy(page, 1500)
 		const row = await rowInView(page)
 		if (!row) throw new Error('no row in view')
-		expectDealing(row.lanes)
+		expectDealing(row.cards)
 	})
 
 	test(`@spec ${HIGHWAY} "Fast scroll"`, async ({ page }) => {
@@ -104,15 +134,15 @@ test.describe('deal-in, scroll-triggered (Chromium)', () => {
 		await scrollBy(page, 1500)
 		const first = await rowInView(page)
 		if (!first) throw new Error('no row in view')
-		expectDealing(first.lanes)
+		expectDealing(first.cards)
 
 		// With no further scrolling, it runs on: its pace is time, not scroll.
 		await expect
-			.poll(async () => (await rowInView(page))?.lanes[2][0].currentTime ?? 0)
+			.poll(async () => (await rowInView(page))?.cards[0].currentTime ?? 0)
 			.toBeGreaterThan(300)
 		const later = await rowInView(page)
 		expect(later?.key).toBe(first.key)
-		expect(later?.lanes[2][0].playState).toBe('running')
+		expect(later?.cards[0].playState).toBe('running')
 	})
 
 	test(`@spec ${HIGHWAY} "Scrolling up after a month jump"`, async ({
@@ -135,7 +165,7 @@ test.describe('deal-in, scroll-triggered (Chromium)', () => {
 		const row = await rowInView(page)
 		if (!row || !before) throw new Error('no row in view')
 		expect(row.key < before.key).toBe(true)
-		expectDealing(row.lanes)
+		expectDealing(row.cards)
 	})
 
 	test(`@spec ${HIGHWAY} "A row comes back"`, async ({ page }) => {
@@ -144,7 +174,7 @@ test.describe('deal-in, scroll-triggered (Chromium)', () => {
 		const row = await rowInView(page)
 		if (!row) throw new Error('no row in view')
 		await expect
-			.poll(async () => (await rowInView(page))?.lanes[2][0].playState)
+			.poll(async () => (await rowInView(page))?.cards[0].playState)
 			.toBe('finished')
 
 		// Fully out of view, then back to the same place: dealt in again.
@@ -162,7 +192,7 @@ test.describe('deal-in, scroll-triggered (Chromium)', () => {
 		await scrollBy(page, place - (await scrollTop()))
 		const again = await rowInView(page)
 		expect(again?.key).toBe(row.key)
-		expectDealing(again?.lanes ?? [])
+		expectDealing(again?.cards ?? [])
 	})
 })
 
@@ -179,7 +209,7 @@ test.describe('deal-in, scroll-linked (no scroll triggers)', () => {
 		const row = await rowInView(page)
 		if (!row) throw new Error('no row in view')
 
-		/** The HOME lane's opacity and the row's top, relative to the list. */
+		/** The row's first card's opacity and the row's top, relative to the list. */
 		const state = () =>
 			page.evaluate((key) => {
 				const scroll = document.querySelector(
@@ -188,9 +218,9 @@ test.describe('deal-in, scroll-linked (no scroll triggers)', () => {
 				const g = [...scroll.querySelectorAll<HTMLElement>('.date-group')].find(
 					(n) => n.dataset.dateKey === key,
 				) as HTMLElement
-				const lane = g.querySelector('.lane') as HTMLElement
+				const card = g.querySelector('event-card') as HTMLElement
 				return {
-					opacity: Number(getComputedStyle(lane).opacity),
+					opacity: Number(getComputedStyle(card).opacity),
 					top:
 						g.getBoundingClientRect().top - scroll.getBoundingClientRect().top,
 					height: g.getBoundingClientRect().height,

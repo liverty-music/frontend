@@ -186,7 +186,7 @@ function misalignedLanes(page: Page, lanes: number) {
 		const heads = [
 			...host.querySelectorAll<HTMLElement>('.stage-header > span'),
 		]
-		// The layout box, without transforms: a row's lanes deal in with a
+		// The layout box, without transforms: a row's cards deal in with a
 		// transform, and rows outside the view wait at its first frame.
 		const box = (el: HTMLElement) => {
 			let left = 0

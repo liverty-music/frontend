@@ -146,8 +146,8 @@ function highwayStory(dateGroups: DateGroup[], hideAway = false) {
  * would hide.
  */
 /**
- * Wait until the rows in view have been dealt in. The deal-in moves the lanes
- * (a transform), so anything that measures where a lane or a card is reads it
+ * Wait until the rows in view have been dealt in. The deal-in moves the cards
+ * (a transform), so anything that measures where a card is reads it
  * once the rows are at rest. Rows out of view have not been triggered and are
  * not waited for.
  */
@@ -167,7 +167,7 @@ async function dealtIn(root: HTMLElement): Promise<void> {
 
 /**
  * An element's layout box, without transforms: its position summed up the
- * offset-parent chain. The deal-in moves the lanes with a transform, and rows
+ * offset-parent chain. The deal-in moves the cards with a transform, and rows
  * out of view hold its opening frame until they come into view, so a
  * transformed box says nothing about the columns.
  */
@@ -868,19 +868,43 @@ export const MonthJumpMoves = {
 } satisfies Story
 
 /**
+ * Rows for the deal-in: two cards on HOME, one on NEAR, two on AWAY, and
+ * every third row with an empty AWAY lane.
+ */
+const DEAL_GROUPS: DateGroup[] = Array.from({ length: 120 }, (_, i) => {
+	const d = new Date(Date.UTC(2026, 0, 1 + i))
+	const date = d.toISOString().slice(0, 10)
+	const at = `${date}T19:00:00+09:00`
+	return {
+		label: date,
+		dateKey: date,
+		isFirstOfMonth: d.getUTCDate() === 1,
+		monthSeparatorLabel: '',
+		home: [ev('VAUNDY', 'home', false, at), ev('YOASOBI', 'home', false, at)],
+		nearby: [ev('Aimer', 'nearby', false, at)],
+		away:
+			i % 3 === 2
+				? []
+				: [ev('LiSA', 'away', false, at), ev('Ado', 'away', false, at)],
+	}
+})
+
+/**
  * The deal-in of date rows. The story runs in both storybook projects and
  * asserts the motion that matches the browser's preference: with motion, each
- * row's lanes run one 800 ms animation, started 100 ms apart (HOME, NEAR,
- * AWAY) by the row coming into view; under reduced motion, none.
+ * concert card of a row runs one 800 ms animation when the row comes into
+ * view, started 100 ms after the card above it in its lane and 100 ms per
+ * lane (HOME, NEAR, AWAY); the lanes' frames and the empty-lane mark do not
+ * move. Under reduced motion, nothing moves.
  *
- * Also run on a grown window: `sibling-index()` counts only a row's lanes, so
- * rows added while scrolling get the same 0/100/200 ms steps as the first
- * ones (the removed reveal counted rows and capped every later row at the
- * same delay).
+ * Also run on a grown window: `sibling-index()` counts only the cards of one
+ * lane, so rows added while scrolling get the same steps as the first ones
+ * (the removed reveal counted rows and capped every later row at the same
+ * delay).
  */
 export const DealIn = {
 	tags: ['reduced-motion'],
-	render: () => highwayStory(LONG_GROUPS),
+	render: () => highwayStory(DEAL_GROUPS),
 	play: async ({ canvasElement, globals }) => {
 		const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches
 		if (import.meta.env.MODE === 'test') {
@@ -889,51 +913,103 @@ export const DealIn = {
 		const scroll = canvasElement.querySelector<HTMLElement>('.concert-scroll')
 		if (!scroll) throw new Error('concert-scroll not rendered')
 
-		/** The deal-in animations of the row at the top of the list. */
+		/** Every deal-in animation of a row, as its target and timing. */
 		const rowAnimations = (row: HTMLElement) =>
-			[...row.querySelectorAll<HTMLElement>('.lane')].map((lane) =>
-				lane
-					.getAnimations()
-					.filter((a) => (a as CSSAnimation).animationName === 'deal-in')
-					.map((a) => a.effect?.getComputedTiming()),
-			)
-		const visibleRow = () => {
+			row
+				.getAnimations({ subtree: true })
+				.filter((a) => (a as CSSAnimation).animationName === 'deal-in')
+				.map((a) => {
+					const effect = a.effect as KeyframeEffect
+					return {
+						target: effect.target as HTMLElement,
+						pseudo: effect.pseudoElement,
+						timing: effect.getComputedTiming(),
+					}
+				})
+		/**
+		 * The first row at or below the top of the list, which is in view and
+		 * has three filled lanes, and the next row with an empty lane (its
+		 * timing is set whether or not it has come into view yet).
+		 */
+		const rowsInView = () => {
 			const edge = scroll.getBoundingClientRect().top
-			const row = [
+			const rows = [
 				...scroll.querySelectorAll<HTMLElement>('.date-group[data-date-key]'),
-			].find((g) => g.getBoundingClientRect().top >= edge - 0.5)
-			if (!row) throw new Error('no row in view')
-			return row
+			].filter((g) => g.getBoundingClientRect().top >= edge - 0.5)
+			const full = rows.find((g) => !g.querySelector('[data-empty="true"]'))
+			const empty = rows.find((g) => g.querySelector('[data-empty="true"]'))
+			if (!full || !empty) throw new Error('rows not built')
+			return { full, empty }
 		}
 
-		const check = async (row: HTMLElement) => {
-			const lanes = rowAnimations(row)
+		const check = async (full: HTMLElement, empty: HTMLElement) => {
+			const all = [...rowAnimations(full), ...rowAnimations(empty)]
 			// @spec components/infrastructure/fan/web/global/live-highway "Reduced motion"
 			if (reduce) {
-				await expect(lanes.flat()).toEqual([])
+				await expect(all).toEqual([])
 				return
 			}
-			// @spec components/infrastructure/fan/web/global/live-highway "Scrolling down"
-			await expect(lanes.map((l) => l.length)).toEqual([1, 1, 1])
-			await expect(lanes.map((l) => l[0]?.delay)).toEqual([0, 100, 200])
-			await expect(lanes.map((l) => l[0]?.duration)).toEqual([800, 800, 800])
+			// Only the concert cards move: not the lanes, their frames or the
+			// empty-lane mark.
+			await expect(all.every((a) => a.target.localName === 'event-card')).toBe(
+				true,
+			)
+			await expect(all.every((a) => a.pseudo === null)).toBe(true)
 
-			// The row in view was triggered: it settles, fully shown, in place.
-			await new Promise((r) => setTimeout(r, 1100))
-			for (const lane of row.querySelectorAll<HTMLElement>('.lane')) {
-				await expect(getComputedStyle(lane).opacity).toBe('1')
+			// @spec components/infrastructure/fan/web/global/live-highway "Scrolling down"
+			// @spec components/infrastructure/fan/web/global/live-highway "Cards in one lane"
+			// Per lane (HOME, NEAR, AWAY), each card's start: one step per card
+			// down the lane, one step per lane.
+			const delays = (row: HTMLElement) =>
+				[...row.querySelectorAll<HTMLElement>('.lane')].map((lane) =>
+					[...lane.querySelectorAll<HTMLElement>('event-card')].map((card) => {
+						const a = rowAnimations(row).filter((x) => x.target === card)
+						return a.length === 1
+							? Math.round(Number(a[0].timing.delay))
+							: `${a.length} animations`
+					}),
+				)
+			await expect(delays(full)).toEqual([[0, 100], [100], [200, 300]])
+			await expect(delays(empty)).toEqual([[0, 100], [100], []])
+			for (const a of all) await expect(a.timing.duration).toBe(800)
+
+			// The cards turn in the row's perspective, not flat: at the first
+			// frame, the depth (translateZ) shrinks the card's box, which it
+			// would not if a lane flattened its cards.
+			const card = full.querySelector<HTMLElement>('event-card')
+			const lane = card?.parentElement
+			const motion = card
+				?.getAnimations()
+				.find((x) => (x as CSSAnimation).animationName === 'deal-in')
+			if (!card || !lane || !motion) throw new Error('no dealt card')
+			const at = motion.currentTime
+			motion.pause()
+			motion.currentTime = Number(motion.effect?.getTiming().delay ?? 0)
+			const inDepth = card.getBoundingClientRect().height
+			lane.style.transformStyle = 'flat'
+			const flat = card.getBoundingClientRect().height
+			lane.style.removeProperty('transform-style')
+			motion.currentTime = at
+			motion.play()
+			await expect(inDepth).toBeLessThan(flat * 0.9)
+
+			// The rows in view were triggered: they settle, fully shown, in place.
+			await new Promise((r) => setTimeout(r, 1300))
+			for (const card of full.querySelectorAll<HTMLElement>('event-card')) {
+				await expect(getComputedStyle(card).opacity).toBe('1')
 				await expect(
 					['none', 'matrix(1, 0, 0, 1, 0, 0)'].includes(
-						getComputedStyle(lane).transform,
+						getComputedStyle(card).transform,
 					),
 				).toBe(true)
 			}
 		}
 
 		await frames()
-		await check(visibleRow())
+		const first = rowsInView()
+		await check(first.full, first.empty)
 
-		// Grow the window by scrolling, then check a row added on the way.
+		// Grow the window by scrolling, then check rows added on the way.
 		for (let i = 1; i <= 6; i++) {
 			scroll.scrollTo({ top: i * scroll.clientHeight, behavior: 'instant' })
 			await frames()
@@ -941,6 +1017,7 @@ export const DealIn = {
 		await expect(
 			scroll.querySelectorAll('.date-group[data-date-key]').length,
 		).toBeGreaterThan(12)
-		await check(visibleRow())
+		const grown = rowsInView()
+		await check(grown.full, grown.empty)
 	},
 } satisfies Story

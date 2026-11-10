@@ -357,13 +357,13 @@ test.describe('Discovery swap tile', () => {
 		})
 		const scrolled = await scroll.evaluate((s) => s.scrollTop)
 
-		// Let the card's row finish dealing in: while its lane is still moving,
+		// Let the card finish dealing in: while it is still moving,
 		// Playwright scrolls the card into view before the click, which would
 		// move the list this test checks.
 		await cards.first().evaluate((card) =>
 			Promise.all(
 				card
-					.closest('.lane')
+					.closest('event-card')
 					?.getAnimations()
 					.map((a) => a.finished) ?? [],
 			),
