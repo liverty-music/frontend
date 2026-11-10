@@ -17,6 +17,8 @@
 @import "../../shared/styles/card.css";
 @import "../../shared/styles/icon-button.css";
 @import "../../shared/styles/menu.css";
+@import "../../shared/styles/state-placeholder.css";
 @import "./summary-list.css";
 @import "./status-label.css";
 @import "./text-link.css";
+@import "./bottom-banner.css";

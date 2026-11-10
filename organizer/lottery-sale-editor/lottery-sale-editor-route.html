@@ -1,20 +1,20 @@
-<import from="./lottery-sale-editor-route.css"></import>
+<import from="../sale-editor/sale-form.css"></import>
 
-<section class="lottery-editor">
+<section class="sale-editor">
   <h1 class="page-title">${(isChange ? 'lotteryEditor.changeTitle' : 'lotteryEditor.newTitle') & t}</h1>
   <p if.bind="event" class="context">
     ${title} · <template if.bind="start">${start | jstDateTime}</template> · ${venue}
   </p>
 
-  <div if.bind="state === 'notFound'" class="message" role="alert">
+  <div if.bind="state === 'notFound'" class="[ state-placeholder ]" role="alert">
     <p>${'lotteryEditor.notFound' & t}</p>
     <console-button variant="tonal" href.bind="salesHref">${'lotteryEditor.toSales' & t}</console-button>
   </div>
-  <div if.bind="state === 'error'" class="message" role="alert">
+  <div if.bind="state === 'error'" class="[ state-placeholder ]" role="alert">
     <p>${'lotteryEditor.loadFailed' & t}</p>
     <console-button variant="tonal" href.bind="salesHref">${'lotteryEditor.toSales' & t}</console-button>
   </div>
-  <div if.bind="state === 'opened'" class="message" role="alert">
+  <div if.bind="state === 'opened'" class="[ state-placeholder ]" role="alert">
     <p>${'lotteryEditor.openedWhileEditing' & t}</p>
     <console-button variant="tonal" href.bind="salesHref">${'lotteryEditor.toSales' & t}</console-button>
   </div>

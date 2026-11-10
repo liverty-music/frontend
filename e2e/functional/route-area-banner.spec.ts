@@ -35,7 +35,7 @@ async function routeAreaBottom(page: Page): Promise<number> {
 test(`@spec ${CAPABILITY} "Last row clears the banner"`, async ({ page }) => {
 	await seedSignedInFan(page, { installBanner: true })
 	await openShell(page, '/settings')
-	const banner = page.locator('.pwa-banner')
+	const banner = page.locator('pwa-install-banner .bottom-banner')
 	await expect(banner).toBeVisible()
 	const signOut = page.locator('.settings-sign-out')
 	await expect(signOut).toBeVisible()
@@ -65,7 +65,7 @@ test(`@spec ${CAPABILITY} "Empty state clears the banner and the FAB"`, async ({
 		route.fulfill({ status: 200, contentType: 'application/json', body: '{}' }),
 	)
 	await openShell(page, '/my-artists')
-	const banner = page.locator('.signup-banner')
+	const banner = page.locator('signup-prompt-banner .bottom-banner')
 	await expect(banner).toBeVisible()
 	const button = page.getByTestId('discover-link')
 	await expect(button).toBeVisible()
@@ -79,7 +79,7 @@ test(`@spec ${CAPABILITY} "No banner, no reserved space"`, async ({ page }) => {
 	await seedSignedInFan(page)
 	await openShell(page, '/settings')
 	await expect(page.locator('settings-route')).toBeVisible()
-	await expect(page.locator('.pwa-banner, .signup-banner')).toHaveCount(0)
+	await expect(page.locator('.bottom-banner')).toHaveCount(0)
 
 	const navTop = (await box(page.locator('bottom-nav-bar nav'))).y
 	expect(await routeAreaBottom(page)).toBeCloseTo(navTop, 0)

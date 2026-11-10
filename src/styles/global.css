@@ -23,11 +23,12 @@
 	/* Body text is body-large unless a template gives it another type style. */
 	:where(body) {
 		font-family: var(--md-sys-typescale-body-large-font);
-		font-weight: var(--md-sys-typescale-body-large-weight);
 		font-size: var(--md-sys-typescale-body-large-size);
+		font-weight: var(--md-sys-typescale-body-large-weight);
 		line-height: var(--md-sys-typescale-body-large-line-height);
 		color: var(--md-sys-color-on-surface);
 		letter-spacing: var(--md-sys-typescale-body-large-tracking);
+
 		background: var(--md-sys-color-surface);
 	}
 
@@ -150,7 +151,7 @@
 	   so the snack or the banner can sit directly above the bar. Both banners
 	   render their surface only while visible (if.bind). A flag on :root,
 	   because a rule inside @scope (fab-menu) cannot match :root. */
-	:where(:root:has(.snack-item:popover-open, .signup-banner, .pwa-banner)) {
+	:where(:root:has(.snack-item:popover-open, .bottom-banner)) {
 		--fab-sunk: 1;
 	}
 
@@ -176,7 +177,7 @@
 	/* While a bottom banner shows, its height is published for the route area
 	   (app-shell) and the snack bar. The banners are exactly this tall, so
 	   layout knows it in the frame the banner appears. */
-	:where(:root:has(.signup-banner, .pwa-banner)) {
+	:where(:root:has(.bottom-banner)) {
 		--bottom-banner-height: var(--bottom-banner-block-size);
 	}
 

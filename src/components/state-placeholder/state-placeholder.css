@@ -1,3 +1,6 @@
+/* The host centres its content in the space the page gives it. The icon and
+   the message take the shared empty-state look (`.state-placeholder`,
+   shared/styles/state-placeholder.css); this file owns the loading skeleton. */
 @layer block {
 	@scope (state-placeholder) {
 		:scope {
@@ -5,24 +8,6 @@
 			flex: 1;
 			align-items: center;
 			justify-content: center;
-		}
-
-		/* The window margin of a compact window keeps a long message off the
-		   screen edges. (The loading skeleton pads itself.) */
-		.state-center {
-			--stack-gap: var(--space-s);
-
-			align-items: center;
-			padding-inline: var(--space-s);
-			text-align: center;
-		}
-
-		/* Brand-accent color so the empty state reads as "waiting /
-		   promised" instead of "broken / forgotten". Drop-shadow was
-		   tried but blurred the clock outline into a solid disk, so we
-		   rely on color alone for visibility. */
-		.state-icon {
-			color: var(--color-brand-accent);
 		}
 
 		/* Loading variant: a stack of skeleton bars that mirrors a text list so

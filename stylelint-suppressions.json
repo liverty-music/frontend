@@ -19,7 +19,7 @@
   },
   "src/styles/button.css": {
     "declaration-property-custom-property-allowed-list": {
-      "count": 3
+      "count": 1
     }
   },
   "organizer/event/sales-tab/sales-tab.css": {
@@ -202,21 +202,11 @@
       "count": 1
     }
   },
-  "src/components/pwa-install-banner/pwa-install-banner.css": {
-    "cube/block-max-lines": {
-      "count": 1
-    }
-  },
   "src/components/settings-list/settings-list.css": {
     "cube/block-max-lines": {
       "count": 1
     },
     "declaration-property-custom-property-allowed-list": {
-      "count": 1
-    }
-  },
-  "src/components/signup-prompt-banner/signup-prompt-banner.css": {
-    "cube/block-max-lines": {
       "count": 1
     }
   },

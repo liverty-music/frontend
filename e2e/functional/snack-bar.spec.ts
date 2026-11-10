@@ -508,7 +508,7 @@ test.describe('Snack placement above the navigation', () => {
 		await page.waitForURL('**/my-artists')
 		await expect(page.locator('pwa-install-banner')).toBeAttached()
 		await expect(page.locator('signup-prompt-banner')).toBeAttached()
-		await expect(page.locator('.pwa-banner, .signup-banner')).toHaveCount(0)
+		await expect(page.locator('.bottom-banner')).toHaveCount(0)
 		await publishSnackDirect(page, 'Saved', 'info', 10_000)
 
 		const gap =
@@ -518,11 +518,13 @@ test.describe('Snack placement above the navigation', () => {
 
 	test(`@spec ${SNACK_CAPABILITY} "A banner is visible"`, async ({ page }) => {
 		await bootSignedIn(page, 'visible')
-		await expect(page.locator('.pwa-banner')).toBeVisible()
+		await expect(
+			page.locator('pwa-install-banner .bottom-banner'),
+		).toBeVisible()
 		await waitSettled(page, 'pwa-install-banner')
 		await publishSnackDirect(page, 'Saved', 'info', 10_000)
 
-		const bannerTop = await topOf(page, '.pwa-banner')
+		const bannerTop = await topOf(page, 'pwa-install-banner .bottom-banner')
 		const gap = bannerTop - (await openSnackBottom(page))
 		expect(gap).toBeCloseTo(await spaceS(page), 0)
 		// A positive gap means the snack covers no part of the banner.
@@ -540,7 +542,8 @@ test.describe('Snack placement above the navigation', () => {
 		await waitSettled(page, 'pwa-install-banner')
 		await publishSnackDirect(page, 'Saved', 'info', 10_000)
 		const onMyArtists =
-			(await topOf(page, '.pwa-banner')) - (await openSnackBottom(page))
+			(await topOf(page, 'pwa-install-banner .bottom-banner')) -
+			(await openSnackBottom(page))
 		expect(onMyArtists).toBeGreaterThan(0)
 	})
 

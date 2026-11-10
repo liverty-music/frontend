@@ -51,7 +51,7 @@
      concerts nearby on Discovery's All Nearby view. -->
 <state-placeholder if.bind="hasSettled && !loadError && showGuestEmptyState && !needsRegion" icon="clock">
   <div class="[ dashboard-empty ] [ stack flow ]">
-    <p t="dashboard.guestEmpty.title" class="[ dashboard-empty-title ] [ md-typescale-title-large ]"></p>
+    <p t="dashboard.guestEmpty.title" class="[ state-placeholder-title ] [ md-typescale-title-large ]"></p>
     <p t="dashboard.guestEmpty.subtitle" class="[ dashboard-empty-subtitle ] [ md-typescale-body-medium ]"></p>
     <div class="[ dashboard-empty-actions ] [ cluster ]">
       <a href="/discovery" t="dashboard.guestEmpty.cta" class="[ button ] [ state-layer ]" data-testid="discover-link"></a>
@@ -65,7 +65,7 @@
      exactly when this must NOT render. -->
 <state-placeholder if.bind="hasSettled && !loadError && !showGuestEmptyState && filteredDateGroups.length === 0" icon="clock">
   <div class="[ dashboard-empty ] [ stack flow ]">
-    <p t="dashboard.empty.title" class="[ dashboard-empty-title ] [ md-typescale-title-large ]"></p>
+    <p t="dashboard.empty.title" class="[ state-placeholder-title ] [ md-typescale-title-large ]"></p>
     <p t="dashboard.empty.subtitle" class="[ dashboard-empty-subtitle ] [ md-typescale-body-medium ]"></p>
     <div class="[ dashboard-empty-actions ] [ cluster ]">
       <a href="/discovery" t="dashboard.empty.discoverLink" class="[ button ] [ state-layer ]" data-testid="discover-link"></a>

@@ -27,15 +27,15 @@ interface Banner {
 }
 
 const INSTALL_BANNER: Banner = {
-	surface: '.pwa-banner',
-	message: '.pwa-banner-label',
-	action: '.pwa-banner-action',
+	surface: 'pwa-install-banner .bottom-banner',
+	message: 'pwa-install-banner .bottom-banner-message',
+	action: 'pwa-install-banner .bottom-banner-action',
 }
 
 const SIGNUP_BANNER: Banner = {
-	surface: '.signup-banner',
-	message: '.signup-banner-message',
-	action: '.signup-banner-action',
+	surface: 'signup-prompt-banner .bottom-banner',
+	message: 'signup-prompt-banner .bottom-banner-message',
+	action: 'signup-prompt-banner .bottom-banner-action',
 }
 
 /** A signed-in fan who has not installed the app, on Tickets (no FAB). */
@@ -64,7 +64,9 @@ async function openSignupBanner(page: Page, language: Language) {
 
 /**
  * Each of the message and the button label fits on one line with nothing
- * clipped, side by side, at one text size between 12px and 16px.
+ * clipped, side by side: the message at a size between 12px and 16px, the
+ * label at the compact button's label-large (14px, the Material 3
+ * extra-small button; src/styles/button.css).
  */
 async function expectFitsOneLine(page: Page, banner: Banner) {
 	// Measured once the web fonts are in: the button label's fallback font is
@@ -96,9 +98,16 @@ async function expectFitsOneLine(page: Page, banner: Banner) {
 	}
 	expect(fit.action.left).toBeGreaterThanOrEqual(fit.message.right)
 	expect(fit.action.middle).toBeCloseTo(fit.message.middle, 0)
-	expect(fit.action.fontSize).toBe(fit.message.fontSize)
+	expect(fit.action.fontSize).toBe(14)
 	expect(fit.message.fontSize).toBeGreaterThanOrEqual(12)
 	expect(fit.message.fontSize).toBeLessThanOrEqual(16)
+	// The message follows the banner's full width (4.2 %), not its padded
+	// content box, so a phone gets the size the one-line fit was tuned for.
+	const width = page.viewportSize()?.width ?? 0
+	expect(fit.message.fontSize).toBeCloseTo(
+		Math.min(16, Math.max(12, width * 0.042)),
+		1,
+	)
 }
 
 for (const width of WIDTHS) {

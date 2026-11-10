@@ -1,91 +1,12 @@
+/* The install banner's own rules: its guide sheet. The banner is the shared
+   bottom banner (src/styles/bottom-banner.css). */
 @layer block {
 	@scope (pwa-install-banner) {
-		:scope {
-			position: fixed;
-			inset-block-end: calc(
-				var(--bottom-nav-height) +
-				env(safe-area-inset-bottom, 0px)
-			);
-			inset-inline: 0;
-
-			/* The banner's width sizes its text (cqi), so the host is the query
-			   container; it spans the screen like the banner. */
-			container: bottom-banner / inline-size;
-		}
-
-		.pwa-banner {
-			/* One text size for the message and the button label, from the
-			   banner's width: 4.2cqi keeps the longest message and the button on
-			   one line at 320px, with room for the button's fallback font
-			   before the web font loads. Shared with
-			   signup-prompt-banner. */
-			--_banner-text: clamp(12px, 4.2cqi, 16px);
-
-			position: relative;
-
-			/* One row: the message takes the rest, the button its own width. */
-			display: grid;
-			grid-template-columns: minmax(0, 1fr) auto;
-			column-gap: var(--space-xs);
-			align-items: center;
-
-			/* Exactly the published banner height (tokens.css), which the
-			   route area and the snack bar clear. */
-			block-size: var(--bottom-banner-block-size);
-			padding-block: var(--space-xs);
-			padding-inline: var(--space-s);
-
-			/* The persistent-banner surface, shared with signup-prompt-banner:
-			   the base surface at 85% with a 2px brand line. A banner stays on
-			   screen, so it is not filled with the brand gradient of the
-			   transient snack bar. */
-			border-block-start: 2px solid;
-			border-image: linear-gradient(
-					to right,
-					var(--color-brand-primary),
-					var(--color-brand-secondary)
-				)
-				1;
-
-			background: oklch(from var(--md-sys-color-surface) l c h / 85%);
-			backdrop-filter: blur(12px);
-		}
-
 		/* Span bottom-sheet across all columns; its <dialog> uses top-layer. */
 		bottom-sheet {
 			overflow: visible;
 			grid-column: 1 / -1;
 			block-size: 0;
-		}
-
-		/* No ellipsis: a copy that no longer fits shows as clipped text, which
-		   the fit check catches. */
-		.pwa-banner-label {
-			overflow: hidden;
-
-			min-inline-size: 0;
-
-			/* stylelint-disable property-disallowed-list, cube/require-token-variables -- sized to the banner's width so the copy fits one line (ui-primitives, bottom banners); no type style is fluid */
-			font-weight: 500;
-			font-size: var(--_banner-text);
-			line-height: 1.6;
-			/* stylelint-enable property-disallowed-list, cube/require-token-variables */
-			color: var(--md-sys-color-on-surface);
-			white-space: nowrap;
-		}
-
-		/* The shared `button` (filled) owns the look; the snack's compact size
-		   hooks, with the banner's text size, keep the message its width. */
-		.pwa-banner-action {
-			--button-min-size: 2.25rem;
-			--button-padding-block: var(--space-3xs);
-			--button-padding-inline: var(--space-s);
-
-			/* The banner's own text size, the same as the message (ui-primitives). */
-			--button-font-size: var(--_banner-text);
-			--button-line-height: 1.1;
-
-			white-space: nowrap;
 		}
 
 		/* Guide sheet — manual install instructions */
@@ -129,77 +50,6 @@
 
 		.pwa-banner-sheet-action {
 			align-self: center;
-		}
-
-		@media (prefers-reduced-motion: no-preference) {
-			/* On the banner, not the host: the host stays mounted while the
-			   banner is hidden, and the entrance plays when the banner appears. */
-			.pwa-banner {
-				animation: pwa-banner-enter var(--md-sys-motion-duration-medium3)
-					var(--md-sys-motion-easing-emphasized-decelerate);
-			}
-
-			/* The attention cue: a light runs along the brand line, then across
-			   the button, every 12s, five times per route (the view model
-			   restarts it after each navigation). Both layers only paint a
-			   moving background over their own box, so nothing moves or resizes.
-			   The button's ::before is the shared state layer, so the cue takes
-			   its ::after (the busy spinner replaces it while the action runs). */
-			.pwa-banner::before,
-			.pwa-banner-action:not([data-busy])::after {
-				pointer-events: none;
-				content: "";
-
-				position: absolute;
-
-				background:
-					linear-gradient(
-						to right,
-						transparent,
-						color-mix(in oklch, var(--color-white) 70%, transparent),
-						transparent
-					)
-					-100% 0 / 50% 100% no-repeat;
-
-				animation: banner-cue 12s ease-in-out 5;
-			}
-
-			.pwa-banner::before {
-				inset-block-start: -2px;
-				inset-inline: 0;
-				block-size: 2px;
-			}
-
-			.pwa-banner-action:not([data-busy])::after {
-				inset: 0;
-				border-radius: inherit;
-				animation-delay: 1s;
-			}
-		}
-
-		/* The light crosses in the first ~9% of each 12s cycle, then rests out
-		   of view. Shared with signup-prompt-banner. */
-		@keyframes banner-cue {
-			0% {
-				background-position-x: -100%;
-			}
-
-			9%,
-			100% {
-				background-position-x: 200%;
-			}
-		}
-
-		@keyframes pwa-banner-enter {
-			from {
-				transform: translateY(100%);
-				opacity: 0;
-			}
-
-			to {
-				transform: translateY(0);
-				opacity: 1;
-			}
 		}
 	}
 }

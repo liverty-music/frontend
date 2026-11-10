@@ -1,12 +1,12 @@
 <import from="./concert-route.css"></import>
 
 <section class="concert">
-  <div if.bind="state === 'notFound'" class="message" role="alert">
-    <h1 class="page-title">${'concert.notFound' & t}</h1>
+  <div if.bind="state === 'notFound'" class="[ state-placeholder ]" role="alert">
+    <h1 class="[ page-title state-placeholder-title ]">${'concert.notFound' & t}</h1>
     <console-button variant="tonal" href.bind="concertsHref">${'concert.toConcerts' & t}</console-button>
   </div>
 
-  <div if.bind="state === 'error'" class="message" role="alert">
+  <div if.bind="state === 'error'" class="[ state-placeholder ]" role="alert">
     <p>${'concert.loadFailed' & t}</p>
     <console-button variant="tonal" click.trigger="load()">${'common.retry' & t}</console-button>
   </div>
@@ -38,7 +38,7 @@
         <section class="[ seat-types ] [ flow ]" aria-labelledby="concert-seat-types-heading" data-testid="seat-types">
           <h2 id="concert-seat-types-heading" class="[ section-title ] [ md-typescale-title-large ]">${'seatType.title' & t}</h2>
           <p class="note">${'seatType.note' & t}</p>
-          <div if.bind="seatTypeState === 'error'" class="message" role="alert">
+          <div if.bind="seatTypeState === 'error'" class="[ state-placeholder ]" role="alert">
             <p>${'seatType.loadFailed' & t}</p>
             <console-button variant="tonal" click.trigger="loadSeatTypes()">${'common.retry' & t}</console-button>
           </div>
@@ -55,7 +55,7 @@
                 <span if.bind="seatType.stocked" class="note">${'seatType.inUse' & t}</span>
               </li>
             </ul>
-            <p else class="message">${'seatType.empty' & t}</p>
+            <p else class="[ state-placeholder ]">${'seatType.empty' & t}</p>
 
             <form if.bind="canEditSeatTypes" class="seat-type-form" novalidate submit.trigger="false">
               <h3 class="[ form-title ] [ md-typescale-title-small ]">${'seatType.add' & t}</h3>

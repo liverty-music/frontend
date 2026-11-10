@@ -3,7 +3,8 @@
  * an ancestor: --snack-bar-container, --snack-bar-on-container,
  * --snack-bar-shadow, and --bottom-nav-height for the clearance above a
  * bottom navigation bar. The message is body-medium. The action button takes
- * the fan app's shared button (`button` block); an app without it styles
+ * the fan app's shared button (`button` block) at its compact size, so the
+ * message keeps the width of the row; an app without it styles
  * `.snack-action-btn` itself. The close button is the shared icon button
  * (`shared/styles/icon-button.css`) in the snack's text colour.
  */
@@ -170,15 +171,6 @@
 		   (on-container), or the organizer console's own rule. Only its place
 		   in the row is set here. */
 		.snack-action-btn {
-			/* Compact size of the fan app's shared button (button.css hooks),
-			   so the message keeps the width of the row. */
-			--button-min-size: 2.25rem;
-			--button-padding-block: var(--space-3xs);
-			--button-padding-inline: var(--space-s);
-			--button-font-size: var(--md-sys-typescale-label-medium-size);
-			--button-line-height: var(--md-sys-typescale-label-medium-line-height);
-			--button-tracking: var(--md-sys-typescale-label-medium-tracking);
-
 			flex-shrink: 0;
 		}
 

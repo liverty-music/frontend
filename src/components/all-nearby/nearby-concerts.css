@@ -38,7 +38,6 @@
 			--stack-gap: calc(var(--space-s) + var(--space-3xs));
 
 			align-items: center;
-			color: var(--md-sys-color-on-surface-variant);
 		}
 	}
 }

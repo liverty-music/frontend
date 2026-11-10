@@ -44,21 +44,15 @@
 		/* ── Empty state ──
 		   Title, subtitle and actions: the placeholder's own gap, plus a step
 		   more before the subtitle and the actions, each centred at its own
-		   width. */
+		   width. The colours are the placeholder's. */
 		.dashboard-empty {
 			--stack-gap: var(--space-s);
 
 			align-items: center;
 		}
 
-		.dashboard-empty-title {
-			color: var(--md-sys-color-on-surface-variant);
-		}
-
 		.dashboard-empty-subtitle {
 			--flow-space: var(--space-3xs);
-
-			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		/* Discovery and the concerts nearby, side by side (wrapping when narrow). */

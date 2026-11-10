@@ -282,11 +282,20 @@ test(`@spec ${STORY} "Guest taps follow"`, async ({ page }) => {
 	await cardOf(page, ARTISTS.kumamoto.name).click({ timeout: 15_000 })
 	await page.getByRole('button', { name: 'このアーティストをフォロー' }).click()
 
-	const banner = page.locator('.signup-banner')
+	const banner = page.locator('signup-prompt-banner .bottom-banner')
 	await expect(banner).toBeVisible()
 	// Docked on the navigation bar across the full width, as on every other
-	// screen — not anchored to Discovery's layout box.
-	const b = await page.locator('signup-prompt-banner').boundingBox()
+	// screen — not anchored to Discovery's layout box. Measured once the
+	// banner has slid in: its entrance moves it up from below.
+	await banner.evaluate((el) =>
+		Promise.all(
+			el
+				.getAnimations()
+				.filter((a) => (a as CSSAnimation).animationName !== 'banner-cue')
+				.map((a) => a.finished),
+		),
+	)
+	const b = await banner.boundingBox()
 	const nav = await page.locator('bottom-nav-bar nav').boundingBox()
 	expect(b && nav && Math.abs(b.y + b.height - nav.y)).toBeLessThanOrEqual(1)
 	expect(b?.x).toBe(0)

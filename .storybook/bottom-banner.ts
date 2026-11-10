@@ -34,9 +34,9 @@ export async function expectBannerSurface(surface: HTMLElement): Promise<void> {
 }
 
 /** The banner's bottom edge sits at the navigation bar's height (no safe area in tests). */
-export async function expectBannerOffset(host: HTMLElement): Promise<void> {
-	await expect(Number.parseFloat(getComputedStyle(host).bottom)).toBe(
-		resolveLength(host, 'var(--bottom-nav-height)'),
+export async function expectBannerOffset(surface: HTMLElement): Promise<void> {
+	await expect(Number.parseFloat(getComputedStyle(surface).bottom)).toBe(
+		resolveLength(surface, 'var(--bottom-nav-height)'),
 	)
 }
 
@@ -62,8 +62,10 @@ export async function expectOneRow(
 
 /**
  * The action: the filled button (the `primary` role with its white label at
- * 4.5:1 or more) at the snack's compact size, 36px tall, with the shared 12px
- * radius and bold label, and the message's text size, between 12px and 16px.
+ * 4.5:1 or more) at the compact size (`data-size="compact"`, the Material 3
+ * extra-small button): 32px tall with a 48px tap target, the shared 12px
+ * radius and the default button's label (label-large). The message keeps its
+ * own size, between 12px and 16px.
  */
 export async function expectCompactFilledButton(
 	action: HTMLElement,
@@ -78,14 +80,17 @@ export async function expectCompactFilledButton(
 	await expect(
 		contrast(composite(style.backgroundColor), composite(style.color)),
 	).toBeGreaterThanOrEqual(WCAG_AA)
-	await expect(action.getBoundingClientRect().height).toBe(36)
+	await expect(action.dataset.size).toBe('compact')
+	await expect(action.getBoundingClientRect().height).toBe(32)
+	await expect(
+		Number.parseFloat(getComputedStyle(action, '::after').height),
+	).toBe(48)
 	await expect(style.borderTopLeftRadius).toBe('12px')
-	// The shared buttons' one label weight (ui-primitives).
-	await expect(style.fontWeight).toBe(
-		defaultButtonLabel(action.parentElement ?? action).weight,
-	)
-	const size = Number.parseFloat(style.fontSize)
-	await expect(size).toBe(Number.parseFloat(getComputedStyle(message).fontSize))
+	// The shared buttons' one label (ui-primitives).
+	const label = defaultButtonLabel(action.parentElement ?? action)
+	await expect(style.fontWeight).toBe(label.weight)
+	await expect(Number.parseFloat(style.fontSize)).toBe(label.size)
+	const size = Number.parseFloat(getComputedStyle(message).fontSize)
 	await expect(size).toBeGreaterThanOrEqual(12)
 	await expect(size).toBeLessThanOrEqual(16)
 }
@@ -114,7 +119,7 @@ export async function expectBannerMessage(
 	}
 }
 
-/** The cue's animations on the banner: the line's (`::before`) and the CTA's (`::after`). */
+/** The cue's animations on the banner: the line's (`::before`) and the CTA's (its own background). */
 function cueAnimations(surface: HTMLElement): CSSAnimation[] {
 	return surface
 		.getAnimations({ subtree: true })
@@ -156,7 +161,7 @@ export async function expectBannerMotion(
 	await expect(targets).toEqual(
 		expect.arrayContaining([
 			[surface, '::before'],
-			[action, '::after'],
+			[action, null],
 		]),
 	)
 	for (const a of cue) {

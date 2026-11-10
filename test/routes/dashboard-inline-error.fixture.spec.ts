@@ -59,7 +59,7 @@ describe('dashboard timetable inline error', () => {
 		)
 		const host = fixture.appHost
 
-		expect(host.querySelector('.inline-error-message')?.textContent).toBe(
+		expect(host.querySelector('inline-error p')?.textContent).toBe(
 			'ライブの読み込みに失敗しました',
 		)
 		const retry = host.querySelector('button')
@@ -75,9 +75,9 @@ describe('dashboard timetable inline error', () => {
 	it('labels the retry button in English for a fan using English', async () => {
 		const { fixture } = await render(new Error('boom'), 'en')
 
-		expect(
-			fixture.appHost.querySelector('.inline-error-message')?.textContent,
-		).toBe('Failed to load live events')
+		expect(fixture.appHost.querySelector('inline-error p')?.textContent).toBe(
+			'Failed to load live events',
+		)
 		expect(fixture.appHost.querySelector('button')?.textContent).toBe('Retry')
 		expect(fixture.appHost.textContent).not.toContain('boom')
 		await fixture.stop(true)

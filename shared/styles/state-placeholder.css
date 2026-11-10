@@ -1,0 +1,38 @@
+/* The empty or error state both apps use: `class="[ state-placeholder ]"` on
+   the element that stands in for content that cannot be shown (an empty
+   list, a failed load, a page that does not exist). Its children, in order:
+   an optional icon, an optional title (`state-placeholder-title`, with its
+   type style in the template), the message, and an optional action.
+   - one centred column, 16px between the children, 48px above and below and
+     16px at the sides, so a long message keeps off the window edges
+   - icon and message `on-surface-variant`, title `on-surface`
+   Material 3 has no empty-state component (its content-design pages hold
+   none; m3.material.io/foundations/content-design/empty-states is a 404).
+   Material 2's "Empty states" (m2.material.io/design/communication/
+   empty-states.html) is the nearest guidance: a non-interactive image and a
+   tagline. The colours are the Material 3 roles for an icon, a heading and
+   supporting text.
+
+   The fan app's `<state-placeholder>` element (an icon by name, or a loading
+   skeleton) and `<inline-error>` are built on it; a fan route or a console
+   screen with no icon puts the class on its own element. The fan app imports
+   it from `src/styles/main.css`; the organizer console from
+   `organizer/styles/shared.css`. */
+@layer block {
+	@scope (.state-placeholder) {
+		:scope {
+			display: grid;
+			gap: var(--space-s);
+			justify-items: center;
+
+			padding: var(--space-xl) var(--space-s);
+
+			color: var(--md-sys-color-on-surface-variant);
+			text-align: center;
+		}
+
+		.state-placeholder-title {
+			color: var(--md-sys-color-on-surface);
+		}
+	}
+}

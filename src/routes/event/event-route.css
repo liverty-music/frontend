@@ -17,21 +17,9 @@
 			inline-size: 100%;
 		}
 
-		.event-status,
-		.event-empty {
+		.event-status {
 			color: var(--md-sys-color-on-surface-variant);
 			text-align: center;
-		}
-
-		.event-empty {
-			display: grid;
-			gap: var(--space-s);
-			justify-items: center;
-			padding-block: var(--space-xl);
-		}
-
-		.event-empty-title {
-			color: var(--md-sys-color-on-surface);
 		}
 
 		.event-cover {

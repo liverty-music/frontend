@@ -6,14 +6,14 @@
   <p if.bind="state === 'loading'" class="event-status" role="status" t="eventPage.loading"></p>
 
   <!-- No event page: identical for every reason (unknown, discovered, draft, unlisted). -->
-  <section if.bind="state === 'not-found'" class="event-empty" data-testid="event-not-found">
-    <h1 class="[ event-empty-title ] [ md-typescale-headline-small ]" t="eventPage.notFound.title"></h1>
+  <section if.bind="state === 'not-found'" class="[ state-placeholder ]" data-testid="event-not-found">
+    <h1 class="[ state-placeholder-title ] [ md-typescale-headline-small ]" t="eventPage.notFound.title"></h1>
     <p t="eventPage.notFound.body"></p>
     <a href="/dashboard" class="[ button ] [ state-layer ]" t="eventPage.notFound.toDashboard"></a>
   </section>
 
   <!-- Any other failure: retry -->
-  <div if.bind="state === 'error'" class="event-empty" data-testid="event-error">
+  <div if.bind="state === 'error'" class="[ state-placeholder ]" data-testid="event-error">
     <p t="eventPage.error.body"></p>
     <button type="button" class="[ button ] [ state-layer ]" click.trigger="retry()" t="eventPage.error.retry"></button>
   </div>

@@ -307,7 +307,7 @@ test.describe('Discovery swap tile', () => {
 	}) => {
 		await seedSignedInFan(page, { installBanner: true })
 		await page.goto('/discovery')
-		const banner = page.locator('.pwa-banner')
+		const banner = page.locator('pwa-install-banner .bottom-banner')
 		await expect(banner).toBeVisible({ timeout: 60_000 })
 		await expect(tile(page)).toBeVisible()
 		await settle(page, 'discovery-route')

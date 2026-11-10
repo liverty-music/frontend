@@ -621,7 +621,9 @@ test.describe('sinking while a bottom banner is visible', () => {
 
 	async function openWithBanner(page: Page): Promise<void> {
 		await openShell(page, '/dashboard')
-		await expect(page.locator('.pwa-banner')).toBeVisible()
+		await expect(
+			page.locator('pwa-install-banner .bottom-banner'),
+		).toBeVisible()
 		await settle(page, 'pwa-install-banner')
 		await settle(page, 'fab-menu')
 	}
@@ -632,7 +634,7 @@ test.describe('sinking while a bottom banner is visible', () => {
 		await openWithBanner(page)
 
 		const f = await expectSunk(page)
-		const b = await box(page.locator('.pwa-banner'))
+		const b = await box(page.locator('pwa-install-banner .bottom-banner'))
 		expect(intersects(f, b)).toBe(false)
 		// Within the bar, the FAB covers nothing above the banner.
 		expect(f.y).toBeGreaterThanOrEqual(b.y + b.height - 0.5)
@@ -674,7 +676,7 @@ test.describe('sinking while a bottom banner is visible', () => {
 		// @spec components/infrastructure/fan/web/global/snack-bar "The FAB stays sunk under a banner and a snack bar"
 		const f = await expectSunk(page)
 		const snack = await box(page.locator('.snack-item'))
-		const banner = await box(page.locator('.pwa-banner'))
+		const banner = await box(page.locator('pwa-install-banner .bottom-banner'))
 		// The snack sits a space-s step above the banner, covering neither.
 		expect(banner.y - (snack.y + snack.height)).toBeCloseTo(
 			await spaceS(page),
@@ -693,7 +695,9 @@ test.describe('sinking while a bottom banner is visible', () => {
 		// Confirming the install in the guide sheet removes the banner.
 		await page.getByTestId('pwa-install-banner-cta').click()
 		await page.getByTestId('pwa-install-banner-confirm').click()
-		await expect(page.locator('.pwa-banner')).toHaveCount(0)
+		await expect(page.locator('pwa-install-banner .bottom-banner')).toHaveCount(
+			0,
+		)
 		await settle(page, 'fab-menu')
 
 		const f = await box(fab(page))

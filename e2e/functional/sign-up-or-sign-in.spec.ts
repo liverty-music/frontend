@@ -77,7 +77,9 @@ test.describe('starts of sign-up and sign-in are reported', () => {
 		await page.goto('/dashboard')
 		await analyticsReady(events)
 
-		await page.locator('.signup-banner-action').click({ timeout: 20_000 })
+		await page
+			.locator('signup-prompt-banner .bottom-banner-action')
+			.click({ timeout: 20_000 })
 		const leftAt = await left
 
 		await expect
@@ -343,7 +345,9 @@ test.describe('sign-up and sign-in start only where the person chooses', () => {
 		const calls = await mockAccount(page, () => ({ body: { user } }))
 		await page.goto('/dashboard')
 
-		await page.locator('.signup-banner-action').click({ timeout: 20_000 })
+		await page
+			.locator('signup-prompt-banner .bottom-banner-action')
+			.click({ timeout: 20_000 })
 
 		await expect
 			.poll(() => callsOf(calls, 'UserService/Create').length, {
@@ -353,7 +357,9 @@ test.describe('sign-up and sign-in start only where the person chooses', () => {
 		await page.waitForURL((url) => url.pathname === '/dashboard', {
 			timeout: 30_000,
 		})
-		await expect(page.locator('.signup-banner-action')).toHaveCount(0)
+		await expect(
+			page.locator('signup-prompt-banner .bottom-banner-action'),
+		).toHaveCount(0)
 	})
 
 	test(`@spec ${STORY} "Sign-up from an event page returns to it"`, async ({
@@ -387,7 +393,9 @@ test.describe('sign-up and sign-in start only where the person chooses', () => {
 		})
 
 		await page.goto('/dashboard')
-		await expect(page.locator('.signup-banner-action')).toBeVisible({
+		await expect(
+			page.locator('signup-prompt-banner .bottom-banner-action'),
+		).toBeVisible({
 			timeout: 20_000,
 		})
 		// biome-ignore lint/suspicious/noPlaywrightWaitForTimeout: an absence check; a forced sign-up has no event to wait for
@@ -407,7 +415,9 @@ test.describe('sign-up and sign-in start only where the person chooses', () => {
 		)
 		await page.goto('/dashboard')
 
-		await page.locator('.signup-banner-action').click({ timeout: 20_000 })
+		await page
+			.locator('signup-prompt-banner .bottom-banner-action')
+			.click({ timeout: 20_000 })
 
 		// The authentication completes and the app opens, signed in.
 		await page.waitForURL((url) => !url.pathname.startsWith('/auth/'), {
@@ -433,7 +443,9 @@ test.describe('sign-up and sign-in start only where the person chooses', () => {
 		const calls = await mockAccount(page, () => ({ body: { user } }))
 		await page.goto('/dashboard')
 
-		await page.locator('.signup-banner-action').click({ timeout: 20_000 })
+		await page
+			.locator('signup-prompt-banner .bottom-banner-action')
+			.click({ timeout: 20_000 })
 
 		await page.waitForURL((url) => url.pathname === '/dashboard', {
 			timeout: 30_000,
@@ -443,6 +455,8 @@ test.describe('sign-up and sign-in start only where the person chooses', () => {
 		await expect(
 			page.locator('user-home-selector .selector-content'),
 		).toBeHidden()
-		await expect(page.locator('.signup-banner-action')).toHaveCount(0)
+		await expect(
+			page.locator('signup-prompt-banner .bottom-banner-action'),
+		).toHaveCount(0)
 	})
 })

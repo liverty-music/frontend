@@ -44,11 +44,5 @@
 		.explain {
 			max-inline-size: 65ch;
 		}
-
-		.message {
-			display: grid;
-			gap: var(--space-xs);
-			justify-items: start;
-		}
 	}
 }

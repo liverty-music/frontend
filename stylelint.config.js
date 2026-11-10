@@ -146,8 +146,10 @@ export default {
 				'shared/styles/card.css',
 				'src/styles/status-label.css',
 				'src/styles/text-link.css',
+				'src/styles/bottom-banner.css',
 				'shared/styles/icon-button.css',
 				'shared/styles/menu.css',
+				'shared/styles/state-placeholder.css',
 				'organizer/!(styles)/**/*.css',
 			],
 			rules: {

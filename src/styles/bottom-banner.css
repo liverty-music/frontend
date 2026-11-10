@@ -1,0 +1,151 @@
+/* The fan app's persistent bottom banner, shared by the install banner
+   (`pwa-install-banner`) and the signup prompt (`signup-prompt-banner`):
+   `<aside class="[ bottom-banner ]">` holding the message
+   (`bottom-banner-message`) and one action, the shared filled button at its
+   compact size: `class="[ button bottom-banner-action ] [ state-layer ]"
+   data-size="compact"`.
+   - place    fixed above the navigation bar, across the window, exactly
+              --bottom-banner-block-size tall (tokens.css), which the route
+              area and the snack bar clear (global.css publishes it while a
+              banner shows)
+   - layout   one row: the message takes the rest, the action its own width
+   - surface  the base surface at 85% with a 2px brand line. A banner stays on
+              screen, so it is not filled with the brand gradient of the
+              transient snack bar
+   - message  its size follows the banner's width (cqi), 12px to 16px, so the
+              copy and the action fit one line on a 320px window, with room
+              for the fallback font before the web font loads. No ellipsis: a
+              copy that no longer fits shows as clipped text, which the fit
+              check catches
+   - motion   the banner slides in when it appears; a light runs along the
+              brand line and then across the action every 12s, five times
+              (the install banner restarts it after each navigation). Neither
+              plays with reduced motion.
+   A component's own stylesheet adds only what is its own (the install
+   banner's guide sheet). */
+
+/* The banner's keyframes, named once for both banners. */
+@layer utility {
+	/* The light crosses in the first ~9% of each 12s cycle, then rests. */
+	@keyframes banner-cue {
+		0% {
+			background-position-x: -100%;
+		}
+
+		9%,
+		100% {
+			background-position-x: 200%;
+		}
+	}
+
+	@keyframes bottom-banner-enter {
+		from {
+			transform: translateY(100%);
+			opacity: 0;
+		}
+
+		to {
+			transform: translateY(0);
+			opacity: 1;
+		}
+	}
+}
+
+@layer block {
+	@scope (.bottom-banner) {
+		:scope {
+			position: fixed;
+			inset-block-end: calc(
+				var(--bottom-nav-height) +
+				env(safe-area-inset-bottom, 0px)
+			);
+			inset-inline: 0;
+
+			container: bottom-banner / inline-size;
+			display: grid;
+			grid-template-columns: minmax(0, 1fr) auto;
+			column-gap: var(--space-xs);
+			align-items: center;
+
+			block-size: var(--bottom-banner-block-size);
+			padding-block: var(--space-xs);
+			padding-inline: var(--space-s);
+			border-block-start: 2px solid;
+			border-image: linear-gradient(
+					to right,
+					var(--color-brand-primary),
+					var(--color-brand-secondary)
+				)
+				1;
+
+			background: oklch(from var(--md-sys-color-surface) l c h / 85%);
+			backdrop-filter: blur(12px);
+		}
+
+		.bottom-banner-message {
+			overflow: hidden;
+
+			min-inline-size: 0;
+
+			/* stylelint-disable property-disallowed-list, cube/require-token-variables -- sized to the banner's width so the copy fits one line (ui-primitives, bottom banners); no type style is fluid */
+
+			/* 4.2 % of the banner's full width: cqi reads the content box, so
+			   the banner's own side padding is added back. */
+			font-size: clamp(12px, calc(4.2cqi + 0.042 * 2 * var(--space-s)), 16px);
+			font-weight: 500;
+			line-height: 1.6;
+			/* stylelint-enable property-disallowed-list, cube/require-token-variables */
+			color: var(--md-sys-color-on-surface);
+			white-space: nowrap;
+		}
+
+		.bottom-banner-action {
+			white-space: nowrap;
+		}
+
+		@media (prefers-reduced-motion: no-preference) {
+			/* On the banner, not the host: the host stays mounted while the
+			   banner is hidden, and the entrance plays when the banner appears. */
+			:scope {
+				animation: bottom-banner-enter var(--md-sys-motion-duration-medium3)
+					var(--md-sys-motion-easing-emphasized-decelerate);
+			}
+
+			/* The cue only paints a moving background over its own box, so
+			   nothing moves or resizes: the banner's ::before on the line, and a
+			   background image over the action's fill (its ::before is the
+			   state layer, its ::after the tap target or the busy spinner).
+			   `:scope` lifts it above the button's closer `background`. A busy
+			   action shows its spinner instead of the cue. */
+			:scope::before {
+				pointer-events: none;
+				content: "";
+
+				position: absolute;
+				inset-block-start: -2px;
+				inset-inline: 0;
+
+				block-size: 2px;
+			}
+
+			:scope::before,
+			:scope .bottom-banner-action:not([data-busy]) {
+				background-image: linear-gradient(
+					to right,
+					transparent,
+					color-mix(in oklch, var(--color-white) 70%, transparent),
+					transparent
+				);
+				background-repeat: no-repeat;
+				background-position: -100% 0;
+				background-size: 50% 100%;
+
+				animation: banner-cue 12s ease-in-out 5;
+			}
+
+			:scope .bottom-banner-action:not([data-busy]) {
+				animation-delay: 1s;
+			}
+		}
+	}
+}

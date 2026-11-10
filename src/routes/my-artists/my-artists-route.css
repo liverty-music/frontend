@@ -23,9 +23,9 @@
 
 		/* The placeholder's message column fills the route and centres its
 		   content vertically. */
-		.state-center {
+		.state-placeholder {
 			flex: 1;
-			justify-content: center;
+			align-content: center;
 		}
 
 		/* Title, subtitle and action: the placeholder's own gap, plus a step
@@ -39,8 +39,6 @@
 
 		.empty-subtitle {
 			--flow-space: var(--space-3xs);
-
-			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.empty-action {

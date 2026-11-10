@@ -2,11 +2,11 @@
 <import from="../lottery-sale-editor/lottery-sale-editor-route"></import>
 <import from="../ticket-sale-editor/ticket-sale-editor-route"></import>
 
-<div if.bind="state === 'notFound'" class="message" role="alert">
+<div if.bind="state === 'notFound'" class="[ state-placeholder ]" role="alert">
   <p>${'lotteryEditor.notFound' & t}</p>
   <console-button variant="tonal" href.bind="salesHref">${'lotteryEditor.toSales' & t}</console-button>
 </div>
-<div if.bind="state === 'error'" class="message" role="alert">
+<div if.bind="state === 'error'" class="[ state-placeholder ]" role="alert">
   <p>${'lotteryEditor.loadFailed' & t}</p>
   <console-button variant="tonal" click.trigger="pick()">${'common.retry' & t}</console-button>
 </div>

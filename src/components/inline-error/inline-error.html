@@ -1,8 +1,8 @@
-<section class="[ inline-error-layout ] [ center ]">
-  <div class="[ inline-error-content ] [ stack ]">
-    <svg-icon name="info" size="xl" class="inline-error-icon"></svg-icon>
-    <p class="[ inline-error-message ] [ md-typescale-body-medium ]">${message}</p>
-  </div>
+<!-- The shared empty or error state (shared/styles/state-placeholder.css)
+     with the info icon and an optional retry. -->
+<section class="[ state-placeholder ]">
+  <svg-icon name="info" size="xl"></svg-icon>
+  <p class="[ md-typescale-body-medium ]">${message}</p>
   <button
     if.bind="retryAction"
     click.trigger="retry()"
