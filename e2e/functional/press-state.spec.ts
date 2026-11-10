@@ -136,13 +136,17 @@ test.describe('press acknowledgement', () => {
 	}) => {
 		const card = await openCard(page)
 		expect(await stateLayer(card)).toBe(0)
+		const radius = () =>
+			card.evaluate((el) => getComputedStyle(el).borderTopLeftRadius)
+		const restRadius = await radius()
 
 		await pressCentre(page, card)
 		await expect.poll(() => stateLayer(card)).toBeCloseTo(0.1, 5)
-		// Material 3 scales no pressed card.
+		// Material 3 scales no pressed card, and a card keeps its shape.
 		expect(await card.evaluate((el) => getComputedStyle(el).transform)).toBe(
 			'none',
 		)
+		expect(await radius()).toBe(restRadius)
 
 		await page.mouse.up()
 		await expect.poll(() => stateLayer(card)).toBe(0)

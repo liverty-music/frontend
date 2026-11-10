@@ -58,7 +58,8 @@ export const Hovered = {
 export const KeyboardFocused = {
 	render: () => defineAureliaStory({ template: '' }),
 	play: async ({ canvasElement }) => {
-		// @spec components/infrastructure/organizer/web/global/action-feedback "Keyboard focus"
+		// The focus ring half of action-feedback "Keyboard focus" is checked on
+		// the real button in console-button.stories.ts; this story checks the layer.
 		await expectKeyboardFocus(consoleShadowRoot(canvasElement))
 	},
 } satisfies Story
@@ -66,7 +67,8 @@ export const KeyboardFocused = {
 export const Pressed = {
 	render: () => defineAureliaStory({ template: '' }),
 	play: async ({ canvasElement }) => {
-		// @spec components/infrastructure/organizer/web/global/action-feedback "Pointer click"
+		// The no-ring-after-click half of action-feedback "Pointer click" is
+		// checked in console-button.stories.ts; this story checks the layer.
 		await expectPress(
 			consoleShadowRoot(canvasElement),
 			'[data-testid="state-layer-host"] [data-sample="press"]',

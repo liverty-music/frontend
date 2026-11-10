@@ -43,7 +43,8 @@ export const Hovered = {
 export const KeyboardFocused = {
 	render: () => defineAureliaStory({ template: STATE_LAYER_SAMPLES }),
 	play: async ({ canvasElement }) => {
-		// @spec components/infrastructure/fan/web/global/design-tokens "Keyboard focus uses focus-visible"
+		// The mouse half of design-tokens "Keyboard focus uses focus-visible" is
+		// checked in e2e/functional/state-layers.spec.ts.
 		await expectKeyboardFocus(canvasElement)
 	},
 } satisfies Story
