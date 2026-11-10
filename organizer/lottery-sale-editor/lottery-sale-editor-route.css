@@ -53,12 +53,6 @@
 			background: var(--md-sys-color-error-container);
 		}
 
-		.message {
-			display: grid;
-			gap: var(--space-xs);
-			justify-items: start;
-		}
-
 		/* The event's seat types the sale sells: name, then price and quantity.
 		   The padding is the space above the section's title. */
 		.tickets {

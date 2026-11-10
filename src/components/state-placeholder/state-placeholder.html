@@ -5,7 +5,8 @@
   <div repeat.for="row of rowList" class="[ skeleton-row ] [ skeleton ]"></div>
 </section>
 
-<section else class="[ state-center ] [ stack ]">
-  <svg-icon if.bind="icon" name.bind="icon" size="xl" class="state-icon"></svg-icon>
+<!-- The shared empty or error state (shared/styles/state-placeholder.css). -->
+<section else class="[ state-placeholder ]">
+  <svg-icon if.bind="icon" name.bind="icon" size="xl"></svg-icon>
   <au-slot></au-slot>
 </section>

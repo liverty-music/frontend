@@ -9,22 +9,5 @@
 			gap: var(--space-s);
 			padding-block-end: var(--_fab-room);
 		}
-
-		.message {
-			display: grid;
-			gap: var(--space-xs);
-			justify-items: start;
-
-			padding: var(--space-m) var(--space-s);
-			border-radius: var(--md-sys-shape-corner-medium);
-
-			color: var(--md-sys-color-on-surface-variant);
-
-			background: var(--md-sys-color-surface-container-low);
-		}
-
-		.message-title {
-			color: var(--md-sys-color-on-surface);
-		}
 	}
 }

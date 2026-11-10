@@ -87,6 +87,56 @@ export const Empty = {
 	},
 } satisfies Story
 
+/**
+ * The empty state a route draws: icon, title, message and an action. The
+ * shared block (`shared/styles/state-placeholder.css`) colours the icon and
+ * the message `on-surface-variant` and the title `on-surface`, centred.
+ */
+export const WithTitleAndAction = {
+	render: (args) =>
+		defineAureliaStory({
+			template: `
+				<state-placeholder icon.bind="icon">
+					<h2 class="[ state-placeholder-title ] [ md-typescale-title-large ]">まだフォローしているアーティストがいません</h2>
+					<p class="md-typescale-body-medium">アーティストを探してフォローすると、ここにライブが並びます</p>
+					<a href="#" class="[ button ] [ state-layer ]">アーティストを探す</a>
+				</state-placeholder>
+			`,
+			props: args,
+			register: [StatePlaceholder],
+		}),
+	args: { icon: 'music' },
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement)
+		const block = canvasElement.querySelector<HTMLElement>('.state-placeholder')
+		if (!block) throw new Error('no state-placeholder')
+		const role = (name: string) => {
+			const probe = document.createElement('span')
+			probe.style.color = `var(${name})`
+			block.append(probe)
+			const color = getComputedStyle(probe).color
+			probe.remove()
+			return color
+		}
+		const variant = role('--md-sys-color-on-surface-variant')
+		const icon = canvasElement.querySelector('svg-icon') as HTMLElement
+		await expect(getComputedStyle(icon).color).toBe(variant)
+		await expect(getComputedStyle(canvas.getByRole('heading')).color).toBe(
+			role('--md-sys-color-on-surface'),
+		)
+		await expect(
+			getComputedStyle(
+				canvas.getByText(
+					'アーティストを探してフォローすると、ここにライブが並びます',
+				),
+			).color,
+		).toBe(variant)
+		await expect(getComputedStyle(block).textAlign).toBe('center')
+		await expect(canvas.getByRole('link')).toBeInTheDocument()
+		await expectScreenshot(canvasElement, 'state-placeholder-title-action')
+	},
+} satisfies Story
+
 // Without an icon, only the projected content renders.
 export const NoIcon = {
 	render: (args) =>

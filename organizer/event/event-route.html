@@ -1,13 +1,13 @@
 <import from="./event-route.css"></import>
 
 <section class="event">
-  <div if.bind="page.state === 'notFound'" class="message" role="alert">
-    <h1 class="page-title">${'event.notFound' & t}</h1>
+  <div if.bind="page.state === 'notFound'" class="[ state-placeholder ]" role="alert">
+    <h1 class="[ page-title state-placeholder-title ]">${'event.notFound' & t}</h1>
     <console-button if.bind="page.concert" variant="tonal" href.bind="concertHref">${'event.toConcert' & t}</console-button>
     <console-button else variant="tonal" href.bind="concertsHref">${'concert.toConcerts' & t}</console-button>
   </div>
 
-  <div if.bind="page.state === 'error'" class="message" role="alert">
+  <div if.bind="page.state === 'error'" class="[ state-placeholder ]" role="alert">
     <p>${'event.loadFailed' & t}</p>
     <console-button variant="tonal" click.trigger="page.reload()">${'common.retry' & t}</console-button>
   </div>

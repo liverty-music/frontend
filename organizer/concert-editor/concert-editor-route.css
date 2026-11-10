@@ -180,11 +180,5 @@
 			display: grid;
 			gap: var(--space-3xs);
 		}
-
-		.message {
-			display: grid;
-			gap: var(--space-xs);
-			justify-items: start;
-		}
 	}
 }

@@ -62,7 +62,7 @@ describe('Component template compilation smoke tests', () => {
 			.deps(...sharedRegistrations, StatePlaceholder, SvgIcon)
 			.build().started
 
-		fixture.getBy('.state-center')
+		fixture.getBy('.state-placeholder')
 	})
 
 	it('BottomNavBar compiles and renders nav element', async () => {

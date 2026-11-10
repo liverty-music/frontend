@@ -43,11 +43,5 @@
 		.cancelled-note {
 			color: var(--md-sys-color-error);
 		}
-
-		.message {
-			display: grid;
-			gap: var(--space-xs);
-			justify-items: start;
-		}
 	}
 }

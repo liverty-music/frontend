@@ -12,7 +12,8 @@
 
 /* The reset, the compositions, the screen-reader utility, the state layer,
    the type styles and the blocks the fan app uses too (card, icon button,
-   menu), so a console component's template can use the classes. */
+   menu, the empty or error state), so a console component's template can
+   use the classes. */
 @import "../../shared/styles/reset.css";
 @import "../../shared/styles/compositions.css";
 @import "../../shared/styles/utilities.css";
@@ -21,6 +22,7 @@
 @import "../../shared/styles/card.css";
 @import "../../shared/styles/icon-button.css";
 @import "../../shared/styles/menu.css";
+@import "../../shared/styles/state-placeholder.css";
 
 @layer global {
 	/* Counts, prices, dates and times line up in columns: every digit in the

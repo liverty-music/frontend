@@ -71,11 +71,5 @@
 
 			background: var(--md-sys-color-error-container);
 		}
-
-		.message {
-			display: grid;
-			gap: var(--space-xs);
-			justify-items: start;
-		}
 	}
 }

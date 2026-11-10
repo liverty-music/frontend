@@ -129,12 +129,6 @@
 			}
 		}
 
-		.message {
-			display: grid;
-			gap: var(--space-xs);
-			justify-items: start;
-		}
-
 		/* Expanded window: the summary pane beside the dates. */
 		@container shell (width >= 840px) {
 			.panes {

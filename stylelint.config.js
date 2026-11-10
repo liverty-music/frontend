@@ -148,6 +148,7 @@ export default {
 				'src/styles/text-link.css',
 				'shared/styles/icon-button.css',
 				'shared/styles/menu.css',
+				'shared/styles/state-placeholder.css',
 				'organizer/!(styles)/**/*.css',
 			],
 			rules: {
