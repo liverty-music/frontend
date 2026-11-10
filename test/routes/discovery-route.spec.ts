@@ -1802,6 +1802,7 @@ describe('DiscoveryRoute', () => {
 			const start = vi.fn((cb: () => void) => {
 				cb()
 				return {
+					ready: Promise.resolve(),
 					finished: new Promise<void>((r) => {
 						finish = r
 					}),

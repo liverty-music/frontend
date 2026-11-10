@@ -301,6 +301,9 @@ export class MyArtistsRoute {
 		// Under reduced motion a global rule stops the animation (global.css).
 		document.documentElement.classList.add('vt-suppress-root')
 		const transition = document.startViewTransition(doRemove)
+		// The browser can skip the transition and reject `ready`; the row is
+		// still removed, without the animation.
+		void transition.ready.catch(() => {})
 		void transition.finished.finally(() => {
 			document.documentElement.classList.remove('vt-suppress-root')
 		})
