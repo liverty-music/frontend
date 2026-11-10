@@ -156,7 +156,32 @@ export class TicketWallet {
 		}
 	}
 
-	/** Remove the key pair, the entry-device state and the saved list. */
+	/**
+	 * The ids of the tickets whose admission stamp this device has played;
+	 * empty when they cannot be read. Never throws.
+	 */
+	public async stampedIds(): Promise<ReadonlySet<string>> {
+		try {
+			return await this.storage.getStampedIds()
+		} catch (err) {
+			this.logger.warn('Stamped tickets unavailable', { error: err })
+			return new Set()
+		}
+	}
+
+	/** Record that the ticket's admission stamp has been played. Never throws. */
+	public async markStamped(ticketId: string): Promise<void> {
+		try {
+			await this.storage.addStampedIds([ticketId])
+		} catch (err) {
+			this.logger.warn('Recording the stamp failed', { error: err })
+		}
+	}
+
+	/**
+	 * Remove the key pair, the entry-device state, the saved list and the
+	 * stamped ids.
+	 */
 	public async clear(): Promise<void> {
 		this.record = undefined
 		try {

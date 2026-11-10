@@ -1,0 +1,65 @@
+/* The admission stamp: a ring of red ink with 入場済 and the admit time,
+   blended into the face it sits on. */
+@layer block {
+	@scope (admission-stamp) {
+		:scope {
+			--_stamp: oklch(50% 0.2 25deg);
+			--_stamp-shadow: oklch(20% 0.05 25deg / 35%);
+			--_press: calc(var(--md-sys-motion-duration-long4) * 2.5);
+
+			position: absolute;
+			inset-block-end: var(--space-l);
+			inset-inline-end: var(--space-m);
+			display: block;
+		}
+
+		.admission-stamp {
+			transform: rotate(-12deg);
+
+			display: grid;
+			place-items: center;
+
+			padding: var(--space-xs) var(--space-s);
+			border: var(--space-3xs) double var(--_stamp);
+			border-radius: var(--md-sys-shape-corner-full);
+
+			color: var(--_stamp);
+
+			mix-blend-mode: multiply;
+		}
+
+		/* Pressed onto the face: it drops from 2.5x with a back-ease over
+		   380 ms, lands with a shadow that sinks into the paper, and ends at
+		   rest (1.5 s). The duration tokens are 0 ms with reduced motion, and
+		   the face then asks for the stamp at rest anyway. */
+		.admission-stamp[data-stamp="press"] {
+			animation: admission-stamp-press var(--_press) both;
+		}
+
+		@keyframes admission-stamp-press {
+			0% {
+				transform: rotate(-12deg) scale(2.5);
+				opacity: 0;
+				filter: drop-shadow(
+					0 var(--space-m) var(--space-s) var(--_stamp-shadow)
+				);
+				animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+			}
+
+			25% {
+				transform: rotate(-12deg) scale(1);
+				opacity: 1;
+				filter: drop-shadow(
+					0 var(--space-3xs) var(--space-3xs) var(--_stamp-shadow)
+				);
+				animation-timing-function: ease-out;
+			}
+
+			100% {
+				transform: rotate(-12deg) scale(1);
+				opacity: 1;
+				filter: none;
+			}
+		}
+	}
+}

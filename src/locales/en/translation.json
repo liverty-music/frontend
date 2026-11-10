@@ -539,6 +539,14 @@
 			"brightness": "Turn up your screen brightness so it scans easily.",
 			"who": "Tickets entering together",
 			"close": "Close"
+		},
+		"virtual": {
+			"title": "Virtual ticket",
+			"open": "View ticket {{n}} of {{title}} as a virtual ticket",
+			"stamp": "ADMITTED",
+			"share": "Share image",
+			"shareFailed": "The image could not be made. Please try again.",
+			"close": "Close"
 		}
 	},
 	"order": {

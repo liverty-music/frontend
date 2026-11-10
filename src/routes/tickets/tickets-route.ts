@@ -27,6 +27,8 @@ import {
 	formatSaleStart,
 } from '../event/event-page'
 import { AdmissionCodeSession } from './admission-code-session'
+import { IShareImage } from './virtual-ticket/share-image'
+import type { VirtualTicket } from './virtual-ticket/virtual-ticket'
 import {
 	enterableTickets,
 	groupByEvent,
@@ -78,6 +80,10 @@ export const ADMISSION_POLL_MS = 5000
  *   together.
  * - The code is signed on the device every 15 seconds, with or without a
  *   connection, while the display is kept awake.
+ * - Tapping a ticket opens its virtual ticket: the face as a collectible,
+ *   with an admission stamp once it is 入場済み (pressed with an animation the
+ *   first time the device shows it), and an image of it to share without the
+ *   fan's personal details.
  */
 export class TicketsRoute {
 	private readonly logger = resolve(ILogger).scopeTo('TicketsRoute')
@@ -90,6 +96,7 @@ export class TicketsRoute {
 	private readonly resaleClient = resolve(IResaleListingRpcClient)
 	private readonly saleClient = resolve(ITicketSaleRpcClient)
 	private readonly orderClient = resolve(IOrderRpcClient)
+	private readonly shareImage = resolve(IShareImage)
 
 	// ── List state ───────────────────────────────────────────────────────────
 	public step: TicketsViewStep = 'loading'
@@ -133,6 +140,19 @@ export class TicketsRoute {
 		this.signFor(ticketIds, signTime),
 	)
 
+	// ── Virtual ticket ───────────────────────────────────────────────────────
+	/** The ticket whose virtual ticket is open, and its event. */
+	public ticketGroup: WalletEventGroup | null = null
+	public openedTicket: WalletTicket | null = null
+	/** Press the open ticket's stamp with its animation (first showing on this device). */
+	public pressStamp = false
+	/** Bound via `component.ref`: the open virtual ticket. */
+	public virtualTicket?: VirtualTicket
+	/** The share image is being made. */
+	public sharing = false
+	/** The share image could not be made. */
+	public shareFailed = false
+
 	private abortController: AbortController | null = null
 	private pollTimer: ReturnType<typeof setInterval> | null = null
 
@@ -144,6 +164,7 @@ export class TicketsRoute {
 	public detaching(): void {
 		this.abortController?.abort()
 		this.closeCode()
+		this.closeTicket()
 	}
 
 	/**
@@ -491,9 +512,14 @@ export class TicketsRoute {
 		}
 		if (signal?.aborted) return
 		const byId = new Map(tickets.map((t) => [t.id, t]))
+		// The state and admit time are read again; the stock and seat type,
+		// read once from the Order and the event's sales, are kept.
 		this.groups = this.groups.map((g) => ({
 			...g,
-			tickets: g.tickets.map((t) => byId.get(t.id) ?? t),
+			tickets: g.tickets.map((t) => {
+				const fresh = byId.get(t.id)
+				return fresh ? { ...t, ...fresh } : t
+			}),
 		}))
 		this.offline = false
 		this.savedAt = null
@@ -501,14 +527,112 @@ export class TicketsRoute {
 
 		if (this.codeGroup) {
 			const eventId = this.codeGroup.eventId
-			this.codeGroup =
+			const group =
 				this.groups.find((g) => g.eventId === eventId) ?? this.codeGroup
-			const before = this.presentedIds().join()
-			this.presented = presentedTickets(this.codeGroup)
+			this.codeGroup = group
+			const shown = this.presentedIds()
+			this.presented = presentedTickets(group)
+			const admitted = group.tickets.filter(
+				(t) => shown.includes(t.id) && t.state === 'entered',
+			)
+			// Every ticket the code presented is admitted: the code has done its
+			// job, so it closes and the first of them opens with its stamp.
+			if (this.presented.length === 0 && admitted.length === shown.length) {
+				this.closeCode()
+				if (admitted.length > 0) await this.openTicket(group, admitted[0])
+				return
+			}
 			// Admitted tickets leave the code: remake it for the rest at once.
-			if (this.presentedIds().join() !== before) {
+			if (this.presentedIds().join() !== shown.join()) {
 				void this.session.setTickets(this.presentedIds())
 			}
+		}
+	}
+
+	// ── Virtual ticket ───────────────────────────────────────────────────────
+
+	public get isTicketOpen(): boolean {
+		return this.openedTicket !== null
+	}
+
+	/**
+	 * A tap on a ticket's card opens its virtual ticket; a tap on one of the
+	 * card's buttons or links does only what that control does.
+	 */
+	public onCardClick(
+		event: MouseEvent,
+		group: WalletEventGroup,
+		ticket: WalletTicket,
+	): void {
+		const target = event.target
+		if (target instanceof Element && target.closest('button, a')) return
+		void this.openTicket(group, ticket)
+	}
+
+	/**
+	 * Open the ticket's virtual ticket. An entered ticket whose stamp this
+	 * device has not played yet gets it pressed with the animation.
+	 */
+	public async openTicket(
+		group: WalletEventGroup,
+		ticket: WalletTicket,
+	): Promise<void> {
+		const stamped = await this.wallet.stampedIds()
+		this.shareFailed = false
+		this.pressStamp = ticket.state === 'entered' && !stamped.has(ticket.id)
+		this.ticketGroup = group
+		this.openedTicket = ticket
+	}
+
+	public closeTicket(): void {
+		// The ticket first: it takes the sheet's content away before the
+		// bindings that read the group could see it gone.
+		this.openedTicket = null
+		this.ticketGroup = null
+		this.pressStamp = false
+	}
+
+	/** The stamp was pressed to its end: this device has now played it. */
+	public onStampPressed(): void {
+		const ticket = this.openedTicket
+		if (!ticket) return
+		void this.wallet.markStamped(ticket.id)
+	}
+
+	/** Open the code from a virtual ticket (the ticket closes for it). */
+	public openCodeFromTicket(): void {
+		const group = this.ticketGroup
+		if (!group) return
+		this.closeTicket()
+		this.openCode(group)
+	}
+
+	/** Ask to list the open ticket (the ticket closes for the confirmation). */
+	public askToListFromTicket(): void {
+		const group = this.ticketGroup
+		const ticket = this.openedTicket
+		if (!group || !ticket) return
+		this.closeTicket()
+		this.askToList(group, ticket)
+	}
+
+	/**
+	 * Share an image of the open ticket's face with the full name and phone
+	 * number masked: to the share sheet, or downloaded where the browser cannot
+	 * share files.
+	 */
+	public async shareTicket(): Promise<void> {
+		const face = this.virtualTicket?.face
+		if (!face || this.sharing) return
+		this.sharing = true
+		this.shareFailed = false
+		try {
+			await this.shareImage.share(face, this.ticketGroup?.event?.coverUrl ?? '')
+		} catch (err) {
+			this.logger.warn('Sharing the ticket image failed', { error: err })
+			this.shareFailed = true
+		} finally {
+			this.sharing = false
 		}
 	}
 

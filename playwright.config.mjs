@@ -109,6 +109,19 @@ export default defineConfig({
         baseURL: 'http://localhost:9000',
       },
     },
+    // The virtual ticket on the real WebKit engine, iPhone 14 viewport: Safari
+    // on iOS is a supported browser, the owner has no iPhone, and the share
+    // image's SVG foreignObject export behaves differently on WebKit. Chromium
+    // runs the same spec in `functional`.
+    {
+      name: 'webkit-virtual-ticket',
+      testMatch: 'e2e/functional/virtual-ticket.spec.ts',
+      use: {
+        ...devices['iPhone 14'],
+        browserName: 'webkit',
+        baseURL: 'http://localhost:9000',
+      },
+    },
     // The organizer members' guide and the console's 使い方 on the real WebKit
     // engine, iPhone 14 viewport: the guide spec asks for the browsers the
     // console supports, Safari on iOS among them, and `functional` runs only

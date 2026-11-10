@@ -50,13 +50,17 @@
 			--flow-space: var(--space-xs);
 		}
 
-		/* Individual ticket card (the covered-ticket face) */
+		/* Individual ticket card (the covered-ticket face); a tap on it opens
+		   its virtual ticket. */
 		.tickets-card {
 			--flow-space: var(--space-xs);
+
+			cursor: pointer;
 
 			padding: var(--space-s);
 			border: 1px solid var(--md-sys-color-outline-variant);
 			border-radius: var(--md-sys-shape-corner-large);
+
 			background: var(--md-sys-color-surface);
 
 			/* Void and entered tickets are de-emphasised */
@@ -88,6 +92,13 @@
 					transparent
 				);
 			}
+		}
+
+		/* Virtual ticket sheet: the face, then its actions */
+		.tickets-virtual {
+			--flow-space: var(--space-s);
+
+			padding: var(--space-m);
 		}
 
 		/* Entry QR code sheet */

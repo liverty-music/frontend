@@ -1,0 +1,107 @@
+/* stylelint-disable no-unknown-custom-properties -- --artist-hue is set inline by the template from the first performer's name */
+
+/* The virtual ticket's face. It is a printed object, so its colours do not
+   follow the theme: a paper-light lower part tinted with the first
+   performer's hue and dark ink on it.
+
+   The share image is made from a clone of the face carrying `data-share`:
+   the full name and phone number become solid bars, the stamp is left out,
+   and the cover's area stays empty for the cover bitmap drawn under it. */
+@layer block {
+	@scope (virtual-ticket) {
+		:scope {
+			display: block;
+		}
+
+		/* The colours are set here, where the template sets --artist-hue. */
+		.virtual-ticket {
+			--_paper: oklch(96% 0.03 var(--artist-hue));
+			--_ink: oklch(22% 0.03 var(--artist-hue));
+			--_ink-muted: oklch(40% 0.05 var(--artist-hue));
+			--_rule: oklch(80% 0.06 var(--artist-hue));
+			--_band: oklch(62% 0.16 var(--artist-hue));
+
+			position: relative;
+
+			overflow: hidden;
+			display: flex;
+			flex-direction: column;
+
+			border-radius: var(--md-sys-shape-corner-large);
+
+			color: var(--_ink);
+		}
+
+		/* Always 16:9 whatever the cover's own shape: the image is taken out
+		   of the flow, so it cannot stretch the area (and the share image's
+		   copy, whose image is not loaded, lays out the same). */
+		.virtual-ticket-cover {
+			position: relative;
+			aspect-ratio: 16 / 9;
+			background: var(--_band);
+		}
+
+		.virtual-ticket-cover-image {
+			position: absolute;
+			inset: 0;
+
+			inline-size: 100%;
+			block-size: 100%;
+
+			object-fit: cover;
+		}
+
+		/* The paper is the body's, not the face's: the cover's area must stay
+		   empty in the share image, where the cover is drawn under the face. */
+		.virtual-ticket-body {
+			--flow-space: var(--space-xs);
+
+			flex-grow: 1;
+			padding: var(--space-m);
+			border-block-start: var(--space-3xs) solid var(--_band);
+			background: var(--_paper);
+		}
+
+		.virtual-ticket-details {
+			display: grid;
+			grid-template-columns: max-content 1fr;
+			gap: var(--space-2xs) var(--space-s);
+
+			& > div {
+				display: contents;
+			}
+		}
+
+		.virtual-ticket-performers,
+		.virtual-ticket-details dt,
+		.virtual-ticket-area {
+			color: var(--_ink-muted);
+		}
+
+		.virtual-ticket-notice {
+			padding-block-start: var(--space-xs);
+			border-block-start: 1px dashed var(--_rule);
+			color: var(--_ink-muted);
+		}
+
+		.virtual-ticket[data-share] {
+			& [data-personal] dd {
+				border-radius: var(--md-sys-shape-corner-extra-small);
+				color: transparent;
+				background: var(--_ink);
+			}
+
+			& admission-stamp {
+				display: none;
+			}
+
+			& .virtual-ticket-cover {
+				background: transparent;
+			}
+
+			& .virtual-ticket-cover-image {
+				visibility: hidden;
+			}
+		}
+	}
+}
