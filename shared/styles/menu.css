@@ -1,6 +1,6 @@
 /* The menu both apps use, a Material 3 menu (baseline): `class="menu"` on the
-   popover that holds the choices, `class="menu-item"` on each choice (a
-   <button> or an <a>), with the label-large type style from the template.
+   popover that holds the choices, `class="[ menu-item ] [ state-layer ]
+   [ md-typescale-label-large ]"` on each choice (a <button> or an <a>).
    The fan app imports it from `src/styles/main.css`; the organizer console
    from `organizer/styles/shared.css`, so a console component's shadow root
    has it too.
@@ -9,11 +9,11 @@
                 to 280px wide. Where it opens is the caller's.
    - item       48px tall, the full width of the menu, 12px side padding and
                 12px between a leading icon and the label, `on-surface` label
-   - states     a layer of `on-surface` over the item (::before): hover 8 %,
-                keyboard focus 10 %, pressed 10 %. The focus ring is drawn
-                inside the item, which reaches both edges of the menu.
-   - disabled   `disabled` or `aria-disabled="true"`: `on-surface` at 38 %,
-                no state layer; the item stays in the menu
+   - states     the shared `state-layer` (::before), in `on-surface`. The
+                focus ring is drawn inside the item, which reaches both edges
+                of the menu.
+   - disabled   `disabled` or `aria-disabled="true"`: `on-surface` at 38 %
+                (the state layer shows none); the item stays in the menu
    Values: Material 3 menus, "Menu (baseline)" tokens and measurements
    (https://m3.material.io/components/menus/specs). The menu sets no display
    and no gap: the items are blocks that stack, and a group or divider inside
@@ -36,8 +36,6 @@
 		.menu-item {
 			cursor: pointer;
 
-			position: relative;
-
 			display: flex;
 			gap: var(--space-xs);
 			align-items: center;
@@ -46,6 +44,10 @@
 			min-block-size: var(--md-sys-target-size);
 			padding-inline: var(--space-xs);
 			border: none;
+
+			/* Square, so the state layer (which takes the item's corners)
+			   reaches both edges of the menu; a <button> is rounded otherwise. */
+			border-radius: var(--md-sys-shape-corner-none);
 
 			color: var(--md-sys-color-on-surface);
 			text-align: start;
@@ -59,32 +61,6 @@
 			outline-offset: calc(-1 * var(--md-sys-state-focus-indicator-thickness));
 		}
 
-		.menu-item::before {
-			pointer-events: none;
-			content: "";
-
-			position: absolute;
-			inset: 0;
-
-			opacity: 0;
-			background: currentcolor;
-
-			transition: opacity var(--md-sys-motion-duration-short2)
-				var(--md-sys-motion-easing-standard);
-		}
-
-		.menu-item:hover::before {
-			opacity: var(--md-sys-state-hover-opacity);
-		}
-
-		.menu-item:focus-visible::before {
-			opacity: var(--md-sys-state-focus-opacity);
-		}
-
-		.menu-item:active::before {
-			opacity: var(--md-sys-state-pressed-opacity);
-		}
-
 		.menu-item:is(:disabled, [aria-disabled="true"]) {
 			cursor: not-allowed;
 			color: color-mix(
@@ -92,10 +68,6 @@
 				var(--md-sys-color-on-surface) 38%,
 				transparent
 			);
-		}
-
-		.menu-item:is(:disabled, [aria-disabled="true"])::before {
-			opacity: 0;
 		}
 	}
 }

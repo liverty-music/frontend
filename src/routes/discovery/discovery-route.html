@@ -27,7 +27,7 @@
       >
       <button
         if.bind="search.searchQuery"
-        class="clear-button"
+        class="[ clear-button ] [ state-layer ]"
         click.trigger="clearSearch()"
         aria-label.bind="$this.i18n?.tr('discovery.clearSearch') ?? ''"
       >
@@ -39,7 +39,7 @@
     <div class="genre-bar">
       <button
         type="button"
-        class="[ chip reset-chip ] [ pressable ] [ md-typescale-label-large ]"
+        class="[ chip reset-chip ] [ state-layer ] [ md-typescale-label-large ]"
         click.trigger="onReset()"
         disabled.bind="genre.isLoadingTag"
         aria-label.bind="$this.i18n?.tr('discovery.resetBubbles') ?? ''"
@@ -50,7 +50,7 @@
         <button
           repeat.for="tag of genre.genreTags; key.bind: tag"
           type="button"
-          class="[ chip ] [ pressable ] [ md-typescale-label-large ]"
+          class="[ chip ] [ state-layer ] [ md-typescale-label-large ]"
           click.trigger="onGenreSelected(tag)"
           disabled.bind="genre.isLoadingTag"
           aria-pressed.bind="genre.activeTag === tag"
@@ -94,7 +94,7 @@
       <ul class="results-list" role="list">
         <li
           repeat.for="artist of search.searchResults; key.bind: artist.id"
-          class="result-item"
+          class="[ result-item ] [ state-layer ]"
           data-followed.bind="followedIds.has(artist.id)"
           busy-on-click.bind="() => followedIds.has(artist.id) ? undefined : onFollowFromSearch(artist)"
           role="button"

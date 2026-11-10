@@ -145,7 +145,7 @@ export const Matched = {
 
 		// @spec components/infrastructure/fan/web/global/live-highway "Matched card has a light beam from above"
 		// A narrow cone anchored at the centre of the top edge, fading downward.
-		const beam = getComputedStyle(article, '::before')
+		const beam = getComputedStyle(article, '::after')
 		await expect(beam.backgroundImage).toContain('linear-gradient')
 		await expect(beam.maskImage).toContain('radial-gradient')
 		await expect(beam.maskImage).toContain('at 50% 0%')

@@ -11,7 +11,7 @@
     <h2 class="[ sheet-title ] [ md-typescale-title-large ]" id="nearby-filter-sheet-title" t="allNearby.filter.title"></h2>
     <ul class="[ filter-rows ] [ stack ]" role="list">
       <li>
-        <button type="button" class="[ filter-row ] [ pressable md-typescale-body-large ]" data-testid="nearby-area-row" click.trigger="choose('area')">
+        <button type="button" class="[ filter-row ] [ state-layer md-typescale-body-large ]" data-testid="nearby-area-row" click.trigger="choose('area')">
           <svg-icon name="map-pin" size="sm" aria-hidden="true"></svg-icon>
           <span class="row-label" t="allNearby.filter.area"></span>
           <span if.bind="areaName" class="[ row-value ] [ md-typescale-body-large-emphasized ]">${areaName}</span>
@@ -20,7 +20,7 @@
         </button>
       </li>
       <li>
-        <button type="button" class="[ filter-row ] [ pressable md-typescale-body-large ]" data-testid="nearby-period-row" click.trigger="choose('period')">
+        <button type="button" class="[ filter-row ] [ state-layer md-typescale-body-large ]" data-testid="nearby-period-row" click.trigger="choose('period')">
           <svg-icon name="calendar" size="sm" aria-hidden="true"></svg-icon>
           <span class="row-label" t="allNearby.filter.period"></span>
           <span class="[ row-value ] [ md-typescale-body-large-emphasized ]">${periodLabel}</span>

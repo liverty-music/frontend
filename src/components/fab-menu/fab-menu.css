@@ -53,14 +53,13 @@
 			box-shadow: 0 4px 20px
 				color-mix(in oklch, var(--color-brand-primary) 55%, transparent);
 
-			/* Spatial spring for the sink and the press cue. */
+			/* Spatial spring for the sink. A press shows the shared state layer
+			   (`state-layer`, ::before) alone: Material 3 scales no pressed FAB. */
 			transition:
 				translate var(--md-sys-motion-spring-spatial-duration)
 				var(--md-sys-motion-spring-spatial),
 				scale var(--md-sys-motion-spring-spatial-duration)
-				var(--md-sys-motion-spring-spatial),
-				transform var(--md-sys-motion-spring-spatial-fast-duration)
-				var(--md-sys-motion-spring-spatial-fast);
+				var(--md-sys-motion-spring-spatial);
 
 			/* Its own View Transition snapshot. A named snapshot paints above
 			   the root one, and the FAB overlaps the navigation bar and the
@@ -69,39 +68,6 @@
 			   place on top, since snapshots paint in the order of their
 			   elements and the FAB is in the top layer (global.css). */
 			view-transition-name: fab-toggle;
-		}
-
-		.fab-toggle:active {
-			transform: scale(0.92);
-		}
-
-		/* M3 state layer: on-color overlay composited over the fill. */
-		.fab-toggle::after {
-			pointer-events: none;
-			content: "";
-
-			position: absolute;
-			inset: 0;
-
-			border-radius: inherit;
-
-			opacity: 0;
-			background: var(--color-white);
-
-			transition: opacity var(--md-sys-motion-spring-effects-duration)
-				var(--md-sys-motion-spring-effects);
-		}
-
-		.fab-toggle:hover::after {
-			opacity: var(--md-sys-state-hover-opacity);
-		}
-
-		.fab-toggle:focus-visible::after {
-			opacity: var(--md-sys-state-focus-opacity);
-		}
-
-		.fab-toggle:active::after {
-			opacity: var(--md-sys-state-pressed-opacity);
 		}
 
 		/* ── Glyph: equalizer ↔ close ── */
@@ -300,36 +266,6 @@
 
 			background: var(--md-sys-color-menu-surface);
 			box-shadow: var(--shadow-soft);
-		}
-
-		/* State layer over the icon circle's on-color (currentColor adapts to the
-		   selected item's on-primary-container ink). */
-		.fab-item::after {
-			pointer-events: none;
-			content: "";
-
-			position: absolute;
-			inset: 0;
-
-			border-radius: inherit;
-
-			opacity: 0;
-			background: currentcolor;
-
-			transition: opacity var(--md-sys-motion-spring-effects-duration)
-				var(--md-sys-motion-spring-effects);
-		}
-
-		.fab-item:hover::after {
-			opacity: var(--md-sys-state-hover-opacity);
-		}
-
-		.fab-item:focus-visible::after {
-			opacity: var(--md-sys-state-focus-opacity);
-		}
-
-		.fab-item:active::after {
-			opacity: var(--md-sys-state-pressed-opacity);
 		}
 
 		/* Selected/active item = filled brand container (the M3 "on" treatment).

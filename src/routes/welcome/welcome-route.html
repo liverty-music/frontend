@@ -38,7 +38,7 @@
   <button
     if.bind="dateGroups.length > 0"
     click.trigger="scrollToPreview()"
-    class="[ button welcome-scroll-action ] [ pressable ]"
+    class="[ button welcome-scroll-action ] [ state-layer ]"
     data-variant="outlined"
     data-testid="welcome-see-preview"
   >
@@ -55,13 +55,13 @@
     <div class="[ welcome-action-group ] [ stack ]">
       <button
         busy-on-click.bind="() => handleGetStarted()"
-        class="[ button ] [ pressable ]"
+        class="[ button ] [ state-layer ]"
         data-testid="welcome-get-started"
         t="welcome.cta.getStarted"
       ></button>
       <button
         busy-on-click.bind="() => handleLogin()"
-        class="[ button ] [ pressable ]"
+        class="[ button ] [ state-layer ]"
         data-variant="outlined"
         data-testid="welcome-login"
         t="welcome.cta.login"
@@ -95,7 +95,7 @@
     <p t="welcome.demo.notificationLead" class="[ welcome-demo-lead ] [ md-typescale-headline-small ]"></p>
     <button
       type="button"
-      class="[ welcome-notification-trigger ]"
+      class="[ welcome-notification-trigger ] [ state-layer ]"
       click.trigger="onNotificationTap()"
       aria-label.bind="'welcome.demo.notificationTap' | t"
     >
@@ -129,13 +129,13 @@
       <div class="[ welcome-action-group ] [ stack ]">
         <button
           busy-on-click.bind="() => handleGetStarted()"
-          class="[ button ] [ pressable ]"
+          class="[ button ] [ state-layer ]"
           data-testid="welcome-get-started"
           t="welcome.cta.getStarted"
         ></button>
         <button
           busy-on-click.bind="() => handleLogin()"
-          class="[ button ] [ pressable ]"
+          class="[ button ] [ state-layer ]"
           data-variant="outlined"
           data-testid="welcome-login"
           t="welcome.cta.login"

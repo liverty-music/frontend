@@ -383,9 +383,11 @@ export const MotionFollowsSystemPreference = {
 		]
 		await expect(cards.length).toBeGreaterThan(0)
 		for (const card of cards) {
-			// The press feedback is the card's only motion.
-			await expect(getComputedStyle(card).transitionProperty).toBe(
-				reduce ? 'none' : 'transform',
+			// The press feedback, the shared state layer's fade, is the card's
+			// only motion: the card itself does not move.
+			await expect(getComputedStyle(card).transitionDuration).toBe('0s')
+			await expect(getComputedStyle(card, '::before').transitionDuration).toBe(
+				reduce ? '0s' : '0.1s',
 			)
 		}
 
@@ -405,7 +407,7 @@ export const MotionFollowsSystemPreference = {
 		await expect(matchedCards.length).toBeGreaterThan(0)
 		for (const card of matchedCards) {
 			await expect(getComputedStyle(card).boxShadow).not.toBe('none')
-			await expect(getComputedStyle(card, '::before').maskImage).toContain(
+			await expect(getComputedStyle(card, '::after').maskImage).toContain(
 				'radial-gradient',
 			)
 			const name = card.querySelector<HTMLElement>('.artist-name')

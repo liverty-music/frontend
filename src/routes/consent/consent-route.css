@@ -44,12 +44,6 @@
 			padding: var(--space-s);
 
 			text-align: start;
-
-			transition: background var(--md-sys-motion-duration-short4);
-
-			&:hover {
-				background: color-mix(in oklch, var(--color-white) 5%, transparent);
-			}
 		}
 
 		.consent-row-text {

@@ -13,7 +13,7 @@
 
 	<section class="[ lottery-entry-status-panel card ] [ flow wrapper ]" if.bind="step === 'error'" data-testid="lottery-entry-status-error">
 		<p class="[ lottery-entry-status-error ] [ md-typescale-body-medium ]" t.bind="messageKey"></p>
-		<button type="button" class="[ button lottery-entry-status-action ] [ pressable ]" click.trigger="load()" t="lotteryEntryStatus.reload"></button>
+		<button type="button" class="[ button lottery-entry-status-action ] [ state-layer ]" click.trigger="load()" t="lotteryEntryStatus.reload"></button>
 	</section>
 
 	<section class="[ lottery-entry-status-panel card ] [ flow wrapper ]" if.bind="step === 'loaded'" data-testid="lottery-entry-status-entry">

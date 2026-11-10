@@ -1,7 +1,7 @@
-/* The fan app's chip, a Material 3 filter chip: `class="[ chip ] [ pressable ]
+/* The fan app's chip, a Material 3 filter chip: `class="[ chip ] [ state-layer ]
    [ md-typescale-label-large ]"` on the native <button> itself, or on the
    <label> around a visually hidden checkbox. The template gives the type
-   style; `pressable` gives the hover, focus and press state layer.
+   style; `state-layer` gives the hover, focus and press state layer.
    - unselected  32px tall, small (8px) corners, a 1px `outline-variant`
                  border, no fill, `on-surface-variant` label
    - selected    `aria-pressed="true"`, `aria-checked="true"`, a checked
@@ -17,12 +17,10 @@
    `size`. A filter chip shows a `check` icon only while selected, in place
    of any other leading icon (the template renders it with `if`). The
    tap target is 48px tall (and at
-   least 48px wide) through a transparent ::before centred on the chip, so a
+   least 48px wide) through a transparent ::after centred on the chip, so a
    group of chips leaves var(--space-s) between rows: two targets never
-   overlap. A label's hidden checkbox comes before its leading icon. Hover
-   and keyboard focus raise the `pressable` state layer; the press restates
-   its opacity, which the hover rule would otherwise outrank from this
-   layer. A label chip's checkbox is visually hidden, so the chip draws the
+   overlap. A label's hidden checkbox comes before its leading icon; the
+   state layer reads its focus and disabled state. A label chip's checkbox is visually hidden, so the chip draws the
    focus ring for it, and a button chip draws the same one. The disabled rule
    comes before the selected one, so a selected chip reads its dimmed
    hooks. */
@@ -68,7 +66,7 @@
 			padding-inline-start: var(--space-2xs);
 		}
 
-		:scope::before {
+		:scope:not([data-busy])::after {
 			content: "";
 
 			position: absolute;
@@ -80,24 +78,22 @@
 			block-size: max(100%, var(--md-sys-target-size));
 		}
 
-		:scope:is(:focus-visible, :has(> input:focus-visible))::after {
-			opacity: var(--md-sys-state-focus-opacity);
-		}
-
-		:scope:hover:not(:disabled, :has(> input:disabled))::after {
-			opacity: var(--md-sys-state-hover-opacity);
-		}
-
-		:scope:active:not(:disabled, :has(> input:disabled))::after {
-			opacity: var(--md-sys-state-pressed-opacity);
-		}
-
 		:scope:is(:focus-visible, :has(> input:focus-visible)) {
 			/* stylelint-disable property-disallowed-list -- the checkbox a label chip stands for is visually hidden, so the chip must show its keyboard focus ring (no global fan ring exists yet, task 6.1) */
 			outline: var(--md-sys-state-focus-indicator-thickness) solid
 				var(--color-brand-primary);
 			outline-offset: var(--md-sys-state-focus-indicator-outer-offset);
 			/* stylelint-enable property-disallowed-list */
+		}
+
+		/* The shared state layer reads the element's own state; a label chip
+		   maps its hidden checkbox's focus and disabled state onto it. */
+		:scope:has(> input:focus-visible)::before {
+			opacity: var(--md-sys-state-focus-opacity);
+		}
+
+		:scope:has(> input:disabled)::before {
+			opacity: 0;
 		}
 
 		:scope:is(:disabled, :has(> input:disabled)) {

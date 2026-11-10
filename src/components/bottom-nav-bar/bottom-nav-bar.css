@@ -50,6 +50,8 @@
 		}
 
 		.nav-tab {
+			/* Hover, focus and press: the shared state layer (`state-layer`,
+			   ::before), with no scale (Material 3 navigation bar). */
 			position: relative;
 
 			display: flex;
@@ -71,9 +73,7 @@
 				box-shadow var(--md-sys-motion-duration-medium1)
 				var(--md-sys-motion-spring-effects),
 				border-radius var(--md-sys-motion-spring-spatial-duration)
-				var(--md-sys-motion-spring-spatial),
-				transform var(--md-sys-motion-duration-medium1)
-				var(--md-sys-motion-easing-standard);
+				var(--md-sys-motion-spring-spatial);
 		}
 
 		/* While the FAB is shown, cut a notch around it in the bar's top edge.
@@ -92,16 +92,6 @@
 		/* Tabs 3 and 4 sit after the FAB's centre slot. */
 		.nav-tab:nth-child(3) {
 			grid-column-start: 4;
-		}
-
-		/* Press cue at the moment of tap. The nav tabs are <a> elements the global
-		   <button> baseline cannot reach, so the press feedback is defined here.
-		   Distinct from the persistent [data-active] selected-tab state — this is
-		   transient on touch. Large-target scale magnitude (matches the FAB). */
-		.nav-tab:active {
-			/* Press-in phase: fast ease-in. */
-			transform: scale(0.92);
-			transition: transform var(--md-sys-motion-duration-short1) ease-in;
 		}
 
 		.nav-icon {
@@ -125,7 +115,8 @@
 			box-shadow: inset 0 2px 8px
 				oklch(from var(--color-brand-accent) l c h / 20%);
 
-			&::before {
+			/* On ::after: the shared state layer takes ::before. */
+			&::after {
 				content: "";
 
 				position: absolute;
@@ -147,16 +138,6 @@
 		.nav-tab[data-dimmed] {
 			opacity: 0.3;
 			transition: opacity var(--md-sys-motion-duration-short4);
-		}
-
-		/* Reduced motion: drop the press scale, acknowledge the tap with a brief
-		   accent-tinted background instead. The selection lands at once: its
-		   duration tokens are 0 ms under reduced motion. */
-		@media (prefers-reduced-motion: reduce) {
-			.nav-tab:active {
-				transform: none;
-				background: oklch(from var(--color-brand-accent) l c h / 12%);
-			}
 		}
 	}
 }

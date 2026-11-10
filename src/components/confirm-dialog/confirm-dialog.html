@@ -22,7 +22,7 @@
         type="button"
         autofocus
         click.trigger="cancel()"
-        class="[ button ] [ pressable ]"
+        class="[ button ] [ state-layer ]"
         data-variant="outlined"
         t="confirmDialog.cancel"
         data-testid.bind="cancelTestId"
@@ -30,7 +30,7 @@
       <button
         type="button"
         click.trigger="confirm()"
-        class="[ button ] [ pressable ]"
+        class="[ button ] [ state-layer ]"
         data-variant.bind="confirmVariant"
         data-testid.bind="confirmButtonTestId"
       >${confirmLabel}</button>

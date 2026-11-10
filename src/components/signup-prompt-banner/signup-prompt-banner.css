@@ -94,10 +94,10 @@
 			   the button, every 12s, five times. The banner is mounted by each
 			   route, so the cue starts again on every route by itself. Both
 			   layers only paint a moving background over their own box, so
-			   nothing moves or resizes. The button's ::after is the pressable
-			   state layer, so the cue takes its ::before. */
+			   nothing moves or resizes. The button's ::before is the shared
+			   state layer, so the cue takes its ::after. */
 			.signup-banner::before,
-			.signup-banner-action::before {
+			.signup-banner-action::after {
 				pointer-events: none;
 				content: "";
 
@@ -121,7 +121,7 @@
 				block-size: 2px;
 			}
 
-			.signup-banner-action::before {
+			.signup-banner-action::after {
 				inset: 0;
 				border-radius: inherit;
 				animation-delay: 1s;

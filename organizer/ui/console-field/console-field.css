@@ -99,11 +99,23 @@
 
 		background: var(--md-sys-color-surface-container);
 
-		&:is(:hover, :focus-visible) {
+		/* The options mix the shared hover and focus opacities into their
+		   fill; whether a customizable select's <option> can carry the shared
+		   `state-layer` (::before) is not yet checked. */
+		&:hover {
 			background: color-mix(
 				in oklch,
 				var(--md-sys-color-on-surface)
 					calc(var(--md-sys-state-hover-opacity) * 100%),
+				var(--md-sys-color-surface-container)
+			);
+		}
+
+		&:focus-visible {
+			background: color-mix(
+				in oklch,
+				var(--md-sys-color-on-surface)
+					calc(var(--md-sys-state-focus-opacity) * 100%),
 				var(--md-sys-color-surface-container)
 			);
 		}

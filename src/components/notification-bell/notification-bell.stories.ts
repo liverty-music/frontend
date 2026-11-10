@@ -69,10 +69,10 @@ export const Hovered = {
 	args: { unreadCount: 0 },
 	play: async ({ canvasElement }) => {
 		const button = canvasElement.querySelector('button') as HTMLButtonElement
-		const rest = getComputedStyle(button).backgroundColor
+		const layer = () =>
+			Number.parseFloat(getComputedStyle(button, '::before').opacity)
+		await expect(layer()).toBe(0)
 		if (!(await hoverPointer(button))) return
-		await waitFor(() =>
-			expect(getComputedStyle(button).backgroundColor).not.toBe(rest),
-		)
+		await waitFor(() => expect(layer()).toBeCloseTo(0.08, 5))
 	},
 } satisfies Story

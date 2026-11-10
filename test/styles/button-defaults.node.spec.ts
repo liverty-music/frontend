@@ -4,11 +4,10 @@ import { describe, expect, it } from 'vitest'
 
 /**
  * Every native button gets its look from the shared layers: the reset gives
- * the pointer cursor, global.css a borderless transparent box, its hover and
- * focus layer and the high-contrast border. A fan block that sets
- * `background: transparent`, `border: none` or `cursor: pointer` on a button
- * only repeats them, and the first two also remove the hover layer and the
- * high-contrast border (block beats global).
+ * the pointer cursor, global.css a borderless transparent box and the
+ * high-contrast border. A fan block that sets `background: transparent`,
+ * `border: none` or `cursor: pointer` on a button only repeats them, and
+ * `border: none` also removes the high-contrast border (block beats global).
  */
 
 const templates = globSync('src/**/*.html')
@@ -26,8 +25,8 @@ function buttonClasses(): Set<string> {
 			}
 		}
 	}
-	// The shared button and the press utility own their own looks.
-	for (const c of ['button', 'pressable']) classes.delete(c)
+	// The shared button and the state-layer utility own their own looks.
+	for (const c of ['button', 'state-layer']) classes.delete(c)
 	return classes
 }
 

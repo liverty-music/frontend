@@ -35,7 +35,7 @@
       type="submit"
       aria-busy.bind="sending"
       disabled.bind="sending"
-      class="[ button ] [ pressable ]"
+      class="[ button ] [ state-layer ]"
       data-testid="passkey-recovery-send"
     >
       <span if.bind="error === 'failed'" t="passkeyRecovery.retry"></span>
@@ -50,7 +50,7 @@
       type="button"
       busy-on-click.bind="() => send()"
       disabled.bind="resendIn > 0"
-      class="[ button ] [ pressable ]"
+      class="[ button ] [ state-layer ]"
       data-variant="outlined"
       data-testid="passkey-recovery-resend"
     >

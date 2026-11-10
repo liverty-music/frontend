@@ -24,7 +24,7 @@
       if.bind="snack.action"
       type="button"
       click.trigger="onAction()"
-      class="[ snack-action-btn button ] [ pressable md-typescale-label-large ]"
+      class="[ snack-action-btn button ] [ state-layer md-typescale-label-large ]"
       data-variant="on-container"
       data-attention.bind="snack.attention || null"
     ><au-slot name="action">${snack.action.label}</au-slot></button>
@@ -32,7 +32,7 @@
       if.bind="dismissible"
       type="button"
       click.trigger="onClose()"
-      class="[ snack-close-btn icon-button ]"
+      class="[ snack-close-btn icon-button ] [ state-layer ]"
       aria-label.bind="closeLabel"
     >
       <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">

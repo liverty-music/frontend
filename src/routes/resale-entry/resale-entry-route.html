@@ -17,7 +17,7 @@
 
 	<section class="[ resale-entry-panel card ] [ flow wrapper ]" if.bind="step === 'error'" data-testid="resale-entry-error">
 		<p class="[ resale-entry-lead ] [ md-typescale-body-medium ]" role="alert" t="resaleEntry.error.load"></p>
-		<button type="button" class="[ button resale-entry-action ] [ pressable ]" click.trigger="load()" data-testid="resale-entry-retry" t="resaleEntry.error.reload"></button>
+		<button type="button" class="[ button resale-entry-action ] [ state-layer ]" click.trigger="load()" data-testid="resale-entry-retry" t="resaleEntry.error.reload"></button>
 	</section>
 
 	<!-- What is applied for: the event, the seat type, its price and how resale works -->
@@ -47,7 +47,7 @@
 		<h2 class="[ resale-entry-step-title ] [ md-typescale-title-large-emphasized ]" t="resaleEntry.applied.title"></h2>
 		<p class="[ resale-entry-lead ] [ md-typescale-body-medium ]" data-testid="resale-entry-applied-count" t="resaleEntry.applied.body" t-params.bind="{ count: entry.ticketCount }"></p>
 		<p if.bind="nextDrawLabel" class="[ resale-entry-lead ] [ md-typescale-body-medium ]" data-testid="resale-entry-next-draw" t="resaleEntry.nextDraw" t-params.bind="{ time: nextDrawLabel }"></p>
-		<a href="/resale-entries" class="[ button resale-entry-action ] [ pressable ]" data-testid="resale-entry-to-entries" t="resaleEntry.toEntries"></a>
+		<a href="/resale-entries" class="[ button resale-entry-action ] [ state-layer ]" data-testid="resale-entry-to-entries" t="resaleEntry.toEntries"></a>
 	</section>
 
 	<!-- One seat type per account and event -->
@@ -72,7 +72,7 @@
 		</label>
 		<p class="[ resale-entry-total ] [ md-typescale-title-large-emphasized ]" data-testid="resale-entry-total" t="resaleEntry.total" t-params.bind="{ total: yen(total) }"></p>
 		<p class="[ resale-entry-error ] [ md-typescale-body-medium ]" if.bind="message" role="alert" data-testid="resale-entry-message" t.bind="message.key" t-params.bind="message.params"></p>
-		<button type="button" class="[ button resale-entry-action ] [ pressable ]" click.trigger="toPersonalDetails()" disabled.bind="busy" data-testid="resale-entry-to-personal-details" t="resaleEntry.count.continue"></button>
+		<button type="button" class="[ button resale-entry-action ] [ state-layer ]" click.trigger="toPersonalDetails()" disabled.bind="busy" data-testid="resale-entry-to-personal-details" t="resaleEntry.count.continue"></button>
 	</section>
 
 	<!-- Step 2: 本人確認 -->
@@ -99,8 +99,8 @@
 		<p id="resale-entry-phone-error" class="[ resale-entry-error ] [ md-typescale-body-medium ]" if.bind="isPhoneInvalid" t="resaleEntry.phoneInvalid"></p>
 		<p class="[ resale-entry-error ] [ md-typescale-body-medium ]" if.bind="message" role="alert" data-testid="resale-entry-message" t.bind="message.key" t-params.bind="message.params"></p>
 		<div class="[ resale-entry-actions ] [ cluster ]">
-			<button type="button" class="[ button ] [ pressable ]" data-variant="outlined" click.trigger="backToCount()" t="resaleEntry.back"></button>
-			<button type="button" class="[ button resale-entry-action ] [ pressable ]" click.trigger="toPayment()" disabled.bind="!isPersonalDetailsValid || busy" data-testid="resale-entry-to-payment" t="resaleEntry.personalDetails.continue"></button>
+			<button type="button" class="[ button ] [ state-layer ]" data-variant="outlined" click.trigger="backToCount()" t="resaleEntry.back"></button>
+			<button type="button" class="[ button resale-entry-action ] [ state-layer ]" click.trigger="toPayment()" disabled.bind="!isPersonalDetailsValid || busy" data-testid="resale-entry-to-payment" t="resaleEntry.personalDetails.continue"></button>
 		</div>
 	</section>
 
@@ -179,8 +179,8 @@
 		</dl>
 
 		<div if.bind="!cardConfirmed" class="[ resale-entry-actions ] [ cluster ]">
-			<button type="button" class="[ button ] [ pressable ]" data-variant="outlined" click.trigger="backToCount()" disabled.bind="step === 'submitting'" data-testid="resale-entry-change-count" t="resaleEntry.confirm.changeCount"></button>
-			<button type="button" class="[ button ] [ pressable ]" data-variant="outlined" click.trigger="backToPersonalDetails()" disabled.bind="step === 'submitting'" data-testid="resale-entry-change-personal-details" t="resaleEntry.confirm.changePersonalDetails"></button>
+			<button type="button" class="[ button ] [ state-layer ]" data-variant="outlined" click.trigger="backToCount()" disabled.bind="step === 'submitting'" data-testid="resale-entry-change-count" t="resaleEntry.confirm.changeCount"></button>
+			<button type="button" class="[ button ] [ state-layer ]" data-variant="outlined" click.trigger="backToPersonalDetails()" disabled.bind="step === 'submitting'" data-testid="resale-entry-change-personal-details" t="resaleEntry.confirm.changePersonalDetails"></button>
 		</div>
 
 		<!-- Stripe Payment Element mounts here. -->
@@ -190,7 +190,7 @@
 		<p class="[ resale-entry-error ] [ md-typescale-body-medium ]" if.bind="message" role="alert" data-testid="resale-entry-message" t.bind="message.key" t-params.bind="message.params"></p>
 		<button
 			type="button"
-			class="[ button resale-entry-action ] [ pressable ]"
+			class="[ button resale-entry-action ] [ state-layer ]"
 			click.trigger="apply()"
 			disabled.bind="step === 'submitting'"
 			data-testid="resale-entry-apply"
@@ -204,7 +204,7 @@
 		<h2 class="[ resale-entry-step-title ] [ md-typescale-title-large-emphasized ]" t="resaleEntry.refused.title"></h2>
 		<p class="[ resale-entry-lead ] [ md-typescale-body-medium ]" role="alert" data-testid="resale-entry-message" t.bind="message.key" t-params.bind="message.params"></p>
 		<p class="[ resale-entry-lead ] [ md-typescale-body-medium ]" t="resaleEntry.refused.notCharged"></p>
-		<button type="button" class="[ button resale-entry-action ] [ pressable ]" click.trigger="tryAgain()" data-testid="resale-entry-try-again" t="resaleEntry.refused.tryAgain"></button>
+		<button type="button" class="[ button resale-entry-action ] [ state-layer ]" click.trigger="tryAgain()" data-testid="resale-entry-try-again" t="resaleEntry.refused.tryAgain"></button>
 		<a href="/events/${event.id}" if.bind="event" class="text-link" data-variant="standalone" t="resaleEntry.backToEvent"></a>
 	</section>
 
@@ -213,6 +213,6 @@
 		<h2 class="[ resale-entry-step-title ] [ md-typescale-title-large-emphasized ]" t="resaleEntry.done.title"></h2>
 		<p class="[ resale-entry-lead ] [ md-typescale-body-medium ]" t="resaleEntry.done.body" t-params.bind="{ seatType: seatTypeName, count: entry.ticketCount }"></p>
 		<p if.bind="nextDrawLabel" class="[ resale-entry-lead ] [ md-typescale-body-medium ]" data-testid="resale-entry-next-draw" t="resaleEntry.nextDraw" t-params.bind="{ time: nextDrawLabel }"></p>
-		<a href="/resale-entries" class="[ button resale-entry-action ] [ pressable ]" data-testid="resale-entry-to-entries" t="resaleEntry.toEntries"></a>
+		<a href="/resale-entries" class="[ button resale-entry-action ] [ state-layer ]" data-testid="resale-entry-to-entries" t="resaleEntry.toEntries"></a>
 	</section>
 </template>

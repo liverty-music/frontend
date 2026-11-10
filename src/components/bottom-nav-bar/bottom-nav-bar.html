@@ -4,7 +4,7 @@
     href.bind="tab.path[0]"
     click.capture="switchTab($event, tab)"
     data-nav.bind="tab.data.icon"
-    class="nav-tab"
+    class="[ nav-tab ] [ state-layer ]"
     data-active.bind="tab.isActive || tab.id === section"
   >
     <svg-icon name.bind="tab.data.icon" class="nav-icon"></svg-icon>

@@ -11,10 +11,11 @@ const APP = 'http://localhost:9000'
 
 const FIXTURE = `
 	<section id="state-fixture" style="display:flex; gap:1rem; padding:2rem; color:oklch(98% 0 0deg); background:oklch(20% 0.04 275deg)">
-		<button id="plain" type="button">Plain</button>
-		<button id="plain-next" type="button">Next</button>
-		<button id="selected" type="button" data-selected-morph aria-pressed="true">Selected</button>
-		<button id="pressable" type="button" class="pressable">Press</button>
+		<button id="bare" type="button">Bare</button>
+		<button id="plain" type="button" class="state-layer">Plain</button>
+		<button id="plain-next" type="button" class="state-layer">Next</button>
+		<button id="selected" type="button" class="state-layer" data-selected-morph aria-pressed="true">Selected</button>
+		<button id="disabled" type="button" class="state-layer" disabled>Disabled</button>
 		<span id="leaving" style="transition: opacity var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-emphasized-accelerate)">Leaving</span>
 	</section>
 `
@@ -42,15 +43,9 @@ function alphaOf(color: string): number {
 const backgroundAlpha = (el: Locator): Promise<number> =>
 	el.evaluate((node) => getComputedStyle(node).backgroundColor).then(alphaOf)
 
-/** Alphas of the color layers in the computed background-image. */
-const imageLayerAlphas = (el: Locator): Promise<number[]> =>
-	el
-		.evaluate((node) => getComputedStyle(node).backgroundImage)
-		.then((image) =>
-			[...image.matchAll(/(?:oklab|oklch|color|rgba?)\([^)]*\)/g)].map((m) =>
-				alphaOf(m[0]),
-			),
-		)
+/** Opacity of the shared state layer (`::before`). */
+const layer = (el: Locator): Promise<number> =>
+	el.evaluate((node) => Number(getComputedStyle(node, '::before').opacity))
 
 async function hover(page: Page, el: Locator): Promise<void> {
 	const box = await el.boundingBox()
@@ -75,10 +70,12 @@ test.describe('state layers and motion tokens', () => {
 	}) => {
 		const plain = page.locator('#plain')
 		await moveAway(page)
-		expect(await backgroundAlpha(plain)).toBe(0)
+		expect(await layer(plain)).toBe(0)
 
 		await hover(page, plain)
-		await expect.poll(() => backgroundAlpha(plain)).toBeCloseTo(0.08, 5)
+		await expect.poll(() => layer(plain)).toBeCloseTo(0.08, 5)
+		// The layer is the content colour over the control, not a new fill.
+		expect(await backgroundAlpha(plain)).toBe(0)
 
 		// The value is the shared system token, not a literal of the fan app.
 		const token = await page.evaluate(() =>
@@ -87,6 +84,17 @@ test.describe('state layers and motion tokens', () => {
 				.trim(),
 		)
 		expect(Number(token)).toBe(0.08)
+
+		// A control without the `state-layer` class draws none, and a disabled
+		// one shows none.
+		const bare = page.locator('#bare')
+		await hover(page, bare)
+		expect(
+			await bare.evaluate((el) => getComputedStyle(el, '::before').content),
+		).toBe('none')
+		expect(await backgroundAlpha(bare)).toBe(0)
+		await hover(page, page.locator('#disabled'))
+		expect(await layer(page.locator('#disabled'))).toBe(0)
 	})
 
 	test(`@spec components/infrastructure/fan/web/global/design-tokens "Keyboard focus uses focus-visible"`, async ({
@@ -100,12 +108,12 @@ test.describe('state layers and motion tokens', () => {
 		await plain.click()
 		await moveAway(page)
 		await expect(plain).toBeFocused()
-		await expect.poll(() => backgroundAlpha(plain)).toBe(0)
+		await expect.poll(() => layer(plain)).toBe(0)
 
 		// Keyboard focus shows the 10% focus layer.
 		await page.keyboard.press('Tab')
 		await expect(next).toBeFocused()
-		await expect.poll(() => backgroundAlpha(next)).toBeCloseTo(0.1, 5)
+		await expect.poll(() => layer(next)).toBeCloseTo(0.1, 5)
 	})
 
 	test(`@spec components/infrastructure/fan/web/global/design-tokens "Selected state persists and stacks"`, async ({
@@ -114,37 +122,30 @@ test.describe('state layers and motion tokens', () => {
 		const selected = page.locator('#selected')
 		await moveAway(page)
 		await expect.poll(() => backgroundAlpha(selected)).toBeCloseTo(0.12, 5)
-		expect(await imageLayerAlphas(selected)).toEqual([])
+		expect(await layer(selected)).toBe(0)
 
 		await hover(page, selected)
 		// The selected layer stays and the hover layer is drawn over it.
-		await expect
-			.poll(async () => {
-				const alphas = await imageLayerAlphas(selected)
-				return (
-					alphas.length > 0 && alphas.every((a) => Math.abs(a - 0.08) < 1e-5)
-				)
-			})
-			.toBe(true)
+		await expect.poll(() => layer(selected)).toBeCloseTo(0.08, 5)
 		expect(await backgroundAlpha(selected)).toBeCloseTo(0.12, 5)
 	})
 
 	test(`@spec components/infrastructure/fan/web/global/design-tokens "Press applies the shared 10% overlay"`, async ({
 		page,
 	}) => {
-		const pressable = page.locator('#pressable')
-		const layer = () =>
-			pressable.evaluate((el) =>
-				Number(getComputedStyle(el, '::after').opacity),
-			)
+		const plain = page.locator('#plain')
 		await moveAway(page)
-		expect(await layer()).toBe(0)
+		expect(await layer(plain)).toBe(0)
 
-		await hover(page, pressable)
+		await hover(page, plain)
 		await page.mouse.down()
-		await expect.poll(layer).toBeCloseTo(0.1, 5)
+		await expect.poll(() => layer(plain)).toBeCloseTo(0.1, 5)
+		// Material 3 scales no pressed control.
+		expect(await plain.evaluate((el) => getComputedStyle(el).transform)).toBe(
+			'none',
+		)
 		await page.mouse.up()
-		await expect.poll(layer).toBe(0)
+		await expect.poll(() => layer(plain)).toBeCloseTo(0.08, 5)
 	})
 
 	test(`@spec components/infrastructure/fan/web/global/design-tokens "Leaving element accelerates"`, async ({

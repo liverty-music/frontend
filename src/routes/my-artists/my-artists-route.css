@@ -3,7 +3,6 @@
 		:scope {
 			--_white-10: oklch(100% 0 0deg / 10%);
 			--_danger: oklch(60% 0.2 25deg);
-			--_danger-10: oklch(60% 0.2 25deg / 10%);
 
 			display: grid;
 			grid-template-areas: "content";
@@ -325,21 +324,13 @@
 			min-block-size: 44px;
 			border-radius: var(--md-sys-shape-corner-small);
 
-			color: oklch(from var(--_danger) l c h / 40%);
-
-			transition:
-				color var(--md-sys-motion-duration-short3) ease-out,
-				background-color var(--md-sys-motion-duration-short3) ease-out;
+			/* Full colour at rest: hover and focus are the shared state layer
+			   (`state-layer`), not a brighter icon. */
+			color: var(--_danger);
 
 			& svg {
 				inline-size: 1rem;
 				block-size: 1rem;
-			}
-
-			&:hover,
-			&:focus-visible {
-				color: var(--_danger);
-				background-color: var(--_danger-10);
 			}
 		}
 

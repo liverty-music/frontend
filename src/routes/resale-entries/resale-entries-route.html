@@ -7,7 +7,7 @@
 
 	<section if.bind="state === 'error'" class="[ resale-entries-panel card ] [ flow wrapper ]" data-testid="resale-entries-error">
 		<p class="[ resale-entries-lead ] [ md-typescale-body-medium ]" t="resaleEntries.error"></p>
-		<button type="button" class="[ button ] [ pressable ]" click.trigger="load()" t="resaleEntries.retry"></button>
+		<button type="button" class="[ button ] [ state-layer ]" click.trigger="load()" t="resaleEntries.retry"></button>
 	</section>
 
 	<p if.bind="state === 'ready' && rows.length === 0" class="[ resale-entries-lead ] [ md-typescale-body-medium ]" data-testid="resale-entries-empty" t="resaleEntries.empty"></p>
@@ -31,14 +31,14 @@
 					<template if.bind="confirmingId === row.entry.id">
 						<p class="[ resale-entries-lead ] [ md-typescale-body-medium ]" role="alert" data-testid="resale-entries-withdraw-confirm" t="resaleEntries.withdraw.confirm"></p>
 						<div class="[ resale-entries-actions ] [ cluster ]">
-							<button type="button" class="[ button ] [ pressable ]" data-variant="outlined" click.trigger="cancelWithdraw()" disabled.bind="withdrawingId === row.entry.id" t="resaleEntries.withdraw.keep"></button>
-							<button type="button" class="[ button ] [ pressable ]" click.trigger="withdraw(row)" disabled.bind="withdrawingId === row.entry.id" data-testid="resale-entries-withdraw-do" t="resaleEntries.withdraw.do"></button>
+							<button type="button" class="[ button ] [ state-layer ]" data-variant="outlined" click.trigger="cancelWithdraw()" disabled.bind="withdrawingId === row.entry.id" t="resaleEntries.withdraw.keep"></button>
+							<button type="button" class="[ button ] [ state-layer ]" click.trigger="withdraw(row)" disabled.bind="withdrawingId === row.entry.id" data-testid="resale-entries-withdraw-do" t="resaleEntries.withdraw.do"></button>
 						</div>
 					</template>
-					<button else type="button" class="[ button ] [ pressable ]" data-variant="outlined" click.trigger="askWithdraw(row)" data-testid="resale-entries-withdraw" t="resaleEntries.withdraw.action"></button>
+					<button else type="button" class="[ button ] [ state-layer ]" data-variant="outlined" click.trigger="askWithdraw(row)" data-testid="resale-entries-withdraw" t="resaleEntries.withdraw.action"></button>
 				</template>
 				<template case="won">
-					<a href="/tickets" class="[ button ] [ pressable ]" data-testid="resale-entries-to-tickets" t="resaleEntries.toTickets"></a>
+					<a href="/tickets" class="[ button ] [ state-layer ]" data-testid="resale-entries-to-tickets" t="resaleEntries.toTickets"></a>
 				</template>
 				<template case="lapsed">
 					<p class="[ resale-entries-lead ] [ md-typescale-body-medium ]" data-testid="resale-entries-note" t="resaleEntries.note.lapsed"></p>
@@ -47,7 +47,7 @@
 					<p class="[ resale-entries-lead ] [ md-typescale-body-medium ]" data-testid="resale-entries-note" t="resaleEntries.note.withdrawn"></p>
 				</template>
 			</template>
-			<a if.bind="canApplyAgain(row)" href.bind="applyUrl(row)" class="[ button ] [ pressable ]" data-testid="resale-entries-apply-again" t="resaleEntries.applyAgain"></a>
+			<a if.bind="canApplyAgain(row)" href.bind="applyUrl(row)" class="[ button ] [ state-layer ]" data-testid="resale-entries-apply-again" t="resaleEntries.applyAgain"></a>
 			<p if.bind="message && message.entryId === row.entry.id" class="[ resale-entries-error ] [ md-typescale-body-medium ]" role="alert" data-testid="resale-entries-message" t.bind="message.key"></p>
 		</li>
 	</ul>

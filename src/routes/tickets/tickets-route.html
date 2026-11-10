@@ -37,7 +37,7 @@
 		<p id="tickets-other-device" t="tickets.device.otherDevice"></p>
 		<button
 			type="button"
-			class="[ button tickets-action ] [ pressable ]"
+			class="[ button tickets-action ] [ state-layer ]"
 			data-variant="outlined"
 			if.bind="canOfferMove && !confirmingMove"
 			click.trigger="askToUseThisDevice()"
@@ -49,14 +49,14 @@
 			<div class="cluster">
 				<button
 					type="button"
-					class="[ button tickets-action ] [ pressable ]"
+					class="[ button tickets-action ] [ state-layer ]"
 					disabled.bind="moving"
 					click.trigger="confirmUseThisDevice()"
 					t="tickets.device.confirm"
 				></button>
 				<button
 					type="button"
-					class="[ button tickets-action ] [ pressable ]"
+					class="[ button tickets-action ] [ state-layer ]"
 					data-variant="outlined"
 					disabled.bind="moving"
 					click.trigger="cancelMove()"
@@ -83,7 +83,7 @@
 		<p class="[ tickets-error ] [ md-typescale-body-medium ]" t="tickets.error.message"></p>
 		<button
 			type="button"
-			class="[ button tickets-action ] [ pressable ]"
+			class="[ button tickets-action ] [ state-layer ]"
 			click.trigger="load()"
 			t="tickets.error.retry"
 		></button>
@@ -168,7 +168,7 @@
 							<p class="[ tickets-lead ] [ md-typescale-body-medium ]" t="tickets.resale.listedNote" t-params.bind="{ deadline: listingDeadlineLabel(group) }"></p>
 							<button
 								type="button"
-								class="[ button tickets-action ] [ pressable ]"
+								class="[ button tickets-action ] [ state-layer ]"
 								data-variant="outlined"
 								data-testid="tickets-withdraw"
 								if.bind="!offline"
@@ -193,7 +193,7 @@
 					</template>
 					<button
 						type="button"
-						class="[ button tickets-action ] [ pressable ]"
+						class="[ button tickets-action ] [ state-layer ]"
 						data-variant="outlined"
 						data-testid="tickets-list-for-resale"
 						if.bind="offersListing(ticket, listings, resaleByStock, offline)"
@@ -216,7 +216,7 @@
 
 			<button
 				type="button"
-				class="[ button tickets-action ] [ pressable ]"
+				class="[ button tickets-action ] [ state-layer ]"
 				if.bind="canShowCode && offersCode(group)"
 				click.trigger="openCode(group)"
 				t="tickets.code.show"
@@ -258,7 +258,7 @@
 			<div class="cluster">
 				<button
 					type="button"
-					class="[ button tickets-action ] [ pressable ]"
+					class="[ button tickets-action ] [ state-layer ]"
 					data-testid="tickets-resale-confirm-list"
 					disabled.bind="resaleBusy"
 					click.trigger="confirmListing()"
@@ -266,7 +266,7 @@
 				></button>
 				<button
 					type="button"
-					class="[ button tickets-action ] [ pressable ]"
+					class="[ button tickets-action ] [ state-layer ]"
 					data-variant="outlined"
 					disabled.bind="resaleBusy"
 					click.trigger="cancelListing()"
@@ -323,7 +323,7 @@
 
 			<button
 				type="button"
-				class="[ button tickets-action ] [ pressable ]"
+				class="[ button tickets-action ] [ state-layer ]"
 				data-variant="outlined"
 				click.trigger="closeCode()"
 				t="tickets.code.close"

@@ -120,7 +120,7 @@ const render = (args: Args) =>
 			${SCAFFOLD_STYLE}
 			<div class="story-stage">
 				<div aria-hidden="true">${args.backdrop === 'timetable' ? TIMETABLE : EMPTY}</div>
-				<button type="button" class="[ story-replay ] [ button ] [ pressable ]" data-variant="outlined" click.trigger="replay()">
+				<button type="button" class="[ story-replay ] [ button ] [ state-layer ]" data-variant="outlined" click.trigger="replay()">
 					Play again
 				</button>
 				<celebration-overlay

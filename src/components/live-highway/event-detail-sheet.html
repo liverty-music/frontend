@@ -79,7 +79,7 @@
         <button
           if.bind="!outOfRange.saved"
           type="button"
-          class="[ button out-of-range-action ] [ pressable ]"
+          class="[ button out-of-range-action ] [ state-layer ]"
           data-variant="outlined"
           disabled.bind="hypeUpdating"
           click.trigger="widenHype()"
@@ -88,7 +88,7 @@
         <button
           if.bind="outOfRange.saved && pushAction"
           type="button"
-          class="[ button push-action ] [ pressable ]"
+          class="[ button push-action ] [ state-layer ]"
           data-variant="outlined"
           click.trigger="pushAction.callback()"
         >${pushAction.label}</button>
@@ -110,7 +110,7 @@
         <button
           if.bind="showNotifyButton"
           type="button"
-          class="[ button journey-notify ] [ pressable ]"
+          class="[ button journey-notify ] [ state-layer ]"
           data-testid="journey-notify-btn"
           data-journey-status="tracking"
           data-emphasis.bind="notifyEmphasis"
@@ -132,7 +132,7 @@
             <span if.bind="config.status === 'lost'" class="journey-separator" aria-hidden="true"></span>
             <button
               type="button"
-              class="[ journey-node ] [ md-typescale-label-large ]"
+              class="[ journey-node ] [ state-layer ] [ md-typescale-label-large ]"
               md-typescale-label-large-emphasized.class="status === config.status"
               data-testid="journey-btn"
               data-journey-status.bind="config.status"
@@ -156,7 +156,7 @@
           <button
             if.bind="pushLine.offer && pushAction"
             type="button"
-            class="[ button push-action ] [ pressable ]"
+            class="[ button push-action ] [ state-layer ]"
             data-variant="outlined"
             click.trigger="pushAction.callback()"
           >${pushAction.label}</button>
@@ -166,7 +166,7 @@
           href.bind="event.sourceUrl"
           target="_blank"
           rel="noopener noreferrer"
-          class="[ button official-site ] [ pressable ]"
+          class="[ button official-site ] [ state-layer ]"
           data-variant="outlined"
           click.trigger="onSourceOpened()"
         >
@@ -182,7 +182,7 @@
         <button
           if.bind="!isFollowed"
           type="button"
-          class="[ button follow-action ] [ pressable ]"
+          class="[ button follow-action ] [ state-layer ]"
           disabled.bind="followUpdating"
           click.trigger="follow()"
           t="allNearby.follow.action"

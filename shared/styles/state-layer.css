@@ -1,0 +1,59 @@
+/* The state layer both apps use, Material 3 "States": `state-layer` on an
+   interactive element (a <button>, an <a>, a role="button" element, or a
+   <label>) draws hover, keyboard focus and press as an overlay of the
+   element's content colour (`currentcolor`) at the shared opacities: hover
+   8 %, focus 10 %, pressed 10 %. A disabled element (`disabled` or
+   `aria-disabled="true"`) shows none. Press is the overlay alone: Material 3
+   scales no pressed component (a button's corner morph is the button's own).
+
+   A label around a visually hidden input (a chip) maps the input's focus
+   and disabled state in its own block. A `:has(> input…)` here, on every
+   control of both apps, made the dashboard too slow to open on a 10x
+   throttled CPU (e2e/functional/deep-link-slow-device.spec.ts times out
+   with it and passes without it).
+
+   Pseudo-elements, the same in both apps: `::before` is the state layer;
+   `::after` is free for a 48 px touch target, the busy spinner or a
+   decoration. The layer takes the element's corners, so a block sets its
+   shape on the element. Values: https://m3.material.io/foundations/
+   interaction/states/state-layers (fixed opacities, content colour) and
+   …/applying-states (press is a ripple overlay, with no scale).
+
+   The fan app imports it from `src/styles/main.css`; the organizer console
+   from `organizer/styles/shared.css`, so a console component's shadow root
+   has it too. In the utility layer, so a block's own position (a fixed FAB)
+   outranks the `relative` here. */
+@layer utility {
+	.state-layer {
+		position: relative;
+	}
+
+	/* stylelint-disable-next-line cube/utility-single-property -- the overlay takes several properties together */
+	.state-layer::before {
+		pointer-events: none;
+		content: "";
+
+		position: absolute;
+		inset: 0;
+
+		border-radius: inherit;
+
+		opacity: 0;
+		background: currentcolor;
+
+		transition: opacity var(--md-sys-motion-duration-short2)
+			var(--md-sys-motion-easing-standard);
+	}
+
+	.state-layer:hover:not(:disabled, [aria-disabled="true"])::before {
+		opacity: var(--md-sys-state-hover-opacity);
+	}
+
+	.state-layer:active:not(:disabled, [aria-disabled="true"])::before {
+		opacity: var(--md-sys-state-pressed-opacity);
+	}
+
+	.state-layer:focus-visible:not(:disabled, [aria-disabled="true"])::before {
+		opacity: var(--md-sys-state-focus-opacity);
+	}
+}

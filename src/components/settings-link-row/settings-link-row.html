@@ -1,6 +1,6 @@
 <import from="../settings-list/settings-list.css"></import>
 
-<button type="button" click.trigger="action()" class="settings-row" data-testid.bind="testId || null">
+<button type="button" click.trigger="action()" class="[ settings-row ] [ state-layer ]" data-testid.bind="testId || null">
   <svg-icon if.bind="icon" name.bind="icon" class="settings-icon"></svg-icon>
   <span class="[ settings-row-label ] [ md-typescale-body-large ]">${label}</span>
   <span if.bind="value || chevron" class="settings-row-end">

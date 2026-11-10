@@ -2,7 +2,7 @@
 
 <div class="[ settings-row ] [ settings-row-toggle ]">
   <svg-icon name.bind="icon" class="settings-icon"></svg-icon>
-  <button type="button" click.trigger="toggleExpanded()" aria-expanded.bind="expanded" class="[ settings-expand ] [ stack ]">
+  <button type="button" click.trigger="toggleExpanded()" aria-expanded.bind="expanded" class="[ settings-expand ] [ stack ] [ state-layer ]">
     <span class="settings-expand-head">
       <span class="[ settings-row-label ] [ md-typescale-body-large ]">${label}</span>
       <svg-icon name="chevron-right" class="settings-expand-caret" data-expanded.bind="expanded"></svg-icon>
@@ -15,7 +15,7 @@
     role="switch"
     aria-checked.bind="checked"
     aria-label.bind="label"
-    class="settings-switch"
+    class="[ settings-switch ] [ state-layer ]"
   >
     <span class="settings-toggle-track" data-on.bind="checked">
       <span class="settings-toggle-thumb" data-on.bind="checked"></span>

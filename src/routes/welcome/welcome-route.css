@@ -171,14 +171,14 @@
 			inline-size: 100%;
 			max-inline-size: var(--page-max-inline-size);
 
-			&:active {
-				scale: 0.99;
-			}
+			/* The mock card's corners, which the shared state layer
+			   (`state-layer`) and the focus ring take. Press shows the layer
+			   alone, with no scale (Material 3). */
+			border-radius: var(--md-sys-shape-corner-large);
 
 			&:focus-visible {
 				outline: 2px solid var(--color-brand-primary);
 				outline-offset: 4px;
-				border-radius: var(--md-sys-shape-corner-large);
 			}
 		}
 

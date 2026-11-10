@@ -31,8 +31,8 @@ function row(variant: (typeof VARIANTS)[number]): string {
 				? 'background:linear-gradient(to right, var(--color-brand-primary), var(--color-brand-secondary))'
 				: ''
 		}">
-			<button type="button" class="[ button ] [ pressable ]"${attr}>${name} button</button>
-			<a href="#" class="[ button ] [ pressable ]"${attr}>${name} link</a>
+			<button type="button" class="[ button ] [ state-layer ]"${attr}>${name} button</button>
+			<a href="#" class="[ button ] [ state-layer ]"${attr}>${name} link</a>
 		</div>`
 }
 

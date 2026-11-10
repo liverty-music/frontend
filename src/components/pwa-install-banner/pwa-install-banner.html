@@ -16,7 +16,7 @@
 
   <button
     type="button"
-    class="[ button pwa-banner-action ] [ pressable ]"
+    class="[ button pwa-banner-action ] [ state-layer ]"
     busy-on-click.bind="() => onCta()"
     t="pwaInstallBanner.cta"
     data-testid="pwa-install-banner-cta"
@@ -63,7 +63,7 @@
 
       <button
         type="button"
-        class="[ button pwa-banner-sheet-action ] [ pressable ]"
+        class="[ button pwa-banner-sheet-action ] [ state-layer ]"
         click.trigger="onConfirmInstalled()"
         t="pwaInstallBanner.guideConfirm"
         data-testid="pwa-install-banner-confirm"

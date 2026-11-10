@@ -2,8 +2,10 @@ import { concertWire } from '../support/concert-wire'
 import { expect, type Locator, type Page, test } from '../support/test'
 
 /**
- * Press acknowledgement is CSS on `:active`: a state layer over the control and
- * a shape change. Only a real pointer press puts an element in `:active`, so
+ * Press acknowledgement is CSS on `:active`: the shared state layer
+ * (`::before`) over the control, and on a button the Material 3 corner
+ * morph; nothing scales (Material 3 "Applying states": a pressed state is a
+ * ripple overlay). Only a real pointer press puts an element in `:active`, so
  * these run against the guest dashboard with a real mouse held down.
  */
 
@@ -105,12 +107,11 @@ async function openCard(page: Page): Promise<Locator> {
 	return card
 }
 
-/** Opacity of the state layer, on whichever pseudo-element the card leaves free. */
-function stateLayer(card: Locator): Promise<number> {
-	return card.evaluate((el) => {
-		const pseudo = el.hasAttribute('data-matched') ? '::after' : '::before'
-		return Number(getComputedStyle(el, pseudo).opacity)
-	})
+/** Opacity of the shared state layer (`::before`). */
+function stateLayer(el: Locator): Promise<number> {
+	return el.evaluate((node) =>
+		Number(getComputedStyle(node, '::before').opacity),
+	)
 }
 
 async function pressCentre(page: Page, target: Locator): Promise<void> {
@@ -130,23 +131,25 @@ async function pressAt(
 }
 
 test.describe('press acknowledgement', () => {
-	test(`@spec components/infrastructure/fan/web/global/app-shell "Pressing a control shows the state layer and shape change"`, async ({
+	test(`@spec components/infrastructure/fan/web/global/app-shell "Pressing a control shows the state layer and shape change" (card)`, async ({
 		page,
 	}) => {
 		const card = await openCard(page)
 		expect(await stateLayer(card)).toBe(0)
+		const radius = () =>
+			card.evaluate((el) => getComputedStyle(el).borderTopLeftRadius)
+		const restRadius = await radius()
 
 		await pressCentre(page, card)
-		await expect.poll(() => stateLayer(card)).toBeGreaterThan(0)
-		await expect
-			.poll(() => card.evaluate((el) => getComputedStyle(el).transform))
-			.not.toBe('none')
+		await expect.poll(() => stateLayer(card)).toBeCloseTo(0.1, 5)
+		// Material 3 scales no pressed card, and a card keeps its shape.
+		expect(await card.evaluate((el) => getComputedStyle(el).transform)).toBe(
+			'none',
+		)
+		expect(await radius()).toBe(restRadius)
 
 		await page.mouse.up()
 		await expect.poll(() => stateLayer(card)).toBe(0)
-		await expect
-			.poll(() => card.evaluate((el) => getComputedStyle(el).transform))
-			.toBe('none')
 	})
 
 	test(`@spec components/infrastructure/fan/web/global/app-shell "Pressing a control shows the state layer and shape change" (discover CTA)`, async ({
@@ -159,18 +162,22 @@ test.describe('press acknowledgement', () => {
 		await page.goto(`${APP}/my-artists`)
 		const cta = page.getByTestId('discover-link').first()
 		await cta.waitFor({ timeout: 10000 })
-		const layer = () =>
-			cta.evaluate((el) => Number(getComputedStyle(el, '::after').opacity))
+		const layer = () => stateLayer(cta)
 		const radius = () =>
 			cta.evaluate((el) => getComputedStyle(el).borderTopLeftRadius)
 		const before = await radius()
+		expect(before).toBe('12px')
 		expect(await layer()).toBe(0)
 
 		// Press its leading quarter: on a short desktop viewport the centred FAB,
 		// floating above the guest's signup banner, covers the CTA's centre.
 		await pressAt(page, cta, 0.15)
-		await expect.poll(layer).toBeGreaterThan(0)
-		await expect.poll(radius).not.toBe(before)
+		await expect.poll(layer).toBeCloseTo(0.1, 5)
+		// The Material 3 Expressive pressed shape: the corners square to 8px.
+		await expect.poll(radius).toBe('8px')
+		expect(await cta.evaluate((el) => getComputedStyle(el).transform)).toBe(
+			'none',
+		)
 
 		// Release off the link so the press does not become a click that
 		// navigates away before the release can be observed.
@@ -205,10 +212,9 @@ test.describe('press acknowledgement', () => {
 	}) => {
 		await page.emulateMedia({ reducedMotion: 'reduce' })
 		const card = await openCard(page)
-		const transition = await card.evaluate((el) => {
-			const pseudo = el.hasAttribute('data-matched') ? '::after' : '::before'
-			return getComputedStyle(el, pseudo).transitionDuration
-		})
+		const transition = await card.evaluate(
+			(el) => getComputedStyle(el, '::before').transitionDuration,
+		)
 		expect(transition).toBe('0s')
 
 		await pressCentre(page, card)

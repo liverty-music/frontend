@@ -25,7 +25,7 @@
       <a
         href="/discovery"
         t="myArtists.empty.discoverButton"
-        class="[ button empty-action ] [ pressable ]"
+        class="[ button empty-action ] [ state-layer ]"
         data-testid="discover-link"
       ></a>
     </div>
@@ -89,7 +89,7 @@
           <td if.bind="editing" class="artist-remove-col">
             <button
               type="button"
-              class="artist-remove-btn"
+              class="[ artist-remove-btn ] [ state-layer ]"
               aria-label.bind="i18n.tr('myArtists.unfollowArtist', { name: artist.artist.name })"
               click.trigger="unfollowArtist(artist)"
             >
@@ -106,7 +106,7 @@
      FAB is hidden while editing, so this is the sole (and unambiguous) exit.
      Shown only in edit mode. -->
 <div if.bind="editing" class="edit-action-bar" role="toolbar" aria-label="編集">
-  <button type="button" class="[ button ] [ pressable ]" click.trigger="toggleEditing()">
+  <button type="button" class="[ button ] [ state-layer ]" click.trigger="toggleEditing()">
     <svg-icon name="check" size="sm" aria-hidden="true"></svg-icon>
     <span t="myArtists.done"></span>
   </button>
