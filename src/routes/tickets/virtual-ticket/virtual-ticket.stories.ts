@@ -116,9 +116,11 @@ export const NotEntered = {
 	play: async ({ canvasElement }) => {
 		const face = faceOf(canvasElement)
 		await coverLoaded(face)
-		// The face is tinted with the first performer's hue (an oklch colour,
+		// The paper is tinted with the first performer's hue (an oklch colour,
 		// not the transparent fallback of an unresolved --artist-hue).
-		await expect(getComputedStyle(face).backgroundColor).toContain('oklch')
+		const body = face.querySelector<HTMLElement>('.virtual-ticket-body')
+		if (!body) throw new Error('no body')
+		await expect(getComputedStyle(body).backgroundColor).toContain('oklch')
 		await expect(getComputedStyle(face).color).toContain('oklch')
 		const text = face.textContent ?? ''
 		for (const item of [
