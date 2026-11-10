@@ -6,8 +6,8 @@
    (`organizer/ui/console-field/console-field.css`):
    - rest      56px tall, a 1px `outline` border, extra-small corners, on the
                `surface` colour
-   - focused   a 2px `primary` border: the 1px border plus a 1px inset
-               shadow, so the text does not move; keyboard focus also shows
+   - focused   a 2px `primary` border, its extra pixel taken from the
+               padding so the text does not move; keyboard focus also shows
                the app's global ring
    - invalid   `aria-invalid="true"` turns the border `error`, focused or not
    - disabled  on-surface at 38% for the text, at 12% for the border */
@@ -28,9 +28,9 @@
 
 		:scope:focus {
 			--_indicator: var(--md-sys-color-primary);
-			--_indicator-inner: inset 0 0 0 1px var(--_indicator);
 
-			box-shadow: var(--_indicator-inner);
+			padding-inline: calc(var(--space-s) - 1px);
+			border-width: 2px;
 		}
 
 		:scope[aria-invalid="true"] {

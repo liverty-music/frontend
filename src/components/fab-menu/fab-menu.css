@@ -53,8 +53,7 @@
 				var(--color-brand-primary),
 				var(--color-brand-secondary)
 			);
-			box-shadow: 0 4px 20px
-				color-mix(in oklch, var(--color-brand-primary) 55%, transparent);
+			box-shadow: var(--glow-fab);
 
 			/* Spatial spring for the sink. A press shows the shared state layer
 			   (`state-layer`, ::before) alone: Material 3 scales no pressed FAB. */
@@ -276,7 +275,6 @@
 			color: var(--md-sys-color-on-surface);
 
 			background: var(--md-sys-color-menu-surface);
-			box-shadow: var(--shadow-soft);
 		}
 
 		.fab-item-label {
@@ -295,7 +293,6 @@
 			text-align: end;
 
 			background: var(--md-sys-color-menu-surface);
-			box-shadow: var(--shadow-soft);
 		}
 
 		/* Selected/active item = filled brand container (the M3 "on" treatment).

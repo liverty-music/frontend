@@ -4,7 +4,6 @@
 		--bottom-nav-height: var(--nav-bar-clearance);
 		--snack-bar-container: var(--md-sys-color-inverse-surface);
 		--snack-bar-on-container: var(--md-sys-color-inverse-on-surface);
-		--snack-bar-shadow: 0 3px 8px oklch(0% 0 0deg / 20%);
 
 		display: contents;
 	}

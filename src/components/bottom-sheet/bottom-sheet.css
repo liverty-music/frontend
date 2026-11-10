@@ -193,7 +193,7 @@
 			border-start-end-radius: var(--md-sys-shape-corner-extra-large);
 
 			background: var(--sheet-bg, var(--md-sys-color-surface-container));
-			box-shadow: var(--shadow-sheet);
+			box-shadow: var(--md-sys-elevation-level1);
 
 			/* Focus target on open; suppress the focus ring on the container
 			   itself (interactive children keep their own rings). Scoped to

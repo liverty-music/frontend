@@ -14,11 +14,6 @@
       "count": 1
     }
   },
-  "src/styles/button.css": {
-    "declaration-property-custom-property-allowed-list": {
-      "count": 1
-    }
-  },
   "organizer/event/sales-tab/sales-tab.css": {
     "cube/block-max-lines": {
       "count": 1
@@ -44,9 +39,6 @@
       "count": 1
     },
     "declaration-property-custom-property-allowed-list": {
-      "count": 6
-    },
-    "declaration-property-value-allowed-list": {
       "count": 2
     }
   },
@@ -58,12 +50,6 @@
   "organizer/ui/console-field/console-field.css": {
     "cube/block-max-lines": {
       "count": 1
-    },
-    "declaration-property-custom-property-allowed-list": {
-      "count": 1
-    },
-    "declaration-property-value-allowed-list": {
-      "count": 1
     }
   },
   "src/components/bottom-nav-bar/bottom-nav-bar.css": {
@@ -71,9 +57,6 @@
       "count": 1
     },
     "declaration-property-custom-property-allowed-list": {
-      "count": 2
-    },
-    "declaration-property-value-allowed-list": {
       "count": 1
     }
   },
@@ -87,12 +70,12 @@
       "count": 1
     },
     "declaration-property-custom-property-allowed-list": {
-      "count": 2
+      "count": 1
     }
   },
   "src/components/coach-mark/coach-mark.css": {
     "declaration-property-custom-property-allowed-list": {
-      "count": 2
+      "count": 1
     }
   },
   "src/components/celebration-overlay/celebration-overlay.css": {
@@ -103,9 +86,6 @@
   "src/components/discovery-swap-button/discovery-swap-button.css": {
     "cube/block-max-lines": {
       "count": 1
-    },
-    "declaration-property-value-allowed-list": {
-      "count": 1
     }
   },
   "src/components/fab-menu/fab-menu.css": {
@@ -113,26 +93,12 @@
       "count": 1
     },
     "declaration-property-custom-property-allowed-list": {
-      "count": 4
-    },
-    "declaration-property-value-allowed-list": {
-      "count": 1
-    }
-  },
-  "src/components/notification-mock/notification-mock-card.css": {
-    "declaration-property-custom-property-allowed-list": {
       "count": 1
     }
   },
   "src/components/onboarding-progress/onboarding-progress.css": {
     "cube/block-max-lines": {
       "count": 1
-    },
-    "declaration-property-custom-property-allowed-list": {
-      "count": 1
-    },
-    "declaration-property-value-allowed-list": {
-      "count": 4
     }
   },
   "src/components/live-highway/concert-highway.css": {
@@ -148,10 +114,7 @@
       "count": 1
     },
     "declaration-property-custom-property-allowed-list": {
-      "count": 7
-    },
-    "declaration-property-value-allowed-list": {
-      "count": 1
+      "count": 6
     }
   },
   "src/components/live-highway/event-detail-sheet.css": {
@@ -166,9 +129,6 @@
   },
   "src/components/settings-list/settings-list.css": {
     "cube/block-max-lines": {
-      "count": 1
-    },
-    "declaration-property-custom-property-allowed-list": {
       "count": 1
     }
   },
@@ -185,9 +145,6 @@
   "src/routes/my-artists/my-artists-route.css": {
     "cube/block-max-lines": {
       "count": 1
-    },
-    "declaration-property-value-allowed-list": {
-      "count": 3
     }
   },
   "src/routes/order/order-route.css": {

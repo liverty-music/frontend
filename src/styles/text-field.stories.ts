@@ -92,9 +92,18 @@ export const Focused = {
 			'var(--md-sys-color-primary)',
 		)
 		const style = getComputedStyle(el)
-		// A 2px primary indicator: the 1px border and a 1px inset shadow.
+		// A 2px primary border, its extra pixel taken from the padding, and
+		// the app's keyboard focus ring outside it.
 		await expect(style.borderTopColor).toBe(primary)
-		await expect(style.boxShadow).toBe(`${primary} 0px 0px 0px 1px inset`)
+		await expect(style.borderTopWidth).toBe('2px')
+		await expect(
+			Number.parseFloat(style.paddingLeft) +
+				Number.parseFloat(style.borderLeftWidth),
+		).toBe(17)
+		await expect(style.boxShadow).toBe('none')
+		await expect(style.outlineStyle).toBe('solid')
+		await expect(style.outlineWidth).toBe('3px')
+		await expect(style.outlineOffset).toBe('2px')
 		await expectScreenshot(el, 'text-field-focused')
 	},
 } satisfies Story

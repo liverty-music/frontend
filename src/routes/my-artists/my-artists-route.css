@@ -266,6 +266,8 @@
 				background: var(--md-sys-color-surface);
 			}
 
+			/* stylelint-disable declaration-property-value-allowed-list -- the hype tier glows in the artist's own colour are spec-defined (my-artists "Active dot reflects hype tier CSS effects"); a colour set per row cannot be a root token */
+
 			/* HOME: subtle glow */
 			&[data-active="true"][data-level="home"] {
 				border: 1px solid var(--_dot-color, oklch(70% 0.15 60deg));
@@ -295,6 +297,7 @@
 					oklch(from var(--_dot-color, oklch(70% 0.15 60deg)) l c h / 20%);
 				animation: dot-pulse 1.5s ease-in-out infinite;
 			}
+			/* stylelint-enable declaration-property-value-allowed-list */
 		}
 
 		/* The radio is visually hidden, so its dot shows the focus ring. */

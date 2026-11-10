@@ -92,6 +92,7 @@
 			);
 
 			/* Massive multi-layer outer glow — festival spotlight spill */
+			/* stylelint-disable declaration-property-value-allowed-list, declaration-property-custom-property-allowed-list -- the matched card's glow in the artist's own hue is spec-defined (live-highway "Matched event card glow opacity"); a hue set per card cannot be a root token */
 			box-shadow:
 				0 -8px 20px var(--_spot-bright),
 				0 -4px 40px var(--_spot-glow),
@@ -99,6 +100,7 @@
 				0 0 40px var(--_spot-glow),
 				0 0 80px oklch(60% 0.3 var(--artist-hue) / 25%),
 				inset 0 4px 30px var(--_spot-mid);
+			/* stylelint-enable declaration-property-value-allowed-list, declaration-property-custom-property-allowed-list */
 		}
 
 		/* Spotlight beam cone — contained within card using clipped ::after (the

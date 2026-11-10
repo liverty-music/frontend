@@ -28,9 +28,12 @@
 
 		background: var(--md-sys-color-surface);
 
+		/* A 2px `primary` border, its extra pixel taken from the padding
+		   so the text does not move. */
 		&:focus-within {
+			padding-inline: calc(var(--space-s) - 1px);
+			border-width: 2px;
 			border-color: var(--md-sys-color-primary);
-			box-shadow: inset 0 0 0 1px var(--md-sys-color-primary);
 		}
 
 		/* The field shows the keyboard focus ring for the control inside
@@ -179,8 +182,9 @@
 		background: var(--md-sys-color-surface-container-low);
 
 		&:focus-within {
+			padding-inline: var(--space-s);
+			border-width: 1px;
 			border-color: var(--md-sys-color-outline-variant);
-			box-shadow: none;
 		}
 	}
 }
