@@ -59,15 +59,15 @@ export const Pressed = {
 /**
  * A busy filled button (`busy-on-click` sets `data-busy`): the spinner on
  * ::after shows over the button while the state layer keeps ::before, so the
- * two no longer compete for one pseudo-element.
+ * two no longer compete for one pseudo-element. The label is hidden (its text
+ * fill is transparent) so it does not show through the spinner.
  */
 export const BusyButton = {
 	tags: ['reduced-motion'],
 	parameters: {
-		// The busy state dims the whole control to 65 % (unchanged by this
-		// story), so its label falls below 4.5:1 while the action runs, as a
-		// disabled control's does. This story checks where the spinner is
-		// drawn, not that dimming, which predates the shared state layer.
+		// The busy label is not shown (its text fill is transparent), but axe
+		// measures the text colour, dimmed to 65 % with the control, and finds
+		// it below 4.5:1. No sighted user reads that text while busy.
 		a11y: { options: { rules: { 'color-contrast': { enabled: false } } } },
 	},
 	render: () =>
@@ -93,5 +93,9 @@ export const BusyButton = {
 		await expect(getComputedStyle(button, '::before').content).toBe('""')
 		await expect(layerOpacity(button)).toBe(0)
 		await expect(getComputedStyle(button).opacity).toBe('0.65')
+		// The label does not show through the spinner.
+		await expect(
+			getComputedStyle(button).getPropertyValue('-webkit-text-fill-color'),
+		).toBe('rgba(0, 0, 0, 0)')
 	},
 } satisfies Story

@@ -131,7 +131,7 @@ async function pressAt(
 }
 
 test.describe('press acknowledgement', () => {
-	test('a pressed card shows the state layer and does not scale', async ({
+	test(`@spec components/infrastructure/fan/web/global/app-shell "Pressing a control shows the state layer and shape change" (card)`, async ({
 		page,
 	}) => {
 		const card = await openCard(page)

@@ -122,7 +122,8 @@
 
 /* Busy state — applied by the `busy-on-click` custom attribute while an async
    click handler is in flight. Dims the control, blocks further interaction,
-   and draws a spinner on ::after (the shared state layer keeps ::before). A
+   hides its label (still read by assistive technology) so it does not show
+   through the spinner, and draws the spinner on ::after (the shared state layer keeps ::before). A
    block that puts its own ::after on a control that can be busy (a chip's
    touch target, a banner action's cue) leaves it while `[data-busy]` is set.
    Centred with `translate`, so the turn (`rotate`) keeps it centred. */
@@ -131,8 +132,14 @@
 	[data-busy] {
 		pointer-events: none;
 		cursor: progress;
+
 		position: relative;
+
 		opacity: 0.65;
+
+		/* Text fill, not color: a block's color (the block layer) outranks this
+		   layer, and no block sets the fill. */
+		-webkit-text-fill-color: transparent;
 	}
 
 	/* stylelint-disable-next-line cube/utility-single-property -- the spinner of the busy state */
