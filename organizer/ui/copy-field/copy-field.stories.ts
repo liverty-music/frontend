@@ -46,9 +46,21 @@ export const CopyIconOnAPhone = {
 			.element()
 		const icon = deepQuery(button, 'svg')
 		await expect(icon.getBoundingClientRect().width).toBe(24)
-		const target = button.getBoundingClientRect()
-		await expect(target.width).toBeGreaterThanOrEqual(48)
-		await expect(target.height).toBeGreaterThanOrEqual(48)
+		// The shared icon button is 40 px; its target reaches 4 px past each
+		// edge, so a tap 3 px outside the visible circle still lands on it.
+		const box = button.getBoundingClientRect()
+		await expect(box.width).toBe(40)
+		const root = button.getRootNode() as ShadowRoot
+		const cx = box.left + box.width / 2
+		const cy = box.top + box.height / 2
+		for (const [x, y] of [
+			[box.left - 3, cy],
+			[box.right + 3, cy],
+			[cx, box.top - 3],
+			[cx, box.bottom + 3],
+		]) {
+			await expect(root.elementFromPoint(x, y)).toBe(button)
+		}
 	},
 } satisfies Story
 

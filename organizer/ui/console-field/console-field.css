@@ -54,12 +54,14 @@
 	}
 
 	/*
-	 * Customizable select: the picker and its options take the console's
-	 * tokens (an M3 menu: surface container, the chosen option in the
-	 * secondary container), and the element stays a native select for the
-	 * keyboard, the form value and screen readers. A browser without
-	 * `base-select` shows its own picker, readable in dark because the control
-	 * inherits the page's `color-scheme`.
+	 * Customizable select: the picker and its options take the values of the
+	 * shared `menu` block (`shared/styles/menu.css`), which a pseudo-element
+	 * cannot carry as a class: surface container, extra-small corners,
+	 * elevation level 2, 48 px options with 12 px side padding; the chosen
+	 * option is in the secondary container. The element stays a native
+	 * select for the keyboard, the form value and screen readers. A browser
+	 * without `base-select` shows its own picker, readable in dark because
+	 * the control inherits the page's `color-scheme`.
 	 */
 	select,
 	::picker(select) {
@@ -84,14 +86,14 @@
 		color: var(--md-sys-color-on-surface);
 
 		background: var(--md-sys-color-surface-container);
-		box-shadow: var(--md-elevation-2);
+		box-shadow: var(--md-sys-elevation-level2);
 	}
 
 	option {
 		gap: var(--space-xs);
 
 		min-block-size: var(--md-sys-target-size);
-		padding-inline: var(--space-s);
+		padding-inline: var(--space-xs);
 
 		color: var(--md-sys-color-on-surface);
 

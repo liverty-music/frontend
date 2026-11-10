@@ -1,40 +1,16 @@
+/* The button is the shared `icon-button` block and the list the shared `menu`
+   block (`shared/styles/`, in every console shadow root); these rules only
+   place the menu under its button. */
 @layer block {
 	:host {
 		display: inline-flex;
 	}
 
-	/* M3 standard icon button. */
-	.button {
+	.trigger {
 		anchor-name: --overflow-menu;
-
-		display: inline-grid;
-		place-items: center;
-
-		inline-size: var(--md-sys-target-size);
-		block-size: var(--md-sys-target-size);
-		border: none;
-		border-radius: var(--md-sys-shape-corner-full);
-
-		color: var(--md-sys-color-on-surface-variant);
-
-		background: transparent;
 	}
 
-	/* M3 menu: surface container, extra-small corners, level-2 elevation,
-	   48 px items. Without anchor positioning the popover stays centered. */
-	.menu {
-		min-inline-size: 160px;
-		max-inline-size: 280px;
-		padding-block: var(--space-2xs);
-		border: none;
-		border-radius: var(--md-sys-shape-corner-extra-small);
-
-		color: var(--md-sys-color-on-surface);
-
-		background: var(--md-sys-color-surface-container);
-		box-shadow: var(--md-elevation-2);
-	}
-
+	/* Without anchor positioning the popover stays centred. */
 	@supports (position-area: block-end) {
 		.menu {
 			position-anchor: --overflow-menu;
@@ -43,41 +19,6 @@
 				flip-block,
 				flip-inline,
 				flip-block flip-inline;
-		}
-	}
-
-	.menu:popover-open {
-		display: grid;
-	}
-
-	.item {
-		cursor: pointer;
-
-		display: flex;
-		align-items: center;
-
-		inline-size: 100%;
-		min-block-size: var(--md-sys-target-size);
-		padding-inline: var(--space-xs);
-		border: none;
-		color: inherit;
-		text-align: start;
-		text-decoration: none;
-
-		background: transparent;
-
-		&:focus-visible {
-			outline-offset: -3px;
-		}
-
-		/* Unavailable items stay in the menu, dimmed (M3 Menus). */
-		&[aria-disabled="true"] {
-			cursor: not-allowed;
-			color: color-mix(
-				in oklch,
-				var(--md-sys-color-on-surface) 38%,
-				transparent
-			);
 		}
 	}
 }

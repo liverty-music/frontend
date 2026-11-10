@@ -1,0 +1,113 @@
+/* The icon button both apps use, a Material 3 standard icon button (small,
+   round): `class="icon-button"` on a native <button> or an <a> that holds one
+   24px icon and an accessible name (`aria-label`, or visually hidden text).
+   The fan app imports it from `src/styles/main.css`; the organizer console
+   from `organizer/styles/shared.css`, so a console component's shadow root
+   has it too (a `popovertarget` button and a link cannot reach a component's
+   button across a shadow boundary).
+   - container  40px, round (`corner-full`), no fill
+   - icon       24px (an <svg> child, or the fan app's svg-icon through
+                --icon-size), `on-surface-variant`. A surface of another
+                colour sets --icon-button-color on it (the snack bar: its own
+                text colour)
+   - target     48px (`--md-sys-target-size`), a transparent ::after centred
+                on the container, so the 40px button still takes a 48px tap
+   - states     a layer of the icon colour over the container (::before):
+                hover 8 %, keyboard focus 10 %, pressed 10 %
+   - toggle     `aria-pressed="true"`: a `primary` icon
+   - disabled   `disabled` or `aria-disabled="true"`: `on-surface` at 38 %, no
+                state layer
+   The focus ring is the app's global one. Values: Material 3 icon buttons,
+   "Icon button - Size - Small" and "Icon button - Color - Standard"
+   (https://m3.material.io/components/icon-buttons/specs). */
+@layer block {
+	@scope (.icon-button) {
+		:scope {
+			--_color: var(
+				--icon-button-color,
+				var(--md-sys-color-on-surface-variant)
+			);
+			--icon-size: 24px;
+
+			cursor: pointer;
+
+			position: relative;
+
+			display: inline-grid;
+			flex-shrink: 0;
+			place-items: center;
+
+			inline-size: 40px;
+			block-size: 40px;
+			border: none;
+			border-radius: var(--md-sys-shape-corner-full);
+
+			color: var(--_color);
+			text-decoration: none;
+
+			background: transparent;
+		}
+
+		:scope > svg {
+			inline-size: var(--icon-size);
+			block-size: var(--icon-size);
+		}
+
+		:scope::before {
+			pointer-events: none;
+			content: "";
+
+			position: absolute;
+			inset: 0;
+
+			border-radius: inherit;
+
+			opacity: 0;
+			background: currentcolor;
+
+			transition: opacity var(--md-sys-motion-duration-short2)
+				var(--md-sys-motion-easing-standard);
+		}
+
+		:scope::after {
+			content: "";
+
+			position: absolute;
+			inset-block-start: 50%;
+			inset-inline-start: 50%;
+			translate: -50% -50%;
+
+			inline-size: var(--md-sys-target-size);
+			block-size: var(--md-sys-target-size);
+		}
+
+		:scope:hover::before {
+			opacity: var(--md-sys-state-hover-opacity);
+		}
+
+		:scope:focus-visible::before {
+			opacity: var(--md-sys-state-focus-opacity);
+		}
+
+		:scope:active::before {
+			opacity: var(--md-sys-state-pressed-opacity);
+		}
+
+		:scope[aria-pressed="true"] {
+			color: var(--md-sys-color-primary);
+		}
+
+		:scope:is(:disabled, [aria-disabled="true"]) {
+			cursor: not-allowed;
+			color: color-mix(
+				in oklch,
+				var(--md-sys-color-on-surface) 38%,
+				transparent
+			);
+		}
+
+		:scope:is(:disabled, [aria-disabled="true"])::before {
+			opacity: 0;
+		}
+	}
+}

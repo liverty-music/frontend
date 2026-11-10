@@ -175,10 +175,6 @@
 		--nav-bar-clearance: var(--nav-bar-height);
 		--safe-area-block-end: env(safe-area-inset-bottom, 0px);
 
-		/* The menus' shadow. It differs from the shared level 2
-		   (`--md-sys-elevation-level2`); the FAB uses the shared levels 3 and 4. */
-		--md-elevation-2: 0 2px 6px oklch(0% 0 0deg / 20%);
-
 		/* The top app bar's height, which the menus under it clear. */
 		--top-app-bar-block-size: 64px;
 

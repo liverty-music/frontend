@@ -35,9 +35,6 @@
   "organizer/shell/top-app-bar/top-app-bar.css": {
     "cube/block-max-lines": {
       "count": 1
-    },
-    "declaration-property-custom-property-allowed-list": {
-      "count": 1
     }
   },
   "shared/ui/circular-progress/circular-progress.css": {
@@ -66,7 +63,7 @@
       "count": 1
     },
     "declaration-property-custom-property-allowed-list": {
-      "count": 2
+      "count": 1
     },
     "declaration-property-value-allowed-list": {
       "count": 1
@@ -90,18 +87,7 @@
       "count": 1
     }
   },
-  "organizer/ui/overflow-menu/overflow-menu.css": {
-    "declaration-property-custom-property-allowed-list": {
-      "count": 1
-    },
-    "property-disallowed-list": {
-      "count": 1
-    }
-  },
   "organizer/ui/venue-field/venue-field.css": {
-    "declaration-property-custom-property-allowed-list": {
-      "count": 1
-    },
     "property-disallowed-list": {
       "count": 2
     }

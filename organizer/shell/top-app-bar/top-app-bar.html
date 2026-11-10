@@ -3,7 +3,7 @@
 
 <header class="top-app-bar">
   <template if.bind="breadcrumbs.parent">
-    <a href.bind="breadcrumbs.parent.href" class="back state-layer" data-testid="back">
+    <a href.bind="breadcrumbs.parent.href" class="[ icon-button back ]" data-testid="back">
       <console-icon name="arrow-back"></console-icon>
       <span class="visually-hidden">${'shell.back' & t}: <crumb-text crumb.bind="breadcrumbs.parent"></crumb-text></span>
     </a>
@@ -30,7 +30,7 @@
         <a
           repeat.for="artist of artists; key: id"
           href.bind="artist.href"
-          class="[ menu-item state-layer ] [ md-typescale-label-large ]"
+          class="[ menu-item ] [ md-typescale-label-large ]"
           aria-current.bind="artist.id === context.artistId ? 'true' : null"
           click.trigger="chooseArtist()"
         >
@@ -46,7 +46,7 @@
     external
     target="_blank"
     rel="noopener"
-    class="help state-layer"
+    class="icon-button"
     title.bind="'shell.help' & t"
     data-testid="help"
   >
@@ -55,7 +55,7 @@
   </a>
   <button
     type="button"
-    class="account state-layer"
+    class="icon-button"
     popovertarget="account-menu"
     aria-label.bind="'shell.account' & t"
   >
@@ -67,7 +67,7 @@
       <button
         repeat.for="code of languages"
         type="button"
-        class="[ menu-item state-layer ] [ md-typescale-label-large ]"
+        class="[ menu-item ] [ md-typescale-label-large ]"
         lang.bind="code"
         aria-pressed.bind="language.current === code ? 'true' : 'false'"
         click.trigger="setLanguage(code)"
@@ -77,7 +77,7 @@
       </button>
     </div>
     <hr class="menu-divider">
-    <button type="button" class="[ menu-item state-layer ] [ md-typescale-label-large ]" click.trigger="signOut()">
+    <button type="button" class="[ menu-item ] [ md-typescale-label-large ]" click.trigger="signOut()">
       <console-icon name="logout"></console-icon>
       <span>${'shell.signOut' & t}</span>
     </button>

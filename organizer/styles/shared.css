@@ -10,14 +10,16 @@
  */
 @layer reset, global, composition, utility, block;
 
-/* The reset, the compositions, the screen-reader utility and the card the
-   fan app uses too, and the type styles, so a console component's template
-   can use the classes. */
+/* The reset, the compositions, the screen-reader utility, the type styles and
+   the blocks the fan app uses too (card, icon button, menu), so a console
+   component's template can use the classes. */
 @import "../../shared/styles/reset.css";
 @import "../../shared/styles/compositions.css";
 @import "../../shared/styles/utilities.css";
 @import "../../shared/styles/m3-typescale.css";
 @import "../../shared/styles/card.css";
+@import "../../shared/styles/icon-button.css";
+@import "../../shared/styles/menu.css";
 
 @layer global {
 	/* Counts, prices, dates and times line up in columns: every digit in the

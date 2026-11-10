@@ -1,11 +1,11 @@
 /*
  * Styled for the fan app by default. An app can restyle it by setting these on
  * an ancestor: --snack-bar-container, --snack-bar-on-container,
- * --snack-bar-action-hover (the close button's hover layer),
  * --snack-bar-shadow, and --bottom-nav-height for the clearance above a
  * bottom navigation bar. The message is body-medium. The action button takes
  * the fan app's shared button (`button` block); an app without it styles
- * `.snack-action-btn` itself.
+ * `.snack-action-btn` itself. The close button is the shared icon button
+ * (`shared/styles/icon-button.css`) in the snack's text colour.
  */
 @layer block {
 	@scope (snack-bar) {
@@ -16,10 +16,6 @@
 			   --snack-bar-container instead. */
 			--_bg-from: var(--md-sys-color-snack-info-from);
 			--_bg-to: var(--md-sys-color-snack-info-to);
-			--_action-bg-hover: var(
-				--snack-bar-action-hover,
-				oklch(100% 0 0deg / 18%)
-			);
 
 			/* Material 3 snackbar placement: bottom of screen, above the
 			   persistent bottom navigation, animating up from the bottom edge.
@@ -144,8 +140,9 @@
 			);
 			box-shadow: var(--snack-bar-shadow, var(--shadow-card-glow));
 
-			/* The close button's 48 px target reaches into the end padding, so
-			   its 24 px icon lines up with the row's edge. */
+			/* The close button's 40 px container reaches into the end padding,
+			   so its 24 px icon sits as far from the edge as the message's
+			   start. */
 			&:has(> .snack-close-btn) {
 				--_pad-end: calc(var(--space-s) - var(--space-2xs));
 
@@ -195,27 +192,13 @@
 			white-space: pre-line;
 		}
 
-		/* M3 close affordance: a 24 px icon on a 48 px target. */
+		/* M3 snackbar close affordance: the shared icon button in the
+		   snack's text colour. */
 		.snack-close-btn {
-			display: inline-grid;
-			flex-shrink: 0;
-			place-items: center;
-
-			inline-size: 48px;
-			block-size: 48px;
-			border: none;
-			border-radius: var(--md-sys-shape-corner-full);
-
-			background: transparent;
+			--icon-button-color: currentcolor;
 
 			& svg {
-				inline-size: 24px;
-				block-size: 24px;
 				fill: currentcolor;
-			}
-
-			&:hover {
-				background: var(--_action-bg-hover);
 			}
 		}
 
