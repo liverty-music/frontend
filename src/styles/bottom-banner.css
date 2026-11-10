@@ -88,7 +88,10 @@
 			min-inline-size: 0;
 
 			/* stylelint-disable property-disallowed-list, cube/require-token-variables -- sized to the banner's width so the copy fits one line (ui-primitives, bottom banners); no type style is fluid */
-			font-size: clamp(12px, 4.2cqi, 16px);
+
+			/* 4.2 % of the banner's full width: cqi reads the content box, so
+			   the banner's own side padding is added back. */
+			font-size: clamp(12px, calc(4.2cqi + 0.042 * 2 * var(--space-s)), 16px);
 			font-weight: 500;
 			line-height: 1.6;
 			/* stylelint-enable property-disallowed-list, cube/require-token-variables */
@@ -112,7 +115,8 @@
 			   nothing moves or resizes: the banner's ::before on the line, and a
 			   background image over the action's fill (its ::before is the
 			   state layer, its ::after the tap target or the busy spinner).
-			   `:scope` lifts it above the button's closer `background`. */
+			   `:scope` lifts it above the button's closer `background`. A busy
+			   action shows its spinner instead of the cue. */
 			:scope::before {
 				pointer-events: none;
 				content: "";
@@ -125,7 +129,7 @@
 			}
 
 			:scope::before,
-			:scope .bottom-banner-action {
+			:scope .bottom-banner-action:not([data-busy]) {
 				background-image: linear-gradient(
 					to right,
 					transparent,
@@ -139,7 +143,7 @@
 				animation: banner-cue 12s ease-in-out 5;
 			}
 
-			:scope .bottom-banner-action {
+			:scope .bottom-banner-action:not([data-busy]) {
 				animation-delay: 1s;
 			}
 		}

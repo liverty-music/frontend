@@ -101,6 +101,13 @@ async function expectFitsOneLine(page: Page, banner: Banner) {
 	expect(fit.action.fontSize).toBe(14)
 	expect(fit.message.fontSize).toBeGreaterThanOrEqual(12)
 	expect(fit.message.fontSize).toBeLessThanOrEqual(16)
+	// The message follows the banner's full width (4.2 %), not its padded
+	// content box, so a phone gets the size the one-line fit was tuned for.
+	const width = page.viewportSize()?.width ?? 0
+	expect(fit.message.fontSize).toBeCloseTo(
+		Math.min(16, Math.max(12, width * 0.042)),
+		1,
+	)
 }
 
 for (const width of WIDTHS) {
