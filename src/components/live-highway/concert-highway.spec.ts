@@ -272,6 +272,25 @@ describe('ConcertHighway', () => {
 			expect(replace).not.toHaveBeenCalled()
 		})
 
+		it('gives the cards of the new window their beams', () => {
+			const groups = months(['2026-11', 30], ['2026-12', 31]).map((g) => ({
+				...g,
+				home: [makeConcert({ id: `c-${g.dateKey}`, matched: true })],
+			}))
+			openAt(sut, groups, '2026-11-01')
+			expect(sut.laserBeams.map((b) => b.timeline)).not.toContain(
+				'--beam-c-2026-12-01',
+			)
+
+			sut.jumpToMonth(1)
+
+			const beams = sut.laserBeams.map((b) => b.timeline)
+			expect(beams).toEqual(
+				sut.visibleGroups.map((g) => `--beam-c-${g.dateKey}`),
+			)
+			expect(beams).toContain('--beam-c-2026-12-01')
+		})
+
 		// @spec components/infrastructure/fan/web/route/dashboard "Previous month"
 		it('moves to the first November date, scrolling up to it', () => {
 			const { scrolls } = openAt(

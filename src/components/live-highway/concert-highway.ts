@@ -195,6 +195,8 @@ export class ConcertHighway {
 
 		this.pauseGrowth()
 		this.openWindow(target.dateKey)
+		// The beams follow the built cards, as after any change of the window.
+		this.buildBeams()
 
 		const groups = [
 			...el.querySelectorAll<HTMLElement>('.date-group[data-date-key]'),
