@@ -143,10 +143,10 @@
 			   the button, every 12s, five times per route (the view model
 			   restarts it after each navigation). Both layers only paint a
 			   moving background over their own box, so nothing moves or resizes.
-			   The button's ::after is the pressable state layer, so the cue takes
-			   its ::before. */
+			   The button's ::before is the shared state layer, so the cue takes
+			   its ::after (the busy spinner replaces it while the action runs). */
 			.pwa-banner::before,
-			.pwa-banner-action::before {
+			.pwa-banner-action:not([data-busy])::after {
 				pointer-events: none;
 				content: "";
 
@@ -170,7 +170,7 @@
 				block-size: 2px;
 			}
 
-			.pwa-banner-action::before {
+			.pwa-banner-action:not([data-busy])::after {
 				inset: 0;
 				border-radius: inherit;
 				animation-delay: 1s;

@@ -13,9 +13,12 @@
 
 			position: relative;
 
+			/* The content colour, which the state layer takes. */
+			color: var(--color-white);
+
 			/* No overflow clip: the gradient is rounded by border-radius, the
 			   noise ::after self-rounds via border-radius:inherit, and the
-			   matched beam ::before is hidden at the corners by its mask — so
+			   matched beam ::after is hidden at the corners by its mask — so
 			   the journey badge can bleed past the corner without a wrapper. */
 			display: flex;
 			flex-direction: column;
@@ -27,12 +30,9 @@
 			border-radius: var(--md-sys-shape-corner-large);
 
 			/* No entrance of its own: the card's lane is dealt in when its date
-			   row comes into view (concert-highway.css, "Deal-in"). */
-			transition: transform var(--md-sys-motion-duration-short4) ease-out;
-
-			&:active {
-				transform: scale(0.97);
-			}
+			   row comes into view (concert-highway.css, "Deal-in"). A press shows
+			   the shared state layer (`state-layer`, ::before) and nothing else:
+			   Material 3 scales no pressed card. */
 
 			/* The lane spaces the cards (concert-highway.css). */
 			&[data-lane="nearby"],
@@ -101,8 +101,9 @@
 				inset 0 4px 30px var(--_spot-mid);
 		}
 
-		/* Spotlight beam cone — contained within card using clipped ::before */
-		.event-card[data-matched]::before {
+		/* Spotlight beam cone — contained within card using clipped ::after (the
+		   shared state layer keeps ::before) */
+		.event-card[data-matched]::after {
 			pointer-events: none;
 			content: "";
 
@@ -161,55 +162,6 @@
 			opacity: 0.08;
 			background-image: var(--_noise-url);
 			background-size: 200px 200px;
-		}
-
-		/* =============================================
-		   PRESSED — state layer
-		   ============================================= */
-
-		/* The card cannot use the shared `pressable` utility: its ::before and
-		   ::after already paint the spotlight (matched) and the grain
-		   (unmatched). Each treatment leaves the other pseudo-element free, so the
-		   state layer takes that one. Keyed off `:active` alone, so no card does
-		   any press work until it is pressed; the `scale(0.97)` above is the
-		   shape change. */
-		.event-card[data-matched]::after,
-		.event-card:not([data-matched])::before {
-			pointer-events: none;
-			content: "";
-
-			position: absolute;
-			inset: 0;
-
-			border-radius: inherit;
-
-			opacity: 0;
-			background: var(--color-white);
-
-			transition: opacity var(--md-sys-motion-duration-short3)
-				var(--md-sys-motion-easing-standard);
-		}
-
-		.event-card[data-matched]:active::after,
-		.event-card:not([data-matched]):active::before {
-			opacity: var(--md-sys-state-pressed-opacity);
-		}
-
-		/* =============================================
-		   Reduced motion
-		   ============================================= */
-		@media (prefers-reduced-motion: reduce) {
-			/* The press is the card's only motion: it has no entrance animation (see
-			   `.event-card` above), and the laser beams stop under the same query in
-			   concert-highway.css. Without the transition the state layer still
-			   appears, so the press is still acknowledged. (The matched-card hue
-			   drift that used to be gated here was removed as dead per-frame
-			   style-recalc work.) */
-			.event-card,
-			.event-card[data-matched]::after,
-			.event-card:not([data-matched])::before {
-				transition: none;
-			}
 		}
 	}
 }

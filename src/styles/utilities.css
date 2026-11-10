@@ -38,10 +38,11 @@
 		}
 	}
 
-	/* Like `spin` but preserves the centering translate of the busy overlay. */
+	/* The busy spinner's turn. On `rotate`, so the `translate` that centres
+	   the spinner stays put. */
 	@keyframes busy-spin {
 		to {
-			transform: translate(-50%, -50%) rotate(1turn);
+			rotate: 1turn;
 		}
 	}
 
@@ -53,83 +54,6 @@
 		100% {
 			opacity: 1;
 		}
-	}
-
-	/* Busy state — applied by the `busy-on-click` custom attribute while an async
-	   click handler is in flight. Dims the control, blocks further interaction,
-	   and overlays a spinner. Multi-property by nature (state, not a token). */
-	/* stylelint-disable-next-line cube/utility-single-property -- a state, not a token: it sets several properties together */
-	[data-busy] {
-		pointer-events: none;
-		cursor: progress;
-		position: relative;
-		opacity: 0.65;
-	}
-
-	/* Centered with transform (no negative margins, which the token rule forbids);
-	   the spin keyframe keeps the translate so it stays centered while rotating. */
-	/* stylelint-disable-next-line cube/utility-single-property -- the spinner of the busy state */
-	[data-busy]::after {
-		content: "";
-
-		position: absolute;
-		inset-block-start: 50%;
-		inset-inline-start: 50%;
-		transform: translate(-50%, -50%);
-
-		inline-size: 1rem;
-		block-size: 1rem;
-		border: 1.5px solid oklch(from var(--color-brand-accent) l c h / 30%);
-		border-block-start-color: var(--color-brand-accent);
-		border-radius: var(--md-sys-shape-corner-full);
-
-		animation: busy-spin 0.8s linear infinite;
-	}
-
-	/* ── Press state (M3 Expressive): state layer + corner morph ──
-	   Opt in with the `pressable` class. Keyed off `:active` alone, so a control
-	   costs nothing until it is pressed: no script, no listener, no style read
-	   when a screen is built. The layer is painted by a pseudo-element over the
-	   control's own box, and only the visual corner radius morphs, so the
-	   clickable bounds stay stable. Lives in the utility layer so component
-	   (block-layer) shape/`:active` rules keep precedence. */
-	.pressable {
-		position: relative;
-		transition:
-			border-radius var(--md-sys-motion-spring-spatial-fast-duration)
-			var(--md-sys-motion-spring-spatial-fast),
-			background-color var(--md-sys-motion-duration-short3)
-			var(--md-sys-motion-easing-standard),
-			transform var(--md-sys-motion-duration-short3)
-			var(--md-sys-motion-easing-standard);
-	}
-
-	/* stylelint-disable-next-line cube/utility-single-property -- the state layer takes several properties together */
-	.pressable::after {
-		pointer-events: none;
-		content: "";
-
-		position: absolute;
-		inset: 0;
-
-		border-radius: inherit;
-
-		opacity: 0;
-		background: currentcolor;
-
-		transition: opacity var(--md-sys-motion-duration-short3)
-			var(--md-sys-motion-easing-standard);
-	}
-
-	.pressable:active {
-		border-radius: var(
-			--press-morph-radius,
-			var(--md-sys-shape-corner-large-increased)
-		);
-	}
-
-	.pressable:active::after {
-		opacity: var(--md-sys-state-pressed-opacity);
 	}
 
 	/* ── Skeleton loading placeholder (M3) ──
@@ -186,32 +110,51 @@
 		);
 	}
 
-	/* Hover on a selected control stacks the hover layer on top of the
-	   persistent selected layer (image over color) instead of replacing it. */
-	[data-selected-morph]:is(
-		[aria-selected="true"],
-		[aria-pressed="true"],
-		[data-selected]
-	):hover {
-		background-image: linear-gradient(
-			color-mix(
-					in oklab,
-					currentcolor calc(var(--md-sys-state-hover-opacity) * 100%),
-					transparent
-				)
-				0 0
-		);
-	}
-
 	/* Reduced motion override */
 	@media (prefers-reduced-motion: reduce) {
-		[data-busy]::after {
+		/* The shimmer stops. The selection transition needs no rule here: its
+		   duration tokens are 0 ms under reduced motion. */
+		.skeleton {
 			animation: none;
 		}
+	}
+}
 
-		/* The shimmer stops. The press and selection transitions need no
-		   rule here: their duration tokens are 0 ms under reduced motion. */
-		.skeleton {
+/* Busy state — applied by the `busy-on-click` custom attribute while an async
+   click handler is in flight. Dims the control, blocks further interaction,
+   and draws a spinner on ::after (the shared state layer keeps ::before). A
+   block that puts its own ::after on a control that can be busy (a chip's
+   touch target, a banner action's cue) leaves it while `[data-busy]` is set.
+   Centred with `translate`, so the turn (`rotate`) keeps it centred. */
+@layer utility {
+	/* stylelint-disable-next-line cube/utility-single-property -- a state, not a token: it sets several properties together */
+	[data-busy] {
+		pointer-events: none;
+		cursor: progress;
+		position: relative;
+		opacity: 0.65;
+	}
+
+	/* stylelint-disable-next-line cube/utility-single-property -- the spinner of the busy state */
+	[data-busy]::after {
+		content: "";
+
+		position: absolute;
+		inset-block-start: 50%;
+		inset-inline-start: 50%;
+		translate: -50% -50%;
+
+		inline-size: 1rem;
+		block-size: 1rem;
+		border: 1.5px solid oklch(from var(--color-brand-accent) l c h / 30%);
+		border-block-start-color: var(--color-brand-accent);
+		border-radius: var(--md-sys-shape-corner-full);
+
+		animation: busy-spin 0.8s linear infinite;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		[data-busy]::after {
 			animation: none;
 		}
 	}

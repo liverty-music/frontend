@@ -8,7 +8,7 @@
       click.trigger="confirm()"
       aria-busy.bind="state === 'verifying'"
       disabled.bind="state === 'verifying'"
-      class="[ button ] [ pressable ]"
+      class="[ button ] [ state-layer ]"
       data-testid="verify-email-confirm"
     >
       <span if.bind="state === 'failed'" t="verifyEmail.retry"></span>
@@ -19,7 +19,7 @@
   <section if.bind="state === 'verified'" class="[ verify-email-result card ] [ stack ]" aria-live="polite" data-testid="verify-email-verified">
     <success-mark></success-mark>
     <p t="verifyEmail.verified" class="[ verify-email-message ] [ md-typescale-body-large ]"></p>
-    <a load="/" class="[ button ] [ pressable ]" t="verifyEmail.openApp" data-testid="verify-email-open-app"></a>
+    <a load="/" class="[ button ] [ state-layer ]" t="verifyEmail.openApp" data-testid="verify-email-open-app"></a>
   </section>
 
   <section if.bind="state === 'invalid'" class="[ verify-email-result card ] [ stack ]" aria-live="polite" data-testid="verify-email-invalid">

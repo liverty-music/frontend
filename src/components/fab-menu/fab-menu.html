@@ -7,7 +7,7 @@
 <button
   ref="fabButton"
   type="button"
-  class="fab-toggle"
+  class="[ fab-toggle ] [ state-layer ]"
   popover="manual"
   popovertarget="fab-menu-panel"
   popovertargetaction="toggle"
@@ -61,7 +61,7 @@
     >
       <button
         type="button"
-        class="[ fab-item ] [ md-typescale-label-large ]"
+        class="[ fab-item ] [ state-layer ] [ md-typescale-label-large ]"
         data-action-id.bind="action.id"
         data-kind.bind="action.kind"
         data-active.bind="isActive(action) & signal:'fab-menu:state'"

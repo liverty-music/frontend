@@ -15,21 +15,21 @@
         <button
           if.bind="!notifyProblem"
           type="button"
-          class="[ button ] [ pressable ]"
+          class="[ button ] [ state-layer ]"
           busy-on-click.bind="() => onEnableNotifications()"
           t="postSignup.notify.enable"
         ></button>
         <button
           else
           type="button"
-          class="[ button ] [ pressable ]"
+          class="[ button ] [ state-layer ]"
           click.trigger="next()"
           t="postSignup.next"
         ></button>
         <button
           if.bind="!notifyProblem"
           type="button"
-          class="[ button ] [ pressable ]"
+          class="[ button ] [ state-layer ]"
           data-variant="outlined"
           click.trigger="next()"
           t="postSignup.defer"
@@ -53,21 +53,21 @@
         <button
           if.bind="!installGuideShown"
           type="button"
-          class="[ button ] [ pressable ]"
+          class="[ button ] [ state-layer ]"
           busy-on-click.bind="() => onInstall()"
           t="postSignup.install.add"
         ></button>
         <button
           else
           type="button"
-          class="[ button ] [ pressable ]"
+          class="[ button ] [ state-layer ]"
           click.trigger="close()"
           t="postSignup.close"
         ></button>
         <button
           if.bind="!installGuideShown"
           type="button"
-          class="[ button ] [ pressable ]"
+          class="[ button ] [ state-layer ]"
           data-variant="outlined"
           click.trigger="next()"
           t="postSignup.defer"
@@ -89,7 +89,7 @@
       <div class="[ post-signup-actions ] [ stack ]">
         <button
           type="button"
-          class="[ button ] [ pressable ]"
+          class="[ button ] [ state-layer ]"
           data-variant="outlined"
           click.trigger="next()"
           t="postSignup.defer"

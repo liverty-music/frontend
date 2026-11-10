@@ -18,14 +18,14 @@
 
     <section if.bind="deletionState === 'failed'" class="[ delete-account-error ] [ stack ]" role="alert" data-testid="delete-account-failed">
       <p t="deleteAccount.deleteFailed"></p>
-      <button type="button" busy-on-click.bind="() => retryDelete()" class="[ button ] [ pressable ]" data-variant="outlined" t="deleteAccount.retry" data-testid="delete-account-retry-delete"></button>
+      <button type="button" busy-on-click.bind="() => retryDelete()" class="[ button ] [ state-layer ]" data-variant="outlined" t="deleteAccount.retry" data-testid="delete-account-retry-delete"></button>
     </section>
 
     <output if.bind="blockersState === 'loading'" class="[ delete-account-status ] [ md-typescale-body-large ]" aria-busy="true" t="deleteAccount.loading"></output>
 
     <section if.bind="blockersState === 'error'" class="[ delete-account-error ] [ stack ]" role="alert" data-testid="delete-account-load-error">
       <p t="deleteAccount.loadFailed"></p>
-      <button type="button" busy-on-click.bind="() => loadBlockers()" class="[ button ] [ pressable ]" data-variant="outlined" t="deleteAccount.retry" data-testid="delete-account-retry-load"></button>
+      <button type="button" busy-on-click.bind="() => loadBlockers()" class="[ button ] [ state-layer ]" data-variant="outlined" t="deleteAccount.retry" data-testid="delete-account-retry-load"></button>
     </section>
 
     <!-- What blocks deletion, each kind with its count. -->
@@ -54,7 +54,7 @@
         type="button"
         click.trigger="askDelete()"
         aria-haspopup="dialog"
-        class="[ button ] [ pressable ]"
+        class="[ button ] [ state-layer ]"
         data-variant="danger"
         t="deleteAccount.delete"
         data-testid="delete-account-delete"

@@ -16,8 +16,8 @@
     <h2 t="settings.guestHero.heading" class="[ settings-guest-hero-heading ] [ md-typescale-title-large-emphasized ]"></h2>
     <p t="settings.guestHero.body" class="[ settings-guest-hero-body ] [ md-typescale-body-medium ]"></p>
     <div class="[ settings-guest-hero-actions ] [ stack ]">
-      <button click.trigger="signIn()" t="settings.signIn" class="[ button ] [ pressable ]" data-testid="settings-sign-in"></button>
-      <button click.trigger="signUp()" t="settings.signUp" class="[ button ] [ pressable ]" data-variant="outlined" data-testid="settings-sign-up"></button>
+      <button click.trigger="signIn()" t="settings.signIn" class="[ button ] [ state-layer ]" data-testid="settings-sign-in"></button>
+      <button click.trigger="signUp()" t="settings.signUp" class="[ button ] [ state-layer ]" data-variant="outlined" data-testid="settings-sign-up"></button>
     </div>
     <!-- Sign-in help for a fan who can use none of their passkeys. -->
     <a href="/passkey-recovery" t="settings.guestHero.cantSignIn" class="[ text-link settings-guest-hero-help ] [ md-typescale-body-medium ]" data-variant="standalone" data-testid="settings-cant-sign-in"></a>
@@ -306,7 +306,7 @@
       <!-- Contact: a mailto link, so the device's mail app opens a new message
            to the support address. -->
       <li class="settings-list-item">
-        <a href="mailto:${supportEmail}" class="settings-row" data-testid="settings-contact">
+        <a href="mailto:${supportEmail}" class="[ settings-row ] [ state-layer ]" data-testid="settings-contact">
           <span t="settings.contact" class="[ settings-row-label ] [ md-typescale-body-large ]"></span>
           <span class="settings-row-end">
             <svg-icon name="chevron-right" class="settings-chevron"></svg-icon>
@@ -339,7 +339,7 @@
           aria-haspopup="dialog"
           data-busy.bind="signingOut || null"
           aria-busy.bind="signingOut || null"
-          class="settings-row settings-sign-out"
+          class="[ settings-row settings-sign-out ] [ state-layer ]"
         >
           <span t="settings.signOut" class="[ settings-sign-out-text ] [ md-typescale-label-large ]"></span>
         </button>
@@ -423,7 +423,7 @@
       type="submit"
       disabled.bind="!personalDetailsChanged"
       t="settings.personalDetails.save"
-      class="[ button settings-personal-details-save ] [ pressable ]"
+      class="[ button settings-personal-details-save ] [ state-layer ]"
       data-testid="settings-personal-details-save"
     ></button>
   </form>
@@ -455,7 +455,7 @@
         busy-on-click.bind="() => selectLanguage(lang)"
         role="radio"
         aria-checked.bind="currentLocale === lang"
-        class="[ language-option ] [ md-typescale-body-large ]"
+        class="[ language-option ] [ state-layer ] [ md-typescale-body-large ]"
         data-selected.bind="currentLocale === lang"
       >
         <span t.bind="'languages.' + lang"></span>

@@ -17,7 +17,7 @@
         <button
           repeat.for="p of presets"
           type="button"
-          class="[ chip ] [ pressable ] [ md-typescale-label-large ]"
+          class="[ chip ] [ state-layer ] [ md-typescale-label-large ]"
           aria-pressed.bind="isPresetActive(p)"
           click.trigger="selectPreset(p)"
         >
@@ -58,7 +58,7 @@
     <div class="apply-row">
       <button
         type="button"
-        class="[ button ] [ pressable ]"
+        class="[ button ] [ state-layer ]"
         click.trigger="applyCustom()"
         disabled.bind="!isDraftValid"
         t="allNearby.dateRange.apply"

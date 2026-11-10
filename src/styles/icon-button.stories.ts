@@ -32,7 +32,7 @@ function row(buttons: string): string {
 }
 
 const button = (label: string, attrs = '') =>
-	`<button type="button" class="icon-button" aria-label="${label}" ${attrs}>${CLOSE}</button>`
+	`<button type="button" class="[ icon-button ] [ state-layer ]" aria-label="${label}" ${attrs}>${CLOSE}</button>`
 
 /** The computed colour of `value`, painted on a probe. */
 function resolved(root: HTMLElement, value: string): string {

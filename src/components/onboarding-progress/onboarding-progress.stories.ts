@@ -72,7 +72,7 @@ export const Filling = {
 		defineAureliaStory({
 			template: `
 				<onboarding-progress value.bind="value"></onboarding-progress>
-				<button type="button" class="[ button ] [ pressable ]" click.trigger="follow()">Follow one more</button>
+				<button type="button" class="[ button ] [ state-layer ]" click.trigger="follow()">Follow one more</button>
 			`,
 			props: {
 				value: 0,

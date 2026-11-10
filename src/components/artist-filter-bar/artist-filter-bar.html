@@ -17,7 +17,7 @@
       <h2 class="[ sheet-title ] [ md-typescale-title-large ]" id="filter-sheet-title">絞り込み</h2>
       <button
         type="button"
-        class="[ button ] [ pressable ]"
+        class="[ button ] [ state-layer ]"
         data-variant="outlined"
         click.trigger="clearAll()"
         disabled.bind="!hasPendingSelection"
@@ -29,7 +29,7 @@
       <h3 class="[ facet-heading ] [ md-typescale-title-small ]" id="filter-artist-heading">アーティスト</h3>
       <ul class="artists-list" aria-labelledby="filter-artist-heading">
         <li repeat.for="artist of countedArtists" key.bind="artist.id">
-          <label class="[ chip artist-chip ] [ pressable ] [ md-typescale-label-large ]">
+          <label class="[ chip artist-chip ] [ state-layer ] [ md-typescale-label-large ]">
             <input
               type="checkbox"
               class="visually-hidden"
@@ -54,7 +54,7 @@
       <ul class="journey-list" aria-labelledby="filter-journey-heading">
         <!-- Process phase: tracking -> applied -->
         <li repeat.for="config of processStatuses" key.bind="config.status">
-          <label class="[ chip journey-chip ] [ pressable ] [ md-typescale-label-large ]" data-journey-status.bind="config.status">
+          <label class="[ chip journey-chip ] [ state-layer ] [ md-typescale-label-large ]" data-journey-status.bind="config.status">
             <input
               type="checkbox"
               class="visually-hidden"
@@ -70,7 +70,7 @@
         <li class="journey-list-break" aria-hidden="true"></li>
         <!-- Outcome phase: unpaid, paid, lost -->
         <li repeat.for="config of outcomeStatuses" key.bind="config.status">
-          <label class="[ chip journey-chip ] [ pressable ] [ md-typescale-label-large ]" data-journey-status.bind="config.status">
+          <label class="[ chip journey-chip ] [ state-layer ] [ md-typescale-label-large ]" data-journey-status.bind="config.status">
             <input
               type="checkbox"
               class="visually-hidden"
@@ -92,7 +92,7 @@
     <section class="[ filter-facet filter-facet-date ] [ stack ]" aria-labelledby="filter-date-heading">
       <button
         type="button"
-        class="date-facet-toggle"
+        class="[ date-facet-toggle ] [ state-layer ]"
         click.trigger="toggleDateFacet()"
         aria-expanded.bind="isDateFacetExpanded"
         aria-controls="filter-date-field"
@@ -112,7 +112,7 @@
     </section>
 
     <div class="confirm-row">
-      <button type="button" class="[ button ] [ pressable ]" click.trigger="confirmSelection()">完了</button>
+      <button type="button" class="[ button ] [ state-layer ]" click.trigger="confirmSelection()">完了</button>
     </div>
   </div>
 </bottom-sheet>

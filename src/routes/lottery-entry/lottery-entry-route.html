@@ -38,7 +38,7 @@
 	<section class="[ lottery-entry-panel card ] [ flow wrapper ]" if.bind="step === 'verify-required'" data-testid="lottery-entry-verify">
 		<h2 class="[ lottery-entry-step-title ] [ md-typescale-title-large-emphasized ]" t="lotteryEntry.verify.title"></h2>
 		<p class="[ lottery-entry-lead ] [ md-typescale-body-medium ]" t="lotteryEntry.verify.body"></p>
-		<button type="button" class="[ button lottery-entry-action ] [ pressable ]" click.trigger="goToVerify()" t="lotteryEntry.verify.action"></button>
+		<button type="button" class="[ button lottery-entry-action ] [ state-layer ]" click.trigger="goToVerify()" t="lotteryEntry.verify.action"></button>
 	</section>
 
 	<!-- Step 1: ticket count -->
@@ -52,7 +52,7 @@
 		</label>
 		<p class="[ lottery-entry-total ] [ md-typescale-title-large-emphasized ]" data-testid="lottery-entry-total" t="lotteryEntry.total" t-params.bind="{ total: yen(total) }"></p>
 		<p class="[ lottery-entry-error ] [ md-typescale-body-medium ]" if.bind="message" role="alert" data-testid="lottery-entry-message" t.bind="message.key" t-params.bind="message.params"></p>
-		<button type="button" class="[ button lottery-entry-action ] [ pressable ]" click.trigger="toPersonalDetails()" disabled.bind="busy" data-testid="lottery-entry-to-personal-details" t="lotteryEntry.count.continue"></button>
+		<button type="button" class="[ button lottery-entry-action ] [ state-layer ]" click.trigger="toPersonalDetails()" disabled.bind="busy" data-testid="lottery-entry-to-personal-details" t="lotteryEntry.count.continue"></button>
 	</section>
 
 	<!-- Step 2: 本人確認 -->
@@ -79,8 +79,8 @@
 		<p id="lottery-entry-phone-error" class="[ lottery-entry-error ] [ md-typescale-body-medium ]" if.bind="isPhoneInvalid" t="lotteryEntry.phoneInvalid"></p>
 		<p class="[ lottery-entry-error ] [ md-typescale-body-medium ]" if.bind="message" role="alert" data-testid="lottery-entry-message" t.bind="message.key" t-params.bind="message.params"></p>
 		<div class="[ lottery-entry-actions ] [ cluster ]">
-			<button type="button" class="[ button ] [ pressable ]" data-variant="outlined" click.trigger="backToCount()" t="lotteryEntry.back"></button>
-			<button type="button" class="[ button lottery-entry-action ] [ pressable ]" click.trigger="toPayment()" disabled.bind="!isPersonalDetailsValid || busy" data-testid="lottery-entry-to-payment" t="lotteryEntry.personalDetails.continue"></button>
+			<button type="button" class="[ button ] [ state-layer ]" data-variant="outlined" click.trigger="backToCount()" t="lotteryEntry.back"></button>
+			<button type="button" class="[ button lottery-entry-action ] [ state-layer ]" click.trigger="toPayment()" disabled.bind="!isPersonalDetailsValid || busy" data-testid="lottery-entry-to-payment" t="lotteryEntry.personalDetails.continue"></button>
 		</div>
 	</section>
 
@@ -106,7 +106,7 @@
 			<button
 				if.bind="!cardConfirmed"
 				type="button"
-				class="[ button ] [ pressable ]"
+				class="[ button ] [ state-layer ]"
 				data-variant="outlined"
 				click.trigger="backToPersonalDetails()"
 				disabled.bind="step === 'submitting'"
@@ -115,7 +115,7 @@
 			></button>
 			<button
 				type="button"
-				class="[ button lottery-entry-action ] [ pressable ]"
+				class="[ button lottery-entry-action ] [ state-layer ]"
 				click.trigger="confirmEntry()"
 				disabled.bind="step === 'submitting'"
 				data-testid="lottery-entry-confirm"
@@ -129,8 +129,8 @@
 		<h2 class="[ lottery-entry-step-title ] [ md-typescale-title-large-emphasized ]" t="lotteryEntry.refused.title"></h2>
 		<p class="[ lottery-entry-lead ] [ md-typescale-body-medium ]" role="alert" data-testid="lottery-entry-message" t.bind="message.key" t-params.bind="message.params"></p>
 		<p class="[ lottery-entry-lead ] [ md-typescale-body-medium ]" t="lotteryEntry.refused.notCharged"></p>
-		<a href.bind="entryStatusUrl" if.bind="alreadyEntered" class="[ button lottery-entry-action ] [ pressable ]" data-testid="lottery-entry-to-status" t="lotteryEntry.done.toStatus"></a>
-		<button type="button" if.bind="canTryAgain" class="[ button lottery-entry-action ] [ pressable ]" click.trigger="tryAgain()" data-testid="lottery-entry-try-again" t="lotteryEntry.refused.tryAgain"></button>
+		<a href.bind="entryStatusUrl" if.bind="alreadyEntered" class="[ button lottery-entry-action ] [ state-layer ]" data-testid="lottery-entry-to-status" t="lotteryEntry.done.toStatus"></a>
+		<button type="button" if.bind="canTryAgain" class="[ button lottery-entry-action ] [ state-layer ]" click.trigger="tryAgain()" data-testid="lottery-entry-try-again" t="lotteryEntry.refused.tryAgain"></button>
 		<a href="/events/${event.id}" if.bind="event" class="text-link" data-variant="standalone" t="lotteryEntry.backToEvent"></a>
 	</section>
 
@@ -138,6 +138,6 @@
 	<section class="[ lottery-entry-panel card ] [ flow wrapper ]" if.bind="step === 'done'" data-testid="lottery-entry-done">
 		<h2 class="[ lottery-entry-step-title ] [ md-typescale-title-large-emphasized ]" t="lotteryEntry.done.title"></h2>
 		<p class="[ lottery-entry-lead ] [ md-typescale-body-medium ]" t="lotteryEntry.done.body" t-params.bind="{ sale: sale.name, count: entry.ticketCount }"></p>
-		<a href.bind="entryStatusUrl" class="[ button lottery-entry-action ] [ pressable ]" data-testid="lottery-entry-to-status" t="lotteryEntry.done.toStatus"></a>
+		<a href.bind="entryStatusUrl" class="[ button lottery-entry-action ] [ state-layer ]" data-testid="lottery-entry-to-status" t="lotteryEntry.done.toStatus"></a>
 	</section>
 </template>

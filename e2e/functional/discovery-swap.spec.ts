@@ -128,8 +128,7 @@ function spacePx(page: Page, token: string): Promise<number> {
 }
 
 const tile = (page: Page) => page.getByTestId('discovery-swap')
-const tileBox = (page: Page) =>
-	box(page.locator('discovery-swap-button .swap-tile'))
+const tileBox = (page: Page) => box(tile(page))
 
 /** The bubbles and the orb as drawn on the canvas, in page coordinates. */
 function drawn(page: Page) {

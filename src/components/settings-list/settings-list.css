@@ -51,22 +51,8 @@
 			   centred text would drift to the middle of the column. */
 			text-align: start;
 
-			transition: background var(--md-sys-motion-duration-short4);
-
-			/* Only a row that is itself the control (a <button> or <a>) reacts
-			   to the pointer; a row holding its own action button does not. */
-			&:is(button, a):hover {
-				background: color-mix(in oklch, var(--color-white) 5%, transparent);
-			}
-
-			/* A full-width row reads better with a background-deepen than a scale.
-			   transform: none suppresses the global <button> baseline scale so a
-			   <button>.settings-row and an <a>.settings-row feel identical. The
-			   background-deepen needs no scale to suppress under reduced motion. */
-			&:is(button, a):active {
-				transform: none;
-				background: color-mix(in oklch, var(--color-white) 10%, transparent);
-			}
+			/* A row that is itself the control (a <button> or <a>) carries the
+			   shared `state-layer`: hover, focus and press over the whole row. */
 		}
 
 		/* Column placement. Each property targets whichever element is a DIRECT
@@ -314,10 +300,6 @@
 		.settings-row[data-disabled="true"] {
 			cursor: not-allowed;
 			opacity: 0.5;
-		}
-
-		.settings-row[data-disabled="true"]:hover {
-			background: transparent;
 		}
 
 		.settings-expand-caret[data-expanded="true"] {

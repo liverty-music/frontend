@@ -56,7 +56,7 @@
     <tr repeat.for="row of rows; key: id" data-link.bind="!!row.href">
       <template repeat.for="column of columns">
         <th class="md-typescale-body-medium-emphasized" if.bind="column === primary" scope="row">
-          <a if.bind="row.href" href.bind="row.href" class="row-link"><cell-text value.bind="row.cells[column.key]"></cell-text></a>
+          <a if.bind="row.href" href.bind="row.href" class="[ row-link ] [ state-layer ]"><cell-text value.bind="row.cells[column.key]"></cell-text></a>
           <cell-text else value.bind="row.cells[column.key]"></cell-text>
           <span if.bind="row.subtitle" class="[ subtitle ] [ md-typescale-body-small ]"><cell-text value.bind="row.subtitle"></cell-text></span>
         </th>

@@ -3,8 +3,6 @@
 		:scope {
 			--_event-title-color: oklch(100% 0 0deg / 80%);
 			--_border-light: oklch(100% 0 0deg / 20%);
-			--_border-light-hover: oklch(100% 0 0deg / 40%);
-			--_bg-hover: oklch(100% 0 0deg / 5%);
 		}
 
 		/* The sections follow one another in the content's flow; each sets
@@ -184,12 +182,6 @@
 				outline: 2px solid var(--color-brand-primary);
 				outline-offset: 2px;
 			}
-		}
-
-		.journey-node[aria-pressed="false"]:hover:not(:disabled) {
-			border-color: var(--_border-light-hover);
-			color: var(--md-sys-color-on-surface);
-			background: var(--_bg-hover);
 		}
 
 		/* Pressed: the single solid-filled status */

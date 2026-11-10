@@ -1,4 +1,4 @@
-/* The fan app's one text button: `class="[ button ] [ pressable ]"` on a
+/* The fan app's one text button: `class="[ button ] [ state-layer ]"` on a
    <button> or an <a>, with an optional `data-variant`.
    - (none)        filled: primary role fill, white on-primary label — the
                    main action, and the action on a bottom banner
@@ -13,9 +13,12 @@
    --button-padding-inline, and --button-font-size, --button-line-height and
    --button-tracking (a smaller type style) on it; the radius, typeface and
    weight stay shared. The label
-   is set here, not by the templates: label-large is the button's role. The press
-   morph and pressed state layer come from the `pressable` utility, the pending
-   state from the `busy-on-click` attribute. A page keeps its own block class
+   is set here, not by the templates: label-large is the button's role. Hover,
+   focus and press come from the shared `state-layer` utility; the pending
+   state from the `busy-on-click` attribute. A press also squares the corners
+   from 12px to 8px, the Material 3 Expressive pressed shape of a small
+   square button (https://m3.material.io/components/buttons/specs, "Shape
+   morph" and "Corner sizes"). A page keeps its own block class
    only for layout the button does not own (e.g. `inline-size: 100%`).
    Icon-only buttons are not text buttons and do not use this block. */
 @layer block {
@@ -54,24 +57,14 @@
 
 			background: var(--md-sys-color-primary);
 			box-shadow: var(--shadow-button);
+
+			transition: border-radius
+				var(--md-sys-motion-spring-spatial-fast-duration)
+				var(--md-sys-motion-spring-spatial-fast);
 		}
 
-		/* The `pressable` morph, restated here: this block's own radius would
-		   otherwise outrank the utility layer. */
 		:scope:active:not(:disabled) {
-			border-radius: var(
-				--press-morph-radius,
-				var(--md-sys-shape-corner-large-increased)
-			);
-		}
-
-		/* Hover and keyboard focus raise the `pressable` state layer. */
-		:scope:focus-visible::after {
-			opacity: var(--md-sys-state-focus-opacity);
-		}
-
-		:scope:hover:not(:disabled)::after {
-			opacity: var(--md-sys-state-hover-opacity);
+			border-radius: var(--md-sys-shape-corner-small);
 		}
 
 		:scope:disabled {

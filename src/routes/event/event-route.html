@@ -9,13 +9,13 @@
   <section if.bind="state === 'not-found'" class="event-empty" data-testid="event-not-found">
     <h1 class="[ event-empty-title ] [ md-typescale-headline-small ]" t="eventPage.notFound.title"></h1>
     <p t="eventPage.notFound.body"></p>
-    <a href="/dashboard" class="[ button ] [ pressable ]" t="eventPage.notFound.toDashboard"></a>
+    <a href="/dashboard" class="[ button ] [ state-layer ]" t="eventPage.notFound.toDashboard"></a>
   </section>
 
   <!-- Any other failure: retry -->
   <div if.bind="state === 'error'" class="event-empty" data-testid="event-error">
     <p t="eventPage.error.body"></p>
-    <button type="button" class="[ button ] [ pressable ]" click.trigger="retry()" t="eventPage.error.retry"></button>
+    <button type="button" class="[ button ] [ state-layer ]" click.trigger="retry()" t="eventPage.error.retry"></button>
   </div>
 
   <template if.bind="state === 'ready' && event">
@@ -65,7 +65,7 @@
         <span class="[ event-performer-name ] [ md-typescale-title-large-emphasized ]">${performer.name}</span>
         <button
           type="button"
-          class="[ event-follow ] [ pressable md-typescale-label-large ]"
+          class="[ event-follow ] [ state-layer md-typescale-label-large ]"
           data-followed.bind="followedIds.has(performer.id)"
           aria-pressed.bind="followedIds.has(performer.id)"
           disabled.bind="!followsLoaded || followUpdatingId === performer.id"
@@ -113,11 +113,11 @@
 
     <!-- Share and add-to-calendar -->
     <div class="[ event-actions ] [ cluster ]">
-      <button type="button" class="[ button ] [ pressable ]" data-variant="outlined" click.trigger="share()" data-testid="event-share">
+      <button type="button" class="[ button ] [ state-layer ]" data-variant="outlined" click.trigger="share()" data-testid="event-share">
         <svg-icon name="link" size="md"></svg-icon>
         <span t="eventPage.share.action"></span>
       </button>
-      <button type="button" class="[ button ] [ pressable ]" data-variant="outlined" click.trigger="addToCalendar()" data-testid="event-calendar">
+      <button type="button" class="[ button ] [ state-layer ]" data-variant="outlined" click.trigger="addToCalendar()" data-testid="event-calendar">
         <svg-icon name="calendar" size="md"></svg-icon>
         <span t="eventPage.addToCalendar"></span>
       </button>
@@ -161,8 +161,8 @@
                 <template case="available">
                   <p if.bind="row.stock.lowStock" class="[ event-sale-low ] [ md-typescale-body-large-emphasized ]" data-testid="event-sale-low" t="eventPage.tickets.sale.lowStock"></p>
                   <template if.bind="row.offered">
-                    <a if.bind="!isGuest" href.bind="row.actionUrl" class="[ button ] [ pressable ]" data-testid="event-buy" t="eventPage.tickets.sale.buy"></a>
-                    <button else type="button" class="[ button ] [ pressable ]" click.trigger="signUp()" data-testid="event-buy" t="eventPage.tickets.sale.buy"></button>
+                    <a if.bind="!isGuest" href.bind="row.actionUrl" class="[ button ] [ state-layer ]" data-testid="event-buy" t="eventPage.tickets.sale.buy"></a>
+                    <button else type="button" class="[ button ] [ state-layer ]" click.trigger="signUp()" data-testid="event-buy" t="eventPage.tickets.sale.buy"></button>
                   </template>
                 </template>
                 <template case="allHeld">
@@ -176,8 +176,8 @@
             </template>
             <!-- Lottery, within the window: enter this seat type -->
             <template if.bind="shownSale.method === 'lottery' && isSaleOpen && row.offered">
-              <a if.bind="!isGuest" href.bind="row.actionUrl" class="[ button ] [ pressable ]" data-testid="event-enter" t="eventPage.tickets.lottery.enter"></a>
-              <button else type="button" class="[ button ] [ pressable ]" click.trigger="signUp()" data-testid="event-enter" t="eventPage.tickets.lottery.enter"></button>
+              <a if.bind="!isGuest" href.bind="row.actionUrl" class="[ button ] [ state-layer ]" data-testid="event-enter" t="eventPage.tickets.lottery.enter"></a>
+              <button else type="button" class="[ button ] [ state-layer ]" click.trigger="signUp()" data-testid="event-enter" t="eventPage.tickets.lottery.enter"></button>
             </template>
             <!-- Official resale of a sold-out seat type, whichever sale is shown; never a count -->
             <div if.bind="row.stock.resaleOpen" class="[ event-resale ] [ flow ]" data-testid="event-resale">
@@ -185,17 +185,17 @@
               <p data-testid="event-resale-listing" t="eventPage.tickets.resale.listing"></p>
               <p data-testid="event-resale-draw" t="eventPage.tickets.resale.draw"></p>
               <template if.bind="!isGuest">
-                <a if.bind="resaleApplied" href.bind="row.resaleUrl" class="[ button ] [ pressable ]" data-variant="outlined" data-testid="event-resale-applied" t="eventPage.tickets.resale.applied"></a>
-                <a else href.bind="row.resaleUrl" class="[ button ] [ pressable ]" data-testid="event-resale-apply" t="eventPage.tickets.resale.apply"></a>
+                <a if.bind="resaleApplied" href.bind="row.resaleUrl" class="[ button ] [ state-layer ]" data-variant="outlined" data-testid="event-resale-applied" t="eventPage.tickets.resale.applied"></a>
+                <a else href.bind="row.resaleUrl" class="[ button ] [ state-layer ]" data-testid="event-resale-apply" t="eventPage.tickets.resale.apply"></a>
               </template>
-              <button else type="button" class="[ button ] [ pressable ]" click.trigger="signUp()" data-testid="event-resale-apply" t="eventPage.tickets.resale.apply"></button>
+              <button else type="button" class="[ button ] [ state-layer ]" click.trigger="signUp()" data-testid="event-resale-apply" t="eventPage.tickets.resale.apply"></button>
             </div>
           </li>
         </ul>
       </div>
       <template if.bind="!shownSale && isGuest && !isCancelled">
         <p t="eventPage.tickets.signUpHint"></p>
-        <button type="button" class="[ button ] [ pressable ]" click.trigger="signUp()" data-testid="event-signup" t="eventPage.tickets.signUp"></button>
+        <button type="button" class="[ button ] [ state-layer ]" click.trigger="signUp()" data-testid="event-signup" t="eventPage.tickets.signUp"></button>
       </template>
     </section>
 

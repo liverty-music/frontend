@@ -114,7 +114,7 @@ export async function expectBannerMessage(
 	}
 }
 
-/** The cue's animations on the banner: the line's (`::before`) and the CTA's. */
+/** The cue's animations on the banner: the line's (`::before`) and the CTA's (`::after`). */
 function cueAnimations(surface: HTMLElement): CSSAnimation[] {
 	return surface
 		.getAnimations({ subtree: true })
@@ -156,7 +156,7 @@ export async function expectBannerMotion(
 	await expect(targets).toEqual(
 		expect.arrayContaining([
 			[surface, '::before'],
-			[action, '::before'],
+			[action, '::after'],
 		]),
 	)
 	for (const a of cue) {

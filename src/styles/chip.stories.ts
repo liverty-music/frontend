@@ -20,7 +20,7 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-const CLASS = 'class="[ chip ] [ pressable ] [ md-typescale-label-large ]"'
+const CLASS = 'class="[ chip ] [ state-layer ] [ md-typescale-label-large ]"'
 
 /** Chips the way the sheets lay them out: a cluster on a sheet surface. */
 function row(chips: string, width = '20rem'): string {
@@ -62,7 +62,7 @@ async function expectShape(el: HTMLElement): Promise<void> {
 	await expect(el.getBoundingClientRect().height).toBe(32)
 	await expect(style.borderTopLeftRadius).toBe('8px')
 	await expect(style.borderTopWidth).toBe('1px')
-	const target = getComputedStyle(el, '::before')
+	const target = getComputedStyle(el, '::after')
 	await expect(Number.parseFloat(target.height)).toBe(48)
 	await expect(Number.parseFloat(target.width)).toBeGreaterThanOrEqual(48)
 }
@@ -266,7 +266,7 @@ export const Focused = {
 			// The focus state layer is raised.
 			await waitFor(() =>
 				expect(
-					Number.parseFloat(getComputedStyle(el, '::after').opacity),
+					Number.parseFloat(getComputedStyle(el, '::before').opacity),
 				).toBeGreaterThan(0),
 			)
 		}

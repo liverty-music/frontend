@@ -10,12 +10,13 @@
  */
 @layer reset, global, composition, utility, block;
 
-/* The reset, the compositions, the screen-reader utility, the type styles and
-   the blocks the fan app uses too (card, icon button, menu), so a console
-   component's template can use the classes. */
+/* The reset, the compositions, the screen-reader utility, the state layer,
+   the type styles and the blocks the fan app uses too (card, icon button,
+   menu), so a console component's template can use the classes. */
 @import "../../shared/styles/reset.css";
 @import "../../shared/styles/compositions.css";
 @import "../../shared/styles/utilities.css";
+@import "../../shared/styles/state-layer.css";
 @import "../../shared/styles/m3-typescale.css";
 @import "../../shared/styles/card.css";
 @import "../../shared/styles/icon-button.css";
@@ -39,41 +40,6 @@
 	:where(:focus-visible) {
 		outline: var(--focus-ring-width) solid var(--md-sys-color-primary);
 		outline-offset: var(--focus-ring-offset);
-	}
-
-	/* M3 state layer: an overlay of the control's content color at the shared
-	   opacities (hover 8 %, keyboard focus 10 %, pressed 10 %). A disabled
-	   control shows none. */
-	:where(.state-layer) {
-		position: relative;
-	}
-
-	:where(.state-layer)::before {
-		pointer-events: none;
-		content: "";
-
-		position: absolute;
-		inset: 0;
-
-		border-radius: inherit;
-
-		opacity: 0;
-		background: currentcolor;
-
-		transition: opacity var(--md-sys-motion-duration-short2)
-			var(--md-sys-motion-easing-standard);
-	}
-
-	:where(.state-layer:hover:not(:disabled, [aria-disabled="true"]))::before {
-		opacity: var(--md-sys-state-hover-opacity);
-	}
-
-	:where(.state-layer:focus-visible)::before {
-		opacity: var(--md-sys-state-focus-opacity);
-	}
-
-	:where(.state-layer:active:not(:disabled, [aria-disabled="true"]))::before {
-		opacity: var(--md-sys-state-pressed-opacity);
 	}
 
 	/* A control whose visible shape is under 48 px still answers taps on a

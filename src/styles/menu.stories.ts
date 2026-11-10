@@ -24,7 +24,7 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 const item = (label: string, attrs = '') =>
-	`<button type="button" role="menuitem" class="[ menu-item ] [ md-typescale-label-large ]" ${attrs}>${label}</button>`
+	`<button type="button" role="menuitem" class="[ menu-item ] [ state-layer ] [ md-typescale-label-large ]" ${attrs}>${label}</button>`
 
 /** A menu shown in place (not a popover), on the page surface. */
 function menu(items: string): string {

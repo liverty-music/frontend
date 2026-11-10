@@ -19,7 +19,7 @@
   },
   "src/styles/button.css": {
     "declaration-property-custom-property-allowed-list": {
-      "count": 4
+      "count": 3
     }
   },
   "organizer/event/sales-tab/sales-tab.css": {
@@ -69,11 +69,6 @@
       "count": 1
     },
     "property-disallowed-list": {
-      "count": 1
-    }
-  },
-  "organizer/ui/console-snackbar/console-snackbar.css": {
-    "declaration-property-custom-property-allowed-list": {
       "count": 1
     }
   },
@@ -140,7 +135,7 @@
       "count": 1
     },
     "property-disallowed-list": {
-      "count": 3
+      "count": 2
     }
   },
   "src/components/dna-orb/dna-orb-canvas.css": {
@@ -221,11 +216,6 @@
     }
   },
   "src/components/signup-prompt-banner/signup-prompt-banner.css": {
-    "cube/block-max-lines": {
-      "count": 1
-    }
-  },
-  "src/routes/consent/consent-route.css": {
     "cube/block-max-lines": {
       "count": 1
     }

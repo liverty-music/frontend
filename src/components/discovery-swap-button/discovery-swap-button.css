@@ -17,6 +17,14 @@
 		.swap-tile {
 			display: grid;
 			place-items: center;
+		}
+
+		/* The button is the tile; its hidden label names where a tap leads.
+		   The tile's surface is on the button so the shared state layer
+		   (`state-layer`, ::before) lies over it: hover, focus and press, with
+		   no scale (Material 3). */
+		.discovery-swap-button {
+			display: grid;
 
 			inline-size: var(--swap-tile-size);
 			block-size: var(--swap-tile-size);
@@ -29,22 +37,7 @@
 				0 8px 22px var(--_shadow),
 				inset 0 1px 0 var(--_rim);
 
-			transition: scale 160ms ease;
-		}
-
-		/* The tile alone; its hidden label names where a tap leads. */
-		.discovery-swap-button {
-			display: grid;
-
-			&:active .swap-tile {
-				scale: 0.92;
-			}
-
 			&:focus-visible {
-				outline: none;
-			}
-
-			&:focus-visible .swap-tile {
 				outline: 2px solid var(--color-brand-primary);
 				outline-offset: 3px;
 			}
@@ -234,7 +227,6 @@
 		}
 
 		@media (prefers-reduced-motion: reduce) {
-			.swap-tile,
 			.swap-ring,
 			.swap-glyph,
 			.swap-sparkles {

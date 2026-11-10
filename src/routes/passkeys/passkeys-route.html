@@ -6,7 +6,7 @@
 
   <section if.bind="listState === 'error'" class="[ passkeys-error ] [ stack ]" role="alert" data-testid="passkeys-list-error">
     <p t="passkeys.listFailed"></p>
-    <button type="button" busy-on-click.bind="() => load()" class="[ button ] [ pressable ]" data-variant="outlined" t="passkeys.retry"></button>
+    <button type="button" busy-on-click.bind="() => load()" class="[ button ] [ state-layer ]" data-variant="outlined" t="passkeys.retry"></button>
   </section>
 
   <template if.bind="listState === 'ready'">
@@ -35,7 +35,7 @@
           click.trigger="askRemoval(passkey)"
           disabled.bind="!canRemove"
           aria-describedby="passkeys-last-note"
-          class="[ button passkeys-remove ] [ pressable ]"
+          class="[ button passkeys-remove ] [ state-layer ]"
           data-variant="outlined"
           data-testid="passkeys-remove"
           t="passkeys.remove"
@@ -48,7 +48,7 @@
       type="button"
       click.trigger="addOnThisDevice()"
       aria-describedby="passkeys-add-note passkeys-add-existing-note"
-      class="[ button ] [ pressable ]"
+      class="[ button ] [ state-layer ]"
       data-testid="passkeys-add"
     >
       <svg-icon name="plus" size="md"></svg-icon>
@@ -78,13 +78,13 @@
     <button
       type="button"
       busy-on-click.bind="() => confirmRemoval()"
-      class="[ button ] [ pressable ]"
+      class="[ button ] [ state-layer ]"
       data-variant="danger"
       data-testid="passkeys-confirm-remove"
     >
       <span if.bind="removalFailed" t="passkeys.retry"></span>
       <span else t="passkeys.confirm.remove"></span>
     </button>
-    <button type="button" click.trigger="cancelRemoval()" class="[ button ] [ pressable ]" data-variant="outlined" t="passkeys.confirm.cancel"></button>
+    <button type="button" click.trigger="cancelRemoval()" class="[ button ] [ state-layer ]" data-variant="outlined" t="passkeys.confirm.cancel"></button>
   </div>
 </bottom-sheet>

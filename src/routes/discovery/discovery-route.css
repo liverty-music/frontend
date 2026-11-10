@@ -5,10 +5,8 @@
 			--_bg-mid: oklch(35.9% 0.135 279deg);
 			--_white-5: oklch(100% 0 0deg / 5%);
 			--_white-8: oklch(100% 0 0deg / 8%);
-			--_white-10: oklch(100% 0 0deg / 10%);
 			--_white-12: oklch(100% 0 0deg / 12%);
 			--_white-15: oklch(100% 0 0deg / 15%);
-			--_white-25: oklch(100% 0 0deg / 25%);
 			--_white-40: oklch(100% 0 0deg / 40%);
 			--_white-50: oklch(100% 0 0deg / 50%);
 			--_white-70: oklch(100% 0 0deg / 70%);
@@ -214,10 +212,6 @@
 				inline-size: 0.875rem;
 				block-size: 0.875rem;
 			}
-
-			&:hover {
-				background: var(--_white-25);
-			}
 		}
 
 		.genre-bar {
@@ -306,24 +300,9 @@
 
 			background: var(--_white-5);
 
-			transition: background var(--md-sys-motion-duration-short3);
-
-			&:hover {
-				background: var(--_white-10);
-			}
-
-			&:active {
-				background: var(--_white-15);
-			}
-
 			&[data-followed="true"] {
 				cursor: default;
 				opacity: 0.5;
-
-				&:hover,
-				&:active {
-					background: var(--_white-5);
-				}
 			}
 		}
 
