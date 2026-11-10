@@ -11,6 +11,7 @@ import type {
 export class FakeWalletStorage implements IWalletStorage {
 	public deviceKey: DeviceKeyRecord | undefined
 	public snapshot: unknown
+	public stampedIds = new Set<string>()
 
 	public async getDeviceKey(): Promise<DeviceKeyRecord | undefined> {
 		return this.deviceKey ? structuredClone(this.deviceKey) : undefined
@@ -30,8 +31,17 @@ export class FakeWalletStorage implements IWalletStorage {
 		this.snapshot = structuredClone(snapshot)
 	}
 
+	public async getStampedIds(): Promise<ReadonlySet<string>> {
+		return new Set(this.stampedIds)
+	}
+
+	public async addStampedIds(ids: readonly string[]): Promise<void> {
+		for (const id of ids) this.stampedIds.add(id)
+	}
+
 	public async clear(): Promise<void> {
 		this.deviceKey = undefined
 		this.snapshot = undefined
+		this.stampedIds.clear()
 	}
 }

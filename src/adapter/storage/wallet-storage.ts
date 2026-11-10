@@ -21,31 +21,53 @@ export interface DeviceKeyRecord {
 export type EntryDeviceCheck = 'entry' | 'other' | 'unchecked'
 
 /**
- * IndexedDB persistence for the ticket wallet: the device key pair and the last
- * loaded tickets list (shown again without a connection). Web Storage cannot
- * hold a `CryptoKey`, so both live here, in one database. Every method rejects
- * when IndexedDB is unavailable; callers treat that like an empty store.
+ * IndexedDB persistence for the ticket wallet: the device key pair, the last
+ * loaded tickets list (shown again without a connection) and the ids of the
+ * tickets whose admission stamp this device has played. Web Storage cannot
+ * hold a `CryptoKey`, so all three live here, in one database that sign-out
+ * empties. Every method rejects when IndexedDB is unavailable; callers treat
+ * that like an empty store.
  */
 export interface IWalletStorage {
 	getDeviceKey(): Promise<DeviceKeyRecord | undefined>
 	putDeviceKey(record: DeviceKeyRecord): Promise<void>
 	getSnapshot<T>(): Promise<T | undefined>
 	putSnapshot<T>(snapshot: T): Promise<void>
-	/** Remove the key pair and the saved list (sign-out). */
+	/** The ids of the tickets whose admission stamp this device has played. */
+	getStampedIds(): Promise<ReadonlySet<string>>
+	/** Record that the admission stamp of these tickets has been played. */
+	addStampedIds(ids: readonly string[]): Promise<void>
+	/** Remove the key pair, the saved list and the stamped ids (sign-out). */
 	clear(): Promise<void>
 }
 
 const DB_NAME = 'wallet'
-const DB_VERSION = 1
+/**
+ * 2 added `stamped-tickets`. A build with an older version cannot open the
+ * upgraded database (`VersionError`), so the frontend is never rolled back
+ * past this version.
+ */
+const DB_VERSION = 2
 const KEY_STORE = 'device-key'
 const SNAPSHOT_STORE = 'ticket-snapshot'
-/** Each store holds one record under this key. */
+/** One record per stamped ticket, keyed by the ticket id. */
+const STAMPED_STORE = 'stamped-tickets'
+const ALL_STORES = [KEY_STORE, SNAPSHOT_STORE, STAMPED_STORE]
+/** The key and snapshot stores hold one record under this key. */
 const RECORD_KEY = 'current'
 
 function request<T>(req: IDBRequest<T>): Promise<T> {
 	return new Promise((resolve, reject) => {
 		req.onsuccess = () => resolve(req.result)
 		req.onerror = () => reject(req.error)
+	})
+}
+
+function complete(tx: IDBTransaction): Promise<void> {
+	return new Promise((resolve, reject) => {
+		tx.oncomplete = () => resolve()
+		tx.onerror = () => reject(tx.error)
+		tx.onabort = () => reject(tx.error)
 	})
 }
 
@@ -59,9 +81,13 @@ export class IndexedDbWalletStorage implements IWalletStorage {
 			const factory = this.factory
 			if (!factory) return Promise.reject(new Error('IndexedDB unavailable'))
 			const req = factory.open(DB_NAME, DB_VERSION)
+			// Create only the stores missing, so an upgrade from version 1
+			// keeps the key pair and the saved list.
 			req.onupgradeneeded = () => {
-				req.result.createObjectStore(KEY_STORE)
-				req.result.createObjectStore(SNAPSHOT_STORE)
+				const db = req.result
+				for (const name of ALL_STORES) {
+					if (!db.objectStoreNames.contains(name)) db.createObjectStore(name)
+				}
 			}
 			this.db = request(req).catch((err: unknown) => {
 				this.db = null
@@ -104,16 +130,31 @@ export class IndexedDbWalletStorage implements IWalletStorage {
 		return this.put(SNAPSHOT_STORE, snapshot)
 	}
 
+	public async getStampedIds(): Promise<ReadonlySet<string>> {
+		const db = await this.open()
+		const keys = await request(
+			db
+				.transaction(STAMPED_STORE, 'readonly')
+				.objectStore(STAMPED_STORE)
+				.getAllKeys(),
+		)
+		return new Set(keys.map(String))
+	}
+
+	public async addStampedIds(ids: readonly string[]): Promise<void> {
+		if (ids.length === 0) return
+		const db = await this.open()
+		const tx = db.transaction(STAMPED_STORE, 'readwrite')
+		const store = tx.objectStore(STAMPED_STORE)
+		for (const id of ids) store.put(true, id)
+		await complete(tx)
+	}
+
 	public async clear(): Promise<void> {
 		const db = await this.open()
-		const tx = db.transaction([KEY_STORE, SNAPSHOT_STORE], 'readwrite')
-		tx.objectStore(KEY_STORE).clear()
-		tx.objectStore(SNAPSHOT_STORE).clear()
-		await new Promise<void>((resolve, reject) => {
-			tx.oncomplete = () => resolve()
-			tx.onerror = () => reject(tx.error)
-			tx.onabort = () => reject(tx.error)
-		})
+		const tx = db.transaction(ALL_STORES, 'readwrite')
+		for (const name of ALL_STORES) tx.objectStore(name).clear()
+		await complete(tx)
 	}
 }
 
