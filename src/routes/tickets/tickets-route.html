@@ -1,3 +1,5 @@
+<import from="./virtual-ticket/virtual-ticket"></import>
+
 <template class="[ tickets-route ] [ flow ]">
 	<header class="tickets-header">
 		<h1 class="[ tickets-title ] [ md-typescale-headline-small ]" t="tickets.title"></h1>
@@ -122,13 +124,26 @@
 			</header>
 
 			<ul class="[ tickets-cards ] [ flow ]" role="list">
+				<!-- A tap anywhere on the card except its buttons and links opens the
+				     virtual ticket; the ticket number is the button that does so for
+				     the keyboard and screen readers. -->
 				<li
 					class="[ tickets-card ] [ flow ]"
 					repeat.for="ticket of group.tickets"
 					data-state.bind="shownState(ticket, listings)"
+					data-testid="tickets-card"
+					click.trigger="onCardClick($event, group, ticket)"
 				>
 					<div class="[ tickets-card-head ] [ cluster ]">
-						<span class="[ tickets-number ] [ md-typescale-label-large ]" t="tickets.ticketN" t-params.bind="{ n: ticketNumber(group, ticket) }"></span>
+						<button
+							type="button"
+							class="[ tickets-number ] [ text-link ] [ md-typescale-label-large ]"
+							data-testid="tickets-open-virtual"
+							aria-label.bind="i18n.tr('tickets.virtual.open', { title: group.event?.title ?? '', n: ticketNumber(group, ticket) })"
+							click.trigger="openTicket(group, ticket)"
+							t="tickets.ticketN"
+							t-params.bind="{ n: ticketNumber(group, ticket) }"
+						></button>
 						<span class="[ status-label ] [ md-typescale-label-large ]" data-tone.bind="stateTone(ticket, listings)" data-testid="tickets-state">
 							${stateLabel(ticket, listings)}
 						</span>
@@ -273,6 +288,71 @@
 					t="tickets.resale.cancel"
 				></button>
 			</div>
+		</div>
+	</bottom-sheet>
+
+	<!-- The virtual ticket of one ticket, with its actions below the face -->
+	<bottom-sheet
+		open.bind="isTicketOpen"
+		dismissable.bind="true"
+		sheet-closed.trigger="closeTicket()"
+		aria-label.bind="i18n.tr('tickets.virtual.title')"
+	>
+		<div class="[ tickets-virtual ] [ flow ]" if.bind="openedTicket" data-testid="tickets-virtual">
+			<virtual-ticket
+				component.ref="virtualTicket"
+				event.bind="ticketGroup.event"
+				ticket.bind="openedTicket"
+				personal-details.bind="personalDetails"
+				press-stamp.bind="pressStamp"
+				stamp-pressed.trigger="onStampPressed()"
+			></virtual-ticket>
+
+			<button
+				type="button"
+				class="[ button tickets-action ] [ pressable ]"
+				data-testid="tickets-virtual-code"
+				if.bind="canShowCode && openedTicket.state === 'not-entered' && offersCode(ticketGroup)"
+				click.trigger="openCodeFromTicket()"
+				t="tickets.code.show"
+			></button>
+			<button
+				type="button"
+				class="[ button tickets-action ] [ pressable ]"
+				data-variant="outlined"
+				data-testid="tickets-virtual-share"
+				disabled.bind="sharing"
+				click.trigger="shareTicket()"
+				t="tickets.virtual.share"
+			></button>
+			<output class="[ tickets-error ] [ md-typescale-body-medium ]" if.bind="shareFailed" t="tickets.virtual.shareFailed"></output>
+			<button
+				type="button"
+				class="[ button tickets-action ] [ pressable ]"
+				data-variant="outlined"
+				data-testid="tickets-virtual-list-for-resale"
+				if.bind="offersListing(openedTicket, listings, resaleByStock, offline)"
+				click.trigger="askToListFromTicket()"
+				t="tickets.resale.list"
+			></button>
+			<button
+				type="button"
+				class="[ button tickets-action ] [ pressable ]"
+				data-variant="outlined"
+				data-testid="tickets-virtual-withdraw"
+				if.bind="shownState(openedTicket, listings) === 'listed' && !offline"
+				disabled.bind="resaleBusy"
+				click.trigger="withdraw(openedTicket)"
+				t="tickets.resale.withdraw"
+			></button>
+			<output class="[ tickets-error ] [ md-typescale-body-medium ]" if.bind="resaleMessageFor(openedTicket, resaleMessage)" t.bind="resaleMessageFor(openedTicket, resaleMessage)"></output>
+			<button
+				type="button"
+				class="[ button tickets-action ] [ pressable ]"
+				data-variant="outlined"
+				click.trigger="closeTicket()"
+				t="tickets.virtual.close"
+			></button>
 		</div>
 	</bottom-sheet>
 

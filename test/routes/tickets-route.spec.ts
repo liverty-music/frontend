@@ -38,7 +38,13 @@ import {
 	type TicketStock,
 } from '../../src/entities/ticket-sale'
 import ja from '../../src/locales/ja/translation.json'
-import { TicketsRoute } from '../../src/routes/tickets/tickets-route'
+import {
+	ADMISSION_POLL_MS,
+	TicketsRoute,
+} from '../../src/routes/tickets/tickets-route'
+import { AdmissionStamp } from '../../src/routes/tickets/virtual-ticket/admission-stamp'
+import { IShareImage } from '../../src/routes/tickets/virtual-ticket/share-image'
+import { VirtualTicket } from '../../src/routes/tickets/virtual-ticket/virtual-ticket'
 import { ITicketWallet, TicketWallet } from '../../src/services/ticket-wallet'
 import { IUserStore } from '../../src/services/user-store'
 import { createTestContainer } from '../helpers/create-container'
@@ -48,6 +54,7 @@ const USER = '019a0000-0000-7000-8000-000000000001'
 const EVENT = '019a0000-0000-7000-8000-0000000000e1'
 const LATER_EVENT = '019a0000-0000-7000-8000-0000000000e2'
 const PAST_EVENT = '019a0000-0000-7000-8000-0000000000e3'
+const COVER_URL = 'https://cdn.liverty-music.app/cdn/org-1/cover-1/large.webp'
 const ticketId = (i: number) =>
 	`019a0000-0000-7000-8000-${String(i).padStart(12, '0')}`
 
@@ -84,12 +91,14 @@ function protoConcert(id: string, day: number) {
 			openTime: { value: timestampFromDate(jst(day, 17, 30)) },
 			startTime: { value: timestampFromDate(jst(day, 18, 30)) },
 			listedVenueName: { value: 'Shibuya WWW' },
+			venue: { adminArea: { value: 'JP-13' } },
 			seriesId: { value: 'series-1' },
 		},
 	})
 	const series = create(SeriesSchema, {
 		id: { value: 'series-1' },
 		title: { value: `LIVE ${day}` },
+		coverImage: { large: { value: COVER_URL } },
 		organizerId: { value: 'org-1' },
 		publishState: PublishState.PUBLISHED,
 	})
@@ -172,6 +181,7 @@ describe('TicketsRoute', () => {
 	let saleClient: { listByEvent: ReturnType<typeof vi.fn> }
 	/** OrderService: every ticket's Order is of the S席 stock. */
 	let orderClient: { get: ReturnType<typeof vi.fn> }
+	let shareImage: { share: ReturnType<typeof vi.fn> }
 
 	/** event-1's sales with its S席 stock, 5000 yen. */
 	function salesWith(o: Partial<TicketStock> = {}): EventTicketSales {
@@ -207,6 +217,7 @@ describe('TicketsRoute', () => {
 			Registration.instance(IResaleListingRpcClient, resaleClient),
 			Registration.instance(ITicketSaleRpcClient, saleClient),
 			Registration.instance(IOrderRpcClient, orderClient),
+			Registration.instance(IShareImage, shareImage),
 		)
 		container.register(TicketsRoute)
 		return container.get(TicketsRoute)
@@ -279,6 +290,7 @@ describe('TicketsRoute', () => {
 				ticketStockId: { value: 'stock-s' },
 			})),
 		}
+		shareImage = { share: vi.fn().mockResolvedValue('shared') }
 		vi.useFakeTimers({
 			toFake: [
 				'Date',
@@ -840,6 +852,274 @@ describe('TicketsRoute', () => {
 		})
 	})
 
+	describe('virtual ticket', () => {
+		/** The screen rendered with its sheets passed through. */
+		async function render() {
+			const fixture = await createFixture(
+				'<tickets-route component.ref="route"></tickets-route>',
+				class Host {
+					public route!: TicketsRoute
+				},
+				[
+					I18nConfiguration.customize((o) => {
+						o.initOptions = {
+							lng: 'ja',
+							resources: { ja: { translation: ja } },
+						}
+					}),
+					TicketsRoute,
+					VirtualTicket,
+					AdmissionStamp,
+					BottomSheetStub,
+					Registration.instance(ITicketRpcClient, ticketClient),
+					Registration.instance(IWalletPublicKeyRpcClient, keyClient),
+					Registration.instance(IConcertRpcClient, concertClient),
+					Registration.instance(IWalletStorage, storage),
+					Registration.singleton(ITicketWallet, TicketWallet),
+					Registration.instance(IScreenWakeLock, wakeLock),
+					Registration.instance(IUserStore, userStore),
+					Registration.instance(IResaleListingRpcClient, resaleClient),
+					Registration.instance(ITicketSaleRpcClient, saleClient),
+					Registration.instance(IOrderRpcClient, orderClient),
+					Registration.instance(IShareImage, shareImage),
+				],
+			).started
+			const sut = fixture.component.route
+			sut.loading()
+			await vi.waitFor(() => {
+				expect(sut.step).toBe('loaded')
+				expect(sut.device).not.toBe('checking')
+			})
+			await tasksSettled()
+			const $ = <T extends Element = HTMLElement>(testId: string) =>
+				fixture.appHost.querySelector<T>(`[data-testid="${testId}"]`)
+			const $$ = (testId: string) => [
+				...fixture.appHost.querySelectorAll<HTMLElement>(
+					`[data-testid="${testId}"]`,
+				),
+			]
+			return { fixture, sut, $, $$ }
+		}
+
+		/** Let the next poll read the given tickets. */
+		async function nextPoll(tickets: Ticket[]): Promise<void> {
+			ticketClient.list.mockResolvedValue(tickets)
+			await vi.advanceTimersByTimeAsync(ADMISSION_POLL_MS)
+		}
+
+		it('opens the tapped ticket as a virtual ticket with the QR code button below the face', async () => {
+			// @spec components/infrastructure/fan/web/route/tickets "Fan taps a ticket"
+			ticketClient.list.mockResolvedValue([protoTicket(1), protoTicket(2)])
+			saleClient.listByEvent.mockResolvedValue(
+				salesWith({ state: 'available', resaleOpen: false }),
+			)
+			const { fixture, sut, $, $$ } = await render()
+			expect($('tickets-virtual')).toBeNull()
+
+			// A tap on the card itself, not on one of its controls.
+			$$('tickets-card')[1]
+				.querySelector('dl')
+				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+			await vi.waitFor(() => expect(sut.isTicketOpen).toBe(true))
+			await tasksSettled()
+
+			expect(sut.openedTicket?.id).toBe(ticketId(2))
+			const sheet = $('tickets-virtual')
+			const face = sheet?.querySelector('.virtual-ticket')
+			const text = (face?.textContent ?? '').replace(/\s+/g, ' ')
+			expect(face?.querySelector('img')?.getAttribute('src')).toBe(COVER_URL)
+			for (const item of [
+				'LIVE 20',
+				'Shibuya WWW',
+				'東京都',
+				'17:30',
+				'18:30',
+				'S席',
+				'指定なし',
+				'山田太郎',
+				'090-1234-5678',
+				ja.tickets.resaleProhibited,
+			]) {
+				expect(text).toContain(item)
+			}
+			expect(face?.querySelector('admission-stamp')).toBeNull()
+			// The QR code button sits below the face, outside it.
+			const code = $('tickets-virtual-code')
+			expect(code).not.toBeNull()
+			expect(face?.contains(code)).toBe(false)
+			expect(
+				face &&
+					code &&
+					face.compareDocumentPosition(code) & Node.DOCUMENT_POSITION_FOLLOWING,
+			).toBeTruthy()
+			expect($('tickets-virtual-share')?.textContent?.trim()).toBe('画像を共有')
+
+			// The QR code opens from there, in place of the virtual ticket.
+			code?.click()
+			expect(sut.isTicketOpen).toBe(false)
+			expect(sut.isCodeOpen).toBe(true)
+			sut.closeCode()
+			await fixture.stop(true)
+		})
+
+		it('opens the virtual ticket from the keyboard through the ticket number', async () => {
+			ticketClient.list.mockResolvedValue([protoTicket(1)])
+			const { fixture, sut, $ } = await render()
+			const button = $<HTMLButtonElement>('tickets-open-virtual')
+			expect(button?.tagName).toBe('BUTTON')
+			expect(button?.getAttribute('aria-label')).toContain('LIVE 20')
+			button?.click()
+			await vi.waitFor(() => expect(sut.openedTicket?.id).toBe(ticketId(1)))
+			await fixture.stop(true)
+		})
+
+		it('runs a list button without opening the virtual ticket', async () => {
+			// @spec components/infrastructure/fan/web/route/tickets "Tapping a button in the list"
+			ticketClient.list.mockResolvedValue([protoTicket(1)])
+			saleClient.listByEvent.mockResolvedValue(salesWith())
+			const { fixture, sut, $ } = await render()
+
+			$('tickets-list-for-resale')?.click()
+			await tasksSettled()
+
+			expect(sut.isListingOpen).toBe(true)
+			expect(sut.isTicketOpen).toBe(false)
+			expect($('tickets-virtual')).toBeNull()
+			await fixture.stop(true)
+		})
+
+		it('closes the code and presses the stamp on the first ticket when every presented ticket is admitted', async () => {
+			// @spec components/infrastructure/fan/web/route/tickets "Admitted while the code is shown"
+			ticketClient.list.mockResolvedValue([protoTicket(1), protoTicket(2)])
+			saleClient.listByEvent.mockResolvedValue(
+				salesWith({ state: 'available', resaleOpen: false }),
+			)
+			const { fixture, sut, $ } = await render()
+			sut.openCode(sut.groups[0])
+			await currentCode(sut)
+
+			await nextPoll([
+				protoTicket(1, { admitted: jst(10, 12, 0, 3) }),
+				protoTicket(2, { admitted: jst(10, 12, 0, 3) }),
+			])
+			await vi.waitFor(() => expect(sut.isTicketOpen).toBe(true))
+			await tasksSettled()
+
+			expect(sut.isCodeOpen).toBe(false)
+			expect(sut.session.text).toBeNull()
+			expect(wakeLock.release).toHaveBeenCalled()
+			expect(sut.openedTicket?.id).toBe(ticketId(1))
+			// The re-read keeps the seat type read from the ticket's Order.
+			expect(sut.openedTicket?.seatTypeName).toBe('S席')
+			expect($('virtual-ticket-seat-type')?.textContent).toBe('S席')
+			const stamp = $('virtual-ticket-stamp')
+			expect(stamp?.getAttribute('data-stamp')).toBe('press')
+			expect(stamp?.textContent).toContain('入場済')
+			expect(stamp?.querySelector('time')?.textContent).toContain('12:00')
+
+			// Once the animation has played, this device remembers it.
+			const end = new Event('animationend', { bubbles: true })
+			Object.defineProperty(end, 'animationName', {
+				value: 'admission-stamp-press',
+			})
+			stamp?.dispatchEvent(end)
+			await vi.waitFor(() =>
+				expect(storage.stampedIds.has(ticketId(1))).toBe(true),
+			)
+			expect(storage.stampedIds.has(ticketId(2))).toBe(false)
+			await fixture.stop(true)
+		})
+
+		it('keeps the code open for the rest when only some are admitted', async () => {
+			// @spec components/infrastructure/fan/web/route/tickets "Only some admitted"
+			ticketClient.list.mockResolvedValue([
+				protoTicket(1),
+				protoTicket(2),
+				protoTicket(3),
+			])
+			const sut = await open()
+			sut.openCode(sut.groups[0])
+			await currentCode(sut)
+
+			await nextPoll([
+				protoTicket(1, { admitted: jst(10, 12, 0, 3) }),
+				protoTicket(2),
+				protoTicket(3),
+			])
+			await vi.waitFor(() => expect(sut.headCount).toBe(2))
+
+			expect(sut.isCodeOpen).toBe(true)
+			expect(sut.presented.map((t) => t.id)).toEqual([ticketId(2), ticketId(3)])
+			expect(sut.isTicketOpen).toBe(false)
+			sut.closeCode()
+		})
+
+		it('presses the stamp the first time a ticket admitted elsewhere is opened, and only then', async () => {
+			// @spec components/infrastructure/fan/web/route/tickets "Admitted without the code on screen"
+			// @spec components/infrastructure/fan/web/route/tickets "Opened again"
+			ticketClient.list.mockResolvedValue([
+				protoTicket(1, { admitted: jst(10, 11, 30) }),
+			])
+			const sut = await open()
+			const [group] = sut.groups
+
+			await sut.openTicket(group, group.tickets[0])
+			expect(sut.pressStamp).toBe(true)
+			sut.onStampPressed()
+			await vi.waitFor(() =>
+				expect(storage.stampedIds.has(ticketId(1))).toBe(true),
+			)
+			sut.closeTicket()
+
+			// A later visit on the same device shows the stamp at rest.
+			sut.detaching()
+			const later = await open()
+			await later.openTicket(later.groups[0], later.groups[0].tickets[0])
+			expect(later.pressStamp).toBe(false)
+		})
+
+		it('presses the stamp again after the fan signs out and in', async () => {
+			// @spec components/infrastructure/fan/web/route/tickets "Signed out and in again"
+			ticketClient.list.mockResolvedValue([
+				protoTicket(1, { admitted: jst(10, 11, 30) }),
+			])
+			storage.stampedIds.add(ticketId(1))
+			const sut = await open()
+			await sut.openTicket(sut.groups[0], sut.groups[0].tickets[0])
+			expect(sut.pressStamp).toBe(false)
+
+			await storage.clear()
+			await sut.openTicket(sut.groups[0], sut.groups[0].tickets[0])
+			expect(sut.pressStamp).toBe(true)
+		})
+
+		it('shares the open face, and says so when the image cannot be made', async () => {
+			ticketClient.list.mockResolvedValue([protoTicket(1)])
+			const { fixture, sut, $ } = await render()
+			$('tickets-open-virtual')?.click()
+			await vi.waitFor(() => expect(sut.isTicketOpen).toBe(true))
+			await tasksSettled()
+
+			$('tickets-virtual-share')?.click()
+			await vi.waitFor(() => expect(shareImage.share).toHaveBeenCalledTimes(1))
+			const [face, coverUrl] = shareImage.share.mock.calls[0]
+			expect((face as HTMLElement).classList.contains('virtual-ticket')).toBe(
+				true,
+			)
+			expect(coverUrl).toBe(COVER_URL)
+			expect(sut.shareFailed).toBe(false)
+
+			shareImage.share.mockRejectedValueOnce(new Error('decode failed'))
+			await sut.shareTicket()
+			await tasksSettled()
+			expect(sut.shareFailed).toBe(true)
+			expect($('tickets-virtual')?.textContent).toContain(
+				ja.tickets.virtual.shareFailed,
+			)
+			await fixture.stop(true)
+		})
+	})
+
 	describe('official resale', () => {
 		/** event-1's S席 stock at 5000 yen, sold out with its resale open. */
 		function firstCome(o: Partial<TicketStock> = {}): EventTicketSales {
@@ -1043,6 +1323,7 @@ describe('TicketsRoute', () => {
 					Registration.instance(IResaleListingRpcClient, resaleClient),
 					Registration.instance(ITicketSaleRpcClient, saleClient),
 					Registration.instance(IOrderRpcClient, orderClient),
+					Registration.instance(IShareImage, shareImage),
 				],
 			).started
 			const sut = fixture.component.route
