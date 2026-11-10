@@ -973,6 +973,26 @@ export const DealIn = {
 			await expect(delays(empty)).toEqual([[0, 100], [100], []])
 			for (const a of all) await expect(a.timing.duration).toBe(800)
 
+			// The cards turn in the row's perspective, not flat: at the first
+			// frame, the depth (translateZ) shrinks the card's box, which it
+			// would not if a lane flattened its cards.
+			const card = full.querySelector<HTMLElement>('event-card')
+			const lane = card?.parentElement
+			const motion = card
+				?.getAnimations()
+				.find((x) => (x as CSSAnimation).animationName === 'deal-in')
+			if (!card || !lane || !motion) throw new Error('no dealt card')
+			const at = motion.currentTime
+			motion.pause()
+			motion.currentTime = Number(motion.effect?.getTiming().delay ?? 0)
+			const inDepth = card.getBoundingClientRect().height
+			lane.style.transformStyle = 'flat'
+			const flat = card.getBoundingClientRect().height
+			lane.style.removeProperty('transform-style')
+			motion.currentTime = at
+			motion.play()
+			await expect(inDepth).toBeLessThan(flat * 0.9)
+
 			// The rows in view were triggered: they settle, fully shown, in place.
 			await new Promise((r) => setTimeout(r, 1300))
 			for (const card of full.querySelectorAll<HTMLElement>('event-card')) {

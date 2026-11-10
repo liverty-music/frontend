@@ -468,8 +468,8 @@
 			   after the lane before it (HOME, NEAR, AWAY), whichever edge the row
 			   comes in from. `sibling-index()` counts only the cards of one lane;
 			   it is not used across rows, where it would count every row already
-			   built. The perspective sits on the lanes' parent so the cards of a
-			   row share one vanishing point. */
+			   built. The perspective sits on the lanes' parent, and the lanes
+			   keep the 3D space, so the cards of a row share one vanishing point. */
 
 			@media (prefers-reduced-motion: no-preference) {
 				.date-group:not(.date-group-skeleton) {
@@ -522,9 +522,17 @@
 			}
 		}
 
+		/* `perspective` reaches only an element's children, and the cards are
+		   the grandchildren of `.lane-grid`: each lane keeps the 3D space
+		   (`preserve-3d`), so every card of a row turns in the row's one
+		   perspective and vanishing point instead of flat. */
 		.date-group:not(.date-group-skeleton) .lane-grid {
 			perspective: 520px;
 			perspective-origin: 70% 40%;
+		}
+
+		.date-group:not(.date-group-skeleton) .lane {
+			transform-style: preserve-3d;
 		}
 
 		/* No `filter: brightness()` flash: measured on a 4× CPU fling, it
