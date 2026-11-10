@@ -177,7 +177,7 @@ export const WithProgress = {
 	play: async ({ canvasElement }) => {
 		// @spec components/infrastructure/fan/web/global/ui-primitives "Custom content via slot"
 		const canvas = within(canvasElement)
-		const center = canvasElement.querySelector('.state-center')
+		const center = canvasElement.querySelector('.state-placeholder')
 		await expect(center).not.toBeNull()
 		const bar = canvas.getByRole('progressbar')
 		await expect(center?.contains(bar)).toBe(true)

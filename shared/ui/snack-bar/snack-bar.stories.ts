@@ -276,13 +276,16 @@ export const UpdateAction = {
 		await expect(canvasElement.querySelector('.snack-icon')).toBeNull()
 
 		// @spec components/infrastructure/fan/web/global/ui-primitives "Compact button on a snack bar"
-		// Smaller than the default button, with the same radius and weight, so
-		// the message keeps the row (the e2e checks one line at 360px).
-		await expect(Number.parseFloat(style.minHeight)).toBe(36)
+		// The compact size (the Material 3 extra-small button): 32px tall with
+		// the default button's label and a 48px tap target, so the message
+		// keeps the row (the e2e checks one line at 360px).
+		await expect(action.dataset.size).toBe('compact')
+		await expect(action.getBoundingClientRect().height).toBe(32)
+		await expect(
+			Number.parseFloat(getComputedStyle(action, '::after').height),
+		).toBe(48)
 		const defaultLabel = defaultButtonLabel(canvasElement)
-		await expect(Number.parseFloat(style.fontSize)).toBeLessThan(
-			defaultLabel.size,
-		)
+		await expect(Number.parseFloat(style.fontSize)).toBe(defaultLabel.size)
 		await expect(style.fontWeight).toBe(defaultLabel.weight)
 
 		// After the glow (or with none), both projects render the same still
