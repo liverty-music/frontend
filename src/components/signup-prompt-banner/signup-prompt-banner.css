@@ -59,8 +59,11 @@
 
 			min-inline-size: 0;
 
-			/* stylelint-disable-next-line property-disallowed-list -- sized to the banner's width so the copy fits one line (ui-primitives, bottom banners); no type style is fluid */
-			font: 500 var(--_banner-text) / 1.6 var(--md-ref-typeface-plain);
+			/* stylelint-disable property-disallowed-list, cube/require-token-variables -- sized to the banner's width so the copy fits one line (ui-primitives, bottom banners); no type style is fluid */
+			font-weight: 500;
+			font-size: var(--_banner-text);
+			line-height: 1.6;
+			/* stylelint-enable property-disallowed-list, cube/require-token-variables */
 			color: var(--md-sys-color-on-surface);
 			white-space: nowrap;
 		}
@@ -73,7 +76,8 @@
 			--button-padding-inline: var(--space-s);
 
 			/* The banner's own text size, the same as the message (ui-primitives). */
-			--button-font: 500 var(--_banner-text) / 1.1 var(--md-ref-typeface-plain);
+			--button-font-size: var(--_banner-text);
+			--button-line-height: 1.1;
 
 			white-space: nowrap;
 		}

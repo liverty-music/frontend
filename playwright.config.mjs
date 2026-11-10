@@ -96,6 +96,12 @@ export default defineConfig({
         'e2e/functional/fan-shell-navigation.spec.ts',
         'e2e/functional/fab-menu-arc.spec.ts',
         'e2e/functional/fab-menu-top-layer.spec.ts',
+        // The timetable's deal-in without scroll-triggered animations.
+        'e2e/functional/deal-in.spec.ts',
+        // The month jump without scroll-state queries.
+        'e2e/functional/month-jump.spec.ts',
+        // Safari downloads Noto Sans JP: it draws no local() Noto.
+        'e2e/functional/local-noto.spec.ts',
       ],
       use: {
         ...devices['iPhone 14'],

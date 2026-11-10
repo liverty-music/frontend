@@ -198,6 +198,14 @@ export default {
 				],
 			},
 		},
+		// A type style class sets the five font longhands, not the `font`
+		// shorthand, which would reset the fan app's `palt` (m3-typescale.css).
+		{
+			files: ['shared/styles/m3-typescale.css'],
+			rules: {
+				'cube/utility-single-property': [true, { max: 5 }],
+			},
+		},
 		// Each self-contained entry declares its own tokens.
 		{
 			files: ['src/**/*.css', 'shared/**/*.css'],

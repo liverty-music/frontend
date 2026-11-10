@@ -94,6 +94,32 @@ if (hasDOM) {
 		} as unknown as typeof ResizeObserver
 	}
 
+	// jsdom has no View Transitions. The app calls `startViewTransition`
+	// without a feature check (it is Baseline), so give it one that runs the
+	// update at once and reports the transition as done. A test that needs
+	// the transition's timing replaces it with its own.
+	if (typeof document.startViewTransition !== 'function') {
+		Object.defineProperty(document, 'startViewTransition', {
+			configurable: true,
+			writable: true,
+			value: (
+				update?: ViewTransitionUpdateCallback | StartViewTransitionOptions,
+			): ViewTransition => {
+				const callback = typeof update === 'function' ? update : update?.update
+				const updateCallbackDone = Promise.resolve(callback?.()).then(
+					() => undefined,
+				)
+				return {
+					updateCallbackDone,
+					ready: updateCallbackDone,
+					finished: updateCallbackDone,
+					skipTransition: () => {},
+					types: new Set<string>(),
+				} as unknown as ViewTransition
+			},
+		})
+	}
+
 	const { BrowserPlatform } = await import('@aurelia/platform-browser')
 	const { onFixtureCreated, setPlatform } = await import('@aurelia/testing')
 

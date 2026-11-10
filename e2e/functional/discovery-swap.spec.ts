@@ -352,11 +352,23 @@ test.describe('Discovery swap tile', () => {
 		const cards = view.locator('[data-live-card]')
 		await expect(cards.first()).toBeVisible({ timeout: 15_000 })
 		const scroll = view.locator('.concert-scroll')
+		// Instant: the list scrolls smoothly, and the place is read at once.
 		await scroll.evaluate((s) => {
-			s.scrollTop = 40
+			s.scrollTo({ top: 40, behavior: 'instant' })
 		})
 		const scrolled = await scroll.evaluate((s) => s.scrollTop)
 
+		// Let the card's row finish dealing in: while its lane is still moving,
+		// Playwright scrolls the card into view before the click, which would
+		// move the list this test checks.
+		await cards.first().evaluate((card) =>
+			Promise.all(
+				card
+					.closest('.lane')
+					?.getAnimations()
+					.map((a) => a.finished) ?? [],
+			),
+		)
 		await cards.first().click()
 		const sheet = page.locator(
 			'event-detail-sheet dialog[open], event-detail-sheet :popover-open',

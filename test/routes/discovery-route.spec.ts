@@ -105,6 +105,14 @@ function simulateFollow(
 	;(mock as { followedCount: number }).followedCount = artists.length
 }
 
+/**
+ * Wait until a Discovery swap's View Transition has finished. A tap while it
+ * is still revealing is ignored, so a test that switches twice waits between.
+ */
+async function swapDone(route: { revealing: boolean }): Promise<void> {
+	await vi.waitFor(() => expect(route.revealing).toBe(false))
+}
+
 describe('DiscoveryRoute', () => {
 	let sut: InstanceType<typeof DiscoveryRoute>
 	let mockArtistClient: ReturnType<typeof createMockArtistServiceClient>
@@ -1519,6 +1527,7 @@ describe('DiscoveryRoute', () => {
 
 				sut.switchView()
 				expect(sut.view).toBe('nearby')
+				await swapDone(sut)
 				sut.switchView()
 				expect(sut.view).toBe('artists')
 				sut.onRevealMark(revealMark('first-name', 5000))
@@ -1571,13 +1580,14 @@ describe('DiscoveryRoute', () => {
 			bubbles.detaching()
 		})
 
-		it(`@spec ${SPEC} "Switching Discovery's view replaces its actions"`, () => {
+		it(`@spec ${SPEC} "Switching Discovery's view replaces its actions"`, async () => {
 			sut.loading(undefined, routeTo('view=nearby'))
 			sut.attached()
 			sut.switchView()
 			// @ts-expect-error -- the @observable change callback, as Aurelia calls it
 			sut.viewChanged('artists')
 			expect(ids()).toEqual(['help'])
+			await swapDone(sut)
 			sut.switchView()
 			// @ts-expect-error -- the @observable change callback, as Aurelia calls it
 			sut.viewChanged('nearby')
@@ -1649,7 +1659,7 @@ describe('DiscoveryRoute', () => {
 		})
 
 		// @spec components/infrastructure/fan/web/route/discovery "Switching rewrites the address"
-		it('rewrites the address in place on each switch, adding no history entry', () => {
+		it('rewrites the address in place on each switch, adding no history entry', async () => {
 			sut.loading(undefined, routeTo())
 			expect(sut.view).toBe('artists')
 
@@ -1661,6 +1671,7 @@ describe('DiscoveryRoute', () => {
 				'/discovery?view=nearby',
 			)
 
+			await swapDone(sut)
 			sut.switchView()
 			expect(sut.view).toBe('artists')
 			expect(mockHistory.replaceState).toHaveBeenLastCalledWith(
@@ -1719,7 +1730,7 @@ describe('DiscoveryRoute', () => {
 		})
 
 		// @spec components/infrastructure/fan/web/route/discovery "All Nearby view pauses the simulation"
-		it('pauses the bubbles on the All Nearby view and resumes them on the way back', () => {
+		it('pauses the bubbles on the All Nearby view and resumes them on the way back', async () => {
 			sut.loading(undefined, routeTo())
 			sut.attached()
 			const canvas = sut.dnaOrbCanvas as unknown as {
@@ -1732,10 +1743,12 @@ describe('DiscoveryRoute', () => {
 			expect(canvas.resume).not.toHaveBeenCalled()
 
 			// Back while the document is visible: the bubbles run again.
+			await swapDone(sut)
 			sut.switchView()
 			expect(canvas.resume).toHaveBeenCalledOnce()
 
 			// A visibility change on the All Nearby view keeps them paused.
+			await swapDone(sut)
 			sut.switchView()
 			setHidden(false)
 			document.dispatchEvent(new Event('visibilitychange'))
@@ -1743,6 +1756,7 @@ describe('DiscoveryRoute', () => {
 
 			// Back while the document is hidden: they stay paused.
 			setHidden(true)
+			await swapDone(sut)
 			sut.switchView()
 			expect(canvas.resume).toHaveBeenCalledOnce()
 			sut.detaching()
@@ -1793,6 +1807,7 @@ describe('DiscoveryRoute', () => {
 					}),
 				}
 			})
+			const original = document.startViewTransition
 			Object.assign(document, { startViewTransition: start })
 			try {
 				sut.loading(undefined, routeTo())
@@ -1806,8 +1821,7 @@ describe('DiscoveryRoute', () => {
 				expect(sut.view).toBe('nearby')
 				finish()
 			} finally {
-				delete (document as { startViewTransition?: unknown })
-					.startViewTransition
+				Object.assign(document, { startViewTransition: original })
 			}
 		})
 

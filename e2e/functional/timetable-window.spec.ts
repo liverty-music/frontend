@@ -171,7 +171,7 @@ async function scrollDown(page: Page, screens: number): Promise<void> {
 			const s = document.querySelector(
 				'concert-highway .concert-scroll',
 			) as HTMLElement
-			s.scrollTop += s.clientHeight
+			s.scrollBy({ top: s.clientHeight, behavior: 'instant' })
 		})
 		await settle(page)
 	}
@@ -186,6 +186,18 @@ function misalignedLanes(page: Page, lanes: number) {
 		const heads = [
 			...host.querySelectorAll<HTMLElement>('.stage-header > span'),
 		]
+		// The layout box, without transforms: a row's lanes deal in with a
+		// transform, and rows outside the view wait at its first frame.
+		const box = (el: HTMLElement) => {
+			let left = 0
+			for (
+				let n: HTMLElement | null = el;
+				n;
+				n = n.offsetParent as HTMLElement | null
+			)
+				left += n.offsetLeft
+			return { left, width: el.offsetWidth }
+		}
 		const bad: string[] = []
 		if (heads.length !== expected) bad.push(`header has ${heads.length} stages`)
 		for (const g of host.querySelectorAll<HTMLElement>(
@@ -195,12 +207,12 @@ function misalignedLanes(page: Page, lanes: number) {
 			if (cols.length !== expected)
 				bad.push(`${g.dataset.dateKey}: ${cols.length} lanes`)
 			cols.forEach((lane, i) => {
-				const a = lane.getBoundingClientRect()
-				const b = heads[i]?.getBoundingClientRect()
+				const a = box(lane)
+				const b = heads[i] ? box(heads[i]) : undefined
 				if (
 					!b ||
-					Math.abs(a.left - b.left) > 0.5 ||
-					Math.abs(a.width - b.width) > 0.5
+					Math.abs(a.left - b.left) > 1 ||
+					Math.abs(a.width - b.width) > 1
 				) {
 					bad.push(`${g.dataset.dateKey} lane ${i}`)
 				}
@@ -234,7 +246,10 @@ test.describe('timetable date window', () => {
 			const s = document.querySelector(
 				'concert-highway .concert-scroll',
 			) as HTMLElement
-			s.scrollTop = s.scrollHeight - s.clientHeight * 1.4
+			s.scrollTo({
+				top: s.scrollHeight - s.clientHeight * 1.4,
+				behavior: 'instant',
+			})
 		})
 		await settle(page)
 		expect((await builtKeys(page)).length).toBeGreaterThan(before)
@@ -254,7 +269,9 @@ test.describe('timetable date window', () => {
 	}) => {
 		// Every layout shift the timetable causes, the way CLS counts them. Shifts
 		// of other surfaces (the guest sign-up banner settles on its own) are not
-		// this scenario's subject.
+		// this scenario's subject, nor is the month-jump capsule, which widens
+		// on purpose when a previous month comes into reach (its buttons keep
+		// their places; concert-highway stories).
 		await page.addInitScript(() => {
 			const w = window as unknown as { __cls: number }
 			w.__cls = 0
@@ -266,7 +283,11 @@ test.describe('timetable date window', () => {
 					const inTimetable = (
 						(e as unknown as { sources?: { node?: Node | null }[] }).sources ??
 						[]
-					).some((src) => src.node?.parentElement?.closest('concert-highway'))
+					).some(
+						(src) =>
+							src.node?.parentElement?.closest('concert-highway') &&
+							!src.node.parentElement.closest('.month-jump'),
+					)
 					if (!e.hadRecentInput && inTimetable) w.__cls += e.value
 				}
 			}).observe({ type: 'layout-shift', buffered: true })
@@ -437,7 +458,7 @@ test.describe('timetable date window', () => {
 				const before = top.getBoundingClientRect().top
 				const firstBefore = groups()[0].dataset.dateKey
 				const scrollBefore = s.scrollTop
-				s.scrollTop -= 150
+				s.scrollBy({ top: -150, behavior: 'instant' })
 				const scrolled = scrollBefore - s.scrollTop
 				await frame()
 				const same = groups().find((g) => g.dataset.dateKey === key)

@@ -265,7 +265,7 @@ test.describe('App shell scroll lock (guest)', () => {
 			const scroll = document.querySelector(
 				'[data-testid="concert-scroll"]',
 			) as HTMLElement
-			scroll.scrollTop = scroll.scrollHeight
+			scroll.scrollTo({ top: scroll.scrollHeight, behavior: 'instant' })
 		})
 		await navIsPinned()
 	})
@@ -279,6 +279,20 @@ test.describe('App shell scroll lock (guest)', () => {
 		await expect(header).toContainText(/home/i)
 		await expect(header).toContainText(/near/i)
 		await expect(header).toContainText(/away/i)
+
+		// The rows deal in with a transform; measure the first row once its
+		// deal-in has settled (rows outside the view wait for theirs).
+		await page.evaluate(() =>
+			Promise.all(
+				document
+					.querySelector(
+						'concert-highway .date-group:not(.date-group-skeleton)',
+					)
+					?.getAnimations({ subtree: true })
+					.filter((a) => (a as CSSAnimation).animationName === 'deal-in')
+					.map((a) => a.finished) ?? [],
+			),
+		)
 
 		const layout = await page.evaluate(() => {
 			const highway = document.querySelector('concert-highway') as HTMLElement
@@ -323,7 +337,7 @@ test.describe('App shell scroll lock (guest)', () => {
 			const scroll = document.querySelector(
 				'[data-testid="concert-scroll"]',
 			) as HTMLElement
-			scroll.scrollTop = scroll.scrollHeight
+			scroll.scrollTo({ top: scroll.scrollHeight, behavior: 'instant' })
 		})
 		const after = await header.boundingBox()
 		const scrollBox = await page

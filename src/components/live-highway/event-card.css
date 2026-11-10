@@ -26,14 +26,8 @@
 			padding: var(--space-xs);
 			border-radius: var(--md-sys-shape-corner-large);
 
-			/* No entrance animation. The previous one ran on every card at once,
-			   so off-screen cards burned it long before the fan scrolled to them
-			   and on-screen cards all appeared in the same instant. Its replacement
-			   — a staggered reveal on the date group — did not work: measured, every
-			   row moved together despite correctly staggered delays, and neither
-			   removing the scroll-driven animation nor disabling containment changed
-			   it. Rather than ship motion that does not run, reveal is deferred to
-			   its own change where the cause can be found. */
+			/* No entrance of its own: the card's lane is dealt in when its date
+			   row comes into view (concert-highway.css, "Deal-in"). */
 			transition: transform var(--md-sys-motion-duration-short4) ease-out;
 
 			&:active {
@@ -50,8 +44,12 @@
 
 		/* --- Artist name --- */
 		.artist-name {
-			/* stylelint-disable-next-line property-disallowed-list -- the artist name is sized to its lane (design-tokens, the one exception to type styles) */
-			font: 400 clamp(14px, 8cqi, 32px) / 1.2 var(--md-ref-typeface-brand);
+			/* stylelint-disable property-disallowed-list, cube/require-token-variables -- the artist name is sized to its lane (design-tokens, the one exception to type styles) */
+			font-family: var(--md-ref-typeface-brand);
+			font-weight: 400;
+			font-size: clamp(14px, 8cqi, 32px);
+			line-height: 1.2;
+			/* stylelint-enable property-disallowed-list, cube/require-token-variables */
 			color: var(--color-white);
 			overflow-wrap: break-word;
 			filter: drop-shadow(0 2px 4px var(--_drop-shadow));

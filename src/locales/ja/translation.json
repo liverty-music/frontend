@@ -172,6 +172,10 @@
 		"undoFailed": "取り消せませんでした。もう一度お試しください。"
 	},
 	"dashboard": {
+		"monthJump": {
+			"prev": "{{date, datetime(month: long)}}へ移動",
+			"next": "{{date, datetime(month: long)}}へ移動"
+		},
 		"lane": {
 			"home": "HOME",
 			"near": "NEAR",

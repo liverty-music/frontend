@@ -62,10 +62,13 @@
 				transform var(--md-sys-motion-spring-spatial-fast-duration)
 				var(--md-sys-motion-spring-spatial-fast);
 
-			/* Named while a route animates part of itself in a View
-			   Transition (global.css), so the FAB keeps its own snapshot above
-			   the animated part instead of being painted under it. */
-			view-transition-name: var(--fab-transition-name, none);
+			/* Its own View Transition snapshot. A named snapshot paints above
+			   the root one, and the FAB overlaps the navigation bar and the
+			   route area, which are named in some transitions (a tab switch,
+			   a route animating part of itself); named too, the FAB keeps its
+			   place on top, since snapshots paint in the order of their
+			   elements and the FAB is in the top layer (global.css). */
+			view-transition-name: fab-toggle;
 		}
 
 		.fab-toggle:active {

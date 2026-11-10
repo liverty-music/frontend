@@ -30,7 +30,7 @@
     <span if.bind="!hideAway" data-stage="away" class="md-typescale-headline-small" t="dashboard.lane.away"></span>
   </header>
 
-  <ol class="[ concert-scroll ]" data-testid="concert-scroll">
+  <ol class="[ concert-scroll ]" data-testid="concert-scroll" scrollend.trigger="onScrollEnd()">
     <!-- Loading placeholder. Built from the timetable's own structure — real
          date groups, real lanes, card-shaped blocks — rather than a generic bar
          stack, so the swap to concerts moves nothing. The stage header above is
@@ -105,5 +105,41 @@
     </li>
 
     <li class="[ window-edge ]" ref="bottomEdge" aria-hidden="true"></li>
+
+    <!-- Month jump: previous and next month in one capsule, stuck to the
+         bottom of the list above the FAB. Each button is hidden when there
+         is no month in its direction; the stylesheet also hides the capsule
+         until the list has been scrolled and while the FAB is open. -->
+    <li
+      if.bind="visibleGroups.length > 0"
+      class="[ month-jump ]"
+      data-testid="month-jump"
+      data-has-prev.bind="prevMonth !== null"
+      data-has-next.bind="nextMonth !== null"
+      data-moved.bind="moved"
+    >
+      <div class="[ month-jump-capsule ]">
+        <button
+          type="button"
+          class="[ month-jump-button ]"
+          data-direction="prev"
+          t="[aria-label]dashboard.monthJump.prev"
+          t-params.bind="{ date: prevMonth }"
+          click.trigger="jumpToMonth(-1)"
+        >
+          <svg-icon name="skip-up" size="md"></svg-icon>
+        </button>
+        <button
+          type="button"
+          class="[ month-jump-button ]"
+          data-direction="next"
+          t="[aria-label]dashboard.monthJump.next"
+          t-params.bind="{ date: nextMonth }"
+          click.trigger="jumpToMonth(1)"
+        >
+          <svg-icon name="skip-down" size="md"></svg-icon>
+        </button>
+      </div>
+    </li>
   </ol>
 </section>

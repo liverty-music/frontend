@@ -172,6 +172,10 @@
 		"undoFailed": "Couldn't undo. Please try again."
 	},
 	"dashboard": {
+		"monthJump": {
+			"prev": "Go to {{date, datetime(month: long)}}",
+			"next": "Go to {{date, datetime(month: long)}}"
+		},
 		"lane": {
 			"home": "HOME",
 			"near": "NEAR",
