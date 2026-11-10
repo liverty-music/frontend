@@ -89,7 +89,32 @@ export class IndexedDbWalletStorage implements IWalletStorage {
 					if (!db.objectStoreNames.contains(name)) db.createObjectStore(name)
 				}
 			}
-			this.db = request(req).catch((err: unknown) => {
+			this.db = new Promise<IDBDatabase>((resolve, reject) => {
+				// Another tab still holds the database at an older version (an
+				// old build left open across a deploy). The upgrade waits until
+				// that tab closes, so fail now, like an unavailable IndexedDB,
+				// rather than hold the screen on a request that may never end.
+				let blocked = false
+				req.onblocked = () => {
+					blocked = true
+					reject(new Error('IndexedDB upgrade blocked by another tab'))
+				}
+				req.onsuccess = () => {
+					const db = req.result
+					// Opened only after the rejection: the next call opens again.
+					if (blocked) {
+						db.close()
+						return
+					}
+					// Let a later build's upgrade in another tab proceed.
+					db.onversionchange = () => {
+						db.close()
+						this.db = null
+					}
+					resolve(db)
+				}
+				req.onerror = () => reject(req.error)
+			}).catch((err: unknown) => {
 				this.db = null
 				throw err
 			})

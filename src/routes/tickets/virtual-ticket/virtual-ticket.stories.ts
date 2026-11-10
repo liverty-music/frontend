@@ -66,7 +66,7 @@ const PERSON: WalletPersonalDetails = {
 
 function ticketStory(
 	o: {
-		event?: EventPageEvent
+		event?: EventPageEvent | null
 		ticket?: WalletTicket
 		pressStamp?: boolean
 	} = {},
@@ -75,7 +75,7 @@ function ticketStory(
 		template:
 			'<virtual-ticket event.bind="event" ticket.bind="ticket" personal-details.bind="person" press-stamp.bind="pressStamp"></virtual-ticket>',
 		props: {
-			event: o.event ?? EVENT,
+			event: o.event === undefined ? EVENT : o.event,
 			ticket: o.ticket ?? NOT_ENTERED,
 			person: PERSON,
 			pressStamp: o.pressStamp ?? false,
@@ -199,6 +199,23 @@ export const NoCover = {
 		const face = faceOf(canvasElement)
 		await expect(face.querySelector('.virtual-ticket-cover')).toBeNull()
 		await expect(face.textContent).toContain('Autumn Tour 2026')
+	},
+} satisfies Story
+
+/**
+ * An event whose details could not be read: the face says so and still
+ * shows the ticket's own items, with no cover.
+ */
+export const EventUnknown = {
+	render: () => ticketStory({ event: null }),
+	play: async ({ canvasElement }) => {
+		const face = faceOf(canvasElement)
+		await expect(face.textContent).toContain(
+			'イベント情報を読み込めませんでした',
+		)
+		await expect(face.textContent).toContain('S席')
+		await expect(face.textContent).toContain('山田太郎')
+		await expect(face.querySelector('.virtual-ticket-cover')).toBeNull()
 	},
 } satisfies Story
 

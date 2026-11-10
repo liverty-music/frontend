@@ -1,5 +1,5 @@
 import { IDBFactory } from 'fake-indexeddb'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { IndexedDbWalletStorage } from '../../../src/adapter/storage/wallet-storage'
 
 /** Open the wallet database as version 1 left it, with one record per store. */
@@ -62,6 +62,41 @@ describe('IndexedDbWalletStorage', () => {
 		const later = new IndexedDbWalletStorage(factory)
 		expect(await later.getStampedIds()).toEqual(new Set())
 		expect(await later.getSnapshot()).toBeUndefined()
+	})
+
+	it('fails instead of waiting while another tab holds the old version', async () => {
+		const factory = new IDBFactory()
+		await seedVersion1(factory)
+		// An old build's tab: a version 1 connection that never closes.
+		const old = await new Promise<IDBDatabase>((resolve, reject) => {
+			const req = factory.open('wallet', 1)
+			req.onsuccess = () => resolve(req.result)
+			req.onerror = () => reject(req.error)
+		})
+		const storage = new IndexedDbWalletStorage(factory)
+
+		await expect(storage.getSnapshot()).rejects.toThrow('blocked')
+
+		// Once that tab is gone, the next read upgrades and succeeds.
+		old.close()
+		await vi.waitFor(async () =>
+			expect(await storage.getSnapshot()).toEqual({ groups: ['saved'] }),
+		)
+	})
+
+	it('closes its connection when a later version is opened elsewhere', async () => {
+		const factory = new IDBFactory()
+		const storage = new IndexedDbWalletStorage(factory)
+		await storage.addStampedIds(['t-1'])
+
+		const later = await new Promise<IDBDatabase>((resolve, reject) => {
+			const req = factory.open('wallet', 3)
+			req.onblocked = () => reject(new Error('blocked'))
+			req.onsuccess = () => resolve(req.result)
+			req.onerror = () => reject(req.error)
+		})
+		expect(later.version).toBe(3)
+		later.close()
 	})
 
 	it('rejects when IndexedDB is unavailable', async () => {
