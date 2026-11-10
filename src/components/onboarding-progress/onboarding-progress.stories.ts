@@ -104,6 +104,7 @@ export const Ready = {
 		})
 		await expect(link).toHaveAttribute('href', '/dashboard')
 		await expect(canvas.queryByRole('progressbar')).toBeNull()
-		expectTargets(canvasElement, 'a')
+		// Once the row has grown in: a 48 px tap.
+		await waitFor(() => expectTargets(canvasElement, 'a'))
 	},
 } satisfies Story

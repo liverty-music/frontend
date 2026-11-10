@@ -57,11 +57,12 @@ function control(canvasElement: HTMLElement): HTMLElement {
 }
 
 /** The M3 outlined shape every state shares. */
+/** 56 px tall, extra-small corners; the border is 2 px while focused. */
 async function expectShape(el: HTMLElement): Promise<void> {
 	const style = getComputedStyle(el)
 	await expect(el.getBoundingClientRect().height).toBe(56)
 	await expect(style.borderTopLeftRadius).toBe('4px')
-	await expect(style.borderTopWidth).toBe('1px')
+	await expect(style.borderTopWidth).toBe(el.matches(':focus') ? '2px' : '1px')
 }
 
 export const Rest = {
