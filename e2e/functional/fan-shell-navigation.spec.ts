@@ -87,7 +87,9 @@ test.describe('bottom navigation', () => {
 		expect(third.x - (second.x + second.width)).toBeGreaterThanOrEqual(56)
 	})
 
-	test(`@spec ${NAV} "Route with FAB actions"`, async ({ page }) => {
+	test(`@spec ${NAV} "Route with FAB actions"`, { tag: '@webkit' }, async ({
+		page,
+	}) => {
 		await openShell(page, '/dashboard')
 		await expect(fab(page)).toBeVisible()
 
@@ -102,7 +104,9 @@ test.describe('bottom navigation', () => {
 		expect(await maskOf(page)).toContain('radial-gradient')
 	})
 
-	test(`@spec ${NAV} "Route without FAB actions"`, async ({ page }) => {
+	test(`@spec ${NAV} "Route without FAB actions"`, { tag: '@webkit' }, async ({
+		page,
+	}) => {
 		await openShell(page, '/settings')
 
 		await expect(page.locator('fab-menu')).toHaveCount(0)
@@ -114,7 +118,9 @@ test.describe('bottom navigation', () => {
 		expect(third.x - (second.x + second.width)).toBeGreaterThanOrEqual(56)
 	})
 
-	test(`@spec ${NAV} "Tabs do not move between routes"`, async ({ page }) => {
+	test(`@spec ${NAV} "Tabs do not move between routes"`, {
+		tag: '@webkit',
+	}, async ({ page }) => {
 		await openShell(page, '/dashboard')
 		await expect(fab(page)).toBeVisible()
 		const onDashboard = await tabs(page).evaluateAll((els) =>

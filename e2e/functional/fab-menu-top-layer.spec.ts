@@ -19,9 +19,9 @@ test.use({ viewport: { width: 390, height: 844 } })
 
 const CAPABILITY = 'components/infrastructure/fan/web/global/fab-menu'
 
-test(`@spec ${CAPABILITY} "FAB stays above the Discovery dna orb"`, async ({
-	page,
-}) => {
+test(`@spec ${CAPABILITY} "FAB stays above the Discovery dna orb"`, {
+	tag: '@webkit',
+}, async ({ page }) => {
 	await seedSignedInFan(page)
 	await openShell(page, '/discovery')
 	await expect(fab(page)).toBeVisible()

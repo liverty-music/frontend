@@ -189,9 +189,9 @@ test.describe('deal-in, scroll-triggered (Chromium)', () => {
 })
 
 test.describe('deal-in, scroll-linked (no scroll triggers)', () => {
-	test(`@spec ${HIGHWAY} "Leaving through the top without entry-triggered animations"`, async ({
-		page,
-	}) => {
+	test(`@spec ${HIGHWAY} "Leaving through the top without entry-triggered animations"`, {
+		tag: '@webkit',
+	}, async ({ page }) => {
 		await openDashboard(page)
 		test.skip(
 			await page.evaluate(() => CSS.supports('timeline-trigger: --t view()')),
