@@ -16,6 +16,20 @@ export async function swipeSideways(
 	return true
 }
 
+/**
+ * Drags a finger vertically across `selector` through each offset of `path`
+ * (px, positive is down) and lifts it; `[160]` is a swipe down.
+ */
+export async function swipeVertically(
+	selector: string,
+	path: number[],
+): Promise<boolean> {
+	if (import.meta.env.MODE !== 'test') return false
+	const { commands } = await import('vitest/browser')
+	await commands.swipeVertically(selector, path)
+	return true
+}
+
 /** Presses the pointer down on `selector` and keeps it down. */
 export async function pressAndHold(selector: string): Promise<boolean> {
 	if (import.meta.env.MODE !== 'test') return false

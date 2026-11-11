@@ -362,6 +362,8 @@ describe('DashboardRoute', () => {
 	})
 
 	describe('countedArtists', () => {
+		// @spec components/infrastructure/fan/web/global/bottom-sheet "Chips ordered by concert count descending"
+		// @spec components/infrastructure/fan/web/global/bottom-sheet "Zero-concert artists hidden"
 		it('counts over the unfiltered set, hides zero, sorts by count then name', () => {
 			mockFollowStore.followedArtists = [
 				makeArtist('a1', 'Beta'),
@@ -383,6 +385,7 @@ describe('DashboardRoute', () => {
 			])
 		})
 
+		// @spec components/infrastructure/fan/web/global/bottom-sheet "Counts stable while filtering"
 		it('keeps counts stable over the unfiltered set while a filter is active', () => {
 			mockFollowStore.followedArtists = [
 				makeArtist('a1', 'One'),
@@ -394,6 +397,10 @@ describe('DashboardRoute', () => {
 			const counts = sut.countedArtists
 			expect(counts).toHaveLength(2)
 			expect(counts.find((a) => a.id === 'a2')?.count).toBe(1)
+
+			// A journey selection narrows the highway too; counts stay as they were.
+			sut.filteredStatuses = ['applied']
+			expect(sut.countedArtists).toEqual(counts)
 		})
 	})
 

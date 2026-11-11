@@ -170,7 +170,9 @@ test.describe('Artist filter bar bottom sheet', () => {
 		await mockLastFmApi(page)
 	})
 
-	test('displays followed artists in the filter sheet', async ({ page }) => {
+	test('@spec components/infrastructure/fan/web/global/bottom-sheet "Opening the bottom sheet"', async ({
+		page,
+	}) => {
 		// Seed: post-onboarding guest with home set and followed artists
 		await page.addInitScript(() => {
 			localStorage.setItem('onboardingComplete', 'true')
@@ -219,6 +221,14 @@ test.describe('Artist filter bar bottom sheet', () => {
 		await expect(
 			sheet.locator('label.artist-chip', { hasText: 'Vaundy' }),
 		).toBeVisible()
+		// The chips are selectable, and none starts selected.
+		await expect(sheet.locator('label.artist-chip input')).toHaveCount(2)
+		await expect(sheet.locator('label.artist-chip input:checked')).toHaveCount(
+			0,
+		)
+
+		// The launcher panel closed as the sheet opened.
+		await expect(page.locator('fab-menu .fab-panel')).toBeHidden()
 	})
 
 	test('selecting an artist and confirming activates the filter button', async ({
