@@ -64,9 +64,10 @@ export const Catalog = {
 				),
 			)
 
-		// The default size is the 48 px touch target itself.
+		// The default size is the Material 3 small button: 40 px tall, with a
+		// 48 px target through its ::after.
 		for (const el of canvasElement.querySelectorAll<HTMLElement>('.button')) {
-			await expect(el.getBoundingClientRect().height).toBe(48)
+			await expect(el.getBoundingClientRect().height).toBe(40)
 		}
 		expectTargets(canvasElement, '.button')
 

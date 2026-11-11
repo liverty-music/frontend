@@ -117,7 +117,7 @@
 
 			min-inline-size: 0;
 			max-inline-size: 100%;
-			min-block-size: var(--md-sys-target-size);
+			min-block-size: 32px;
 			padding-inline: var(--space-xs) var(--space-3xs);
 			border: none;
 			border-radius: var(--md-sys-shape-corner-full);

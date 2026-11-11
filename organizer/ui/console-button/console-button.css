@@ -12,7 +12,7 @@
 		align-items: center;
 		justify-content: center;
 
-		min-block-size: var(--md-sys-target-size);
+		min-block-size: 40px;
 		padding-inline: var(--space-m);
 		border: 1px solid transparent;
 		border-radius: var(--md-sys-shape-corner-full);

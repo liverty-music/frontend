@@ -53,9 +53,8 @@ test(`@spec ${WELCOME} "Scroll affordance button is rendered when preview is ava
 	await openWelcome(page, '?devPreview=1')
 	const cue = page.locator('.welcome-scroll-action')
 	await expect(cue).toBeVisible()
-	const box = await cue.boundingBox()
-	expect(box?.height).toBeGreaterThanOrEqual(48)
-	expect(box?.width).toBeGreaterThanOrEqual(48)
+	// The Material 3 small button: 40 px to see, 48 px to tap (its ::after).
+	expect((await cue.boundingBox())?.height).toBe(40)
 	expect(await missedTaps(cue)).toEqual([])
 })
 
