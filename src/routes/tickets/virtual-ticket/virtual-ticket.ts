@@ -169,6 +169,7 @@ export class VirtualTicket {
 			// that is shown, however long the renderers took to start.
 			if (!this.detached) {
 				this.settled = true
+				if (this.pressing) this.scheduleImpact()
 			}
 		}
 	}
@@ -287,7 +288,6 @@ export class VirtualTicket {
 			resize()
 			this.drawCover()
 			this.drawn = true
-			if (this.pressing) this.scheduleImpact()
 		} catch (err) {
 			// Said aloud: a silent fall back to the plain cover hid a renderer
 			// that could not start in the app at all.
@@ -450,8 +450,8 @@ export class VirtualTicket {
 			const stamp = this.face?.querySelector<HTMLElement>('.admission-stamp')
 			if (!stamp || this.detached) return
 			const press = stamp
-				.getAnimations()
-				.find((a) => (a as CSSAnimation).animationName === STAMP_ANIMATION)
+				.getAnimations?.()
+				?.find((a) => (a as CSSAnimation).animationName === STAMP_ANIMATION)
 			const seconds = Number.parseFloat(
 				getComputedStyle(stamp).animationDuration,
 			)

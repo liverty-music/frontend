@@ -95,4 +95,38 @@ describe('virtual-ticket drawn as a sheet', () => {
 		expect(sheets()[0].parentElement?.classList).toContain('virtual-ticket-fit')
 		await fixture.stop(true)
 	})
+
+	it('draws the stamp’s impact once, through the sheet, after the drawing has settled', async () => {
+		sheet.impact.mockClear()
+		const host = {
+			ticket: { ...TICKET, state: 'entered' as const, admitTime: new Date() },
+		}
+		const fixture = await createFixture
+			.html(
+				'<virtual-ticket event.bind="null" ticket.bind="ticket" press-stamp.bind="true"></virtual-ticket>',
+			)
+			.component(host)
+			.deps(i18n, VirtualTicket, AdmissionStamp)
+			.build().started
+		const root = fixture.appHost
+
+		// The stamp waits for the sheet, then lands, and the impact follows.
+		await vi.waitFor(
+			() => expect(root.querySelector('[data-stamp="press"]')).not.toBeNull(),
+			{ timeout: 10_000 },
+		)
+		await vi.waitFor(() => expect(sheet.impact).toHaveBeenCalled(), {
+			timeout: 5000,
+		})
+		const [x, y] = sheet.impact.mock.calls[0]
+		// On the stub, towards the right.
+		expect(x).toBeGreaterThan(0.6)
+		expect(y).toBeGreaterThan(0.8)
+		expect(
+			root.querySelector('.virtual-ticket-card')?.hasAttribute('data-thump'),
+		).toBe(true)
+		await new Promise((r) => setTimeout(r, 600))
+		expect(sheet.impact).toHaveBeenCalledTimes(1)
+		await fixture.stop(true)
+	})
 })
