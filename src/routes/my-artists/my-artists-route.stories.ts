@@ -342,6 +342,44 @@ export const Widths = {
 		// @spec components/infrastructure/fan/web/route/my-artists "Slider renders on each artist row"
 		// @spec components/infrastructure/fan/web/global/design-tokens "Neighbouring controls"
 		expectTargets(firstRow, '.hype-label')
+		// The name on the left and the slider on its right, on one row: four
+		// stops on a 2 px track, the active dot 14 px and the others 8 px.
+		const nameCell = firstRow.querySelector('.artist-name-cell')
+		const labels = [...firstRow.querySelectorAll('.hype-label')]
+		if (!nameCell) throw new Error('no artist name cell rendered')
+		await expect(labels).toHaveLength(4)
+		const middle = (el: Element) => {
+			const r = el.getBoundingClientRect()
+			return r.top + r.height / 2
+		}
+		for (const label of labels) {
+			await expect(
+				Math.abs(middle(label) - middle(nameCell)),
+			).toBeLessThanOrEqual(1)
+			await expect(label.getBoundingClientRect().left).toBeGreaterThanOrEqual(
+				nameCell.getBoundingClientRect().right,
+			)
+		}
+		await expect(
+			getComputedStyle(firstRow.querySelector('.artist-row-name') as Element)
+				.textOverflow,
+		).toBe('ellipsis')
+		await expect(getComputedStyle(labels[0], '::before').height).toBe('2px')
+		await Promise.all(
+			document
+				.getAnimations()
+				.filter((a) => a instanceof CSSTransition)
+				.map((a) => a.finished),
+		)
+		const dots = [...firstRow.querySelectorAll<HTMLElement>('.hype-dot')]
+		await expect(dots.filter((d) => d.dataset.active === 'true')).toHaveLength(
+			1,
+		)
+		for (const dot of dots) {
+			const size = dot.dataset.active === 'true' ? 14 : 8
+			await expect(dot.getBoundingClientRect().width).toBe(size)
+			await expect(dot.getBoundingClientRect().height).toBe(size)
+		}
 		// The room left for the name's text in its cell (the cell less its
 		// start padding, the colour dot and the gap): four full-width characters
 		// at 16 px, so a name like ヨルシカ shows whole.

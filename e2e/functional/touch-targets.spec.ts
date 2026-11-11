@@ -53,12 +53,29 @@ test(`@spec ${WELCOME} "Scroll affordance button is rendered when preview is ava
 	await openWelcome(page, '?devPreview=1')
 	const cue = page.locator('.welcome-scroll-action')
 	await expect(cue).toBeVisible()
+	// A labelled <button>.
+	expect(await cue.evaluate((el) => el.tagName)).toBe('BUTTON')
+	await expect(cue).toHaveAccessibleName(/\S/)
 	// The Material 3 small button: 40 px to see, 48 px to tap (its ::after).
 	expect((await cue.boundingBox())?.height).toBe(40)
 	expect(await missedTaps(cue)).toEqual([])
+	// The Tab key reaches it, and it shows the focus ring.
+	let reached = false
+	for (let i = 0; i < 30 && !reached; i++) {
+		await page.keyboard.press('Tab')
+		reached = await cue.evaluate((el) => el === document.activeElement)
+	}
+	expect(reached).toBe(true)
+	const ring = await cue.evaluate((el) => {
+		const style = getComputedStyle(el)
+		return { style: style.outlineStyle, width: style.outlineWidth }
+	})
+	expect(ring).toEqual({ style: 'solid', width: '3px' })
 })
 
-test(`@spec ${WELCOME} "Link below Log In"`, async ({ page }) => {
+// The 48 px part of welcome "Link below Log In"; its place below Log In is
+// checked in test/routes/welcome-cant-sign-in.spec.ts.
+test('the link below Log In takes a 48 px tap', async ({ page }) => {
 	// No preview data: Screen 1 shows Log In and the help link below it.
 	await openWelcome(page)
 	const link = page.getByTestId('welcome-cant-sign-in').first()
