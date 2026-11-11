@@ -269,37 +269,6 @@ test.describe('Normal detail sheet dismiss', () => {
 		await page.goto('/dashboard')
 	})
 
-	// TODO: Bottom-sheet scroll-snap dismiss doesn't trigger reliably in headless Chromium.
-	// The dialog popover="auto" light-dismiss and scroll-to-dismiss-zone both depend
-	// on smooth scrolling and scrollend events that may not fire in CI.
-	test.fixme('tap outside (light dismiss) closes sheet', async ({ page }) => {
-		await openDetailSheet(page)
-
-		// Tap outside the sheet (top of page, above the bottom sheet)
-		await page.mouse.click(200, 50)
-
-		// Sheet should close
-		const sheet = page.locator('event-detail-sheet bottom-sheet')
-		await expect(sheet).not.toBeVisible({ timeout: 3000 })
-
-		// URL should revert to dashboard
-		await expect(page).toHaveURL(/dashboard/)
-	})
-
-	test.fixme('Escape key closes sheet', async ({ page }) => {
-		await openDetailSheet(page)
-
-		// Press Escape
-		await page.keyboard.press('Escape')
-
-		// Sheet should close
-		const sheet = page.locator('event-detail-sheet bottom-sheet')
-		await expect(sheet).not.toBeVisible({ timeout: 3000 })
-
-		// URL should revert to dashboard
-		await expect(page).toHaveURL(/dashboard/)
-	})
-
 	test('browser back button closes sheet', async ({ page }) => {
 		await openDetailSheet(page)
 

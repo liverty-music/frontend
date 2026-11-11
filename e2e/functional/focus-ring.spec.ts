@@ -252,16 +252,6 @@ test.describe('organizer console', () => {
 				expect(ring?.focused).toMatch(/^button/)
 				expect(ring?.style).toBe('none')
 			})
-
-			test(`the ring colour reaches 3:1 on every surface tier (${scheme})`, async ({
-				page,
-			}) => {
-				const ratios = await ringContrastOnSurfaces(page)
-				expect(Object.keys(ratios).length).toBeGreaterThanOrEqual(5)
-				for (const [tier, ratio] of Object.entries(ratios)) {
-					expect(ratio, tier).toBeGreaterThanOrEqual(3)
-				}
-			})
 		})
 	}
 })

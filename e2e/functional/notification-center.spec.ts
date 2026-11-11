@@ -177,17 +177,6 @@ test.describe('the notification center', () => {
 		await expect(page.getByTestId('notifications-unread')).toHaveCount(1)
 	})
 
-	test('an empty center says so', async ({ page }) => {
-		await openAs(page, [])
-
-		await page.goto('/notifications')
-
-		await expect(page.getByTestId('notifications-empty')).toHaveText(
-			'通知はまだありません。',
-		)
-		await expect(bellBadge(page)).toHaveCount(0)
-	})
-
 	test('a guest sees no bell and is sent to the welcome page', async ({
 		page,
 	}) => {

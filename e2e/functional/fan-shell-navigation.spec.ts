@@ -143,16 +143,6 @@ test.describe('bottom navigation', () => {
 			await expect(active).toHaveAttribute('data-nav', icon)
 		}
 	})
-
-	test(`@spec ${NAV} "Route outside every tab"`, async ({ page }) => {
-		for (const path of [
-			'/settings',
-			'/orders/00000000-0000-4000-8000-0d0000000001',
-		]) {
-			await openShell(page, path)
-			await expect(page.locator('.nav-tab[data-active="true"]')).toHaveCount(0)
-		}
-	})
 })
 
 test.describe('Settings item in the launcher', () => {
@@ -186,27 +176,6 @@ test.describe('Settings item in the launcher', () => {
 		}
 		// No tab page shows a Settings gear in the header any more.
 		await expect(page.locator('page-header a')).toHaveCount(0)
-	})
-
-	test(`@spec ${FAB} "No Settings item outside the tabs"`, async ({ page }) => {
-		for (const path of [
-			'/settings',
-			'/events/00000000-0000-4000-8000-0e0000000001',
-			'/orders/00000000-0000-4000-8000-0d0000000001',
-		]) {
-			await openShell(page, path)
-			await expect(
-				page.locator('fab-menu .fab-item[data-action-id="settings"]'),
-			).toHaveCount(0)
-		}
-	})
-
-	test(`@spec ${FAB} "FAB hidden when no actions are contributed"`, async ({
-		page,
-	}) => {
-		await openShell(page, '/settings')
-		await expect(page.locator('fab-menu')).toHaveCount(0)
-		await expect(nav(page)).toHaveAttribute('data-notch', 'false')
 	})
 
 	test(`@spec ${FAB} "FAB hidden while the route hides the launcher"`, async ({

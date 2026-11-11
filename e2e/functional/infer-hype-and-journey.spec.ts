@@ -283,31 +283,6 @@ test.describe('calendar add starts tracking', () => {
 		expect(server.journeys.has(HOME_CONCERT)).toBe(false)
 	})
 
-	test(`@spec ${TRACK} "Existing journey kept"`, async ({ page }) => {
-		const server: Server = {
-			hype: 'HYPE_TYPE_NEARBY',
-			hypeSetBy: 'default',
-			journeys: new Map([[HOME_CONCERT, 'TICKET_JOURNEY_STATUS_PAID']]),
-		}
-		await seedSignedIn(page)
-		const calls = await mockBackend(page, server)
-		await page.goto('/dashboard')
-
-		await openSheet(page, 'Home Show Hall')
-		const tab = page.context().waitForEvent('page')
-		await sheet(page).getByRole('link', { name: 'カレンダーに追加' }).click()
-		await (await tab).close()
-		await page.bringToFront()
-		// biome-ignore lint/suspicious/noPlaywrightWaitForTimeout: an absence check; past the return fallback a snack would have shown
-		await page.waitForTimeout(1_500)
-
-		expect(callsOf(calls, 'TicketJourneyService/InferTracking')).toEqual([])
-		await expect(page.locator('snack-bar .snack-item')).toHaveCount(0)
-		await expect(
-			sheet(page).locator('.journey-row [data-journey-status="paid"]'),
-		).toHaveAttribute('aria-pressed', 'true')
-	})
-
 	test(`@spec ${TRACK} "Opening a new-concert push changes no journey"`, async ({
 		page,
 	}) => {

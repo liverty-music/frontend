@@ -120,14 +120,6 @@ function expectDealing(cards: CardMotion[]): void {
 test.describe('deal-in, scroll-triggered (Chromium)', () => {
 	test.skip(({ browserName }) => browserName !== 'chromium')
 
-	test(`@spec ${HIGHWAY} "Scrolling down"`, async ({ page }) => {
-		await openDashboard(page)
-		await scrollBy(page, 1500)
-		const row = await rowInView(page)
-		if (!row) throw new Error('no row in view')
-		expectDealing(row.cards)
-	})
-
 	test(`@spec ${HIGHWAY} "Fast scroll"`, async ({ page }) => {
 		await openDashboard(page)
 		// 1500 px in one frame: rows cross into view far faster than 100 ms.

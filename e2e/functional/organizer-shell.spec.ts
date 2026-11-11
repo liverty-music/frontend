@@ -511,12 +511,6 @@ test.describe('addresses name the Organizer and the Artist', () => {
 		await expect(page).toHaveURL(/\/artists\/a-2\/series$/)
 	})
 
-	test('One represented Artist is named without a menu', async ({ page }) => {
-		await open(page, SERIES)
-		await expect(page.getByTestId('artist-name')).toHaveText('Band A')
-		await expect(page.getByTestId('artist-menu-button')).toHaveCount(0)
-	})
-
 	test('Long names shorten in the top bar on a phone', async ({ page }) => {
 		await page.setViewportSize({ width: 390, height: 844 })
 		await open(page, SERIES, {

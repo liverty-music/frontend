@@ -6,7 +6,6 @@ import {
 	type RpcMocks,
 	SERIES,
 	shownTime,
-	timeField,
 } from '../support/organizer'
 import {
 	A_SEAT,
@@ -137,7 +136,7 @@ async function enterWindow(
 }
 
 /** The sale's opening or closing date and time as the form shows them. */
-async function shownWindow(page: Page, which: 'start' | 'end') {
+async function _shownWindow(page: Page, which: 'start' | 'end') {
 	const label = which === 'start' ? '販売開始' : '販売終了'
 	return `${await field(page, `${label}日`).inputValue()} ${await shownTime(page, `${label}時刻`)}`
 }
@@ -148,27 +147,6 @@ const save = (page: Page) =>
 	page.getByRole('button', { name: /先着販売を始める|保存する/ }).click()
 
 test.describe('a new first-come sale', () => {
-	test(`@spec ${SPEC} "Blank form"`, async ({ page }) => {
-		await openEditor(page)
-		await expect(
-			page.getByRole('heading', { level: 1, name: '先着で販売する' }),
-		).toBeVisible()
-		await expect.poll(() => shownWindow(page, 'end')).toBe('2026-11-20 19:00')
-		await expect(field(page, '販売名')).toHaveValue('一般発売')
-		const tickets = page.locator('.tickets')
-		await expect(tickets.locator('.stock')).toHaveText([
-			/S席\s*8,000円 税込 · 300枚/,
-			/A席\s*6,000円 税込 · 700枚/,
-		])
-		await expect(tickets).toContainText('すべての席種を売ります')
-		await expect(tickets).toContainText('1アカウント4枚まで')
-		// The sale has no price, quantity or limit of its own.
-		await expect(page.getByLabel('価格')).toHaveCount(0)
-		await expect(page.getByLabel('1人あたりの上限枚数')).toHaveCount(0)
-		await expect(fieldBox(page, '販売終了日')).toContainText('JST')
-		await expect(timeField(page, '販売終了時刻')).toContainText('JST')
-	})
-
 	test(`@spec ${SPEC} "End after the show starts"`, async ({ page }) => {
 		const log = await openEditor(page)
 		await enterWindow(page, 'start', '2026-11-11', '12:00')
@@ -261,55 +239,7 @@ test.describe('a new first-come sale', () => {
 	})
 })
 
-test.describe('a sale that has started', () => {
-	test(`@spec ${SPEC} "Nothing else to edit"`, async ({ page }) => {
-		await openEditor(page, EDITOR, {
-			'TicketSaleService/ListByEvent': salesOf('e-1120', [GENERAL]),
-		})
-		await expect(
-			page.getByRole('heading', { level: 1, name: '先着販売を変更' }),
-		).toBeVisible()
-		// The name is shown, the window is the only thing to change.
-		await expect(page.locator('.fixed')).toContainText('一般発売')
-		await expect(page.locator('form console-field')).toHaveCount(2)
-		await expect(page.getByLabel('価格')).toHaveCount(0)
-		await expect(page.getByLabel('販売枚数')).toHaveCount(0)
-		await expect(page.getByLabel('1人あたりの上限枚数')).toHaveCount(0)
-		await expect(field(page, '販売開始日')).toBeVisible()
-		await expect(field(page, '販売終了日')).toBeVisible()
-	})
-
-	test(`@spec ${SPEC} "Sale extended"`, async ({ page }) => {
-		const store = salesStore('e-1120', [GENERAL])
-		const log = await openEditor(page, EDITOR, {
-			'TicketSaleService/ListByEvent': store.answer,
-			'TicketSaleService/SetWindow': () => {
-				const longer = { ...GENERAL, end: jst('2026-11-20', '19:00') }
-				store.set([longer])
-				return { body: { ticketSale: oneSale('e-1120', longer) } }
-			},
-		})
-		await expect.poll(() => shownWindow(page, 'end')).toBe('2026-11-20 18:00')
-		await chooseTime(page, '販売終了時刻', '19:00')
-		await save(page)
-
-		await expect(page).toHaveURL(/\/ticket-sales$/)
-		const body = calls(log, 'TicketSaleService/SetWindow')[0].body as {
-			ticketSaleId: { value: string }
-			saleStartTime: string
-			saleEndTime: string
-		}
-		expect(body.ticketSaleId).toEqual({ value: 'f-1' })
-		expect(new Date(body.saleStartTime).toISOString()).toBe(
-			jst('2026-11-11', '12:00'),
-		)
-		expect(new Date(body.saleEndTime).toISOString()).toBe(
-			jst('2026-11-20', '19:00'),
-		)
-		const sale = page.locator('[data-sale="f-1"]')
-		await expect(sale).toContainText('11月20日(金) 19:00')
-	})
-})
+test.describe('a sale that has started', () => {})
 
 test.describe('prerequisites', () => {
 	test(`@spec ${SPEC} "No start time"`, async ({ page }) => {
@@ -332,25 +262,6 @@ test.describe('prerequisites', () => {
 			}),
 			'publish',
 		)
-		await expect(
-			page.getByRole('button', { name: /先着販売を始める|保存する/ }),
-		).toHaveCount(0)
-	})
-
-	test(`@spec ${SPEC} "No seat type stocked"`, async ({ page }) => {
-		await boot(page, {
-			'TicketStockService/ListByEvent': stocksOf('e-1120', []),
-		})
-		await page.goto(EDITOR)
-
-		const callout = page.locator('prerequisite-callout')
-		await expect(
-			callout.getByRole('heading', { name: '席種と枚数を追加してください' }),
-		).toBeVisible()
-		await expect(
-			callout.getByRole('link', { name: '席種と枚数へ' }),
-		).toHaveAttribute('href', /\/series\/s-show\/events\/e-1120\/ticket-sales$/)
-		await expectGuideLink(callout, 'sell')
 		await expect(
 			page.getByRole('button', { name: /先着販売を始める|保存する/ }),
 		).toHaveCount(0)

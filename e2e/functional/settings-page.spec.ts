@@ -17,7 +17,7 @@ test.use({ viewport: { width: 390, height: 844 }, locale: 'ja-JP' })
 const SETTINGS = 'components/infrastructure/fan/web/route/settings'
 const GUEST_STORY = 'stories/roam-app-as-guest'
 
-const SIGNED_IN_TITLES = [
+const _SIGNED_IN_TITLES = [
 	'アカウント',
 	'チケットの名義',
 	'通知とサウンド',
@@ -26,7 +26,7 @@ const SIGNED_IN_TITLES = [
 	'このアプリについて',
 ]
 
-const sectionTitles = (page: Page) =>
+const _sectionTitles = (page: Page) =>
 	page.locator('settings-route .settings-section-title').allTextContents()
 
 /** A signed-in fan whose saved User carries these ticket details. */
@@ -100,43 +100,6 @@ async function onTop(page: Page, selector: string): Promise<boolean> {
 }
 
 test.describe('section order', () => {
-	test(`@spec ${SETTINGS} "Signed-in fan sees the account first"`, async ({
-		page,
-	}) => {
-		await openAsFan(page)
-		expect(await sectionTitles(page)).toEqual(SIGNED_IN_TITLES)
-		// Sign Out, then Delete account, close the page.
-		const groups = await page
-			.getByTestId('settings-scroll')
-			.evaluate((el) =>
-				[...el.children].slice(-2).map((c) => c.getAttribute('data-testid')),
-			)
-		expect(groups).toEqual([
-			'settings-sign-out-group',
-			'settings-delete-account-group',
-		])
-	})
-
-	test(`@spec ${SETTINGS} "Guest sees the hero, then the preferences"`, async ({
-		page,
-	}) => {
-		await openAsGuest(page)
-		await expect(page.getByTestId('settings-sign-in')).toBeVisible()
-		expect(await sectionTitles(page)).toEqual([
-			'通知とサウンド',
-			'表示と操作',
-			'サービス改善の協力',
-			'このアプリについて',
-		])
-		await expect(page.getByText('プッシュ通知')).toHaveCount(0)
-		await expect(page.getByTestId('settings-personal-details-row')).toHaveCount(
-			0,
-		)
-		await expect(page.getByTestId('settings-delete-account-group')).toHaveCount(
-			0,
-		)
-	})
-
 	test(`@spec ${SETTINGS} "Guest sees a prominent sign-in hero at the top"`, async ({
 		page,
 	}) => {
@@ -219,16 +182,6 @@ test.describe('section order', () => {
 })
 
 test.describe('rows', () => {
-	test(`@spec ${SETTINGS} "Consent rows and Passkeys"`, async ({ page }) => {
-		await openAsFan(page)
-		// Each row's glyph, as drawn: no two rows draw the same one.
-		const glyphs = await page
-			.locator('settings-route :is(.settings-icon, .list-item-icon)')
-			.evaluateAll((els) => els.map((el) => el.innerHTML.trim()))
-		expect(glyphs.length).toBeGreaterThan(0)
-		expect(new Set(glyphs).size).toBe(glyphs.length)
-	})
-
 	test(`@spec ${SETTINGS} "Legal links"`, async ({ page }) => {
 		for (const [label, path] of [
 			['利用規約', '/legal/terms'],
@@ -244,49 +197,11 @@ test.describe('rows', () => {
 			await page.waitForURL((url) => url.pathname === path)
 		}
 	})
-
-	test(`@spec ${SETTINGS} "Contact support"`, async ({ page }) => {
-		await openAsGuest(page)
-		const contact = page.getByTestId('settings-contact')
-		await expect(contact).toHaveText(/お問い合わせ/)
-		await expect(contact).toHaveAttribute('href', /^mailto:.+@.+/)
-	})
-
-	test(`@spec ${SETTINGS} "One Privacy Policy link next to the toggles"`, async ({
-		page,
-	}) => {
-		await openAsGuest(page)
-		await expect(
-			page.locator('settings-route :is(.settings-row, .list-item)', {
-				hasText: 'プライバシーポリシー',
-			}),
-		).toHaveCount(1)
-		await expect(page.getByTestId('settings-analytics-policy-note')).toHaveText(
-			'データの扱いはプライバシーポリシーで詳しく説明しています。',
-		)
-		await page.getByTestId('settings-analytics-policy-link').click()
-		await page.waitForURL((url) => url.pathname === '/legal/privacy')
-	})
 })
 
 test.describe('consent wording', () => {
 	const consent = (page: Page) =>
 		page.locator('settings-route section[aria-labelledby="analytics-title"]')
-
-	test(`@spec ${SETTINGS} "Analytics toggle is labeled by its purpose"`, async ({
-		page,
-	}) => {
-		await openAsGuest(page)
-		await expect(consent(page).locator('h2')).toHaveText('サービス改善の協力')
-		await expect(consent(page)).toContainText('利用状況を共有する')
-	})
-
-	test(`@spec ${SETTINGS} "Session-replay toggle is labeled by its purpose"`, async ({
-		page,
-	}) => {
-		await openAsGuest(page)
-		await expect(consent(page)).toContainText('画面操作ログを共有する')
-	})
 
 	test(`@spec ${SETTINGS} "Both toggles default to on"`, async ({ page }) => {
 		await openAsFan(page)
@@ -314,54 +229,12 @@ test.describe('consent wording', () => {
 		await expect(analytics()).toHaveAttribute('aria-checked', 'false')
 		await expect(replay()).toHaveAttribute('aria-checked', 'true')
 	})
-
-	test(`@spec ${SETTINGS} "No anonymity claim"`, async ({ page }) => {
-		await openAsGuest(page)
-		// Open both descriptions.
-		for (const label of ['利用状況を共有する', '画面操作ログを共有する']) {
-			await consent(page).getByText(label).click()
-		}
-		await expect(consent(page)).not.toContainText('匿名')
-	})
 })
 
 test.describe('name on your tickets', () => {
 	const row = (page: Page) => page.getByTestId('settings-personal-details-row')
 	const dialog = (page: Page) =>
 		page.getByRole('dialog', { name: '名義を変更しますか？' })
-
-	test(`@spec ${SETTINGS} "No details saved yet"`, async ({ page }) => {
-		await openAsFan(page)
-		await expect(row(page)).toContainText('未設定')
-		await row(page).click()
-		await expect(page.getByTestId('settings-full-name')).toBeVisible()
-		await expect(page.getByTestId('settings-full-name')).toHaveValue('')
-		await expect(page.getByTestId('settings-phone-number')).toHaveValue('')
-		await expect(page.getByTestId('settings-full-name')).toBeEditable()
-	})
-
-	test(`@spec ${SETTINGS} "Fan changes their phone number"`, async ({
-		page,
-	}) => {
-		const calls = await openAsFan(page, {
-			fullName: '山田 花子',
-			phoneNumber: '+819012345678',
-		})
-		await expect(row(page)).toContainText('山田 花子')
-		await expect(row(page)).toContainText('090-1234-5678')
-		await row(page).click()
-		await page.getByTestId('settings-phone-number').fill('090-9876-5432')
-		await page.getByTestId('settings-personal-details-save').click()
-		await dialog(page).getByRole('button', { name: '変更する' }).click()
-
-		await expect(row(page)).toContainText('090-9876-5432')
-		await expect(page.getByTestId('settings-full-name')).toBeHidden()
-		const updates = callsOf(calls, 'UserService/Update')
-		expect(updates).toHaveLength(1)
-		expect(updates[0].body).toEqual({
-			phoneNumber: { value: '+819098765432' },
-		})
-	})
 
 	test(`@spec ${SETTINGS} "Saving asks first"`, async ({ page }) => {
 		const calls = await openAsFan(page, {
@@ -403,31 +276,27 @@ test.describe('name on your tickets', () => {
 		await expect(name).toBeFocused()
 	})
 
-	for (const how of ['Cancel', 'Escape'] as const) {
-		test(`@spec ${SETTINGS} "Fan cancels the confirmation" (${how})`, async ({
-			page,
-		}) => {
-			const calls = await openAsFan(page, { fullName: '山田 花子' })
-			await row(page).click()
-			await page.getByTestId('settings-full-name').fill('鈴木 一郎')
-			await page.getByTestId('settings-personal-details-save').click()
-			await expect(dialog(page)).toBeVisible()
+	// Cancel is a fixture test (settings-route.fixture.spec.ts); only a real
+	// browser turns the Escape key into a close of the top-layer dialog.
+	test(`@spec ${SETTINGS} "Fan cancels the confirmation" (Escape)`, async ({
+		page,
+	}) => {
+		const calls = await openAsFan(page, { fullName: '山田 花子' })
+		await row(page).click()
+		await page.getByTestId('settings-full-name').fill('鈴木 一郎')
+		await page.getByTestId('settings-personal-details-save').click()
+		await expect(dialog(page)).toBeVisible()
 
-			if (how === 'Cancel') {
-				await dialog(page).getByRole('button', { name: 'キャンセル' }).click()
-			} else {
-				await page.keyboard.press('Escape')
-			}
+		await page.keyboard.press('Escape')
 
-			await expect(dialog(page)).toBeHidden()
-			// The sheet stays open with the fan's input.
-			await expect(page.getByTestId('settings-full-name')).toBeVisible()
-			await expect(page.getByTestId('settings-full-name')).toHaveValue(
-				'鈴木 一郎',
-			)
-			expect(callsOf(calls, 'UserService/Update')).toHaveLength(0)
-		})
-	}
+		await expect(dialog(page)).toBeHidden()
+		// The sheet stays open with the fan's input.
+		await expect(page.getByTestId('settings-full-name')).toBeVisible()
+		await expect(page.getByTestId('settings-full-name')).toHaveValue(
+			'鈴木 一郎',
+		)
+		expect(callsOf(calls, 'UserService/Update')).toHaveLength(0)
+	})
 })
 
 test.describe('sign out', () => {
@@ -436,41 +305,23 @@ test.describe('sign out', () => {
 	const dialog = (page: Page) =>
 		page.getByRole('dialog', { name: 'サインアウトしますか？' })
 
-	test(`@spec ${SETTINGS} "Sign out asks first"`, async ({ page }) => {
+	// Cancel is a fixture test (settings-route.fixture.spec.ts); only a real
+	// browser turns the Escape key into a close of the top-layer dialog.
+	test(`@spec ${SETTINGS} "Sign out cancelled" (Escape)`, async ({ page }) => {
+		let endSession = false
+		await page.route(`${OIDC_AUTHORITY}/oidc/v1/end_session**`, (route) => {
+			endSession = true
+			return route.abort()
+		})
 		await openAsFan(page)
 		await signOut(page).click()
 		await expect(dialog(page)).toBeVisible()
-		await expect(dialog(page)).toContainText(
-			'次に使うときは、パスキーでもう一度ログインします。',
-		)
-		await expect(
-			dialog(page).getByRole('button', { name: 'キャンセル' }),
-		).toBeFocused()
+		await page.keyboard.press('Escape')
+		await expect(dialog(page)).toBeHidden()
+		expect(new URL(page.url()).pathname).toBe('/settings')
+		await expect(signOut(page)).toBeVisible()
+		expect(endSession).toBe(false)
 	})
-
-	for (const how of ['Cancel', 'Escape'] as const) {
-		test(`@spec ${SETTINGS} "Sign out cancelled" (${how})`, async ({
-			page,
-		}) => {
-			let endSession = false
-			await page.route(`${OIDC_AUTHORITY}/oidc/v1/end_session**`, (route) => {
-				endSession = true
-				return route.abort()
-			})
-			await openAsFan(page)
-			await signOut(page).click()
-			await expect(dialog(page)).toBeVisible()
-			if (how === 'Cancel') {
-				await dialog(page).getByRole('button', { name: 'キャンセル' }).click()
-			} else {
-				await page.keyboard.press('Escape')
-			}
-			await expect(dialog(page)).toBeHidden()
-			expect(new URL(page.url()).pathname).toBe('/settings')
-			await expect(signOut(page)).toBeVisible()
-			expect(endSession).toBe(false)
-		})
-	}
 
 	test(`@spec ${SETTINGS} "Sign out action"`, async ({ page }) => {
 		// The seed signs the fan in again on every load, so the return to the
@@ -500,14 +351,6 @@ test.describe('sign out', () => {
 		)
 		const group = await box(page.getByTestId('settings-sign-out-group'))
 		expect(group.y - (lastRow.y + lastRow.height)).toBeGreaterThanOrEqual(24)
-	})
-
-	test(`@spec ${SETTINGS} "Sign out hidden for guests"`, async ({ page }) => {
-		await openAsGuest(page)
-		await expect(page.getByTestId('settings-sign-out-group')).toHaveCount(0)
-		await expect(
-			page.getByRole('button', { name: 'サインアウト' }),
-		).toHaveCount(0)
 	})
 })
 

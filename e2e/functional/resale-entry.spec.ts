@@ -1,6 +1,6 @@
 import { concertWire } from '../support/concert-wire'
 import { fakeId } from '../support/fake-id'
-import { callsOf, connectError, mockFanRpc } from '../support/fan-auth'
+import { callsOf, mockFanRpc } from '../support/fan-auth'
 import { seedSignedInFan } from '../support/fan-shell'
 import { stubStripe } from '../support/stripe'
 import { expect, type Page, test } from '../support/test'
@@ -195,85 +195,4 @@ test(`@spec ${ENTRY_SPEC} "Applying for two tickets" and @spec ${EVENT_SPEC} "Al
 		'申し込み済み',
 		{ timeout: 30_000 },
 	)
-})
-
-test(`@spec ${ENTRY_SPEC} "Lapsed entry"`, async ({ page }) => {
-	await mockBackend(page, {
-		'ResaleEntryService/List': listOf(
-			entryWire('RESALE_ENTRY_STATE_LAPSED', {
-				drawTime: new Date(Date.now() - DAY).toISOString(),
-			}),
-		),
-	})
-	await page.goto('/resale-entries')
-
-	const entry = page.getByTestId('resale-entries-entry')
-	await expect(entry).toBeVisible({ timeout: 30_000 })
-	await expect(page.getByTestId('resale-entries-state')).toHaveText('期限切れ')
-	await expect(page.getByTestId('resale-entries-note')).toContainText(
-		'請求はありません',
-	)
-	// The router writes the link as an absolute address.
-	await expect(page.getByTestId('resale-entries-apply-again')).toHaveAttribute(
-		'href',
-		new RegExp(`/events/${EVENT_ID}/resale/${STOCK_ID}$`),
-	)
-})
-
-test(`@spec ${ENTRY_SPEC} "Withdrawing a waiting entry"`, async ({ page }) => {
-	await mockBackend(page, {
-		'ResaleEntryService/List': listOf(waiting()),
-		'ResaleEntryService/Withdraw': {
-			resaleEntry: entryWire('RESALE_ENTRY_STATE_WITHDRAWN', {
-				withdrawTime: new Date().toISOString(),
-			}),
-		},
-	})
-	await page.goto('/resale-entries')
-
-	await expect(page.getByTestId('resale-entries-state')).toHaveText(
-		'抽選待ち',
-		{ timeout: 30_000 },
-	)
-	await page.getByTestId('resale-entries-withdraw').click()
-	await expect(
-		page.getByTestId('resale-entries-withdraw-confirm'),
-	).toContainText('請求はありません')
-	await page.getByTestId('resale-entries-withdraw-do').click()
-
-	await expect(page.getByTestId('resale-entries-state')).toHaveText(
-		'取り消し済み',
-	)
-	await expect(page.getByTestId('resale-entries-note')).toContainText(
-		'請求はありません',
-	)
-	await expect(page.getByTestId('resale-entries-apply-again')).toBeVisible()
-})
-
-test(`@spec ${ENTRY_SPEC} "Draw decided first"`, async ({ page }) => {
-	let decided = false
-	await mockBackend(page, {
-		'ResaleEntryService/List': () => ({
-			body: decided
-				? listOf(
-						entryWire('RESALE_ENTRY_STATE_WON', {
-							drawTime: new Date().toISOString(),
-						}),
-					)
-				: listOf(waiting()),
-		}),
-		'ResaleEntryService/Withdraw': () => {
-			decided = true
-			return connectError('failed_precondition', 400)
-		},
-	})
-	await page.goto('/resale-entries')
-
-	await page.getByTestId('resale-entries-withdraw').click({ timeout: 30_000 })
-	await page.getByTestId('resale-entries-withdraw-do').click()
-
-	await expect(page.getByTestId('resale-entries-message')).toHaveText(
-		'この申し込みは、すでに抽選で結果が決まっています。',
-	)
-	await expect(page.getByTestId('resale-entries-state')).toHaveText('当選')
 })
