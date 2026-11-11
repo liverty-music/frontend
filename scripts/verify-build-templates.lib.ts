@@ -26,7 +26,7 @@ export const ROUTE_MARKERS: readonly RouteMarker[] = [
 	{ route: 'auth-callback', marker: 'callback-loading' },
 	{ route: 'dashboard', marker: 'dashboard-empty-subtitle' },
 	{ route: 'discovery', marker: 'bubble-area' },
-	{ route: 'my-artists', marker: 'artists-fieldset' },
+	{ route: 'my-artists', marker: 'empty-subtitle' },
 	{ route: 'not-found', marker: 'not-found-code' },
 	{ route: 'settings', marker: 'settings-section-title' },
 	{ route: 'tickets', marker: 'tickets-card' },

@@ -81,7 +81,7 @@ describe('elevation', () => {
 			// The matched card's glow in its artist's hue.
 			'src/components/live-highway/event-card-spotlight.css',
 			// The hype tier glows in the artist's colour.
-			'src/routes/my-artists/my-artists-route.css',
+			'src/routes/my-artists/hype-dot-radio.css',
 		])
 	})
 

@@ -1,0 +1,105 @@
+/* A hype dot and the radio it stands for. It renders on
+   `<label as-element="hype-dot-radio" class="hype-label">` in an artist row,
+   so the label is the scope root and stays the cell's grid item. */
+@layer block {
+	@scope (.hype-label) {
+		:scope {
+			cursor: pointer;
+
+			position: relative;
+
+			display: flex;
+			align-items: center;
+			justify-content: center;
+
+			/* The label is the dot's tap target: at least 48 px square (its
+			   column is at least 48 px wide). */
+			min-block-size: var(--md-sys-target-size);
+		}
+
+		/* The level's look when active: WATCH minimal, HOME a subtle glow,
+		   NEARBY a neon glow, AWAY an intense neon, in the artist's colour. */
+		.hype-dot {
+			--_color: var(--_dot-color, oklch(70% 0.15 60deg));
+
+			position: relative;
+
+			display: block;
+
+			inline-size: 8px;
+			block-size: 8px;
+			border-radius: var(--md-sys-shape-corner-full);
+
+			background: var(--md-sys-color-outline-variant);
+
+			transition:
+				inline-size var(--md-sys-motion-duration-short4) ease-out,
+				block-size var(--md-sys-motion-duration-short4) ease-out,
+				background-color var(--md-sys-motion-duration-short4) ease-out,
+				border-color var(--md-sys-motion-duration-short4) ease-out,
+				box-shadow var(--md-sys-motion-duration-short4) ease-out,
+				opacity var(--md-sys-motion-duration-short4) ease-out;
+
+			&[data-active="true"] {
+				inline-size: 14px;
+				block-size: 14px;
+			}
+
+			&[data-active="true"][data-level="watch"] {
+				border: 1px solid oklch(100% 0 0deg / 10%);
+				background: var(--md-sys-color-surface);
+			}
+
+			/* stylelint-disable declaration-property-value-allowed-list -- the hype tier glows in the artist's own colour are spec-defined (my-artists "Active dot reflects hype tier CSS effects"); a colour set per row cannot be a root token */
+			&[data-active="true"][data-level="home"] {
+				border: 1px solid var(--_color);
+				opacity: 0.4;
+				background: var(--_color);
+				box-shadow: 0 0 8px oklch(from var(--_color) l c h / 30%);
+			}
+
+			&[data-active="true"][data-level="nearby"] {
+				border: 2px solid var(--_color);
+				background: var(--_color);
+				box-shadow: 0 0 16px oklch(from var(--_color) l c h / 50%);
+				animation: dot-pulse 2s ease-in-out infinite;
+			}
+
+			&[data-active="true"][data-level="away"] {
+				border: 2px solid var(--_color);
+				background: var(--_color);
+				box-shadow:
+					0 0 24px oklch(from var(--_color) l c h / 60%),
+					0 0 48px oklch(from var(--_color) l c h / 20%);
+				animation: dot-pulse 1.5s ease-in-out infinite;
+			}
+			/* stylelint-enable declaration-property-value-allowed-list */
+		}
+
+		/* The radio is visually hidden, so its dot shows the focus ring. */
+		:scope:has(> input:focus-visible) > .hype-dot {
+			/* stylelint-disable property-disallowed-list -- the radio a hype dot stands for is visually hidden, so the dot draws the global ring in its place */
+			outline: var(--md-sys-state-focus-indicator-thickness) solid
+				var(--md-sys-color-focus-indicator);
+			outline-offset: var(--md-sys-state-focus-indicator-outer-offset);
+			/* stylelint-enable property-disallowed-list */
+		}
+
+		@media (prefers-reduced-motion: reduce) {
+			.hype-dot {
+				animation: none;
+			}
+		}
+
+		@keyframes dot-pulse {
+			0%,
+			100% {
+				transform: scale(1);
+			}
+
+			50% {
+				transform: scale(1.15);
+			}
+		}
+	}
+}

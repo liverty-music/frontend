@@ -1,0 +1,14 @@
+<import from="./hype-dot-radio.css"></import>
+
+<input
+  type="radio"
+  class="[ visually-hidden ]"
+  name.bind="group"
+  model.bind="level"
+>
+<span class="[ visually-hidden ]">${text}</span>
+<span
+  class="hype-dot"
+  data-active.bind="active"
+  data-level.bind="level"
+></span>

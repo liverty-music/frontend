@@ -963,24 +963,34 @@ describe('MyArtistsRoute', () => {
 		// @spec components/infrastructure/fan/web/route/my-artists "Remove control is available on all pointer types"
 		// @spec components/infrastructure/fan/web/route/my-artists "Default (non-editing) list shows no persistent per-row unfollow control"
 		it('shows a one-tap remove button only while editing, in place of the hype dots', async () => {
-			const { default: html } = await import(
+			const { default: rowHtml } = await import(
+				'../../src/routes/my-artists/artist-hype-row.html?raw'
+			)
+			const { default: routeHtml } = await import(
 				'../../src/routes/my-artists/my-artists-route.html?raw'
 			)
-			const remove = html.match(
+			const remove = rowHtml.match(
 				/<td if\.bind="editing" class="artist-remove-col">[\s\S]*?<\/td>/,
 			)?.[0]
 			// The remove cell exists only in edit mode; the dots only outside it.
 			expect(remove).toBeDefined()
-			expect(html).toMatch(
+			expect(rowHtml).toMatch(
 				/<template if\.bind="!editing">\s*<td repeat\.for="level of hypeLevels"/,
 			)
 			// A plain button activated by click (tap or mouse), with no timed or
-			// path-based gesture anywhere on the list.
+			// path-based gesture anywhere on the list; the route unfollows on the
+			// row's request and nowhere else.
 			expect(remove).toMatch(
-				/<button[\s\S]*type="button"[\s\S]*click\.trigger="unfollowArtist\(artist\)"/,
+				/<button[\s\S]*type="button"[\s\S]*click\.trigger="unfollow\(\)"/,
 			)
-			expect(html).not.toMatch(/long-?press|swipe|pointerdown|touchstart/i)
-			expect(html.match(/unfollowArtist\(/g)).toHaveLength(1)
+			for (const html of [rowHtml, routeHtml]) {
+				expect(html).not.toMatch(/long-?press|swipe|pointerdown|touchstart/i)
+			}
+			expect(rowHtml.match(/unfollow\(\)/g)).toHaveLength(1)
+			expect(routeHtml.match(/unfollowArtist\(/g)).toHaveLength(1)
+			expect(routeHtml).toMatch(
+				/unfollow-requested\.trigger="unfollowArtist\(\$event\.detail\.artist\)"/,
+			)
 		})
 	})
 })
