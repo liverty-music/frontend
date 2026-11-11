@@ -16,6 +16,15 @@ const sheet = vi.hoisted(() => ({
 	release: vi.fn(),
 	impact: vi.fn(),
 }))
+// The art's renderer starts first; here it fails as it does without WebGL,
+// at once rather than after loading PixiJS.
+vi.mock('../../src/routes/tickets/virtual-ticket/ticket-renderer', () => ({
+	TicketRenderer: {
+		create: vi.fn(async () => {
+			throw new Error('no WebGL')
+		}),
+	},
+}))
 vi.mock(
 	'../../src/routes/tickets/virtual-ticket/ticket-sheet-renderer',
 	() => ({
