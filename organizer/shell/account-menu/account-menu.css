@@ -1,0 +1,50 @@
+@layer block {
+	@scope (account-menu) {
+		/* The button, not this element, is the top app bar's flex item. */
+		:scope {
+			display: contents;
+		}
+
+		/* The shared `menu` block; this rule only places it, under the bar
+		   at the end edge. */
+		.menu {
+			position: fixed;
+			inset: var(--top-app-bar-block-size) var(--space-2xs) auto auto;
+		}
+
+		/* The items touch; the flow composition spaces only the divider from
+		   its neighbours. */
+		.account-menu {
+			--flow-space: 0;
+		}
+
+		/* Lined up with the items' labels. */
+		.menu-heading {
+			padding: var(--space-2xs) var(--space-xs) var(--space-3xs);
+			color: var(--md-sys-color-on-surface-variant);
+		}
+
+		.menu-group {
+			display: grid;
+		}
+
+		/* The chosen language carries the check. */
+		.menu-check {
+			visibility: hidden;
+		}
+
+		.menu-item[aria-pressed="true"] .menu-check {
+			visibility: visible;
+		}
+
+		.menu-divider,
+		.menu-divider + * {
+			--flow-space: var(--space-2xs);
+		}
+
+		.menu-divider {
+			border: none;
+			border-block-start: 1px solid var(--md-sys-color-outline-variant);
+		}
+	}
+}

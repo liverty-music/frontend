@@ -16,6 +16,10 @@
 			display: block;
 		}
 
+		/* The brand lockup, the names (`organizer-and-artist`) and the account
+		   menu are their own blocks; 使い方 and the back arrow are shared icon
+		   buttons (`icon-button`, which does not shrink), so the names and the
+		   title shrink first. */
 		.top-app-bar {
 			display: flex;
 			gap: var(--space-2xs);
@@ -28,8 +32,8 @@
 		}
 
 		/* Compact, below a destination: the back arrow and the page title take
-		   the brand's place. The arrow is the shared icon button in the
-		   `on-surface` colour of an M3 top app bar's leading icon. */
+		   the brand's place. The arrow is in the `on-surface` colour of an M3
+		   top app bar's leading icon. */
 		.back {
 			--icon-button-color: var(--md-sys-color-on-surface);
 		}
@@ -57,135 +61,8 @@
 			}
 		}
 
-		/* The brand lockup: Liverty Music over Organizer Console. The logo is
-		   one of the three places the brand color may appear. */
-		.brand {
-			display: inline-grid;
-			flex-shrink: 0;
-			align-content: center;
-
-			min-block-size: var(--md-sys-target-size);
-			padding-inline: var(--space-xs);
-
-			text-decoration: none;
-		}
-
-		.brand-mark {
-			color: var(--md-sys-color-primary);
-		}
-
-		.brand-product {
-			color: var(--md-sys-color-on-surface-variant);
-		}
-
-		/* The Organizer and the Artist worked on, stacked on a compact window;
-		   the names shorten before they wrap. */
-		.context {
-			display: grid;
-			flex: 1 1 0;
-			justify-items: end;
-			min-inline-size: 0;
-		}
-
-		.organizer-name,
-		.artist-name {
-			overflow: hidden;
-
-			min-inline-size: 0;
-			max-inline-size: 100%;
-
-			text-overflow: ellipsis;
-			white-space: nowrap;
-		}
-
-		.organizer-name {
-			padding-inline: var(--space-xs) var(--space-3xs);
-			color: var(--md-sys-color-on-surface-variant);
-		}
-
-		.context > .artist-name {
-			padding-inline: var(--space-xs) var(--space-3xs);
-			color: var(--md-sys-color-on-surface);
-		}
-
-		/* M3 menu button: the current Artist and a drop-down arrow. */
-		.artist-button {
-			display: inline-flex;
-			flex: 0 1 auto;
-			gap: var(--space-3xs);
-			align-items: center;
-
-			min-inline-size: 0;
-			max-inline-size: 100%;
-			min-block-size: 32px;
-			padding-inline: var(--space-xs) var(--space-3xs);
-			border: none;
-			border-radius: var(--md-sys-shape-corner-full);
-			color: var(--md-sys-color-on-surface);
-
-			background: transparent;
-		}
-
-		/* 使い方 and the account menu are shared icon buttons (`icon-button`,
-		   which does not shrink); the names and the title shrink first. The
-		   menus are the shared `menu` block; these rules only place them. */
-		.menu {
-			position: fixed;
-			inset: var(--top-app-bar-block-size) var(--space-2xs) auto auto;
-		}
-
-		/* Lined up with the items' labels. */
-		.menu-heading {
-			padding: var(--space-2xs) var(--space-xs) var(--space-3xs);
-			color: var(--md-sys-color-on-surface-variant);
-		}
-
-		.menu-group {
-			display: grid;
-		}
-
-		.menu-check {
-			visibility: hidden;
-		}
-
-		/* Below its button where anchor positioning is supported, else under
-		   the bar at the start edge. */
-		.artist-menu {
-			inset: var(--top-app-bar-block-size) auto auto var(--space-s);
-		}
-
-		@supports (position-area: block-end) {
-			.artist-menu {
-				inset: auto;
-				position-area: block-end span-inline-end;
-				position-try-fallbacks: flip-inline;
-			}
-		}
-
-		.menu-item[aria-pressed="true"] .menu-check,
-		.menu-item[aria-current="true"] .menu-check {
-			visibility: visible;
-		}
-
-		/* The account menu's items touch; the flow composition spaces only
-		   the divider from its neighbours. */
-		.account-menu {
-			--flow-space: 0;
-		}
-
-		.menu-divider,
-		.menu-divider + * {
-			--flow-space: var(--space-2xs);
-		}
-
-		.menu-divider {
-			border: none;
-			border-block-start: 1px solid var(--md-sys-color-outline-variant);
-		}
-
-		/* Medium and wider: the brand lockup on one line above the rail, the
-		   Organizer and the Artist beside it; the breadcrumb in the page leads
-		   to the parents, so there is no back arrow. */
+		/* Medium and wider: the breadcrumb in the page leads to the parents,
+		   so there is no back arrow. */
 		@container shell (width >= 600px) {
 			.top-app-bar {
 				gap: var(--space-s);
@@ -197,67 +74,6 @@
 			.top-app-bar .back,
 			.title {
 				display: none;
-			}
-
-			.brand {
-				display: inline-flex;
-				gap: var(--space-2xs);
-				align-items: center;
-			}
-
-			/* stylelint-disable property-disallowed-list -- the brand and the organizer name grow with the window class, which a template cannot see */
-			.brand-mark {
-				font-family: var(--md-sys-typescale-title-medium-font);
-				font-weight: var(--md-sys-typescale-title-medium-emphasized-weight);
-				font-size: var(--md-sys-typescale-title-medium-size);
-				line-height: var(--md-sys-typescale-title-medium-line-height);
-				letter-spacing: var(--md-sys-typescale-title-medium-tracking);
-			}
-
-			.brand-product {
-				font-family: var(--md-sys-typescale-title-medium-font);
-				font-weight: var(--md-sys-typescale-title-medium-weight);
-				font-size: var(--md-sys-typescale-title-medium-size);
-				line-height: var(--md-sys-typescale-title-medium-line-height);
-				letter-spacing: var(--md-sys-typescale-title-medium-tracking);
-			}
-
-			.context {
-				display: flex;
-				gap: var(--space-2xs);
-				align-items: center;
-			}
-
-			.organizer-name {
-				flex: 0 1 auto;
-
-				font-family: var(--md-sys-typescale-title-small-font);
-
-				font-weight: var(--md-sys-typescale-title-small-weight);
-
-				font-size: var(--md-sys-typescale-title-small-size);
-
-				line-height: var(--md-sys-typescale-title-small-line-height);
-				letter-spacing: var(--md-sys-typescale-title-small-tracking);
-				color: var(--md-sys-color-on-surface);
-			}
-			/* stylelint-enable property-disallowed-list */
-
-			.artist-button {
-				min-block-size: var(--md-sys-target-size);
-			}
-		}
-
-		/* Compact, below a destination: no brand, and the names keep to the
-		   trailing part of the bar so the page title has room. */
-		@container shell (width < 600px) {
-			.brand[data-deep="true"] {
-				display: none;
-			}
-
-			.context[data-deep="true"] {
-				flex: 0 1 auto;
-				max-inline-size: 45%;
 			}
 		}
 	}

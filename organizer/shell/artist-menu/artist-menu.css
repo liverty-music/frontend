@@ -1,0 +1,67 @@
+@layer block {
+	@scope (artist-menu) {
+		/* The button, not this element, is the bar's grid or flex item. */
+		:scope {
+			display: contents;
+		}
+
+		/* M3 menu button: the current Artist and a drop-down arrow. */
+		.artist-button {
+			display: inline-flex;
+			flex: 0 1 auto;
+			gap: var(--space-3xs);
+			align-items: center;
+
+			min-inline-size: 0;
+			max-inline-size: 100%;
+			min-block-size: 32px;
+			padding-inline: var(--space-xs) var(--space-3xs);
+			border: none;
+			border-radius: var(--md-sys-shape-corner-full);
+			color: var(--md-sys-color-on-surface);
+
+			background: transparent;
+		}
+
+		/* The name shortens before it wraps. */
+		.artist-name {
+			overflow: hidden;
+
+			min-inline-size: 0;
+			max-inline-size: 100%;
+
+			text-overflow: ellipsis;
+			white-space: nowrap;
+		}
+
+		/* The shared `menu` block, placed below its button where anchor
+		   positioning is supported, else under the bar at the start edge. */
+		.artist-menu {
+			position: fixed;
+			inset: var(--top-app-bar-block-size) auto auto var(--space-s);
+		}
+
+		@supports (position-area: block-end) {
+			.artist-menu {
+				inset: auto;
+				position-area: block-end span-inline-end;
+				position-try-fallbacks: flip-inline;
+			}
+		}
+
+		/* The current Artist carries the check. */
+		.menu-check {
+			visibility: hidden;
+		}
+
+		.menu-item[aria-current="true"] .menu-check {
+			visibility: visible;
+		}
+
+		@container shell (width >= 600px) {
+			.artist-button {
+				min-block-size: var(--md-sys-target-size);
+			}
+		}
+	}
+}

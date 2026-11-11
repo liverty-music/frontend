@@ -1,0 +1,68 @@
+@layer block {
+	@scope (organizer-and-artist) {
+		/* The names, not this element, are the top app bar's flex item. */
+		:scope {
+			display: contents;
+		}
+
+		/* Stacked on a compact window; the names shorten before they wrap. */
+		.context {
+			display: grid;
+			flex: 1 1 0;
+			justify-items: end;
+			min-inline-size: 0;
+		}
+
+		/* With one Artist its name sits here; the Artist menu names it otherwise. */
+		.organizer-name,
+		.context > .artist-name {
+			overflow: hidden;
+
+			min-inline-size: 0;
+			max-inline-size: 100%;
+			padding-inline: var(--space-xs) var(--space-3xs);
+
+			text-overflow: ellipsis;
+			white-space: nowrap;
+		}
+
+		.organizer-name {
+			color: var(--md-sys-color-on-surface-variant);
+		}
+
+		.context > .artist-name {
+			color: var(--md-sys-color-on-surface);
+		}
+
+		/* Medium and wider: side by side. */
+		@container shell (width >= 600px) {
+			.context {
+				display: flex;
+				gap: var(--space-2xs);
+				align-items: center;
+			}
+
+			.organizer-name {
+				flex: 0 1 auto;
+
+				/* stylelint-disable property-disallowed-list -- the organizer name grows with the window class, which a template cannot see */
+				font-family: var(--md-sys-typescale-title-small-font);
+				font-weight: var(--md-sys-typescale-title-small-weight);
+				font-size: var(--md-sys-typescale-title-small-size);
+				line-height: var(--md-sys-typescale-title-small-line-height);
+				letter-spacing: var(--md-sys-typescale-title-small-tracking);
+				/* stylelint-enable property-disallowed-list */
+				color: var(--md-sys-color-on-surface);
+			}
+		}
+
+		/* Compact, below a destination: the names keep to the trailing part
+		   of the bar so the page title has room. */
+		@container shell (width < 600px) {
+			.context[data-deep="true"] {
+				flex: 0 1 auto;
+				max-inline-size: 45%;
+			}
+		}
+	}
+}

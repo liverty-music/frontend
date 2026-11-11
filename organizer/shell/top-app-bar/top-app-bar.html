@@ -1,5 +1,8 @@
 <import from="./top-app-bar.css"></import>
 <import from="../crumb-text/crumb-text"></import>
+<import from="../brand-lockup/brand-lockup"></import>
+<import from="../organizer-and-artist/organizer-and-artist"></import>
+<import from="../account-menu/account-menu"></import>
 
 <header class="top-app-bar">
   <template if.bind="breadcrumbs.parent">
@@ -9,38 +12,8 @@
     </a>
     <span class="[ title ] [ md-typescale-title-large ]"><crumb-text crumb.bind="breadcrumbs.current"></crumb-text></span>
   </template>
-  <a href.bind="context.homeHref" class="brand" data-deep.bind="!!breadcrumbs.parent" aria-label.bind="'app.name' & t">
-    <span class="[ brand-mark ] [ md-typescale-title-small-emphasized ]">${'app.logoMark' & t}</span>
-    <span class="[ brand-product ] [ md-typescale-label-medium ]">${'app.logoSub' & t}</span>
-  </a>
-  <div class="context" data-deep.bind="!!breadcrumbs.parent">
-    <span class="[ organizer-name ] [ md-typescale-label-medium ]" data-testid="organizer-name">${context.organizerName}</span>
-    <template if.bind="artists.length > 1">
-      <button
-        type="button"
-        class="[ artist-button state-layer touch-target ] [ md-typescale-label-large ]"
-        popovertarget="artist-menu"
-        aria-label.bind="'shell.artistMenu' & t:{ name: artistName }"
-        data-testid="artist-menu-button"
-      >
-        <span class="[ artist-name ] [ md-typescale-label-large ]">${artistName}</span>
-        <console-icon name="arrow-drop-down"></console-icon>
-      </button>
-      <nav ref="artistMenu" id="artist-menu" popover class="menu artist-menu" aria-label.bind="'shell.artists' & t">
-        <a
-          repeat.for="artist of artists; key: id"
-          href.bind="artist.href"
-          class="[ menu-item ] [ state-layer ] [ md-typescale-label-large ]"
-          aria-current.bind="artist.id === context.artistId ? 'true' : null"
-          click.trigger="chooseArtist()"
-        >
-          <console-icon name="check" class="menu-check"></console-icon>
-          <span>${artist.name}</span>
-        </a>
-      </nav>
-    </template>
-    <span else class="[ artist-name ] [ md-typescale-label-large ]" data-testid="artist-name">${artistName}</span>
-  </div>
+  <brand-lockup href.bind="context.homeHref" deep.bind="!!breadcrumbs.parent"></brand-lockup>
+  <organizer-and-artist deep.bind="!!breadcrumbs.parent"></organizer-and-artist>
   <a
     href.bind="helpHref"
     external
@@ -53,33 +26,5 @@
     <console-icon name="help"></console-icon>
     <span class="visually-hidden">${'shell.help' & t}</span>
   </a>
-  <button
-    type="button"
-    class="[ icon-button ] [ state-layer ]"
-    popovertarget="account-menu"
-    aria-label.bind="'shell.account' & t"
-  >
-    <console-icon name="account-circle"></console-icon>
-  </button>
-  <div ref="menu" id="account-menu" popover class="[ menu account-menu ] [ flow ]">
-    <p class="[ menu-heading ] [ md-typescale-label-medium ]" id="account-menu-language">${'shell.language' & t}</p>
-    <div role="group" aria-labelledby="account-menu-language" class="menu-group">
-      <button
-        repeat.for="code of languages"
-        type="button"
-        class="[ menu-item ] [ state-layer ] [ md-typescale-label-large ]"
-        lang.bind="code"
-        aria-pressed.bind="language.current === code ? 'true' : 'false'"
-        click.trigger="setLanguage(code)"
-      >
-        <console-icon name="check" class="menu-check"></console-icon>
-        <span>${`shell.languageName.${code}` & t}</span>
-      </button>
-    </div>
-    <hr class="menu-divider">
-    <button type="button" class="[ menu-item ] [ state-layer ] [ md-typescale-label-large ]" click.trigger="signOut()">
-      <console-icon name="logout"></console-icon>
-      <span>${'shell.signOut' & t}</span>
-    </button>
-  </div>
+  <account-menu></account-menu>
 </header>

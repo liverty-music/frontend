@@ -1,0 +1,24 @@
+<import from="./artist-menu.css"></import>
+
+<button
+  type="button"
+  class="[ artist-button state-layer touch-target ] [ md-typescale-label-large ]"
+  popovertarget="artist-menu"
+  aria-label.bind="'shell.artistMenu' & t:{ name: currentName }"
+  data-testid="artist-menu-button"
+>
+  <span class="[ artist-name ] [ md-typescale-label-large ]">${currentName}</span>
+  <console-icon name="arrow-drop-down"></console-icon>
+</button>
+<nav ref="menu" id="artist-menu" popover class="menu artist-menu" aria-label.bind="'shell.artists' & t">
+  <a
+    repeat.for="artist of artists; key: id"
+    href.bind="artist.href"
+    class="[ menu-item ] [ state-layer ] [ md-typescale-label-large ]"
+    aria-current.bind="artist.id === currentId ? 'true' : null"
+    click.trigger="choose()"
+  >
+    <console-icon name="check" class="menu-check"></console-icon>
+    <span>${artist.name}</span>
+  </a>
+</nav>
