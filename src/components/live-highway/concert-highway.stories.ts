@@ -400,10 +400,8 @@ export const LanesAndDateSeparators = {
 		// The empty NEAR lane of the second date holds no card.
 		await expect(laneOf(groups[1], 'near').cards).toHaveLength(0)
 
-		// Each lane's top edge: a 2 px line in its stage colour at 40% opacity
-		// (not tagged: the scenario's second line, the lane separators, says
-		// "the adjacent stage colour at 15%", while the app draws a faint white
-		// line at 5%, see the report of task 9.1).
+		// @spec components/infrastructure/fan/web/global/live-highway "Stage-colored lane accents"
+		// Each lane's top edge: a 2 px line in its stage colour at 40% opacity.
 		for (const name of ['home', 'near', 'away'] as const) {
 			const { lane } = laneOf(groups[0], name)
 			const style = getComputedStyle(lane)
@@ -416,6 +414,20 @@ export const LanesAndDateSeparators = {
 				),
 			)
 		}
+		// The separators between lanes: a 1 px line of white at 5% on the end
+		// edge of every lane but the last.
+		for (const name of ['home', 'near'] as const) {
+			const { lane } = laneOf(groups[0], name)
+			const style = getComputedStyle(lane)
+			await expect(style.borderInlineEndWidth).toBe('1px')
+			await expect(style.borderInlineEndStyle).toBe('solid')
+			await expect(style.borderInlineEndColor).toBe(
+				resolveColor(lane, 'oklch(100% 0 0deg / 5%)'),
+			)
+		}
+		await expect(
+			getComputedStyle(laneOf(groups[0], 'away').lane).borderInlineEndWidth,
+		).toBe('0px')
 
 		// @spec components/infrastructure/fan/web/global/live-highway "Date separator gradient treatment"
 		for (const group of groups) {
