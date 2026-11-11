@@ -1,0 +1,77 @@
+@layer block {
+	/* Month jump. A zero-height row at the end of the timetable's list, stuck
+	   to its bottom edge, so it takes no room in the list and stays put while
+	   the list scrolls; the capsule hangs above it. It stands clear of the FAB,
+	   which rises into the list from the navigation bar's notch. */
+	@scope (.month-jump) {
+		:scope {
+			--_jump-button: 3rem;
+
+			position: sticky;
+			inset-block-end: calc(var(--fab-notch-radius) + var(--space-2xs));
+
+			display: flex;
+			grid-column: 1 / -1;
+			align-items: end;
+			justify-content: center;
+
+			block-size: 0;
+		}
+
+		.month-jump-capsule {
+			display: flex;
+			border-radius: var(--md-sys-shape-corner-full);
+			background: var(--md-sys-color-menu-surface);
+			box-shadow: var(--md-sys-elevation-level2);
+		}
+
+		.month-jump-button {
+			display: grid;
+			place-items: center;
+
+			inline-size: var(--_jump-button);
+			block-size: var(--_jump-button);
+			border-radius: var(--md-sys-shape-corner-full);
+
+			color: var(--md-sys-color-on-surface);
+		}
+
+		/* No month in a direction: that button goes, in every browser. */
+		:scope[data-has-prev="false"] [data-direction="prev"],
+		:scope[data-has-next="false"] [data-direction="next"] {
+			display: none;
+		}
+
+		/* Each button keeps its place on screen whether the other is shown:
+		   alone, the capsule moves half a button toward its own side, so a
+		   fan tapping "next" again after the first jump, when "previous"
+		   appears, still finds it under the thumb. */
+		:scope[data-has-prev="false"] .month-jump-capsule {
+			translate: calc(var(--_jump-button) / 2) 0;
+		}
+
+		:scope[data-has-next="false"] .month-jump-capsule {
+			translate: calc(var(--_jump-button) / -2) 0;
+		}
+
+		:scope[data-has-prev="false"][data-has-next="false"] {
+			display: none;
+		}
+
+		/* Not before the fan has scrolled the list: at its top, until the
+		   first scroll or jump (`data-moved`). A jump back to the first loaded
+		   date also ends at the top, and the capsule stays there. A browser
+		   without scroll-state queries never matches this, so it shows the
+		   capsule from the start. */
+		@container timetable not scroll-state(scrollable: top) {
+			:scope[data-moved="false"] {
+				display: none;
+			}
+		}
+
+		/* Not while the FAB's action list is open. */
+		:where(:root:has(.fab-panel:popover-open)) :scope {
+			display: none;
+		}
+	}
+}

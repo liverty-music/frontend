@@ -1,0 +1,96 @@
+@layer block {
+	/* A date row's lanes, and the deal-in of their concert cards. */
+	@scope (.lane-grid) {
+		:scope {
+			/* A lane's place in the deal-in order: HOME 0, then NEAR and AWAY
+			   (concert-lane.css). */
+			--_lane-step: 0;
+
+			display: grid;
+			grid-column: 1 / -1;
+			grid-template-columns: subgrid;
+		}
+
+		/* biome-ignore lint/correctness/noUnknownProperty: scroll-triggered animations (Chromium 145+) are newer than Biome's property list */
+		@supports (timeline-trigger: --t view()) {
+			/* Started by the date row's trigger (date-group.css). Each card
+			   starts one step after the card above it in its lane, and each lane
+			   one step after the lane before it, whichever edge the row comes in
+			   from. `sibling-index()` counts only the cards of one lane; it is not
+			   used across rows, where it would count every row already built. */
+			@media (prefers-reduced-motion: no-preference) {
+				.lane > event-card {
+					animation: deal-in var(--md-sys-motion-duration-extra-long2)
+						var(--md-sys-motion-easing-emphasized-decelerate) both;
+					animation-delay: calc(
+						(var(--_lane-step) + sibling-index() - 1) *
+						var(--md-sys-motion-duration-short2)
+					);
+
+					/* biome-ignore lint/correctness/noUnknownProperty: scroll-triggered animations (Chromium 145+) are newer than Biome's property list */
+					animation-trigger: --row play-forwards reset;
+				}
+			}
+		}
+
+		/* biome-ignore lint/correctness/noUnknownProperty: scroll-triggered animations (Chromium 145+) are newer than Biome's property list */
+		@supports not (timeline-trigger: --t view()) {
+			/* Without scroll-triggered animations, the same motion follows the
+			   scroll: each card's view progress drives it while it enters, so a
+			   lane's cards come in from the top down as they reach the view
+			   (offset per lane, since a scroll-linked animation ignores delays),
+			   and backwards while the row leaves through the top edge, once 40%
+			   of it has gone, so scrolling back up deals it in from the top. The
+			   exit animation fills forwards only: with `both`, its backwards fill
+			   (the settled keyframe) would override the entry animation, which
+			   comes earlier in the list, for the whole time the row is in view. */
+			@supports (animation-timeline: view()) and (animation-range: entry) {
+				@media (prefers-reduced-motion: no-preference) {
+					.lane > event-card {
+						--_lag: calc(var(--_lane-step) * 12%);
+
+						animation:
+							deal-in linear both,
+							deal-in linear forwards reverse;
+						animation-timeline: view(), view();
+						animation-range:
+							entry var(--_lag) entry calc(60% + var(--_lag)),
+							exit 40% exit 100%;
+					}
+				}
+			}
+		}
+
+		/* `perspective` reaches only an element's children, and the cards are
+		   the grandchildren of the lane grid: each lane keeps the 3D space
+		   (`preserve-3d`), so every card of a row turns in the row's one
+		   perspective and vanishing point instead of flat. */
+		.date-group:not(.date-group-skeleton) > :scope {
+			perspective: 520px;
+			perspective-origin: 70% 40%;
+		}
+
+		.date-group:not(.date-group-skeleton) > :scope > .lane {
+			transform-style: preserve-3d;
+		}
+
+		/* No `filter: brightness()` flash: measured on a 4× CPU fling, it
+		   doubled the median frame time (design D4). */
+		@keyframes deal-in {
+			0% {
+				transform: translate3d(140px, -30px, -260px) rotateY(-75deg)
+					rotateZ(14deg);
+				opacity: 0;
+			}
+
+			60% {
+				transform: translate3d(-6px, 0, 20px) rotateY(8deg) rotateZ(-1deg);
+				opacity: 1;
+			}
+
+			100% {
+				transform: none;
+			}
+		}
+	}
+}

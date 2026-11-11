@@ -1,0 +1,78 @@
+@layer block {
+	/* One lane of a date row. Cards stack with a step between them and below
+	   the last one: a larger step on the home lane, a smaller one on the
+	   others. */
+	@scope (.lane) {
+		:scope {
+			--_card-gap: var(--space-3xs);
+			--_border-faint: oklch(100% 0 0deg / 5%);
+			--_muted-faint: oklch(
+				from var(--md-sys-color-on-surface-variant) l c h /
+				30%
+			);
+
+			container-name: lane;
+			container-type: inline-size;
+			display: flex;
+			flex-direction: column;
+			row-gap: var(--_card-gap);
+
+			padding: var(--space-2xs);
+		}
+
+		:scope:has(> event-card) {
+			--_pad-end: calc(var(--space-2xs) + var(--_card-gap));
+
+			padding-block-end: var(--_pad-end);
+		}
+
+		/* A skeleton card keeps a step of room below it too. */
+		:scope:has(> .skeleton-card) {
+			--_pad-end: calc(var(--space-2xs) * 2);
+
+			padding-block-end: var(--_pad-end);
+		}
+
+		:scope:not(:last-child) {
+			border-inline-end: 1px solid var(--_border-faint);
+		}
+
+		:scope[data-lane="home"] {
+			--_card-gap: var(--space-2xs);
+
+			border-block-start: 2px solid
+				oklch(from var(--color-stage-home) l c h / 40%);
+		}
+
+		:scope[data-lane="near"] {
+			--_lane-step: 1;
+
+			border-block-start: 2px solid
+				oklch(from var(--color-stage-near) l c h / 40%);
+		}
+
+		:scope[data-lane="away"] {
+			--_lane-step: 2;
+
+			border-block-start: 2px solid
+				oklch(from var(--color-stage-away) l c h / 40%);
+		}
+
+		:scope[data-empty="true"]::after {
+			content: "—";
+
+			display: block;
+
+			padding-block: var(--space-s);
+
+			color: var(--_muted-faint);
+			text-align: center;
+		}
+
+		.skeleton-card {
+			display: block;
+			block-size: 44px;
+			border-radius: var(--md-sys-shape-corner-large);
+		}
+	}
+}

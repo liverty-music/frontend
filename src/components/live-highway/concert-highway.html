@@ -1,14 +1,21 @@
 <import from="./beam-timeline.css"></import>
+<import from="./stage-header"></import>
+<import from="./laser-beams"></import>
+<!-- A date row, its lanes and one lane are blocks of their own, without a
+     component: a row is built for every date in the window, so it adds no
+     controller to the ones its cards already have. -->
+<import from="./date-group.css"></import>
+<import from="./lane-grid.css"></import>
+<import from="./concert-lane.css"></import>
+<import from="./month-jump"></import>
 
 <!-- Laser beams — before header so header paints on top -->
-<div class="[ beam-overlay ]" if.bind="showBeams && laserBeams.length > 0">
-  <div
-    repeat.for="b of laserBeams"
-    class="[ laser-beam ]"
-    data-beam-timeline.bind="b.timeline"
-    beam-vars="hue.bind: b.hue; left.bind: b.left; right.bind: b.right; timeline.bind: b.timeline"
-  ></div>
-</div>
+<div
+  as-element="laser-beams"
+  class="[ beam-overlay ]"
+  if.bind="showBeams && laserBeams.length > 0"
+  beams.bind="laserBeams"
+></div>
 
 <!-- Concert grid (stage header + scrollable lanes) -->
 <!-- `data-beams` is the only thing the beam effect changes on the timetable:
@@ -24,11 +31,7 @@
        render, while the concerts are still loading. Gating it on
        `dateGroups.length` withheld the frame for exactly the window it is there
        to fill. -->
-  <header class="[ stage-header ]">
-    <span data-stage="home" class="md-typescale-headline-small" t="dashboard.lane.home"></span>
-    <span data-stage="near" class="md-typescale-headline-small" t="dashboard.lane.near"></span>
-    <span if.bind="!hideAway" data-stage="away" class="md-typescale-headline-small" t="dashboard.lane.away"></span>
-  </header>
+  <header as-element="stage-header" class="[ stage-header ]" hide-away.bind="hideAway"></header>
 
   <ol class="[ concert-scroll ]" data-testid="concert-scroll" scrollend.trigger="onScrollEnd()">
     <!-- Loading placeholder. Built from the timetable's own structure — real
@@ -111,35 +114,16 @@
          is no month in its direction; the stylesheet also hides the capsule
          until the list has been scrolled and while the FAB is open. -->
     <li
+      as-element="month-jump"
       if.bind="visibleGroups.length > 0"
       class="[ month-jump ]"
       data-testid="month-jump"
       data-has-prev.bind="prevMonth !== null"
       data-has-next.bind="nextMonth !== null"
       data-moved.bind="moved"
-    >
-      <div class="[ month-jump-capsule ]">
-        <button
-          type="button"
-          class="[ month-jump-button ] [ state-layer ]"
-          data-direction="prev"
-          t="[aria-label]dashboard.monthJump.prev"
-          t-params.bind="{ date: prevMonth }"
-          click.trigger="jumpToMonth(-1)"
-        >
-          <svg-icon name="skip-up" size="lg"></svg-icon>
-        </button>
-        <button
-          type="button"
-          class="[ month-jump-button ] [ state-layer ]"
-          data-direction="next"
-          t="[aria-label]dashboard.monthJump.next"
-          t-params.bind="{ date: nextMonth }"
-          click.trigger="jumpToMonth(1)"
-        >
-          <svg-icon name="skip-down" size="lg"></svg-icon>
-        </button>
-      </div>
-    </li>
+      prev-month.bind="prevMonth"
+      next-month.bind="nextMonth"
+      month-jump.trigger="jumpToMonth($event.detail)"
+    ></li>
   </ol>
 </section>

@@ -1,0 +1,149 @@
+@layer block {
+	/* stylelint-disable-next-line cube/block-max-lines -- the laser beam is one effect: its overlay, its shape and leading edges (pseudo-elements, which cannot leave the block) and the scroll-driven range that lands it on its card are explained together, and no part of it means anything as a component of its own */
+	@scope (.beam-overlay) {
+		/* Bounded to the lane row, not the viewport. That is not cosmetic: a beam's
+		   length is driven by how far its concert has travelled through the SCROLL
+		   AREA, so the box being scaled has to be that same area or the two
+		   disagree by their height ratio. Measured with a viewport-sized overlay,
+		   that mismatch alone put the beam up to 130px past its card. */
+		:scope {
+			pointer-events: none;
+
+			position: absolute;
+			inset: 0;
+
+			grid-column: lane-home / lane-away;
+			grid-row: lane-home / lane-away;
+		}
+
+		/* The beam reaches from the top of the lane area down to its concert's card,
+		   and stops exactly on the card's top edge.
+
+		   Exactness is the whole point here, and it comes from making two spans the
+		   same. The animation's range runs from "this card's top edge is at the
+		   BOTTOM of the scroll area" to "its top edge is at the TOP" — so progress
+		   0 to 1 covers precisely the distance the beam has to span, and the beam's
+		   own 0 to 100% is that same distance because the overlay is the scroll
+		   area. Get either half wrong and the beam drifts: the shipped version used
+		   the plain `cover` range against a viewport-sized overlay and was -70px
+		   short at the top of the screen and +68px long at the bottom.
+
+		   `scaleY` is animated rather than a length or a registered custom
+		   property: a custom-property animation forces a full-subtree style recalc
+		   every frame, the exact cost this component deleted its beam script to
+		   avoid. */
+		.laser-beam {
+			/* The beam's hue, set per beam from its artist (beam-vars). */
+			--_hue: var(--beam-hue, 180);
+
+			position: absolute;
+			inset-block-start: 0;
+			inset-inline: 0;
+			transform-origin: top;
+
+			/* Collapsed by default, which is also the off-screen state: with no fill
+			   mode the animation contributes nothing outside its range, so a concert
+			   the fan has not reached is simply dark. That used to be `both`, whose
+			   backwards fill held the opening keyframe — the full-length beam — and
+			   lit every matched concert in the timetable at once. */
+			transform: scaleY(0);
+
+			block-size: 100%;
+
+			background: linear-gradient(
+				to bottom,
+				oklch(70% 0.15 var(--_hue) / 12%) 0%,
+				oklch(60% 0.1 var(--_hue) / 7%) 60%,
+				oklch(50% 0.08 var(--_hue) / 3%) 100%
+			);
+
+			/* Both edges land on 100%, which IS the card's top edge. The shape used
+			   to need a third, per-card ratio saying where that edge fell inside the
+			   beam; anchoring the foot to it removes the term entirely. */
+			clip-path: polygon(
+				0% 0%,
+				var(--beam-left, 34%) 100%,
+				var(--beam-right, 66%) 100%
+			);
+			filter: drop-shadow(0 0 4px oklch(85% 0.3 var(--_hue) / 55%))
+				drop-shadow(0 0 12px oklch(75% 0.25 var(--_hue) / 28%))
+				drop-shadow(0 0 28px oklch(65% 0.2 var(--_hue) / 10%));
+
+			mask-image: linear-gradient(to bottom, black 65%, transparent);
+		}
+
+		/* The two bright leading edges. */
+		.laser-beam::before,
+		.laser-beam::after {
+			pointer-events: none;
+			content: "";
+
+			position: absolute;
+			inset: 0;
+
+			background: oklch(85% 0.25 var(--_hue) / 25%);
+		}
+
+		.laser-beam::before {
+			clip-path: polygon(
+				0% 0%,
+				4px 0%,
+				calc(var(--beam-left, 34%) + 4px) 100%,
+				var(--beam-left, 34%) 100%
+			);
+		}
+
+		.laser-beam::after {
+			clip-path: polygon(
+				0% 0%,
+				4px 0%,
+				var(--beam-right, 66%) 100%,
+				calc(var(--beam-right, 66%) - 4px) 100%
+			);
+		}
+
+		/* Scroll-driven animations are limited availability (Chrome/Edge 115,
+		   Safari 26; absent in Firefox). The beam is decorative and off by default
+		   per the beam-effect-toggle capability, so this is progressive enhancement
+		   with no fallback — and deliberately no scroll-timeline-polyfill, which
+		   the platform guidance rules out as incomplete.
+
+		   The `animation-range` term in the test is required: it excludes browsers
+		   with only partial scroll-driven-animation support. */
+		@supports ((animation-timeline: view()) and (animation-range: entry)) {
+			@media (prefers-reduced-motion: no-preference) {
+				.laser-beam {
+					/* The range, not the keyframes, is what makes the beam land on its
+					   card. `cover 0%` is the card's top edge at the bottom of the
+					   scroll area and `contain 100%` is that same edge at the top, so
+					   progress spans exactly the distance the beam spans. Plain `cover`
+					   runs one card-height further and misses by that much.
+
+					   animation-timeline is bound inline per beam (the set is
+					   data-driven). It must come AFTER the shorthand, which would
+					   otherwise reset it. */
+					animation: beam-length auto linear;
+					animation-range: cover 0% contain 100%;
+				}
+			}
+		}
+
+		/* The beam is decorative: suppressing it changes nothing about what is
+		   shown or when. Nothing else depends on it running. */
+		@media (prefers-reduced-motion: reduce) {
+			.laser-beam {
+				animation: none;
+			}
+		}
+
+		@keyframes beam-length {
+			from {
+				transform: scaleY(1);
+			}
+
+			to {
+				transform: scaleY(0);
+			}
+		}
+	}
+}

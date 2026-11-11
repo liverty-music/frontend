@@ -1,0 +1,7 @@
+<template>
+  <import from="./stage-header.css"></import>
+
+  <span data-stage="home" class="md-typescale-headline-small" t="dashboard.lane.home"></span>
+  <span data-stage="near" class="md-typescale-headline-small" t="dashboard.lane.near"></span>
+  <span if.bind="!hideAway" data-stage="away" class="md-typescale-headline-small" t="dashboard.lane.away"></span>
+</template>
