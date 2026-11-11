@@ -77,79 +77,8 @@
 			cursor: default;
 		}
 
-		/* ── Stage lanes block (HOME / NEAR / AWAY) ─────────────────────── */
-
-		/* Grid keeps the dt label column at intrinsic max-width (HOME
-		   determines the column) and the dd description column flush-left
-		   across all rows — flex would have left each "—" at a different
-		   x position because HOME / NEAR / AWAY have different widths. */
-		.page-help-lanes {
-			display: grid;
-			grid-template-columns: auto 1fr;
-			gap: var(--space-2xs) var(--space-s);
-
-			padding: var(--space-s);
-			border-radius: var(--md-sys-shape-corner-large);
-
-			background: var(--md-sys-color-surface-container-highest);
-		}
-
-		.stage-home {
-			color: var(--color-stage-home);
-		}
-
-		.stage-near {
-			color: var(--color-stage-near);
-		}
-
-		.stage-away {
-			color: var(--color-stage-away);
-		}
-
-		/* ── Hype tier grid (My Artists) ────────────────────────────────── */
-
-		/* 3-column grid: icon (auto) · invariant English label (auto) · scope
-		   description (1fr). Auto-sized columns 1 and 2 expand to fit the
-		   widest cell in each column, so label-column and description-column
-		   left edges align across all four tiers regardless of icon width.
-		   Markup is <ul> + <li>, each <li> a subgrid row (below). The
-		   decorative emoji is a plain <span aria-hidden="true"> inside the row
-		   so it is NOT promoted to a list term. */
-		.help-hype-grid {
-			display: grid;
-			grid-template-columns: auto auto 1fr;
-			gap: var(--space-xs) var(--space-s);
-
-			padding: var(--space-s);
-			border-radius: var(--md-sys-shape-corner-large);
-
-			background: var(--md-sys-color-surface-container-highest);
-		}
-
-		/* Each row spans the shared grid through subgrid, so its cells align
-		   with every other row while the <li> keeps its list-item role
-		   (`display: contents` drops it in some browsers). */
-		.help-hype-row {
-			display: grid;
-			grid-column: 1 / -1;
-			grid-template-columns: subgrid;
-		}
-
-		.help-hype-icon {
-			align-self: center;
-			text-align: center;
-			white-space: nowrap;
-		}
-
-		.help-hype-label {
-			align-self: center;
-			white-space: nowrap;
-		}
-
-		.help-hype-desc {
-			align-self: center;
-			color: var(--md-sys-color-on-surface-variant);
-		}
+		/* The stage lanes and the hype tiers are their own blocks
+		   (stage-lane-legend, hype-tier-legend). */
 
 		/* ── Note (footnote / caption) ──────────────────────────────────── */
 		.page-help-note {
