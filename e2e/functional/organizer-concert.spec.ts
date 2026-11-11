@@ -519,6 +519,7 @@ test.describe("the concert's seat types", () => {
 test('a snack shown on the concerts list sits above the floating button', async ({
 	page,
 }) => {
+	// @spec components/infrastructure/organizer/web/global/snack-bar "A snack does not cover the floating button"
 	// Removing a concert of drafts only returns to the list with a snack,
 	// where the extended FAB floats at the bottom of a phone window.
 	await page.setViewportSize({ width: 390, height: 844 })
