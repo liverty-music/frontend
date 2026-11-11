@@ -37,22 +37,34 @@ import { MyArtistsRoute } from './my-artists-route'
  */
 const STILL_HYPES: Hype[] = ['watch', 'home']
 
-function follows(count: number): FollowedArtist[] {
+function follows(count: number, hypes: Hype[] = STILL_HYPES): FollowedArtist[] {
 	return Array.from({ length: count }, (_, i) => ({
 		artist: { id: `artist-${i + 1}`, name: `Artist ${i + 1}`, mbid: '' },
-		hype: STILL_HYPES[i % STILL_HYPES.length],
+		hype: hypes[i % hypes.length],
 	}))
 }
+
+/** The saves the faked follow store received, as `artistId:hype`. */
+const saved: string[] = []
 
 /** The launcher's actions the route registered last, so a story can invoke them. */
 const fab = { actions: [] as FabAction[] }
 
-function items(count: number) {
+function items(
+	count: number,
+	{
+		setHype = async () => {},
+		hypes = STILL_HYPES,
+	}: {
+		setHype?: (artistId: string, hype: Hype) => Promise<void>
+		hypes?: Hype[]
+	} = {},
+) {
 	return [
 		Registration.instance(IFollowStore, {
-			listFollowed: async () => follows(count),
+			listFollowed: async () => follows(count, hypes),
 			unfollow: async () => {},
-			setHype: async () => {},
+			setHype,
 		}),
 		Registration.instance(IAuthService, { isAuthenticated: true }),
 		Registration.instance(IOnboardingService, { isOnboarding: false }),
@@ -398,5 +410,168 @@ export const Widths = {
 			Number.parseFloat(style.paddingInlineStart) -
 			Number.parseFloat(style.paddingInlineEnd)
 		await expect(room).toBeGreaterThanOrEqual(80)
+	},
+} satisfies Story
+
+/** The row of artist `id`, and the radio and dot of each of its levels. */
+function hypeRow(root: ParentNode, id: string) {
+	const row = [...root.querySelectorAll<HTMLElement>('.artist-row')].find((r) =>
+		r.querySelector(`input[name="hype-${id}"]`),
+	)
+	if (!row) throw new Error(`no row for ${id}`)
+	const levels = ['watch', 'home', 'nearby', 'away'] as const
+	const labels = [...row.querySelectorAll<HTMLElement>('.hype-label')]
+	return {
+		row,
+		radios: labels.map((l) => l.querySelector<HTMLInputElement>('input')),
+		dots: labels.map((l) => l.querySelector<HTMLElement>('.hype-dot')),
+		labelOf: (level: (typeof levels)[number]) => labels[levels.indexOf(level)],
+		/** The level whose dot is the active one. */
+		active: () =>
+			levels[
+				labels.findIndex(
+					(l) =>
+						l.querySelector<HTMLElement>('.hype-dot')?.dataset.active ===
+						'true',
+				)
+			],
+	}
+}
+
+/**
+ * A fan picks a hype level by tapping a dot of a row. The route accepts the
+ * pick (the save succeeds) or reverts it (the save fails twice), and the dot
+ * follows.
+ */
+export const PickingHypeLevels = {
+	render: () => {
+		saved.length = 0
+		return defineAureliaStory({
+			template: frame(375, 600),
+			register,
+			items: items(2, {
+				setHype: async (artistId, hype) => {
+					saved.push(`${artistId}:${hype}`)
+					// artist-2 cannot be saved.
+					if (artistId === 'artist-2') {
+						// Late enough for the story to see the pick before the revert.
+						await new Promise((r) => setTimeout(r, 150))
+						throw new Error('save failed')
+					}
+				},
+			}),
+		})
+	},
+	play: async ({ canvasElement }) => {
+		await rendered(canvasElement, 2)
+		const table = canvasElement.querySelector<HTMLElement>('table')
+		if (!table) throw new Error('no table')
+		const changes: string[] = []
+		table.addEventListener('change', (e) => {
+			const input = e.target as HTMLInputElement
+			changes.push(`${input.name}:${input.checked}`)
+		})
+
+		// The structure the my-artists scenario "Native radio input semantics"
+		// describes. It is not annotated: the scenario's last line wants the
+		// selected radio `checked` through `model.bind`/`checked.bind`, and the
+		// app leaves every radio unchecked at first (the active dot is drawn
+		// from `data-active`), so the scenario needs the owner's decision.
+		const fieldset = table.closest('fieldset')
+		if (!fieldset) throw new Error('the table is not in a fieldset')
+		const legend = fieldset.querySelector(':scope > legend')
+		await expect(legend?.classList.contains('visually-hidden')).toBe(true)
+		const first = hypeRow(canvasElement, 'artist-1')
+		for (const label of [...first.row.querySelectorAll('.hype-label')]) {
+			await expect(label.localName).toBe('label')
+			const radio = label.querySelector<HTMLInputElement>(':scope > input')
+			await expect(radio?.type).toBe('radio')
+			await expect(radio?.classList.contains('visually-hidden')).toBe(true)
+			await expect(radio?.name).toBe('hype-artist-1')
+			await expect(label.querySelector(':scope > span.hype-dot')).not.toBeNull()
+		}
+		await expect(first.active()).toBe('watch')
+
+		// A dot is tapped.
+		await userEvent.click(first.labelOf('nearby'))
+		// The radio takes the tap natively, and its `change` event crosses the
+		// custom element boundary up to the table.
+		await expect(first.radios[2]?.checked).toBe(true)
+		await expect(changes).toEqual(['hype-artist-1:true'])
+
+		// @spec components/infrastructure/fan/web/route/my-artists "Parent accepts hype selection"
+		// The route keeps the pick: the save succeeded, and the dot stays.
+		await waitFor(() => expect(saved).toContain('artist-1:nearby'))
+		await expect(first.active()).toBe('nearby')
+		await new Promise((r) => setTimeout(r, 50))
+		await expect(first.active()).toBe('nearby')
+		await expect(first.radios[2]?.checked).toBe(true)
+
+		// The route reverts a pick whose save fails (after its one retry).
+		const second = hypeRow(canvasElement, 'artist-2')
+		await expect(second.active()).toBe('home')
+		changes.length = 0
+		await userEvent.click(second.labelOf('away'))
+		await expect(second.active()).toBe('away')
+		await waitFor(() => expect(second.active()).toBe('home'))
+		// The revert is a programmatic update: no second `change` event.
+		await expect(changes).toEqual(['hype-artist-2:true'])
+		await expect(saved.filter((s) => s.startsWith('artist-2:'))).toEqual([
+			'artist-2:away',
+			'artist-2:away',
+		])
+		// Not asserted, and the reason this part of "Parent reverts hype
+		// selection" is not annotated: the radio keeps the tap's `checked` state
+		// after the revert (AWAY stays checked while the dot shows HOME), because
+		// no binding ties `checked` to the level.
+	},
+} satisfies Story
+
+/**
+ * The active dot's pulse follows the system preference. The story runs in
+ * both Storybook projects (see MotionFollowsSystemPreference in the
+ * ConcertHighway stories) and asserts the presentation of the one in use.
+ */
+export const HypeDotMotionFollowsSystemPreference = {
+	tags: ['reduced-motion'],
+	render: () =>
+		defineAureliaStory({
+			template: frame(375, 400),
+			register,
+			items: items(4, { hypes: ['watch', 'home', 'nearby', 'away'] }),
+		}),
+	play: async ({ canvasElement, globals }) => {
+		// @spec components/infrastructure/fan/web/route/my-artists "Reduced motion preference"
+		const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches
+		if (import.meta.env.MODE === 'test') {
+			await expect(typeof globals.reducedMotion).toBe('boolean')
+			await expect(reduce).toBe(globals.reducedMotion)
+		}
+		await rendered(canvasElement, 4)
+		const active = [
+			...canvasElement.querySelectorAll<HTMLElement>(
+				'.hype-dot[data-active="true"]',
+			),
+		]
+		await expect(active.map((d) => d.dataset.level)).toEqual([
+			'watch',
+			'home',
+			'nearby',
+			'away',
+		])
+		for (const dot of active) {
+			const pulses =
+				dot.dataset.level === 'nearby' || dot.dataset.level === 'away'
+			// The pulse runs in the two highest levels, and only with motion.
+			await expect(getComputedStyle(dot).animationName).toBe(
+				pulses && !reduce ? 'dot-pulse' : 'none',
+			)
+			// The static border and glow stay either way.
+			const style = getComputedStyle(dot)
+			await expect(style.borderTopStyle).toBe('solid')
+			if (dot.dataset.level !== 'watch') {
+				await expect(style.boxShadow).not.toBe('none')
+			}
+		}
 	},
 } satisfies Story

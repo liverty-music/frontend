@@ -62,6 +62,15 @@ export const WithoutPreview = {
 		await expect(
 			canvasElement.querySelector('[data-testid="welcome-see-preview"]'),
 		).toBeNull()
+		// @spec components/infrastructure/fan/web/route/welcome "Scroll affordance hidden when preview data is unavailable"
+		// (The route hands the hero `has-preview` from whether it has preview
+		// data: `dateGroups.length > 0`.)
+		const hero = canvasElement.querySelector<HTMLElement>('.welcome-hero')
+		await expect(
+			hero?.querySelector(
+				'.welcome-hero-fallback [data-testid="welcome-get-started"]',
+			),
+		).not.toBeNull()
 		await expect(canvas.getByTestId('welcome-login')).toBeInTheDocument()
 		await expect(canvas.getByTestId('welcome-cant-sign-in')).toBeInTheDocument()
 	},
