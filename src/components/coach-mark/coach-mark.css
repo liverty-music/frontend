@@ -30,6 +30,7 @@
 			calc(anchor(--coach-target left) + var(--coach-spotlight-outset));
 
 		border: 2px solid var(--color-brand-accent);
+		/* stylelint-disable-next-line declaration-property-custom-property-allowed-list -- the public hook a screen sets for its step's target shape (coach-mark "Spotlight shape adapts per step"); 12px is the Material 3 medium corner */
 		border-radius: var(--spotlight-radius, 12px);
 
 		/* stylelint-disable-next-line declaration-property-custom-property-allowed-list -- not elevation: the spec draws the dimmed layer around the spotlight as a box-shadow (coach-mark "Spotlight Visual Layer via Box-Shadow") */

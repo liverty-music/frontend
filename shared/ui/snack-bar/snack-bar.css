@@ -87,17 +87,17 @@
 			}
 		}
 
-		/* A sideways swipe: the surface rests between two empty gutters as wide
-		/* The snack's colours: a brand gradient (M3 Expressive keeps the brand
-		   identity) or the app's own container, in the M3 extra-small (4dp)
-		   shape. Its layout is snack-item.css's. */
+		/* The snack's colours: a brand gradient or the app's own container (the
+		   hooks an app sets on an ancestor), in the M3 extra-small shape. Its
+		   layout is snack-item.css's. */
 		.snack-surface {
+			--_on-surface: var(--snack-bar-on-container, var(--color-white));
+			--_gradient: linear-gradient(to right, var(--_bg-from), var(--_bg-to));
+			--_surface: var(--snack-bar-container, var(--_gradient));
+
 			border-radius: var(--md-sys-shape-corner-extra-small);
-			color: var(--snack-bar-on-container, var(--color-white));
-			background: var(
-				--snack-bar-container,
-				linear-gradient(to right, var(--_bg-from), var(--_bg-to))
-			);
+			color: var(--_on-surface);
+			background: var(--_surface);
 			box-shadow: var(--md-sys-elevation-level3);
 		}
 

@@ -34,6 +34,7 @@
 		au-viewport {
 			grid-area: viewport;
 			box-sizing: border-box;
+			/* stylelint-disable-next-line declaration-property-custom-property-allowed-list -- a measured height global.css publishes while a banner shows, not a spacing choice from the scale */
 			padding-block-end: var(--bottom-banner-height, 0);
 		}
 

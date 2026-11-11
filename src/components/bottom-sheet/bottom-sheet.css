@@ -161,6 +161,7 @@
 
 		/* The sheet's colour: a consumer may set --sheet-bg on the sheet. */
 		sheet-surface > .sheet-body {
+			/* stylelint-disable-next-line declaration-property-custom-property-allowed-list -- the sheet's public colour hook, set by a consumer (page-help) and falling back to the role token */
 			background: var(--sheet-bg, var(--md-sys-color-surface-container));
 		}
 

@@ -84,7 +84,6 @@
 		"lint:js": "biome lint --write src admin organizer reception shared test e2e",
 		"format": "biome format --write src admin organizer reception shared test e2e",
 		"lint:css": "stylelint \"src/**/*.css\" \"shared/**/*.css\" \"admin/**/*.css\" \"organizer/**/*.css\" \"reception/**/*.css\"",
-		"lint:css:suppress": "npm run lint:css -- --suppress",
 		"lint:boundaries": "depcruise src admin organizer reception shared test",
 		"lint": "npm run lint:js && npm run lint:css && npm run lint:boundaries",
 		"check": "biome check --write src admin organizer reception shared test e2e && npm run lint:css && npm run lint:boundaries",
