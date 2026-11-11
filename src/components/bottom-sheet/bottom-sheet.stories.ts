@@ -477,7 +477,7 @@ export const OpenAndCloseByBinding = {
 // The sheet's parts and how it is named: a popover="manual" dialog inside the
 // host, a scroll container of the window's height with the dismiss zone and the
 // body in it, and the backdrop on the popover itself. The dialog element gives
-// the dialog role (the spec's text asks for an explicit `role` attribute).
+// the dialog role, with no explicit `role` attribute.
 export const Structure = {
 	render: behaviour,
 	args: { open: true },
@@ -489,7 +489,9 @@ export const Structure = {
 
 		// @spec components/infrastructure/fan/web/global/bottom-sheet "DOM structure"
 		await expect(dialog.parentElement).toBe(host)
+		await expect(dialog.tagName).toBe('DIALOG')
 		await expect(dialog.getAttribute('popover')).toBe('manual')
+		await expect(dialog.hasAttribute('role')).toBe(false)
 		await expect(dialog.matches(':popover-open')).toBe(true)
 		await expect(
 			within(canvasElement).getByRole('dialog', { name: '詳細' }),
@@ -1306,5 +1308,76 @@ export const GlobalTextRuleHasNoSpecificity = {
 			probe.remove()
 			override.remove()
 		}
+	},
+} satisfies Story
+
+// Who closed the sheet decides what it reports. A person closing it (Escape, a
+// tap on the dimmed area, a swipe) gets `sheet-closed` and `open` false; the
+// parent turning `open` off itself, as the consumer does on the Android back
+// gesture's `popstate`, gets no `sheet-closed` (it would loop) and one
+// `sheet-hidden` once the sheet has finished closing.
+export const CloseEvents = {
+	render: behaviour,
+	args: { open: false, dismissable: true },
+	play: async ({ canvasElement }) => {
+		const vm = vmOf(canvasElement)
+		const dialog = dialogOf(canvasElement)
+		const closed = countEvents(canvasElement, 'sheet-closed')
+		const hidden = countEvents(canvasElement, 'sheet-hidden')
+		// What the sheet looked like when `sheet-hidden` arrived.
+		const atHidden: { popoverOpen: boolean; inert: boolean }[] = []
+		canvasElement.addEventListener('sheet-hidden', () => {
+			atHidden.push({
+				popoverOpen: dialog.matches(':popover-open'),
+				inert: outsideOf(canvasElement).inert,
+			})
+		})
+		const hides = watchHide(canvasElement)
+
+		// @spec components/infrastructure/fan/web/global/bottom-sheet "Dismissable mode with close-request dismiss (ESC / Android back)"
+		// @spec components/infrastructure/fan/web/global/bottom-sheet "Sheet closed event"
+		// Escape: the scroll-to-closed-stop dismiss, `open` false, `sheet-closed`.
+		await open(canvasElement)
+		await userEvent.keyboard('{Escape}')
+		await waitFor(() => expect(closed.n).toBe(1), { timeout: 3000 })
+		await expect(dialog.matches(':popover-open')).toBe(false)
+		await expect(vm.open).toBe(false)
+		await expect(hides).toHaveLength(1)
+
+		// A tap on the dimmed area.
+		await open(canvasElement)
+		await userEvent.click(zoneOf(canvasElement))
+		await waitFor(() => expect(closed.n).toBe(2), { timeout: 3000 })
+		await expect(vm.open).toBe(false)
+
+		// A swipe (only where the browser can send touch input).
+		await open(canvasElement)
+		if (await swipeVertically('.sheet-body', [600])) {
+			await waitFor(() => expect(closed.n).toBe(3), { timeout: 3000 })
+			await expect(vm.open).toBe(false)
+		} else {
+			await finish(canvasElement)
+			closed.n = 3
+		}
+		await expect(hidden.n).toBe(3)
+
+		// The consumer closes it on `popstate`: the programmatic path.
+		const onPopState = () => {
+			vm.open = false
+		}
+		window.addEventListener('popstate', onPopState)
+		try {
+			await open(canvasElement)
+			window.dispatchEvent(new PopStateEvent('popstate'))
+			await waitFor(() => expect(hidden.n).toBe(4), { timeout: 3000 })
+		} finally {
+			window.removeEventListener('popstate', onPopState)
+		}
+		await pause(300)
+		await expect(closed.n).toBe(3)
+		await expect(hidden.n).toBe(4)
+		// By then the sheet had finished closing: hidden, page live again.
+		await expect(atHidden[3]).toEqual({ popoverOpen: false, inert: false })
+		await expect(dialog.matches(':popover-open')).toBe(false)
 	},
 } satisfies Story
