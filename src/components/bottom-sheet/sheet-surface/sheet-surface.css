@@ -1,0 +1,95 @@
+@layer block {
+	@scope (sheet-surface) {
+		/* No box of its own: the container is the scroll area's snap target. */
+		:scope {
+			display: contents;
+		}
+
+		.sheet-body {
+			/* Material 3: full width up to 640 px, centred by the `wrapper`
+			   composition, with no side gutter of its own. */
+			--wrapper-max: 40rem;
+			--gutter: 0px;
+
+			scroll-snap-align: end;
+
+			/*
+			 * Chromium bug workaround: scroll-snap re-evaluation inside the
+			 * top-layer.
+			 *
+			 * When a scroll container with `scroll-snap-type: y mandatory` is
+			 * inside a top-layer element (`position: fixed; inset: 0`), any
+			 * child layout change triggers scroll-snap re-evaluation. Chromium
+			 * incorrectly offsets the scroll container itself by `-scrollTop`
+			 * pixels in the rendered position (while `scrollTop` remains
+			 * unchanged), visually shifting the sheet upward.
+			 *
+			 * `contain: layout` establishes a layout containment boundary on
+			 * `.sheet-body`, isolating child layout changes (e.g., chip-check
+			 * SVG toggle, dynamic content) from `.scroll-area`. This prevents
+			 * the re-evaluation from being triggered.
+			 *
+			 * Removal condition: when Chromium fixes scroll container offset on
+			 * snap re-evaluation inside the top-layer, this declaration MAY be
+			 * removed. The regression guard is the artist-filter chip-check E2E
+			 * test.
+			 */
+			contain: layout;
+			overflow-y: auto;
+
+			max-block-size: 90svh;
+
+			/* Only the top edge is rounded; logical corners mirror under RTL. */
+			border-start-start-radius: var(--md-sys-shape-corner-extra-large);
+			border-start-end-radius: var(--md-sys-shape-corner-extra-large);
+
+			/* Its colour is bottom-sheet.css's, which reads a sheet's --sheet-bg. */
+			box-shadow: var(--md-sys-elevation-level1);
+
+			/* Focus target on open; suppress the focus ring on the container
+			   itself (interactive children keep their own rings). Scoped to
+			   :focus-visible so only genuine keyboard focus is considered, per
+			   the app's focus-visible convention. */
+			&:focus-visible {
+				/* stylelint-disable-next-line property-disallowed-list -- a sheet is not a control: Material 3 gives sheets no focus state, and focus lands on it only so Tab starts inside */
+				outline: none;
+			}
+		}
+
+		/* Material 3 drag handle: 32 x 4 px in the middle of a 48 px area
+		   (22 px above and below). The content, or the heading, starts right
+		   below the area. */
+		.handle-bar {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			block-size: 3rem;
+
+			&::after {
+				content: "";
+
+				inline-size: 2rem;
+				block-size: 0.25rem;
+				border-radius: var(--md-sys-shape-corner-full);
+
+				background: var(--md-sys-color-on-surface-variant);
+			}
+		}
+
+		/* The heading, 24 px from both edges and 16 px above the content; a
+		   sheet-wide action (clear all) sits at its end. */
+		.sheet-heading-row {
+			display: flex;
+			gap: var(--space-s);
+			align-items: center;
+			justify-content: space-between;
+
+			padding-block-end: var(--space-s);
+			padding-inline: var(--space-m);
+		}
+
+		.sheet-heading {
+			color: var(--md-sys-color-on-surface);
+		}
+	}
+}

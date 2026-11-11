@@ -1,3 +1,5 @@
+<import from="./sheet-surface/sheet-surface"></import>
+
 <!-- Non-modal popover host: a native <dialog> shown via showPopover() (NOT
      showModal()) for Top-Layer promotion and the ::backdrop WITHOUT a modal's
      pointer-blocking backdrop. Using <dialog> keeps the native dialog role; the
@@ -22,17 +24,15 @@
       click.trigger="onDismissZoneClick()"
     ></div>
 
-    <!-- Sheet body (scroll-snap target at bottom, initially visible). Focusable
-         (tabindex="-1") so focus can be moved into it on open. -->
-    <section ref="sheetBody" class="[ sheet-body ] [ wrapper ]" tabindex="-1">
-      <div class="handle-bar"></div>
-      <!-- The heading names the dialog (aria-labelledby, set by the view-model).
-           A sheet's own action for the whole sheet (clear all) sits beside it. -->
-      <div if.bind="heading" class="sheet-heading-row">
-        <h2 id.bind="headingId" class="[ sheet-heading ] [ md-typescale-title-large ]">${heading}</h2>
-        <au-slot name="heading-action"></au-slot>
-      </div>
-      <au-slot></au-slot>
-    </section>
+    <!-- The sheet itself (handle, heading, content); the heading action and
+         the content pass through to it. -->
+    <sheet-surface
+      heading.bind="heading"
+      heading-id.bind="headingId"
+      body.from-view="sheetBody"
+    >
+      <au-slot name="heading-action" au-slot="heading-action"></au-slot>
+      <au-slot au-slot="default"></au-slot>
+    </sheet-surface>
   </div>
 </dialog>

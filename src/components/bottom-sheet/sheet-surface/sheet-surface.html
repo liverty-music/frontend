@@ -1,0 +1,15 @@
+<import from="./sheet-surface.css"></import>
+
+<!-- The scroll-snap target at the bottom of bottom-sheet's scroll area,
+     initially visible. Focusable (tabindex="-1") so focus can be moved into
+     it on open. -->
+<section ref="body" class="[ sheet-body ] [ wrapper ]" tabindex="-1">
+  <div class="handle-bar"></div>
+  <!-- The heading names the dialog (aria-labelledby, set by bottom-sheet).
+       A sheet's own action for the whole sheet (clear all) sits beside it. -->
+  <div if.bind="heading" class="sheet-heading-row">
+    <h2 id.bind="headingId" class="[ sheet-heading ] [ md-typescale-title-large ]">${heading}</h2>
+    <au-slot name="heading-action"></au-slot>
+  </div>
+  <au-slot></au-slot>
+</section>
