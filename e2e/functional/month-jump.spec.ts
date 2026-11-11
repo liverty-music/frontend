@@ -52,9 +52,9 @@ test.describe('month jump', () => {
 		await expect(jump(page, 'next')).toBeVisible()
 	})
 
-	test(`@spec ${DASHBOARD} "First display in a browser that cannot tell whether a list has been scrolled"`, async ({
-		page,
-	}) => {
+	test(`@spec ${DASHBOARD} "First display in a browser that cannot tell whether a list has been scrolled"`, {
+		tag: '@webkit',
+	}, async ({ page }) => {
 		await openDashboard(page)
 		test.skip(
 			await page.evaluate(() => CSS.supports('container-type: scroll-state')),

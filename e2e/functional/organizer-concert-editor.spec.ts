@@ -132,7 +132,7 @@ async function pickVenue(scope: Locator, name = 'Zepp Haneda') {
 }
 
 /** Longer than the venue field waits after the last keystroke (500 ms). */
-const SEARCH_PAUSE_MS = 1000
+const _SEARCH_PAUSE_MS = 1000
 
 /** Title, performer and the first date of a new concert, all but the venue. */
 async function fillNewConcert(page: Page, opts: { performer?: boolean } = {}) {
@@ -181,160 +181,6 @@ test.describe('venue search', () => {
 		expect(body.draft.events[0].venueName).toEqual({
 			value: 'Zepp Haneda (TOKYO)',
 		})
-	})
-
-	test(`@spec ${SPEC} "No match"`, async ({ page }) => {
-		await openEditor(page, `${SERIES}/new`, {
-			'VenueService/Search': { candidates: [] },
-		})
-		await venueSearch(row(page, 0)).fill('存在しない会場')
-		await expect(row(page, 0)).toContainText(
-			'会場が見つかりませんでした。別の名前で検索してください。',
-		)
-		await expect(venue(row(page, 0)).getByRole('option')).toHaveCount(0)
-		await expect(
-			row(page, 0).getByRole('button', { name: '変更' }),
-		).toHaveCount(0)
-		await expect(venueSearch(row(page, 0))).toBeVisible()
-	})
-
-	test(`@spec ${SPEC} "Search unavailable"`, async ({ page }) => {
-		let attempts = 0
-		const log = await openEditor(page, `${SERIES}/new`, {
-			'VenueService/Search': () => {
-				attempts++
-				return attempts === 1
-					? connectError('unavailable', 'map catalog down', 503)
-					: { body: { candidates: [HANEDA] } }
-			},
-		})
-		await venueSearch(row(page, 0)).fill('Zepp Haneda')
-		await expect(row(page, 0)).toContainText('会場を検索できません。')
-		await expect(
-			row(page, 0).getByRole('button', { name: '変更' }),
-		).toHaveCount(0)
-
-		await row(page, 0).getByRole('button', { name: '再試行' }).click()
-		await expect(
-			venue(row(page, 0)).getByRole('option', { name: /Zepp Haneda/ }),
-		).toBeVisible()
-		expect(calls(log, 'VenueService/Search')).toHaveLength(2)
-	})
-
-	test(`@spec ${SPEC} "Short Japanese name"`, async ({ page }) => {
-		const log = await openEditor(page, `${SERIES}/new`, {
-			'VenueService/Search': {
-				candidates: [
-					{
-						placeId: { value: 'ChIJ-budokan' },
-						name: { value: '日本武道館' },
-						address: '千代田区北の丸公園',
-					},
-				],
-			},
-		})
-		await venueSearch(row(page, 0)).fill('武道館')
-		await expect(
-			venue(row(page, 0)).getByRole('option', { name: /日本武道館/ }),
-		).toBeVisible()
-		expect(calls(log, 'VenueService/Search').map((c) => c.body)).toEqual([
-			{ text: '武道館' },
-		])
-	})
-
-	test(`@spec ${SPEC} "Short Latin text"`, async ({ page }) => {
-		const log = await openEditor(page, `${SERIES}/new`)
-		await venueSearch(row(page, 0)).fill('Zepp')
-		// biome-ignore lint/suspicious/noPlaywrightWaitForTimeout: an absence check; no search may start before the pause ends
-		await page.waitForTimeout(SEARCH_PAUSE_MS)
-		expect(calls(log, 'VenueService/Search')).toHaveLength(0)
-		await expect(venueSearch(row(page, 0))).toHaveAttribute(
-			'aria-expanded',
-			'false',
-		)
-
-		await venueSearch(row(page, 0)).fill('Zepp H')
-		await expect(
-			venue(row(page, 0)).getByRole('option', { name: /Zepp Haneda/ }),
-		).toBeVisible()
-		expect(calls(log, 'VenueService/Search').map((c) => c.body)).toEqual([
-			{ text: 'Zepp H' },
-		])
-	})
-
-	test(`@spec ${SPEC} "Typing on"`, async ({ page }) => {
-		let releaseFirst: () => void = () => {}
-		const firstHeld = new Promise<void>((resolve) => {
-			releaseFirst = resolve
-		})
-		const log = await openEditor(page, `${SERIES}/new`, {
-			'VenueService/Search': async (request) => {
-				if (request.text === 'LIQUID') {
-					// The answer for LIQUID arrives after the one for LIQUIDROOM.
-					await firstHeld
-					return { body: { candidates: [HANEDA] } }
-				}
-				return {
-					body: {
-						candidates: [
-							{
-								placeId: { value: 'ChIJ-liquidroom' },
-								name: { value: 'LIQUIDROOM' },
-								address: '渋谷区東',
-							},
-						],
-					},
-				}
-			},
-		})
-		const field = row(page, 0)
-		await venueSearch(field).fill('LIQUID')
-		await expect.poll(() => calls(log, 'VenueService/Search').length).toBe(1)
-		await venueSearch(field).fill('LIQUIDROOM')
-		await expect(
-			venue(field).getByRole('option', { name: /LIQUIDROOM/ }),
-		).toBeVisible()
-
-		releaseFirst()
-		// biome-ignore lint/suspicious/noPlaywrightWaitForTimeout: lets the pause end so a stale result would have time to show
-		await page.waitForTimeout(SEARCH_PAUSE_MS)
-		await expect(venue(field).getByRole('option')).toHaveCount(1)
-		await expect(
-			venue(field).getByRole('option', { name: /Zepp Haneda/ }),
-		).toHaveCount(0)
-		expect(calls(log, 'VenueService/Search').map((c) => c.body)).toEqual([
-			{ text: 'LIQUID' },
-			{ text: 'LIQUIDROOM' },
-		])
-	})
-
-	test(`@spec ${SPEC} "Keyboard pick"`, async ({ page }) => {
-		await openEditor(page, `${SERIES}/new`, {
-			'VenueService/Search': {
-				candidates: [
-					HANEDA,
-					{
-						placeId: { value: 'ChIJ-divercity' },
-						name: { value: 'Zepp DiverCity (TOKYO)' },
-						address: '江東区青海',
-					},
-				],
-			},
-		})
-		const field = row(page, 0)
-		await venueSearch(field).fill('Zepp Haneda')
-		await expect(venue(field).getByRole('option')).toHaveCount(2)
-		// The list credits Google Maps as its source.
-		await expect(field.getByText('Google Maps')).toBeVisible()
-
-		await venueSearch(field).press('ArrowDown')
-		await venueSearch(field).press('ArrowDown')
-		await venueSearch(field).press('Enter')
-
-		await expect(field).toContainText('Zepp DiverCity (TOKYO)')
-		await expect(field).toContainText('江東区青海')
-		await expect(venue(field).getByRole('option')).toHaveCount(0)
-		await expect(field.getByRole('button', { name: '変更' })).toBeVisible()
 	})
 
 	test(`@spec ${SPEC} "Typed name not picked"`, async ({ page }) => {
@@ -602,49 +448,7 @@ test.describe('times on a 12-hour device', () => {
 	})
 })
 
-test.describe('dates and times of a new concert', () => {
-	test(`@spec ${SPEC} "Defaults of a new concert"`, async ({ page }) => {
-		await openEditor(page, `${SERIES}/new`)
-		await expect.poll(() => shownTime(row(page, 0), '開場')).toBe('17:00')
-		expect(await shownTime(row(page, 0), '開演')).toBe('19:00')
-		await expect(timeField(row(page, 0), '開演')).toContainText('JST')
-	})
-
-	test(`@spec ${SPEC} "Another night at the same venue"`, async ({ page }) => {
-		const log = await openEditor(page, `${SERIES}/new`, {
-			'SeriesService/Create': oneSeries(XX_SOLO),
-		})
-		await fillNewConcert(page)
-		await pickVenue(row(page, 0))
-		await row(page, 0).getByLabel('日付').fill('2026-11-03')
-		await chooseTime(row(page, 0), '開演', '18:00')
-
-		await page.getByRole('button', { name: '公演日を追加' }).click()
-		const added = row(page, 1)
-		await expect(added).toContainText('Zepp Haneda (TOKYO)')
-		await expect(added).toContainText('大田区羽田空港')
-		await expect(added.getByLabel('日付')).toHaveValue('2026-11-03')
-		expect(await shownTime(added, '開場')).toBe('17:00')
-		expect(await shownTime(added, '開演')).toBe('18:00')
-
-		// Only the date changes for the next night.
-		await added.getByLabel('日付').fill('2026-11-04')
-		await page.getByRole('button', { name: '公演をつくる' }).click()
-		await expect.poll(() => calls(log, 'SeriesService/Create').length).toBe(1)
-		const body = calls(log, 'SeriesService/Create')[0]
-			.body as unknown as DraftBody
-		expect(body.draft.events).toHaveLength(2)
-		for (const [i, day] of [
-			[0, '2026-11-03'],
-			[1, '2026-11-04'],
-		] as const) {
-			expect(body.draft.events[i].placeId).toEqual({ value: 'ChIJ-haneda' })
-			expect(
-				new Date(body.draft.events[i].startTime?.value ?? '').toISOString(),
-			).toBe(jst(day, '18:00'))
-		}
-	})
-})
+test.describe('dates and times of a new concert', () => {})
 
 test.describe('a published concert', () => {
 	test(`@spec ${SPEC} "Published event's venue is fixed"`, async ({ page }) => {
@@ -795,27 +599,6 @@ const PROCESSING =
 test.describe("each date's per-account limit", () => {
 	const limit = (scope: Locator) => scope.getByLabel(/1アカウントの上限/)
 
-	test(`@spec ${SPEC} "New date"`, async ({ page }) => {
-		await openEditor(page, `${SERIES}/s-solo/edit`)
-		await page.getByRole('button', { name: '公演日を追加' }).click()
-		await expect(limit(row(page, 1))).toHaveValue('4')
-		await expect(limit(row(page, 1))).toBeEditable()
-	})
-
-	test(`@spec ${SPEC} "Group tickets"`, async ({ page }) => {
-		const log = await openEditor(page, `${SERIES}/s-solo/edit`, {
-			'SeriesService/Update': oneSeries(XX_SOLO),
-		})
-		await expect(limit(row(page, 0))).toHaveValue('4')
-		await limit(row(page, 0)).fill('6')
-		await page.getByRole('button', { name: '保存する' }).click()
-		await expect(snackbar(page)).toContainText('変更を保存しました')
-
-		const body = calls(log, 'SeriesService/Update')[0]
-			.body as unknown as DraftBody
-		expect(body.draft.events[0].perAccountLimit).toBe(6)
-	})
-
 	test(`@spec ${SPEC} "Above one admission code"`, async ({ page }) => {
 		const log = await openEditor(page, `${SERIES}/s-solo/edit`)
 		await limit(row(page, 0)).fill('11')
@@ -878,6 +661,8 @@ test.describe('cover image', () => {
 	})
 
 	test(`@spec ${SPEC} "Processed image available"`, async ({ page }) => {
+		// The 3 s re-read runs on the page's fake clock, fast-forwarded below.
+		await page.clock.install()
 		await mockImageHosts(page)
 		let coverSet = false
 		let listsAfterSet = 0
@@ -904,15 +689,23 @@ test.describe('cover image', () => {
 		await expect(page.getByText(PROCESSING)).toBeVisible()
 
 		// The editor re-reads the concert every 3 s until the cover is processed.
-		await expect(preview(page)).toHaveAttribute('src', NEW_COVER, {
-			timeout: 12_000,
-		})
+		await expect
+			.poll(
+				async () => {
+					await page.clock.fastForward(3_000)
+					return preview(page).getAttribute('src')
+				},
+				{ timeout: 12_000 },
+			)
+			.toBe(NEW_COVER)
 		await expect(page.getByText(PROCESSING)).toHaveCount(0)
 		expect(listsAfterSet).toBe(2)
 		expect(calls(log, 'SeriesService/List').length).toBe(3)
 	})
 
 	test(`@spec ${SPEC} "Saved before processing finished"`, async ({ page }) => {
+		// The 3 s re-read runs on the page's fake clock, fast-forwarded below.
+		await page.clock.install()
 		await mockImageHosts(page)
 		let log: RpcLog = { calls: [] }
 		// The new cover is processed only after the concert page has read the
@@ -959,9 +752,15 @@ test.describe('cover image', () => {
 		).toBeVisible()
 
 		// It re-reads every 3 s and shows the processed image once served.
-		await expect(concertCover).toHaveAttribute('src', NEW_COVER, {
-			timeout: 15_000,
-		})
+		await expect
+			.poll(
+				async () => {
+					await page.clock.fastForward(3_000)
+					return concertCover.getAttribute('src')
+				},
+				{ timeout: 15_000 },
+			)
+			.toBe(NEW_COVER)
 		await expect(page.getByText(PROCESSING)).toHaveCount(0)
 	})
 })

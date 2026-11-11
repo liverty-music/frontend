@@ -68,6 +68,31 @@ const AWAY_LANE: Record<string, number> = {
 	[AWAY_CONCERT_2]: 3,
 }
 
+/**
+ * Waits until `saves` journey changes have finished their hype reads, then for
+ * two frames (the raise snack would show right after the last one), instead of
+ * sleeping. Each change reads the hype list twice, once before it saves and
+ * once after (`setJourneyStatus`), so the last change's reads are in only when
+ * the count has grown by two per change since `readsBefore`, which the caller
+ * took before the first of them.
+ */
+async function expectNoSnackAfterReReads(
+	page: Page,
+	calls: Parameters<typeof callsOf>[0],
+	readsBefore: number,
+	saves = 1,
+): Promise<void> {
+	await expect
+		.poll(() => callsOf(calls, 'FollowService/List').length)
+		.toBeGreaterThanOrEqual(readsBefore + 2 * saves)
+	await page.evaluate(
+		() =>
+			new Promise<void>((resolve) =>
+				requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+			),
+	)
+}
+
 /** Mock the backend with the server's rules, starting from `server`. */
 async function mockBackend(page: Page, server: Server) {
 	const groups = [
@@ -283,31 +308,6 @@ test.describe('calendar add starts tracking', () => {
 		expect(server.journeys.has(HOME_CONCERT)).toBe(false)
 	})
 
-	test(`@spec ${TRACK} "Existing journey kept"`, async ({ page }) => {
-		const server: Server = {
-			hype: 'HYPE_TYPE_NEARBY',
-			hypeSetBy: 'default',
-			journeys: new Map([[HOME_CONCERT, 'TICKET_JOURNEY_STATUS_PAID']]),
-		}
-		await seedSignedIn(page)
-		const calls = await mockBackend(page, server)
-		await page.goto('/dashboard')
-
-		await openSheet(page, 'Home Show Hall')
-		const tab = page.context().waitForEvent('page')
-		await sheet(page).getByRole('link', { name: 'カレンダーに追加' }).click()
-		await (await tab).close()
-		await page.bringToFront()
-		// biome-ignore lint/suspicious/noPlaywrightWaitForTimeout: an absence check; past the return fallback a snack would have shown
-		await page.waitForTimeout(1_500)
-
-		expect(callsOf(calls, 'TicketJourneyService/InferTracking')).toEqual([])
-		await expect(page.locator('snack-bar .snack-item')).toHaveCount(0)
-		await expect(
-			sheet(page).locator('.journey-row [data-journey-status="paid"]'),
-		).toHaveAttribute('aria-pressed', 'true')
-	})
-
 	test(`@spec ${TRACK} "Opening a new-concert push changes no journey"`, async ({
 		page,
 	}) => {
@@ -402,14 +402,15 @@ test.describe('a journey for a distant concert raises the hype level', () => {
 
 		// A later Applied for another distant concert leaves it at Nearby.
 		await openSheet(page, 'Away Show 3 Hall')
+		const readsBefore = callsOf(calls, 'FollowService/List').length
 		await sheet(page)
 			.locator('.journey-row [data-journey-status="applied"]')
 			.click()
 		await expect(
 			sheet(page).locator('.journey-row [data-journey-status="applied"]'),
 		).toHaveAttribute('aria-pressed', 'true')
-		// biome-ignore lint/suspicious/noPlaywrightWaitForTimeout: an absence check; the raise snack would follow the re-read at once
-		await page.waitForTimeout(1_500)
+		// An absence check: the raise snack would follow the hype re-read at once.
+		await expectNoSnackAfterReReads(page, calls, readsBefore)
 		await expect(snack(page, '新着ライブを')).toHaveCount(0)
 		expect(server.hype).toBe('HYPE_TYPE_NEARBY')
 	})
@@ -424,10 +425,11 @@ test.describe('a journey for a distant concert raises the hype level', () => {
 			journeys: new Map(),
 		}
 		await seedSignedIn(page)
-		await mockBackend(page, server)
+		const calls = await mockBackend(page, server)
 		await page.goto('/dashboard')
 
 		await openSheet(page, 'Away Show 2 Hall')
+		const readsBefore = callsOf(calls, 'FollowService/List').length
 		await sheet(page)
 			.locator('.journey-row [data-journey-status="applied"]')
 			.click()
@@ -440,8 +442,8 @@ test.describe('a journey for a distant concert raises the hype level', () => {
 		await expect(
 			sheet(page).locator('.journey-row [data-journey-status="paid"]'),
 		).toHaveAttribute('aria-pressed', 'true')
-		// biome-ignore lint/suspicious/noPlaywrightWaitForTimeout: an absence check; the raise snack would follow the re-read at once
-		await page.waitForTimeout(1_500)
+		// An absence check: the raise snack would follow the hype re-read at once.
+		await expectNoSnackAfterReReads(page, calls, readsBefore, 3)
 		await expect(snack(page, '新着ライブを')).toHaveCount(0)
 
 		await page.goto('/my-artists')

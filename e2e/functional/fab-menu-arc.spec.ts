@@ -72,9 +72,9 @@ test.beforeEach(async ({ page }) => {
 })
 
 test.describe('placement in the notch', () => {
-	test(`@spec ${CAPABILITY} "Launcher present with the navigation bar"`, async ({
-		page,
-	}) => {
+	test(`@spec ${CAPABILITY} "Launcher present with the navigation bar"`, {
+		tag: '@webkit',
+	}, async ({ page }) => {
 		await openShell(page, '/dashboard')
 		await expect(page.locator('fab-menu')).toHaveCount(1)
 		await expect(fab(page)).toBeVisible()
@@ -120,9 +120,9 @@ test.describe('placement in the notch', () => {
 })
 
 test.describe('the action arc', () => {
-	test(`@spec ${CAPABILITY} "Tapping the FAB expands the action list"`, async ({
-		page,
-	}) => {
+	test(`@spec ${CAPABILITY} "Tapping the FAB expands the action list"`, {
+		tag: '@webkit',
+	}, async ({ page }) => {
 		await openShell(page, '/dashboard')
 		await openArc(page)
 
@@ -141,9 +141,9 @@ test.describe('the action arc', () => {
 		expect(await opacity(page, 'fab-menu .fab-equalizer')).toBe(0)
 	})
 
-	test(`@spec ${CAPABILITY} "Tapping again collapses the list"`, async ({
-		page,
-	}) => {
+	test(`@spec ${CAPABILITY} "Tapping again collapses the list"`, {
+		tag: '@webkit',
+	}, async ({ page }) => {
 		await openShell(page, '/dashboard')
 		await openArc(page)
 
@@ -213,9 +213,9 @@ test.describe('the action arc', () => {
 				}
 			})
 
-			test(`@spec ${CAPABILITY} "Labels never overlap icons" (${width}px)`, async ({
-				page,
-			}) => {
+			test(`@spec ${CAPABILITY} "Labels never overlap icons" (${width}px)`, {
+				tag: '@webkit',
+			}, async ({ page }) => {
 				await openShell(page, '/dashboard')
 				await openArc(page)
 				const items = await itemBoxes(page)
@@ -248,9 +248,9 @@ test.describe('the action arc', () => {
 		})
 	}
 
-	test(`@spec ${CAPABILITY} "Expansion uses spring motion"`, async ({
-		page,
-	}) => {
+	test(`@spec ${CAPABILITY} "Expansion uses spring motion"`, {
+		tag: '@webkit',
+	}, async ({ page }) => {
 		await openShell(page, '/dashboard')
 		await settle(page, 'fab-menu')
 		// Read each item's travel the moment the arc opens.
@@ -453,9 +453,9 @@ test.describe('handedness', () => {
 			await seedSignedInFan(page, { handed: 'left' })
 		})
 
-		test(`@spec ${CAPABILITY} "Left-handed mode mirrors the arc"`, async ({
-			page,
-		}) => {
+		test(`@spec ${CAPABILITY} "Left-handed mode mirrors the arc"`, {
+			tag: '@webkit',
+		}, async ({ page }) => {
 			await openShell(page, '/dashboard')
 			await openArc(page)
 			const viewport = page.viewportSize()
@@ -501,7 +501,9 @@ test.describe('handedness', () => {
 })
 
 test.describe('sinking while a snack bar is open', () => {
-	test(`@spec ${CAPABILITY} "A snack bar opens"`, async ({ page }) => {
+	test(`@spec ${CAPABILITY} "A snack bar opens"`, { tag: '@webkit' }, async ({
+		page,
+	}) => {
 		await openShell(page, '/dashboard')
 		await publishSnack(page, 'Saved', 10_000)
 		await expect(page.locator('.snack-item:popover-open')).toHaveCount(1)
@@ -628,7 +630,9 @@ test.describe('sinking while a bottom banner is visible', () => {
 		await settle(page, 'fab-menu')
 	}
 
-	test(`@spec ${CAPABILITY} "A bottom banner is visible"`, async ({ page }) => {
+	test(`@spec ${CAPABILITY} "A bottom banner is visible"`, {
+		tag: '@webkit',
+	}, async ({ page }) => {
 		// Both fab-menu requirements carry this scenario name; this test covers
 		// both: the FAB is sunk, 40px, centred and within the bar.
 		await openWithBanner(page)

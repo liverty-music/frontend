@@ -84,7 +84,10 @@ test(`@spec ${CAPABILITY} "Windows with Noto Sans JP installed"`, async ({
 	).toBe(true)
 })
 
-test(`@spec ${CAPABILITY} "iPhone"`, async ({ page, browserName }) => {
+test(`@spec ${CAPABILITY} "iPhone"`, { tag: '@webkit' }, async ({
+	page,
+	browserName,
+}) => {
 	// Safari draws no local() font it does not ship, and Apple devices have no
 	// Noto; Chromium on a machine without the variable Noto behaves the same.
 	await page.goto('/welcome')

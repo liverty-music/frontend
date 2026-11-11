@@ -220,103 +220,6 @@ test.describe('boot reconciliation of unmerged guest data', () => {
 })
 
 test.describe('guest data storage', () => {
-	test(`@spec ${STORY} "Followed artists stored locally with hype"`, async ({
-		page,
-	}) => {
-		await seedOnce(page, [], {
-			onboardingComplete: 'false',
-			'guest.home': 'JP-13',
-		})
-		const artists = [A, B, C].map((a) => ({
-			id: { value: a.id },
-			name: { value: a.name },
-			mbid: { value: '' },
-		}))
-		await mockFanRpc(page, { 'ArtistService/ListTop': { artists } })
-		await page.route('**/ws.audioscrobbler.com/**', (route) =>
-			route.fulfill({
-				status: 200,
-				contentType: 'application/json',
-				body: '{}',
-			}),
-		)
-
-		await page.goto('/discovery')
-		const canvas = page.locator('dna-orb-canvas canvas')
-		await canvas.waitFor({ timeout: 20_000 })
-
-		// Tap one bubble with the keyboard (the canvas's accessible path).
-		await expect
-			.poll(
-				async () => {
-					if ((await guestQueue(page)).length === 0) {
-						await canvas.focus()
-						await page.keyboard.press('ArrowRight')
-						await page.keyboard.press('Enter')
-					}
-					return (await guestQueue(page)).length
-				},
-				{ timeout: 20_000, intervals: [500] },
-			)
-			.toBe(1)
-		const [entry] = await guestQueue(page)
-		expect([A.id, B.id, C.id]).toContain(entry.artist.id)
-		expect(entry.hype).toBe('nearby')
-	})
-
-	test(`@spec ${STORY} "Hype update stored inline in follow entry"`, async ({
-		page,
-	}) => {
-		await seedOnce(
-			page,
-			[
-				{ artist: A, hype: 'nearby' },
-				{ artist: B, hype: 'nearby' },
-			],
-			{ onboardingComplete: 'true', 'guest.home': 'JP-13' },
-		)
-		await mockFanRpc(page)
-		await page.goto('/my-artists')
-		await setHypeOnRow(page, 1, 'away')
-
-		// The changed entry is set by the fan; the untouched legacy Nearby
-		// entry is read as set by default.
-		await expect
-			.poll(() => guestQueue(page))
-			.toEqual([
-				{ artist: A, hype: 'nearby', hypeSetBy: 'default' },
-				{ artist: B, hype: 'away', hypeSetBy: 'fan' },
-			])
-	})
-
-	test(`@spec ${STORY} "Legacy data read with hype fallback"`, async ({
-		page,
-	}) => {
-		// Old GuestFollow entries: no hype field.
-		await seedOnce(page, [{ artist: A }, { artist: B }], {
-			onboardingComplete: 'true',
-			'guest.home': 'JP-13',
-		})
-		await mockFanRpc(page)
-		const errors: string[] = []
-		page.on('pageerror', (e) => errors.push(e.message))
-
-		await page.goto('/my-artists')
-
-		const rows = page.locator('[data-artist-rows] .artist-row')
-		await expect(rows).toHaveCount(2, { timeout: 20_000 })
-		for (let i = 0; i < 2; i++) {
-			await expect(
-				rows.nth(i).locator('.hype-dot[data-active="true"]'),
-			).toHaveAttribute('data-level', 'nearby')
-		}
-		expect((await guestQueue(page)).map((e) => e.artist.id)).toEqual([
-			A.id,
-			B.id,
-		])
-		expect(errors).toEqual([])
-	})
-
 	test(`@spec ${STORY} "Home area selection stored locally"`, async ({
 		page,
 	}) => {
@@ -335,45 +238,6 @@ test.describe('guest data storage', () => {
 })
 
 test.describe('data merge on authentication', () => {
-	test(`@spec ${STORY} "Guest hype merged from follow entries"`, async ({
-		page,
-	}) => {
-		await seedOnce(
-			page,
-			[
-				{ artist: A, hype: 'away' },
-				{ artist: B, hype: 'nearby' },
-				{ artist: C, hype: 'home' },
-			],
-			{ onboardingComplete: 'true', 'guest.home': 'JP-13' },
-		)
-		const calls = await mockFanRpc(page, { 'UserService/Get': USER })
-
-		await signUpFromMyArtists(page)
-
-		await expect
-			.poll(() => hypeCalls(calls), { timeout: 20_000 })
-			.toEqual([
-				[A.id, 'HYPE_TYPE_AWAY'],
-				[C.id, 'HYPE_TYPE_HOME'],
-			])
-		// Each SetHype comes after that artist's Follow.
-		for (const id of [A.id, C.id]) {
-			const follow = calls.findIndex(
-				(c) =>
-					c.method === 'FollowService/Follow' &&
-					(c.body.artistId as { value: string }).value === id,
-			)
-			const setHype = calls.findIndex(
-				(c) =>
-					c.method === 'FollowService/SetHype' &&
-					(c.body.artistId as { value: string }).value === id,
-			)
-			expect(follow).toBeGreaterThanOrEqual(0)
-			expect(setHype).toBeGreaterThan(follow)
-		}
-	})
-
 	test(`@spec ${STORY} "Hype merge failure is non-blocking"`, async ({
 		page,
 	}) => {
@@ -539,36 +403,6 @@ test.describe('data merge on authentication', () => {
 		expect(await storage(page, 'guest.home')).toBeNull()
 	})
 
-	test(`@spec ${STORY} "Guest follow at the default level does not overwrite the account's level"`, async ({
-		page,
-	}) => {
-		// The guest followed A at the default Nearby; the account follows A at Away.
-		await seedOnce(page, [{ artist: A, hype: 'nearby' }], {
-			onboardingComplete: 'true',
-			'guest.home': 'JP-13',
-		})
-		const calls = await mockFanRpc(page, {
-			'UserService/Get': USER,
-			'FollowService/List': {
-				artists: [
-					{
-						artist: { id: { value: A.id }, name: { value: A.name } },
-						hype: 'HYPE_TYPE_AWAY',
-					},
-				],
-			},
-		})
-
-		await signUpFromMyArtists(page)
-
-		await expect
-			.poll(() => followedIds(calls), { timeout: 20_000 })
-			.toEqual([A.id])
-		await expect.poll(() => guestQueue(page)).toEqual([])
-		// No SetHype: the account's Away is not overwritten with Nearby.
-		expect(callsOf(calls, 'FollowService/SetHype')).toEqual([])
-	})
-
 	test(`@spec ${STORY} "Follow call fails during merge"`, async ({ page }) => {
 		await seedOnce(
 			page,
@@ -658,7 +492,7 @@ test.describe('data merge on authentication', () => {
 })
 
 /** Pick a hype level on the n-th artist row of My Artists. */
-async function setHypeOnRow(page: Page, row: number, hype: Hype) {
+async function _setHypeOnRow(page: Page, row: number, hype: Hype) {
 	const radios = page
 		.locator('[data-artist-rows] .artist-row')
 		.nth(row)

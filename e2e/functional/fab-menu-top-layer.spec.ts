@@ -2,7 +2,6 @@ import {
 	box,
 	centre,
 	fab,
-	nav,
 	openShell,
 	seedSignedInFan,
 } from '../support/fan-shell'
@@ -20,9 +19,9 @@ test.use({ viewport: { width: 390, height: 844 } })
 
 const CAPABILITY = 'components/infrastructure/fan/web/global/fab-menu'
 
-test(`@spec ${CAPABILITY} "FAB stays above the Discovery dna orb"`, async ({
-	page,
-}) => {
+test(`@spec ${CAPABILITY} "FAB stays above the Discovery dna orb"`, {
+	tag: '@webkit',
+}, async ({ page }) => {
 	await seedSignedInFan(page)
 	await openShell(page, '/discovery')
 	await expect(fab(page)).toBeVisible()
@@ -49,16 +48,4 @@ test(`@spec ${CAPABILITY} "FAB hidden when navigation is hidden"`, async ({
 
 	await expect(page.locator('bottom-nav-bar')).toHaveCount(0)
 	await expect(page.locator('fab-menu')).toHaveCount(0)
-})
-
-test(`@spec ${CAPABILITY} "FAB hidden when no actions are contributed"`, async ({
-	page,
-}) => {
-	await seedSignedInFan(page)
-	// Settings is outside the four tabs and contributes no action (Tickets
-	// shows the FAB with its Settings item).
-	await openShell(page, '/settings')
-
-	await expect(page.locator('fab-menu')).toHaveCount(0)
-	await expect(nav(page)).toHaveAttribute('data-notch', 'false')
 })

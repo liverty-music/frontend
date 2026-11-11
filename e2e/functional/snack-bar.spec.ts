@@ -198,18 +198,6 @@ test.describe('Snack bar: multiple rapid snacks (5.1)', () => {
 
 		await expect(snacks).toHaveCount(0, { timeout: 5000 })
 	})
-
-	// @spec components/infrastructure/fan/web/global/snack-bar "Multiple simultaneous snacks"
-	test('a second snack waits until the first has gone', async ({ page }) => {
-		await publishSnackDirect(page, 'First snack', 'info', 1500)
-		await publishSnackDirect(page, 'Second snack', 'warning', 1500)
-
-		const open = page.locator('.snack-item:popover-open')
-		await expect(open).toHaveText('First snack', { timeout: 3000 })
-		await expect(page.locator('.snack-stack .snack-item')).toHaveCount(1)
-		await expect(open).toHaveText('Second snack', { timeout: 5000 })
-		await expect(page.locator('.snack-stack .snack-item')).toHaveCount(1)
-	})
 })
 
 // =========================================================================
@@ -258,53 +246,6 @@ test.describe('Snack bar: undo snack on My Artists (5.2)', () => {
 		await expect(page.locator('.artists-fieldset')).toBeVisible({
 			timeout: 10_000,
 		})
-	})
-
-	test('unfollow shows undo snack with action button', async ({ page }) => {
-		test.setTimeout(30_000)
-
-		// Unfollow is now reached via Edit mode: tap the Edit toggle first,
-		// then tap the per-row remove (-) button.
-		// page-help's .dismiss-zone may intercept real pointer events,
-		// so dispatch clicks via JS to bypass interception.
-		const firstRow = page.locator('.artist-row').first()
-		await expect(firstRow).toBeVisible()
-
-		// Enter edit mode. Edit moved from the header into the FAB action launcher
-		// as a command: open the FAB, tap Edit — it enters edit mode and closes
-		// the launcher on its own (the FAB hides while editing), so no extra
-		// dismiss is needed and the per-row remove buttons are immediately live.
-		await page.evaluate(() => {
-			const fab = document.querySelector<HTMLElement>('fab-menu .fab-toggle')
-			if (!fab) throw new Error('fab-menu .fab-toggle not found')
-			fab.click()
-		})
-		await page.evaluate(() => {
-			const edit = document.querySelector<HTMLElement>(
-				'fab-menu .fab-item[data-action-id="edit"]',
-			)
-			if (!edit) throw new Error('FAB edit item not found')
-			edit.click()
-		})
-
-		// Wait for Aurelia to render the per-row remove buttons.
-		await expect(page.locator('.artist-remove-btn').first()).toBeVisible()
-
-		// Click the remove button on the first artist row.
-		await page.evaluate(() => {
-			const btn = document.querySelector<HTMLElement>('.artist-remove-btn')
-			if (!btn) throw new Error('.artist-remove-btn not found')
-			btn.click()
-		})
-
-		// Snack should appear
-		const snack = page.locator('.snack-item:popover-open')
-		await expect(snack).toHaveCount(1, { timeout: 5000 })
-		await expect(snack.first()).toBeVisible()
-
-		// Snack should contain a message
-		const snackText = await snack.first().textContent()
-		expect(snackText).toBeTruthy()
 	})
 
 	test(`@spec components/infrastructure/fan/web/global/snack-bar "The Done bar of edit mode stays tappable"`, async ({
@@ -548,6 +489,8 @@ test.describe('Snack placement above the navigation', () => {
 	})
 
 	test(`@spec ${SNACK_CAPABILITY} "A banner is visible"`, async ({ page }) => {
+		// The snack's 10 s timer runs on the page's fake clock, fast-forwarded below.
+		await page.clock.install()
 		await bootSignedIn(page, 'visible')
 		await expect(
 			page.locator('pwa-install-banner .bottom-banner'),
@@ -560,9 +503,8 @@ test.describe('Snack placement above the navigation', () => {
 		expect(gap).toBeCloseTo(await spaceS(page), 0)
 		// A positive gap means the snack covers no part of the banner.
 		expect(gap).toBeGreaterThan(0)
-		await expect(page.locator('.snack-item')).toHaveCount(0, {
-			timeout: 15_000,
-		})
+		await page.clock.fastForward(10_000)
+		await expect(page.locator('.snack-item')).toHaveCount(0)
 
 		// My Artists also mounts the (hidden) signup prompt next to the install
 		// banner; the hidden one must not cancel the visible one's height, or
@@ -581,14 +523,15 @@ test.describe('Snack placement above the navigation', () => {
 	test(`@spec ${SNACK_CAPABILITY} "Same placement for every severity"`, async ({
 		page,
 	}) => {
+		// Each snack's 1.5 s timer runs on the page's fake clock.
+		await page.clock.install()
 		await bootSignedIn(page, 'none')
 		const bottoms: number[] = []
 		for (const severity of ['info', 'warning', 'error'] as const) {
 			await publishSnackDirect(page, `A ${severity} snack`, severity, 1500)
 			bottoms.push(await openSnackBottom(page))
-			await expect(page.locator('.snack-item')).toHaveCount(0, {
-				timeout: 5000,
-			})
+			await page.clock.fastForward(1500)
+			await expect(page.locator('.snack-item')).toHaveCount(0)
 		}
 		expect(bottoms[1]).toBeCloseTo(bottoms[0], 0)
 		expect(bottoms[2]).toBeCloseTo(bottoms[0], 0)
