@@ -4,16 +4,23 @@ import { createFixture } from '@aurelia/testing'
 import { CustomElement } from 'aurelia'
 import { afterEach, describe, expect, it } from 'vitest'
 
+import { ListItem } from '../../src/components/list-item/list-item'
 import settingsHtml from '../../src/routes/settings/settings-route.html?raw'
 
-/** A link of the Settings template, as written there, without its `t`. */
+/**
+ * A link of the Settings template, as written there, without its `t`: an
+ * `<a>`, or a `<list-item>` row that renders one.
+ */
 function linkFrom(testId: string): string {
 	const t = document.createElement('template')
 	t.innerHTML = settingsHtml
-	const link = t.content.querySelector(`[data-testid="${testId}"]`)
+	const link = t.content.querySelector(
+		`[data-testid="${testId}"], [test-id="${testId}"]`,
+	)
 	if (!link) throw new Error(`${testId} not found`)
 	return link.outerHTML
 		.replace(/\st="[^"]*"/g, '')
+		.replace(/\slabel\.bind="[^"]*"/g, '')
 		.replace(/\$\{supportEmail\}/, 'support@example.com')
 }
 
@@ -32,7 +39,7 @@ async function clickFromSettings(link: string) {
 			{
 				path: 'settings',
 				component: CustomElement.define(
-					{ name: 'settings-page', template: link },
+					{ name: 'settings-page', template: link, dependencies: [ListItem] },
 					class {},
 				),
 			},

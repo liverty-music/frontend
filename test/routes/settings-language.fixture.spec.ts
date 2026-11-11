@@ -131,10 +131,10 @@ async function render(o: Options) {
 		snacks.push(s)
 	})
 	const rowValue = (labelKey: string) => {
-		const label = [...host.querySelectorAll('.settings-row-label')].find(
+		const label = [...host.querySelectorAll('.list-item-label')].find(
 			(l) => l.textContent === labelKey,
 		)
-		return label?.closest('button')?.querySelector('.settings-row-value')
+		return label?.closest('button')?.querySelector('.list-item-value')
 			?.textContent
 	}
 	const languageRow = () =>

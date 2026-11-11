@@ -30,6 +30,7 @@ import { CelebrationOverlay } from './components/celebration-overlay/celebration
 import { FabMenu } from './components/fab-menu/fab-menu'
 import { InlineError } from './components/inline-error/inline-error'
 import { LegalDocument } from './components/legal-document/legal-document'
+import { ListItem } from './components/list-item/list-item'
 import { ConcertHighway } from './components/live-highway/concert-highway'
 import { EventCard } from './components/live-highway/event-card'
 import { EventDetailSheet } from './components/live-highway/event-detail-sheet'
@@ -38,7 +39,6 @@ import { PageHeader } from './components/page-header/page-header'
 import { PageHelp } from './components/page-help/page-help'
 import { PostSignupDialog } from './components/post-signup-dialog/post-signup-dialog'
 import { SettingsConsentRow } from './components/settings-consent-row/settings-consent-row'
-import { SettingsLinkRow } from './components/settings-link-row/settings-link-row'
 import { SettingsStatusRow } from './components/settings-status-row/settings-status-row'
 import { SettingsSwitchRow } from './components/settings-switch-row/settings-switch-row'
 import { SignupPromptBanner } from './components/signup-prompt-banner/signup-prompt-banner'
@@ -279,12 +279,8 @@ async function bootstrap(): Promise<void> {
 	au.register(PostSignupDialog)
 	au.register(StatePlaceholder)
 	au.register(SuccessMark)
-	au.register(
-		SettingsConsentRow,
-		SettingsLinkRow,
-		SettingsStatusRow,
-		SettingsSwitchRow,
-	)
+	au.register(SettingsConsentRow, SettingsStatusRow, SettingsSwitchRow)
+	au.register(ListItem)
 	au.register(SvgIcon)
 	au.register(UserHomeSelector)
 	au.register(AuthHook)

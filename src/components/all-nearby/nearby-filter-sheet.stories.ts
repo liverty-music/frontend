@@ -4,6 +4,8 @@ import {
 	type StoryObj,
 } from '@aurelia/storybook'
 import { expect, userEvent, waitFor, within } from 'storybook/test'
+import { expectScreenshot } from '../../../.storybook/screenshot'
+import { atWidth } from '../../../.storybook/viewport'
 import { NearbyFilterSheet } from './nearby-filter-sheet'
 
 const meta = {
@@ -110,4 +112,53 @@ export const NoArea = {
 	render,
 	args: { areaName: '', periodLabel: '7日以内' },
 	play: play('エリアを選ぶ', '7日以内'),
+} satisfies Story
+
+/**
+ * On a 320 px phone, where this change started: the heading and both rows
+ * keep their text. Each label shows in full on one line, and each value shows
+ * in full (a long area name would end in an ellipsis instead).
+ */
+export const NarrowWindow = {
+	render,
+	args: { areaName: '鹿児島県', periodLabel: '8/12〜8/20' },
+	play: async (context) => {
+		await atWidth(320, async () => {
+			const { canvasElement } = context
+			const canvas = within(canvasElement)
+			await userEvent.click(
+				canvas.getByRole('button', { name: 'Open filters' }),
+			)
+			const rows = ['nearby-area-row', 'nearby-period-row'].map(
+				(id) =>
+					canvasElement.querySelector(`[data-testid="${id}"]`) as HTMLElement,
+			)
+			await waitFor(() => expect(rows[0]).toBeVisible())
+			const title = canvas.getByRole('heading', { name: 'エリアと期間' })
+			await expect(title.getBoundingClientRect().height).toBe(28)
+			for (const row of rows) {
+				await expect(row.getBoundingClientRect().width).toBeLessThanOrEqual(320)
+				for (const part of ['.list-item-label', '.list-item-value']) {
+					const el = row.querySelector(part) as HTMLElement
+					await expect(el.scrollWidth).toBeLessThanOrEqual(el.clientWidth)
+				}
+				await expect(
+					(
+						row.querySelector('.list-item-label') as HTMLElement
+					).getBoundingClientRect().height,
+				).toBe(24)
+			}
+			await expectScreenshot(
+				canvasElement.querySelector('.sheet-body') as HTMLElement,
+				'nearby-filter-sheet-320',
+			)
+			// Close it, lifting the sheet's inert for the next story.
+			await userEvent.keyboard('{Escape}')
+			await waitFor(() =>
+				expect(
+					canvasElement.querySelector('dialog')?.matches(':popover-open'),
+				).toBe(false),
+			)
+		})
+	},
 } satisfies Story

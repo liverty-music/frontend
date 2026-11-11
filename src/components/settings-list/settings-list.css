@@ -14,13 +14,13 @@
 		}
 
 		/* Row components render their row inside a host that takes no box. */
-		:is(
-				settings-link-row,
-				settings-switch-row,
-				settings-consent-row,
-				settings-status-row
-			) {
+		:is(settings-switch-row, settings-consent-row, settings-status-row) {
 			display: contents;
+		}
+
+		/* A list item lays out its own row, across the whole card. */
+		list-item {
+			grid-column: 1 / -1;
 		}
 
 		/* Each settings row is wrapped in a semantic <li>; display:contents keeps
@@ -40,8 +40,10 @@
 			column-gap: var(--space-xs);
 			align-items: center;
 
-			min-block-size: var(--md-sys-target-size);
-			padding: var(--space-xs) var(--space-s);
+			/* The list item's measurements (list-item.css), so every row of
+			   the card has the same height and edges. */
+			min-block-size: 3.5rem;
+			padding: var(--space-2xs) var(--space-s);
 
 			/* Square, so the divider above a row runs straight to the card's
 			   edges; the global <button> rule rounds a button row's corners. */
@@ -89,8 +91,6 @@
 			}
 		}
 
-		.settings-row-end,
-		.settings-chevron,
 		.settings-toggle-track,
 		.settings-switch,
 		.settings-row-action {
@@ -98,25 +98,8 @@
 			justify-self: end;
 		}
 
-		/* Trailing value + chevron cluster (nav rows). */
-		.settings-row-end {
-			display: flex;
-			gap: var(--space-2xs);
-			align-items: center;
-		}
-
-		.settings-chevron {
-			inline-size: 1rem;
-			block-size: 1rem;
-			color: var(--md-sys-color-on-surface-variant);
-		}
-
 		.settings-row-label {
 			color: var(--md-sys-color-on-surface);
-		}
-
-		.settings-row-value {
-			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		/* Rows of the route itself that opt out of the 3-column model and span
@@ -166,7 +149,7 @@
 		.settings-list-item
 			+ .settings-list-item:not(.settings-list-subitem)
 			> *
-			> .settings-row {
+			> :is(.settings-row, .list-item) {
 			border-block-start: 1px solid var(--md-sys-color-outline-variant);
 		}
 

@@ -1,5 +1,6 @@
 <import from="./nearby-filter-sheet.css"></import>
 <import from="../bottom-sheet/bottom-sheet"></import>
+<import from="../list-item/list-item"></import>
 
 <bottom-sheet
   open.bind="isOpen"
@@ -8,23 +9,37 @@
   heading.bind="'allNearby.filter.title' | t"
 >
   <div class="nearby-filter-sheet">
-    <ul class="[ filter-rows ] [ stack ]" role="list">
+    <ul class="filter-rows" role="list">
       <li>
-        <button type="button" class="[ filter-row ] [ state-layer md-typescale-body-large ]" data-testid="nearby-area-row" click.trigger="choose('area')">
-          <svg-icon name="map-pin" size="sm" aria-hidden="true"></svg-icon>
-          <span class="row-label" t="allNearby.filter.area"></span>
-          <span if.bind="areaName" class="[ row-value ] [ md-typescale-body-large-emphasized ]">${areaName}</span>
-          <span else class="row-value" data-empty t="allNearby.area.choose"></span>
-          <svg-icon name="chevron-right" size="xs" class="row-caret" aria-hidden="true"></svg-icon>
-        </button>
+        <list-item
+          if.bind="areaName"
+          icon="map-pin"
+          label.bind="'allNearby.filter.area' | t"
+          value.bind="areaName"
+          caret.bind="true"
+          test-id="nearby-area-row"
+          click.trigger="choose('area')"
+        ></list-item>
+        <!-- A guest without a home area is asked to choose one. -->
+        <list-item
+          else
+          icon="map-pin"
+          label.bind="'allNearby.filter.area' | t"
+          value.bind="'allNearby.area.choose' | t"
+          caret.bind="true"
+          test-id="nearby-area-row"
+          click.trigger="choose('area')"
+        ></list-item>
       </li>
       <li>
-        <button type="button" class="[ filter-row ] [ state-layer md-typescale-body-large ]" data-testid="nearby-period-row" click.trigger="choose('period')">
-          <svg-icon name="calendar" size="sm" aria-hidden="true"></svg-icon>
-          <span class="row-label" t="allNearby.filter.period"></span>
-          <span class="[ row-value ] [ md-typescale-body-large-emphasized ]">${periodLabel}</span>
-          <svg-icon name="chevron-right" size="xs" class="row-caret" aria-hidden="true"></svg-icon>
-        </button>
+        <list-item
+          icon="calendar"
+          label.bind="'allNearby.filter.period' | t"
+          value.bind="periodLabel"
+          caret.bind="true"
+          test-id="nearby-period-row"
+          click.trigger="choose('period')"
+        ></list-item>
       </li>
     </ul>
   </div>

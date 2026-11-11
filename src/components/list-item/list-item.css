@@ -1,0 +1,78 @@
+/* Material 3 list item (m3.material.io/components/lists/specs): at least
+   56 px tall, 16 px from both edges, 12 px between its parts, a 24 px leading
+   icon and caret in on-surface-variant, the label in body-large, supporting
+   text in body-medium and the value in label-small (the trailing supporting
+   text). */
+@layer block {
+	@scope (list-item) {
+		:scope {
+			display: block;
+		}
+
+		.list-item {
+			display: flex;
+			gap: var(--space-xs);
+			align-items: center;
+
+			inline-size: 100%;
+			min-block-size: 3.5rem;
+			padding-block: var(--space-2xs);
+			padding-inline: var(--space-s);
+
+			/* Square, so a divider or the list's edge runs straight past it; the
+			   global <button> rule rounds a button. */
+			border-radius: var(--md-sys-shape-corner-none);
+
+			color: var(--md-sys-color-on-surface);
+			text-align: start;
+			text-decoration: none;
+
+			/* The row reaches both edges of its list, so the ring is drawn
+			   inside it. */
+			&:focus-visible {
+				/* stylelint-disable-next-line property-disallowed-list -- a list item spans its list, so the global ring would be cut by the list's edge; Material 3 draws it inside (list item focus indicator offset -3 dp) */
+				outline-offset: calc(
+					-1 *
+					var(--md-sys-state-focus-indicator-thickness)
+				);
+			}
+		}
+
+		.list-item-icon,
+		.list-item-caret {
+			color: var(--md-sys-color-on-surface-variant);
+		}
+
+		/* The label keeps the room it needs and the value takes what is left,
+		   cut off with an ellipsis when it does not fit (its basis is 0, so
+		   it never takes room from the label). A label longer than the whole
+		   row wraps. Without a value, the text fills the row and the caret
+		   stays at the end. */
+		.list-item-text {
+			display: flex;
+			flex: 0 1 auto;
+			flex-direction: column;
+			min-inline-size: 0;
+		}
+
+		.list-item:not(:has(> .list-item-value)) > .list-item-text {
+			flex-grow: 1;
+		}
+
+		.list-item-supporting {
+			color: var(--md-sys-color-on-surface-variant);
+		}
+
+		.list-item-value {
+			overflow: hidden;
+			flex: 1 1 0;
+
+			min-inline-size: 0;
+
+			color: var(--md-sys-color-on-surface-variant);
+			text-align: end;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+		}
+	}
+}
