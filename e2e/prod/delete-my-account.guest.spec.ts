@@ -24,9 +24,14 @@ test.use({ trace: 'off', screenshot: 'off', video: 'off' })
 const API_BASE =
 	process.env.PROD_API_BASE_URL ?? 'https://api.liverty-music.app'
 
-/** The throwaway account of this run, on the prod test account domain. */
+/**
+ * The throwaway account of this run. Its address is on Postmark's black hole
+ * domain: Postmark drops the mail sent there and leaves it out of the bounce
+ * rate, while mail to a made-up address on liverty-music.app (no MX) bounces
+ * and counts toward Postmark's 10% bounce-rate limit for the whole account.
+ */
 const ACCOUNT = {
-	email: `e2e-delete-account-${Date.now()}@liverty-music.app`,
+	email: `e2e-delete-account-${Date.now()}@blackhole.postmarkapp.com`,
 }
 
 /** The hosted login's address; its passkeys belong to this relying party. */
