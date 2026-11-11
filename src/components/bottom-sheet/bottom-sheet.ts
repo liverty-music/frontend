@@ -175,11 +175,13 @@ export class BottomSheet {
 			this.userInteracted = false
 			this.dismissing = false
 			this.programmaticClose = false
+			// Before showPopover(): showing the dialog moves focus into it, so
+			// reading the active element afterwards would remember the dialog.
+			this.previouslyFocused =
+				(document.activeElement as HTMLElement | null) ?? null
 			this.popoverEl.showPopover()
 			this.showing = true
 			this.tracker.opened(this)
-			this.previouslyFocused =
-				(document.activeElement as HTMLElement | null) ?? null
 			this.applyInert()
 			this.armObserver()
 			this.armInteractionWatch()

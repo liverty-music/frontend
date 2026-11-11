@@ -123,6 +123,27 @@ describe('BottomSheet', () => {
 		})
 	})
 
+	// @spec components/infrastructure/fan/web/global/bottom-sheet "Open bound to true at component creation time"
+	it('survives a failed showPopover before attach and opens at attached()', () => {
+		popover.showPopover.mockImplementationOnce(() => {
+			throw new DOMException('not connected', 'InvalidStateError')
+		})
+
+		// `open` is bound true during binding, before the popover ref resolves.
+		sut.open = true
+		expect(() => sut.openChanged(true)).not.toThrow()
+		expect(popover.showPopover).toHaveBeenCalledOnce()
+		expect(mockTracker.opened).not.toHaveBeenCalled()
+
+		// attached() retries once the ref is initialized, and the sheet opens.
+		sut.attached()
+		expect(popover.showPopover).toHaveBeenCalledTimes(2)
+		expect(mockTracker.opened).toHaveBeenCalledOnce()
+		// An opening is not a close: nothing was hidden or reported.
+		expect(popover.hidePopover).not.toHaveBeenCalled()
+		expect(mockHost.dispatchEvent).not.toHaveBeenCalled()
+	})
+
 	describe('aria-label', () => {
 		it('mirrors the ariaLabel bindable onto the popover in attached()', () => {
 			sut.ariaLabel = 'Select language'
@@ -256,6 +277,29 @@ describe('BottomSheet', () => {
 			sut.updateVisibility(0)
 
 			expect(popover.hidePopover).not.toHaveBeenCalled()
+		})
+
+		// @spec components/infrastructure/fan/web/global/bottom-sheet "Just-opened dismiss guard"
+		it('suppresses every dismiss signal until the body has settled, then releases', () => {
+			sut.openChanged(true)
+			touchScrollArea() // even a user gesture cannot dismiss a sheet still opening
+
+			// Open transition: the body is off-screen or half-way, then on-screen
+			// but not yet fully visible. None of it closes the sheet.
+			sut.updateVisibility(0)
+			sut.updateVisibility(0.5)
+			sut.updateVisibility(0.05)
+			expect(popover.hidePopover).not.toHaveBeenCalled()
+			expect(mockHost.dispatchEvent).not.toHaveBeenCalled()
+
+			// The body settles fully visible: the guard releases, and the first
+			// swipe after that closes the sheet.
+			sut.updateVisibility(1)
+			sut.updateVisibility(0)
+			expect(popover.hidePopover).toHaveBeenCalledOnce()
+			expect(mockHost.dispatchEvent).toHaveBeenCalledWith(
+				expect.objectContaining({ type: 'sheet-closed' }),
+			)
 		})
 
 		it('does not close on an engine re-snap the user never triggered', () => {

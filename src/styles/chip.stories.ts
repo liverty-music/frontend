@@ -4,7 +4,13 @@ import {
 	type StoryObj,
 } from '@aurelia/storybook'
 import { expect, userEvent, waitFor } from 'storybook/test'
-import { composite, contrast, WCAG_AA } from '../../.storybook/contrast'
+import {
+	composite,
+	contrast,
+	resolveColor,
+	WCAG_AA,
+} from '../../.storybook/contrast'
+import { hoverPointer } from '../../.storybook/gestures'
 import { expectScreenshot } from '../../.storybook/screenshot'
 import { expectTargets } from '../../.storybook/target-size'
 
@@ -334,5 +340,62 @@ export const WrappingRow = {
 			canvasElement.firstElementChild ?? canvasElement,
 			'chip-wrapping-row',
 		)
+	},
+} satisfies Story
+
+/**
+ * Selecting a chip: the fill, a leading check and nothing else changes. The
+ * corner radius is 8 px before and after and no transition touches it, and a
+ * pointer over an unselected chip selects nothing: the state is the checkbox.
+ */
+export const SelectionWithoutShapeMorph = {
+	render: () =>
+		defineAureliaStory({
+			template: row(`
+				<label ${CLASS}>
+					<input type="checkbox" class="visually-hidden" checked.bind="on" />
+					<svg-icon if.bind="on" name="check" class="chip-icon"></svg-icon>
+					<span>1 YOASOBI</span>
+				</label>`),
+			props: { on: false },
+		}),
+	play: async ({ canvasElement }) => {
+		const chip = canvasElement.querySelector('label.chip') as HTMLElement
+		const input = chip.querySelector('input') as HTMLInputElement
+		const container = resolveColor(
+			canvasElement,
+			'var(--md-sys-color-secondary-container)',
+		)
+		const radius = () => getComputedStyle(chip).borderTopLeftRadius
+		await expect(radius()).toBe('8px')
+
+		// @spec components/infrastructure/fan/web/global/bottom-nav-bar "Selection is driven by state, not hover"
+		const hovered = await hoverPointer(chip)
+		if (hovered) await expect(chip.matches(':hover')).toBe(true)
+		await new Promise((r) => setTimeout(r, 400))
+		await expect(input.checked).toBe(false)
+		await expect(getComputedStyle(chip).backgroundColor).toBe(
+			'rgba(0, 0, 0, 0)',
+		)
+		await expect(chip.querySelector('svg-icon.chip-icon')).toBeNull()
+
+		// @spec components/infrastructure/fan/web/global/bottom-nav-bar "Selecting a filter chip is clearly signalled without a shape morph"
+		await userEvent.click(chip)
+		await waitFor(() =>
+			expect(getComputedStyle(chip).backgroundColor).toBe(container),
+		)
+		await expect(input.checked).toBe(true)
+		await expect(chip.querySelector('svg-icon.chip-icon')).not.toBeNull()
+		await expect(radius()).toBe('8px')
+		// The chip declares no transition (the default has a zero duration), so
+		// none can tween the shape.
+		await expect(getComputedStyle(chip).transitionDuration).toBe('0s')
+		await expect(
+			chip
+				.getAnimations()
+				.filter((a): a is CSSTransition => a instanceof CSSTransition)
+				.map((a) => a.transitionProperty)
+				.filter((p) => p.includes('radius')),
+		).toEqual([])
 	},
 } satisfies Story
