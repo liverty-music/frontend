@@ -25,18 +25,16 @@
 		}
 
 		.virtual-ticket-preset {
-			--_ring:
-				0 0 0 2px var(--md-sys-color-surface),
-				0 0 0 4px var(--md-sys-color-primary);
-
 			aspect-ratio: 1;
 			inline-size: 1.75rem;
 			border: 2px solid oklch(100% 0 0deg / 35%);
 			border-radius: var(--md-sys-shape-corner-full);
 		}
 
+		/* The picked design: a primary rim, a size up. */
 		.virtual-ticket-preset[aria-pressed="true"] {
-			box-shadow: var(--_ring);
+			scale: 1.2;
+			border-color: var(--md-sys-color-primary);
 		}
 
 		/* The picker's swatches, one per preset. */
