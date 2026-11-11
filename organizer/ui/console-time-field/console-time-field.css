@@ -1,7 +1,8 @@
 /*
- * The field frame, the label, the affix and the customizable select come from
- * `../console-field/console-field.css` (imported first by the template); these
- * rules make that frame a group of two selects.
+ * The field frame, the label and the affix come from
+ * `../console-field/console-field.css` and the customizable select from
+ * `../console-field/console-field-controls.css` (both imported first by the
+ * template); these rules make that frame a group of two selects.
  */
 @layer block {
 	/* A floated legend is laid out as a grid item, so the field's gap applies
