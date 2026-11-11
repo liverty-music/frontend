@@ -1,0 +1,17 @@
+<import from="./event-performers.css"></import>
+
+<ul class="event-performers" role="list">
+  <li repeat.for="performer of performers; key.bind: performer.id" class="event-performer">
+    <span class="[ event-performer-name ] [ md-typescale-title-large-emphasized ]">${performer.name}</span>
+    <button
+      type="button"
+      class="[ event-follow ] [ state-layer md-typescale-label-large ]"
+      data-followed.bind="followedIds.has(performer.id)"
+      aria-pressed.bind="followedIds.has(performer.id)"
+      disabled.bind="!followsLoaded || updatingId === performer.id"
+      click.trigger="toggle(performer)"
+      data-testid="event-follow"
+      t.bind="followedIds.has(performer.id) ? 'eventPage.follow.following' : 'eventPage.follow.action'"
+    ></button>
+  </li>
+</ul>

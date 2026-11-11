@@ -1,0 +1,32 @@
+<import from="./event-details.css"></import>
+
+<section class="event-details">
+  <div class="event-detail-row">
+    <svg-icon name="calendar" size="lg" class="event-detail-icon"></svg-icon>
+    <div>
+      <time datetime.bind="dateKey" class="[ event-detail-primary ] [ md-typescale-title-medium ]" data-testid="event-date">${dateLabel}</time>
+      <p class="event-times" data-testid="event-times">
+        <span if.bind="openTimeLabel"><span t="eventPage.open"></span> ${openTimeLabel}</span>
+        <span if.bind="startTimeLabel"><span t="eventPage.start"></span> ${startTimeLabel}</span>
+      </p>
+    </div>
+  </div>
+
+  <!-- Venue -->
+  <div class="event-detail-row">
+    <svg-icon name="map-pin" size="lg" class="event-detail-icon"></svg-icon>
+    <div>
+      <p class="[ event-detail-primary ] [ md-typescale-title-medium ]" data-testid="event-venue">${venueName}</p>
+      <p if.bind="prefecture" class="event-detail-secondary" data-testid="event-prefecture">${prefecture}</p>
+      <a
+        href.bind="mapsUrl"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="text-link"
+        data-variant="standalone"
+        data-testid="event-maps"
+        t="eventDetail.openInGoogleMaps"
+      ></a>
+    </div>
+  </div>
+</section>
