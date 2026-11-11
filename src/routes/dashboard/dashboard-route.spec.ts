@@ -1648,7 +1648,7 @@ describe('DashboardRoute', () => {
 					?.getAttribute('loading.bind') as string,
 			)
 
-		// @spec components/infrastructure/fan/web/global/live-highway "Dashboard data loading uses promise.bind"
+		// @spec components/infrastructure/fan/web/global/live-highway "Dashboard shows loading skeletons and a retryable error"
 		it('shows the skeletons until the first load settles, then the error and Retry in their place when it fails', async () => {
 			mockAuth.isAuthenticated = true
 			mockConcertService.peekDateGroups.mockReturnValue(null)
