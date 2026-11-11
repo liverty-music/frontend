@@ -203,7 +203,6 @@ export class VirtualTicket {
 				height,
 				margin: SHEET_MARGIN,
 				look: TICKET_LOOKS[this.preset] ?? TICKET_LOOKS.default,
-				split: ART_SPLIT,
 				resolution: this.drawResolution(),
 			})
 			if (this.detached) {

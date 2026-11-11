@@ -122,10 +122,12 @@ void main(void) {
 	float lines = 0.5 + 0.5 * sin((p.x - p.y) * 620.0);
 	vec2 centre = vec2(0.5 * aspect, 0.5);
 	float along = dot(p - centre, normalize(vec2(1.0, 0.55)));
-	float sweep = smoothstep(0.42, 0.0, abs(along - uTilt.x * 0.95 - uTilt.y * 0.45));
+	float sweep = smoothstep(0.36, 0.0, abs(along - uTilt.x * 0.95 - uTilt.y * 0.45));
 
-	float mask = (0.3 + 0.9 * sweep) * (0.78 + 0.22 * lines) * mix(0.2, 1.0, onArt);
-	vec3 colour = base.rgb + foil * mask * uStrength * uFoil * (0.28 + 0.6 * lum);
+	// The foil shows in the band of light that follows the tilt, and hardly
+	// at all outside it, so the cover keeps its own colours.
+	float mask = (0.06 + 0.85 * sweep) * (0.78 + 0.22 * lines) * mix(0.2, 1.0, onArt);
+	vec3 colour = base.rgb + foil * mask * uStrength * uFoil * (0.16 + 0.42 * lum);
 
 	vec2 cell = floor(p * 46.0);
 	float seed = hash(cell);
@@ -140,7 +142,7 @@ void main(void) {
 
 	vec2 glareAt = vec2((0.5 + uTilt.x * 0.55) * aspect, 0.32 - uTilt.y * 0.45);
 	float glare = smoothstep(0.8, 0.0, distance(p, glareAt));
-	colour += vec3(1.0) * (glare * glare * 0.2 + sweep * 0.07) * uStrength;
+	colour += vec3(1.0) * (glare * glare * 0.1 + sweep * 0.05) * uStrength;
 
 	float line = 0.5 + 0.5 * sin(vTextureCoord.y * uInputSize.y * 2.2);
 	colour *= 1.0 - uScan * onArt * line * 0.55;
