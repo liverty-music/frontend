@@ -14,7 +14,7 @@
 
 			block-size: 100%;
 
-			transition: transform var(--md-sys-motion-duration-extra-long2)
+			transition: transform var(--md-sys-motion-duration-long2)
 				var(--md-sys-motion-easing-emphasized-decelerate);
 		}
 

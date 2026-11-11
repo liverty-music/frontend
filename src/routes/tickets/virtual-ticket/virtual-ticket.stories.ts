@@ -3,7 +3,7 @@ import {
 	type Meta,
 	type StoryObj,
 } from '@aurelia/storybook'
-import { expect } from 'storybook/test'
+import { expect, waitFor } from 'storybook/test'
 import type { EventPageEvent } from '../../event/event-page'
 import type { WalletPersonalDetails, WalletTicket } from '../wallet-view'
 import { AdmissionStamp, STAMP_ANIMATION } from './admission-stamp'
@@ -233,11 +233,12 @@ export const EnteredAtRest = {
 } satisfies Story
 
 /**
- * 入場済み, shown for the first time on this device: the stamp is pressed
- * onto the front, and where it lands a shockwave runs through the art and
- * sparks fly. The button presses it again. Tagged `reduced-motion`, so it
- * also runs with motion reduced, where the stamp is shown at rest. Not
- * screenshotted: the pressing makes the frame non-deterministic.
+ * 入場済み, shown for the first time on this device: once the drawing has
+ * settled, the stamp is pressed onto the front, and where it lands a
+ * shockwave runs through the drawing and sparks fly. The button presses it
+ * again. Tagged `reduced-motion`, so it also runs with motion reduced, where
+ * the stamp is shown at rest. Not screenshotted: the pressing makes the
+ * frame non-deterministic.
  */
 export const StampPressed = {
 	tags: ['reduced-motion'],
@@ -245,8 +246,16 @@ export const StampPressed = {
 		ticketStory({ ticket: ENTERED, pressStamp: true, replay: true }),
 	play: async ({ canvasElement }) => {
 		const face = faceOf(canvasElement)
-		const stamp = face.querySelector<HTMLElement>('[data-stamp]')
-		if (!stamp) throw new Error('no stamp')
+		// A stamp to be pressed appears once the drawing has settled, after
+		// the renderers have started; one at rest appears at once.
+		const stamp = await waitFor(
+			() => {
+				const found = face.querySelector<HTMLElement>('[data-stamp]')
+				if (!found) throw new Error('no stamp yet')
+				return found
+			},
+			{ timeout: 15_000 },
+		)
 		const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches
 		if (reduced) {
 			await expect(stamp.getAttribute('data-stamp')).toBe('rest')

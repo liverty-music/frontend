@@ -21,7 +21,9 @@
 		   size (20rem wide) and scaled to fit the stage, so its type and
 		   spacing keep their proportions on a narrow or short screen. */
 		.virtual-ticket-stage {
-			touch-action: none;
+			/* Vertical drags scroll the sheet and pull it down; on a phone the
+			   ticket follows the device's tilt instead of the finger. */
+			touch-action: pan-y;
 
 			isolation: isolate;
 			position: relative;
@@ -29,7 +31,17 @@
 			container: virtual-ticket-stage / inline-size;
 
 			aspect-ratio: 10 / 17;
-			inline-size: min(26rem, 100%, 52dvh);
+
+			/* Under the ticket stay the flip button, the designs and both
+			   actions, so its height leaves them that room. The body of the
+			   bottom sheet it opens in is at most 90svh tall (bottom-sheet.css),
+			   so the room is taken from that, in svh like the sheet: it does not
+			   change as the address bar moves. */
+			inline-size: clamp(
+				12rem,
+				calc((90svh - 18rem) * 10 / 17),
+				min(26rem, 100%)
+			);
 		}
 
 		.virtual-ticket-fit {

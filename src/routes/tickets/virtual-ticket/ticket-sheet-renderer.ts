@@ -69,10 +69,27 @@ export function sheetSupported(): boolean {
 	)
 }
 
+/**
+ * An `HTMLSource` taken at its resolution. PixiJS's (8.22.0-dev.f7d8c62)
+ * reads the element's CSS size as its size in pixels (`resourceWidth` is
+ * `offsetWidth`), so whatever the resolution, a side is taken at 1 pixel per
+ * CSS pixel and stretched to the screen: on a phone the text blurs. The
+ * browser draws the element at the size it is asked for.
+ */
+class SharpHTMLSource extends HTMLSource {
+	override get resourceWidth(): number {
+		return Math.round(super.resourceWidth * this._resolution)
+	}
+
+	override get resourceHeight(): number {
+		return Math.round(super.resourceHeight * this._resolution)
+	}
+}
+
 const COLUMNS = 22
 const ROWS = 30
 /** How long turning the ticket over takes, in seconds. */
-const TURN_SECONDS = 0.9
+const TURN_SECONDS = 0.55
 /** The distance of the eye from the sheet, in CSS pixels. */
 const EYE = 900
 const IMPACT_SECONDS = 1.4
@@ -85,8 +102,20 @@ const IDLE_AFTER = 1.6
  * The foil over the whole sheet, text included: lighter than over the art
  * alone, and faint on the back, so the lettering stays easy to read.
  */
-const FRONT_FOIL = 0.7
+const FRONT_FOIL = 0.35
 const BACK_FOIL = 0.1
+
+/**
+ * The look of the sheet's own pass over the whole ticket. The front's art is
+ * drawn by its own renderer inside the front, graded, foiled and with its
+ * glitter, grain and scan lines (ticket-renderer.ts), and the sheet takes it
+ * in with the rest of the front. So the sheet only lays a light foil and the
+ * glare over everything, text included; doing the art's grading again would
+ * grade it twice.
+ */
+function sheetLook(look: TicketLook): TicketLook {
+	return { ...look, grade: 0, sparkle: 0, scan: 0, grain: 0 }
+}
 
 interface Particle {
 	readonly node: Graphics
@@ -136,13 +165,17 @@ export class TicketSheetRenderer {
 		// paint record yet (a frame or two after the card moves into the
 		// canvas) makes that throw where nothing can catch it. `onPaint` below
 		// does the same with the failure handled.
-		this.frontSource = new HTMLSource({
+		// Taken at the resolution the sheet is drawn at: a side taken at its
+		// CSS size is stretched to the screen, and its text blurs.
+		this.frontSource = new SharpHTMLSource({
 			resource: options.front,
 			autoUpdate: false,
+			resolution: options.resolution,
 		})
-		this.backSource = new HTMLSource({
+		this.backSource = new SharpHTMLSource({
 			resource: options.back,
 			autoUpdate: false,
+			resolution: options.resolution,
 		})
 		options.canvas.addEventListener('paint', this.onPaint)
 		;(options.canvas as SheetCanvas).requestPaint?.()
@@ -159,7 +192,7 @@ export class TicketSheetRenderer {
 		})
 		this.mesh.autoResize = false
 
-		this.holo = createHoloFilter(options.look, options.split)
+		this.holo = createHoloFilter(sheetLook(options.look), options.split)
 		this.uniforms = holoUniformsOf(this.holo)
 		this.sparks.blendMode = 'add'
 		this.world.addChild(this.mesh, this.sparks)
@@ -202,7 +235,7 @@ export class TicketSheetRenderer {
 	}
 
 	public setLook(look: TicketLook): void {
-		if (!this.destroyed) applyLook(this.uniforms, look)
+		if (!this.destroyed) applyLook(this.uniforms, sheetLook(look))
 	}
 
 	public tiltTo(x: number, y: number): void {
@@ -235,11 +268,15 @@ export class TicketSheetRenderer {
 			radius: -1,
 			time: 0,
 		})
+		this.shock.resolution = 'inherit'
+
 		this.split = new RGBSplitFilter({
 			red: { x: -SPLIT_KICK, y: 0 },
 			green: { x: 0, y: 0 },
 			blue: { x: SPLIT_KICK, y: 0 },
 		})
+		this.split.resolution = 'inherit'
+
 		this.world.filters = [this.holo, this.shock, this.split]
 		this.impactAge = 0
 		this.thump = 1
@@ -339,7 +376,7 @@ export class TicketSheetRenderer {
 	private place(): void {
 		const { width, height, margin, front, back, canvas } = this.options
 		// Eased, so the turn starts and lands softly.
-		const eased = 0.5 - 0.5 * Math.cos(this.turn * Math.PI)
+		const eased = this.turn * this.turn * (3 - 2 * this.turn)
 		const curl = Math.sin(eased * Math.PI)
 		const showsBack = eased > 0.5
 		const base = (showsBack ? eased - 1 : eased) * Math.PI

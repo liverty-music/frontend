@@ -27,6 +27,15 @@ const ART_SPLIT = 0.54
 const SHEET_MARGIN = 56
 /** The stamp lands this far into its pressing animation (its 20% keyframe). */
 const STAMP_LANDS_AT = 0.2
+/**
+ * The stamp's centre on the front at the design size (20rem by 34rem): a
+ * 6.5rem seal, 6% from the right edge and 2.5% from the foot
+ * (admission-stamp.css).
+ */
+const STAMP_CENTRE: [number, number] = [
+	1 - 0.06 - 6.5 / 20 / 2,
+	1 - 0.025 - 6.5 / 34 / 2,
+]
 
 /** The pose the share image is drawn in, each axis in -1..1. */
 const SHARE_TILT = [-0.7, -0.6] as const
@@ -109,6 +118,11 @@ export class VirtualTicket {
 	private sheet: TicketSheetRenderer | null = null
 	private resizeObserver: ResizeObserver | null = null
 	private stampTimer: ReturnType<typeof setTimeout> | undefined
+	/**
+	 * Both renderers have started, or failed to. A stamp to be pressed waits
+	 * for this; one at rest does not.
+	 */
+	public settled = false
 	private detached = false
 	private askedForTilt = false
 
@@ -139,14 +153,25 @@ export class VirtualTicket {
 		this.sheet?.tiltTo(x, y)
 	}
 
+	/**
+	 * The art first, in every way of drawing: drawn as a sheet, the front
+	 * (art included) is taken into the sheet, which then only adds its bend
+	 * and a light foil.
+	 */
 	private async start(): Promise<void> {
-		if (
-			this.drawing === 'canvas' &&
-			!reducedMotion() &&
-			(await this.startSheet())
-		)
-			return
-		await this.startRenderer()
+		try {
+			await this.startRenderer()
+			if (this.drawing === 'canvas' && !reducedMotion() && !this.detached) {
+				await this.startSheet()
+			}
+		} finally {
+			// The stamp is pressed only now, so its impact lands in the drawing
+			// that is shown, however long the renderers took to start.
+			if (!this.detached) {
+				this.settled = true
+				if (this.pressing) this.scheduleImpact()
+			}
+		}
 	}
 
 	/**
@@ -187,7 +212,6 @@ export class VirtualTicket {
 				return true
 			}
 			this.sheet.showBack(this.isBack)
-			if (this.pressing) this.scheduleImpact()
 			return true
 		} catch (err) {
 			this.logger.warn('Drawing the ticket as a sheet failed', { error: err })
@@ -213,6 +237,7 @@ export class VirtualTicket {
 
 	public detaching(): void {
 		this.detached = true
+		this.settled = false
 		removeEventListener('deviceorientation', this.onDeviceTilt)
 		clearTimeout(this.stampTimer)
 		this.resizeObserver?.disconnect()
@@ -232,7 +257,9 @@ export class VirtualTicket {
 	private async startRenderer(): Promise<void> {
 		const canvas = this.canvas
 		const face = this.face
-		if (!canvas || !face || typeof ResizeObserver === 'undefined') return
+		const fit = this.fit
+		if (!canvas || !face || !fit || typeof ResizeObserver === 'undefined')
+			return
 		try {
 			const { TicketRenderer } = await import('./ticket-renderer')
 			const renderer = await TicketRenderer.create({
@@ -250,14 +277,17 @@ export class VirtualTicket {
 				return
 			}
 			this.renderer = renderer
-			this.resizeObserver = new ResizeObserver(() => {
-				renderer.resize(face.clientWidth, face.clientHeight)
-			})
-			this.resizeObserver.observe(face)
-			renderer.resize(face.clientWidth, face.clientHeight)
+			// Measured on the box the card is laid out in: the front reports no
+			// size once it is inside the sheet's canvas.
+			const resize = () => {
+				const { width, height } = ticketSize(face)
+				renderer.resize(width, height)
+			}
+			this.resizeObserver = new ResizeObserver(resize)
+			this.resizeObserver.observe(fit)
+			resize()
 			this.drawCover()
 			this.drawn = true
-			if (this.pressing) this.scheduleImpact()
 		} catch (err) {
 			// Said aloud: a silent fall back to the plain cover hid a renderer
 			// that could not start in the app at all.
@@ -405,27 +435,58 @@ export class VirtualTicket {
 	}
 
 	public pressStampChanged(): void {
-		if (this.pressing && (this.renderer || this.sheet)) this.scheduleImpact()
+		if (this.pressing && this.settled) this.scheduleImpact()
 	}
 
 	/** Burst from where the stamp sits, at the moment it lands. */
+	/**
+	 * Draw the impact where the stamp lands, timed from its pressing
+	 * animation. The stamp is rendered once the drawing has settled, so it is
+	 * looked up a frame later.
+	 */
 	private scheduleImpact(): void {
 		clearTimeout(this.stampTimer)
-		const stamp = this.face?.querySelector<HTMLElement>('.admission-stamp')
-		if (!stamp) return
-		const seconds = Number.parseFloat(getComputedStyle(stamp).animationDuration)
-		const delay =
-			(Number.isFinite(seconds) ? seconds : 1.5) * 1000 * STAMP_LANDS_AT
-		this.stampTimer = setTimeout(() => {
-			const face = this.face?.getBoundingClientRect()
-			const at = stamp.getBoundingClientRect()
-			if (!face?.width || !face.height) return
-			const x = (at.left + at.width / 2 - face.left) / face.width
-			const y = (at.top + at.height / 2 - face.top) / face.height
-			this.renderer?.impact(x, y)
-			this.sheet?.impact(x, y)
-			this.card?.setAttribute('data-thump', '')
-		}, delay)
+		requestAnimationFrame(() => {
+			const stamp = this.face?.querySelector<HTMLElement>('.admission-stamp')
+			if (!stamp || this.detached) return
+			const press = stamp
+				.getAnimations?.()
+				?.find((a) => (a as CSSAnimation).animationName === STAMP_ANIMATION)
+			const seconds = Number.parseFloat(
+				getComputedStyle(stamp).animationDuration,
+			)
+			const landsAt =
+				(Number.isFinite(seconds) ? seconds : 1.5) * 1000 * STAMP_LANDS_AT
+			const elapsed = Number(press?.currentTime ?? 0)
+			this.stampTimer = setTimeout(
+				() => {
+					const [x, y] = this.stampCentre(stamp)
+					// Drawn as a sheet, the shockwave runs through the whole ticket;
+					// otherwise through the art.
+					if (this.sheet) this.sheet.impact(x, y)
+					else this.renderer?.impact(x, y)
+					this.card?.setAttribute('data-thump', '')
+				},
+				Math.max(0, landsAt - elapsed),
+			)
+		})
+	}
+
+	/**
+	 * Where the stamp sits on the front, 0-1 on each axis. Inside the sheet's
+	 * canvas no element reports a box, so there it comes from the stamp's
+	 * place in the layout (admission-stamp.css) at the design size.
+	 */
+	private stampCentre(stamp: HTMLElement): [number, number] {
+		const face = this.face?.getBoundingClientRect()
+		const at = stamp.getBoundingClientRect()
+		if (face?.width && face.height && at.width) {
+			return [
+				(at.left + at.width / 2 - face.left) / face.width,
+				(at.top + at.height / 2 - face.top) / face.height,
+			]
+		}
+		return STAMP_CENTRE
 	}
 
 	public get showsCover(): boolean {

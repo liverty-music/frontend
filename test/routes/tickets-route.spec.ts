@@ -61,6 +61,23 @@ import { IUserStore } from '../../src/services/user-store'
 import { createTestContainer } from '../helpers/create-container'
 import { FakeWalletStorage } from '../helpers/fake-wallet-storage'
 
+// The virtual ticket's renderers fail at once, as they do without WebGL, so
+// the ticket settles and a pressed stamp appears without loading PixiJS.
+vi.mock('../../src/routes/tickets/virtual-ticket/ticket-renderer', () => ({
+	TicketRenderer: {
+		create: vi.fn(async () => {
+			throw new Error('no WebGL')
+		}),
+	},
+}))
+vi.mock(
+	'../../src/routes/tickets/virtual-ticket/ticket-sheet-renderer',
+	() => ({
+		sheetSupported: () => false,
+		TicketSheetRenderer: { create: vi.fn() },
+	}),
+)
+
 const USER = '019a0000-0000-7000-8000-000000000001'
 const EVENT = '019a0000-0000-7000-8000-0000000000e1'
 const LATER_EVENT = '019a0000-0000-7000-8000-0000000000e2'
@@ -1038,6 +1055,10 @@ describe('TicketsRoute', () => {
 			// The re-read keeps the seat type read from the ticket's Order.
 			expect(sut.openedTicket?.seatTypeName).toBe('S席')
 			expect($('virtual-ticket-seat-type')?.textContent).toBe('S席')
+			// A stamp to be pressed appears once the drawing has settled.
+			await vi.waitFor(() => expect($('virtual-ticket-stamp')).not.toBeNull(), {
+				timeout: 10_000,
+			})
 			const stamp = $('virtual-ticket-stamp')
 			expect(stamp?.getAttribute('data-stamp')).toBe('press')
 			expect(stamp?.textContent).toContain('入場済')

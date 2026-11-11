@@ -171,6 +171,10 @@ export interface HoloUniforms {
 export function createHoloFilter(look: TicketLook, split: number): Filter {
 	return new Filter({
 		glProgram: GlProgram.from({ vertex: VERTEX, fragment: HOLO_FRAGMENT }),
+		// A filter draws into a texture of its own first, at 1 device pixel per
+		// CSS pixel unless told otherwise, and that is then stretched to the
+		// screen: drawn as a sheet, every letter of the ticket blurred.
+		resolution: 'inherit',
 		resources: {
 			holoUniforms: {
 				uTilt: { value: new Float32Array([0, 0]), type: 'vec2<f32>' },
@@ -423,11 +427,15 @@ export class TicketRenderer {
 			radius: -1,
 			time: 0,
 		})
+		this.shock.resolution = 'inherit'
+
 		this.split = new RGBSplitFilter({
 			red: { x: -SPLIT_KICK, y: 0 },
 			green: { x: 0, y: 0 },
 			blue: { x: SPLIT_KICK, y: 0 },
 		})
+		this.split.resolution = 'inherit'
+
 		this.root.filters = [this.holo, this.shock, this.split]
 		this.impactAge = 0
 		this.flash.alpha = 0.3
