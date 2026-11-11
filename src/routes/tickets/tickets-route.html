@@ -305,7 +305,9 @@
 				ticket.bind="openedTicket"
 				personal-details.bind="personalDetails"
 				press-stamp.bind="pressStamp"
+				preset.two-way="ticketPreset"
 				stamp-pressed.trigger="onStampPressed()"
+				preset-chosen.trigger="onPresetChosen($event)"
 			></virtual-ticket>
 
 			<button

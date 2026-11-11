@@ -1,0 +1,78 @@
+/* The stub below the tear: the act again in small, the seat and bars that
+   are decoration only. */
+@layer block {
+	@scope (virtual-ticket) {
+		.ticket-front-stub {
+			position: relative;
+
+			overflow: hidden;
+			display: grid;
+			grid-template-columns: minmax(0, 1fr) 46%;
+			gap: 0.75rem;
+			align-items: center;
+
+			min-block-size: 0;
+			padding: 0.5rem 1.125rem 0.75rem;
+		}
+
+		.ticket-front-stub-text {
+			display: grid;
+			gap: 0.5rem;
+			min-inline-size: 0;
+		}
+
+		.ticket-front-stub-name {
+			overflow: hidden;
+			display: -webkit-box;
+			-webkit-box-orient: vertical;
+			-webkit-line-clamp: 2;
+
+			font: var(
+				--_display-font,
+				900 2.125rem /
+				0.98 var(--md-ref-typeface-brand)
+			);
+			font-size: 1rem;
+			line-height: 1.05;
+			text-transform: var(--_display-case, uppercase);
+			overflow-wrap: anywhere;
+		}
+
+		.ticket-front-seat {
+			display: flex;
+			gap: 0.5rem;
+			align-items: baseline;
+		}
+
+		.ticket-front-seat dd {
+			font: 700 0.8125rem / 1 var(--md-ref-typeface-plain);
+			white-space: nowrap;
+		}
+
+		/* Bars of uneven width in a white box, as a printed ticket carries. */
+		.ticket-front-bars {
+			block-size: 3.5rem;
+			border: 0.375rem solid oklch(100% 0 0deg);
+			border-radius: 2px;
+			background:
+				repeating-linear-gradient(
+					90deg,
+					oklch(15% 0 0deg) 0 2px,
+					transparent 2px 5px,
+					oklch(15% 0 0deg) 5px 6px,
+					transparent 6px 8px,
+					oklch(15% 0 0deg) 8px 11px,
+					transparent 11px 13px,
+					oklch(15% 0 0deg) 13px 14px,
+					transparent 14px 18px
+				),
+				oklch(100% 0 0deg);
+		}
+
+		/* Used: the bars fade under the stamp that cancels them, so 入場済
+		   reads clearly. */
+		.ticket-front[data-entered="true"] .ticket-front-bars {
+			opacity: 0.16;
+		}
+	}
+}

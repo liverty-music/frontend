@@ -9,6 +9,10 @@ import { IResaleListingRpcClient } from '../../adapter/rpc/client/resale-listing
 import { ITicketRpcClient } from '../../adapter/rpc/client/ticket-client'
 import { ITicketSaleRpcClient } from '../../adapter/rpc/client/ticket-sale-client'
 import {
+	loadTicketPreset,
+	saveTicketPreset,
+} from '../../adapter/storage/ticket-preset-storage'
+import {
 	RESALE_FEE_PERCENT,
 	type ResaleListing,
 	resaleDeadline,
@@ -27,7 +31,8 @@ import {
 	formatSaleStart,
 } from '../event/event-page'
 import { AdmissionCodeSession } from './admission-code-session'
-import { IShareImage } from './virtual-ticket/share-image'
+import { IShareImage, shareImageScale } from './virtual-ticket/share-image'
+import type { TicketPreset } from './virtual-ticket/ticket-presets'
 import type { VirtualTicket } from './virtual-ticket/virtual-ticket'
 import {
 	enterableTickets,
@@ -146,6 +151,8 @@ export class TicketsRoute {
 	public openedTicket: WalletTicket | null = null
 	/** Press the open ticket's stamp with its animation (first showing on this device). */
 	public pressStamp = false
+	/** The open ticket's design, as the fan chose it on this device. */
+	public ticketPreset: TicketPreset = 'default'
 	/** Bound via `component.ref`: the open virtual ticket. */
 	public virtualTicket?: VirtualTicket
 	/** The share image is being made. */
@@ -580,8 +587,15 @@ export class TicketsRoute {
 		const stamped = await this.wallet.stampedIds()
 		this.shareFailed = false
 		this.pressStamp = ticket.state === 'entered' && !stamped.has(ticket.id)
+		this.ticketPreset = loadTicketPreset(ticket.id)
 		this.ticketGroup = group
 		this.openedTicket = ticket
+	}
+
+	/** Keep the design the fan chose for the open ticket on this device. */
+	public onPresetChosen(event: CustomEvent<{ preset: TicketPreset }>): void {
+		const ticket = this.openedTicket
+		if (ticket) saveTicketPreset(ticket.id, event.detail.preset)
 	}
 
 	public closeTicket(): void {
@@ -617,17 +631,21 @@ export class TicketsRoute {
 	}
 
 	/**
-	 * Share an image of the open ticket's face with the full name and phone
-	 * number masked: to the share sheet, or downloaded where the browser cannot
+	 * Share an image of the open ticket's front, which holds no personal
+	 * details: to the share sheet, or downloaded where the browser cannot
 	 * share files.
 	 */
 	public async shareTicket(): Promise<void> {
-		const face = this.virtualTicket?.face
-		if (!face || this.sharing) return
+		const ticket = this.virtualTicket
+		const face = ticket?.face
+		if (!ticket || !face || this.sharing) return
 		this.sharing = true
 		this.shareFailed = false
 		try {
-			await this.shareImage.share(face, this.ticketGroup?.event?.coverUrl ?? '')
+			await this.shareImage.share(
+				face,
+				await ticket.shareArt(shareImageScale()),
+			)
 		} catch (err) {
 			this.logger.warn('Sharing the ticket image failed', { error: err })
 			this.shareFailed = true

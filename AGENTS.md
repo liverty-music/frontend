@@ -196,8 +196,9 @@ Authenticated E2E setup (test user, `npm run auth:capture:password`, expired sto
 
 ## npm `overrides` — exit conditions, not neglect
 
-`package.json` carries two `overrides`, `playwright` and `playwright-core`.
-Both are version bindings and move on upgrade. A security pin added in future
+`package.json` carries three `overrides`: `playwright` and `playwright-core`,
+which are version bindings and move on upgrade, and `pixi-filters` > `pixi.js`,
+which is removed when its exit condition is met. A security pin added in future
 belongs here too, with its exit condition, and is resolved by REMOVAL rather
 than by upgrade.
 
@@ -205,6 +206,7 @@ than by upgrade.
 |---|---|---|
 | `playwright` (same version as `@playwright/test`) | `@vitest/browser-playwright` peers `playwright: *`, so a lock regeneration resolves the newest release while the CI container ships only the browsers of `@playwright/test`'s version | none — it always equals `@playwright/test`; Renovate moves both in the `playwright` group |
 | `playwright-core` (same version as `@playwright/test`) | `@axe-core/playwright` asks for `playwright-core >= 1.0.0`, so a lock refresh hoists the newest core while `playwright` keeps its pinned one nested; the two `Page` types then differ and `tsc -p e2e` fails (frontend#779) | none — it always equals `@playwright/test`; it is in the same Renovate `playwright` group |
+| `pixi-filters` > `pixi.js` (`$pixi.js`, the root's version) | `pixi.js` is pinned to the dev build `8.22.0-dev.f7d8c62`, the only build with the Chrome 157 fix for `HTMLSource` (pixijs/pixijs#12341). `pixi-filters` peers `pixi.js >=8.0.0-0`, and a semver range does not match a prerelease of another version, so `npm ci` fails with `ERESOLVE` without the override | a `pixi.js` release on npm `latest` contains pixijs/pixijs#12341 (expected 8.23.0): move `pixi.js` to it and delete this override |
 
 **Keeping the upstream package current is the root-cause remedy** for a
 security pin. When it widens its range, delete the override and let normal

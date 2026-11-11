@@ -1,0 +1,100 @@
+/* stylelint-disable no-unknown-custom-properties -- --tilt-x and --tilt-y are set by the renderer every frame; --sheet-margin is set on the sheet's canvas by the component */
+
+/* The card: the element that tilts and turns over, its two sides' shared
+   outline, and the card drawn as a sheet with HTML-in-Canvas. */
+@layer block {
+	@scope (virtual-ticket) {
+		.virtual-ticket-card {
+			--_turn: 0deg;
+
+			position: relative;
+			transform-style: preserve-3d;
+			transform: rotateY(calc(var(--_turn) + var(--tilt-x, 0) * 9deg))
+				rotateX(calc(var(--tilt-y, 0) * -7deg));
+
+			block-size: 100%;
+
+			transition: transform var(--md-sys-motion-duration-extra-long2)
+				var(--md-sys-motion-easing-emphasized-decelerate);
+		}
+
+		.virtual-ticket-card[data-side="back"] {
+			--_turn: 180deg;
+		}
+
+		/* The stamp has landed: the whole ticket takes the blow. */
+		.virtual-ticket-card[data-thump] {
+			animation: virtual-ticket-thump var(--md-sys-motion-duration-long2)
+				var(--md-sys-motion-easing-emphasized-decelerate);
+		}
+
+		@keyframes virtual-ticket-thump {
+			0% {
+				scale: 0.975;
+			}
+
+			100% {
+				scale: 1;
+			}
+		}
+
+		/* Both sides share the ticket's outline: rounded corners and a notch
+		   on each edge where the stub tears off. */
+		.ticket-front,
+		.ticket-back {
+			--_notch: 0.7rem;
+			--_tear: 76%;
+
+			position: absolute;
+			inset: 0;
+
+			overflow: hidden;
+
+			border-radius: var(--md-sys-shape-corner-large);
+
+			backface-visibility: hidden;
+
+			mask:
+				radial-gradient(
+					circle var(--_notch) at 0 var(--_tear),
+					transparent 97%,
+					black
+				)
+				left / 51% 100% no-repeat,
+				radial-gradient(
+					circle var(--_notch) at 100% var(--_tear),
+					transparent 97%,
+					black
+				)
+				right / 51% 100% no-repeat;
+		}
+
+		/* Drawn as a sheet (HTML-in-Canvas): the canvas takes the ticket's
+		   place with room around it, the card lies flat inside it, and WebGL
+		   does the tilting and the turning. */
+		.virtual-ticket-sheet {
+			position: absolute;
+			inset: calc(var(--sheet-margin) * -1);
+
+			inline-size: calc(100% + var(--sheet-margin) * 2);
+			max-inline-size: none;
+			block-size: calc(100% + var(--sheet-margin) * 2);
+		}
+
+		.virtual-ticket-card[data-sheeted="true"] {
+			position: absolute;
+			inset: var(--sheet-margin);
+			transform: none;
+
+			inline-size: 20rem;
+			block-size: 34rem;
+
+			transition: none;
+			animation: none;
+		}
+
+		.virtual-ticket-card[data-sheeted="true"] .ticket-back {
+			transform: none;
+		}
+	}
+}

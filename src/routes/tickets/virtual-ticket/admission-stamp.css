@@ -1,64 +1,79 @@
-/* The admission stamp: a ring of red ink with 入場済 and the admit time,
-   blended into the face it sits on. */
+/* The admission stamp: a round seal of red ink with 入場済, ringed by the
+   event's date and blended into the paper it sits on. */
 @layer block {
 	@scope (admission-stamp) {
 		:scope {
-			--_stamp: oklch(50% 0.2 25deg);
-			--_stamp-shadow: oklch(20% 0.05 25deg / 35%);
+			--_stamp: var(--stamp-color, oklch(48% 0.2 22deg));
 			--_press: calc(var(--md-sys-motion-duration-long4) * 2.5);
 
 			position: absolute;
-			inset-block-end: var(--space-l);
-			inset-inline-end: var(--space-m);
+
+			/* On the stub, over the decorative bars: it covers no fact. */
+			inset-block-end: 2.5%;
+			inset-inline-end: 6%;
 			display: block;
 		}
 
 		.admission-stamp {
-			transform: rotate(-12deg);
+			position: relative;
+			transform: rotate(-14deg);
 
 			display: grid;
+			place-content: center;
 			place-items: center;
 
-			padding: var(--space-xs) var(--space-s);
-			border: var(--space-3xs) double var(--_stamp);
-			border-radius: var(--md-sys-shape-corner-full);
+			aspect-ratio: 1;
+			inline-size: 6.5rem;
 
 			color: var(--_stamp);
 
-			mix-blend-mode: multiply;
+			opacity: 0.92;
+			mix-blend-mode: var(--stamp-blend, multiply);
 		}
 
-		/* Pressed onto the face: it drops from 2.5x with a back-ease over
-		   380 ms, lands with a shadow that sinks into the paper, and ends at
-		   rest (1.5 s). The duration tokens are 0 ms with reduced motion, and
-		   the face then asks for the stamp at rest anyway. */
+		.admission-stamp-seal {
+			position: absolute;
+			inset: 0;
+		}
+
+		.admission-stamp-around {
+			font: 800 10.5px var(--md-ref-typeface-brand);
+			letter-spacing: 2.6px;
+		}
+
+		.admission-stamp-word {
+			font: 900 1.25rem / 1.1 var(--md-ref-typeface-plain);
+			letter-spacing: 0.08em;
+		}
+
+		/* Pressed onto the ticket (1.5 s in all). It comes down from 1.6x,
+		   gathering speed, and lands at 20%; the ink then spreads a little
+		   and settles. Only transform and opacity move, so the browser
+		   animates one cached layer. The duration tokens are 0 ms with
+		   reduced motion, and the ticket then asks for the stamp at rest
+		   anyway. */
 		.admission-stamp[data-stamp="press"] {
+			will-change: transform, opacity;
 			animation: admission-stamp-press var(--_press) both;
 		}
 
 		@keyframes admission-stamp-press {
 			0% {
-				transform: rotate(-12deg) scale(2.5);
+				transform: rotate(-20deg) scale(1.6);
 				opacity: 0;
-				filter: drop-shadow(
-					0 var(--space-m) var(--space-s) var(--_stamp-shadow)
-				);
-				animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+				animation-timing-function: cubic-bezier(0.5, 0, 0.9, 0.6);
 			}
 
-			25% {
-				transform: rotate(-12deg) scale(1);
-				opacity: 1;
-				filter: drop-shadow(
-					0 var(--space-3xs) var(--space-3xs) var(--_stamp-shadow)
-				);
-				animation-timing-function: ease-out;
+			20% {
+				transform: rotate(-14deg) scale(0.97);
+				opacity: 0.92;
+				animation-timing-function: cubic-bezier(0.2, 0.8, 0.3, 1);
 			}
 
+			55%,
 			100% {
-				transform: rotate(-12deg) scale(1);
-				opacity: 1;
-				filter: none;
+				transform: rotate(-14deg) scale(1);
+				opacity: 0.92;
 			}
 		}
 	}

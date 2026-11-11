@@ -1,0 +1,92 @@
+/* stylelint-disable no-unknown-custom-properties -- --_accent is set on .ticket-front (ticket-front.css) and by each preset (ticket-presets.css) */
+
+/* The art's part of the front: the marks along its top and the headline at
+   its foot, set in white over the drawn art. */
+@layer block {
+	@scope (virtual-ticket) {
+		.ticket-front-art {
+			position: relative;
+
+			overflow: hidden;
+			display: flex;
+			flex-direction: column;
+			justify-content: space-between;
+
+			min-block-size: 0;
+			padding: 0.875rem 1.125rem 1rem;
+
+			color: oklch(100% 0 0deg);
+			text-shadow: 0 1px 0.1875rem oklch(0% 0 0deg / 55%);
+		}
+
+		.ticket-front-marks {
+			display: flex;
+			justify-content: space-between;
+
+			font: 700 0.5625rem / 1 var(--md-ref-typeface-brand);
+			letter-spacing: 0.28em;
+
+			opacity: 0.9;
+		}
+
+		.ticket-front-headline {
+			display: grid;
+			gap: 0.375rem;
+		}
+
+		/* The lock-up: the tour's name in the accent over the act in the
+		   display face. */
+		.ticket-front-title {
+			overflow: hidden;
+			display: -webkit-box;
+			-webkit-box-orient: vertical;
+			-webkit-line-clamp: 2;
+
+			font: var(--_title-font, 600 0.75rem / 1.25 var(--md-ref-typeface-brand));
+			color: var(--_accent);
+			text-transform: var(--_title-case, uppercase);
+			letter-spacing: var(--_title-spacing, 0.16em);
+		}
+
+		.ticket-front-performers {
+			overflow: hidden;
+			display: -webkit-box;
+			-webkit-box-orient: vertical;
+			-webkit-line-clamp: 3;
+
+			font: var(
+				--_display-font,
+				900 2.125rem /
+				0.98 var(--md-ref-typeface-brand)
+			);
+			text-transform: var(--_display-case, uppercase);
+			letter-spacing: var(--_display-spacing, -0.01em);
+			overflow-wrap: break-word;
+		}
+
+		/* The headline in gold foil. */
+		.virtual-ticket-card[data-preset="classic"] .ticket-front-performers {
+			padding-block-end: 0.125rem;
+
+			color: transparent;
+			text-shadow: none;
+
+			background: linear-gradient(
+				100deg,
+				#f8e7b0,
+				#c8a45a 40%,
+				#fff3c9 60%,
+				#a8813a
+			);
+			background-clip: text;
+		}
+
+		/* The electronic preset's headline glows and splits. */
+		.virtual-ticket-card[data-preset="electronic"] .ticket-front-performers {
+			text-shadow:
+				0 0 0.75rem #39e6ffcc,
+				0.09rem 0 #ff3df2aa,
+				-0.09rem 0 #39e6ffaa;
+		}
+	}
+}

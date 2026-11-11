@@ -74,14 +74,16 @@ async function liveFace(t: WalletTicket): Promise<HTMLElement> {
 }
 
 /** A fake browser: records what was drawn and what was handed over. */
-function fakeEnv(o: { canShare?: boolean; cover?: boolean } = {}) {
-	const cover = { close: vi.fn() } as unknown as ImageBitmap
-	const drawn: { clone: HTMLElement; cover: ImageBitmap | null }[] = []
+function fakeEnv(o: { canShare?: boolean } = {}) {
+	const drawn: { clone: HTMLElement; art: HTMLCanvasElement | null }[] = []
 	const env = {
-		fetchCover: vi.fn(async () => (o.cover === false ? null : cover)),
 		render: vi.fn(
-			async (clone: HTMLElement, _face: HTMLElement, c: ImageBitmap | null) => {
-				drawn.push({ clone, cover: c })
+			async (
+				clone: HTMLElement,
+				_face: HTMLElement,
+				art: HTMLCanvasElement | null,
+			) => {
+				drawn.push({ clone, art })
 				return new Blob(['png'], { type: 'image/png' })
 			},
 		),
@@ -91,7 +93,7 @@ function fakeEnv(o: { canShare?: boolean; cover?: boolean } = {}) {
 		},
 		download: vi.fn(),
 	} satisfies ShareImageEnv
-	return { env, drawn, cover }
+	return { env, drawn }
 }
 
 function sharedFile(env: ReturnType<typeof fakeEnv>['env']): File {
@@ -102,36 +104,34 @@ function sharedFile(env: ReturnType<typeof fakeEnv>['env']): File {
 }
 
 describe('ShareImage', () => {
-	it('hands the share sheet a PNG of the face with the name and phone number masked', async () => {
+	it('hands the share sheet a PNG of the front, which holds no personal details', async () => {
 		// @spec components/infrastructure/fan/web/route/tickets "Sharing from a phone"
 		const face = await liveFace(ticket())
-		const { env, drawn, cover } = fakeEnv()
+		const { env, drawn } = fakeEnv()
+		const art = document.createElement('canvas')
 
-		const outcome = await new ShareImage(env).share(face, COVER_URL)
+		const outcome = await new ShareImage(env).share(face, art)
 
 		expect(outcome).toBe('shared')
 		const file = sharedFile(env)
 		expect(file.name).toBe(SHARE_FILE_NAME)
 		expect(file.type).toBe('image/png')
-		expect(env.fetchCover).toHaveBeenCalledWith(COVER_URL)
-		const [{ clone, cover: drawnCover }] = drawn
-		expect(drawnCover).toBe(cover)
+		const [{ clone, art: drawnArt }] = drawn
+		expect(drawnArt).toBe(art)
 		expect(clone.hasAttribute('data-share')).toBe(true)
 		expect(clone.textContent).not.toContain('山田太郎')
 		expect(clone.textContent).not.toContain('090-1234-5678')
 		expect(clone.innerHTML).not.toContain('ticket-1')
-		// The rest of the face is in the image.
+		// The front's items are in the image.
 		expect(clone.textContent).toContain('Autumn Tour 2026')
 		expect(clone.textContent).toContain('S席')
-		// The cover is drawn under the copy, not loaded inside it.
-		expect(clone.querySelector('img')?.hasAttribute('src')).toBe(false)
-		expect(cover.close).toHaveBeenCalled()
+		// The art is drawn under the copy: the copy holds no cover and no canvas.
+		expect(clone.querySelector('img, canvas')).toBeNull()
 
-		// The face the fan is looking at never changes.
+		// The front the fan is looking at never changes.
 		expect(face.hasAttribute('data-share')).toBe(false)
-		expect(face.textContent).toContain('山田太郎')
-		expect(face.textContent).toContain('090-1234-5678')
 		expect(face.querySelector('img')?.getAttribute('src')).toBe(COVER_URL)
+		expect(face.querySelector('canvas')).not.toBeNull()
 	})
 
 	it('leaves the stamp out of the image of an entered ticket', async () => {
@@ -139,11 +139,13 @@ describe('ShareImage', () => {
 		const face = await liveFace(ENTERED)
 		const { env, drawn } = fakeEnv()
 
-		await new ShareImage(env).share(face, COVER_URL)
+		await new ShareImage(env).share(face, null)
 
 		expect(drawn[0].clone.querySelector('admission-stamp')).toBeNull()
 		expect(drawn[0].clone.textContent).not.toContain('入場済')
-		// The live face keeps its stamp.
+		// Without the stamp the stub's bars are whole.
+		expect(drawn[0].clone.hasAttribute('data-entered')).toBe(false)
+		// The live front keeps its stamp.
 		expect(face.querySelector('admission-stamp')).not.toBeNull()
 	})
 
@@ -152,7 +154,7 @@ describe('ShareImage', () => {
 		const face = await liveFace(ticket())
 		const { env } = fakeEnv({ canShare: false })
 
-		const outcome = await new ShareImage(env).share(face, COVER_URL)
+		const outcome = await new ShareImage(env).share(face, null)
 
 		expect(outcome).toBe('downloaded')
 		expect(env.navigator.share).not.toHaveBeenCalled()
@@ -167,30 +169,30 @@ describe('ShareImage', () => {
 		const nav = env.navigator as { canShare?: unknown }
 		nav.canShare = undefined
 
-		expect(await new ShareImage(env).share(face, COVER_URL)).toBe('downloaded')
+		expect(await new ShareImage(env).share(face, null)).toBe('downloaded')
 	})
 
-	it('makes the masked image without the cover when it cannot be fetched', async () => {
+	it('shares the front without the cover when the cover never loaded', async () => {
 		// @spec components/infrastructure/fan/web/route/tickets "Sharing without the cover image"
 		const face = await liveFace(ticket())
-		const { env, drawn } = fakeEnv({ cover: false })
-
-		const outcome = await new ShareImage(env).share(face, COVER_URL)
-
-		expect(outcome).toBe('shared')
-		expect(drawn[0].cover).toBeNull()
-		expect(drawn[0].clone.hasAttribute('data-share')).toBe(true)
-		expect(drawn[0].clone.textContent).not.toContain('山田太郎')
-	})
-
-	it('fetches no cover for an event without one', async () => {
-		const face = await liveFace(ticket())
+		// No connection: the cover fails to load, and the front drops it.
+		face
+			.querySelector('.ticket-front-cover img')
+			?.dispatchEvent(new Event('error'))
+		await vi.waitFor(() =>
+			expect(face.querySelector('.ticket-front-cover')).toBeNull(),
+		)
 		const { env, drawn } = fakeEnv()
 
-		await new ShareImage(env).share(face, '')
+		const outcome = await new ShareImage(env).share(face, null)
 
-		expect(env.fetchCover).not.toHaveBeenCalled()
-		expect(drawn[0].cover).toBeNull()
+		expect(outcome).toBe('shared')
+		expect(sharedFile(env).type).toBe('image/png')
+		// The image is made from the front's items alone.
+		expect(drawn[0].clone.querySelector('img')).toBeNull()
+		for (const item of ['Autumn Tour 2026', 'Shibuya WWW', 'S席']) {
+			expect(drawn[0].clone.textContent).toContain(item)
+		}
 	})
 
 	it('reports a closed share sheet as cancelled, and rethrows other failures', async () => {
@@ -199,13 +201,11 @@ describe('ShareImage', () => {
 		env.navigator.share.mockRejectedValueOnce(
 			new DOMException('closed', 'AbortError'),
 		)
-		expect(await new ShareImage(env).share(face, COVER_URL)).toBe('cancelled')
+		expect(await new ShareImage(env).share(face, null)).toBe('cancelled')
 
 		env.navigator.share.mockRejectedValueOnce(
 			new DOMException('no', 'NotAllowedError'),
 		)
-		await expect(new ShareImage(env).share(face, COVER_URL)).rejects.toThrow(
-			'no',
-		)
+		await expect(new ShareImage(env).share(face, null)).rejects.toThrow('no')
 	})
 })

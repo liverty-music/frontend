@@ -546,7 +546,24 @@
 			"stamp": "ADMITTED",
 			"share": "Share image",
 			"shareFailed": "The image could not be made. Please try again.",
-			"close": "Close"
+			"close": "Close",
+			"flipToBack": "See the back",
+			"flipToFront": "Back to the front",
+			"back": "Back of the ticket",
+			"eligiblePerson": "Eligible person",
+			"noResale": "No paid transfer without consent",
+			"noResaleDetail": "Transferring this ticket for payment without the organizer's consent is prohibited.",
+			"verified": "Eligible person's name and contact confirmed",
+			"verifiedDetail": "This ticket was sold after confirming the eligible person's name and contact details at purchase.",
+			"design": "Design",
+			"preset": {
+				"default": "Standard",
+				"rock": "Rock",
+				"pop": "Pop",
+				"jazz": "Jazz",
+				"classic": "Classical",
+				"electronic": "Electronic"
+			}
 		}
 	},
 	"order": {

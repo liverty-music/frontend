@@ -7,7 +7,10 @@ import {
 	AdmissionStamp,
 	STAMP_ANIMATION,
 } from '../../src/routes/tickets/virtual-ticket/admission-stamp'
-import { VirtualTicket } from '../../src/routes/tickets/virtual-ticket/virtual-ticket'
+import {
+	PRESET_CHOSEN,
+	VirtualTicket,
+} from '../../src/routes/tickets/virtual-ticket/virtual-ticket'
 import type {
 	WalletPersonalDetails,
 	WalletTicket,
@@ -121,20 +124,20 @@ describe('virtual-ticket', () => {
 		vi.restoreAllMocks()
 	})
 
-	it('shows every item of the face as text, with the cover and no QR code', async () => {
+	it('shows every item of the front as text, with the cover and no QR code or personal details', async () => {
 		// @spec components/infrastructure/fan/web/route/tickets "Fan taps a ticket"
 		const { face } = await mount()
 		const all = text(face)
 
 		const cover = face.querySelector<HTMLImageElement>(
-			'.virtual-ticket-cover img',
+			'.ticket-front-cover img',
 		)
 		expect(cover?.getAttribute('src')).toBe(EVENT.coverUrl)
-		// Loaded with CORS so it can be drawn into the share image.
+		// Loaded with CORS so it can be drawn into the art and the share image.
 		expect(cover?.getAttribute('crossorigin')).toBe('anonymous')
 		expect(all).toContain('The Band / Guest')
 		expect(all).toContain('Autumn Tour 2026')
-		expect(all).toContain('2026年11月20日')
+		expect(all).toContain('2026.11.20')
 		expect(all).toContain('Shibuya WWW')
 		// The prefecture as a localized name, never the ISO code.
 		expect(all).toContain('東京都')
@@ -143,37 +146,112 @@ describe('virtual-ticket', () => {
 		expect(all).toContain('18:30')
 		expect(all).toContain('S席')
 		expect(all).toContain('指定なし')
-		expect(all).toContain('山田太郎')
-		expect(all).toContain('090-1234-5678')
-		expect(all).toContain(ja.tickets.resaleProhibited)
-		// The face holds no QR code and no ticket id.
-		expect(
-			face.querySelector('img:not(.virtual-ticket-cover-image)'),
-		).toBeNull()
+		// The front holds no personal details, no QR code and no ticket id.
+		expect(all).not.toContain('山田太郎')
+		expect(all).not.toContain('090-1234-5678')
+		expect(face.querySelector('img:not(.ticket-front-cover-image)')).toBeNull()
 		expect(face.innerHTML).not.toContain('ticket-1')
 	})
 
-	it('colours the face with the first performer’s hue', async () => {
-		const { face } = await mount()
-		const hue = Number(face.style.getPropertyValue('--artist-hue'))
-		expect(Number.isInteger(hue)).toBe(true)
-		const { face: other } = await mount({
+	it('shows the eligible person and the two statements on the back', async () => {
+		// @spec components/infrastructure/fan/web/route/tickets "Fan turns the ticket over"
+		const { fixture, face } = await mount()
+		const back = fixture.appHost.querySelector<HTMLElement>('.ticket-back')
+		if (!back) throw new Error('no back')
+		const card = fixture.appHost.querySelector('.virtual-ticket-card')
+		// The side that is turned away cannot be reached.
+		expect(card?.getAttribute('data-side')).toBe('front')
+		expect(back.inert).toBe(true)
+
+		// A tap on the ticket turns it over.
+		face.click()
+		await fixture.tasksSettled
+		expect(card?.getAttribute('data-side')).toBe('back')
+		expect(back.inert).toBe(false)
+		expect(face.inert).toBe(true)
+
+		const all = text(back)
+		for (const item of [
+			'The Band / Guest',
+			'Autumn Tour 2026',
+			'2026年11月20日',
+			'Shibuya WWW',
+			'東京都',
+			'17:30 / 18:30',
+			'S席 / 指定なし',
+			'山田太郎',
+			'090-1234-5678',
+			ja.tickets.virtual.noResale,
+			ja.tickets.virtual.verified,
+		]) {
+			expect(all).toContain(item)
+		}
+		expect(back.innerHTML).not.toContain('ticket-1')
+
+		// The button turns it back.
+		fixture.appHost
+			.querySelector<HTMLElement>('[data-testid="virtual-ticket-flip"]')
+			?.click()
+		await fixture.tasksSettled
+		expect(card?.getAttribute('data-side')).toBe('front')
+	})
+
+	it('shows the design the fan picks and tells the screen which', async () => {
+		// @spec components/infrastructure/fan/web/route/tickets "Fan picks a design"
+		const { fixture } = await mount()
+		const card = fixture.appHost.querySelector('.virtual-ticket-card')
+		expect(card?.getAttribute('data-preset')).toBe('default')
+		const picked: string[] = []
+		fixture.appHost.addEventListener(PRESET_CHOSEN, (event) => {
+			picked.push((event as CustomEvent<{ preset: string }>).detail.preset)
+		})
+
+		const options = [
+			...fixture.appHost.querySelectorAll<HTMLElement>(
+				'[data-testid="virtual-ticket-preset"]',
+			),
+		]
+		expect(options.map((o) => o.getAttribute('data-preset'))).toEqual([
+			'default',
+			'rock',
+			'pop',
+			'jazz',
+			'classic',
+			'electronic',
+		])
+		options[3].click()
+		await fixture.tasksSettled
+
+		expect(card?.getAttribute('data-preset')).toBe('jazz')
+		expect(options[3].getAttribute('aria-pressed')).toBe('true')
+		expect(picked).toEqual(['jazz'])
+		// Picking a design does not turn the ticket over.
+		expect(card?.getAttribute('data-side')).toBe('front')
+	})
+
+	it('colours the ticket with the first performer’s hue', async () => {
+		const hueOf = (root: Element): string =>
+			root
+				.querySelector<HTMLElement>('.virtual-ticket-stage')
+				?.style.getPropertyValue('--artist-hue') ?? ''
+		const { fixture } = await mount()
+		expect(Number.isInteger(Number(hueOf(fixture.appHost)))).toBe(true)
+		expect(hueOf(fixture.appHost)).not.toBe('')
+		const { fixture: other } = await mount({
 			event: { ...EVENT, performers: [{ id: 'x', name: 'Another', mbid: '' }] },
 		})
-		expect(other.style.getPropertyValue('--artist-hue')).not.toBe(
-			face.style.getPropertyValue('--artist-hue'),
-		)
+		expect(hueOf(other.appHost)).not.toBe(hueOf(fixture.appHost))
 	})
 
 	it('opens with every item and without the cover when the cover cannot load', async () => {
 		// @spec components/infrastructure/fan/web/route/tickets "Opened in the venue without a connection"
 		const { fixture, face } = await mount()
 		face
-			.querySelector('.virtual-ticket-cover img')
+			.querySelector('.ticket-front-cover img')
 			?.dispatchEvent(new Event('error'))
 		await fixture.tasksSettled
 
-		expect(face.querySelector('.virtual-ticket-cover')).toBeNull()
+		expect(face.querySelector('.ticket-front-cover')).toBeNull()
 		const all = text(face)
 		for (const item of [
 			'Autumn Tour 2026',
@@ -181,8 +259,6 @@ describe('virtual-ticket', () => {
 			'東京都',
 			'S席',
 			'指定なし',
-			'山田太郎',
-			'090-1234-5678',
 		]) {
 			expect(all).toContain(item)
 		}
@@ -190,34 +266,49 @@ describe('virtual-ticket', () => {
 
 	it('shows no cover area for an event without a cover', async () => {
 		const { face } = await mount({ event: { ...EVENT, coverUrl: '' } })
-		expect(face.querySelector('.virtual-ticket-cover')).toBeNull()
+		expect(face.querySelector('.ticket-front-cover')).toBeNull()
 	})
 
-	it('names the face by its title and keeps every item as text for a screen reader', async () => {
-		// @spec components/infrastructure/fan/web/route/tickets "Reading the face aloud"
-		const { face } = await mount({ ticket: ENTERED })
+	it('names the front by its title and keeps every item as text for a screen reader', async () => {
+		// @spec components/infrastructure/fan/web/route/tickets "Reading the ticket aloud"
+		const { fixture, face } = await mount({ ticket: ENTERED })
 		const title = face.ownerDocument.getElementById(
 			face.getAttribute('aria-labelledby') ?? '',
 		)
 		expect(title?.textContent?.trim()).toBe('Autumn Tour 2026')
-		expect(face.querySelector('canvas')).toBeNull()
-		expect(face.querySelector('[aria-hidden="true"]')).toBeNull()
-		// Each detail is a term with its value, read in that order.
+		// The drawn art is decoration: the canvas is hidden from assistive
+		// technology, and what it shows is also there as text.
+		expect(face.querySelector('canvas')?.getAttribute('aria-hidden')).toBe(
+			'true',
+		)
+		// Each fact is a term with its value, read in that order.
 		const terms = [...face.querySelectorAll('dt')].map((dt) => text(dt).trim())
 		expect(terms).toEqual([
-			'日付',
-			'会場',
+			'会場 東京都',
+			'日付 金',
 			'開場',
 			'開演',
 			'席種',
 			'座席',
-			'お名前',
-			'電話番号',
 		])
-		// The stamp is text too: 入場済 and the admit time.
+		// The stamp is text too: 入場済, ringed by the event's date.
 		const stamp = face.querySelector('admission-stamp')
 		expect(text(stamp as Element)).toContain('入場済')
-		expect(stamp?.querySelector('time')?.textContent).toContain('18:02')
+		expect(text(stamp as Element)).toContain('2026.11.20')
+		expect(stamp?.querySelector('time')).toBeNull()
+		// Turned over, the back is the side that can be reached: it is
+		// named, and the eligible person is a term with its value.
+		const back = fixture.appHost.querySelector<HTMLElement>('.ticket-back')
+		expect(back?.inert).toBe(true)
+		face.click()
+		await fixture.tasksSettled
+		expect(back?.inert).toBe(false)
+		expect(face.inert).toBe(true)
+		expect(back?.getAttribute('aria-label')).toBe(ja.tickets.virtual.back)
+		const holder = [...(back?.querySelectorAll('dt') ?? [])].find(
+			(dt) => text(dt).trim() === ja.tickets.virtual.eligiblePerson,
+		)
+		expect(text(holder?.nextElementSibling as Element)).toContain('山田太郎')
 	})
 
 	it('shows no stamp on a ticket that is not yet entered', async () => {
@@ -258,8 +349,11 @@ describe('virtual-ticket', () => {
 	})
 
 	it('shows the event as unknown when its details could not be read', async () => {
-		const { face } = await mount({ event: null })
+		const { fixture, face } = await mount({ event: null })
 		expect(text(face)).toContain(ja.tickets.event.unknown)
-		expect(text(face)).toContain('山田太郎')
+		// The back still names the eligible person.
+		expect(
+			text(fixture.appHost.querySelector('.ticket-back') as Element),
+		).toContain('山田太郎')
 	})
 })
