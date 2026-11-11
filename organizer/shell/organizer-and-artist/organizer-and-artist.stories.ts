@@ -89,3 +89,14 @@ export const Medium = {
 		await expect(getComputedStyle(context).display).toBe('flex')
 	},
 } satisfies Story
+
+/** Compact, below a destination: the names keep to 45 % of the bar. */
+export const CompactBelowDestination = {
+	args: { deep: true },
+	render: render(['Band A', 'Band B'], 400),
+	play: async ({ canvasElement }) => {
+		const context = canvasElement.querySelector<HTMLElement>('.context')
+		if (!context) throw new Error('names not rendered')
+		await expect(getComputedStyle(context).maxInlineSize).toBe('45%')
+	},
+} satisfies Story

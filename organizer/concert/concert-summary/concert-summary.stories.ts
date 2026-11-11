@@ -4,6 +4,7 @@ import {
 	type StoryObj,
 } from '@aurelia/storybook'
 import { expect } from 'storybook/test'
+import ja from '../../locales/ja/translation.json'
 import { consoleStoryParameters } from '../../ui/story-support'
 import { ConcertSummary } from './concert-summary'
 
@@ -107,6 +108,16 @@ export const Processing = {
 	play: async ({ canvasElement }) => {
 		const note = paneOf(canvasElement).querySelector('[role="status"]')
 		await expect(note?.textContent?.trim()).not.toBe('')
+	},
+} satisfies Story
+
+/** A picked cover processed for longer than expected: the slow note. */
+export const Slow = {
+	args: { coverUrl: COVER, coverNote: 'slow' },
+	render: render(400),
+	play: async ({ canvasElement }) => {
+		const note = paneOf(canvasElement).querySelector('[role="status"]')
+		await expect(note?.textContent?.trim()).toBe(ja.concertEditor.cover.slow)
 	},
 } satisfies Story
 
