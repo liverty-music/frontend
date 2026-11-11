@@ -27,11 +27,10 @@
   <!-- Outside the grid — the <dialog> inside goes to top-layer regardless -->
   <bottom-sheet
     open.bind="isGuideSheetOpen"
-    t="[aria-label]pwaInstallBanner.guideTitle"
+    heading.bind="'pwaInstallBanner.guideTitle' | t"
     sheet-closed.trigger="isGuideSheetOpen = false"
   >
-    <section class="[ pwa-banner-sheet ] [ stack ]" aria-labelledby="pwa-banner-sheet-title">
-      <h2 id="pwa-banner-sheet-title" class="[ pwa-banner-sheet-title ] [ md-typescale-title-large ]" t="pwaInstallBanner.guideTitle"></h2>
+    <div class="[ pwa-banner-sheet ] [ stack ]">
 
       <ol if.bind="isIos" class="[ pwa-banner-sheet-steps ] [ stack ]">
         <li class="[ pwa-banner-sheet-step ] [ md-typescale-body-large ]">
@@ -70,6 +69,6 @@
         t="pwaInstallBanner.guideConfirm"
         data-testid="pwa-install-banner-confirm"
       ></button>
-    </section>
+    </div>
   </bottom-sheet>
 </aside>

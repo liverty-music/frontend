@@ -1,59 +1,9 @@
 @layer block {
 	@scope (nearby-filter-sheet) {
+		/* The rows are list items reaching both edges of the sheet, as a
+		   Material 3 list does; only the space below the list is the sheet's. */
 		.nearby-filter-sheet {
-			--flow-space: var(--space-s);
-
-			padding-block: var(--space-s) var(--space-m);
-			padding-inline: var(--space-m);
-		}
-
-		.sheet-title {
-			color: var(--md-sys-color-on-surface);
-		}
-
-		.filter-rows {
-			--stack-gap: var(--space-2xs);
-		}
-
-		/* One row per filter: what it is, its value, and a caret to its own
-		   selector. */
-		.filter-row {
-			display: grid;
-			grid-template-columns: auto auto minmax(0, 1fr) auto;
-			gap: var(--space-xs);
-			align-items: center;
-
-			inline-size: 100%;
-			min-block-size: 3rem;
-			padding-block: var(--space-2xs);
-			padding-inline: var(--space-s);
-			border: 1px solid var(--md-sys-color-outline-variant);
-			border-radius: var(--md-sys-shape-corner-large);
-
-			color: var(--md-sys-color-on-surface);
-			text-align: start;
-
-			background: var(--md-sys-color-surface-container);
-		}
-
-		.row-label {
-			color: var(--md-sys-color-on-surface-variant);
-		}
-
-		.row-value {
-			overflow: hidden;
-			text-align: end;
-			text-overflow: ellipsis;
-			white-space: nowrap;
-		}
-
-		/* "Choose an area" reads as a prompt, not a value. */
-		.row-value[data-empty] {
-			color: var(--md-sys-color-on-surface-variant);
-		}
-
-		.row-caret {
-			color: var(--md-sys-color-on-surface-variant);
+			padding-block-end: var(--space-m);
 		}
 	}
 }

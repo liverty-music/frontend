@@ -162,11 +162,6 @@
 			--_bg-to: var(--md-sys-color-snack-error-to);
 		}
 
-		.snack-icon {
-			inline-size: 1.25rem;
-			block-size: 1.25rem;
-		}
-
 		/* The action's look comes from the app: the fan app's shared button
 		   (on-container), or the organizer console's own rule. Only its place
 		   in the row is set here. */

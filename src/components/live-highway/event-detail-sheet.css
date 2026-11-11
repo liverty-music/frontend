@@ -69,11 +69,8 @@
 			align-items: start;
 		}
 
-		/* Nudged down to the first line of the text beside it; the text is
-		   always taller, so the offset never sets the row's height. */
+		/* The 24 px icon is as tall as the title-medium line beside it. */
 		.detail-icon {
-			position: relative;
-			inset-block-start: var(--space-3xs);
 			color: var(--md-sys-color-on-surface-variant);
 		}
 

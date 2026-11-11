@@ -68,7 +68,7 @@
         aria-pressed.bind="(action.kind === 'toggle' ? isPressed(action) : null) & signal:'fab-menu:state'"
         click.trigger="onAction(action)"
       >
-        <svg-icon name.bind="action.icon" size="md" class="fab-item-icon"></svg-icon>
+        <svg-icon name.bind="action.icon" size="lg" class="fab-item-icon"></svg-icon>
         <span class="fab-item-label" t.bind="action.labelKey"></span>
       </button>
     </li>

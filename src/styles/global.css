@@ -184,6 +184,19 @@
 		);
 	}
 
+	/* While My Artists shows its edit-mode Done bar, fixed above the
+	   navigation bar, the distance from the window's bottom edge to the bar's
+	   top edge: the navigation bar, the safe area, a visible banner and the
+	   bar. The snack bar sits above it, so a snack never covers Done. */
+	:where(:root:has(.edit-action-bar)) {
+		--bottom-floating-clearance: calc(
+			var(--bottom-nav-height) +
+			env(safe-area-inset-bottom, 0px) +
+			var(--bottom-banner-height, 0px) +
+			var(--edit-action-bar-block-size)
+		);
+	}
+
 	/* While a bottom banner shows, its height is published for the route area
 	   (app-shell) and the snack bar. The banners are exactly this tall, so
 	   layout knows it in the frame the banner appears. */

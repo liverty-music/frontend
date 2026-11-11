@@ -10,19 +10,17 @@
 <bottom-sheet
   open.bind="isSheetOpen"
   sheet-closed.trigger="closeSheet()"
-  aria-labelledby="filter-sheet-title"
+  heading="絞り込み"
 >
+  <button
+    au-slot="heading-action"
+    type="button"
+    class="[ button ] [ state-layer ]"
+    data-variant="outlined"
+    click.trigger="clearAll()"
+    disabled.bind="!hasPendingSelection"
+  >全て解除</button>
   <div class="[ filter-sheet-content ] [ stack ]">
-    <div class="sheet-header">
-      <h2 class="[ sheet-title ] [ md-typescale-title-large ]" id="filter-sheet-title">絞り込み</h2>
-      <button
-        type="button"
-        class="[ button ] [ state-layer ]"
-        data-variant="outlined"
-        click.trigger="clearAll()"
-        disabled.bind="!hasPendingSelection"
-      >全て解除</button>
-    </div>
 
     <!-- Artist facet -->
     <section class="[ filter-facet ] [ stack ]" aria-labelledby="filter-artist-heading">
@@ -98,7 +96,7 @@
         aria-controls="filter-date-field"
       >
         <h3 class="[ facet-heading ] [ md-typescale-title-small ]" id="filter-date-heading">過去のコンサートも表示</h3>
-        <svg-icon name="chevron-right" size="xs" class="date-facet-caret" data-expanded.bind="isDateFacetExpanded"></svg-icon>
+        <svg-icon name="chevron-right" size="sm" class="date-facet-caret" data-expanded.bind="isDateFacetExpanded"></svg-icon>
       </button>
       <div if.bind="isDateFacetExpanded" id="filter-date-field" class="[ date-facet-field ] [ stack ]">
         <label class="[ date-field-label ] [ md-typescale-body-medium ]" for="filter-from-input">この日付以降を表示</label>

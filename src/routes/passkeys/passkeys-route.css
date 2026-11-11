@@ -41,8 +41,6 @@
 		}
 
 		.passkeys-icon {
-			inline-size: 1.25rem;
-			block-size: 1.25rem;
 			color: var(--md-sys-color-on-surface-variant);
 		}
 
@@ -66,11 +64,8 @@
 		.passkeys-confirm {
 			--stack-gap: var(--space-xs);
 
-			padding: var(--space-s);
-		}
-
-		.passkeys-confirm-title {
-			color: var(--md-sys-color-on-surface);
+			padding-block-end: var(--space-m);
+			padding-inline: var(--space-m);
 		}
 
 		.passkeys-confirm-name {

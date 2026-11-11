@@ -60,7 +60,6 @@
         >
           <!-- Artist name cell -->
           <th scope="row" class="artist-name-cell">
-            <span class="artist-row-indicator" aria-hidden="true"></span>
             <span class="[ artist-row-name ] [ md-typescale-label-large ]">${artist.artist.name}</span>
           </th>
 
@@ -93,7 +92,7 @@
               aria-label.bind="i18n.tr('myArtists.unfollowArtist', { name: artist.artist.name })"
               click.trigger="unfollowArtist(artist)"
             >
-              <svg-icon name="trash" size="md" aria-hidden="true"></svg-icon>
+              <svg-icon name="trash" size="lg" aria-hidden="true"></svg-icon>
             </button>
           </td>
         </tr>

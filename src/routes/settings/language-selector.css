@@ -10,14 +10,9 @@
 			padding-inline: var(--space-m);
 		}
 
-		.selector-title {
-			color: var(--md-sys-color-on-surface);
-		}
-
 		/* Vertical list; layout comes from `[ stack ]` (composition layer).
 		   This tightens the default stack gap to the selector rhythm. */
 		.language-list {
-			--flow-space: var(--space-s);
 			--stack-gap: var(--space-3xs);
 		}
 
@@ -44,8 +39,6 @@
 		}
 
 		.language-check {
-			inline-size: 1.25rem;
-			block-size: 1.25rem;
 			color: var(--md-sys-color-primary);
 		}
 	}

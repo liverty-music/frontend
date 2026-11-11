@@ -64,8 +64,12 @@
 			inset-inline: 0;
 
 			display: flex;
+			align-items: center;
 			justify-content: center;
 
+			/* Exactly this tall, so the snack bar's clearance (global.css) is
+			   known in the frame the bar appears. */
+			block-size: var(--edit-action-bar-block-size);
 			padding-block: var(--space-2xs);
 			padding-inline: var(--space-s);
 			border-block-start: 1px solid var(--md-sys-color-outline-variant);
@@ -164,7 +168,6 @@
 		/* ── Artist name cell ── */
 		.artist-name-cell {
 			display: flex;
-			gap: var(--space-xs);
 			align-items: center;
 
 			min-inline-size: 0;
@@ -178,19 +181,6 @@
 
 			text-align: start;
 			white-space: nowrap;
-		}
-
-		.artist-row-indicator {
-			flex-shrink: 0;
-
-			inline-size: 8px;
-			block-size: 8px;
-			border-radius: var(--md-sys-shape-corner-full);
-
-			vertical-align: middle;
-
-			/* stylelint-disable-next-line no-unknown-custom-properties -- set inline by the template, per artist */
-			background-color: var(--_dot-color);
 		}
 
 		.artist-row-name {

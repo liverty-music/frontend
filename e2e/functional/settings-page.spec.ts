@@ -195,7 +195,10 @@ test.describe('section order', () => {
 		const title = page.locator('settings-route .settings-section-title').first()
 		await expect(title).toHaveText('アカウント')
 		const firstRow = page.locator('settings-route .settings-card').first()
-		for (const el of [title, firstRow.locator('.settings-row').first()]) {
+		for (const el of [
+			title,
+			firstRow.locator(':is(.settings-row, .list-item)').first(),
+		]) {
 			await expect(el).toBeInViewport()
 			expect((await box(el)).y).toBeGreaterThanOrEqual(
 				header.y + header.height - 1,
@@ -220,7 +223,7 @@ test.describe('rows', () => {
 		await openAsFan(page)
 		// Each row's glyph, as drawn: no two rows draw the same one.
 		const glyphs = await page
-			.locator('settings-route .settings-icon')
+			.locator('settings-route :is(.settings-icon, .list-item-icon)')
 			.evaluateAll((els) => els.map((el) => el.innerHTML.trim()))
 		expect(glyphs.length).toBeGreaterThan(0)
 		expect(new Set(glyphs).size).toBe(glyphs.length)
@@ -234,7 +237,9 @@ test.describe('rows', () => {
 		]) {
 			await openAsGuest(page)
 			await page
-				.locator('settings-route .settings-row', { hasText: label })
+				.locator('settings-route :is(.settings-row, .list-item)', {
+					hasText: label,
+				})
 				.click()
 			await page.waitForURL((url) => url.pathname === path)
 		}
@@ -252,7 +257,7 @@ test.describe('rows', () => {
 	}) => {
 		await openAsGuest(page)
 		await expect(
-			page.locator('settings-route .settings-row', {
+			page.locator('settings-route :is(.settings-row, .list-item)', {
 				hasText: 'プライバシーポリシー',
 			}),
 		).toHaveCount(1)
@@ -490,7 +495,9 @@ test.describe('sign out', () => {
 		const about = page.locator('settings-route section', {
 			has: page.locator('h2', { hasText: 'このアプリについて' }),
 		})
-		const lastRow = await box(about.locator('.settings-row').last())
+		const lastRow = await box(
+			about.locator(':is(.settings-row, .list-item)').last(),
+		)
 		const group = await box(page.getByTestId('settings-sign-out-group'))
 		expect(group.y - (lastRow.y + lastRow.height)).toBeGreaterThanOrEqual(24)
 	})

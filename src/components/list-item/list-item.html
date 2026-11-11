@@ -1,0 +1,21 @@
+<import from="./list-item.css"></import>
+
+<!-- The same content in a link or a button: the row is one target. -->
+<a if.bind="href" href.bind="href" class="[ list-item ] [ state-layer ]" data-testid.bind="testId || null">
+  <svg-icon if.bind="icon" name.bind="icon" size="lg" class="list-item-icon" aria-hidden="true"></svg-icon>
+  <span class="list-item-text">
+    <span class="[ list-item-label ] [ md-typescale-body-large ]">${label}</span>
+    <span if.bind="supporting" class="[ list-item-supporting ] [ md-typescale-body-medium ]">${supporting}</span>
+  </span>
+  <span if.bind="value" class="[ list-item-value ] [ md-typescale-label-small ]">${value}</span>
+  <svg-icon if.bind="caret" name="chevron-right" size="lg" class="list-item-caret" aria-hidden="true"></svg-icon>
+</a>
+<button else type="button" class="[ list-item ] [ state-layer ]" data-testid.bind="testId || null">
+  <svg-icon if.bind="icon" name.bind="icon" size="lg" class="list-item-icon" aria-hidden="true"></svg-icon>
+  <span class="list-item-text">
+    <span class="[ list-item-label ] [ md-typescale-body-large ]">${label}</span>
+    <span if.bind="supporting" class="[ list-item-supporting ] [ md-typescale-body-medium ]">${supporting}</span>
+  </span>
+  <span if.bind="value" class="[ list-item-value ] [ md-typescale-label-small ]">${value}</span>
+  <svg-icon if.bind="caret" name="chevron-right" size="lg" class="list-item-caret" aria-hidden="true"></svg-icon>
+</button>

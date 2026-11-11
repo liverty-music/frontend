@@ -1,8 +1,7 @@
 <import from="./error-banner.css"></import>
 
-<bottom-sheet open.to-view="errorBoundary.currentError" dismissable.bind="false" t="[aria-label]errorBanner.label">
-  <section class="[ error-content card ] [ flow ]">
-    <h2 class="[ error-title ] [ md-typescale-title-large ]" t="errorBanner.title"></h2>
+<bottom-sheet open.to-view="errorBoundary.currentError" dismissable.bind="false" heading.bind="'errorBanner.title' | t">
+  <section class="[ error-content ] [ flow ]">
     <!-- Fixed copy: neither the captured error's message nor its Error ID is
          shown; both stay in the report email, and the message in the console
          log (spec global/error-banner). -->

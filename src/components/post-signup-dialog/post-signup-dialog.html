@@ -1,12 +1,15 @@
 <import from="./post-signup-dialog.css"></import>
 
-<bottom-sheet open.bind="isOpen" t="[aria-label]postSignup.ariaLabel" sheet-closed.trigger="close()">
+<bottom-sheet
+  open.bind="isOpen"
+  heading.bind="(step === 'install' ? 'postSignup.install.title' : 'postSignup.notify.title') | t"
+  sheet-closed.trigger="close()"
+>
   <section class="[ post-signup-step ] [ stack ]" data-step.bind="step">
 
     <!-- Step 1: notifications -->
     <template if.bind="step === 'notify'">
       <div class="[ post-signup-text ] [ stack ]">
-        <h2 class="[ post-signup-title ] [ md-typescale-headline-small ]" t="postSignup.notify.title"></h2>
         <p if.bind="followedCount > 0" class="[ post-signup-body ] [ md-typescale-body-medium ]" t="postSignup.notify.body" t-params.bind="{ count: followedCount }"></p>
         <p else class="[ post-signup-body ] [ md-typescale-body-medium ]" t="postSignup.notify.bodyNoFollows"></p>
         <p if.bind="notifyProblem" class="[ post-signup-problem ] [ md-typescale-body-medium ]" role="status" t.bind="notifyProblem === 'blocked' ? 'postSignup.notify.blocked' : 'postSignup.notify.failed'"></p>
@@ -41,7 +44,6 @@
     <template if.bind="step === 'install'">
       <div class="[ post-signup-text ] [ stack ]">
         <img class="[ post-signup-app-icon ]" src="/icons/icon-192x192.png" alt="" width="64" height="64">
-        <h2 class="[ post-signup-title ] [ md-typescale-headline-small ]" t="postSignup.install.title"></h2>
         <p class="[ post-signup-body ] [ md-typescale-body-medium ]" t="postSignup.install.body"></p>
         <ol if.bind="installGuideShown" class="[ post-signup-steps ] [ md-typescale-body-medium ]">
           <li t="postSignup.install.step1"></li>
@@ -78,7 +80,6 @@
     <!-- iOS / iPadOS: add to the home screen to receive notifications -->
     <template if.bind="step === 'iosGuide'">
       <div class="[ post-signup-text ] [ stack ]">
-        <h2 class="[ post-signup-title ] [ md-typescale-headline-small ]" t="postSignup.notify.title"></h2>
         <p class="[ post-signup-body ] [ md-typescale-body-medium ]" t="postSignup.ios.body"></p>
         <ol class="[ post-signup-steps ] [ md-typescale-body-medium ]">
           <li t="postSignup.ios.step1"></li>

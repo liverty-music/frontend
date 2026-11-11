@@ -4,7 +4,8 @@
 		.post-signup-step {
 			--stack-gap: var(--space-m);
 
-			padding: var(--space-m) var(--space-s) var(--space-l);
+			padding-block-end: var(--space-l);
+			padding-inline: var(--space-m);
 		}
 
 		.post-signup-text {
@@ -16,10 +17,6 @@
 			inline-size: 4rem;
 			block-size: 4rem;
 			border-radius: var(--md-sys-shape-corner-large);
-		}
-
-		.post-signup-title {
-			word-break: auto-phrase;
 		}
 
 		.post-signup-body {

@@ -26,6 +26,7 @@ function makePopover() {
 		showPopover: vi.fn(),
 		hidePopover: vi.fn(),
 		setAttribute: vi.fn(),
+		removeAttribute: vi.fn(),
 		querySelectorAll: vi.fn(() => [] as unknown as NodeListOf<HTMLElement>),
 	}
 }
@@ -142,6 +143,43 @@ describe('BottomSheet', () => {
 				'aria-label',
 				'Help sheet',
 			)
+		})
+	})
+
+	// @spec components/infrastructure/fan/web/global/bottom-sheet "Sheet with a heading"
+	describe('heading', () => {
+		it('names the popover by its heading instead of an aria-label', () => {
+			sut.ariaLabel = 'Select language'
+			sut.heading = 'Language'
+			sut.attached()
+
+			expect(popover.setAttribute).toHaveBeenCalledWith(
+				'aria-labelledby',
+				sut.headingId,
+			)
+			expect(popover.removeAttribute).toHaveBeenCalledWith('aria-label')
+			expect(popover.setAttribute).not.toHaveBeenCalledWith(
+				'aria-label',
+				expect.anything(),
+			)
+		})
+
+		it('goes back to the aria-label when the heading is cleared', () => {
+			sut.ariaLabel = 'Select language'
+			sut.heading = 'Language'
+			sut.attached()
+			sut.heading = ''
+			sut.headingChanged()
+
+			expect(popover.removeAttribute).toHaveBeenCalledWith('aria-labelledby')
+			expect(popover.setAttribute).toHaveBeenCalledWith(
+				'aria-label',
+				'Select language',
+			)
+		})
+
+		it('gives every sheet its own heading id', () => {
+			expect(new BottomSheet().headingId).not.toBe(sut.headingId)
 		})
 	})
 

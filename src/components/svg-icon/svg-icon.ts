@@ -1,6 +1,7 @@
 import { bindable, INode, resolve } from 'aurelia'
 
-export type SvgIconSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl'
+/** sm 16 px, md 20 px, lg 24 px (an icon that stands on its own), xl 40 px. */
+export type SvgIconSize = 'sm' | 'md' | 'lg' | 'xl'
 
 export class SvgIcon {
 	@bindable public name = ''

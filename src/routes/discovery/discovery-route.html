@@ -17,7 +17,7 @@
 
     <!-- Search bar -->
     <search class="search-bar">
-      <svg-icon name="search" class="search-icon"></svg-icon>
+      <svg-icon name="search" size="lg" class="search-icon"></svg-icon>
       <input
         type="text"
         class="[ search-input ] [ md-typescale-body-large ]"
@@ -105,7 +105,7 @@
             ${artist.name.charAt(0)}
           </div>
           <span class="[ result-name ] [ md-typescale-body-large ]">${artist.name}</span>
-          <svg-icon if.bind="followedIds.has(artist.id)" name="check" class="followed-check"></svg-icon>
+          <svg-icon if.bind="followedIds.has(artist.id)" name="check" size="lg" class="followed-check"></svg-icon>
         </li>
       </ul>
     </section>

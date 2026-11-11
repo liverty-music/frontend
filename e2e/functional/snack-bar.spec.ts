@@ -306,6 +306,37 @@ test.describe('Snack bar: undo snack on My Artists (5.2)', () => {
 		const snackText = await snack.first().textContent()
 		expect(snackText).toBeTruthy()
 	})
+
+	test(`@spec components/infrastructure/fan/web/global/snack-bar "The Done bar of edit mode stays tappable"`, async ({
+		page,
+	}) => {
+		await page.locator('fab-menu .fab-toggle').click()
+		await page.locator('fab-menu .fab-item[data-action-id="edit"]').click()
+		const done = page.locator('.edit-action-bar button')
+		await expect(done).toBeVisible()
+
+		// Unfollow a row: the undo snack opens while the Done bar shows.
+		await page.locator('.artist-remove-btn').first().click()
+		const snackBottom = await openSnackBottom(page)
+		const barTop = await topOf(page, '.edit-action-bar')
+		// The snack's bottom edge is above the bar's top edge (one space-3xs
+		// step, as above any control floating over the route's bottom edge).
+		// One space-3xs step (4 px) above the bar.
+		expect(barTop - snackBottom).toBeCloseTo(4, 0)
+
+		// A tap at Done's centre lands on Done, not on the snack.
+		const reached = await done.evaluate((button) => {
+			const box = button.getBoundingClientRect()
+			const hit = document.elementFromPoint(
+				box.left + box.width / 2,
+				box.top + box.height / 2,
+			)
+			return hit === button || button.contains(hit)
+		})
+		expect(reached).toBe(true)
+		await done.click()
+		await expect(page.locator('.edit-action-bar')).toHaveCount(0)
+	})
 })
 
 // =========================================================================

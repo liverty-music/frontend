@@ -104,12 +104,13 @@
       <!-- Passkeys: opens passkey management, which asks the fan to sign in
            again in the hosted login every time. -->
       <li class="settings-list-item">
-        <settings-link-row
+        <list-item
           icon="lock"
           label.bind="'settings.passkeys' | t"
           test-id="settings-passkeys"
-          action.bind="() => openPasskeys()"
-        ></settings-link-row>
+          caret.bind="true"
+          click.trigger="openPasskeys()"
+        ></list-item>
       </li>
 
     </ul>
@@ -124,22 +125,24 @@
     <ul class="[ settings-card card ]" role="list">
       <!-- The saved name, or 「未設定」 while none is saved. -->
       <li class="settings-list-item">
-        <settings-link-row
+        <list-item
           if.bind="savedUser.fullName"
           icon="ticket"
           label.bind="savedUser.fullName"
           value.bind="savedPhoneDisplay"
           test-id="settings-personal-details-row"
-          action.bind="() => openPersonalDetails()"
-        ></settings-link-row>
-        <settings-link-row
+          caret.bind="true"
+          click.trigger="openPersonalDetails()"
+        ></list-item>
+        <list-item
           else
           icon="ticket"
           label.bind="'settings.notSet' | t"
           value.bind="savedPhoneDisplay"
           test-id="settings-personal-details-row"
-          action.bind="() => openPersonalDetails()"
-        ></settings-link-row>
+          caret.bind="true"
+          click.trigger="openPersonalDetails()"
+        ></list-item>
       </li>
     </ul>
     <p t="settings.personalDetails.note" class="[ settings-section-note ] [ md-typescale-body-medium ]"></p>
@@ -205,22 +208,24 @@
     <ul class="[ settings-card card ]" role="list">
       <!-- My Home Area -->
       <li class="settings-list-item">
-        <settings-link-row
+        <list-item
           icon="map-pin"
           label.bind="'settings.myHomeArea' | t"
           value.bind="currentHomeKey | t"
-          action.bind="() => openHomeSelector()"
-        ></settings-link-row>
+          caret.bind="true"
+          click.trigger="openHomeSelector()"
+        ></list-item>
       </li>
 
       <!-- Language -->
       <li class="settings-list-item">
-        <settings-link-row
+        <list-item
           icon="globe"
           label.bind="'settings.language' | t"
           value.bind="'languages.' + currentLocale | t"
-          action.bind="() => openLanguageSelector()"
-        ></settings-link-row>
+          caret.bind="true"
+          click.trigger="openLanguageSelector()"
+        ></list-item>
       </li>
 
       <!-- Left-handed mode: mirrors the FAB's action arc to open toward the left
@@ -290,39 +295,33 @@
       <!-- Terms of Service. Navigates via the VM's root router (openLegal), not
            a load/href attribute — see SettingsRoute.openLegal for why. -->
       <li class="settings-list-item">
-        <settings-link-row label.bind="'settings.termsOfService' | t" action.bind="() => openLegal('/legal/terms')"></settings-link-row>
+        <list-item label.bind="'settings.termsOfService' | t" caret.bind="true" click.trigger="openLegal('/legal/terms')"></list-item>
       </li>
 
       <!-- Privacy Policy: the only Privacy Policy row on the page. -->
       <li class="settings-list-item">
-        <settings-link-row label.bind="'settings.privacyPolicy' | t" test-id="settings-privacy-policy" action.bind="() => openLegal('/legal/privacy')"></settings-link-row>
+        <list-item label.bind="'settings.privacyPolicy' | t" test-id="settings-privacy-policy" caret.bind="true" click.trigger="openLegal('/legal/privacy')"></list-item>
       </li>
 
       <!-- OSS Licenses -->
       <li class="settings-list-item">
-        <settings-link-row label.bind="'settings.ossLicenses' | t" action.bind="() => openLegal('/legal/licenses')"></settings-link-row>
+        <list-item label.bind="'settings.ossLicenses' | t" caret.bind="true" click.trigger="openLegal('/legal/licenses')"></list-item>
       </li>
 
       <!-- Contact: a mailto link, so the device's mail app opens a new message
            to the support address. -->
       <li class="settings-list-item">
-        <a href="mailto:${supportEmail}" class="[ settings-row ] [ state-layer ]" data-testid="settings-contact">
-          <span t="settings.contact" class="[ settings-row-label ] [ md-typescale-body-large ]"></span>
-          <span class="settings-row-end">
-            <svg-icon name="chevron-right" class="settings-chevron"></svg-icon>
-          </span>
-        </a>
+        <list-item href="mailto:${supportEmail}" label.bind="'settings.contact' | t" caret.bind="true" test-id="settings-contact"></list-item>
       </li>
 
       <!-- App version. Read-only display; tapping copies the version string
            to the clipboard as a support affordance. -->
       <li class="settings-list-item">
-        <settings-link-row
+        <list-item
           label.bind="'settings.version' | t"
           value.bind="releaseVersion"
-          chevron.bind="false"
-          action.bind="() => copyVersion()"
-        ></settings-link-row>
+          click.trigger="copyVersion()"
+        ></list-item>
       </li>
     </ul>
   </section>
@@ -360,12 +359,13 @@
   <section if.bind="auth.isAuthenticated" aria-label.bind="'settings.deleteAccount' | t" data-testid="settings-delete-account-group">
     <ul class="[ settings-card card ]" role="list">
       <li class="settings-list-item">
-        <settings-link-row
+        <list-item
           icon="trash"
           label.bind="'settings.deleteAccount' | t"
           test-id="settings-delete-account"
-          action.bind="() => openDeleteAccount()"
-        ></settings-link-row>
+          caret.bind="true"
+          click.trigger="openDeleteAccount()"
+        ></list-item>
       </li>
     </ul>
   </section>
@@ -382,15 +382,14 @@
 <bottom-sheet
   open.bind="personalDetailsOpen"
   sheet-closed.trigger="personalDetailsOpen = false"
-  aria-label.bind="'settings.personalDetails.title' | t"
+  heading.bind="'settings.personalDetails.title' | t"
 >
   <form
-    class="[ settings-personal-details ] [ stack flow ]"
+    class="[ settings-personal-details ] [ stack ]"
     submit.trigger="savePersonalDetails()"
     novalidate
     data-testid="settings-personal-details"
   >
-    <h2 t="settings.personalDetails.title" class="[ selector-title ] [ md-typescale-title-large ]"></h2>
     <p id="personal-details-note" t="settings.personalDetails.note" class="[ settings-personal-details-note ] [ md-typescale-body-medium ]"></p>
     <label class="[ settings-field ] [ stack ]">
       <span t="settings.personalDetails.name" class="[ settings-field-label ] [ md-typescale-label-large ]"></span>
@@ -446,10 +445,9 @@
 <!-- Language Selector Bottom Sheet. Single-select: a radiogroup whose options
      expose `aria-checked` so SR users perceive the active language and that
      exactly one may be chosen (the check icon + data-selected are visual only). -->
-<bottom-sheet open.bind="languageSelectorOpen" sheet-closed.trigger="languageSelectorOpen = false" aria-label="Select language">
-  <div class="[ selector-content ] [ flow ]">
-    <h2 id="language-selector-title" t="settings.language" class="[ selector-title ] [ md-typescale-title-large ]"></h2>
-    <div class="[ language-list ] [ stack ]" role="radiogroup" aria-labelledby="language-selector-title">
+<bottom-sheet open.bind="languageSelectorOpen" sheet-closed.trigger="languageSelectorOpen = false" heading.bind="'settings.language' | t">
+  <div class="selector-content">
+    <div class="[ language-list ] [ stack ]" role="radiogroup" aria-label.bind="'settings.language' | t">
       <button
         repeat.for="lang of supportedLanguages"
         busy-on-click.bind="() => selectLanguage(lang)"
@@ -459,7 +457,7 @@
         data-selected.bind="currentLocale === lang"
       >
         <span t.bind="'languages.' + lang"></span>
-        <svg-icon if.bind="currentLocale === lang" name="check" class="language-check"></svg-icon>
+        <svg-icon if.bind="currentLocale === lang" name="check" size="lg" class="language-check"></svg-icon>
       </button>
     </div>
   </div>

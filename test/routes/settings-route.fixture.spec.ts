@@ -418,9 +418,11 @@ describe('SettingsRoute section order (fixture)', () => {
 describe('SettingsRoute rows (fixture)', () => {
 	it('@spec components/infrastructure/fan/web/route/settings "Consent rows and Passkeys"', async () => {
 		const r = await render(makeUserStore({ id: 'user-1' }))
-		const icons = [...r.host.querySelectorAll('svg-icon.settings-icon')].map(
-			(i) => (i as HTMLElement & { name?: string }).name,
-		)
+		const icons = [
+			...r.host.querySelectorAll(
+				'svg-icon.settings-icon, svg-icon.list-item-icon',
+			),
+		].map((i) => (i as HTMLElement & { name?: string }).name)
 		expect(icons).toContain('chart')
 		expect(icons).toContain('pointer')
 		expect(icons).toContain('lock')
@@ -431,9 +433,9 @@ describe('SettingsRoute rows (fixture)', () => {
 
 	it('@spec components/infrastructure/fan/web/route/settings "One Privacy Policy link next to the toggles"', async () => {
 		const r = await render(makeUserStore({ id: 'user-1' }))
-		const rows = [...r.host.querySelectorAll('.settings-row')].filter((row) =>
-			row.textContent?.includes(ja.settings.privacyPolicy),
-		)
+		const rows = [
+			...r.host.querySelectorAll('.settings-row, .list-item'),
+		].filter((row) => row.textContent?.includes(ja.settings.privacyPolicy))
 		// The About row is the only Privacy Policy row.
 		expect(rows).toEqual([r.q('settings-privacy-policy')])
 		const note = r.q('settings-analytics-policy-note')

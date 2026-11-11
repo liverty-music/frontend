@@ -381,23 +381,22 @@ export const Widths = {
 			await expect(dot.getBoundingClientRect().height).toBe(size)
 		}
 		// The room left for the name's text in its cell (the cell less its
-		// start padding, the colour dot and the gap): four full-width characters
-		// at 16 px, so a name like ヨルシカ shows whole.
+		// padding; the row has no colour dot before the name): five full-width
+		// characters at 16 px, so a name like ヨルシカ shows whole with room
+		// to spare.
 		// The name column fits its content, so measure with a long name.
 		const longName = firstRow.querySelector('.artist-row-name')
 		if (!longName) throw new Error('no artist name rendered')
 		longName.textContent = 'Official髭男dism'
 		await new Promise(requestAnimationFrame)
 		const cell = firstRow.querySelector<HTMLElement>('.artist-name-cell')
-		const dot = firstRow.querySelector<HTMLElement>('.artist-row-indicator')
-		if (!cell || !dot) throw new Error('no artist name cell rendered')
+		if (!cell) throw new Error('no artist name cell rendered')
+		await expect(cell.querySelector('.artist-row-indicator')).toBeNull()
 		const style = getComputedStyle(cell)
 		const room =
 			cell.getBoundingClientRect().width -
 			Number.parseFloat(style.paddingInlineStart) -
-			Number.parseFloat(style.paddingInlineEnd) -
-			dot.getBoundingClientRect().width -
-			Number.parseFloat(style.columnGap)
-		await expect(room).toBeGreaterThanOrEqual(64)
+			Number.parseFloat(style.paddingInlineEnd)
+		await expect(room).toBeGreaterThanOrEqual(80)
 	},
 } satisfies Story

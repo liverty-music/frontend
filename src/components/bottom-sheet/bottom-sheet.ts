@@ -17,6 +17,13 @@ export class BottomSheet {
 	@bindable public open = false
 	@bindable public dismissable = true
 	@bindable public ariaLabel = ''
+	// Plain-text heading shown below the handle bar; it also names the sheet.
+	@bindable public heading = ''
+
+	// Unique per instance, so two sheets on one screen never share the id the
+	// dialog's aria-labelledby points at.
+	private static nextId = 0
+	public readonly headingId = `bottom-sheet-heading-${++BottomSheet.nextId}`
 
 	private readonly host = resolve(INode) as HTMLElement
 	// App-wide record of open sheets; the shell hides the FAB while any is open.
@@ -92,6 +99,10 @@ export class BottomSheet {
 	}
 
 	public ariaLabelChanged(): void {
+		this.applyAriaLabel()
+	}
+
+	public headingChanged(): void {
 		this.applyAriaLabel()
 	}
 
@@ -436,14 +447,21 @@ export class BottomSheet {
 	}
 
 	/**
-	 * Mirror the accessible name onto the popover host. Consumers supply it
-	 * either through the `ariaLabel` bindable (`aria-label="..."` /
-	 * `aria-label.bind="..."`) or via the `t="[aria-label]..."` i18n attribute,
-	 * which sets `aria-label` on the host element — so fall back to reading it
-	 * off the host when the bindable is empty.
+	 * Name the popover host. A sheet with a heading is named by it
+	 * (`aria-labelledby`); one without is named by the `ariaLabel` bindable
+	 * (`aria-label="..."` / `aria-label.bind="..."`) or by the
+	 * `t="[aria-label]..."` i18n attribute, which sets `aria-label` on the host
+	 * element, so fall back to reading it off the host when the bindable is
+	 * empty.
 	 */
 	private applyAriaLabel(): void {
 		if (!this.popoverEl) return
+		if (this.heading) {
+			this.popoverEl.setAttribute('aria-labelledby', this.headingId)
+			this.popoverEl.removeAttribute('aria-label')
+			return
+		}
+		this.popoverEl.removeAttribute('aria-labelledby')
 		const label = this.ariaLabel || this.host.getAttribute('aria-label') || ''
 		if (label) {
 			this.popoverEl.setAttribute('aria-label', label)

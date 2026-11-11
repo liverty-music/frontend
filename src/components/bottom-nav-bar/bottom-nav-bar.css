@@ -1,8 +1,14 @@
 @layer block {
 	@scope (bottom-nav-bar) {
 		:scope {
-			--_tab-gap: 0.125rem;
+			/* Material 3: 4 dp between the icon and the label. */
+			--_tab-gap: var(--space-3xs);
 			--_safe-area-bottom: env(safe-area-inset-bottom);
+
+			/* The bar's own width decides the label size (below); a size
+			   container must be a block, not the custom element's inline. */
+			container: nav-bar / inline-size;
+			display: block;
 		}
 
 		/* Four tabs, two on each side of a centre slot kept for the FAB on every
@@ -20,8 +26,10 @@
 			justify-content: center;
 
 			/* Height published as a shared token so the FAB launcher can offset
-			   above the nav without a hard-coded constant (design D7). */
-			block-size: var(--bottom-nav-height);
+			   above the nav without a hard-coded constant (design D7).
+			   The safe area is added below the tabs, so they keep the whole
+			   64 px on a phone with a home indicator. */
+			block-size: calc(var(--bottom-nav-height) + var(--_safe-area-bottom));
 			padding-block-end: var(--_safe-area-bottom);
 
 			background: var(--md-sys-color-surface-container);
@@ -92,11 +100,6 @@
 			grid-column-start: 4;
 		}
 
-		.nav-icon {
-			inline-size: 1.25rem;
-			block-size: 1.25rem;
-		}
-
 		/* Active tab: 3-layer treatment so "current page" reads instantly:
 		   1) brand-accent color, 2) bolder label weight,
 		   3) a 2px accent bar at the top edge as a visual anchor. */
@@ -134,6 +137,23 @@
 		.nav-tab[data-dimmed] {
 			opacity: 0.3;
 			transition: opacity var(--md-sys-motion-duration-short4);
+		}
+
+		/* Below 360 px the four tabs beside the FAB's 72 px slot are 62 px
+		   wide. In Noto Sans JP label-medium (12 px), and still in label-small
+		   (11 px) with its 0.5 px tracking, the selected "Timetable" comes
+		   within 2 px of "Discovery". There the labels take label-small's
+		   size with no tracking, which leaves 6 px or more between two labels
+		   (Pixel 7, the widest rendering measured). Line height and weights
+		   are the same in both styles. A container query cannot switch the
+		   type class in the template, so the two values are set here. */
+		@container nav-bar (inline-size < 360px) {
+			.nav-label {
+				/* stylelint-disable-next-line property-disallowed-list -- a narrow bar switches its labels to label-small, which only CSS can do by width; the value is the shared label-small token */
+				font-size: var(--md-sys-typescale-label-small-size);
+				/* stylelint-disable-next-line property-disallowed-list -- the labels need the 0.5 px tracking back to fit four tabs beside the FAB at 320 px (measured 1.5 px between labels with it, 6 px without) */
+				letter-spacing: 0;
+			}
 		}
 	}
 }

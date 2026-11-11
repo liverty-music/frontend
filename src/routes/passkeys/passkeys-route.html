@@ -12,7 +12,7 @@
   <template if.bind="listState === 'ready'">
     <ul class="[ passkeys-card card ]" role="list" data-testid="passkeys-list">
       <li repeat.for="passkey of passkeys" class="passkeys-item" data-testid="passkeys-item">
-        <svg-icon name="lock" class="passkeys-icon"></svg-icon>
+        <svg-icon name="lock" size="lg" class="passkeys-icon"></svg-icon>
         <span class="[ passkeys-label ] [ stack ]">
           <span class="[ passkeys-name ] [ md-typescale-body-large ]" data-testid="passkeys-name">
             <template if.bind="passkey.providerName">${passkey.providerName}</template>
@@ -63,9 +63,8 @@
 
 <!-- Removal confirmation. The note about the device's passkey manager is part
      of the confirmation, so the fan reads it before confirming. -->
-<bottom-sheet open.bind="confirmOpen" sheet-closed.trigger="cancelRemoval()" aria-label.bind="'passkeys.confirm.title' | t">
+<bottom-sheet open.bind="confirmOpen" sheet-closed.trigger="cancelRemoval()" heading.bind="'passkeys.confirm.title' | t">
   <div class="[ passkeys-confirm ] [ stack ]" data-testid="passkeys-confirm">
-    <h2 t="passkeys.confirm.title" class="[ passkeys-confirm-title ] [ md-typescale-headline-small ]"></h2>
     <p class="[ passkeys-confirm-name ] [ md-typescale-body-large-emphasized ]">
       <template if.bind="pendingRemoval.providerName">${pendingRemoval.providerName}</template>
       <template else>

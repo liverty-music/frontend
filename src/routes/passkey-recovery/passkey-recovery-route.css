@@ -37,8 +37,6 @@
 		}
 
 		.passkey-recovery-icon {
-			inline-size: var(--space-xl);
-			block-size: var(--space-xl);
 			color: var(--color-success);
 		}
 	}

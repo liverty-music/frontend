@@ -1,11 +1,11 @@
 <import from="../settings-list/settings-list.css"></import>
 
 <div class="[ settings-row ] [ settings-row-toggle ]">
-  <svg-icon name.bind="icon" class="settings-icon"></svg-icon>
+  <svg-icon name.bind="icon" size="lg" class="settings-icon"></svg-icon>
   <button type="button" click.trigger="toggleExpanded()" aria-expanded.bind="expanded" class="[ settings-expand ] [ stack ] [ state-layer ]">
     <span class="settings-expand-head">
       <span class="[ settings-row-label ] [ md-typescale-body-large ]">${label}</span>
-      <svg-icon name="chevron-right" class="settings-expand-caret" data-expanded.bind="expanded"></svg-icon>
+      <svg-icon name="chevron-right" size="sm" class="settings-expand-caret" data-expanded.bind="expanded"></svg-icon>
     </span>
     <span if.bind="expanded" class="[ settings-toggle-desc ] [ md-typescale-body-medium ]">${description}</span>
   </button>
