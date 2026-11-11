@@ -170,7 +170,11 @@
 			min-inline-size: 0;
 			max-inline-size: 10rem;
 			padding-block: var(--space-3xs);
-			padding-inline: var(--space-s);
+
+			/* Start padding only: the first dot sits centred in its 48 px
+			   column, which already leaves 20 px before it, and a 320 px screen
+			   needs that width for the name. */
+			padding-inline-start: var(--space-s);
 
 			text-align: start;
 			white-space: nowrap;
