@@ -500,7 +500,13 @@ export const Structure = {
 		await expect(dialog.hasAttribute('aria-label')).toBe(true)
 		await expect([...dialog.children]).toEqual([area])
 		await expect(area.tagName).toBe('DIV')
-		await expect([...area.children]).toEqual([zoneOf(canvasElement), body])
+		// The sheet itself is the `sheet-surface` host, which has no box of its
+		// own: `.sheet-body` is laid out and snaps as the scroll area's child.
+		const surface = body.parentElement as HTMLElement
+		await expect([...area.children]).toEqual([zoneOf(canvasElement), surface])
+		await expect(surface.tagName).toBe('SHEET-SURFACE')
+		await expect(getComputedStyle(surface).display).toBe('contents')
+		await expect([...surface.children]).toEqual([body])
 		await expect(body.tagName).toBe('SECTION')
 
 		const style = getComputedStyle(area)
