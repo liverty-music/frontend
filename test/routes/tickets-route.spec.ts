@@ -1551,12 +1551,22 @@ describe('TicketsRoute', () => {
 		})
 
 		it('lets the later load win when two overlap', async () => {
-			ticketClient.list.mockResolvedValue([protoTicket(1)])
+			// The first read is slow and finishes after the second: it must not
+			// replace what the second showed.
+			const slow = deferred<Ticket[]>()
+			ticketClient.list
+				.mockReturnValueOnce(slow.promise)
+				.mockResolvedValue([protoTicket(1), protoTicket(2)])
 			const sut = build()
 			const first = sut.load()
+			await vi.waitFor(() => expect(ticketClient.list).toHaveBeenCalledTimes(1))
 			const second = sut.load()
-			await Promise.all([first, second])
+			await second
 			await vi.waitFor(() => expect(sut.device).not.toBe('checking'))
+			expect(sut.groups[0].tickets).toHaveLength(2)
+			slow.resolve([protoTicket(1)])
+			await first
+			expect(sut.groups[0].tickets).toHaveLength(2)
 			expect(sut.step).toBe('loaded')
 		})
 
