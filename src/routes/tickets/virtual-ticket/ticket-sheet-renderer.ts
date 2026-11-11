@@ -53,8 +53,6 @@ export interface TicketSheetOptions {
 	/** The room around the ticket on the canvas, for the bend and the sparks. */
 	readonly margin: number
 	readonly look: TicketLook
-	/** The art's share of the front's height. */
-	readonly split: number
 	/** Device pixels per CSS pixel of the drawing. */
 	readonly resolution: number
 }
@@ -102,7 +100,7 @@ const IDLE_AFTER = 1.6
  * The foil over the whole sheet, text included: lighter than over the art
  * alone, and faint on the back, so the lettering stays easy to read.
  */
-const FRONT_FOIL = 0.35
+const FRONT_FOIL = 0.2
 const BACK_FOIL = 0.1
 
 /**
@@ -192,7 +190,7 @@ export class TicketSheetRenderer {
 		})
 		this.mesh.autoResize = false
 
-		this.holo = createHoloFilter(sheetLook(options.look), options.split)
+		this.holo = createHoloFilter(sheetLook(options.look), 0)
 		this.uniforms = holoUniformsOf(this.holo)
 		this.sparks.blendMode = 'add'
 		this.world.addChild(this.mesh, this.sparks)
@@ -383,11 +381,10 @@ export class TicketSheetRenderer {
 
 		this.mesh.texture = showsBack ? this.backTexture : this.frontTexture
 		this.faceFoil = showsBack ? BACK_FOIL : FRONT_FOIL
-		// The back has no art: the foil stays faint all over it.
-		// The art's foot as a share of the canvas, which the foil is laid over.
-		this.uniforms.uSplit = showsBack
-			? 0
-			: (margin + height * this.options.split) / (height + margin * 2)
+		// The art is foiled by its own renderer inside the front, and the back
+		// has none, so this pass treats the whole sheet as paper: a faint foil
+		// and the glare only.
+		this.uniforms.uSplit = 0
 
 		const tiltY = this.tiltX * 0.16
 		const tiltX = this.tiltY * -0.12
