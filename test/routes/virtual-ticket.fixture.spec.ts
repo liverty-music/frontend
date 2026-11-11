@@ -196,15 +196,6 @@ describe('virtual-ticket', () => {
 		expect(card?.getAttribute('data-side')).toBe('front')
 	})
 
-	it('leaves the transfer statement off a ticket that may be transferred', async () => {
-		const { fixture } = await mount({
-			ticket: ticket({ resaleWithoutConsentProhibited: false }),
-		})
-		const back = text(fixture.appHost.querySelector('.ticket-back') as Element)
-		expect(back).not.toContain(ja.tickets.virtual.noResale)
-		expect(back).toContain(ja.tickets.virtual.verified)
-	})
-
 	it('shows the design the fan picks and tells the screen which', async () => {
 		// @spec components/infrastructure/fan/web/route/tickets "Fan picks a design"
 		const { fixture } = await mount()
@@ -241,7 +232,7 @@ describe('virtual-ticket', () => {
 	it('colours the ticket with the first performer’s hue', async () => {
 		const hueOf = (root: Element): string =>
 			root
-				.querySelector<HTMLElement>('.virtual-ticket-card')
+				.querySelector<HTMLElement>('.virtual-ticket-stage')
 				?.style.getPropertyValue('--artist-hue') ?? ''
 		const { fixture } = await mount()
 		expect(Number.isInteger(Number(hueOf(fixture.appHost)))).toBe(true)

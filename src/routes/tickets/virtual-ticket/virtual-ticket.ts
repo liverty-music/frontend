@@ -87,6 +87,8 @@ export class VirtualTicket {
 	public coverImage?: HTMLImageElement
 	/** Bound via `ref`: the canvas the art is drawn on. */
 	public canvas?: HTMLCanvasElement
+	/** Bound via `ref`: the box the card is laid out in at its design size. */
+	public fit?: HTMLElement
 	/** Bound via `ref`: the element that tilts and flips. */
 	public card?: HTMLElement
 	/** Bound via `ref`: the back. */
@@ -150,8 +152,7 @@ export class VirtualTicket {
 	 * Resolves to false when the browser cannot, leaving the DOM untouched.
 	 */
 	private async startSheet(): Promise<boolean> {
-		const { card, face, back } = this
-		const fit = card?.parentElement
+		const { card, face, back, fit } = this
 		if (!card || !face || !back || !fit) return false
 		try {
 			const { TicketSheetRenderer, sheetSupported } = await import(
@@ -185,16 +186,24 @@ export class VirtualTicket {
 			if (this.pressing) this.scheduleImpact()
 			return true
 		} catch {
-			// Put the card back where the DOM path expects it.
-			if (this.sheeted) {
-				const canvas = card.parentElement
-				fit.append(card)
-				canvas?.remove()
-				this.sheeted = false
-			}
 			this.sheet = null
+			this.leaveSheet()
 			return false
 		}
+	}
+
+	/**
+	 * Put the card back where the template has it and drop the sheet's
+	 * canvas. The view is kept and attached again when the ticket is
+	 * reopened, so the next start must find the DOM as the template made it.
+	 */
+	private leaveSheet(): void {
+		const { card, fit } = this
+		if (!this.sheeted || !card || !fit) return
+		const canvas = card.parentElement
+		fit.append(card)
+		if (canvas !== fit) canvas?.remove()
+		this.sheeted = false
 	}
 
 	public detaching(): void {
@@ -207,6 +216,7 @@ export class VirtualTicket {
 		this.renderer = null
 		this.sheet?.destroy()
 		this.sheet = null
+		this.leaveSheet()
 		this.drawn = false
 	}
 

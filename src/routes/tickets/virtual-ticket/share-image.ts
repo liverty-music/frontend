@@ -152,6 +152,11 @@ export async function renderShareImage(
 	for (const name of ['data-side', 'data-sheeted', 'data-thump']) {
 		shell.removeAttribute(name)
 	}
+	// The hue is set on the stage, above the card.
+	shell.style.setProperty(
+		'--artist-hue',
+		getComputedStyle(face).getPropertyValue('--artist-hue'),
+	)
 	shell.style.cssText += `;position:relative;inset:auto;transform:none;transition:none;animation:none;inline-size:${width}px;block-size:${height}px`
 	shell.append(clone)
 	host.append(shell)

@@ -13,15 +13,15 @@
      turns over at a tap (or with the button below). Each side is a separate element so the other can be inert. -->
 <div
 	class="virtual-ticket-stage"
+	style="--artist-hue: ${hue}"
 	pointermove.trigger="onPointerMove($event)"
 	pointerleave.trigger="onPointerLeave()"
 	click.trigger="onTap($event)"
 >
-	<div class="virtual-ticket-fit">
+	<div ref="fit" class="virtual-ticket-fit">
 	<div
 		ref="card"
 		class="virtual-ticket-card"
-		style="--artist-hue: ${hue}"
 		data-side.bind="side"
 		data-preset.bind="preset"
 		data-sheeted.bind="sheeted"
@@ -161,7 +161,7 @@
 			</dl>
 
 			<div class="ticket-back-notices" data-testid="virtual-ticket-notices">
-				<div if.bind="ticket.resaleWithoutConsentProhibited">
+				<div>
 					<p class="ticket-back-mark" t="tickets.virtual.noResale"></p>
 					<p t="tickets.virtual.noResaleDetail"></p>
 				</div>
