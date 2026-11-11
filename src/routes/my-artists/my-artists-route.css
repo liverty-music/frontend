@@ -164,7 +164,6 @@
 		/* ── Artist name cell ── */
 		.artist-name-cell {
 			display: flex;
-			gap: var(--space-xs);
 			align-items: center;
 
 			min-inline-size: 0;
@@ -178,19 +177,6 @@
 
 			text-align: start;
 			white-space: nowrap;
-		}
-
-		.artist-row-indicator {
-			flex-shrink: 0;
-
-			inline-size: 8px;
-			block-size: 8px;
-			border-radius: var(--md-sys-shape-corner-full);
-
-			vertical-align: middle;
-
-			/* stylelint-disable-next-line no-unknown-custom-properties -- set inline by the template, per artist */
-			background-color: var(--_dot-color);
 		}
 
 		.artist-row-name {
