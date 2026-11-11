@@ -32,6 +32,7 @@
 		border: 2px solid var(--color-brand-accent);
 		border-radius: var(--spotlight-radius, 12px);
 
+		/* stylelint-disable-next-line declaration-property-custom-property-allowed-list -- not elevation: the spec draws the dimmed layer around the spotlight as a box-shadow (coach-mark "Spotlight Visual Layer via Box-Shadow") */
 		box-shadow: var(--coach-overlay-shadow);
 
 		animation: coach-pulse 1.5s ease-in-out infinite;

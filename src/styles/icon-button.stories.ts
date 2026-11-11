@@ -114,8 +114,10 @@ export const Focused = {
 		await userEvent.tab()
 		await expect(el).toHaveFocus()
 		await expectShape(el)
-		// The fan app has no ring of its own yet (task 6.1): the browser's.
-		await expect(getComputedStyle(el).outlineStyle).not.toBe('none')
+		// The app's keyboard focus ring: 3 px, 2 px outside.
+		await expect(getComputedStyle(el).outlineStyle).toBe('solid')
+		await expect(getComputedStyle(el).outlineWidth).toBe('3px')
+		await expect(getComputedStyle(el).outlineOffset).toBe('2px')
 		await waitFor(() => expect(layer(el)).toBeCloseTo(0.1, 2))
 		await expectScreenshot(
 			canvasElement.firstElementChild ?? canvasElement,

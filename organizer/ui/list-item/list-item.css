@@ -21,7 +21,8 @@
 		padding-inline-end: var(--space-s);
 
 		&:focus-visible {
-			outline-offset: -3px;
+			/* stylelint-disable-next-line property-disallowed-list -- a list item reaches both edges of its list, so the global ring is drawn inside it */
+			outline-offset: calc(-1 * var(--md-sys-state-focus-indicator-thickness));
 		}
 	}
 

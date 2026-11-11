@@ -368,6 +368,8 @@ test.describe('ticket section layout', () => {
 		expect(layout.overflow).toBeLessThanOrEqual(0)
 		expect(layout.rows).toBeGreaterThan(1)
 		expect(layout.right).toBeLessThanOrEqual(320)
-		expect(layout.smallest).toBeGreaterThanOrEqual(44)
+		// The 48 px tap of dashboard "Canonical presentation kept"; its labels,
+		// icons and hues are checked in event-detail-sheet.fixture.spec.ts.
+		expect(layout.smallest).toBeGreaterThanOrEqual(48)
 	})
 })

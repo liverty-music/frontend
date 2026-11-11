@@ -40,8 +40,9 @@
 	/* Keyboard focus shows a ring in the brand color; a pointer click does not
 	   (`:focus-visible`). */
 	:where(:focus-visible) {
-		outline: var(--focus-ring-width) solid var(--md-sys-color-primary);
-		outline-offset: var(--focus-ring-offset);
+		outline: var(--md-sys-state-focus-indicator-thickness) solid
+			var(--md-sys-color-focus-indicator);
+		outline-offset: var(--md-sys-state-focus-indicator-outer-offset);
 	}
 
 	/* A control whose visible shape is under 48 px still answers taps on a

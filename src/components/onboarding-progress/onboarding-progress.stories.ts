@@ -4,6 +4,7 @@ import {
 	type StoryObj,
 } from '@aurelia/storybook'
 import { expect, userEvent, waitFor, within } from 'storybook/test'
+import { expectTargets } from '../../../.storybook/target-size'
 import { OnboardingProgress } from './onboarding-progress'
 
 const meta = {
@@ -103,5 +104,7 @@ export const Ready = {
 		})
 		await expect(link).toHaveAttribute('href', '/dashboard')
 		await expect(canvas.queryByRole('progressbar')).toBeNull()
+		// Once the row has grown in: a 48 px tap.
+		await waitFor(() => expectTargets(canvasElement, 'a'))
 	},
 } satisfies Story

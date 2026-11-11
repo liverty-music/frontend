@@ -52,13 +52,19 @@
 			inset: 0;
 		}
 
+		/* The link stretches over its row through ::after, so the row's area
+		   shows the ring, inside its edges, in place of the link text. */
 		&:focus-visible {
+			/* stylelint-disable-next-line property-disallowed-list -- the ring moves to the row area the link stretches over (below) */
 			outline: none;
 		}
 
 		&:focus-visible::after {
-			outline: var(--focus-ring-width) solid var(--md-sys-color-primary);
-			outline-offset: calc(-1 * var(--focus-ring-width));
+			/* stylelint-disable property-disallowed-list -- the row reaches both edges of the table, so the ring is drawn inside it */
+			outline: var(--md-sys-state-focus-indicator-thickness) solid
+				var(--md-sys-color-focus-indicator);
+			outline-offset: calc(-1 * var(--md-sys-state-focus-indicator-thickness));
+			/* stylelint-enable property-disallowed-list */
 		}
 	}
 

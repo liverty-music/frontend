@@ -6,6 +6,7 @@ import {
 import { expect, userEvent, waitFor } from 'storybook/test'
 import { composite, contrast, WCAG_AA } from '../../.storybook/contrast'
 import { expectScreenshot } from '../../.storybook/screenshot'
+import { expectTargets } from '../../.storybook/target-size'
 
 /**
  * Foundations story for the shared chip (`src/styles/chip.css`), a Material 3
@@ -326,6 +327,8 @@ export const WrappingRow = {
 				await expect(overlap).toBe(false)
 			}
 		}
+		// @spec components/infrastructure/fan/web/global/design-tokens "Neighbouring controls"
+		expectTargets(canvasElement, '.chip')
 		for (const el of all) await expectShape(el)
 		await expectScreenshot(
 			canvasElement.firstElementChild ?? canvasElement,

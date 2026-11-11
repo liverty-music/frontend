@@ -4,8 +4,8 @@
 			display: grid;
 			place-items: center;
 
-			inline-size: 2.75rem;
-			block-size: 2.75rem;
+			inline-size: var(--md-sys-target-size);
+			block-size: var(--md-sys-target-size);
 			border-radius: var(--md-sys-shape-corner-full);
 		}
 

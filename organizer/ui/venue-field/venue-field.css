@@ -42,8 +42,11 @@
 		   (aria-activedescendant), so the option draws the focus state itself. */
 		&[aria-selected="true"] {
 			background: var(--md-sys-color-surface-container-highest);
-			outline: var(--focus-ring-width) solid var(--md-sys-color-primary);
-			outline-offset: calc(-1 * var(--focus-ring-width));
+			/* stylelint-disable property-disallowed-list -- focus stays in the input (aria-activedescendant), so the option draws the ring itself, inside its edges because it reaches both sides of the list */
+			outline: var(--md-sys-state-focus-indicator-thickness) solid
+				var(--md-sys-color-focus-indicator);
+			outline-offset: calc(-1 * var(--md-sys-state-focus-indicator-thickness));
+			/* stylelint-enable property-disallowed-list */
 		}
 	}
 

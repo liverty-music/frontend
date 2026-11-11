@@ -6,6 +6,7 @@ import {
 import { expect } from 'storybook/test'
 import { composite, contrast, WCAG_AA } from '../../.storybook/contrast'
 import { expectScreenshot } from '../../.storybook/screenshot'
+import { expectTargets } from '../../.storybook/target-size'
 
 /**
  * Foundations story for the shared text button (`src/styles/button.css`), a
@@ -62,6 +63,13 @@ export const Catalog = {
 					`[data-row="${name}"] .button`,
 				),
 			)
+
+		// The default size is the Material 3 small button: 40 px tall, with a
+		// 48 px target through its ::after.
+		for (const el of canvasElement.querySelectorAll<HTMLElement>('.button')) {
+			await expect(el.getBoundingClientRect().height).toBe(40)
+		}
+		expectTargets(canvasElement, '.button')
 
 		// Every variant shares the shape (12px corners) on both elements.
 		for (const el of canvasElement.querySelectorAll<HTMLElement>('.button')) {
@@ -179,6 +187,8 @@ export const Compact = {
 			await expect(Number.parseFloat(target.height)).toBe(48)
 			await expect(Number.parseFloat(target.width)).toBeGreaterThanOrEqual(48)
 		}
+		// @spec components/infrastructure/fan/web/global/design-tokens "Compact button"
+		expectTargets(canvasElement, '.button')
 		await expectScreenshot(canvasElement, 'button-compact')
 	},
 } satisfies Story

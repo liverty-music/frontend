@@ -56,6 +56,16 @@
 	   utility (`shared/styles/state-layer.css`) on the controls that carry
 	   it; a bare <button> draws none. */
 
+	/* One keyboard focus ring for every element: 3 px, 2 px outside, in the
+	   app's ring colour. A pointer click shows none (`:focus-visible`). Blocks
+	   draw no ring of their own; forced-colours mode keeps the outline in a
+	   system colour. */
+	:where(:focus-visible) {
+		outline: var(--md-sys-state-focus-indicator-thickness) solid
+			var(--md-sys-color-focus-indicator);
+		outline-offset: var(--md-sys-state-focus-indicator-outer-offset);
+	}
+
 	/* Checkboxes, radios and range sliders take the brand colour. A text
 	   field's frame comes from the `text-field` block (`./text-field.css`). */
 	:where(input, textarea, select) {
@@ -196,15 +206,11 @@
 	}
 	/* stylelint-enable cube/prefer-where-in-reset */
 
-	/* High contrast: ensure borders and focus rings are visible */
+	/* High contrast: ensure borders are visible. The focus ring is the one
+	   above; its colour already reaches 3:1 on every surface. */
 	@media (prefers-contrast: more) {
 		:where(button, input, textarea, select) {
 			border: 2px solid currentcolor;
-		}
-
-		:where(:focus-visible) {
-			outline: 3px solid currentcolor;
-			outline-offset: 2px;
 		}
 	}
 

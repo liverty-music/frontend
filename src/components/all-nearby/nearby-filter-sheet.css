@@ -34,11 +34,6 @@
 			text-align: start;
 
 			background: var(--md-sys-color-surface-container);
-
-			&:focus-visible {
-				outline: 2px solid var(--color-brand-primary);
-				outline-offset: 2px;
-			}
 		}
 
 		.row-label {

@@ -36,6 +36,9 @@
 			translate: -50% 0;
 			scale: calc(1 - var(--_sunk) * (1 - var(--fab-sunk-scale)));
 
+			/* A popover clips its overflow by default; the touch target
+			   (::after) reaches past the sunk FAB's edge. */
+			overflow: visible;
 			display: grid;
 			place-items: center;
 
@@ -50,8 +53,7 @@
 				var(--color-brand-primary),
 				var(--color-brand-secondary)
 			);
-			box-shadow: 0 4px 20px
-				color-mix(in oklch, var(--color-brand-primary) 55%, transparent);
+			box-shadow: var(--glow-fab);
 
 			/* Spatial spring for the sink. A press shows the shared state layer
 			   (`state-layer`, ::before) alone: Material 3 scales no pressed FAB. */
@@ -68,6 +70,33 @@
 			   place on top, since snapshots paint in the order of their
 			   elements and the FAB is in the top layer (global.css). */
 			view-transition-name: fab-toggle;
+		}
+
+		/* The 48 px touch target, also while the FAB is sunk and scaled down:
+		   the scale applies to it too, so it is divided back out. */
+		.fab-toggle::after {
+			content: "";
+
+			position: absolute;
+			inset-block-start: 50%;
+			inset-inline-start: 50%;
+			translate: -50% -50%;
+
+			inline-size: max(
+				100%,
+				calc(
+					var(--md-sys-target-size) /
+					(1 - var(--_sunk) * (1 - var(--fab-sunk-scale)))
+				)
+			);
+			block-size: max(
+				100%,
+				calc(
+					var(--md-sys-target-size) /
+					(1 - var(--_sunk) * (1 - var(--fab-sunk-scale)))
+				)
+			);
+			border-radius: inherit;
 		}
 
 		/* ── Glyph: equalizer ↔ close ── */
@@ -246,7 +275,6 @@
 			color: var(--md-sys-color-on-surface);
 
 			background: var(--md-sys-color-menu-surface);
-			box-shadow: var(--shadow-soft);
 		}
 
 		.fab-item-label {
@@ -265,7 +293,6 @@
 			text-align: end;
 
 			background: var(--md-sys-color-menu-surface);
-			box-shadow: var(--shadow-soft);
 		}
 
 		/* Selected/active item = filled brand container (the M3 "on" treatment).

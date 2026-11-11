@@ -1,7 +1,7 @@
 /*
  * Styled for the fan app by default. An app can restyle it by setting these on
- * an ancestor: --snack-bar-container, --snack-bar-on-container,
- * --snack-bar-shadow, and --bottom-nav-height for the clearance above a
+ * an ancestor: --snack-bar-container, --snack-bar-on-container, and
+ * --bottom-nav-height for the clearance above a
  * bottom navigation bar. The message is body-medium. The action button takes
  * the fan app's shared button (`button` block) at its compact size, so the
  * message keeps the width of the row; an app without it styles
@@ -139,7 +139,7 @@
 				--snack-bar-container,
 				linear-gradient(to right, var(--_bg-from), var(--_bg-to))
 			);
-			box-shadow: var(--snack-bar-shadow, var(--shadow-card-glow));
+			box-shadow: var(--md-sys-elevation-level3);
 
 			/* The close button's 40 px container reaches into the end padding,
 			   so its 24 px icon sits as far from the edge as the message's
@@ -206,13 +206,11 @@
 		@keyframes snack-action-glow {
 			0%,
 			100% {
-				box-shadow: 0 0 0 0
-					color-mix(in oklch, var(--color-white) 0%, transparent);
+				box-shadow: var(--glow-attention-off);
 			}
 
 			50% {
-				box-shadow: 0 0 14px 2px
-					color-mix(in oklch, var(--color-white) 55%, transparent);
+				box-shadow: var(--glow-attention);
 			}
 		}
 	}

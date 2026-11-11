@@ -98,7 +98,7 @@
 		"prebuild": "npm run licenses:generate",
 		"test": "vitest run --project=unit --project=scripts",
 		"test:scripts": "vitest run --project=scripts",
-		"test-storybook": "vitest run --project=storybook --project=storybook-reduced-motion",
+		"test-storybook": "vitest run --project=storybook --project=storybook-reduced-motion --project=storybook-more-contrast",
 		"storybook": "storybook dev -p 6006",
 		"build-storybook": "storybook build",
 		"test:e2e": "playwright test",

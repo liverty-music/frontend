@@ -109,8 +109,10 @@ export const Focused = {
 		await userEvent.tab()
 		await expect(first).toHaveFocus()
 		await expectLink(first)
-		// The browser's keyboard focus ring shows until the app has its own.
-		await expect(getComputedStyle(first).outlineStyle).not.toBe('none')
+		// The app's keyboard focus ring: 3 px, 2 px outside.
+		await expect(getComputedStyle(first).outlineStyle).toBe('solid')
+		await expect(getComputedStyle(first).outlineWidth).toBe('3px')
+		await expect(getComputedStyle(first).outlineOffset).toBe('2px')
 		await expectScreenshot(
 			canvasElement.firstElementChild ?? canvasElement,
 			'text-link-focused',

@@ -7,9 +7,10 @@
  * and `color-scheme: light dark` lets the operating system pick: light by
  * default, dark when the system is dark, switching without a reload.
  *
- * Every value is a literal `oklch()` so test/organizer/styles/contrast.spec.ts
- * can compute the contrast of each role pair in both themes. Keep it that way:
- * a relative color or a `var()` inside a role breaks that check.
+ * Every value is a literal `oklch()`, or a plain `var()` of another role, so
+ * test/organizer/styles/contrast.spec.ts can compute the contrast of each role
+ * pair in both themes. Keep it that way: a relative color or a `var()` inside
+ * a larger value breaks that check.
  *
  * State-layer opacities, durations and easings come from
  * shared/styles/m3-sys.css and are not redefined here.
@@ -36,6 +37,10 @@
 			oklch(32% 0.12 350deg),
 			oklch(93% 0.04 350deg)
 		);
+
+		/* Keyboard focus ring: brand magenta, the primary role; its size is
+		   shared (m3-sys.css). */
+		--md-sys-color-focus-indicator: var(--md-sys-color-primary);
 
 		/* Neutral accent: tonal buttons, the selected navigation item and tab. */
 		--md-sys-color-secondary-container: light-dark(
@@ -192,10 +197,6 @@
 		/* Readable page width on expanded windows. */
 		--page-max-inline-size: 1200px;
 
-		/* Focus ring. */
-		--focus-ring-width: 3px;
-		--focus-ring-offset: 2px;
-
 		color-scheme: light dark;
 
 		/* Shadow colour of the shared elevation levels. */
@@ -216,5 +217,26 @@
 		/* A calm work tool: no brand face, every style uses the plain one. */
 		--md-ref-typeface-brand: var(--md-ref-typeface-plain);
 		--md-ref-typeface-mono: ui-monospace, "SFMono-Regular", monospace;
+	}
+
+	/* More contrast, when the operating system asks for it (Material 3's high
+	   contrast level: content at 7:1). Secondary text reaches 8:1 or more on
+	   every surface tier in both themes, and control boundaries and dividers
+	   5.5:1 or more. Every other role keeps its regular value. */
+	@media (prefers-contrast: more) {
+		:root {
+			--md-sys-color-on-surface-variant: light-dark(
+				oklch(36% 0.016 285deg),
+				oklch(88% 0.012 285deg)
+			);
+			--md-sys-color-outline: light-dark(
+				oklch(45% 0.014 285deg),
+				oklch(72% 0.014 285deg)
+			);
+			--md-sys-color-outline-variant: light-dark(
+				oklch(45% 0.014 285deg),
+				oklch(72% 0.014 285deg)
+			);
+		}
 	}
 }

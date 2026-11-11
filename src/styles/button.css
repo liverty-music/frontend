@@ -9,15 +9,16 @@
                    on a coloured surface (the snack bar)
    Every variant shares the shape, padding and label below, in one of two
    sizes (`data-size`):
-   - (none)        44px tall, 24px at the sides
+   - (none)        the Material 3 small button: 40px tall, 24px at the
+                   sides (https://m3.material.io/components/buttons/specs,
+                   token set "Button - Size - Small")
    - compact       the Material 3 extra-small button: 32px tall, 12px from
-                   the container edge to the label, label-large
-                   (https://m3.material.io/components/buttons/specs, token
-                   set "Button - Size - Xsmall"). For an action in a row of
-                   text: a snack bar, a bottom banner, a settings row. Its
-                   tap target stays 48px through a transparent ::after
-                   centred on it (M3 "Target areas"); a busy button's ::after
-                   is the spinner instead.
+                   the container edge to the label, label-large (token set
+                   "Button - Size - Xsmall"). For an action in a row of
+                   text: a snack bar, a bottom banner, a settings row.
+   At both sizes the tap target is 48px through a transparent ::after
+   centred on the button (M3 "Target areas"); a busy button's ::after is
+   the spinner instead.
    The label
    is set here, not by the templates: label-large is the button's role. Hover,
    focus and press come from the shared `state-layer` utility; the pending
@@ -37,7 +38,7 @@
 			align-items: center;
 			justify-content: center;
 
-			min-block-size: 2.75rem;
+			min-block-size: 2.5rem;
 			padding-block: var(--space-2xs);
 			padding-inline: var(--space-m);
 			border: 2px solid transparent;
@@ -53,7 +54,6 @@
 			letter-spacing: var(--md-sys-typescale-label-large-tracking);
 
 			background: var(--md-sys-color-primary);
-			box-shadow: var(--shadow-button);
 
 			transition: border-radius
 				var(--md-sys-motion-spring-spatial-fast-duration)
@@ -67,7 +67,6 @@
 		:scope:disabled {
 			cursor: not-allowed;
 			opacity: 0.5;
-			box-shadow: none;
 		}
 
 		/* The 2px transparent border is part of the container, so the label sits
@@ -79,7 +78,7 @@
 			padding-inline: calc(var(--space-xs) - 2px);
 		}
 
-		:scope[data-size="compact"]:not([data-busy])::after {
+		:scope:not([data-busy])::after {
 			content: "";
 
 			position: absolute;
@@ -98,18 +97,15 @@
 		border-color: var(--md-sys-color-outline-variant);
 		color: var(--md-sys-color-on-surface);
 		background: transparent;
-		box-shadow: none;
 	}
 
 	.button[data-variant="danger"] {
 		background: var(--md-sys-color-error-container);
-		box-shadow: none;
 	}
 
 	.button[data-variant="on-container"] {
 		border-color: color-mix(in oklch, var(--color-white) 62%, transparent);
 		color: var(--color-white);
 		background: color-mix(in oklch, var(--color-white) 18%, transparent);
-		box-shadow: none;
 	}
 }

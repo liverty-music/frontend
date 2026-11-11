@@ -79,7 +79,10 @@
 		   subgrid, so each header label sits over its column of dots. */
 		.artists-table {
 			display: grid;
-			grid-template-columns: auto repeat(4, minmax(44px, 1fr));
+			grid-template-columns: auto repeat(
+					4,
+					minmax(var(--md-sys-target-size), 1fr)
+				);
 			grid-template-rows: auto minmax(0, 1fr);
 			flex: 1;
 
@@ -167,7 +170,11 @@
 			min-inline-size: 0;
 			max-inline-size: 10rem;
 			padding-block: var(--space-3xs);
-			padding-inline: var(--space-s);
+
+			/* Start padding only: the first dot sits centred in its 48 px
+			   column, which already leaves 20 px before it, and a 320 px screen
+			   needs that width for the name. */
+			padding-inline-start: var(--space-s);
 
 			text-align: start;
 			white-space: nowrap;
@@ -227,7 +234,9 @@
 			align-items: center;
 			justify-content: center;
 
-			min-block-size: 44px;
+			/* The label is the dot's tap target: at least 48 px square (its
+			   column is at least 48 px wide). */
+			min-block-size: var(--md-sys-target-size);
 		}
 
 		/* ── Hype dot (base) ── */
@@ -250,13 +259,6 @@
 				box-shadow var(--md-sys-motion-duration-short4) ease-out,
 				opacity var(--md-sys-motion-duration-short4) ease-out;
 
-			/* 44px min tap target */
-			&::before {
-				content: "";
-				position: absolute;
-				inset: -18px;
-			}
-
 			&[data-active="true"] {
 				inline-size: 14px;
 				block-size: 14px;
@@ -267,6 +269,8 @@
 				border: 1px solid oklch(100% 0 0deg / 10%);
 				background: var(--md-sys-color-surface);
 			}
+
+			/* stylelint-disable declaration-property-value-allowed-list -- the hype tier glows in the artist's own colour are spec-defined (my-artists "Active dot reflects hype tier CSS effects"); a colour set per row cannot be a root token */
 
 			/* HOME: subtle glow */
 			&[data-active="true"][data-level="home"] {
@@ -297,6 +301,16 @@
 					oklch(from var(--_dot-color, oklch(70% 0.15 60deg)) l c h / 20%);
 				animation: dot-pulse 1.5s ease-in-out infinite;
 			}
+			/* stylelint-enable declaration-property-value-allowed-list */
+		}
+
+		/* The radio is visually hidden, so its dot shows the focus ring. */
+		.hype-label:has(> input:focus-visible) > .hype-dot {
+			/* stylelint-disable property-disallowed-list -- the radio a hype dot stands for is visually hidden, so the dot draws the global ring in its place */
+			outline: var(--md-sys-state-focus-indicator-thickness) solid
+				var(--md-sys-color-focus-indicator);
+			outline-offset: var(--md-sys-state-focus-indicator-outer-offset);
+			/* stylelint-enable property-disallowed-list */
 		}
 
 		/* ── Remove column (edit mode) ── */
@@ -317,9 +331,9 @@
 			align-items: center;
 			justify-content: center;
 
-			/* 44 px minimum tap target on both pointer types (WCAG 2.5.5). */
-			min-inline-size: 44px;
-			min-block-size: 44px;
+			/* The 48 px touch target on both pointer types. */
+			min-inline-size: var(--md-sys-target-size);
+			min-block-size: var(--md-sys-target-size);
 			border-radius: var(--md-sys-shape-corner-small);
 
 			/* Full colour at rest: hover and focus are the shared state layer

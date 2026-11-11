@@ -4,8 +4,6 @@
 			--_swap-duration: 620ms;
 			--_swap-easing: cubic-bezier(0.34, 1.5, 0.64, 1);
 			--_tile-surface: oklch(from var(--md-sys-color-surface) l c h / 90%);
-			--_shadow: oklch(0% 0 0deg / 50%);
-			--_rim: oklch(from var(--color-white) l c h / 10%);
 
 			/* The icon's side, and one unit of its 64-unit view box. */
 			--_icon-size: calc(var(--swap-tile-size) - 0.5rem);
@@ -33,14 +31,7 @@
 
 			background: var(--_tile-surface);
 			backdrop-filter: blur(6px);
-			box-shadow:
-				0 8px 22px var(--_shadow),
-				inset 0 1px 0 var(--_rim);
-
-			&:focus-visible {
-				outline: 2px solid var(--color-brand-primary);
-				outline-offset: 3px;
-			}
+			box-shadow: var(--md-sys-elevation-level3);
 		}
 
 		/* The parts that want a line (badge, rims, pin, perforation) set

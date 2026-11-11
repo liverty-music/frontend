@@ -5,6 +5,7 @@ import {
 } from '@aurelia/storybook'
 import { expect, within } from 'storybook/test'
 import { expectScreenshot } from '../../../.storybook/screenshot'
+import { expectTargets } from '../../../.storybook/target-size'
 import { type EventDateTab, EventDateTabs } from './event-date-tabs'
 
 const meta = {
@@ -66,12 +67,10 @@ export const FourDates = {
 		const canvas = within(canvasElement)
 		const links = canvas.getAllByRole('link')
 		await expect(links).toHaveLength(4)
-		// Every tab keeps the 44px tap target and fits the 360px frame.
-		for (const link of links) {
-			await expect(link.getBoundingClientRect().height).toBeGreaterThanOrEqual(
-				44,
-			)
-		}
+		// Every tab is a 48 px touch target, side by side without overlap,
+		// and the four fit the 360px frame.
+		// @spec components/infrastructure/fan/web/global/design-tokens "Neighbouring controls"
+		expectTargets(canvasElement, 'a')
 		const frame = canvasElement.querySelector('.frame-360') as HTMLElement
 		await expect(frame.scrollWidth).toBeLessThanOrEqual(360)
 		await expectScreenshot(frame, 'event-date-tabs-four-360')
@@ -88,11 +87,7 @@ export const WithCancelledDate = {
 		await expect(links[1]).toHaveTextContent('11/21(土)中止')
 		await expect(links[0]).not.toHaveTextContent('中止')
 		// The mark stays inside the tap target and the 360px frame.
-		for (const link of links) {
-			await expect(link.getBoundingClientRect().height).toBeGreaterThanOrEqual(
-				44,
-			)
-		}
+		expectTargets(canvasElement, 'a')
 		const frame = canvasElement.querySelector('.frame-360') as HTMLElement
 		await expect(frame.scrollWidth).toBeLessThanOrEqual(360)
 	},

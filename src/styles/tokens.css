@@ -52,13 +52,20 @@
 		--toggle-thumb-inset: 0.125rem;
 		--toggle-thumb-translate: 1.25rem;
 
-		/* Shadows (derived from brand color via relative color syntax) */
-		--shadow-card-glow: 0 4px 24px -4px
-			oklch(from var(--color-brand-primary) l c h / 20%);
-		--shadow-sheet: 0 -8px 32px -4px oklch(0% 0 0deg / 50%);
-		--shadow-button: 0 4px 16px -2px
-			oklch(from var(--color-brand-primary) l c h / 30%);
-		--shadow-soft: 0 2px 8px oklch(0% 0 0deg / 20%);
+		/* Glows: light in a brand colour. A glow is not elevation (depth comes
+		   from the shared --md-sys-elevation-level* shadows and the surface
+		   tiers); it is used where a surface's own spec describes one. */
+		--glow-fab: 0 4px 20px
+			color-mix(in oklch, var(--color-brand-primary) 55%, transparent);
+		--glow-progress: 0 0 0.75rem
+			oklch(from var(--color-brand-primary) l c h / 55%);
+		--glow-progress-ready: 0 0 1.25rem
+			oklch(from var(--color-brand-primary) l c h / 55%);
+		--glow-beacon: 0 0 0 2px var(--color-brand-accent);
+		--glow-attention-off: 0 0 0 0
+			color-mix(in oklch, var(--color-white) 0%, transparent);
+		--glow-attention: 0 0 14px 2px
+			color-mix(in oklch, var(--color-white) 55%, transparent);
 
 		/* ── Material 3 role tokens (mapped onto the oklch brand palette) ──
 		   Single dark ("stage-lit") theme; roles are encoded (not raw colors)
@@ -211,6 +218,11 @@
 		/* Shadow colour of the shared elevation levels. */
 		--md-sys-color-shadow: oklch(0% 0 0deg);
 
+		/* Keyboard focus ring colour; its size is shared (m3-sys.css). The
+		   brand colour, not the darker `primary` role: the ring must reach 3:1
+		   on every surface tier, and primary is darkened for its white label. */
+		--md-sys-color-focus-indicator: var(--color-brand-primary);
+
 		/* Corner shapes at the Material 3 values (ShapeTokens.kt). */
 		--md-sys-shape-corner-none: 0;
 		--md-sys-shape-corner-extra-small: 4px;
@@ -226,5 +238,19 @@
 		/* Display and headline styles: Righteous, with the plain face behind it
 		   for the characters it lacks. */
 		--md-ref-typeface-brand: "Righteous", var(--md-ref-typeface-plain);
+	}
+
+	/* More contrast, when the operating system asks for it (Material 3's high
+	   contrast level: content at 7:1, m3.material.io/styles/color/system/
+	   how-the-system-works). Secondary text and icons reach 10:1 or more on
+	   every surface tier, and control boundaries and dividers, translucent
+	   at regular contrast, become opaque at 5.5:1 or more. Every other role
+	   keeps its regular value. */
+	@media (prefers-contrast: more) {
+		:root {
+			--md-sys-color-on-surface-variant: oklch(90% 0.02 275deg);
+			--md-sys-color-outline: oklch(72% 0.02 275deg);
+			--md-sys-color-outline-variant: oklch(72% 0.02 275deg);
+		}
 	}
 }

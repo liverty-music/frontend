@@ -19,7 +19,7 @@
 			border-radius: var(--md-sys-shape-corner-large);
 
 			background: var(--_notif-surface);
-			box-shadow: var(--shadow-card-glow);
+			box-shadow: var(--md-sys-elevation-level3);
 		}
 
 		.notification-mock-icon {

@@ -4,7 +4,9 @@ import {
 	type StoryObj,
 } from '@aurelia/storybook'
 import {
+	CONTRAST_SAMPLES,
 	ELEVATION_SAMPLES,
+	expectContrastLevel,
 	expectEmphasizedOneStepHeavier,
 	expectLargerBrowserTextSize,
 	expectNamedElevationLevels,
@@ -90,5 +92,21 @@ export const SharedSystemTokens = {
 		expectSharedStateAndMotion(inside)
 		// @spec components/infrastructure/fan/web/global/design-tokens "Colors stay per app"
 		expectOwnSurface(inside, consoleTokens)
+	},
+} satisfies Story
+
+/**
+ * Secondary text and boundaries on every surface tier, in a console shadow
+ * root. Runs in the default project and, tagged `more-contrast`, in a browser
+ * context that asks for more contrast (`storybook-more-contrast`).
+ */
+export const ContrastLevel = {
+	tags: ['more-contrast'],
+	render: () => defineAureliaStory({ template: '' }),
+	play: async ({ canvasElement, globals }) => {
+		const root = consoleShadowRoot(canvasElement, CONTRAST_SAMPLES)
+		// @spec components/infrastructure/organizer/web/global/design-tokens "Secondary text with more contrast"
+		// @spec components/infrastructure/organizer/web/global/design-tokens "Regular contrast is unchanged"
+		expectContrastLevel(root, consoleTokens, globals.moreContrast)
 	},
 } satisfies Story

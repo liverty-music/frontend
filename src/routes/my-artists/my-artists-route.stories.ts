@@ -8,6 +8,7 @@ import { CustomElement, Registration } from 'aurelia'
 import { expect, userEvent, waitFor } from 'storybook/test'
 import { expectAriaTree } from '../../../.storybook/aria'
 import { capturePixels, expectScreenshot } from '../../../.storybook/screenshot'
+import { expectTargets } from '../../../.storybook/target-size'
 import { PageHelp } from '../../components/page-help/page-help'
 import { SignupPromptBanner } from '../../components/signup-prompt-banner/signup-prompt-banner'
 import { StatePlaceholder } from '../../components/state-placeholder/state-placeholder'
@@ -330,5 +331,73 @@ export const Widths = {
 		for (const route of canvasElement.querySelectorAll('my-artists-route')) {
 			await expectDotsUnderLabels(route)
 		}
+		// At 320 px the four dots still take a 48 px tap each, side by side
+		// without overlap, and the artist name keeps room to be read.
+		const narrow = canvasElement.querySelector('my-artists-route')
+		if (!narrow) throw new Error('no route rendered')
+		const firstRow = narrow.querySelector<HTMLElement>(
+			'[data-artist-rows] .artist-row',
+		)
+		if (!firstRow) throw new Error('no artist row rendered')
+		// @spec components/infrastructure/fan/web/route/my-artists "Slider renders on each artist row"
+		// @spec components/infrastructure/fan/web/global/design-tokens "Neighbouring controls"
+		expectTargets(firstRow, '.hype-label')
+		// The name on the left and the slider on its right, on one row: four
+		// stops on a 2 px track, the active dot 14 px and the others 8 px.
+		const nameCell = firstRow.querySelector('.artist-name-cell')
+		const labels = [...firstRow.querySelectorAll('.hype-label')]
+		if (!nameCell) throw new Error('no artist name cell rendered')
+		await expect(labels).toHaveLength(4)
+		const middle = (el: Element) => {
+			const r = el.getBoundingClientRect()
+			return r.top + r.height / 2
+		}
+		for (const label of labels) {
+			await expect(
+				Math.abs(middle(label) - middle(nameCell)),
+			).toBeLessThanOrEqual(1)
+			await expect(label.getBoundingClientRect().left).toBeGreaterThanOrEqual(
+				nameCell.getBoundingClientRect().right,
+			)
+		}
+		await expect(
+			getComputedStyle(firstRow.querySelector('.artist-row-name') as Element)
+				.textOverflow,
+		).toBe('ellipsis')
+		await expect(getComputedStyle(labels[0], '::before').height).toBe('2px')
+		await Promise.all(
+			document
+				.getAnimations()
+				.filter((a) => a instanceof CSSTransition)
+				.map((a) => a.finished),
+		)
+		const dots = [...firstRow.querySelectorAll<HTMLElement>('.hype-dot')]
+		await expect(dots.filter((d) => d.dataset.active === 'true')).toHaveLength(
+			1,
+		)
+		for (const dot of dots) {
+			const size = dot.dataset.active === 'true' ? 14 : 8
+			await expect(dot.getBoundingClientRect().width).toBe(size)
+			await expect(dot.getBoundingClientRect().height).toBe(size)
+		}
+		// The room left for the name's text in its cell (the cell less its
+		// start padding, the colour dot and the gap): four full-width characters
+		// at 16 px, so a name like ヨルシカ shows whole.
+		// The name column fits its content, so measure with a long name.
+		const longName = firstRow.querySelector('.artist-row-name')
+		if (!longName) throw new Error('no artist name rendered')
+		longName.textContent = 'Official髭男dism'
+		await new Promise(requestAnimationFrame)
+		const cell = firstRow.querySelector<HTMLElement>('.artist-name-cell')
+		const dot = firstRow.querySelector<HTMLElement>('.artist-row-indicator')
+		if (!cell || !dot) throw new Error('no artist name cell rendered')
+		const style = getComputedStyle(cell)
+		const room =
+			cell.getBoundingClientRect().width -
+			Number.parseFloat(style.paddingInlineStart) -
+			Number.parseFloat(style.paddingInlineEnd) -
+			dot.getBoundingClientRect().width -
+			Number.parseFloat(style.columnGap)
+		await expect(room).toBeGreaterThanOrEqual(64)
 	},
 } satisfies Story
