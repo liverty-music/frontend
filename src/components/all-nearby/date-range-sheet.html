@@ -5,11 +5,9 @@
 <bottom-sheet
   open.bind="isOpen"
   sheet-closed.trigger="onSheetClosed()"
-  aria-labelledby="date-range-sheet-title"
+  heading.bind="'allNearby.dateRange.title' | t"
 >
   <div class="[ date-range-sheet ] [ flow ]">
-    <h2 class="[ sheet-title ] [ md-typescale-title-large ]" id="date-range-sheet-title" t="allNearby.dateRange.title"></h2>
-
     <!-- Quick presets: apply-and-close in one tap -->
     <section class="[ preset-section ] [ flow ]">
       <p class="[ section-label ] [ md-typescale-title-small ]" t="allNearby.dateRange.presetsLabel"></p>

@@ -10,19 +10,8 @@
 		.filter-sheet-content {
 			--stack-gap: var(--space-s);
 
-			padding-block: var(--space-s) var(--space-m);
+			padding-block-end: var(--space-m);
 			padding-inline: var(--space-m);
-		}
-
-		/* ── Header row: title + clear-all ── */
-		.sheet-header {
-			display: flex;
-			align-items: center;
-			justify-content: space-between;
-		}
-
-		.sheet-title {
-			color: var(--md-sys-color-on-surface);
 		}
 
 		/* ── Facet section: heading + chip group ── */

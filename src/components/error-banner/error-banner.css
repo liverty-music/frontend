@@ -1,18 +1,12 @@
 @layer block {
 	@scope (error-banner) {
-		/* The `card` block draws the message. */
+		/* The sheet is the surface; the content lines up with its heading. */
 		.error-content {
-			inline-size: 100%;
-			max-inline-size: 28rem;
-		}
-
-		.error-title {
-			color: var(--md-sys-color-on-surface);
+			padding-block-end: var(--space-m);
+			padding-inline: var(--space-m);
 		}
 
 		.error-message {
-			--flow-space: var(--space-3xs);
-
 			color: var(--md-sys-color-on-surface-variant);
 
 			/* The message is three lines in the catalog. */

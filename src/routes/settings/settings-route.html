@@ -382,15 +382,14 @@
 <bottom-sheet
   open.bind="personalDetailsOpen"
   sheet-closed.trigger="personalDetailsOpen = false"
-  aria-label.bind="'settings.personalDetails.title' | t"
+  heading.bind="'settings.personalDetails.title' | t"
 >
   <form
-    class="[ settings-personal-details ] [ stack flow ]"
+    class="[ settings-personal-details ] [ stack ]"
     submit.trigger="savePersonalDetails()"
     novalidate
     data-testid="settings-personal-details"
   >
-    <h2 t="settings.personalDetails.title" class="[ selector-title ] [ md-typescale-title-large ]"></h2>
     <p id="personal-details-note" t="settings.personalDetails.note" class="[ settings-personal-details-note ] [ md-typescale-body-medium ]"></p>
     <label class="[ settings-field ] [ stack ]">
       <span t="settings.personalDetails.name" class="[ settings-field-label ] [ md-typescale-label-large ]"></span>
@@ -446,10 +445,9 @@
 <!-- Language Selector Bottom Sheet. Single-select: a radiogroup whose options
      expose `aria-checked` so SR users perceive the active language and that
      exactly one may be chosen (the check icon + data-selected are visual only). -->
-<bottom-sheet open.bind="languageSelectorOpen" sheet-closed.trigger="languageSelectorOpen = false" aria-label="Select language">
-  <div class="[ selector-content ] [ flow ]">
-    <h2 id="language-selector-title" t="settings.language" class="[ selector-title ] [ md-typescale-title-large ]"></h2>
-    <div class="[ language-list ] [ stack ]" role="radiogroup" aria-labelledby="language-selector-title">
+<bottom-sheet open.bind="languageSelectorOpen" sheet-closed.trigger="languageSelectorOpen = false" heading.bind="'settings.language' | t">
+  <div class="selector-content">
+    <div class="[ language-list ] [ stack ]" role="radiogroup" aria-label.bind="'settings.language' | t">
       <button
         repeat.for="lang of supportedLanguages"
         busy-on-click.bind="() => selectLanguage(lang)"

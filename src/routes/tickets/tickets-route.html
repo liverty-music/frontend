@@ -243,10 +243,9 @@
 		open.bind="isListingOpen"
 		dismissable.bind="!resaleBusy"
 		sheet-closed.trigger="cancelListing()"
-		aria-label.bind="i18n.tr('tickets.resale.confirmTitle')"
+		heading.bind="i18n.tr('tickets.resale.confirmTitle')"
 	>
 		<div class="[ tickets-code ] [ flow ]" if.bind="listingTicket" data-testid="tickets-resale-confirm">
-			<h2 class="[ tickets-step-title ] [ md-typescale-title-large-emphasized ]" t="tickets.resale.confirmTitle"></h2>
 			<p class="[ tickets-code-event ] [ md-typescale-title-medium ]">${listingGroup.event?.title}</p>
 			<dl class="summary-list">
 				<div>
@@ -362,10 +361,9 @@
 		open.bind="isCodeOpen"
 		dismissable.bind="true"
 		sheet-closed.trigger="closeCode()"
-		aria-label.bind="i18n.tr('tickets.code.title')"
+		heading.bind="i18n.tr('tickets.code.title')"
 	>
 		<div class="[ tickets-code ] [ flow ]" if.bind="codeGroup">
-			<h2 class="[ tickets-step-title ] [ md-typescale-title-large-emphasized ]" t="tickets.code.title"></h2>
 			<p class="[ tickets-code-event ] [ md-typescale-title-medium ]">${codeGroup.event?.title}</p>
 
 			<p class="[ tickets-code-count ] [ md-typescale-headline-large ]" if.bind="headCount > 0">

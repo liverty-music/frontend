@@ -24,8 +24,9 @@ import { IPwaInstallService } from '../../src/services/pwa-install-service'
 const BottomSheetStub = CustomElement.define(
 	{
 		name: 'bottom-sheet',
-		template: '<au-slot if.bind="open"></au-slot>',
-		bindables: ['open', 'ariaLabel'],
+		// The real sheet draws its heading and is named by it.
+		template: `<div if.bind="open"><h2 class="sheet-heading">\${heading}</h2><au-slot></au-slot></div>`,
+		bindables: ['open', 'ariaLabel', 'heading'],
 	},
 	class {},
 )
@@ -172,7 +173,7 @@ describe('PostSignupDialog', () => {
 		it('says the search for the followed artists has started', async () => {
 			const d = await render({ followed: 5 })
 
-			expect(d.text('.post-signup-title')).toBe('新着ライブをいち早くお知らせ')
+			expect(d.text('.sheet-heading')).toBe('新着ライブをいち早くお知らせ')
 			expect(d.text('.post-signup-body')).toBe(
 				'フォロー中の5組のライブを探し始めました。見つかったら通知で届けます。',
 			)
@@ -245,7 +246,7 @@ describe('PostSignupDialog', () => {
 		// @spec components/infrastructure/fan/web/global/post-signup-dialog "Browser offers an install prompt"
 		it('opens the browser install prompt and closes after it is answered', async () => {
 			const d = await render({ permission: 'granted', nativePrompt: true })
-			expect(d.text('.post-signup-title')).toBe(t.install.title)
+			expect(d.text('.sheet-heading')).toBe(t.install.title)
 			expect(d.text('.post-signup-body')).toBe(t.install.body)
 			expect(d.host.querySelector('.post-signup-app-icon')).not.toBeNull()
 
@@ -285,7 +286,7 @@ describe('PostSignupDialog', () => {
 			const d = await render({ ios: true, canReceivePush: false })
 
 			expect(d.step()).toBe('iosGuide')
-			expect(d.text('.post-signup-title')).toBe(t.notify.title)
+			expect(d.text('.sheet-heading')).toBe(t.notify.title)
 			expect(d.text('.post-signup-body')).toBe(t.ios.body)
 			const steps = [...d.host.querySelectorAll('.post-signup-steps li')].map(
 				(li) => li.textContent,
@@ -308,8 +309,8 @@ describe('PostSignupDialog', () => {
 		it('shows the English title in English', async () => {
 			const d = await render({ lng: 'en' })
 
-			expect(d.text('.post-signup-title')).toBe(en.postSignup.notify.title)
-			expect(d.text('.post-signup-title')).not.toBe(t.notify.title)
+			expect(d.text('.sheet-heading')).toBe(en.postSignup.notify.title)
+			expect(d.text('.sheet-heading')).not.toBe(t.notify.title)
 		})
 
 		// @spec components/infrastructure/fan/web/global/post-signup-dialog "aria-label follows active locale"
@@ -317,11 +318,12 @@ describe('PostSignupDialog', () => {
 			const d = await render({ lng: 'en' })
 			const i18n = d.fixture.container.get(I18N)
 
+			// The sheet is named by its heading, the step's title.
 			const sheet = d.host.querySelector('bottom-sheet') as HTMLElement
-			const label =
-				sheet.getAttribute('aria-label') ??
-				(CustomElement.for(sheet).viewModel as { ariaLabel?: string }).ariaLabel
-			expect(label).toBe(en.postSignup.ariaLabel)
+			const heading = (
+				CustomElement.for(sheet).viewModel as { heading?: string }
+			).heading
+			expect(heading).toBe(en.postSignup.notify.title)
 			expect(i18n.getLocale()).toBe('en')
 		})
 

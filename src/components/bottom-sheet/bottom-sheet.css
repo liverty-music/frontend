@@ -8,7 +8,6 @@
 
 		.sheet-popover {
 			--_backdrop-bg: oklch(0% 0 0deg / 60%);
-			--_handle-bg: oklch(100% 0 0deg / 20%);
 
 			/* Entry fade duration. The CLOSE is the dismiss scroll (see
 			   .scroll-area), so there is deliberately NO fixed-duration exit
@@ -160,6 +159,11 @@
 		}
 
 		.sheet-body {
+			/* Material 3: full width up to 640 px, centred by the `wrapper`
+			   composition, with no side gutter of its own. */
+			--wrapper-max: 40rem;
+			--gutter: 0px;
+
 			scroll-snap-align: end;
 
 			/*
@@ -205,27 +209,40 @@
 			}
 		}
 
+		/* Material 3 drag handle: 32 x 4 px in the middle of a 48 px area
+		   (22 px above and below). The content, or the heading, starts right
+		   below the area. */
 		.handle-bar {
 			display: flex;
+			align-items: center;
 			justify-content: center;
-
-			/* Bottom padding establishes a baseline gap between the handle
-			   and the slotted content so consumers that don't add their
-			   own top padding (e.g. user-home-selector) still get
-			   breathing room. Consumers that DO add their own top padding
-			   (post-signup-dialog, page-help) keep their tighter / looser
-			   tone on top of this baseline. */
-			padding-block: var(--space-2xs) var(--space-xs);
+			block-size: 3rem;
 
 			&::after {
 				content: "";
 
-				inline-size: 2.5rem;
+				inline-size: 2rem;
 				block-size: 0.25rem;
 				border-radius: var(--md-sys-shape-corner-full);
 
-				background: var(--_handle-bg);
+				background: var(--md-sys-color-on-surface-variant);
 			}
+		}
+
+		/* The heading, 24 px from both edges and 16 px above the content; a
+		   sheet-wide action (clear all) sits at its end. */
+		.sheet-heading-row {
+			display: flex;
+			gap: var(--space-s);
+			align-items: center;
+			justify-content: space-between;
+
+			padding-block-end: var(--space-s);
+			padding-inline: var(--space-m);
+		}
+
+		.sheet-heading {
+			color: var(--md-sys-color-on-surface);
 		}
 
 		/* The dismiss close is a scroll to the top snap stop; make it smooth

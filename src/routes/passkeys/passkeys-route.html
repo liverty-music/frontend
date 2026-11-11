@@ -63,9 +63,8 @@
 
 <!-- Removal confirmation. The note about the device's passkey manager is part
      of the confirmation, so the fan reads it before confirming. -->
-<bottom-sheet open.bind="confirmOpen" sheet-closed.trigger="cancelRemoval()" aria-label.bind="'passkeys.confirm.title' | t">
+<bottom-sheet open.bind="confirmOpen" sheet-closed.trigger="cancelRemoval()" heading.bind="'passkeys.confirm.title' | t">
   <div class="[ passkeys-confirm ] [ stack ]" data-testid="passkeys-confirm">
-    <h2 t="passkeys.confirm.title" class="[ passkeys-confirm-title ] [ md-typescale-headline-small ]"></h2>
     <p class="[ passkeys-confirm-name ] [ md-typescale-body-large-emphasized ]">
       <template if.bind="pendingRemoval.providerName">${pendingRemoval.providerName}</template>
       <template else>

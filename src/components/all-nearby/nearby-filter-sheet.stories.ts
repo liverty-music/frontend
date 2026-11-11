@@ -57,13 +57,22 @@ function play(area: string, period: string): Story['play'] {
 			expect(areaRow).toBeVisible()
 			expect(periodRow).toBeVisible()
 		})
-		// The sheet's `flow` composition spaces the rows from the title; a
-		// margin set on the list in the block layer would cancel it.
+		// @spec components/infrastructure/fan/web/global/bottom-sheet "Sheet with a heading"
+		// The sheet's own heading, below the handle bar in the title-large
+		// style, names the dialog; the rows start 16 px below it.
 		const title = canvas.getByRole('heading', { name: 'エリアと期間' })
+		const handle = canvasElement.querySelector('.handle-bar') as HTMLElement
+		await expect(getComputedStyle(title).fontSize).toBe('22px')
+		await expect(
+			title.getBoundingClientRect().top - handle.getBoundingClientRect().bottom,
+		).toBeCloseTo(0, 0)
+		await expect(
+			canvas.getByRole('dialog', { name: 'エリアと期間' }),
+		).toBeInTheDocument()
 		const list = canvas.getByRole('list')
 		await expect(
 			list.getBoundingClientRect().top - title.getBoundingClientRect().bottom,
-		).toBeGreaterThanOrEqual(8)
+		).toBeCloseTo(16, 0)
 
 		let chosen = ''
 		host.addEventListener('filter-row-chosen', (e) => {

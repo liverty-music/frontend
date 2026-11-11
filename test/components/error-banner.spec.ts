@@ -168,12 +168,13 @@ describe('ErrorBanner', () => {
 	})
 })
 
-/** The sheet itself is not under test; it passes its content through. */
+/** The sheet itself is not under test; it draws its heading and passes its
+ * content through. */
 const BottomSheetStub = CustomElement.define(
 	{
 		name: 'bottom-sheet',
-		template: '<au-slot></au-slot>',
-		bindables: ['open', 'dismissable', 'ariaLabel'],
+		template: `<h2 class="sheet-heading">\${heading}</h2><au-slot></au-slot>`,
+		bindables: ['open', 'dismissable', 'ariaLabel', 'heading'],
 	},
 	class {},
 )
@@ -231,7 +232,7 @@ describe('ErrorBanner page', () => {
 	it(`@spec ${BANNER_SPEC} "Error banner renders with error details"`, async () => {
 		const { fixture, host, boundary } = await open('ja', false)
 
-		expect(host.querySelector('.error-title')?.textContent).toBe(
+		expect(host.querySelector('.sheet-heading')?.textContent).toBe(
 			'⚡️ライブ中にアクシデント発生⚡️',
 		)
 		expect(host.querySelector('.error-message')?.textContent).toBe(MESSAGE_JA)
@@ -270,7 +271,7 @@ describe('ErrorBanner page', () => {
 		const errorId = boundary.currentError?.id ?? ''
 
 		expect(errorId).toMatch(/^ERR-/)
-		expect(host.querySelector('.error-title')?.textContent).toBe(
+		expect(host.querySelector('.sheet-heading')?.textContent).toBe(
 			'⚡️ライブ中にアクシデント発生⚡️',
 		)
 		expect(host.querySelector('.error-message')?.textContent).toBe(MESSAGE_JA)
@@ -289,7 +290,7 @@ describe('ErrorBanner page', () => {
 	it(`@spec ${BANNER_SPEC} "English labels"`, async () => {
 		const { fixture, host } = await open('en', false)
 
-		expect(host.querySelector('.error-title')?.textContent).toBe(
+		expect(host.querySelector('.sheet-heading')?.textContent).toBe(
 			'⚡️Something went wrong mid-show⚡️',
 		)
 		expect(host.querySelector('.error-message')?.textContent).toBe(
@@ -302,9 +303,10 @@ describe('ErrorBanner page', () => {
 		])
 		const sheet = host.querySelector('bottom-sheet')
 		if (!sheet) throw new Error('bottom-sheet did not render')
+		// The sheet is named by its heading.
 		expect(
-			CustomElement.for<{ ariaLabel: string }>(sheet).viewModel.ariaLabel,
-		).toBe('Error details')
+			CustomElement.for<{ heading: string }>(sheet).viewModel.heading,
+		).toBe('⚡️Something went wrong mid-show⚡️')
 		await fixture.stop(true)
 	})
 })

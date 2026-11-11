@@ -7,7 +7,7 @@
     sheet-closed.trigger="onSheetClosed()"
     t="[aria-label]eventDetail.ariaLabel"
   >
-    <div if.bind="event" class="[ sheet-content ] [ flow ]" aria-labelledby="sheet-artist-name">
+    <div if.bind="event" class="[ sheet-content ] [ flow ]">
       <!-- Hero background image -->
       <div if.bind="backgroundUrl" class="sheet-hero" role="presentation">
         <img
@@ -21,7 +21,7 @@
 
       <!-- Artist name header -->
       <header class="[ sheet-artist-header ] [ flow ]">
-        <h2 id="sheet-artist-name" class="[ sheet-artist-name ] [ md-typescale-headline-small ]">
+        <h2 class="[ sheet-artist-name ] [ md-typescale-headline-small ]">
           ${event.artistName}
         </h2>
         <p class="[ sheet-event-title ] [ md-typescale-body-medium ]">${event.title}</p>

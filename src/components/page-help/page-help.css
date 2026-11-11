@@ -11,7 +11,10 @@
 		.page-help-content {
 			--flow-space: var(--space-s);
 
-			padding: var(--space-m) var(--space-s) var(--space-l);
+			/* No heading: the first section starts right below the handle
+			   area (bottom-sheet). */
+			padding-block-end: var(--space-l);
+			padding-inline: var(--space-s);
 		}
 
 		/* Sub-sections after the first reduce top padding so the divider

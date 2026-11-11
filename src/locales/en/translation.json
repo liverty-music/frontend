@@ -303,7 +303,6 @@
 	},
 	"errorBanner": {
 		"reportCooldown": "Please wait a moment before opening the email again.",
-		"label": "Error details",
 		"title": "⚡️Something went wrong mid-show⚡️",
 		"message": "But don't worry!\nOur engineering team will look into it right away.\nTo help keep it from happening again, a quick email about what happened would help us a lot 🙇‍♀️",
 		"emailReport": "Tell us what happened by email",
@@ -602,7 +601,6 @@
 		"en": "English"
 	},
 	"postSignup": {
-		"ariaLabel": "Account registration complete",
 		"notify": {
 			"title": "Hear about new shows first",
 			"body": "We've started looking for shows by the {{count}} artists you follow. We'll notify you when we find them.",

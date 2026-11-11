@@ -13,12 +13,8 @@
 		.pwa-banner-sheet {
 			--stack-gap: var(--space-m);
 
-			padding-block: var(--space-s) var(--space-l);
+			padding-block-end: var(--space-l);
 			padding-inline: var(--space-m);
-		}
-
-		.pwa-banner-sheet-title {
-			color: var(--md-sys-color-on-surface);
 		}
 
 		.pwa-banner-sheet-steps {

@@ -98,14 +98,16 @@
 		.tickets-virtual {
 			--flow-space: var(--space-s);
 
-			padding: var(--space-xs) var(--space-xs) var(--space-m);
+			padding-block-end: var(--space-m);
+			padding-inline: var(--space-xs);
 		}
 
 		/* Entry QR code sheet */
 		.tickets-code {
 			--flow-space: var(--space-s);
 
-			padding: var(--space-m);
+			padding-block-end: var(--space-m);
+			padding-inline: var(--space-m);
 			text-align: center;
 		}
 

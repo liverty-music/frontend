@@ -3,12 +3,8 @@
 		.date-range-sheet {
 			--flow-space: var(--space-m);
 
-			padding-block: var(--space-s) var(--space-m);
+			padding-block-end: var(--space-m);
 			padding-inline: var(--space-m);
-		}
-
-		.sheet-title {
-			color: var(--md-sys-color-on-surface);
 		}
 
 		.section-label {

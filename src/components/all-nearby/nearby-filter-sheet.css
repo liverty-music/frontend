@@ -1,14 +1,8 @@
 @layer block {
 	@scope (nearby-filter-sheet) {
 		.nearby-filter-sheet {
-			--flow-space: var(--space-s);
-
-			padding-block: var(--space-s) var(--space-m);
+			padding-block-end: var(--space-m);
 			padding-inline: var(--space-m);
-		}
-
-		.sheet-title {
-			color: var(--md-sys-color-on-surface);
 		}
 
 		.filter-rows {
