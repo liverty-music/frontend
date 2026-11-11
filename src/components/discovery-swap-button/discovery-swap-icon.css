@@ -1,0 +1,103 @@
+/* stylelint-disable no-unknown-custom-properties -- the motion and the icon's side come from discovery-swap-button.css, which sets them on the tile; --ring-turn is set inline by the template */
+@layer block {
+	@scope (discovery-swap-icon) {
+		:scope {
+			display: contents;
+		}
+
+		.swap-icon {
+			overflow: visible;
+			grid-area: 1 / 1;
+			inline-size: var(--_icon-size);
+			block-size: var(--_icon-size);
+		}
+
+		/* ── Arrows: a half turn per tap, always the same way ── */
+		.swap-ring {
+			transform-origin: 32px 32px;
+			transform-box: view-box;
+			transform: rotate(calc(var(--ring-turn, 0) * 180deg));
+			transition: transform var(--_swap-duration) var(--_swap-easing);
+		}
+
+		.swap-arrow-brand {
+			fill: var(--color-brand-primary);
+		}
+
+		.swap-arrow-near {
+			fill: var(--color-stage-near);
+		}
+
+		.swap-badge {
+			fill: var(--md-sys-color-surface);
+			stroke: oklch(from var(--color-white) l c h / 22%);
+			stroke-width: 1;
+		}
+
+		/* ── Glyph slots: the view on screen large, the other on the badge ── */
+		.swap-glyph {
+			transform-origin: 0 0;
+			transform-box: view-box;
+			transition:
+				transform var(--_swap-duration) var(--_swap-easing),
+				opacity var(--_swap-duration) ease;
+		}
+
+		.swap-icon[data-view="artists"] .swap-glyph-artists,
+		.swap-icon[data-view="nearby"] .swap-glyph-nearby {
+			transform: translate(31px, 31px) scale(1.5);
+			opacity: 1;
+			filter: drop-shadow(0 1.5px 2px oklch(0% 0 0deg / 55%));
+		}
+
+		.swap-icon[data-view="artists"] .swap-glyph-nearby,
+		.swap-icon[data-view="nearby"] .swap-glyph-artists {
+			transform: translate(53px, 53px) scale(0.42);
+			opacity: 0.95;
+		}
+
+		.swap-glint-dot {
+			fill: var(--color-white);
+			fill-opacity: 0.8;
+		}
+
+		.swap-rim {
+			fill: none;
+			stroke: var(--color-white);
+			stroke-opacity: 0.55;
+			stroke-width: 0.6;
+		}
+
+		/* ── All Nearby glyph details (the LIVE text is sized in SVG units by
+		   its attributes and fitted to the ticket with textLength) ── */
+		.swap-ticket-perforation {
+			stroke: oklch(30% 0.06 45deg / 55%);
+			stroke-dasharray: 1.4 1.4;
+			stroke-width: 1;
+		}
+
+		/* About 7px on screen; no outline to fill the counters in. */
+		.swap-ticket-text {
+			/* stylelint-disable-next-line property-disallowed-list -- lettering inside the ticket drawing, sized by the SVG, not a line of text */
+			font-family: var(--md-ref-typeface-brand);
+			fill: oklch(25% 0.06 45deg);
+		}
+
+		.swap-pin {
+			fill: var(--color-white);
+			stroke: var(--md-sys-color-surface);
+			stroke-width: 1;
+		}
+
+		.swap-pin-hole {
+			fill: var(--md-sys-color-surface);
+		}
+
+		@media (prefers-reduced-motion: reduce) {
+			.swap-ring,
+			.swap-glyph {
+				transition: none;
+			}
+		}
+	}
+}
