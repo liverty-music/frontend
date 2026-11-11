@@ -307,7 +307,7 @@ test.describe('Snack bar: undo snack on My Artists (5.2)', () => {
 		expect(snackText).toBeTruthy()
 	})
 
-	test('the undo snack sits above the Done bar, which stays tappable', async ({
+	test(`@spec components/infrastructure/fan/web/global/snack-bar "The Done bar of edit mode stays tappable"`, async ({
 		page,
 	}) => {
 		await page.locator('fab-menu .fab-toggle').click()
@@ -321,8 +321,8 @@ test.describe('Snack bar: undo snack on My Artists (5.2)', () => {
 		const barTop = await topOf(page, '.edit-action-bar')
 		// The snack's bottom edge is above the bar's top edge (one space-3xs
 		// step, as above any control floating over the route's bottom edge).
-		expect(barTop - snackBottom).toBeGreaterThan(0)
-		expect(barTop - snackBottom).toBeLessThanOrEqual(8)
+		// One space-3xs step (4 px) above the bar.
+		expect(barTop - snackBottom).toBeCloseTo(4, 0)
 
 		// A tap at Done's centre lands on Done, not on the snack.
 		const reached = await done.evaluate((button) => {
