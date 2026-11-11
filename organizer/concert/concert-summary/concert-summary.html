@@ -1,0 +1,21 @@
+<import from="./concert-summary.css"></import>
+
+<aside class="supporting" aria-labelledby="concert-summary-heading">
+  <h2 id="concert-summary-heading" class="[ section-title ] [ md-typescale-title-large ]">${'concert.summary' & t}</h2>
+  <img if.bind="coverUrl" src.bind="coverUrl" alt="" class="cover" data-testid="concert-cover">
+  <p if.bind="coverNote" class="[ cover-note ] [ md-typescale-body-medium ]" role="status">${`concertEditor.cover.${coverNote}` & t}</p>
+  <dl class="summary">
+    <div class="summary-row">
+      <dt class="md-typescale-label-large">${'concertEditor.type' & t}</dt>
+      <dd class="md-typescale-body-large">${typeKey & t}</dd>
+    </div>
+    <div class="summary-row">
+      <dt class="md-typescale-label-large">${'concertEditor.visibility' & t}</dt>
+      <dd class="md-typescale-body-large">${visibilityKey & t}</dd>
+    </div>
+    <div if.bind="performers.length" class="summary-row">
+      <dt class="md-typescale-label-large">${'concertEditor.performers' & t}</dt>
+      <dd class="md-typescale-body-large">${performers.join(' · ')}</dd>
+    </div>
+  </dl>
+</aside>
