@@ -1,0 +1,27 @@
+@layer block {
+	/* Coach-style hint above the detail sheet's actions (landing page only). */
+	@scope (.sheet-actions-hint) {
+		:scope {
+			--flow-space: var(--space-m);
+
+			display: flex;
+			gap: var(--space-3xs);
+			align-items: center;
+			justify-content: center;
+
+			padding: var(--space-2xs) var(--space-s);
+			border: 1px solid oklch(from var(--color-brand-accent) l c h / 35%);
+			border-radius: var(--md-sys-shape-corner-medium);
+
+			color: var(--color-brand-accent);
+			text-align: center;
+			text-wrap: balance;
+			word-break: auto-phrase;
+
+			background: oklch(from var(--color-brand-accent) l c h / 10%);
+
+			animation: fade-slide-up var(--md-sys-motion-duration-medium4)
+				var(--md-sys-motion-duration-short4) ease-out both;
+		}
+	}
+}

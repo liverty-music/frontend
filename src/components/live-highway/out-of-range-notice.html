@@ -1,0 +1,24 @@
+<template>
+  <import from="./out-of-range-notice.css"></import>
+
+  <p if.bind="!notice.saved" class="[ out-of-range-text ] [ md-typescale-body-medium ]">
+    <span if.bind="notice.currentPlaces" t="[html]eventDetail.outOfRange.current" t-params.bind="{ places: notice.currentPlaces }"></span>
+    <span else t="eventDetail.outOfRange.none"></span>
+  </p>
+  <button
+    if.bind="!notice.saved"
+    type="button"
+    class="[ button out-of-range-action ] [ state-layer ]"
+    data-variant="outlined"
+    disabled.bind="updating"
+    click.trigger="widen()"
+  >${notice.actionLabel}</button>
+  <p if.bind="notice.saved" class="[ out-of-range-text ] [ md-typescale-body-medium ]" t.bind="'[html]' + notice.savedKey" t-params.bind="{ places: notice.savedPlaces }"></p>
+  <button
+    if.bind="notice.saved && pushAction"
+    type="button"
+    class="[ button push-action ] [ state-layer ]"
+    data-variant="outlined"
+    click.trigger="pushAction.callback()"
+  >${pushAction.label}</button>
+</template>

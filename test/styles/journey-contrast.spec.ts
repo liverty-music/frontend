@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import chipCss from '../../src/components/artist-filter-bar/artist-filter-bar.css?raw'
-import sheetCss from '../../src/components/live-highway/event-detail-sheet.css?raw'
+import sheetCss from '../../src/components/live-highway/journey-status-row.css?raw'
 import tokensCss from '../../src/styles/tokens.css?raw'
 import { contrast, type Oklch, parseOklch } from '../helpers/oklch'
 

@@ -1,0 +1,25 @@
+<template>
+  <import from="./journey-status-row.css"></import>
+
+  <template repeat.for="config of statuses">
+    <span if.bind="config.status === 'lost'" class="journey-separator" aria-hidden="true"></span>
+    <button
+      type="button"
+      class="[ journey-node ] [ state-layer ] [ md-typescale-label-large ]"
+      md-typescale-label-large-emphasized.class="status === config.status"
+      data-testid="journey-btn"
+      data-journey-status.bind="config.status"
+      aria-pressed.bind="status === config.status ? 'true' : 'false'"
+      disabled.bind="disabled"
+      click.trigger="press(config.status)"
+    >
+      <span class="[ journey-node-cue ] [ md-typescale-body-large ]" aria-hidden="true">${config.icon}</span>
+      <span class="journey-node-label" t.bind="config.labelKey"></span>
+    </button>
+    <span
+      if.bind="config.status === 'applied' || config.status === 'unpaid'"
+      class="[ journey-arrow ] [ md-typescale-body-large ]"
+      aria-hidden="true"
+    ></span>
+  </template>
+</template>

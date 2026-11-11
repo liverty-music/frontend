@@ -1,0 +1,84 @@
+@layer block {
+	/* The four statuses under the detail sheet's notification button, in
+	   journey order; 落選 after a separator. Wraps on a narrow screen instead
+	   of overflowing. */
+	@scope (.journey-row) {
+		:scope {
+			--_border-light: oklch(100% 0 0deg / 20%);
+			--cluster-gap: var(--space-3xs);
+		}
+
+		.journey-separator {
+			align-self: stretch;
+			/* stylelint-disable-next-line property-disallowed-list -- the separator's box is its 1px rule; the extra room on both sides lies outside that box, and the row's single gap cannot widen around one item, so padding would move the rule and a gap would space every node */
+			margin-inline: var(--space-3xs);
+			border-inline-start: 1px solid var(--_border-light);
+		}
+
+		.journey-arrow {
+			align-self: center;
+			color: var(--md-sys-color-on-surface-variant);
+
+			&::before {
+				content: "\203a"; /* > */
+			}
+		}
+
+		/* Node: contrast comes from fill (pressed) vs outline (others) */
+		.journey-node {
+			display: inline-flex;
+			flex: 1 1 auto;
+			gap: var(--space-3xs);
+			align-items: center;
+			justify-content: center;
+
+			min-inline-size: var(--md-sys-target-size);
+			min-block-size: var(--md-sys-target-size);
+			padding-block: var(--space-3xs);
+			padding-inline: var(--space-2xs);
+			border: 1px solid var(--_border-light);
+			border-radius: var(--md-sys-shape-corner-medium);
+
+			color: var(--md-sys-color-on-surface-variant);
+
+			transition:
+				border-color var(--md-sys-motion-duration-short3) ease-out,
+				color var(--md-sys-motion-duration-short3) ease-out,
+				background-color var(--md-sys-motion-duration-short3) ease-out;
+
+			&:disabled {
+				opacity: 0.5;
+			}
+		}
+
+		/* Pressed: the single solid-filled status */
+		.journey-node[aria-pressed="true"] {
+			border-color: var(--_node-fill);
+			color: var(--_node-on);
+			background: var(--_node-fill);
+		}
+
+		/* Semantic hue per status sourced from shared journey-hue tokens;
+		   lightness/chroma stay local to this control's solid-fill treatment. */
+		.journey-node[data-journey-status="tracking"],
+		.journey-node[data-journey-status="applied"] {
+			--_node-fill: oklch(52% 0.14 var(--journey-hue-tracking));
+			--_node-on: oklch(98% 0.02 var(--journey-hue-tracking));
+		}
+
+		.journey-node[data-journey-status="unpaid"] {
+			--_node-fill: oklch(72% 0.16 var(--journey-hue-unpaid));
+			--_node-on: oklch(25% 0.05 var(--journey-hue-unpaid));
+		}
+
+		.journey-node[data-journey-status="paid"] {
+			--_node-fill: oklch(52% 0.15 var(--journey-hue-paid));
+			--_node-on: oklch(98% 0.02 var(--journey-hue-paid));
+		}
+
+		.journey-node[data-journey-status="lost"] {
+			--_node-fill: oklch(52% 0.16 var(--journey-hue-lost));
+			--_node-on: oklch(98% 0.02 var(--journey-hue-lost));
+		}
+	}
+}

@@ -12,35 +12,6 @@
 			padding-inline: var(--space-m);
 		}
 
-		.sheet-hero {
-			position: relative;
-			overflow: hidden;
-			/* stylelint-disable-next-line property-disallowed-list -- the hero bleeds through the content's inline padding to the sheet's edges; the padding stays for every other section, so only a negative margin widens this one */
-			margin-inline: calc(-1 * var(--space-m));
-		}
-
-		.sheet-hero img {
-			aspect-ratio: 16 / 9;
-			inline-size: 100%;
-			object-fit: cover;
-		}
-
-		.sheet-hero::after {
-			content: "";
-
-			position: absolute;
-			inset-block-end: 0;
-			inset-inline: 0;
-
-			block-size: 30%;
-
-			background: linear-gradient(
-				to top,
-				var(--md-sys-color-surface-container),
-				transparent
-			);
-		}
-
 		.sheet-artist-header {
 			--flow-space: var(--space-s);
 
@@ -82,23 +53,6 @@
 			color: var(--md-sys-color-on-surface-variant);
 		}
 
-		/* Out-of-range notice: what the fan's hype level pushes, under the
-		   venue. The `card` block draws it. */
-		.sheet-out-of-range {
-			--flow-space: var(--space-s);
-			--stack-gap: var(--space-2xs);
-		}
-
-		.out-of-range-text {
-			color: var(--md-sys-color-on-surface-variant);
-			word-break: auto-phrase;
-		}
-
-		/* The place words, larger and highlighted */
-		.reach-words {
-			color: var(--color-brand-accent);
-		}
-
 		/* Ticket section: notification button, status row, push line, official site */
 		.sheet-tickets {
 			--flow-space: var(--space-s);
@@ -127,85 +81,6 @@
 			background: var(--_node-fill);
 		}
 
-		/* The four other statuses in journey order; 落選 after a separator.
-		   Wraps on a narrow screen instead of overflowing. */
-		.journey-row {
-			--cluster-gap: var(--space-3xs);
-		}
-
-		.journey-separator {
-			align-self: stretch;
-			/* stylelint-disable-next-line property-disallowed-list -- the separator's box is its 1px rule; the extra room on both sides lies outside that box, and the row's single gap cannot widen around one item, so padding would move the rule and a gap would space every node */
-			margin-inline: var(--space-3xs);
-			border-inline-start: 1px solid var(--_border-light);
-		}
-
-		.journey-arrow {
-			align-self: center;
-			color: var(--md-sys-color-on-surface-variant);
-
-			&::before {
-				content: "\203a"; /* > */
-			}
-		}
-
-		/* Node: contrast comes from fill (pressed) vs outline (others) */
-		.journey-node {
-			display: inline-flex;
-			flex: 1 1 auto;
-			gap: var(--space-3xs);
-			align-items: center;
-			justify-content: center;
-
-			min-inline-size: var(--md-sys-target-size);
-			min-block-size: var(--md-sys-target-size);
-			padding-block: var(--space-3xs);
-			padding-inline: var(--space-2xs);
-			border: 1px solid var(--_border-light);
-			border-radius: var(--md-sys-shape-corner-medium);
-
-			color: var(--md-sys-color-on-surface-variant);
-
-			transition:
-				border-color var(--md-sys-motion-duration-short3) ease-out,
-				color var(--md-sys-motion-duration-short3) ease-out,
-				background-color var(--md-sys-motion-duration-short3) ease-out;
-
-			&:disabled {
-				opacity: 0.5;
-			}
-		}
-
-		/* Pressed: the single solid-filled status */
-		.journey-node[aria-pressed="true"] {
-			border-color: var(--_node-fill);
-			color: var(--_node-on);
-			background: var(--_node-fill);
-		}
-
-		/* Semantic hue per status sourced from shared journey-hue tokens;
-		   lightness/chroma stay local to this control's solid-fill treatment. */
-		.journey-node[data-journey-status="tracking"],
-		.journey-node[data-journey-status="applied"] {
-			--_node-fill: oklch(52% 0.14 var(--journey-hue-tracking));
-			--_node-on: oklch(98% 0.02 var(--journey-hue-tracking));
-		}
-
-		.journey-node[data-journey-status="unpaid"] {
-			--_node-fill: oklch(72% 0.16 var(--journey-hue-unpaid));
-			--_node-on: oklch(25% 0.05 var(--journey-hue-unpaid));
-		}
-
-		.journey-node[data-journey-status="paid"] {
-			--_node-fill: oklch(52% 0.15 var(--journey-hue-paid));
-			--_node-on: oklch(98% 0.02 var(--journey-hue-paid));
-		}
-
-		.journey-node[data-journey-status="lost"] {
-			--_node-fill: oklch(52% 0.16 var(--journey-hue-lost));
-			--_node-on: oklch(98% 0.02 var(--journey-hue-lost));
-		}
-
 		/* What the current status brings by push, with the offer beside it */
 		.push-line {
 			--cluster-gap: var(--space-2xs);
@@ -217,54 +92,6 @@
 
 		.official-site {
 			inline-size: 100%;
-		}
-
-		/* Follow CTA (All Nearby context) */
-		.sheet-follow {
-			--flow-space: var(--space-m);
-
-			display: flex;
-			justify-content: center;
-		}
-
-		.follow-action {
-			inline-size: 100%;
-		}
-
-		.follow-state {
-			display: flex;
-			gap: var(--space-3xs);
-			align-items: center;
-			justify-content: center;
-
-			inline-size: 100%;
-			padding-block: var(--space-2xs);
-
-			color: var(--color-brand-primary);
-		}
-
-		/* Coach-style hint above the actions (landing page only). */
-		.sheet-actions-hint {
-			--flow-space: var(--space-m);
-
-			display: flex;
-			gap: var(--space-3xs);
-			align-items: center;
-			justify-content: center;
-
-			padding: var(--space-2xs) var(--space-s);
-			border: 1px solid oklch(from var(--color-brand-accent) l c h / 35%);
-			border-radius: var(--md-sys-shape-corner-medium);
-
-			color: var(--color-brand-accent);
-			text-align: center;
-			text-wrap: balance;
-			word-break: auto-phrase;
-
-			background: oklch(from var(--color-brand-accent) l c h / 10%);
-
-			animation: fade-slide-up var(--md-sys-motion-duration-medium4)
-				var(--md-sys-motion-duration-short4) ease-out both;
 		}
 	}
 }

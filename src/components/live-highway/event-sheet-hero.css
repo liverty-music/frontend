@@ -1,0 +1,33 @@
+@layer block {
+	/* The artist's image across the top of the event detail sheet. */
+	@scope (.sheet-hero) {
+		:scope {
+			position: relative;
+			overflow: hidden;
+			/* stylelint-disable-next-line property-disallowed-list -- the hero bleeds through the content's inline padding to the sheet's edges; the padding stays for every other section, so only a negative margin widens this one */
+			margin-inline: calc(-1 * var(--space-m));
+		}
+
+		img {
+			aspect-ratio: 16 / 9;
+			inline-size: 100%;
+			object-fit: cover;
+		}
+
+		:scope::after {
+			content: "";
+
+			position: absolute;
+			inset-block-end: 0;
+			inset-inline: 0;
+
+			block-size: 30%;
+
+			background: linear-gradient(
+				to top,
+				var(--md-sys-color-surface-container),
+				transparent
+			);
+		}
+	}
+}
