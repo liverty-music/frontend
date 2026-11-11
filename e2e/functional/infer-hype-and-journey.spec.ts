@@ -69,17 +69,22 @@ const AWAY_LANE: Record<string, number> = {
 }
 
 /**
- * Waits for the hype re-read that follows a journey change, then for two frames
- * (the raise snack would show right after it), instead of sleeping.
+ * Waits until `saves` journey changes have finished their hype reads, then for
+ * two frames (the raise snack would show right after the last one), instead of
+ * sleeping. Each change reads the hype list twice, once before it saves and
+ * once after (`setJourneyStatus`), so the last change's reads are in only when
+ * the count has grown by two per change since `readsBefore`, which the caller
+ * took before the first of them.
  */
-async function expectNoSnackAfterReRead(
+async function expectNoSnackAfterReReads(
 	page: Page,
 	calls: Parameters<typeof callsOf>[0],
-	rereadsBefore: number,
+	readsBefore: number,
+	saves = 1,
 ): Promise<void> {
 	await expect
 		.poll(() => callsOf(calls, 'FollowService/List').length)
-		.toBeGreaterThan(rereadsBefore)
+		.toBeGreaterThanOrEqual(readsBefore + 2 * saves)
 	await page.evaluate(
 		() =>
 			new Promise<void>((resolve) =>
@@ -397,7 +402,7 @@ test.describe('a journey for a distant concert raises the hype level', () => {
 
 		// A later Applied for another distant concert leaves it at Nearby.
 		await openSheet(page, 'Away Show 3 Hall')
-		const rereadsBefore = callsOf(calls, 'FollowService/List').length
+		const readsBefore = callsOf(calls, 'FollowService/List').length
 		await sheet(page)
 			.locator('.journey-row [data-journey-status="applied"]')
 			.click()
@@ -405,7 +410,7 @@ test.describe('a journey for a distant concert raises the hype level', () => {
 			sheet(page).locator('.journey-row [data-journey-status="applied"]'),
 		).toHaveAttribute('aria-pressed', 'true')
 		// An absence check: the raise snack would follow the hype re-read at once.
-		await expectNoSnackAfterReRead(page, calls, rereadsBefore)
+		await expectNoSnackAfterReReads(page, calls, readsBefore)
 		await expect(snack(page, '新着ライブを')).toHaveCount(0)
 		expect(server.hype).toBe('HYPE_TYPE_NEARBY')
 	})
@@ -424,7 +429,7 @@ test.describe('a journey for a distant concert raises the hype level', () => {
 		await page.goto('/dashboard')
 
 		await openSheet(page, 'Away Show 2 Hall')
-		const rereadsBefore = callsOf(calls, 'FollowService/List').length
+		const readsBefore = callsOf(calls, 'FollowService/List').length
 		await sheet(page)
 			.locator('.journey-row [data-journey-status="applied"]')
 			.click()
@@ -438,7 +443,7 @@ test.describe('a journey for a distant concert raises the hype level', () => {
 			sheet(page).locator('.journey-row [data-journey-status="paid"]'),
 		).toHaveAttribute('aria-pressed', 'true')
 		// An absence check: the raise snack would follow the hype re-read at once.
-		await expectNoSnackAfterReRead(page, calls, rereadsBefore)
+		await expectNoSnackAfterReReads(page, calls, readsBefore, 3)
 		await expect(snack(page, '新着ライブを')).toHaveCount(0)
 
 		await page.goto('/my-artists')
