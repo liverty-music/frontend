@@ -1,3 +1,5 @@
+<import from="../../components/ticket-resale-notice/ticket-resale-notice"></import>
+
 <template class="[ order-route ] [ flow ]">
 	<header class="order-header">
 		<h1 class="[ order-title ] [ md-typescale-headline-small ]" t="order.title"></h1>
@@ -113,10 +115,7 @@
 					</dl>
 
 					<!-- 特定興行入場券 resale-prohibition notice -->
-					<p
-						class="[ order-ticket-resale-notice ] [ md-typescale-body-small ]"
-						t="order.tickets.resaleProhibited"
-					></p>
+					<ticket-resale-notice></ticket-resale-notice>
 				</li>
 			</ul>
 		</article>

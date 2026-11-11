@@ -15,56 +15,39 @@
 
 		/* The `card` block draws the panel. */
 		.order-panel {
-			--flow-space: var(--space-m);
 			--wrapper-max: var(--page-max-inline-size);
 
 			inline-size: 100%;
 		}
 
 		.order-content {
-			--flow-space: var(--space-m);
 			--gutter: 0;
 			--wrapper-max: var(--page-max-inline-size);
 
 			inline-size: 100%;
 		}
 
-		.order-lead {
+		.order-lead,
+		.order-status-banner-desc,
+		.order-tax-label {
 			color: var(--md-sys-color-on-surface-variant);
 		}
 
-		/* §5.2 Refund / Failed prominent banner */
+		/* §5.2 Refund banner: shown only for a refunded order. */
 		.order-status-banner {
 			--stack-gap: var(--space-xs);
-			--wrapper-max: var(--page-max-inline-size);
 
 			inline-size: 100%;
 			padding: var(--space-m);
-			border: 1px solid var(--md-sys-color-outline-variant);
+			border: 1px solid
+				color-mix(in oklch, var(--color-brand-primary) 45%, transparent);
 			border-radius: var(--md-sys-shape-corner-large);
 
 			background: color-mix(
 				in oklch,
-				var(--md-sys-color-on-surface-variant) 8%,
+				var(--color-brand-primary) 8%,
 				transparent
 			);
-
-			&[data-kind="refunded"] {
-				border-color: color-mix(
-					in oklch,
-					var(--color-brand-primary) 45%,
-					transparent
-				);
-				background: color-mix(
-					in oklch,
-					var(--color-brand-primary) 8%,
-					transparent
-				);
-			}
-		}
-
-		.order-status-banner-desc {
-			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		/* The total and its tax note, at the end of the summary row. */
@@ -73,10 +56,6 @@
 			gap: var(--space-2xs);
 			align-items: baseline;
 			justify-content: flex-end;
-		}
-
-		.order-tax-label {
-			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		/* Ticket list within the order */
@@ -97,13 +76,6 @@
 			&[data-voided="true"] {
 				opacity: 0.55;
 			}
-		}
-
-		/* 特定興行入場券 resale-prohibition notice */
-		.order-ticket-resale-notice {
-			padding: var(--space-xs);
-			border-inline-start: 2px solid var(--md-sys-color-outline-variant);
-			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.order-error {

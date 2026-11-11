@@ -592,8 +592,7 @@
 				"eventId": "Event",
 				"fullName": "Name",
 				"issueTime": "Issued"
-			},
-			"resaleProhibited": "This is a designated live-entertainment ticket (特定興行入場券). Resale without the organizer's consent is prohibited by law."
+			}
 		}
 	},
 	"languages": {
