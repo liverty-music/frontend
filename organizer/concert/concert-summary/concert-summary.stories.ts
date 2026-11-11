@@ -131,3 +131,37 @@ export const NoPerformers = {
 		).toHaveLength(2)
 	},
 } satisfies Story
+
+/**
+ * The window narrows from 900 px to 700 px: the pane stops being filled when
+ * the width passes 840 px, not before and not after. The shell is the size
+ * container the page reads (`shell`, as in the app), so its width stands for
+ * the window's.
+ */
+export const NarrowingPastExpanded = {
+	render: render(900),
+	play: async ({ canvasElement }) => {
+		const shell = canvasElement.querySelector<HTMLElement>(
+			'[style*="container: shell"]',
+		)
+		if (!shell) throw new Error('no shell container')
+		// A container query reads the content box: no padding, so it is the width.
+		shell.style.padding = '0'
+		const filled = () =>
+			getComputedStyle(paneOf(canvasElement)).backgroundColor !==
+			'rgba(0, 0, 0, 0)'
+
+		// @spec components/infrastructure/organizer/web/global/design-tokens "Window width crosses a breakpoint"
+		for (const [width, expected] of [
+			[900, true],
+			[841, true],
+			[840, true],
+			[839, false],
+			[700, false],
+		] as const) {
+			shell.style.inlineSize = `${width}px`
+			await expect(shell.getBoundingClientRect().width).toBe(width)
+			await expect(filled()).toBe(expected)
+		}
+	},
+} satisfies Story
