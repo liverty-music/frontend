@@ -1,0 +1,13 @@
+<import from="./fab-action.css"></import>
+
+<button
+  type="button"
+  class="[ fab-item ] [ state-layer ] [ md-typescale-label-large ]"
+  data-action-id.bind="action.id"
+  data-kind.bind="action.kind"
+  data-active.bind="active"
+  aria-pressed.bind="pressed"
+>
+  <svg-icon name.bind="action.icon" size="lg" class="fab-item-icon"></svg-icon>
+  <span class="fab-item-label" t.bind="action.labelKey"></span>
+</button>

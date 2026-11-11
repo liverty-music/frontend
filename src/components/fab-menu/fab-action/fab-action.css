@@ -1,0 +1,62 @@
+@layer block {
+	@scope (fab-action) {
+		:scope {
+			--_item-size: 3rem;
+			--_label-gap: var(--space-3xs);
+
+			/* No box of its own: the arc places the item around it. */
+			display: contents;
+		}
+
+		/* The label sits on the outer side: left of the icon while the arc
+		   curves right. */
+		.fab-item {
+			isolation: isolate;
+			position: relative;
+
+			display: grid;
+			place-items: center;
+
+			inline-size: var(--_item-size);
+			block-size: var(--_item-size);
+			border-radius: var(--md-sys-shape-corner-full);
+
+			color: var(--md-sys-color-on-surface);
+
+			background: var(--md-sys-color-menu-surface);
+		}
+
+		.fab-item-label {
+			position: absolute;
+			inset-block-start: 50%;
+			inset-inline-end: calc(100% + var(--_label-gap));
+			translate: 0 -50%;
+
+			inline-size: max-content;
+			max-inline-size: 7.5rem;
+			padding-block: var(--space-3xs);
+			padding-inline: var(--space-2xs);
+			border-radius: var(--md-sys-shape-corner-small);
+
+			color: var(--md-sys-color-on-surface);
+			text-align: end;
+
+			background: var(--md-sys-color-menu-surface);
+		}
+
+		/* Selected/active item = filled brand container (the M3 "on" treatment).
+		   Covers the beam toggle (aria-pressed) and the filter command (data-active). */
+		.fab-item[aria-pressed="true"],
+		.fab-item[data-active="true"] {
+			color: var(--md-sys-color-on-primary-container);
+			background: var(--md-sys-color-primary-container);
+		}
+
+		/* Left-handed: the arc curves up and to the left, and the label moves
+		   to the right of its icon. */
+		:where(.fab-panel[data-handed="left"]) :scope .fab-item-label {
+			inset-inline: calc(100% + var(--_label-gap)) auto;
+			text-align: start;
+		}
+	}
+}

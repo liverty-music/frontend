@@ -1,0 +1,22 @@
+<import from="./fab-toggle.css"></import>
+<import from="../fab-glyph/fab-glyph"></import>
+
+<!-- A disclosure button (aria-expanded + aria-controls), NOT an ARIA menu.
+     It is itself a manual popover (shown by fab-menu on attach) so it floats
+     in the top layer, and controls the arc (fab-menu's #fab-menu-panel) via
+     popovertarget so the browser handles the open/close toggle natively (no
+     invoker double-fire). -->
+<button
+  ref="button"
+  type="button"
+  class="[ fab-toggle ] [ state-layer ]"
+  popover="manual"
+  popovertarget="fab-menu-panel"
+  popovertargetaction="toggle"
+  data-handed.bind="handed"
+  aria-controls="fab-menu-panel"
+  aria-expanded.bind="open"
+  t="[aria-label]fabMenu.toggleAriaLabel"
+>
+  <fab-glyph open.bind="open"></fab-glyph>
+</button>
