@@ -9,7 +9,6 @@ import { expect, type Page, test } from '../support/test'
  * re-entry paints the remembered date first, with no skeleton in between.
  */
 
-const APP = 'http://localhost:9000'
 const DAYS = 225
 
 test.use({ viewport: { width: 390, height: 800 } })
@@ -121,7 +120,7 @@ async function openDashboard(page: Page): Promise<void> {
 		)
 	})
 	await mockRpc(page)
-	await page.goto(`${APP}/dashboard`)
+	await page.goto(`/dashboard`)
 	await page.locator('[data-live-card]').first().waitFor({ timeout: 10000 })
 	await settle(page)
 }
@@ -340,7 +339,7 @@ test.describe('timetable date window', () => {
 		// The two-lane presentation lives on Discovery's All Nearby view; it
 		// builds the same window and keeps every group aligned the same way.
 		await openDashboard(page)
-		await page.goto(`${APP}/discovery?view=nearby`)
+		await page.goto(`/discovery?view=nearby`)
 		const card = page
 			.locator(
 				'nearby-concerts concert-highway [data-hide-away="true"] [data-live-card]',

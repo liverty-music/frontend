@@ -180,7 +180,7 @@ test.describe('Dashboard lane classification after home selection', () => {
 			)
 		})
 
-		await page.goto('http://localhost:9000/dashboard')
+		await page.goto('/dashboard')
 
 		// Wait for dashboard to render with blur applied (needsRegion = true)
 		const blurElement = page.locator('[data-blurred="true"]')
@@ -251,7 +251,7 @@ test.describe('Dashboard lane classification after home selection', () => {
 			)
 		})
 
-		await page.goto('http://localhost:9000/dashboard')
+		await page.goto('/dashboard')
 
 		// Wait for dashboard content to render
 		await expect(page.locator('concert-highway')).toBeVisible({

@@ -266,7 +266,7 @@ test.describe('Normal detail sheet dismiss', () => {
 	test.beforeEach(async ({ page }) => {
 		await page.addInitScript(seedPostDashboardState())
 		await mockRpcRoutes(page)
-		await page.goto('http://localhost:9000/dashboard')
+		await page.goto('/dashboard')
 	})
 
 	// TODO: Bottom-sheet scroll-snap dismiss doesn't trigger reliably in headless Chromium.
@@ -358,7 +358,7 @@ test.describe('Still-onboarding reload recovery', () => {
 	test('dashboard loads with no blocking overlay and interactive nav', async ({
 		page,
 	}) => {
-		await page.goto('http://localhost:9000/dashboard')
+		await page.goto('/dashboard')
 
 		await expect(page.locator('au-viewport')).toBeVisible({ timeout: 10_000 })
 
@@ -374,7 +374,7 @@ test.describe('Still-onboarding reload recovery', () => {
 	test('My Artists tab navigates to my-artists; meaningful dashboard arrival latched onboarding', async ({
 		page,
 	}) => {
-		await page.goto('http://localhost:9000/dashboard')
+		await page.goto('/dashboard')
 
 		// Wait for dashboard to load
 		await expect(page.locator('au-viewport')).toBeVisible({ timeout: 10_000 })

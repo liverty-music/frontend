@@ -216,9 +216,17 @@ jobs:
   e2e:
     needs: changes
     if: needs.changes.outputs.src == 'true'
-    name: E2E
+    name: E2E (${{ matrix.shard }}/2)
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # Two shards, each with the whole time limit: one job ran ~505 tests in
+    # 8-15 minutes and was cancelled at 15 (#989). `CI Success` reads the
+    # matrix as one result, which fails when either shard fails. No fail-fast,
+    # so a failing shard still lets the other report its own failures.
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -252,22 +260,23 @@ jobs:
       # on the grounds that they cover it. They must therefore run here, or
       # that spec has no CI coverage at all.
       - name: Run E2E tests
-        run: npx playwright test --project=functional --project=webkit-repro --project=chromium-control --project=webkit-shell --project=webkit-virtual-ticket --project=webkit-organizer-guide --project=typefaces-pixel7 --project=typefaces-iphone
+        run: npx playwright test --shard=${{ matrix.shard }}/2 --project=functional --project=webkit-repro --project=chromium-control --project=webkit-shell --project=webkit-virtual-ticket --project=webkit-organizer-guide --project=typefaces-pixel7 --project=typefaces-iphone
 
       # PWA / service-worker specs run from their own config against a
       # production build (`vite preview`). vite-plugin-pwa disables the service
       # worker in dev, so running these against the dev server verifies
       # nothing — which is why the offline-cache spec sat excluded from CI with
       # a stale reason. Separate step so the production build it needs does not
-      # slow the rest of the e2e run.
+      # slow the rest of the e2e run. It runs in one shard only.
       - name: Run PWA tests
+        if: matrix.shard == 2
         run: npm run test:pwa
 
       - name: Upload test results
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: failure()
         with:
-          name: e2e-results
+          name: e2e-results-${{ matrix.shard }}
           path: test-results/
           retention-days: 7
 

@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
+import { APP_ORIGIN, E2E_PORT } from './e2e/support/app-origin.ts';
 
 /**
  * Read environment variables from file.
@@ -60,7 +61,7 @@ export default defineConfig({
       ],
       use: {
         ...devices['Desktop Chrome'],
-        baseURL: 'http://localhost:9000',
+        baseURL: APP_ORIGIN,
       },
     },
     // WebKit regression guard: real WebKit engine, iPhone 14 viewport.
@@ -73,7 +74,7 @@ export default defineConfig({
       use: {
         ...devices['iPhone 14'],
         browserName: 'webkit',
-        baseURL: 'http://localhost:9000',
+        baseURL: APP_ORIGIN,
       },
     },
     // Chromium control for the WebKit regression guard: same viewport, Chromium engine.
@@ -84,7 +85,7 @@ export default defineConfig({
       use: {
         ...devices['iPhone 14'],
         browserName: 'chromium',
-        baseURL: 'http://localhost:9000',
+        baseURL: APP_ORIGIN,
       },
     },
     // The shell chrome (bottom navigation, page header, FAB) on the real WebKit
@@ -106,7 +107,7 @@ export default defineConfig({
       use: {
         ...devices['iPhone 14'],
         browserName: 'webkit',
-        baseURL: 'http://localhost:9000',
+        baseURL: APP_ORIGIN,
       },
     },
     // The virtual ticket on the real WebKit engine, iPhone 14 viewport: Safari
@@ -119,7 +120,7 @@ export default defineConfig({
       use: {
         ...devices['iPhone 14'],
         browserName: 'webkit',
-        baseURL: 'http://localhost:9000',
+        baseURL: APP_ORIGIN,
       },
     },
     // The organizer members' guide and the console's 使い方 on the real WebKit
@@ -133,7 +134,7 @@ export default defineConfig({
       use: {
         ...devices['iPhone 14'],
         browserName: 'webkit',
-        baseURL: 'http://localhost:9000',
+        baseURL: APP_ORIGIN,
       },
     },
     // The fan app's typefaces as drawn, on the two phone profiles the
@@ -144,7 +145,7 @@ export default defineConfig({
       testMatch: 'e2e/functional/typefaces.spec.ts',
       use: {
         ...devices['Pixel 7'],
-        baseURL: 'http://localhost:9000',
+        baseURL: APP_ORIGIN,
       },
     },
     {
@@ -153,7 +154,7 @@ export default defineConfig({
       use: {
         ...devices['iPhone 14'],
         browserName: 'chromium',
-        baseURL: 'http://localhost:9000',
+        baseURL: APP_ORIGIN,
       },
     },
     // Layer 3: E2E Functional — onboarding flows (Pixel 7 mobile)
@@ -167,7 +168,7 @@ export default defineConfig({
       ],
       use: {
         ...devices['Pixel 7'],
-        baseURL: 'http://localhost:9000',
+        baseURL: APP_ORIGIN,
       },
     },
     // Layer 3: Smoke — console error detection
@@ -180,7 +181,7 @@ export default defineConfig({
       testIgnore: 'e2e/smoke/post-deploy.spec.ts',
       use: {
         ...devices['Desktop Chrome'],
-        baseURL: 'http://localhost:9000',
+        baseURL: APP_ORIGIN,
       },
     },
     // Visual regression has moved to component-level Storybook browser tests
@@ -224,8 +225,10 @@ export default defineConfig({
      so it never starts a webServer — this file is for local-dev / CI
      tests only. */
   webServer: {
-    command: 'npm start',
-    port: 9000,
+    /* `--strictPort`: if E2E_PORT is taken, vite exits instead of moving to
+       another port that Playwright would never find. */
+    command: `npm start -- --port ${E2E_PORT} --strictPort`,
+    port: E2E_PORT,
     reuseExistingServer: !process.env.CI,
   },
 });

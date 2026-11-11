@@ -8,7 +8,6 @@ import { expect, type Page, test } from '../support/test'
  * the dashboard toggle lights the concerts already on screen in place.
  */
 
-const APP = 'http://localhost:9000'
 const DAYS = 30
 
 function localDate(offset: number) {
@@ -85,7 +84,7 @@ async function openDashboard(page: Page, beams: boolean): Promise<void> {
 		)
 	}, beams)
 	await mockRpc(page)
-	await page.goto(`${APP}/dashboard`)
+	await page.goto(`/dashboard`)
 	await page.locator('[data-live-card]').first().waitFor({ timeout: 10000 })
 }
 

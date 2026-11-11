@@ -105,7 +105,7 @@ for (const hype of ['home', 'nearby', 'away'] as const) {
 		await seedGuest(page, hype)
 		await mockRpc(page, hype)
 
-		await page.goto('http://localhost:9000/dashboard')
+		await page.goto('/dashboard')
 		await expect(page.locator('[data-live-card]').first()).toBeVisible({
 			timeout: 10000,
 		})

@@ -1,3 +1,4 @@
+import { availableParallelism } from 'node:os'
 import { fileURLToPath } from 'node:url'
 import aurelia from '@aurelia/vite-plugin'
 import { storybookTest } from '@storybook/addon-vitest/vitest-plugin'
@@ -199,6 +200,14 @@ const storybookMoreContrastProject = storybookProjectFor({
 export default defineConfig({
 	test: {
 		watch: false,
+		// Locally, use half the CPUs: with one worker per CPU, several worktrees
+		// running tests at once starved each other until unrelated tests hit
+		// the 5 s timeout and a run was killed for memory. Set on the root, the
+		// cap bounds every project in the run together. CI runs one suite per
+		// runner and keeps Vitest's default.
+		...(process.env.CI
+			? {}
+			: { maxWorkers: Math.max(1, Math.floor(availableParallelism() / 2)) }),
 		projects: [
 			unitProject,
 			scriptsProject,

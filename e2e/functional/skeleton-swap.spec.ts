@@ -128,14 +128,14 @@ for (const path of ['/dashboard', `/concerts/${fakeId('h-150-0')}`]) {
 		test.setTimeout(90_000)
 		await prepare(page)
 		// Warm the dev server's modules, then slow the CPU for the load under test.
-		await page.goto('http://localhost:9000/discovery')
+		await page.goto('/discovery')
 		await expect(page.locator('discovery-route')).toBeVisible({
 			timeout: 20_000,
 		})
 		const cdp = await context.newCDPSession(page)
 		await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 })
 
-		await page.goto(`http://localhost:9000${path}`)
+		await page.goto(path)
 		await expect
 			.poll(
 				() =>
