@@ -1,25 +1,15 @@
 <import from="./onboarding-progress.css"></import>
+<import from="../onboarding-progress-meter/onboarding-progress-meter"></import>
+<import from="../onboarding-ready-link/onboarding-ready-link"></import>
 
-<a if.bind="ready" href="/dashboard" class="[ onboarding-progress-ready ] [ md-typescale-label-large ]">
-  <span t="discovery.progress.ready"></span>
-  <span class="visually-hidden" t="discovery.progress.readyAction"></span>
-  <span class="onboarding-progress-ready-icon" aria-hidden="true"><svg-icon name="calendar-check"></svg-icon></span>
-</a>
+<onboarding-ready-link if.bind="ready"></onboarding-ready-link>
 
 <div else class="onboarding-progress-track">
   <span id="onboarding-progress-label" class="[ onboarding-progress-label ] [ md-typescale-body-medium ]" t="discovery.progress.label"></span>
-  <div
-    class="onboarding-progress-meter"
-    role="progressbar"
-    aria-labelledby="onboarding-progress-label"
-    aria-valuemin="0"
-    aria-valuemax="100"
-    aria-valuenow.bind="percent"
-    data-rise.bind="rises % 2"
-    style="--progress: ${percent}"
-  >
-    <span class="onboarding-progress-fill"></span>
-    <span class="onboarding-progress-spark"></span>
-  </div>
+  <onboarding-progress-meter
+    percent.bind="percent"
+    rise.bind="rises % 2"
+    labelled-by="onboarding-progress-label"
+  ></onboarding-progress-meter>
   <span class="[ onboarding-progress-value ] [ md-typescale-label-large ]" aria-hidden="true">${percent}%</span>
 </div>

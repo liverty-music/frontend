@@ -1,0 +1,15 @@
+<import from="./onboarding-progress-meter.css"></import>
+<import from="../onboarding-progress-spark/onboarding-progress-spark"></import>
+
+<div
+  class="onboarding-progress-meter"
+  role="progressbar"
+  aria-labelledby.bind="labelledBy"
+  aria-valuemin="0"
+  aria-valuemax="100"
+  aria-valuenow.bind="percent"
+  style="--progress: ${percent}"
+>
+  <span class="onboarding-progress-fill"></span>
+  <onboarding-progress-spark rise.bind="rise"></onboarding-progress-spark>
+</div>

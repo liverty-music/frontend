@@ -72,13 +72,16 @@ describe('onboarding-progress', () => {
 		const fixture = await render(0.2)
 		const bar = () =>
 			fixture.appHost.querySelector<HTMLElement>('[role="progressbar"]')
-		const rise = bar()?.dataset.rise
+		const spark = () =>
+			fixture.appHost.querySelector<HTMLElement>('.onboarding-progress-spark')
+		const rise = spark()?.dataset.rise
 		fixture.component.value = 0.6
 		await tasksSettled()
 
 		expect(bar()?.getAttribute('aria-valuenow')).toBe('60')
 		expect(bar()?.style.getPropertyValue('--progress')).toBe('60')
 		// A new rise restarts the spark's flare.
-		expect(bar()?.dataset.rise).not.toBe(rise)
+		expect(spark()?.dataset.rise).toBeDefined()
+		expect(spark()?.dataset.rise).not.toBe(rise)
 	})
 })

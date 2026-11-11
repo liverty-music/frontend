@@ -1,0 +1,60 @@
+@layer block {
+	@scope (onboarding-ready-icon) {
+		/* The chip is a flex item of the ready link. */
+		:scope {
+			display: contents;
+		}
+
+		/* The finished timetable as a bright chip that keeps sending out a
+		   ring of light, inviting the tap. Same height as the band row, so
+		   the field below never moves when the row turns into the link. */
+		.onboarding-progress-ready-icon {
+			position: relative;
+
+			display: grid;
+			flex-shrink: 0;
+			place-items: center;
+
+			inline-size: 2rem;
+			block-size: 2rem;
+			border-radius: var(--md-sys-shape-corner-full);
+
+			color: var(--md-sys-color-primary);
+
+			background: var(--color-white);
+
+			&::after {
+				pointer-events: none;
+				content: "";
+
+				position: absolute;
+				inset: 0;
+
+				border-radius: inherit;
+
+				box-shadow: var(--glow-beacon);
+
+				animation: ready-beacon 1.6s var(--md-sys-motion-spring-effects)
+					infinite;
+			}
+		}
+
+		@keyframes ready-beacon {
+			from {
+				scale: 1;
+				opacity: 0.9;
+			}
+
+			to {
+				scale: 1.8;
+				opacity: 0;
+			}
+		}
+
+		@media (prefers-reduced-motion: reduce) {
+			.onboarding-progress-ready-icon::after {
+				animation: none;
+			}
+		}
+	}
+}

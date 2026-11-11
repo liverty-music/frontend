@@ -1,0 +1,75 @@
+/* Registered so the ready border can turn. */
+@property --_ready-angle {
+	inherits: false;
+	initial-value: 0deg;
+	syntax: "<angle>";
+}
+
+@layer block {
+	@scope (onboarding-ready-link) {
+		/* The link is the progress row's own child box. */
+		:scope {
+			display: contents;
+		}
+
+		/* Ready: the row becomes the way to the timetable, ringed by a turning
+		   band of the same light. */
+		.onboarding-progress-ready {
+			display: flex;
+			gap: var(--space-xs);
+			align-items: center;
+			justify-content: center;
+
+			min-block-size: var(--md-sys-target-size);
+			padding-inline: var(--space-s);
+			border: 2px solid transparent;
+			border-radius: var(--md-sys-shape-corner-full);
+
+			color: var(--color-white);
+			text-align: center;
+			text-decoration: none;
+
+			background:
+				linear-gradient(
+					var(--md-sys-color-primary),
+					var(--md-sys-color-primary)
+				)
+				padding-box,
+				conic-gradient(
+					from var(--_ready-angle),
+					var(--color-brand-secondary),
+					var(--color-brand-accent),
+					var(--color-brand-primary),
+					var(--color-brand-secondary)
+				)
+				border-box;
+			box-shadow: var(--glow-progress-ready);
+
+			transition:
+				opacity var(--md-sys-motion-spring-effects-duration)
+				var(--md-sys-motion-spring-effects),
+				scale var(--md-sys-motion-spring-spatial-duration)
+				var(--md-sys-motion-spring-spatial);
+			animation: ready-turn 3s linear infinite;
+
+			@starting-style {
+				scale: 0.92;
+				opacity: 0;
+			}
+		}
+
+		@keyframes ready-turn {
+			to {
+				--_ready-angle: 360deg;
+			}
+		}
+
+		/* The entrance needs no rule here: its duration tokens are 0 ms under
+		   reduced motion. */
+		@media (prefers-reduced-motion: reduce) {
+			.onboarding-progress-ready {
+				animation: none;
+			}
+		}
+	}
+}

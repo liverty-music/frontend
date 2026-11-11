@@ -1,0 +1,96 @@
+/* Registered so the fill and the spark can interpolate; the spark
+   (onboarding-progress-spark) reads it from the band. */
+@property --progress {
+	inherits: true;
+	initial-value: 0;
+	syntax: "<number>";
+}
+
+@layer block {
+	@scope (onboarding-progress-meter) {
+		/* The host is the progress row's grid item; the band fills it. */
+		:scope {
+			--_band: linear-gradient(
+				90deg in oklch,
+				var(--color-brand-secondary),
+				var(--color-brand-primary) 60%,
+				var(--color-brand-accent)
+			);
+			--_track: oklch(100% 0 0deg / 10%);
+			--_track-edge: oklch(100% 0 0deg / 14%);
+
+			display: block;
+		}
+
+		/* A glass groove the light fills, revealed up to --progress so the
+		   gradient stays fixed to the groove as it grows. */
+		.onboarding-progress-meter {
+			position: relative;
+
+			block-size: 0.375rem;
+			border: 1px solid var(--_track-edge);
+			border-radius: var(--md-sys-shape-corner-full);
+
+			background: var(--_track);
+
+			transition: --progress var(--md-sys-motion-spring-spatial-slow-duration)
+				var(--md-sys-motion-spring-spatial-slow);
+		}
+
+		.onboarding-progress-fill {
+			position: absolute;
+
+			/* Over the groove's 1 px edge too, as the edge was drawn under it. */
+			inset: -1px;
+
+			overflow: clip;
+
+			border-radius: inherit;
+
+			background: var(--_band);
+			clip-path: inset(
+				0 calc(100% - var(--progress) * 1%) 0 0 round
+					var(--md-sys-shape-corner-full)
+			);
+			box-shadow: var(--glow-progress);
+
+			/* The sheen: the band again at half the width, screened over the fill
+			   and slid by transform so the compositor moves it without a repaint.
+			   Twice the fill's width, it slides one fill width (two repeats) per
+			   loop. */
+			&::before {
+				content: "";
+
+				position: absolute;
+				inset-block: 0;
+				inset-inline-start: 0;
+
+				inline-size: 200%;
+
+				background: var(--_band);
+				background-size: 25% 100%;
+				mix-blend-mode: screen;
+
+				animation: progress-sheen 2.8s linear infinite;
+			}
+		}
+
+		@keyframes progress-sheen {
+			from {
+				transform: translateX(-50%);
+			}
+
+			to {
+				transform: translateX(0);
+			}
+		}
+
+		/* The fill needs no rule here: its duration token is 0 ms under
+		   reduced motion. */
+		@media (prefers-reduced-motion: reduce) {
+			.onboarding-progress-fill::before {
+				animation: none;
+			}
+		}
+	}
+}
