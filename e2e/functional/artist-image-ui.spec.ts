@@ -266,7 +266,7 @@ test.describe('Event card artist name', () => {
 	})
 
 	test('5.1a: all cards show artist name as text', async ({ page }) => {
-		await page.goto('http://localhost:9000/dashboard')
+		await page.goto('/dashboard')
 
 		// Wait for event cards to render
 		const cards = page.locator('[data-live-card]')
@@ -281,7 +281,7 @@ test.describe('Event card artist name', () => {
 	})
 
 	test('5.1b: artist without fanart shows text name', async ({ page }) => {
-		await page.goto('http://localhost:9000/dashboard')
+		await page.goto('/dashboard')
 
 		const cards = page.locator('[data-live-card]')
 		await expect(cards.first()).toBeVisible({ timeout: 15_000 })
@@ -310,7 +310,7 @@ test.describe('Event detail sheet hero image', () => {
 	test('5.2a: detail sheet shows hero image when backgroundUrl exists', async ({
 		page,
 	}) => {
-		await page.goto('http://localhost:9000/dashboard')
+		await page.goto('/dashboard')
 
 		// Wait for cards and click the one with fanart (YOASOBI)
 		const cards = page.locator('[data-live-card]')
@@ -336,7 +336,7 @@ test.describe('Event detail sheet hero image', () => {
 	test('5.2b: detail sheet has no hero image when backgroundUrl absent', async ({
 		page,
 	}) => {
-		await page.goto('http://localhost:9000/dashboard')
+		await page.goto('/dashboard')
 
 		const cards = page.locator('[data-live-card]')
 		await expect(cards.first()).toBeVisible({ timeout: 15_000 })

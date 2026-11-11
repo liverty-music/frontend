@@ -1,4 +1,5 @@
 import { expect, type Locator, type Page, type Route } from '@playwright/test'
+import { APP_ORIGIN } from './app-origin'
 import { OIDC_AUTHORITY } from './auth-mocks'
 import { artistList, organizer } from './organizer-data'
 
@@ -29,8 +30,6 @@ const SHELL_RPC: RpcMocks = {
 	'OrganizerService/Get': organizer(),
 	'ArtistService/List': artistList('Band A'),
 }
-
-const DEV_ORIGIN = 'http://localhost:9000'
 
 export const ORGANIZER_API = 'https://api.organizer.e2e.liverty-music.app'
 const CLIENT_ID = 'organizer-e2e'
@@ -79,7 +78,7 @@ export async function installConsole(
 	options: ConsoleOptions = {},
 ): Promise<RpcLog> {
 	const log: RpcLog = { calls: [] }
-	const origin = options.origin ?? DEV_ORIGIN
+	const origin = options.origin ?? APP_ORIGIN
 
 	await page.route(
 		(url) => url.origin === origin,
@@ -193,7 +192,7 @@ export async function consoleStorage(
 	page: Page,
 ): Promise<Record<string, string>> {
 	const state = await page.context().storageState()
-	const origin = state.origins.find((o) => o.origin === DEV_ORIGIN)
+	const origin = state.origins.find((o) => o.origin === APP_ORIGIN)
 	return Object.fromEntries(
 		(origin?.localStorage ?? []).map((e) => [e.name, e.value]),
 	)

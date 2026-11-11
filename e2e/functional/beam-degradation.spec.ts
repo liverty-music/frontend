@@ -10,8 +10,6 @@ import { expect, type Page, test } from '../support/test'
  * behave as they do with the effect off.
  */
 
-const APP = 'http://localhost:9000'
-
 function localDate(offset: number) {
 	const d = new Date()
 	d.setDate(d.getDate() + offset)
@@ -118,7 +116,7 @@ test('beams are absent without typed attr(), and nothing else changes', async ({
 		)
 	})
 	await mockRpc(page)
-	await page.goto(`${APP}/dashboard`)
+	await page.goto(`/dashboard`)
 	await page.locator('[data-live-card]').first().waitFor({ timeout: 10000 })
 
 	// The browser without typed attr(): the rule is gone, and only that rule.

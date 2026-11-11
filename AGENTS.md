@@ -4,6 +4,7 @@
   <essential-commands>
     npm run test-storybook # Storybook component tests (browser mode; run in the pinned Playwright container for visual baselines)
     npx playwright test    # E2E tests (functional/smoke/onboarding/pwa — no visual project)
+    E2E_PORT=<p> npx playwright test # runs a worktree in isolation on its own dev server (default port 9000)
   </essential-commands>
 </poly-repo-context>
 

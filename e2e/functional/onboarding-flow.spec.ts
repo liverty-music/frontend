@@ -289,7 +289,7 @@ test.describe('Onboarding flow (single-flag model)', () => {
 	test('Welcome hero shows the scroll affordance; the guided demo opens on the notification', async ({
 		page,
 	}) => {
-		await page.goto('http://localhost:9000/')
+		await page.goto('/')
 
 		// Screen 1 shows the scroll-affordance (message-first), not a commit CTA.
 		await expect(page.getByTestId('welcome-see-preview')).toBeVisible({
@@ -313,7 +313,7 @@ test.describe('Onboarding flow (single-flag model)', () => {
 	test('Scroll affordance reveals the demo; advancing exposes Pick your artists → Discovery', async ({
 		page,
 	}) => {
-		await page.goto('http://localhost:9000/')
+		await page.goto('/')
 
 		// Tap the scroll affordance to reveal the guided demo below the hero.
 		await page.getByTestId('welcome-see-preview').click()
@@ -332,7 +332,7 @@ test.describe('Onboarding flow (single-flag model)', () => {
 		page,
 	}) => {
 		await page.addInitScript(seedCompleted)
-		await page.goto('http://localhost:9000/')
+		await page.goto('/')
 
 		await advanceDemoToTimetable(page)
 
@@ -346,7 +346,7 @@ test.describe('Onboarding flow (single-flag model)', () => {
 	test('The guided demo sits at or below the fold on initial load', async ({
 		page,
 	}) => {
-		await page.goto('http://localhost:9000/')
+		await page.goto('/')
 
 		// Hero is full-viewport (100svh); the demo section's top sits at or beyond
 		// the fold — the explicit `↓` scroll CTA carries the "more below" affordance.
@@ -366,7 +366,7 @@ test.describe('Onboarding flow (single-flag model)', () => {
 	}) => {
 		// mockRpcRoutes (via beforeEach) returns concerts, so the guided demo renders;
 		// the timetable preview lives in the demo's interactive second phase.
-		await page.goto('http://localhost:9000/')
+		await page.goto('/')
 
 		await advanceDemoToTimetable(page)
 
@@ -382,7 +382,7 @@ test.describe('Onboarding flow (single-flag model)', () => {
 		page,
 	}) => {
 		test.setTimeout(45_000)
-		await page.goto('http://localhost:9000/')
+		await page.goto('/')
 		await advanceDemoToTimetable(page)
 
 		// 5 s after the timetable is interactive, the spotlight lands on the
@@ -433,7 +433,7 @@ test.describe('Onboarding flow (single-flag model)', () => {
 			})
 		})
 
-		await page.goto('http://localhost:9000/')
+		await page.goto('/')
 
 		// In the fallback state, [Pick your artists] renders inline on Screen 1 and is
 		// visible in the initial viewport.
@@ -461,7 +461,7 @@ test.describe('Onboarding flow (single-flag model)', () => {
 		page,
 	}) => {
 		await page.addInitScript(seedOnboarding)
-		await page.goto('http://localhost:9000/discovery')
+		await page.goto('/discovery')
 
 		// Soft gate: the discovery layout renders; the auth hook does not redirect.
 		await expect(page.locator('.discovery-layout')).toBeVisible({
@@ -472,7 +472,7 @@ test.describe('Onboarding flow (single-flag model)', () => {
 
 	test('No popover-guide snack on discovery page entry', async ({ page }) => {
 		await page.addInitScript(seedOnboarding)
-		await page.goto('http://localhost:9000/discovery')
+		await page.goto('/discovery')
 		await expect(page.locator('.discovery-layout')).toBeVisible({
 			timeout: 10_000,
 		})
@@ -514,7 +514,7 @@ test.describe('Onboarding flow (single-flag model)', () => {
 				]),
 			)
 		})
-		await page.goto('http://localhost:9000/discovery')
+		await page.goto('/discovery')
 		await expect(page.locator('.discovery-layout')).toBeVisible({
 			timeout: 10_000,
 		})
@@ -561,7 +561,7 @@ test.describe('Onboarding flow (single-flag model)', () => {
 				]),
 			)
 		})
-		await page.goto('http://localhost:9000/dashboard')
+		await page.goto('/dashboard')
 
 		await expect(page).toHaveURL(/dashboard/)
 		await expect(page.locator('au-viewport')).toBeVisible({ timeout: 10_000 })
@@ -575,7 +575,7 @@ test.describe('Onboarding flow (single-flag model)', () => {
 			localStorage.setItem('guest.home', 'JP-13')
 			// No guest.followedArtists → followedCount === 0 → showGuestEmptyState
 		})
-		await page.goto('http://localhost:9000/dashboard')
+		await page.goto('/dashboard')
 
 		// Soft gate: stays on the dashboard and surfaces the in-page empty-state
 		// CTA toward discovery instead of a guard redirect. The CTA placeholder is
@@ -608,7 +608,7 @@ test.describe('Onboarding flow (single-flag model)', () => {
 				),
 			)
 		})
-		await page.goto('http://localhost:9000/dashboard')
+		await page.goto('/dashboard')
 
 		await page.getByRole('button', { name: 'Tokyo' }).first().click()
 
@@ -630,7 +630,7 @@ test.describe('Onboarding flow (single-flag model)', () => {
 			localStorage.setItem('onboarding.celebrationShown', '1')
 			localStorage.setItem('guest.home', 'JP-13')
 		})
-		await page.goto('http://localhost:9000/dashboard')
+		await page.goto('/dashboard')
 
 		await expect(page.locator('.celebration-overlay')).toHaveCount(0)
 	})
@@ -643,7 +643,7 @@ test.describe('Onboarding flow (single-flag model)', () => {
 			localStorage.setItem('onboarding.celebrationShown', '1')
 			localStorage.setItem('guest.home', 'JP-13')
 		})
-		await page.goto('http://localhost:9000/dashboard')
+		await page.goto('/dashboard')
 
 		await expect(page.locator('au-viewport')).toBeVisible({ timeout: 10_000 })
 		await expect(page.locator('.celebration-overlay')).toHaveCount(0)
@@ -689,7 +689,7 @@ test.describe('Onboarding flow (single-flag model)', () => {
 				]),
 			)
 		})
-		await page.goto('http://localhost:9000/my-artists')
+		await page.goto('/my-artists')
 		await expect(page.locator('my-artists-route')).toBeVisible({
 			timeout: 10_000,
 		})
@@ -788,7 +788,7 @@ test.describe('Soft-gate roam (Discovery → Dashboard → My Artists)', () => {
 		})
 
 		// -- DISCOVERY: reachable directly; the progress row becomes ready -------
-		await page.goto('http://localhost:9000/discovery')
+		await page.goto('/discovery')
 		await expect(page.locator('.discovery-layout')).toBeVisible({
 			timeout: 30_000,
 		})

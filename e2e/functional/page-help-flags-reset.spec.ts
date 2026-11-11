@@ -1,4 +1,5 @@
 import type { Browser, Page } from '@playwright/test'
+import { APP_ORIGIN } from '../support/app-origin'
 import { installAuthMocks } from '../support/auth-mocks'
 import {
 	FAN_EMAIL,
@@ -28,7 +29,7 @@ const USER = {
 
 /** A fresh guest device whose help sheets were all seen once. */
 async function freshGuest(browser: Browser): Promise<Page> {
-	const context = await browser.newContext({ baseURL: 'http://localhost:9000' })
+	const context = await browser.newContext({ baseURL: APP_ORIGIN })
 	const page = await context.newPage()
 	await installAuthMocks(page)
 	await context.addInitScript((pages) => {

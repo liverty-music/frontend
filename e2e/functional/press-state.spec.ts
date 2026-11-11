@@ -9,8 +9,6 @@ import { expect, type Locator, type Page, test } from '../support/test'
  * these run against the guest dashboard with a real mouse held down.
  */
 
-const APP = 'http://localhost:9000'
-
 const tomorrow = new Date()
 tomorrow.setDate(tomorrow.getDate() + 1)
 const localDate = {
@@ -101,7 +99,7 @@ async function seedGuest(page: Page, followed: boolean): Promise<void> {
 async function openCard(page: Page): Promise<Locator> {
 	await seedGuest(page, true)
 	await mockRpc(page, true)
-	await page.goto(`${APP}/dashboard`)
+	await page.goto(`/dashboard`)
 	const card = page.locator('[data-live-card]').first()
 	await card.waitFor({ timeout: 10000 })
 	return card
@@ -159,7 +157,7 @@ test.describe('press acknowledgement', () => {
 		// shared discover CTA.
 		await seedGuest(page, false)
 		await mockRpc(page, false)
-		await page.goto(`${APP}/my-artists`)
+		await page.goto(`/my-artists`)
 		const cta = page.getByTestId('discover-link').first()
 		await cta.waitFor({ timeout: 10000 })
 		const layer = () => stateLayer(cta)

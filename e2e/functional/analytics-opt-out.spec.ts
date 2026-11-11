@@ -363,7 +363,7 @@ test.describe
 			// The /consent notice is a standalone public page reachable by link; it
 			// is NOT a step in onboarding. Visiting + acknowledging must navigate on
 			// (to /dashboard) and never gate progression.
-			await page.goto('http://localhost:9000/consent')
+			await page.goto('/consent')
 			await expect(page.locator('.consent-route')).toBeVisible({
 				timeout: 10_000,
 			})
@@ -383,7 +383,7 @@ test.describe
 
 			// A driven artist.search still reaches PostHog, proving acknowledging the
 			// notice left analytics enabled.
-			await page.goto('http://localhost:9000/discovery')
+			await page.goto('/discovery')
 			await triggerArtistSearch(page, 'coldplay')
 			await expectCaptured(recorder, 'artist.search')
 		})
@@ -395,7 +395,7 @@ test.describe
 
 			// No opt-out seeded → default-on. After deferred init + queue flush a
 			// driven discovery search's artist.search capture reaches the ingest mock.
-			await page.goto('http://localhost:9000/discovery')
+			await page.goto('/discovery')
 			await triggerArtistSearch(page, 'coldplay')
 
 			await expectCaptured(recorder, 'artist.search')
@@ -407,14 +407,14 @@ test.describe
 			const recorder = await mockPostHog(page)
 
 			// Confirm capture is alive before opting out (a driven discovery search).
-			await page.goto('http://localhost:9000/discovery')
+			await page.goto('/discovery')
 			await triggerArtistSearch(page, 'coldplay')
 			await expectCaptured(recorder, 'artist.search')
 
 			// Toggle Analytics OFF. handleAnalyticsToggle → consent.revoke('analytics')
 			// → ConsentChanged → AnalyticsService.opt_out_capturing(). The first
 			// settings switch is Analytics, the second is Session-replay.
-			await page.goto('http://localhost:9000/settings')
+			await page.goto('/settings')
 			await expect(page.locator('settings-route')).toBeVisible({
 				timeout: 10_000,
 			})
@@ -433,7 +433,7 @@ test.describe
 			const searchesAfterOptOut = countOf(recorder, 'artist.search')
 
 			// A fresh driven search while opted out must NOT reach the ingest mock.
-			await page.goto('http://localhost:9000/discovery')
+			await page.goto('/discovery')
 			await triggerArtistSearch(page, 'radiohead')
 			// Give a generous window for any (suppressed) capture to have fired.
 			// biome-ignore lint/suspicious/noPlaywrightWaitForTimeout: an absence check; a suppressed capture has no event to wait for
@@ -441,7 +441,7 @@ test.describe
 			expect(countOf(recorder, 'artist.search')).toBe(searchesAfterOptOut)
 
 			// Re-enable: opt back in, then a fresh driven search must capture again.
-			await page.goto('http://localhost:9000/settings')
+			await page.goto('/settings')
 			await expect(page.locator('settings-route')).toBeVisible({
 				timeout: 10_000,
 			})
@@ -451,7 +451,7 @@ test.describe
 			await expect(reSwitch).toHaveAttribute('aria-checked', 'true')
 
 			const searchesAfterOptIn = countOf(recorder, 'artist.search')
-			await page.goto('http://localhost:9000/discovery')
+			await page.goto('/discovery')
 			await triggerArtistSearch(page, 'oasis')
 			await expect
 				.poll(() => countOf(recorder, 'artist.search'), { timeout: 15_000 })
@@ -464,11 +464,11 @@ test.describe
 			const recorder = await mockPostHog(page)
 
 			// Confirm capture is alive first (a driven discovery search).
-			await page.goto('http://localhost:9000/discovery')
+			await page.goto('/discovery')
 			await triggerArtistSearch(page, 'coldplay')
 			await expectCaptured(recorder, 'artist.search')
 
-			await page.goto('http://localhost:9000/settings')
+			await page.goto('/settings')
 			await expect(page.locator('settings-route')).toBeVisible({
 				timeout: 10_000,
 			})
@@ -489,7 +489,7 @@ test.describe
 			// A fresh driven search still captures the catalogue event: replay-off did
 			// not suppress events.
 			const before = countOf(recorder, 'artist.search')
-			await page.goto('http://localhost:9000/discovery')
+			await page.goto('/discovery')
 			await triggerArtistSearch(page, 'radiohead')
 			await expect
 				.poll(() => countOf(recorder, 'artist.search'), { timeout: 15_000 })
@@ -524,7 +524,7 @@ test.describe
 			const recorder = await mockPostHog(page)
 
 			// Two driven searches → at least two captures under one anonymous id.
-			await page.goto('http://localhost:9000/discovery')
+			await page.goto('/discovery')
 			await triggerArtistSearch(page, 'coldplay')
 			await expectCaptured(recorder, 'artist.search')
 

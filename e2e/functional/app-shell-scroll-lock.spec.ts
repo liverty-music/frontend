@@ -124,7 +124,7 @@ async function openDashboard(page: Page): Promise<void> {
 		)
 	})
 
-	await page.goto('http://localhost:9000/dashboard')
+	await page.goto('/dashboard')
 	await expect(page.locator('concert-highway')).toBeVisible({ timeout: 10_000 })
 	await expect(page.locator('[data-testid="concert-scroll"]')).toBeVisible({
 		timeout: 10_000,

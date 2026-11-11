@@ -7,8 +7,6 @@ import { expect, type Locator, type Page, test } from '../support/test'
  * and driven with Playwright's mouse and keyboard.
  */
 
-const APP = 'http://localhost:9000'
-
 const FIXTURE = `
 	<section id="state-fixture" style="display:flex; gap:1rem; padding:2rem; color:oklch(98% 0 0deg); background:oklch(20% 0.04 275deg)">
 		<button id="bare" type="button">Bare</button>
@@ -24,7 +22,7 @@ async function openFixture(page: Page): Promise<void> {
 	await page.route('**/liverty_music.rpc.**', (route) =>
 		route.fulfill({ status: 200, contentType: 'application/json', body: '{}' }),
 	)
-	await page.goto(`${APP}/about`)
+	await page.goto(`/about`)
 	await page.locator('au-viewport').first().waitFor({ timeout: 10000 })
 	await page.evaluate((html) => {
 		document.body.insertAdjacentHTML('afterbegin', html)

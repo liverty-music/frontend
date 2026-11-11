@@ -89,7 +89,7 @@ test.describe('Page identity follows the displayed route (guest)', () => {
 	test('a tab switch shows the target route’s title and tab', async ({
 		page,
 	}) => {
-		await page.goto('http://localhost:9000/discovery')
+		await page.goto('/discovery')
 		await expect(page.locator('discovery-route')).toBeVisible({
 			timeout: 10_000,
 		})
@@ -109,9 +109,7 @@ test.describe('Page identity follows the displayed route (guest)', () => {
 
 	// @spec components/infrastructure/fan/web/global/bottom-nav-bar "Concert deep-link highlights Home"
 	test('a concert deep-link highlights Home', async ({ page }) => {
-		await page.goto(
-			'http://localhost:9000/concerts/00000000-0000-4000-8000-c00000000001',
-		)
+		await page.goto('/concerts/00000000-0000-4000-8000-c00000000001')
 		await expect(page.locator('dashboard-route')).toBeVisible({
 			timeout: 10_000,
 		})
@@ -126,7 +124,7 @@ test.describe('Page identity follows the displayed route (guest)', () => {
 		page,
 	}) => {
 		await guardMyArtists(page)
-		await page.goto('http://localhost:9000/settings')
+		await page.goto('/settings')
 		await expect(page.locator('settings-route')).toBeVisible({
 			timeout: 10_000,
 		})
@@ -228,7 +226,7 @@ test.describe('Timetable tab (guest)', () => {
 			}),
 		)
 		await seedGuest(page)
-		await page.goto('http://localhost:9000/discovery')
+		await page.goto('/discovery')
 		await expect(page.locator('discovery-route')).toBeVisible({
 			timeout: 10_000,
 		})
@@ -322,7 +320,7 @@ test.describe('Timetable tab (guest)', () => {
 		})
 
 		// First visit fills the cache.
-		await page.goto('http://localhost:9000/dashboard')
+		await page.goto('/dashboard')
 		await page.locator('[data-live-card]').first().waitFor({ timeout: 10_000 })
 		await page.locator('.nav-tab[data-nav="discovery"]').click()
 		await expect(page.locator('discovery-route')).toBeVisible({

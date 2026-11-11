@@ -170,7 +170,7 @@ test.describe('Snack bar: multiple rapid snacks (5.1)', () => {
 			)
 		})
 		await mockRpcRoutes(page)
-		await page.goto('http://localhost:9000/dashboard')
+		await page.goto('/dashboard')
 		await expect(page.locator('snack-bar')).toBeAttached({ timeout: 10_000 })
 	})
 
@@ -254,7 +254,7 @@ test.describe('Snack bar: undo snack on My Artists (5.2)', () => {
 			)
 		})
 		await mockRpcRoutes(page)
-		await page.goto('http://localhost:9000/my-artists')
+		await page.goto('/my-artists')
 		await expect(page.locator('.artists-fieldset')).toBeVisible({
 			timeout: 10_000,
 		})
@@ -352,7 +352,7 @@ test.describe('Snack bar: appears above dialog (5.3)', () => {
 	}) => {
 		test.setTimeout(30_000)
 
-		await page.goto('http://localhost:9000/dashboard')
+		await page.goto('/dashboard')
 		await expect(page.locator('snack-bar')).toBeAttached({ timeout: 10_000 })
 
 		// Open a dialog programmatically to simulate a modal being open
@@ -430,7 +430,7 @@ async function bootSignedIn(
 		{ sub: FAN_SUB, email: FAN_EMAIL, banner },
 	)
 	await mockFanRpc(page)
-	await page.goto('http://localhost:9000/tickets')
+	await page.goto('/tickets')
 	await expect(page.locator('bottom-nav-bar nav')).toBeVisible({
 		timeout: 30_000,
 	})
