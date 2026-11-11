@@ -68,6 +68,26 @@ const AWAY_LANE: Record<string, number> = {
 	[AWAY_CONCERT_2]: 3,
 }
 
+/**
+ * Waits for the hype re-read that follows a journey change, then for two frames
+ * (the raise snack would show right after it), instead of sleeping.
+ */
+async function expectNoSnackAfterReRead(
+	page: Page,
+	calls: Parameters<typeof callsOf>[0],
+	rereadsBefore: number,
+): Promise<void> {
+	await expect
+		.poll(() => callsOf(calls, 'FollowService/List').length)
+		.toBeGreaterThan(rereadsBefore)
+	await page.evaluate(
+		() =>
+			new Promise<void>((resolve) =>
+				requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+			),
+	)
+}
+
 /** Mock the backend with the server's rules, starting from `server`. */
 async function mockBackend(page: Page, server: Server) {
 	const groups = [
@@ -377,14 +397,15 @@ test.describe('a journey for a distant concert raises the hype level', () => {
 
 		// A later Applied for another distant concert leaves it at Nearby.
 		await openSheet(page, 'Away Show 3 Hall')
+		const rereadsBefore = callsOf(calls, 'FollowService/List').length
 		await sheet(page)
 			.locator('.journey-row [data-journey-status="applied"]')
 			.click()
 		await expect(
 			sheet(page).locator('.journey-row [data-journey-status="applied"]'),
 		).toHaveAttribute('aria-pressed', 'true')
-		// biome-ignore lint/suspicious/noPlaywrightWaitForTimeout: an absence check; the raise snack would follow the re-read at once
-		await page.waitForTimeout(1_500)
+		// An absence check: the raise snack would follow the hype re-read at once.
+		await expectNoSnackAfterReRead(page, calls, rereadsBefore)
 		await expect(snack(page, '新着ライブを')).toHaveCount(0)
 		expect(server.hype).toBe('HYPE_TYPE_NEARBY')
 	})
@@ -399,10 +420,11 @@ test.describe('a journey for a distant concert raises the hype level', () => {
 			journeys: new Map(),
 		}
 		await seedSignedIn(page)
-		await mockBackend(page, server)
+		const calls = await mockBackend(page, server)
 		await page.goto('/dashboard')
 
 		await openSheet(page, 'Away Show 2 Hall')
+		const rereadsBefore = callsOf(calls, 'FollowService/List').length
 		await sheet(page)
 			.locator('.journey-row [data-journey-status="applied"]')
 			.click()
@@ -415,8 +437,8 @@ test.describe('a journey for a distant concert raises the hype level', () => {
 		await expect(
 			sheet(page).locator('.journey-row [data-journey-status="paid"]'),
 		).toHaveAttribute('aria-pressed', 'true')
-		// biome-ignore lint/suspicious/noPlaywrightWaitForTimeout: an absence check; the raise snack would follow the re-read at once
-		await page.waitForTimeout(1_500)
+		// An absence check: the raise snack would follow the hype re-read at once.
+		await expectNoSnackAfterReRead(page, calls, rereadsBefore)
 		await expect(snack(page, '新着ライブを')).toHaveCount(0)
 
 		await page.goto('/my-artists')

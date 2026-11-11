@@ -489,6 +489,8 @@ test.describe('Snack placement above the navigation', () => {
 	})
 
 	test(`@spec ${SNACK_CAPABILITY} "A banner is visible"`, async ({ page }) => {
+		// The snack's 10 s timer runs on the page's fake clock, fast-forwarded below.
+		await page.clock.install()
 		await bootSignedIn(page, 'visible')
 		await expect(
 			page.locator('pwa-install-banner .bottom-banner'),
@@ -501,9 +503,8 @@ test.describe('Snack placement above the navigation', () => {
 		expect(gap).toBeCloseTo(await spaceS(page), 0)
 		// A positive gap means the snack covers no part of the banner.
 		expect(gap).toBeGreaterThan(0)
-		await expect(page.locator('.snack-item')).toHaveCount(0, {
-			timeout: 15_000,
-		})
+		await page.clock.fastForward(10_000)
+		await expect(page.locator('.snack-item')).toHaveCount(0)
 
 		// My Artists also mounts the (hidden) signup prompt next to the install
 		// banner; the hidden one must not cancel the visible one's height, or
@@ -522,14 +523,15 @@ test.describe('Snack placement above the navigation', () => {
 	test(`@spec ${SNACK_CAPABILITY} "Same placement for every severity"`, async ({
 		page,
 	}) => {
+		// Each snack's 1.5 s timer runs on the page's fake clock.
+		await page.clock.install()
 		await bootSignedIn(page, 'none')
 		const bottoms: number[] = []
 		for (const severity of ['info', 'warning', 'error'] as const) {
 			await publishSnackDirect(page, `A ${severity} snack`, severity, 1500)
 			bottoms.push(await openSnackBottom(page))
-			await expect(page.locator('.snack-item')).toHaveCount(0, {
-				timeout: 5000,
-			})
+			await page.clock.fastForward(1500)
+			await expect(page.locator('.snack-item')).toHaveCount(0)
 		}
 		expect(bottoms[1]).toBeCloseTo(bottoms[0], 0)
 		expect(bottoms[2]).toBeCloseTo(bottoms[0], 0)

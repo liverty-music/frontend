@@ -174,6 +174,8 @@ test.describe('Discovery swap tile', () => {
 	test(`@spec ${CAPABILITY} "The tile never covers the bubble field"`, async ({
 		page,
 	}) => {
+		// The physics field runs on animation frames; the fake clock steps them.
+		await page.clock.install()
 		await openDiscovery(page)
 		await expect(tile(page)).toBeVisible()
 		// Let the bubbles arrive and fall into place, and the orb grow.
@@ -198,8 +200,8 @@ test.describe('Discovery swap tile', () => {
 				timeout: 10_000,
 			})
 			.toBe(56)
-		// biome-ignore lint/suspicious/noPlaywrightWaitForTimeout: the physics field needs time to settle around the tile before it is sampled
-		await page.waitForTimeout(2500)
+		// The physics field needs time to settle around the tile before it is sampled.
+		await page.clock.runFor(2500)
 
 		const t = await tileBox(page)
 		const c = centre(t)
@@ -211,8 +213,8 @@ test.describe('Discovery swap tile', () => {
 			const { bubbles, orb } = await drawn(page)
 			expect(circleHits(orb, t)).toBe(false)
 			expect(bubbles.filter((b) => circleHits(b, t))).toEqual([])
-			// biome-ignore lint/suspicious/noPlaywrightWaitForTimeout: samples the moving field at intervals
-			await page.waitForTimeout(200)
+			// Sample the moving field at intervals.
+			await page.clock.runFor(200)
 		}
 
 		// The bubble field is as tall as it is without the tile.

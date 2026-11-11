@@ -661,6 +661,8 @@ test.describe('cover image', () => {
 	})
 
 	test(`@spec ${SPEC} "Processed image available"`, async ({ page }) => {
+		// The 3 s re-read runs on the page's fake clock, fast-forwarded below.
+		await page.clock.install()
 		await mockImageHosts(page)
 		let coverSet = false
 		let listsAfterSet = 0
@@ -687,15 +689,23 @@ test.describe('cover image', () => {
 		await expect(page.getByText(PROCESSING)).toBeVisible()
 
 		// The editor re-reads the concert every 3 s until the cover is processed.
-		await expect(preview(page)).toHaveAttribute('src', NEW_COVER, {
-			timeout: 12_000,
-		})
+		await expect
+			.poll(
+				async () => {
+					await page.clock.fastForward(3_000)
+					return preview(page).getAttribute('src')
+				},
+				{ timeout: 12_000 },
+			)
+			.toBe(NEW_COVER)
 		await expect(page.getByText(PROCESSING)).toHaveCount(0)
 		expect(listsAfterSet).toBe(2)
 		expect(calls(log, 'SeriesService/List').length).toBe(3)
 	})
 
 	test(`@spec ${SPEC} "Saved before processing finished"`, async ({ page }) => {
+		// The 3 s re-read runs on the page's fake clock, fast-forwarded below.
+		await page.clock.install()
 		await mockImageHosts(page)
 		let log: RpcLog = { calls: [] }
 		// The new cover is processed only after the concert page has read the
@@ -742,9 +752,15 @@ test.describe('cover image', () => {
 		).toBeVisible()
 
 		// It re-reads every 3 s and shows the processed image once served.
-		await expect(concertCover).toHaveAttribute('src', NEW_COVER, {
-			timeout: 15_000,
-		})
+		await expect
+			.poll(
+				async () => {
+					await page.clock.fastForward(3_000)
+					return concertCover.getAttribute('src')
+				},
+				{ timeout: 15_000 },
+			)
+			.toBe(NEW_COVER)
 		await expect(page.getByText(PROCESSING)).toHaveCount(0)
 	})
 })
