@@ -150,6 +150,28 @@ export const LongValue = {
 	},
 } satisfies Story
 
+/** A label longer than the row wraps; the value stays visible. */
+export const LongLabel = {
+	args: {
+		icon: 'ticket',
+		label: 'ウォルフガング・アマデウス・モーツァルト・フォン・ザルツブルク',
+		value: '090-1234-5678',
+	},
+	render,
+	play: async ({ canvasElement }) => {
+		// @spec components/infrastructure/fan/web/global/ui-primitives "Long label"
+		const label = canvasElement.querySelector('.list-item-label') as HTMLElement
+		const value = canvasElement.querySelector('.list-item-value') as HTMLElement
+		const row = canvasElement.querySelector('.list-item') as HTMLElement
+		// The value keeps at least 6em (66 px at label-small) and cuts the rest.
+		await expect(value.getBoundingClientRect().width).toBeGreaterThanOrEqual(66)
+		await expect(getComputedStyle(value).textOverflow).toBe('ellipsis')
+		// The label wraps onto a second line instead of pushing the value out.
+		await expect(label.getBoundingClientRect().height).toBeGreaterThan(24)
+		await expect(row.scrollWidth).toBeLessThanOrEqual(row.clientWidth)
+	},
+} satisfies Story
+
 /** A row with a line of supporting text grows and stays one target. */
 export const TwoLines = {
 	args: {

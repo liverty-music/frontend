@@ -44,10 +44,10 @@
 		}
 
 		/* The label keeps the room it needs and the value takes what is left,
-		   cut off with an ellipsis when it does not fit (its basis is 0, so
-		   it never takes room from the label). A label longer than the whole
-		   row wraps. Without a value, the text fills the row and the caret
-		   stays at the end. */
+		   cut off with an ellipsis when it does not fit. The value never
+		   shrinks below 6em, so a label longer than the row (a user's own
+		   name) wraps instead of squeezing the value out. Without a value,
+		   the text fills the row and the caret stays at the end. */
 		.list-item-text {
 			display: flex;
 			flex: 0 1 auto;
@@ -65,9 +65,7 @@
 
 		.list-item-value {
 			overflow: hidden;
-			flex: 1 1 0;
-
-			min-inline-size: 0;
+			flex: 1 0 6em;
 
 			color: var(--md-sys-color-on-surface-variant);
 			text-align: end;
