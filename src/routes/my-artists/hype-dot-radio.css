@@ -1,6 +1,8 @@
 /* A hype dot and the radio it stands for. It renders on
    `<label as-element="hype-dot-radio" class="hype-label">` in an artist row,
-   so the label is the scope root and stays the cell's grid item. */
+   so the label is the scope root and stays the cell's grid item. The reduced
+   motion rule at the end matches the level rules' specificity, so it wins the
+   pulse they set. */
 @layer block {
 	@scope (.hype-label) {
 		:scope {
@@ -86,7 +88,7 @@
 		}
 
 		@media (prefers-reduced-motion: reduce) {
-			.hype-dot {
+			.hype-dot[data-active="true"][data-level] {
 				animation: none;
 			}
 		}
