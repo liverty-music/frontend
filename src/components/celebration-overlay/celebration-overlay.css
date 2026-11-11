@@ -1,4 +1,3 @@
-/* stylelint-disable no-unknown-custom-properties -- each piece's --_dx, --_dy, --_size, --_spin, --_duration, --_delay and --_color are set inline by the template */
 @layer block {
 	@scope (celebration-overlay) {
 		:scope {
@@ -6,20 +5,6 @@
 			   timetable's card colors stay faintly visible through it. */
 			--_scrim: oklch(0% 0 0deg / 74%);
 			--_scrim-blur: 6px;
-			--_glow-a: oklch(70.9% 0.159 294deg / 60%);
-			--_glow-b: oklch(58.5% 0.204 277deg / 30%);
-			--_text-contrast: oklch(0% 0 0deg / 85%);
-			--_confetti-radius: 2px;
-			--_c1: oklch(70% 0.2 30deg);
-			--_c2: oklch(75% 0.15 160deg);
-			--_c3: oklch(70% 0.2 277deg);
-			--_c4: oklch(80% 0.18 90deg);
-			--_c5: oklch(75% 0.2 200deg);
-			--_c6: oklch(70% 0.15 340deg);
-			--_c7: oklch(80% 0.2 60deg);
-			--_c8: oklch(70% 0.18 294deg);
-			--_c9: oklch(75% 0.2 120deg);
-			--_c10: oklch(70% 0.15 20deg);
 		}
 
 		.celebration-overlay {
@@ -49,149 +34,9 @@
 			}
 		}
 
-		.celebration-text {
-			isolation: isolate;
-			position: relative;
-
-			padding-inline: var(--space-l);
-
-			color: var(--color-white);
-			text-align: center;
-			text-shadow:
-				0 2px 8px var(--_text-contrast),
-				0 0 24px var(--_glow-a),
-				0 0 48px var(--_glow-a),
-				0 0 80px var(--_glow-b);
-			text-wrap: balance;
-			word-break: auto-phrase;
-
-			/* The copy breaks the headline where it means to (after 「ようこそ！」);
-			   longer lines balance and break Japanese at phrase boundaries,
-			   never mid-word (graceful no-op where unsupported). */
-			white-space: pre-line;
-
-			animation: headline-enter var(--md-sys-motion-duration-extra-long1)
-				var(--md-sys-motion-easing-emphasized-decelerate) both;
-		}
-
-		.celebration-sub-text,
-		.celebration-hint {
-			isolation: isolate;
-			position: relative;
-
-			padding-inline: var(--space-l);
-
-			color: oklch(from var(--color-white) l c h / 90%);
-			text-align: center;
-			text-shadow: 0 1px 5px var(--_text-contrast);
-			text-wrap: balance;
-			word-break: auto-phrase;
-			white-space: pre-line;
-
-			animation: line-enter var(--md-sys-motion-duration-long2)
-				var(--md-sys-motion-easing-emphasized-decelerate)
-				var(--md-sys-motion-duration-medium1) both;
-		}
-
-		.celebration-hint {
-			color: oklch(from var(--color-white) l c h / 70%);
-			animation-delay: var(--md-sys-motion-duration-long1);
-		}
-
-		/* Scales up past full size, then settles back to it. */
-		@keyframes headline-enter {
-			0% {
-				transform: scale(0.8);
-				opacity: 0;
-			}
-
-			60% {
-				transform: scale(1.1);
-				opacity: 1;
-			}
-
-			100% {
-				transform: scale(1);
-				opacity: 1;
-			}
-		}
-
-		@keyframes line-enter {
-			from {
-				transform: translateY(8px);
-				opacity: 0;
-			}
-
-			to {
-				transform: translateY(0);
-				opacity: 1;
-			}
-		}
-
-		.confetti-container {
-			pointer-events: none;
-			position: fixed;
-			inset: 0;
-			overflow: hidden;
-		}
-
-		/* One piece of the centre burst. Its size, distance, spin, speed and
-		   color come from custom properties set per piece. */
-		.confetti {
-			position: absolute;
-			inset-block-start: 50%;
-			inset-inline-start: 50%;
-
-			inline-size: var(--_size);
-			block-size: var(--_size);
-			border-radius: var(--_confetti-radius);
-
-			opacity: 0;
-			background: var(--_color);
-
-			animation: confetti-burst var(--_duration) cubic-bezier(0.15, 0.7, 0.3, 1)
-				var(--_delay) forwards;
-
-			&[data-shape="circle"] {
-				border-radius: var(--md-sys-shape-corner-full);
-			}
-
-			&[data-shape="strip"] {
-				inline-size: calc(var(--_size) / 2.5);
-				block-size: calc(var(--_size) * 1.6);
-			}
-		}
-
-		@keyframes confetti-burst {
-			0% {
-				transform: translate(-50%, -50%) rotate(0deg) scale(0.4);
-				opacity: 1;
-			}
-
-			75% {
-				opacity: 1;
-			}
-
-			100% {
-				transform: translate(calc(-50% + var(--_dx)), calc(-50% + var(--_dy)))
-					rotate(var(--_spin)) scale(1);
-				opacity: 0;
-			}
-		}
-
 		@media (prefers-reduced-motion: reduce) {
-			.confetti-container {
-				display: none;
-			}
-
 			.celebration-overlay {
 				transition: none;
-			}
-
-			.celebration-text,
-			.celebration-sub-text,
-			.celebration-hint {
-				animation: none;
 			}
 		}
 	}

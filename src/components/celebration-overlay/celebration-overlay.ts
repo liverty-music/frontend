@@ -4,7 +4,7 @@ import { IHapticService } from '../../services/haptic-service'
 
 /** Pieces in the post-signup confetti burst. */
 const CONFETTI_PIECES = 40
-/** Number of palette colors (`--_c1` … `--_c10` in the stylesheet). */
+/** Number of palette colors (`--_c1` … `--_c10` in confetti-burst.css). */
 const CONFETTI_COLORS = 10
 const CONFETTI_SHAPES = ['square', 'circle', 'strip'] as const
 /** Longest wait for the fade-out's `transitionend` (the fade is 400 ms). */

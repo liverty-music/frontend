@@ -1,0 +1,77 @@
+/* stylelint-disable no-unknown-custom-properties -- each piece's --_dx, --_dy, --_size, --_spin, --_duration, --_delay and --_color are set inline by the template */
+@layer block {
+	@scope (confetti-burst) {
+		:scope {
+			--_confetti-radius: 2px;
+			--_c1: oklch(70% 0.2 30deg);
+			--_c2: oklch(75% 0.15 160deg);
+			--_c3: oklch(70% 0.2 277deg);
+			--_c4: oklch(80% 0.18 90deg);
+			--_c5: oklch(75% 0.2 200deg);
+			--_c6: oklch(70% 0.15 340deg);
+			--_c7: oklch(80% 0.2 60deg);
+			--_c8: oklch(70% 0.18 294deg);
+			--_c9: oklch(75% 0.2 120deg);
+			--_c10: oklch(70% 0.15 20deg);
+
+			display: contents;
+		}
+
+		.confetti-container {
+			pointer-events: none;
+			position: fixed;
+			inset: 0;
+			overflow: hidden;
+		}
+
+		/* One piece of the centre burst. Its size, distance, spin, speed and
+		   color come from custom properties set per piece. */
+		.confetti {
+			position: absolute;
+			inset-block-start: 50%;
+			inset-inline-start: 50%;
+
+			inline-size: var(--_size);
+			block-size: var(--_size);
+			border-radius: var(--_confetti-radius);
+
+			opacity: 0;
+			background: var(--_color);
+
+			animation: confetti-burst var(--_duration) cubic-bezier(0.15, 0.7, 0.3, 1)
+				var(--_delay) forwards;
+
+			&[data-shape="circle"] {
+				border-radius: var(--md-sys-shape-corner-full);
+			}
+
+			&[data-shape="strip"] {
+				inline-size: calc(var(--_size) / 2.5);
+				block-size: calc(var(--_size) * 1.6);
+			}
+		}
+
+		@keyframes confetti-burst {
+			0% {
+				transform: translate(-50%, -50%) rotate(0deg) scale(0.4);
+				opacity: 1;
+			}
+
+			75% {
+				opacity: 1;
+			}
+
+			100% {
+				transform: translate(calc(-50% + var(--_dx)), calc(-50% + var(--_dy)))
+					rotate(var(--_spin)) scale(1);
+				opacity: 0;
+			}
+		}
+
+		@media (prefers-reduced-motion: reduce) {
+			.confetti-container {
+				display: none;
+			}
+		}
+	}
+}
