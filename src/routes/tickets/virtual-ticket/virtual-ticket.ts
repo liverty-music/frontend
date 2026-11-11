@@ -120,6 +120,8 @@ export class VirtualTicket {
 	private sheet: TicketSheetRenderer | null = null
 	private resizeObserver: ResizeObserver | null = null
 	private stampTimer: ReturnType<typeof setTimeout> | undefined
+	/** The pressing animation whose impact has been drawn. */
+	private impactedPress: Animation | null = null
 	private detached = false
 	private askedForTilt = false
 
@@ -443,8 +445,11 @@ export class VirtualTicket {
 			(Number.isFinite(seconds) ? seconds : 1.5) * 1000 * STAMP_LANDS_AT
 		const elapsed = Number(press?.currentTime ?? 0)
 		if (press && elapsed > landsAt + IMPACT_LATE_MS) return
+		// One impact per pressing, whichever renderer was ready for it.
+		if (press && press === this.impactedPress) return
 		this.stampTimer = setTimeout(
 			() => {
+				this.impactedPress = press ?? null
 				const [x, y] = this.stampCentre(stamp)
 				// One shockwave: the sheet's runs through the whole ticket, the
 				// art's through the art alone.
