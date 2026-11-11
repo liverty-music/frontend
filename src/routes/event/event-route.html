@@ -1,5 +1,8 @@
 <import from="./event-route.css"></import>
 <import from="../../components/event-date-tabs/event-date-tabs"></import>
+<import from="../../components/event-cover/event-cover"></import>
+<import from="../../components/event-performers/event-performers"></import>
+<import from="../../components/event-details/event-details"></import>
 
 <article class="[ event-page ] [ flow wrapper ]" data-state.bind="state">
   <!-- Loading -->
@@ -20,20 +23,7 @@
 
   <template if.bind="state === 'ready' && event">
     <!-- Cover image, or the brand placeholder -->
-    <figure class="event-cover">
-      <img
-        if.bind="event.coverUrl"
-        src.bind="event.coverUrl"
-        alt=""
-        decoding="async"
-        fetchpriority="high"
-        class="event-cover-img"
-        data-testid="event-cover"
-      />
-      <div else class="[ event-cover-placeholder ] [ md-typescale-display-small ]" data-testid="event-cover-placeholder" role="presentation">
-        <svg-icon name="music" size="md"></svg-icon>
-      </div>
-    </figure>
+    <event-cover url.bind="event.coverUrl"></event-cover>
 
     <!-- Cancelled banner -->
     <div if.bind="isCancelled" class="event-banner" data-testid="event-cancelled" role="note">
@@ -60,53 +50,24 @@
     </header>
 
     <!-- Performers with follow controls -->
-    <ul class="event-performers" role="list">
-      <li repeat.for="performer of event.performers; key.bind: performer.id" class="event-performer">
-        <span class="[ event-performer-name ] [ md-typescale-title-large-emphasized ]">${performer.name}</span>
-        <button
-          type="button"
-          class="[ event-follow ] [ state-layer md-typescale-label-large ]"
-          data-followed.bind="followedIds.has(performer.id)"
-          aria-pressed.bind="followedIds.has(performer.id)"
-          disabled.bind="!followsLoaded || followUpdatingId === performer.id"
-          click.trigger="toggleFollow(performer)"
-          data-testid="event-follow"
-          t.bind="followedIds.has(performer.id) ? 'eventPage.follow.following' : 'eventPage.follow.action'"
-        ></button>
-      </li>
-    </ul>
+    <event-performers
+      performers.bind="event.performers"
+      followed-ids.bind="followedIds"
+      follows-loaded.bind="followsLoaded"
+      updating-id.bind="followUpdatingId"
+      follow-toggle.trigger="toggleFollow($event.detail)"
+    ></event-performers>
 
-    <!-- Date and times -->
-    <section class="event-details">
-      <div class="event-detail-row">
-        <svg-icon name="calendar" size="lg" class="event-detail-icon"></svg-icon>
-        <div>
-          <time datetime.bind="event.dateKey" class="[ event-detail-primary ] [ md-typescale-title-medium ]" data-testid="event-date">${dateLabel}</time>
-          <p class="event-times" data-testid="event-times">
-            <span if.bind="openTimeLabel"><span t="eventPage.open"></span> ${openTimeLabel}</span>
-            <span if.bind="startTimeLabel"><span t="eventPage.start"></span> ${startTimeLabel}</span>
-          </p>
-        </div>
-      </div>
-
-      <!-- Venue -->
-      <div class="event-detail-row">
-        <svg-icon name="map-pin" size="lg" class="event-detail-icon"></svg-icon>
-        <div>
-          <p class="[ event-detail-primary ] [ md-typescale-title-medium ]" data-testid="event-venue">${event.venueName}</p>
-          <p if.bind="prefecture" class="event-detail-secondary" data-testid="event-prefecture">${prefecture}</p>
-          <a
-            href.bind="mapsUrl"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="text-link"
-            data-variant="standalone"
-            data-testid="event-maps"
-            t="eventDetail.openInGoogleMaps"
-          ></a>
-        </div>
-      </div>
-    </section>
+    <!-- Date, times and venue -->
+    <event-details
+      date-key.bind="event.dateKey"
+      date-label.bind="dateLabel"
+      open-time-label.bind="openTimeLabel"
+      start-time-label.bind="startTimeLabel"
+      venue-name.bind="event.venueName"
+      prefecture.bind="prefecture"
+      maps-url.bind="mapsUrl"
+    ></event-details>
 
     <!-- Description, as entered -->
     <p if.bind="event.description" class="event-description" data-testid="event-description">${event.description}</p>

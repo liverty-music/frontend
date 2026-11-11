@@ -1,0 +1,35 @@
+<import from="./artist-hype-table.css"></import>
+<import from="./artist-hype-row"></import>
+
+<fieldset class="artists-fieldset" data-editing.bind="editing">
+  <legend class="[ visually-hidden ]" t="nav.myArtists"></legend>
+  <table class="artists-table">
+    <thead data-hype-header>
+      <tr class="artists-thead-row">
+        <!-- The cell stays in the grid (its column), only its name is hidden. -->
+        <th scope="col"><span class="[ visually-hidden ]" t="myArtists.table.artistCol"></span></th>
+        <!-- Hype tier headers hidden in edit mode; remove column takes their place. -->
+        <template if.bind="!editing">
+          <!-- Hype tier labels are Layer B brand expressions (per brand-vocabulary spec):
+               rendered invariantly in English in every locale, not via i18n. -->
+          <th scope="col" class="[ hype-col-header ] [ md-typescale-label-small ]">👀<small>Watch</small></th>
+          <th scope="col" class="[ hype-col-header ] [ md-typescale-label-small ]">🔥<small>Home</small></th>
+          <th scope="col" class="[ hype-col-header ] [ md-typescale-label-small ]">🔥🔥<small>Nearby</small></th>
+          <th scope="col" class="[ hype-col-header ] [ md-typescale-label-small ]">🔥🔥🔥<small>Away</small></th>
+        </template>
+        <!-- Remove column header: only visible in edit mode. -->
+        <th if.bind="editing" scope="col"><span class="[ visually-hidden ]" t="myArtists.table.removeCol"></span></th>
+      </tr>
+    </thead>
+    <tbody data-artist-rows>
+      <tr
+        repeat.for="artist of artists; key.bind: artist.artist.id"
+        as-element="artist-hype-row"
+        class="artist-row"
+        css="--_vt-name: artist-${artist.artist.id}; --_dot-color: ${artist.color}"
+        artist.bind="artist"
+        editing.bind="editing"
+      ></tr>
+    </tbody>
+  </table>
+</fieldset>

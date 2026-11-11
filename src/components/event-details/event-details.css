@@ -1,0 +1,35 @@
+@layer block {
+	@scope (event-details) {
+		/* The host is the page's flow item; the section fills it. */
+		:scope {
+			display: block;
+		}
+
+		.event-details {
+			display: grid;
+			gap: var(--space-s);
+		}
+
+		.event-detail-row {
+			display: grid;
+			grid-template-columns: auto 1fr;
+			gap: var(--space-xs);
+			align-items: start;
+		}
+
+		.event-detail-icon {
+			color: var(--md-sys-color-on-surface-variant);
+		}
+
+		.event-detail-secondary,
+		.event-times {
+			color: var(--md-sys-color-on-surface-variant);
+		}
+
+		.event-times {
+			display: flex;
+			flex-wrap: wrap;
+			gap: var(--space-s);
+		}
+	}
+}

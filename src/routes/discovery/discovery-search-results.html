@@ -1,0 +1,27 @@
+<import from="./discovery-search-results.css"></import>
+
+<section class="search-results">
+  <p if.bind="search.isSearching" class="[ search-status ] [ md-typescale-body-medium ]" t="discovery.searching">
+  </p>
+
+  <p if.bind="!search.isSearching && search.isSearchMode && search.searchResults.length === 0 && search.searchQuery.trim().length > 0" class="[ search-status ] [ md-typescale-body-medium ]" t="discovery.noResults">
+  </p>
+
+  <ul class="results-list" role="list">
+    <li
+      repeat.for="artist of search.searchResults; key.bind: artist.id"
+      class="[ result-item ] [ state-layer ]"
+      data-followed.bind="followedIds.has(artist.id)"
+      busy-on-click.bind="() => followedIds.has(artist.id) ? undefined : follow(artist)"
+      role="button"
+      aria-disabled.bind="followedIds.has(artist.id)"
+      aria-label.bind="followedIds.has(artist.id) ? ($this.i18n?.tr('discovery.alreadyFollowing', { name: artist.name }) ?? '') : ($this.i18n?.tr('discovery.followArtist', { name: artist.name }) ?? '')"
+    >
+      <div class="[ result-avatar ] [ md-typescale-title-large ]">
+        ${artist.name.charAt(0)}
+      </div>
+      <span class="[ result-name ] [ md-typescale-body-large ]">${artist.name}</span>
+      <svg-icon if.bind="followedIds.has(artist.id)" name="check" size="lg" class="followed-check"></svg-icon>
+    </li>
+  </ul>
+</section>

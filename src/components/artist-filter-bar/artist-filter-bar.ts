@@ -91,11 +91,6 @@ export class ArtistFilterBar {
 		this.isSheetOpen = false
 	}
 
-	/** Toggle the collapsible date facet ("過去のコンサートも表示"). */
-	public toggleDateFacet(): void {
-		this.isDateFacetExpanded = !this.isDateFacetExpanded
-	}
-
 	public clearAll(): void {
 		this.pendingIds = []
 		this.pendingStatuses = []

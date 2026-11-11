@@ -1,186 +1,13 @@
 /* stylelint-disable no-unknown-custom-properties -- each item's --i and --n are set inline by the template */
 @layer block {
 	@scope (fab-menu) {
-		:scope {
-			/* --fab-sunk is set on :root by global.css: 1 while a snack bar is
-			   open or a persistent bottom banner (signup / install) is visible. */
-			--_sunk: var(--fab-sunk, 0);
-
-			/* The FAB's centre: on the bottom navigation bar's top edge, lowered
-			   half the bar's height while sunk so the smaller FAB lies inside the
-			   bar. No hard-coded pixel constant. */
-			--_fab-centre: calc(
-				var(--bottom-nav-height) +
-				env(safe-area-inset-bottom) -
-				var(--_sunk) *
-				var(--bottom-nav-height) /
-				2
-			);
-
-			/* The thumb arc: from the FAB centre, rising more than it widens, up
-			   and to the right. Four 48px items along it stay 56px or more apart
-			   vertically and 16px or more inside a 320px screen. */
-			--_arc: path("M0 0 C 0 -100, 70 -140, 110 -260");
-			--_arc-left: path("M0 0 C 0 -100, -70 -140, -110 -260");
-			--_item-size: 3rem;
-			--_label-gap: var(--space-3xs);
-		}
-
-		/* ── Collapsed FAB, centred in the navigation bar's notch ── */
-		.fab-toggle {
-			isolation: isolate;
-			position: fixed;
-			inset: auto;
-			inset-block-end: calc(var(--_fab-centre) - var(--fab-size) / 2);
-			inset-inline-start: 50%;
-			translate: -50% 0;
-			scale: calc(1 - var(--_sunk) * (1 - var(--fab-sunk-scale)));
-
-			/* A popover clips its overflow by default; the touch target
-			   (::after) reaches past the sunk FAB's edge. */
-			overflow: visible;
-			display: grid;
-			place-items: center;
-
-			inline-size: var(--fab-size);
-			block-size: var(--fab-size);
-			border-radius: var(--fab-radius-collapsed);
-
-			color: var(--color-white);
-
-			background: linear-gradient(
-				135deg,
-				var(--color-brand-primary),
-				var(--color-brand-secondary)
-			);
-			box-shadow: var(--glow-fab);
-
-			/* Spatial spring for the sink. A press shows the shared state layer
-			   (`state-layer`, ::before) alone: Material 3 scales no pressed FAB. */
-			transition:
-				translate var(--md-sys-motion-spring-spatial-duration)
-				var(--md-sys-motion-spring-spatial),
-				scale var(--md-sys-motion-spring-spatial-duration)
-				var(--md-sys-motion-spring-spatial);
-
-			/* Its own View Transition snapshot. A named snapshot paints above
-			   the root one, and the FAB overlaps the navigation bar and the
-			   route area, which are named in some transitions (a tab switch,
-			   a route animating part of itself); named too, the FAB keeps its
-			   place on top, since snapshots paint in the order of their
-			   elements and the FAB is in the top layer (global.css). */
-			view-transition-name: fab-toggle;
-		}
-
-		/* The 48 px touch target, also while the FAB is sunk and scaled down:
-		   the scale applies to it too, so it is divided back out. */
-		.fab-toggle::after {
-			content: "";
-
-			position: absolute;
-			inset-block-start: 50%;
-			inset-inline-start: 50%;
-			translate: -50% -50%;
-
-			inline-size: max(
-				100%,
-				calc(
-					var(--md-sys-target-size) /
-					(1 - var(--_sunk) * (1 - var(--fab-sunk-scale)))
-				)
-			);
-			block-size: max(
-				100%,
-				calc(
-					var(--md-sys-target-size) /
-					(1 - var(--_sunk) * (1 - var(--fab-sunk-scale)))
-				)
-			);
-			border-radius: inherit;
-		}
-
-		/* ── Glyph: equalizer ↔ close ── */
-		.fab-glyph {
-			display: grid;
-			place-items: center;
-		}
-
-		.fab-equalizer,
-		.fab-close {
-			grid-area: 1 / 1;
-			inline-size: var(--fab-icon-size);
-			block-size: var(--fab-icon-size);
-			transition:
-				opacity var(--md-sys-motion-spring-effects-duration)
-				var(--md-sys-motion-spring-effects),
-				rotate var(--md-sys-motion-spring-spatial-fast-duration)
-				var(--md-sys-motion-spring-spatial-fast);
-		}
-
-		.fab-close {
-			rotate: -90deg;
-
-			opacity: 0;
-
-			fill: none;
-			stroke: currentcolor;
-			stroke-linecap: round;
-			stroke-width: 2.5;
-		}
-
-		.fab-bar {
-			transform-origin: bottom;
-			transform-box: fill-box;
-		}
-
-		.fab-glyph[data-open="true"] .fab-equalizer {
-			rotate: 90deg;
-			opacity: 0;
-		}
-
-		.fab-glyph[data-open="true"] .fab-close {
-			rotate: 0deg;
-			opacity: 1;
-		}
-
-		/* The bars bounce once, only as the launcher opens; idle, they are
-		   still. Each bar starts a little later than the one before it. */
-		.fab-glyph[data-open="true"] .fab-bar {
-			animation: fab-bar-bounce
-				var(--md-sys-motion-spring-spatial-fast-duration)
-				var(--md-sys-motion-spring-effects) 1;
-		}
-
-		.fab-glyph[data-open="true"] .fab-bar:nth-child(2) {
-			animation-delay: 40ms;
-		}
-
-		.fab-glyph[data-open="true"] .fab-bar:nth-child(3) {
-			animation-delay: 80ms;
-		}
-
-		@keyframes fab-bar-bounce {
-			0%,
-			100% {
-				scale: 1 1;
-			}
-
-			40% {
-				scale: 1 1.35;
-			}
-
-			70% {
-				scale: 1 0.7;
-			}
-		}
-
 		/* ── Action arc (top-layer popover) ──
 		   A zero-size layout origin at the FAB centre: no background, border or
 		   shadow of its own. Each item is placed along the thumb arc from it. */
 		.fab-panel {
 			position: fixed;
 			inset: auto;
-			inset-block-end: var(--_fab-centre);
+			inset-block-end: var(--fab-centre);
 			inset-inline-start: 50%;
 
 			/* Items and their shadows lie outside the zero-size box. */
@@ -223,16 +50,19 @@
 			inset: 0;
 		}
 
-		/* Each item travels from the FAB along the arc to its place with the
-		   spatial spring, fading in, closest to the FAB first. Up to four items
-		   take fixed steps along the arc; more share it evenly. */
+		/* Each item travels from the FAB along the thumb arc to its place with
+		   the spatial spring, fading in, closest to the FAB first. Up to four
+		   items take fixed steps along the arc; more share it evenly. The arc
+		   rises more than it widens, up and to the right: four 48px items along
+		   it stay 56px or more apart vertically and 16px or more inside a
+		   320px screen. */
 		.fab-list-item {
 			--_place: calc((var(--i) + 1) / max(var(--n), 4) * 92%);
 
 			position: absolute;
 			inset-block-start: 0;
 			inset-inline-start: 0;
-			offset-path: var(--_arc);
+			offset-path: path("M0 0 C 0 -100, 70 -140, 110 -260");
 			offset-distance: 0%;
 			offset-rotate: 0deg;
 
@@ -258,72 +88,15 @@
 			}
 		}
 
-		/* An action: a 48px circular icon target, with its label beside it on
-		   the outer side (left of the icon while the arc curves right). The
-		   label is inside the button, so it names it and takes taps too. */
-		.fab-item {
-			isolation: isolate;
-			position: relative;
-
-			display: grid;
-			place-items: center;
-
-			inline-size: var(--_item-size);
-			block-size: var(--_item-size);
-			border-radius: var(--md-sys-shape-corner-full);
-
-			color: var(--md-sys-color-on-surface);
-
-			background: var(--md-sys-color-menu-surface);
-		}
-
-		.fab-item-label {
-			position: absolute;
-			inset-block-start: 50%;
-			inset-inline-end: calc(100% + var(--_label-gap));
-			translate: 0 -50%;
-
-			inline-size: max-content;
-			max-inline-size: 7.5rem;
-			padding-block: var(--space-3xs);
-			padding-inline: var(--space-2xs);
-			border-radius: var(--md-sys-shape-corner-small);
-
-			color: var(--md-sys-color-on-surface);
-			text-align: end;
-
-			background: var(--md-sys-color-menu-surface);
-		}
-
-		/* Selected/active item = filled brand container (the M3 "on" treatment).
-		   Covers the beam toggle (aria-pressed) and the filter command (data-active). */
-		.fab-item[aria-pressed="true"],
-		.fab-item[data-active="true"] {
-			color: var(--md-sys-color-on-primary-container);
-			background: var(--md-sys-color-primary-container);
-		}
-
-		/* Left-handed: the arc mirrors to curve up and to the left, and the
-		   labels move to the right of their icons. The FAB stays centred. */
+		/* Left-handed: the arc mirrors up and to the left; the FAB stays put. */
 		.fab-panel[data-handed="left"] .fab-list-item {
-			offset-path: var(--_arc-left);
+			offset-path: path("M0 0 C 0 -100, -70 -140, -110 -260");
 		}
 
-		.fab-panel[data-handed="left"] .fab-item-label {
-			inset-inline: calc(100% + var(--_label-gap)) auto;
-			text-align: start;
-		}
-
-		/* Reduced motion: land the end state at once — no travel, overshoot,
-		   stagger or bounce. The transitions' duration tokens are 0 ms under
-		   reduced motion; only the items' stagger delay is set here. */
+		/* Reduced motion: the duration tokens are 0 ms; drop the stagger too. */
 		@media (prefers-reduced-motion: reduce) {
 			.fab-list-item {
 				transition-delay: 0ms;
-			}
-
-			.fab-glyph[data-open="true"] .fab-bar {
-				animation: none;
 			}
 		}
 	}

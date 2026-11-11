@@ -1,0 +1,49 @@
+/* The switch track and its thumb, shared by the Settings switch rows and
+   consent rows: `<span class="settings-toggle-track" data-on>` around
+   `<span class="settings-toggle-thumb" data-on>`. The row places the track in
+   its trailing column. */
+@layer block {
+	@scope (.settings-toggle-track) {
+		:scope {
+			position: relative;
+
+			/* Fixed-size control. Its grid cell (col3) already pins the size;
+			   `flex-shrink: 0` additionally guards the consent rows, where the
+			   track lives inside a flex `.settings-switch` — without it the track
+			   could shrink and the absolutely-positioned thumb would overflow. */
+			flex-shrink: 0;
+
+			inline-size: var(--toggle-track-inline);
+			block-size: var(--toggle-track-block);
+			border-radius: var(--md-sys-shape-corner-full);
+
+			transition: background var(--md-sys-motion-duration-short4);
+		}
+
+		:scope[data-on="true"] {
+			background: var(--color-brand-primary);
+		}
+
+		:scope[data-on="false"] {
+			background: color-mix(in oklch, var(--color-white) 20%, transparent);
+		}
+
+		.settings-toggle-thumb {
+			position: absolute;
+			inset-block-start: var(--toggle-thumb-inset);
+			inset-inline-start: var(--toggle-thumb-inset);
+
+			inline-size: var(--toggle-thumb-size);
+			block-size: var(--toggle-thumb-size);
+			border-radius: var(--md-sys-shape-corner-full);
+
+			background: var(--color-white);
+
+			transition: transform var(--md-sys-motion-duration-short4);
+		}
+
+		.settings-toggle-thumb[data-on="true"] {
+			transform: translateX(var(--toggle-thumb-translate));
+		}
+	}
+}

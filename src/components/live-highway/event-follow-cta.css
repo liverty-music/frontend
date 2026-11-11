@@ -1,0 +1,27 @@
+@layer block {
+	/* Follow CTA of the event detail sheet (All Nearby context). */
+	@scope (.sheet-follow) {
+		:scope {
+			--flow-space: var(--space-m);
+
+			display: flex;
+			justify-content: center;
+		}
+
+		.follow-action {
+			inline-size: 100%;
+		}
+
+		.follow-state {
+			display: flex;
+			gap: var(--space-3xs);
+			align-items: center;
+			justify-content: center;
+
+			inline-size: 100%;
+			padding-block: var(--space-2xs);
+
+			color: var(--color-brand-primary);
+		}
+	}
+}

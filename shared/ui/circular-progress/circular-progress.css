@@ -56,11 +56,8 @@
 		   indeterminate motion. */
 		.arc {
 			transform-origin: center;
-
 			stroke-dasharray: 1 200;
-			stroke-dashoffset: 0;
 			stroke-linecap: round;
-
 			animation: circular-progress-arc 1333ms
 				var(--md-sys-motion-easing-standard) infinite;
 		}

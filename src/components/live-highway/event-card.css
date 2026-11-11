@@ -9,12 +9,12 @@
 
 		/* Card base styles */
 		.event-card {
+			/* The artist's hue, set on the card from the concert data. */
+			--_hue: var(--artist-hue);
+
 			cursor: pointer;
 
 			position: relative;
-
-			/* The content colour, which the state layer takes. */
-			color: var(--color-white);
 
 			/* No overflow clip: the gradient is rounded by border-radius, the
 			   noise ::after self-rounds via border-radius:inherit, and the
@@ -29,12 +29,13 @@
 			padding: var(--space-xs);
 			border-radius: var(--md-sys-shape-corner-large);
 
-			/* No entrance of its own: the card's lane is dealt in when its date
-			   row comes into view (concert-highway.css, "Deal-in"). A press shows
-			   the shared state layer (`state-layer`, ::before) and nothing else:
-			   Material 3 scales no pressed card. */
+			/* The content colour, which the state layer takes. */
+			color: var(--color-white);
 
-			/* The lane spaces the cards (concert-highway.css). */
+			/* No entrance of its own: the lane grid deals the card in
+			   (lane-grid.css). A press shows only the shared state layer:
+			   Material 3 scales no pressed card. The lane spaces the cards
+			   (concert-lane.css). */
 			&[data-lane="nearby"],
 			&[data-lane="away"] {
 				padding: var(--space-2xs);
@@ -46,12 +47,13 @@
 		.artist-name {
 			/* stylelint-disable property-disallowed-list, cube/require-token-variables -- the artist name is sized to its lane (design-tokens, the one exception to type styles) */
 			font-family: var(--md-ref-typeface-brand);
-			font-weight: 400;
 			font-size: clamp(14px, 8cqi, 32px);
+			font-weight: 400;
 			line-height: 1.2;
 			/* stylelint-enable property-disallowed-list, cube/require-token-variables */
 			color: var(--color-white);
 			overflow-wrap: break-word;
+
 			filter: drop-shadow(0 2px 4px var(--_drop-shadow));
 		}
 
@@ -71,83 +73,14 @@
 			translate: 40% -40%;
 		}
 
-		/* =============================================
-		   MATCHED — festival spotlight from above
-		   ============================================= */
-		.event-card[data-matched] {
-			--_spot-white: oklch(98% 0.05 var(--artist-hue));
-			--_spot-bright: oklch(80% 0.4 var(--artist-hue));
-			--_spot-mid: oklch(65% 0.3 var(--artist-hue));
-			--_spot-dim: oklch(55% 0.2 var(--artist-hue));
-			--_spot-glow: oklch(75% 0.4 var(--artist-hue) / 50%);
-
-			/* Vivid neon border */
-			border: 2px solid var(--_spot-bright);
-
-			/* Vivid diagonal gradient — slightly deeper than unmatched */
-			background: linear-gradient(
-				135deg,
-				oklch(62% 0.3 var(--artist-hue)) 0%,
-				oklch(62% 0.3 calc(var(--artist-hue) + 40)) 100%
-			);
-
-			/* Massive multi-layer outer glow — festival spotlight spill */
-			/* stylelint-disable declaration-property-value-allowed-list, declaration-property-custom-property-allowed-list -- the matched card's glow in the artist's own hue is spec-defined (live-highway "Matched event card glow opacity"); a hue set per card cannot be a root token */
-			box-shadow:
-				0 -8px 20px var(--_spot-bright),
-				0 -4px 40px var(--_spot-glow),
-				0 0 15px var(--_spot-bright),
-				0 0 40px var(--_spot-glow),
-				0 0 80px oklch(60% 0.3 var(--artist-hue) / 25%),
-				inset 0 4px 30px var(--_spot-mid);
-			/* stylelint-enable declaration-property-value-allowed-list, declaration-property-custom-property-allowed-list */
-		}
-
-		/* Spotlight beam cone — contained within card using clipped ::after (the
-		   shared state layer keeps ::before) */
-		.event-card[data-matched]::after {
-			pointer-events: none;
-			content: "";
-
-			position: absolute;
-			inset-block-start: 0;
-			inset-inline: 0;
-
-			block-size: 100%;
-
-			/* Vertical light beam stripe through center */
-			background: linear-gradient(
-				to bottom,
-				oklch(95% 0.1 var(--artist-hue) / 80%) 0%,
-				oklch(80% 0.2 var(--artist-hue) / 40%) 30%,
-				transparent 70%
-			);
-
-			/* Narrow beam shape via mask */
-			mask-image: radial-gradient(
-				ellipse 30% 100% at 50% 0%,
-				black 0%,
-				transparent 100%
-			);
-		}
-
-		/* Artist name neon glow — triple layer */
-		.event-card[data-matched] .artist-name {
-			text-shadow:
-				0 0 6px var(--_spot-bright),
-				0 0 14px var(--_spot-glow),
-				0 0 28px var(--_spot-dim);
-		}
-
-		/* =============================================
-		   UNMATCHED — vivid diagonal gradient
-		   ============================================= */
+		/* Unmatched: a vivid diagonal gradient. The matched look is
+		   event-card-spotlight.css. */
 		.event-card:not([data-matched]) {
 			border: 1px solid oklch(100% 0 0deg / 12%);
 			background: linear-gradient(
 				135deg,
-				oklch(75% 0.3 var(--artist-hue)) 0%,
-				oklch(75% 0.3 calc(var(--artist-hue) + 40)) 100%
+				oklch(75% 0.3 var(--_hue)) 0%,
+				oklch(75% 0.3 calc(var(--_hue) + 40)) 100%
 			);
 		}
 

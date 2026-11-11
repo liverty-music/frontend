@@ -520,7 +520,7 @@ test.describe('Onboarding flow (single-flag model)', () => {
 		})
 
 		// SR status includes followed count
-		const srOutput = page.locator('output.sr-only[role="status"]')
+		const srOutput = page.locator('output.visually-hidden[role="status"]')
 		await expect(srOutput).toContainText(/3/, { timeout: 10_000 })
 	})
 

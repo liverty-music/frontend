@@ -1,0 +1,20 @@
+<import from="./discovery-search-bar.css"></import>
+
+<search class="search-bar">
+  <svg-icon name="search" size="lg" class="search-icon"></svg-icon>
+  <input
+    type="text"
+    class="[ search-input ] [ md-typescale-body-large ]"
+    placeholder.bind="$this.i18n?.tr('discovery.searchPlaceholder') ?? ''"
+    value.bind="search.searchQuery"
+    aria-label.bind="$this.i18n?.tr('discovery.searchPlaceholder') ?? ''"
+  >
+  <button
+    if.bind="search.searchQuery"
+    class="[ clear-button ] [ state-layer ]"
+    click.trigger="clear()"
+    aria-label.bind="$this.i18n?.tr('discovery.clearSearch') ?? ''"
+  >
+    <svg-icon name="x" size="md"></svg-icon>
+  </button>
+</search>

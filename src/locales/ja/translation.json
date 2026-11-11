@@ -590,8 +590,7 @@
 				"eventId": "イベント",
 				"fullName": "お名前",
 				"issueTime": "発行日"
-			},
-			"resaleProhibited": "このチケットは特定興行入場券です。主催者の同意なく転売することは法律により禁じられています。"
+			}
 		}
 	},
 	"languages": {

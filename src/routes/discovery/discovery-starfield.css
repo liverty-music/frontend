@@ -1,0 +1,78 @@
+@layer block {
+	@scope (discovery-starfield) {
+		/* Covers the Discovery layout (its positioned parent) behind the
+		   rows, in tree order. */
+		:scope {
+			--_star-img:
+				radial-gradient(
+					1px 1px at 10% 15%,
+					oklch(100% 0 0deg / 40%),
+					transparent
+				),
+				radial-gradient(
+					1px 1px at 25% 35%,
+					oklch(100% 0 0deg / 30%),
+					transparent
+				),
+				radial-gradient(
+					1.5px 1.5px at 40% 10%,
+					oklch(100% 0 0deg / 50%),
+					transparent
+				),
+				radial-gradient(
+					1px 1px at 55% 60%,
+					oklch(100% 0 0deg / 25%),
+					transparent
+				),
+				radial-gradient(
+					1px 1px at 70% 25%,
+					oklch(100% 0 0deg / 35%),
+					transparent
+				),
+				radial-gradient(
+					1.5px 1.5px at 85% 50%,
+					oklch(100% 0 0deg / 40%),
+					transparent
+				),
+				radial-gradient(
+					1px 1px at 15% 70%,
+					oklch(100% 0 0deg / 30%),
+					transparent
+				),
+				radial-gradient(
+					1px 1px at 50% 85%,
+					oklch(100% 0 0deg / 20%),
+					transparent
+				),
+				radial-gradient(
+					1.5px 1.5px at 90% 80%,
+					oklch(100% 0 0deg / 35%),
+					transparent
+				),
+				radial-gradient(
+					1px 1px at 30% 90%,
+					oklch(100% 0 0deg / 25%),
+					transparent
+				),
+				radial-gradient(
+					1px 1px at 65% 5%,
+					oklch(100% 0 0deg / 30%),
+					transparent
+				),
+				radial-gradient(
+					1px 1px at 5% 45%,
+					oklch(100% 0 0deg / 20%),
+					transparent
+				);
+
+			pointer-events: none;
+
+			position: absolute;
+			inset: 0;
+
+			background-image: var(--_star-img);
+
+			animation: starfield-twinkle 8s ease-in-out infinite alternate;
+		}
+	}
+}

@@ -54,11 +54,6 @@ export class MyArtistsRoute {
 	private undoIndex = -1
 	private undoHandle: SnackHandle | null = null
 
-	// Hype tier references
-	public readonly hypeLevels: Hype[] = ['watch', 'home', 'nearby', 'away']
-	/** Each level's label, the accessible name of its radio button. */
-	public readonly hypeTiers = HYPE_TIERS
-
 	private readonly logger = resolve(ILogger).scopeTo('MyArtistsRoute')
 	private readonly errorBoundary = resolve(IErrorBoundaryService)
 	public readonly i18n = resolve(I18N)
@@ -401,7 +396,7 @@ export class MyArtistsRoute {
 			})
 	}
 
-	// --- Hype level change (native `change` event from radio) ---
+	// --- Hype level change (a row's `hype-changed` event) ---
 
 	public onHypeInput(artist: MyArtist, newHype: Hype): void {
 		const artistId = artist.artist.id

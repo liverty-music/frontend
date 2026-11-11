@@ -9,126 +9,23 @@
       "count": 1
     }
   },
-  "shared/ui/circular-progress/circular-progress.css": {
-    "cube/block-max-lines": {
-      "count": 1
-    }
-  },
   "shared/ui/snack-bar/snack-bar.css": {
-    "cube/block-max-lines": {
-      "count": 1
-    },
     "declaration-property-custom-property-allowed-list": {
       "count": 2
     }
   },
   "src/components/bottom-nav-bar/bottom-nav-bar.css": {
-    "cube/block-max-lines": {
-      "count": 1
-    },
     "declaration-property-custom-property-allowed-list": {
       "count": 1
     }
   },
-  "src/components/artist-filter-bar/artist-filter-bar.css": {
-    "cube/block-max-lines": {
-      "count": 1
-    }
-  },
   "src/components/bottom-sheet/bottom-sheet.css": {
-    "cube/block-max-lines": {
-      "count": 1
-    },
     "declaration-property-custom-property-allowed-list": {
       "count": 1
     }
   },
   "src/components/coach-mark/coach-mark.css": {
     "declaration-property-custom-property-allowed-list": {
-      "count": 1
-    }
-  },
-  "src/components/celebration-overlay/celebration-overlay.css": {
-    "cube/block-max-lines": {
-      "count": 1
-    }
-  },
-  "src/components/discovery-swap-button/discovery-swap-button.css": {
-    "cube/block-max-lines": {
-      "count": 1
-    }
-  },
-  "src/components/fab-menu/fab-menu.css": {
-    "cube/block-max-lines": {
-      "count": 1
-    },
-    "declaration-property-custom-property-allowed-list": {
-      "count": 1
-    }
-  },
-  "src/components/onboarding-progress/onboarding-progress.css": {
-    "cube/block-max-lines": {
-      "count": 1
-    }
-  },
-  "src/components/live-highway/concert-highway.css": {
-    "cube/block-max-lines": {
-      "count": 1
-    },
-    "declaration-property-custom-property-allowed-list": {
-      "count": 4
-    }
-  },
-  "src/components/live-highway/event-card.css": {
-    "cube/block-max-lines": {
-      "count": 1
-    },
-    "declaration-property-custom-property-allowed-list": {
-      "count": 6
-    }
-  },
-  "src/components/live-highway/event-detail-sheet.css": {
-    "cube/block-max-lines": {
-      "count": 1
-    }
-  },
-  "src/components/page-help/page-help.css": {
-    "cube/block-max-lines": {
-      "count": 1
-    }
-  },
-  "src/components/settings-list/settings-list.css": {
-    "cube/block-max-lines": {
-      "count": 1
-    }
-  },
-  "src/routes/discovery/discovery-route.css": {
-    "cube/block-max-lines": {
-      "count": 1
-    }
-  },
-  "src/routes/event/event-route.css": {
-    "cube/block-max-lines": {
-      "count": 1
-    }
-  },
-  "src/routes/my-artists/my-artists-route.css": {
-    "cube/block-max-lines": {
-      "count": 1
-    }
-  },
-  "src/routes/order/order-route.css": {
-    "cube/block-max-lines": {
-      "count": 1
-    }
-  },
-  "src/routes/tickets/tickets-route.css": {
-    "cube/block-max-lines": {
-      "count": 1
-    }
-  },
-  "src/routes/welcome/welcome-route.css": {
-    "cube/block-max-lines": {
       "count": 1
     }
   },

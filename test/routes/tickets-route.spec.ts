@@ -1499,4 +1499,207 @@ describe('TicketsRoute', () => {
 			expect(sut.offersListing(sut.groups[0].tickets[0])).toBe(false)
 		})
 	})
+
+	describe('reads that fail or are superseded', () => {
+		/** A promise settled by the test. */
+		function deferred<T>() {
+			let resolve!: (v: T) => void
+			let reject!: (e: unknown) => void
+			const promise = new Promise<T>((res, rej) => {
+				resolve = res
+				reject = rej
+			})
+			return { promise, resolve, reject }
+		}
+
+		it('drops a read that finishes after the screen was left', async () => {
+			const list = deferred<Ticket[]>()
+			ticketClient.list.mockReturnValueOnce(list.promise)
+			const sut = build()
+			const loading = sut.load()
+			await vi.waitFor(() => expect(ticketClient.list).toHaveBeenCalled())
+			sut.detaching()
+			list.resolve([protoTicket(1)])
+			await loading
+			expect(sut.groups).toEqual([])
+			expect(sut.step).not.toBe('loaded')
+		})
+
+		it('drops a failed read that settles after the screen was left', async () => {
+			const list = deferred<Ticket[]>()
+			ticketClient.list.mockReturnValueOnce(list.promise)
+			const sut = build()
+			const loading = sut.load()
+			await vi.waitFor(() => expect(ticketClient.list).toHaveBeenCalled())
+			sut.detaching()
+			list.reject(offlineError())
+			await loading
+			expect(sut.step).not.toBe('error')
+		})
+
+		it('drops the stock reads when the screen is left before they finish', async () => {
+			ticketClient.list.mockResolvedValueOnce([protoTicket(1)])
+			const sales = deferred<EventTicketSales>()
+			saleClient.listByEvent.mockReturnValueOnce(sales.promise)
+			const sut = build()
+			const loading = sut.load()
+			await vi.waitFor(() => expect(saleClient.listByEvent).toHaveBeenCalled())
+			sut.detaching()
+			sales.resolve(salesWith())
+			await loading
+			expect(sut.step).not.toBe('loaded')
+		})
+
+		it('lets the later load win when two overlap', async () => {
+			// The first read is slow and finishes after the second: it must not
+			// replace what the second showed.
+			const slow = deferred<Ticket[]>()
+			ticketClient.list
+				.mockReturnValueOnce(slow.promise)
+				.mockResolvedValue([protoTicket(1), protoTicket(2)])
+			const sut = build()
+			const first = sut.load()
+			await vi.waitFor(() => expect(ticketClient.list).toHaveBeenCalledTimes(1))
+			const second = sut.load()
+			await second
+			await vi.waitFor(() => expect(sut.device).not.toBe('checking'))
+			expect(sut.groups[0].tickets).toHaveLength(2)
+			slow.resolve([protoTicket(1)])
+			await first
+			expect(sut.groups[0].tickets).toHaveLength(2)
+			expect(sut.step).toBe('loaded')
+		})
+
+		it('shows the list without seat types when the order and sales reads fail', async () => {
+			ticketClient.list.mockResolvedValue([protoTicket(1)])
+			orderClient.get.mockRejectedValue(new Error('order down'))
+			saleClient.listByEvent.mockRejectedValue(new Error('sales down'))
+			resaleClient.list.mockRejectedValue(new Error('listings down'))
+			const sut = await open()
+			expect(sut.step).toBe('loaded')
+			expect(sut.groups[0].tickets[0].seatTypeName).toBeUndefined()
+			expect(sut.offersListing(sut.groups[0].tickets[0])).toBe(false)
+		})
+
+		it('keeps the saved seat type and event when the live reads fail', async () => {
+			ticketClient.list.mockResolvedValueOnce([protoTicket(1)])
+			saleClient.listByEvent.mockResolvedValue(salesWith())
+			const online = await open()
+			expect(online.groups[0].tickets[0].seatTypeName).toBe('S席')
+			online.detaching()
+
+			ticketClient.list.mockResolvedValue([protoTicket(1)])
+			concertClient.get.mockRejectedValue(new Error('concert down'))
+			orderClient.get.mockRejectedValue(new Error('order down'))
+			saleClient.listByEvent.mockRejectedValue(new Error('sales down'))
+			const sut = await open()
+			expect(sut.step).toBe('loaded')
+			expect(sut.groups[0].event).toBeDefined()
+			expect(sut.groups[0].tickets[0].seatTypeName).toBe('S席')
+		})
+
+		it('shows the error when nothing was saved and the read fails', async () => {
+			ticketClient.list.mockRejectedValue(offlineError())
+			const sut = build()
+			sut.loading()
+			await vi.waitFor(() => expect(sut.step).toBe('error'))
+		})
+	})
+
+	describe('guards on actions with nothing to act on', () => {
+		it('reports a device notice for each state that needs one, and none while loading', async () => {
+			ticketClient.list.mockResolvedValue([protoTicket(1)])
+			const sut = await open()
+			expect(sut.hasDeviceNotice).toBe(false)
+			sut.offline = true
+			expect(sut.hasDeviceNotice).toBe(true)
+			sut.offline = false
+			for (const device of [
+				'needs-connection',
+				'failed',
+				'other-device',
+			] as const) {
+				sut.device = device
+				expect(sut.hasDeviceNotice).toBe(true)
+			}
+			sut.device = 'ready'
+			sut.movedToThisDevice = true
+			expect(sut.hasDeviceNotice).toBe(true)
+			sut.movedToThisDevice = false
+			sut.step = 'loading'
+			sut.offline = true
+			expect(sut.hasDeviceNotice).toBe(false)
+		})
+
+		it('does not offer a move on the entry device, and cancel closes the question', async () => {
+			ticketClient.list.mockResolvedValue([protoTicket(1)])
+			const sut = await open()
+			sut.askToUseThisDevice()
+			expect(sut.confirmingMove).toBe(false)
+			sut.confirmingMove = true
+			sut.cancelMove()
+			expect(sut.confirmingMove).toBe(false)
+		})
+
+		it('ignores virtual-ticket actions while no ticket is open', async () => {
+			ticketClient.list.mockResolvedValue([protoTicket(1)])
+			const sut = await open()
+			expect(sut.isTicketOpen).toBe(false)
+			sut.onPresetChosen(
+				new CustomEvent('x', { detail: { preset: 'classic' as never } }),
+			)
+			sut.onStampPressed()
+			sut.openCodeFromTicket()
+			sut.askToListFromTicket()
+			await sut.shareTicket()
+			expect(shareImage.share).not.toHaveBeenCalled()
+			expect(sut.isTicketOpen).toBe(false)
+		})
+
+		it('opens a ticket from a tap on its card but not from a tap on a control inside it', async () => {
+			ticketClient.list.mockResolvedValue([protoTicket(1)])
+			const sut = await open()
+			const group = sut.groups[0]
+			const ticket = group.tickets[0]
+			const button = document.createElement('button')
+			const inner = document.createElement('span')
+			button.append(inner)
+			const onButton = new MouseEvent('click')
+			Object.defineProperty(onButton, 'target', { value: inner })
+			sut.onCardClick(onButton, group, ticket)
+			await tasksSettled()
+			expect(sut.isTicketOpen).toBe(false)
+
+			const onCard = new MouseEvent('click')
+			Object.defineProperty(onCard, 'target', {
+				value: document.createElement('div'),
+			})
+			sut.onCardClick(onCard, group, ticket)
+			await vi.waitFor(() => expect(sut.isTicketOpen).toBe(true))
+			sut.closeTicket()
+			expect(sut.isTicketOpen).toBe(false)
+		})
+
+		it('keeps the list when a state refresh fails', async () => {
+			ticketClient.list.mockResolvedValue([protoTicket(1)])
+			const sut = await open()
+			ticketClient.list.mockRejectedValue(offlineError())
+			await sut.refreshStates()
+			expect(sut.groups).toHaveLength(1)
+			expect(sut.step).toBe('loaded')
+		})
+
+		it('refreshes ticket states with no code open', async () => {
+			ticketClient.list.mockResolvedValue([protoTicket(1)])
+			const sut = await open()
+			ticketClient.list.mockResolvedValue([
+				protoTicket(1, {
+					status: TicketStatus.ADMITTED,
+					admitted: jst(10, 11),
+				}),
+			])
+			await sut.refreshStates()
+			expect(sut.groups[0].tickets[0].state).toBe('entered')
+		})
+	})
 })

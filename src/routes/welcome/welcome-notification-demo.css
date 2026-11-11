@@ -1,0 +1,97 @@
+@layer block {
+	@scope (welcome-notification-demo) {
+		/* The step is an item of the demo section's column. */
+		:scope {
+			display: contents;
+		}
+
+		.welcome-demo-notification {
+			--stack-gap: var(--space-l);
+
+			align-items: center;
+		}
+
+		.welcome-demo-lead {
+			color: var(--color-brand-accent);
+			text-align: center;
+			text-shadow:
+				0 0 6px oklch(from var(--color-brand-accent) l c h / 40%),
+				0 0 16px oklch(from var(--color-brand-accent) l c h / 25%);
+			text-wrap: balance;
+			word-break: auto-phrase;
+		}
+
+		.welcome-notification-trigger {
+			inline-size: 100%;
+			max-inline-size: var(--page-max-inline-size);
+
+			/* The mock card's corners, which the shared state layer
+			   (`state-layer`) and the focus ring take. Press shows the layer
+			   alone, with no scale (Material 3). */
+			border-radius: var(--md-sys-shape-corner-large);
+		}
+
+		/* Entrance fires only once the demo scrolls into view (data-entered on
+		   Welcome's demo section). The ~500ms delay lets the scroll-snap settle
+		   first, so the drop-in isn't lost in the scroll motion. `both` holds
+		   the hidden pre-state during the delay. A heads-up push slides down
+		   from above and settles with an overshoot. */
+		.welcome-demo[data-entered] :scope .welcome-notification-trigger {
+			animation: notif-enter var(--md-sys-motion-duration-extra-long1)
+				var(--md-sys-motion-duration-long2) var(--md-sys-motion-spring-spatial)
+				both;
+		}
+
+		/* Exit: the notification dismisses upward and fades. Welcome holds this
+		   state (`data-exiting`) for the animation's duration, then swaps in the
+		   timetable — so the dismiss fully completes before the timetable
+		   appears. */
+		.welcome-demo-notification[data-exiting] {
+			animation: notif-exit 380ms ease-in both;
+		}
+
+		.welcome-demo-hint {
+			color: var(--md-sys-color-on-surface-variant);
+			text-align: center;
+
+			/* Delay the invite until after the card has dropped in. */
+			animation: hint-pulse 1.6s ease-in-out 700ms infinite;
+		}
+
+		@keyframes notif-enter {
+			from {
+				transform: translateY(-4.5rem) scale(0.9);
+				opacity: 0;
+			}
+		}
+
+		/* Notification dismiss: slide up and fade (sequential exit). */
+		@keyframes notif-exit {
+			to {
+				transform: translateY(-2.5rem) scale(0.94);
+				opacity: 0;
+			}
+		}
+
+		@keyframes hint-pulse {
+			0%,
+			100% {
+				opacity: 0.5;
+			}
+
+			50% {
+				opacity: 1;
+			}
+		}
+
+		/* Reduced motion: the exit and the pulse, whose durations are not
+		   motion tokens, do not run (the token-timed entrance already
+		   collapses to 0 ms). */
+		@media (prefers-reduced-motion: reduce) {
+			.welcome-demo-notification[data-exiting],
+			.welcome-demo-hint {
+				animation: none;
+			}
+		}
+	}
+}

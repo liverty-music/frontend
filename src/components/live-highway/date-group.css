@@ -1,0 +1,87 @@
+@layer block {
+	/* A date row of the timetable, the unit of the date window: only the rows
+	   in the window exist, so nothing here has to skip rendering work. The
+	   loading placeholder is a date row too, so its lanes land on the stage
+	   header's columns and the swap to concerts moves nothing. */
+	@scope (.date-group) {
+		:scope {
+			--_border-light: oklch(100% 0 0deg / 10%);
+			--_border-faint: oklch(100% 0 0deg / 5%);
+		}
+
+		.skeleton-date {
+			display: block;
+			inline-size: 8ch;
+
+			/* One line of the date's title-large style. */
+			block-size: 1.75rem;
+		}
+
+		.month-separator {
+			display: flex;
+			grid-column: 1 / -1;
+			gap: var(--space-s);
+			align-items: center;
+
+			padding-block: var(--space-m) var(--space-2xs);
+			padding-inline: var(--space-xs);
+
+			color: var(--md-sys-color-on-surface-variant);
+			text-transform: uppercase;
+
+			&::before,
+			&::after {
+				content: "";
+				flex: 1;
+				block-size: 1px;
+				background: var(--_border-faint);
+			}
+		}
+
+		.date-separator {
+			position: sticky;
+			inset-block-start: 0;
+
+			grid-column: 1 / -1;
+
+			padding: var(--space-2xs) var(--space-xs);
+			border-block-end: 1px solid var(--_border-light);
+
+			background: linear-gradient(
+				to right,
+				oklch(from var(--color-stage-home) l c h / 10%),
+				oklch(from var(--color-stage-near) l c h / 10%),
+				oklch(from var(--color-stage-away) l c h / 10%)
+			);
+			backdrop-filter: blur(4px);
+
+			& time {
+				color: var(--color-brand-accent);
+				text-transform: uppercase;
+			}
+		}
+
+		/* biome-ignore lint/correctness/noUnknownProperty: scroll-triggered animations (Chromium 145+) are newer than Biome's property list */
+		@supports (timeline-trigger: --t view()) {
+			/* ── Deal-in: a date row's concert cards fly in as the row comes into
+			   view; the lanes' frames and the empty-lane mark stay still ──
+
+			   Time-based, and started by the row entering view (a scroll-triggered
+			   animation), so it runs its full length however fast the fan scrolls.
+			   The row is the trigger: it activates once 60% of the row is in view,
+			   from either edge, and once the row has fully left it resets the
+			   animation, so the next entry deals the row in again from the
+			   start, however soon the fan scrolls back. The cards' motion, its
+			   order and its perspective are the lane grid's (lane-grid.css). */
+			@media (prefers-reduced-motion: no-preference) {
+				:scope:not(.date-group-skeleton) {
+					/* biome-ignore lint/correctness/noUnknownProperty: scroll-triggered animations (Chromium 145+) are newer than Biome's property list */
+					timeline-trigger: --row view() entry 60% exit 40% / cover;
+
+					/* biome-ignore lint/correctness/noUnknownProperty: scroll-triggered animations (Chromium 145+) are newer than Biome's property list */
+					trigger-scope: --row;
+				}
+			}
+		}
+	}
+}

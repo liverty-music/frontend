@@ -21,17 +21,17 @@ export interface RouteMarker {
 }
 
 export const ROUTE_MARKERS: readonly RouteMarker[] = [
-	{ route: 'welcome', marker: 'welcome-brand' },
+	{ route: 'welcome', marker: 'welcome-ambient' },
 	{ route: 'about', marker: 'about-title' },
 	{ route: 'auth-callback', marker: 'callback-loading' },
 	{ route: 'dashboard', marker: 'dashboard-empty-subtitle' },
-	{ route: 'discovery', marker: 'search-bar' },
-	{ route: 'my-artists', marker: 'artists-fieldset' },
+	{ route: 'discovery', marker: 'bubble-area' },
+	{ route: 'my-artists', marker: 'empty-subtitle' },
 	{ route: 'not-found', marker: 'not-found-code' },
 	{ route: 'settings', marker: 'settings-section-title' },
 	{ route: 'tickets', marker: 'tickets-card' },
 	{ route: 'order', marker: 'order-ticket-card' },
-	{ route: 'event', marker: 'event-performer-name' },
+	{ route: 'event', marker: 'event-sale-name' },
 	{ route: 'checkout', marker: 'checkout-seat-type' },
 	{ route: 'passkey-recovery', marker: 'passkey-recovery-lead' },
 	{ route: 'verify-email', marker: 'verify-email-lead' },

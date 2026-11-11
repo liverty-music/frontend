@@ -89,32 +89,6 @@
 			}
 		}
 
-		/* ── Date facet: collapsible "過去のコンサートも表示" affordance ── */
-		.date-facet-toggle {
-			display: flex;
-			align-items: center;
-			justify-content: space-between;
-		}
-
-		.date-facet-caret {
-			color: var(--md-sys-color-on-surface-variant);
-			transition: transform var(--md-sys-motion-duration-short3);
-
-			&[data-expanded="true"] {
-				transform: rotate(90deg);
-			}
-		}
-
-		.date-facet-field {
-			--stack-gap: var(--space-3xs);
-
-			padding-block-start: var(--space-2xs);
-		}
-
-		.date-field-label {
-			color: var(--md-sys-color-on-surface-variant);
-		}
-
 		/* ── Confirm button row ── */
 		.confirm-row {
 			display: flex;

@@ -1,0 +1,86 @@
+@layer block {
+	@scope (welcome-hero) {
+		/* The screen is a snap point of Welcome's scroll. */
+		:scope {
+			display: contents;
+		}
+
+		/* Positioned so it paints above the fixed ambient canvas by DOM order. */
+		.welcome-hero {
+			scroll-snap-align: start;
+			scroll-snap-stop: always;
+
+			position: relative;
+
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+
+			block-size: 100svh;
+			padding-inline: var(--space-l);
+
+			text-align: center;
+
+			animation: fade-in var(--md-sys-motion-duration-extra-long1) ease-out both;
+		}
+
+		.welcome-hero-fallback {
+			--flow-space: var(--space-l);
+			--stack-gap: var(--space-2xs);
+
+			align-items: center;
+		}
+
+		.welcome-title {
+			--flow-space: var(--space-l);
+
+			word-break: auto-phrase;
+		}
+
+		.welcome-subtitle {
+			--flow-space: var(--space-m);
+
+			max-inline-size: 28rem;
+			color: var(--md-sys-color-on-surface-variant);
+			text-wrap: balance;
+			word-break: auto-phrase;
+		}
+
+		.welcome-subtitle-action {
+			--flow-space: var(--space-xs);
+		}
+
+		.welcome-subtitle-action strong {
+			color: var(--color-brand-accent);
+			text-shadow:
+				0 0 6px oklch(from var(--color-brand-accent) l c h / 60%),
+				0 0 14px oklch(from var(--color-brand-accent) l c h / 35%);
+		}
+
+		/* Outlined shared button; it owns only its spacing and the bobbing
+		   arrow. */
+		.welcome-scroll-action {
+			--flow-space: var(--space-l);
+		}
+
+		.welcome-scroll-arrow {
+			display: inline-block;
+			animation: arrow-bob 1.5s ease-in-out infinite alternate;
+		}
+
+		@keyframes arrow-bob {
+			to {
+				translate: 0 8px;
+			}
+		}
+
+		/* Reduced motion: the bobbing arrow, whose duration is not a motion
+		   token, stays put. */
+		@media (prefers-reduced-motion: reduce) {
+			.welcome-scroll-arrow {
+				animation: none;
+			}
+		}
+	}
+}

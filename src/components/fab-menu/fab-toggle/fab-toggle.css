@@ -1,0 +1,75 @@
+@layer block {
+	@scope (fab-toggle) {
+		:scope {
+			/* --fab-sunk is set on :root by global.css: 1 while a snack bar is
+			   open or a persistent bottom banner (signup / install) is visible. */
+			--_scale: calc(1 - var(--fab-sunk, 0) * (1 - var(--fab-sunk-scale)));
+
+			/* No box of its own: the button floats in the top layer. */
+			display: contents;
+		}
+
+		/* Centred in the navigation bar's notch. */
+		.fab-toggle {
+			isolation: isolate;
+			position: fixed;
+			inset: auto;
+			inset-block-end: calc(var(--fab-centre) - var(--fab-size) / 2);
+			inset-inline-start: 50%;
+			translate: -50% 0;
+			scale: var(--_scale);
+
+			/* A popover clips its overflow by default; the touch target
+			   (::after) reaches past the sunk FAB's edge. */
+			overflow: visible;
+			display: grid;
+			place-items: center;
+
+			inline-size: var(--fab-size);
+			block-size: var(--fab-size);
+			border-radius: var(--md-sys-shape-corner-full);
+
+			color: var(--color-white);
+
+			background: linear-gradient(
+				135deg,
+				var(--color-brand-primary),
+				var(--color-brand-secondary)
+			);
+			box-shadow: var(--glow-fab);
+
+			/* Spatial spring for the sink. A press shows the shared state layer
+			   (`state-layer`, ::before) alone: Material 3 scales no pressed FAB. */
+			transition:
+				translate var(--md-sys-motion-spring-spatial-duration)
+				var(--md-sys-motion-spring-spatial),
+				scale var(--md-sys-motion-spring-spatial-duration)
+				var(--md-sys-motion-spring-spatial);
+
+			/* Its own View Transition snapshot. A named snapshot paints above
+			   the root one, and the FAB overlaps the navigation bar and the
+			   route area, which are named in some transitions (a tab switch,
+			   a route animating part of itself); named too, the FAB keeps its
+			   place on top, since snapshots paint in the order of their
+			   elements and the FAB is in the top layer (global.css). */
+			view-transition-name: fab-toggle;
+		}
+
+		/* The 48 px touch target, also while the FAB is sunk and scaled down:
+		   the scale applies to it too, so it is divided back out. */
+		.fab-toggle::after {
+			--_target: max(100%, calc(var(--md-sys-target-size) / var(--_scale)));
+
+			content: "";
+
+			position: absolute;
+			inset-block-start: 50%;
+			inset-inline-start: 50%;
+			translate: -50% -50%;
+
+			inline-size: var(--_target);
+			block-size: var(--_target);
+			border-radius: inherit;
+		}
+	}
+}

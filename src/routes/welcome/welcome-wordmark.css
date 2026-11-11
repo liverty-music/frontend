@@ -1,0 +1,57 @@
+/* @property makes --brand-sweep (background-position %) interpolate. */
+@property --brand-sweep {
+	inherits: false;
+	initial-value: 0%;
+	syntax: "<percentage>";
+}
+
+@layer block {
+	@scope (welcome-wordmark) {
+		/* The first line of the hero's flow; the line below it takes the
+		   flow's step. */
+		:scope {
+			display: contents;
+		}
+
+		/* Wordmark filled by a moving spotlight gradient clipped to the text. */
+		.welcome-brand {
+			text-shadow:
+				0 0 8px oklch(from var(--color-brand-accent) l c h / 55%),
+				0 0 18px oklch(from var(--color-brand-accent) l c h / 32%);
+			text-transform: uppercase;
+
+			background: linear-gradient(
+				100deg,
+				var(--color-brand-accent) 0%,
+				color-mix(in oklch, var(--color-brand-accent) 45%, white) 50%,
+				var(--color-brand-accent) 100%
+			);
+			background-position: var(--brand-sweep) center;
+			background-clip: text;
+			background-size: 250% 100%;
+
+			animation: brand-sweep 7s ease-in-out infinite alternate;
+
+			-webkit-text-fill-color: transparent;
+		}
+
+		@keyframes brand-sweep {
+			from {
+				--brand-sweep: 0%;
+			}
+
+			to {
+				--brand-sweep: 100%;
+			}
+		}
+
+		/* Reduced motion: the sweep, whose duration is not a motion token,
+		   stops with the spotlight in the middle. */
+		@media (prefers-reduced-motion: reduce) {
+			.welcome-brand {
+				background-position: 50% center;
+				animation: none;
+			}
+		}
+	}
+}

@@ -1,0 +1,10 @@
+<template>
+  <import from="./laser-beams.css"></import>
+
+  <div
+    repeat.for="b of beams"
+    class="[ laser-beam ]"
+    data-beam-timeline.bind="b.timeline"
+    beam-vars="hue.bind: b.hue; left.bind: b.left; right.bind: b.right; timeline.bind: b.timeline"
+  ></div>
+</template>

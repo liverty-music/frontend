@@ -212,7 +212,6 @@
 		   the tile. */
 		--discovery-floor: calc(var(--fab-notch-radius) + var(--space-2xs));
 		--swap-tile-size: 3.875rem;
-		--fab-radius-collapsed: var(--md-sys-shape-corner-full); /* round FAB */
 
 		/* Rendered height of the bottom navigation bar. Single source of truth:
 		   bottom-nav-bar sizes itself from this, and the FAB launcher offsets
@@ -220,6 +219,18 @@
 		   pixel constant (design D7). Excludes the safe-area inset, which each
 		   consumer adds on its own. */
 		--bottom-nav-height: 4rem; /* Material 3 navigation bar: 64 dp */
+
+		/* The FAB's centre, above the window's bottom edge: on the navigation
+		   bar's top edge, lowered half the bar's height while sunk
+		   (--fab-sunk, set by global.css) so the smaller FAB lies inside the
+		   bar. The FAB and its action arc both start from it. */
+		--fab-centre: calc(
+			var(--bottom-nav-height) +
+			env(safe-area-inset-bottom) -
+			var(--fab-sunk, 0) *
+			var(--bottom-nav-height) /
+			2
+		);
 
 		/* Shadow colour of the shared elevation levels. */
 		--md-sys-color-shadow: oklch(0% 0 0deg);

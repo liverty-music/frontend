@@ -1,34 +1,14 @@
 <import from="./fab-menu.css"></import>
+<import from="./fab-toggle/fab-toggle"></import>
+<import from="./fab-action/fab-action"></import>
 
-<!-- Collapsed FAB: a disclosure button (aria-expanded + aria-controls), NOT an
-     ARIA menu. It is itself a manual popover (shown on attach) so it floats in
-     the top layer, and controls the panel via popovertarget so the browser
-     handles the open/close toggle natively (no invoker double-fire). -->
-<button
-  ref="fabButton"
-  type="button"
-  class="[ fab-toggle ] [ state-layer ]"
-  popover="manual"
-  popovertarget="fab-menu-panel"
-  popovertargetaction="toggle"
-  data-handed.bind="fabMenu.handed"
-  aria-controls="fab-menu-panel"
-  aria-expanded.bind="isOpen"
-  t="[aria-label]fabMenu.toggleAriaLabel"
->
-  <!-- Equalizer (collapsed) and close (expanded) glyphs, cross-faded on
-       data-open. Inline so each equalizer bar can bounce on its own. -->
-  <span class="fab-glyph" data-open.bind="isOpen" aria-hidden="true">
-    <svg class="fab-equalizer" viewBox="0 0 24 24" focusable="false">
-      <rect class="fab-bar" x="3.5" y="9" width="4" height="12" rx="2"></rect>
-      <rect class="fab-bar" x="10" y="3" width="4" height="18" rx="2"></rect>
-      <rect class="fab-bar" x="16.5" y="12" width="4" height="9" rx="2"></rect>
-    </svg>
-    <svg class="fab-close" viewBox="0 0 24 24" focusable="false">
-      <path d="M6 6 18 18M18 6 6 18"></path>
-    </svg>
-  </span>
-</button>
+<!-- Collapsed FAB: a disclosure button that is itself a manual popover
+     (see fab-toggle), handed back here so the launcher owns its top layer. -->
+<fab-toggle
+  button.from-view="fabButton"
+  open.bind="isOpen"
+  handed.bind="fabMenu.handed"
+></fab-toggle>
 
 <!-- Expanded panel: top-layer auto popover, a role="group" of plain buttons
      (disclosure, not menu). Uses a dialog element (project lint requires popovers
@@ -59,18 +39,12 @@
       class="fab-list-item"
       style="--i: ${$index}; --n: ${fabMenu.actions.length}"
     >
-      <button
-        type="button"
-        class="[ fab-item ] [ state-layer ] [ md-typescale-label-large ]"
-        data-action-id.bind="action.id"
-        data-kind.bind="action.kind"
-        data-active.bind="isActive(action) & signal:'fab-menu:state'"
-        aria-pressed.bind="(action.kind === 'toggle' ? isPressed(action) : null) & signal:'fab-menu:state'"
+      <fab-action
+        action.bind="action"
+        active.bind="isActive(action) & signal:'fab-menu:state'"
+        pressed.bind="(action.kind === 'toggle' ? isPressed(action) : null) & signal:'fab-menu:state'"
         click.trigger="onAction(action)"
-      >
-        <svg-icon name.bind="action.icon" size="lg" class="fab-item-icon"></svg-icon>
-        <span class="fab-item-label" t.bind="action.labelKey"></span>
-      </button>
+      ></fab-action>
     </li>
   </ul>
 </dialog>

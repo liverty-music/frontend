@@ -7,23 +7,22 @@
  * message keeps the width of the row; an app without it styles
  * `.snack-action-btn` itself. The close button is the shared icon button
  * (`shared/styles/icon-button.css`) in the snack's text colour.
+ *
+ * This file places the snack and colours it; `snack-item.css` lays out the
+ * row inside it. An app that renders the bar in a shadow root imports both.
  */
 @layer block {
 	@scope (snack-bar) {
 		:scope {
-			/* The fan app's severity gradients come from the token layer
-			   (--md-sys-color-snack-*, each at 4.5:1 for the white message and the
-			   on-container action); an app without them sets
-			   --snack-bar-container instead. */
+			/* The fan app's severity gradients (--md-sys-color-snack-*, 4.5:1 for
+			   the message and the action); other apps set --snack-bar-container. */
 			--_bg-from: var(--md-sys-color-snack-info-from);
 			--_bg-to: var(--md-sys-color-snack-info-to);
 
-			/* Material 3 snackbar placement: bottom of screen, above the
-			   persistent bottom navigation, animating up from the bottom edge.
-			   --bottom-banner-height (published on :root by the fan app while a
-			   persistent bottom banner shows) lifts the snack above that banner
-			   so it never covers its CTA; a hidden banner publishes no height. The fan app's FAB stays sunk
-			   in the navigation bar meanwhile, so the snack clears it too. */
+			/* Material 3 snackbar placement: above the bottom navigation, rising
+			   from the bottom edge. --bottom-banner-height (published on :root by
+			   the fan app while a bottom banner shows) lifts it above the banner's
+			   CTA. The fan app's FAB stays sunk in the bar meanwhile. */
 			--_above-nav: calc(
 				var(--bottom-nav-height) +
 				env(safe-area-inset-bottom, 0px) +
@@ -31,12 +30,11 @@
 				var(--space-s)
 			);
 
-			/* A control floating over the route's bottom edge (the fan app's
-			   Discovery swap tile) publishes --bottom-floating-clearance, the
-			   distance from the window's bottom to its top edge, and the snack
-			   sits one step above it instead, so the control never moves (M3:
-			   snackbars are nudged up, other components are not animated with
-			   them). Unset, this is invalid and the fallback applies. */
+			/* A control floating over the route's bottom edge (Discovery's swap
+			   tile) publishes --bottom-floating-clearance, from the window's bottom
+			   to its top edge; the snack sits one step above it, so the control
+			   never moves (M3 nudges snackbars up, not other components). Unset,
+			   this is invalid and the fallback applies. */
 			--_above-floating: calc(
 				var(--bottom-floating-clearance) +
 				var(--space-3xs)
@@ -44,8 +42,7 @@
 			--_inset-end: var(--_above-floating, var(--_above-nav));
 		}
 
-		/* Holds the shown snack's item; the item itself is a top-layer
-		   popover with its own offset. */
+		/* Holds the shown snack's item, itself a top-layer popover. */
 		.snack-stack {
 			pointer-events: none;
 			position: fixed;
@@ -91,64 +88,17 @@
 		}
 
 		/* A sideways swipe: the surface rests between two empty gutters as wide
-		   as the snack, and mandatory snapping carries a release past half its
-		   width into a gutter (which dismisses it, snack-item.ts) or back.
-		   The scroller reaches --_shadow-room past the snack on every side so
-		   the surface's shadow is not clipped, and lets taps through there. */
-		.snack-swipe {
-			--_shadow-room: var(--space-m);
-
-			pointer-events: none;
-			scrollbar-width: none;
-			scroll-snap-type: x mandatory;
-
-			overflow: auto hidden;
-			overscroll-behavior-x: contain;
-			display: grid;
-			grid-auto-columns: 100%;
-			grid-auto-flow: column;
-
-			/* stylelint-disable-next-line property-disallowed-list -- the scroller must reach past the snack's box by the shadow room on every side so the shadow is not clipped, while the snack keeps its size and place; only a negative margin outsets a box without moving or resizing its content */
-			margin: calc(-1 * var(--_shadow-room));
-			padding: var(--_shadow-room);
-		}
-
-		.snack-gutter {
-			scroll-snap-align: center;
-		}
-
-		/* Brand-gradient container (M3 Expressive keeps the brand identity),
-		   carrying the M3 structural traits: bottom placement, extra-small (4dp)
-		   shape, a single constrained-width row with side margins (not
-		   full-bleed), a text-button action, and up-from-bottom motion. */
+		/* The snack's colours: a brand gradient (M3 Expressive keeps the brand
+		   identity) or the app's own container, in the M3 extra-small (4dp)
+		   shape. Its layout is snack-item.css's. */
 		.snack-surface {
-			pointer-events: auto;
-			scroll-snap-align: center;
-
-			display: flex;
-			gap: var(--space-2xs);
-			align-items: center;
-
-			padding-block: var(--space-2xs);
-			padding-inline: var(--space-s);
 			border-radius: var(--md-sys-shape-corner-extra-small);
-
 			color: var(--snack-bar-on-container, var(--color-white));
-
 			background: var(
 				--snack-bar-container,
 				linear-gradient(to right, var(--_bg-from), var(--_bg-to))
 			);
 			box-shadow: var(--md-sys-elevation-level3);
-
-			/* The close button's 40 px container reaches into the end padding,
-			   so its 24 px icon sits as far from the edge as the message's
-			   start. */
-			&:has(> .snack-close-btn) {
-				--_pad-end: calc(var(--space-s) - var(--space-2xs));
-
-				padding-inline-end: var(--_pad-end);
-			}
 		}
 
 		/* Severity recolors the container gradient (info keeps the brand hues). */
@@ -160,53 +110,6 @@
 		.snack-item[data-severity="error"] {
 			--_bg-from: var(--md-sys-color-snack-error-from);
 			--_bg-to: var(--md-sys-color-snack-error-to);
-		}
-
-		/* The action's look comes from the app: the fan app's shared button
-		   (on-container), or the organizer console's own rule. Only its place
-		   in the row is set here. */
-		.snack-action-btn {
-			flex-shrink: 0;
-		}
-
-		/* A two-line message breaks between phrases, never inside a word, and
-		   balances its lines (graceful no-op where unsupported). */
-		.snack-message {
-			flex: 1;
-			text-wrap: balance;
-			word-break: auto-phrase;
-
-			/* A message may also give its two lines itself, split by a newline. */
-			white-space: pre-line;
-		}
-
-		/* M3 snackbar close affordance: the shared icon button in the
-		   snack's text colour. */
-		.snack-close-btn {
-			--icon-button-color: currentcolor;
-
-			& svg {
-				fill: currentcolor;
-			}
-		}
-
-		/* An attention action (the fan app's update snack) glows three times
-		   when the snack appears, then stays still. */
-		@media (prefers-reduced-motion: no-preference) {
-			.snack-action-btn[data-attention] {
-				animation: snack-action-glow 1.2s ease-in-out 3;
-			}
-		}
-
-		@keyframes snack-action-glow {
-			0%,
-			100% {
-				box-shadow: var(--glow-attention-off);
-			}
-
-			50% {
-				box-shadow: var(--glow-attention);
-			}
 		}
 	}
 }

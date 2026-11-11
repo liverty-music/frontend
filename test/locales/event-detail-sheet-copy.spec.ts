@@ -3,6 +3,16 @@ import filterHtml from '../../src/components/artist-filter-bar/artist-filter-bar
 import cardHtml from '../../src/components/live-highway/event-card.html?raw'
 import sheetHtml from '../../src/components/live-highway/event-detail-sheet.html?raw'
 import sheetTs from '../../src/components/live-highway/event-detail-sheet.ts?raw'
+import followCtaHtml from '../../src/components/live-highway/event-follow-cta.html?raw'
+import followCtaTs from '../../src/components/live-highway/event-follow-cta.ts?raw'
+import sheetHeroHtml from '../../src/components/live-highway/event-sheet-hero.html?raw'
+import sheetHeroTs from '../../src/components/live-highway/event-sheet-hero.ts?raw'
+import sheetHintHtml from '../../src/components/live-highway/event-sheet-hint.html?raw'
+import sheetHintTs from '../../src/components/live-highway/event-sheet-hint.ts?raw'
+import statusRowHtml from '../../src/components/live-highway/journey-status-row.html?raw'
+import statusRowTs from '../../src/components/live-highway/journey-status-row.ts?raw'
+import outOfRangeHtml from '../../src/components/live-highway/out-of-range-notice.html?raw'
+import outOfRangeTs from '../../src/components/live-highway/out-of-range-notice.ts?raw'
 import type { JourneyStatus } from '../../src/entities/concert'
 import { JOURNEY_NAV_ORDER } from '../../src/entities/ticket-journey'
 import en from '../../src/locales/en/translation.json'
@@ -84,12 +94,25 @@ describe('event detail sheet copy', () => {
 				words.push(...literal.split(/\s+/).filter(Boolean))
 			}
 		}
-		const template = document.createElement('template')
-		template.innerHTML = sheetHtml
-		walk(template.content)
+		// The sheet's copy is split across its template and the components it
+		// composes; walk them all.
+		for (const html of [
+			sheetHtml,
+			sheetHeroHtml,
+			sheetHintHtml,
+			statusRowHtml,
+			outOfRangeHtml,
+			followCtaHtml,
+		]) {
+			const template = document.createElement('template')
+			template.innerHTML = html
+			walk(template.content)
+		}
 		// The walk reached the sheet's markup.
+		const sheet = document.createElement('template')
+		sheet.innerHTML = sheetHtml
 		expect(
-			template.content.querySelector('template')?.content.childNodes.length,
+			sheet.content.querySelector('template')?.content.childNodes.length,
 		).toBeGreaterThan(0)
 		expect(words).toEqual([])
 	})
@@ -114,6 +137,16 @@ describe('event detail sheet copy', () => {
 			sheetTs,
 			cardHtml,
 			filterHtml,
+			sheetHeroHtml,
+			sheetHeroTs,
+			sheetHintHtml,
+			sheetHintTs,
+			statusRowHtml,
+			statusRowTs,
+			outOfRangeHtml,
+			outOfRangeTs,
+			followCtaHtml,
+			followCtaTs,
 		})) {
 			for (const icon of icons) {
 				expect(source, `${name} inlines ${icon}`).not.toContain(icon)

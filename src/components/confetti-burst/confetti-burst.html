@@ -1,0 +1,10 @@
+<import from="./confetti-burst.css"></import>
+
+<div class="confetti-container" aria-hidden="true">
+  <span
+    class="confetti"
+    repeat.for="piece of pieces"
+    data-shape.bind="piece.shape"
+    css="--_dx: ${piece.dx}; --_dy: ${piece.dy}; --_size: ${piece.size}; --_spin: ${piece.spin}; --_duration: ${piece.duration}; --_delay: ${piece.delay}; --_color: ${piece.color}"
+  ></span>
+</div>

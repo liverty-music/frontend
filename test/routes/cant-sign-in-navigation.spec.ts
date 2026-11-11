@@ -5,7 +5,7 @@ import { CustomElement } from 'aurelia'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import settingsHtml from '../../src/routes/settings/settings-route.html?raw'
-import welcomeHtml from '../../src/routes/welcome/welcome-route.html?raw'
+import welcomeHtml from '../../src/routes/welcome/welcome-cta.html?raw'
 
 /** The "can't sign in" link of a route template, as written there. */
 function linkFrom(html: string, testId: string): Element {

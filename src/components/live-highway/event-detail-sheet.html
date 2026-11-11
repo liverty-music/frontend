@@ -1,5 +1,10 @@
 <template>
   <import from="./event-detail-sheet.css"></import>
+  <import from="./event-sheet-hero"></import>
+  <import from="./out-of-range-notice"></import>
+  <import from="./event-sheet-hint"></import>
+  <import from="./journey-status-row"></import>
+  <import from="./event-follow-cta"></import>
 
   <bottom-sheet
     open.bind="isOpen"
@@ -9,15 +14,13 @@
   >
     <div if.bind="event" class="[ sheet-content ] [ flow ]">
       <!-- Hero background image -->
-      <div if.bind="backgroundUrl" class="sheet-hero" role="presentation">
-        <img
-          src.bind="backgroundUrl"
-          alt=""
-          loading="lazy"
-          decoding="async"
-          class="sheet-hero-img"
-        />
-      </div>
+      <div
+        as-element="event-sheet-hero"
+        if.bind="backgroundUrl"
+        class="sheet-hero"
+        role="presentation"
+        src.bind="backgroundUrl"
+      ></div>
 
       <!-- Artist name header -->
       <header class="[ sheet-artist-header ] [ flow ]">
@@ -71,36 +74,27 @@
       </section>
 
       <!-- Out-of-range notice: the fan's hype level does not match the concert -->
-      <section if.bind="outOfRange" class="[ sheet-out-of-range card ] [ stack ]" data-testid="out-of-range">
-        <p if.bind="!outOfRange.saved" class="[ out-of-range-text ] [ md-typescale-body-medium ]">
-          <span if.bind="outOfRange.currentPlaces" t="[html]eventDetail.outOfRange.current" t-params.bind="{ places: outOfRange.currentPlaces }"></span>
-          <span else t="eventDetail.outOfRange.none"></span>
-        </p>
-        <button
-          if.bind="!outOfRange.saved"
-          type="button"
-          class="[ button out-of-range-action ] [ state-layer ]"
-          data-variant="outlined"
-          disabled.bind="hypeUpdating"
-          click.trigger="widenHype()"
-        >${outOfRange.actionLabel}</button>
-        <p if.bind="outOfRange.saved" class="[ out-of-range-text ] [ md-typescale-body-medium ]" t.bind="'[html]' + outOfRange.savedKey" t-params.bind="{ places: outOfRange.savedPlaces }"></p>
-        <button
-          if.bind="outOfRange.saved && pushAction"
-          type="button"
-          class="[ button push-action ] [ state-layer ]"
-          data-variant="outlined"
-          click.trigger="pushAction.callback()"
-        >${pushAction.label}</button>
-      </section>
+      <section
+        as-element="out-of-range-notice"
+        if.bind="outOfRange"
+        class="[ sheet-out-of-range card ] [ stack ]"
+        data-testid="out-of-range"
+        notice.bind="outOfRange"
+        updating.bind="hypeUpdating"
+        push-action.bind="pushAction"
+        widen.trigger="widenHype()"
+      ></section>
 
       <!-- Optional inline hint (landing page only). A real coach-mark overlay
            can't point into this top-layer dialog, so the guidance rides inline,
            right above the actions it describes. -->
-      <p if.bind="actionsHint" class="[ sheet-actions-hint ] [ md-typescale-body-medium ]" role="note">
-        <svg-icon name="info" size="md"></svg-icon>
-        <span>${actionsHint}</span>
-      </p>
+      <p
+        as-element="event-sheet-hint"
+        if.bind="actionsHint"
+        class="[ sheet-actions-hint ] [ md-typescale-body-medium ]"
+        role="note"
+        text.bind="actionsHint"
+      ></p>
 
       <!-- Ticket section: the notification button, the other four statuses,
            the push line and the official site button -->
@@ -122,34 +116,17 @@
         ></button>
 
         <div
+          as-element="journey-status-row"
           if.bind="isAuthenticated"
           class="[ journey-row ] [ cluster ]"
           role="group"
           aria-labelledby="ticket-section-heading"
           aria-busy.bind="journeyUpdating"
-        >
-          <template repeat.for="config of rowStatuses">
-            <span if.bind="config.status === 'lost'" class="journey-separator" aria-hidden="true"></span>
-            <button
-              type="button"
-              class="[ journey-node ] [ state-layer ] [ md-typescale-label-large ]"
-              md-typescale-label-large-emphasized.class="status === config.status"
-              data-testid="journey-btn"
-              data-journey-status.bind="config.status"
-              aria-pressed.bind="status === config.status ? 'true' : 'false'"
-              disabled.bind="journeyUpdating"
-              click.trigger="onStatusPressed(config.status)"
-            >
-              <span class="[ journey-node-cue ] [ md-typescale-body-large ]" aria-hidden="true">${config.icon}</span>
-              <span class="journey-node-label" t.bind="config.labelKey"></span>
-            </button>
-            <span
-              if.bind="config.status === 'applied' || config.status === 'unpaid'"
-              class="[ journey-arrow ] [ md-typescale-body-large ]"
-              aria-hidden="true"
-            ></span>
-          </template>
-        </div>
+          statuses.bind="rowStatuses"
+          status.bind="status"
+          disabled.bind="journeyUpdating"
+          status-pressed.trigger="onStatusPressed($event.detail)"
+        ></div>
 
         <p if.bind="pushLine" class="[ push-line ] [ cluster ] [ md-typescale-body-medium ]" data-testid="push-line">
           <span t.bind="pushLine.key"></span>
@@ -178,23 +155,15 @@
       <!-- Follow CTA — All Nearby context only. Converts a discovered concert
            into a followed artist. No DNA Orb animation on success; the button
            simply flips to a static "Following" state. -->
-      <section if.bind="isAllNearby && event.artist" class="sheet-follow" data-testid="all-nearby-follow">
-        <button
-          if.bind="!isFollowed"
-          type="button"
-          class="[ button follow-action ] [ state-layer ]"
-          disabled.bind="followUpdating"
-          click.trigger="follow()"
-          t="allNearby.follow.action"
-        ></button>
-        <p
-          else
-          class="[ follow-state ] [ md-typescale-label-large ]"
-          data-testid="all-nearby-following"
-          t="allNearby.follow.following"
-        ></p>
-      </section>
-
+      <section
+        as-element="event-follow-cta"
+        if.bind="isAllNearby && event.artist"
+        class="sheet-follow"
+        data-testid="all-nearby-follow"
+        followed.bind="isFollowed"
+        updating.bind="followUpdating"
+        follow.trigger="follow()"
+      ></section>
     </div>
   </bottom-sheet>
 </template>

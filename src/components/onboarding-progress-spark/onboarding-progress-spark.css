@@ -1,0 +1,49 @@
+/* stylelint-disable no-unknown-custom-properties -- --progress is registered in onboarding-progress-meter.css and set on the band this spark sits in */
+@layer block {
+	@scope (onboarding-progress-spark) {
+		/* The spark sits on the band (onboarding-progress-meter), which sets
+		   --progress. */
+		:scope {
+			--_spark: oklch(97% 0.05 140deg);
+			--_spark-size: 0.75rem;
+
+			display: contents;
+		}
+
+		/* The leading spark rides the edge of the light. */
+		.onboarding-progress-spark {
+			position: absolute;
+			inset-block-start: 50%;
+			inset-inline-start: calc(var(--progress) * 1%);
+			translate: -50% -50%;
+
+			inline-size: var(--_spark-size);
+			block-size: var(--_spark-size);
+			border-radius: var(--md-sys-shape-corner-full);
+
+			opacity: calc(min(var(--progress), 1));
+			background: radial-gradient(circle, var(--_spark), transparent 70%);
+		}
+
+		/* Two identical keyframes: switching between them restarts the flare. */
+		.onboarding-progress-spark[data-rise="0"] {
+			animation: spark-flare-a 700ms var(--md-sys-motion-spring-effects);
+		}
+
+		.onboarding-progress-spark[data-rise="1"] {
+			animation: spark-flare-b 700ms var(--md-sys-motion-spring-effects);
+		}
+
+		@keyframes spark-flare-a {
+			40% {
+				scale: 2.2;
+			}
+		}
+
+		@keyframes spark-flare-b {
+			40% {
+				scale: 2.2;
+			}
+		}
+	}
+}

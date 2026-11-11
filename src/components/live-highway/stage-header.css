@@ -1,0 +1,36 @@
+@layer block {
+	/* Row 1 of the timetable: the HOME / NEAR / AWAY heads over the lanes. */
+	@scope (.stage-header) {
+		:scope {
+			--_border-light: oklch(100% 0 0deg / 10%);
+
+			position: relative;
+			display: grid;
+			grid-column: stage-home / stage-away;
+			grid-template-columns: subgrid;
+		}
+
+		:scope > span {
+			padding: var(--space-2xs);
+			color: var(--md-sys-color-surface);
+			text-align: center;
+			text-transform: uppercase;
+		}
+
+		:scope > span:not(:last-child) {
+			border-inline-end: 1px solid var(--_border-light);
+		}
+
+		:scope > [data-stage="home"] {
+			background: var(--color-stage-home);
+		}
+
+		:scope > [data-stage="near"] {
+			background: var(--color-stage-near);
+		}
+
+		:scope > [data-stage="away"] {
+			background: var(--color-stage-away);
+		}
+	}
+}

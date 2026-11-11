@@ -1,0 +1,18 @@
+<template>
+  <import from="./event-follow-cta.css"></import>
+
+  <button
+    if.bind="!followed"
+    type="button"
+    class="[ button follow-action ] [ state-layer ]"
+    disabled.bind="updating"
+    click.trigger="follow()"
+    t="allNearby.follow.action"
+  ></button>
+  <p
+    else
+    class="[ follow-state ] [ md-typescale-label-large ]"
+    data-testid="all-nearby-following"
+    t="allNearby.follow.following"
+  ></p>
+</template>

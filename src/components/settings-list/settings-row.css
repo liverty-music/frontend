@@ -1,0 +1,94 @@
+/* A row of the Settings list (settings-list.css): icon | content | control
+   on the card's column tracks, through subgrid. Used by the Settings route
+   and by the settings-*-row components. */
+@layer block {
+	@scope (.settings-row) {
+		:scope {
+			display: grid;
+			grid-column: 1 / -1;
+			grid-template-columns: auto 1fr auto;
+
+			/* biome-ignore lint/suspicious/noDuplicateProperties: the declaration above is the fallback for browsers without subgrid */
+			grid-template-columns: subgrid;
+			column-gap: var(--space-xs);
+			align-items: center;
+
+			/* The list item's measurements (list-item.css), so every row of
+			   the card has the same height and edges. */
+			min-block-size: 3.5rem;
+			padding: var(--space-2xs) var(--space-s);
+
+			/* Square, so the divider above a row runs straight to the card's
+			   edges; the global <button> rule rounds a button row's corners. */
+			border-radius: var(--md-sys-shape-corner-none);
+
+			/* Reset the UA `text-align: center` a <button>.settings-row would
+			   otherwise impose — its label is a stretched col2 grid item, so
+			   centred text would drift to the middle of the column. */
+			text-align: start;
+
+			/* A row that is itself the control (a <button> or <a>) carries the
+			   shared `state-layer`: hover, focus and press over the whole row. */
+		}
+
+		/* Column placement. Each property targets whichever element is a DIRECT
+		   row child; the same class nested inside a flex cell (e.g. a label inside
+		   the toggle column) ignores `grid-column` harmlessly. */
+		.settings-icon {
+			grid-column: 1;
+			color: var(--md-sys-color-on-surface-variant);
+		}
+
+		.settings-row-label {
+			grid-column: 2;
+			color: var(--md-sys-color-on-surface);
+		}
+
+		/* Rows of the route itself that opt out of the 3-column model and span
+		   the full width: the sound volume slider and Sign Out. They outrank
+		   the row's own rules by specificity. */
+		:scope.settings-volume-row,
+		:scope.settings-sign-out {
+			grid-column: 1 / -1;
+		}
+
+		:scope.settings-volume-row {
+			display: flex;
+			gap: var(--space-s);
+			align-items: center;
+		}
+
+		/* The slider's accent colour comes from global.css (Chrome/Android;
+		   iOS keeps the native control). */
+		.settings-volume-slider {
+			cursor: pointer;
+			flex: 1;
+
+			/* The 48 px touch target; the track stays centred in it. */
+			block-size: var(--md-sys-target-size);
+		}
+
+		/* Full-width, centred — overrides the subgrid column tracks. */
+		:scope.settings-sign-out {
+			grid-template-columns: 1fr;
+			justify-items: center;
+		}
+
+		.settings-sign-out-text {
+			color: var(--md-sys-color-error);
+		}
+
+		/* Toggle rows align their icon + control to the first line of the label
+		   rather than the vertical centre of an expanded description. */
+		:scope.settings-row-toggle {
+			align-items: start;
+		}
+
+		/* Collapsible toggle description. Decoupled from `.settings-row-hint`'s
+		   icon-alignment indent so it can use the full column width. */
+		.settings-toggle-desc {
+			color: var(--md-sys-color-on-surface-variant);
+			text-wrap: pretty;
+		}
+	}
+}

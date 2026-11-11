@@ -1,0 +1,35 @@
+<import from="./artist-hype-row.css"></import>
+<import from="./hype-dot-radio"></import>
+
+<!-- Artist name cell -->
+<th scope="row" class="artist-name-cell">
+  <span class="[ artist-row-name ] [ md-typescale-label-large ]">${artist.artist.name}</span>
+</th>
+
+<!-- Hype dot cells: hidden in edit mode to avoid layout shift. -->
+<template if.bind="!editing">
+  <td repeat.for="level of hypeLevels" class="hype-col">
+    <label
+      as-element="hype-dot-radio"
+      class="hype-label"
+      group.bind="'hype-' + artist.artist.id"
+      level.bind="level"
+      text.bind="hypeTiers[level].label"
+      active.bind="level === artist.hype"
+      change.trigger="hypeChanged(level)"
+    ></label>
+  </td>
+</template>
+
+<!-- Remove cell: replaces hype columns in edit mode. -->
+<td if.bind="editing" class="artist-remove-col">
+  <button
+    type="button"
+    class="[ artist-remove-btn ] [ state-layer ]"
+    t="[aria-label]myArtists.unfollowArtist"
+    t-params.bind="{ name: artist.artist.name }"
+    click.trigger="unfollow()"
+  >
+    <svg-icon name="trash" size="lg" aria-hidden="true"></svg-icon>
+  </button>
+</td>

@@ -1,4 +1,6 @@
 <import from="./page-help.css"></import>
+<import from="../stage-lane-legend/stage-lane-legend"></import>
+<import from="../hype-tier-legend/hype-tier-legend"></import>
 
 <!-- The `?` trigger moved to the FAB action launcher; this component now renders
      only its per-page help sheet, opened via open() (auto-open on first visit is
@@ -59,14 +61,7 @@
           <h3 class="[ help-section-title ] [ md-typescale-headline-small ]" t="pageHelp.dashboard.lanesSectionTitle"></h3>
         </header>
         <p class="page-help-desc" t="pageHelp.dashboard.description"></p>
-        <dl class="page-help-lanes">
-          <dt class="[ stage-home ] [ md-typescale-title-small ]" t="pageHelp.dashboard.homeLabel"></dt>
-          <dd t="pageHelp.dashboard.homeDesc"></dd>
-          <dt class="[ stage-near ] [ md-typescale-title-small ]" t="pageHelp.dashboard.nearLabel"></dt>
-          <dd t="pageHelp.dashboard.nearDesc"></dd>
-          <dt class="[ stage-away ] [ md-typescale-title-small ]" t="pageHelp.dashboard.awayLabel"></dt>
-          <dd t="pageHelp.dashboard.awayDesc"></dd>
-        </dl>
+        <dl as-element="stage-lane-legend" class="page-help-lanes"></dl>
       </section>
 
       <section class="[ page-help-content ] [ flow ]">
@@ -87,38 +82,7 @@
         </header>
         <p class="page-help-desc" t="pageHelp.myArtists.description"></p>
 
-        <!-- 3-column grid: icon (col 1), invariant English label (col 2),
-             notification scope description (col 3). Auto-sized columns 1 and 2
-             expand to fit the widest cell so label-column and description-column
-             edges align across all four tier rows. See onboarding-page-help spec:
-             "Hype tier table is a 3-column grid". Hype tier labels are Layer B
-             brand expressions (invariant English) per brand-vocabulary spec.
-
-             Markup uses <ul> + <li> rather than <dl> so the decorative emoji
-             icon is not promoted to a <dt> "description term". Each <li> is a
-             subgrid row, so the columns size across all rows. -->
-        <ul class="help-hype-grid">
-          <li class="help-hype-row">
-            <span class="[ help-hype-icon ] [ md-typescale-body-large ]" aria-hidden="true">👀</span>
-            <span class="[ help-hype-label ] [ md-typescale-label-large ]">Watch</span>
-            <span class="help-hype-desc" t="pageHelp.myArtists.watchDesc"></span>
-          </li>
-          <li class="help-hype-row">
-            <span class="[ help-hype-icon ] [ md-typescale-body-large ]" aria-hidden="true">🔥</span>
-            <span class="[ help-hype-label ] [ md-typescale-label-large ]">Home</span>
-            <span class="help-hype-desc" t="pageHelp.myArtists.homeDesc"></span>
-          </li>
-          <li class="help-hype-row">
-            <span class="[ help-hype-icon ] [ md-typescale-body-large ]" aria-hidden="true">🔥🔥</span>
-            <span class="[ help-hype-label ] [ md-typescale-label-large ]">Nearby</span>
-            <span class="help-hype-desc" t="pageHelp.myArtists.nearbyDesc"></span>
-          </li>
-          <li class="help-hype-row">
-            <span class="[ help-hype-icon ] [ md-typescale-body-large ]" aria-hidden="true">🔥🔥🔥</span>
-            <span class="[ help-hype-label ] [ md-typescale-label-large ]">Away</span>
-            <span class="help-hype-desc" t="pageHelp.myArtists.awayDesc"></span>
-          </li>
-        </ul>
+        <ul as-element="hype-tier-legend" class="help-hype-grid"></ul>
 
         <p class="[ page-help-note ] [ md-typescale-body-medium ]" t="pageHelp.myArtists.tip"></p>
       </section>

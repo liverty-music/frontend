@@ -1,0 +1,36 @@
+@layer block {
+	@scope (event-cover) {
+		/* The host is the page's flow item; the figure fills it. */
+		:scope {
+			display: block;
+		}
+
+		.event-cover {
+			overflow: hidden;
+			aspect-ratio: 16 / 9;
+			border-radius: var(--md-sys-shape-corner-large);
+			background: var(--md-sys-color-surface-container);
+		}
+
+		.event-cover-img {
+			inline-size: 100%;
+			block-size: 100%;
+			object-fit: cover;
+		}
+
+		.event-cover-placeholder {
+			display: grid;
+			place-items: center;
+
+			block-size: 100%;
+
+			color: var(--md-sys-color-on-surface-variant);
+
+			background: linear-gradient(
+				135deg,
+				oklch(from var(--color-brand-primary) l c h / 45%),
+				oklch(from var(--color-brand-secondary) l c h / 35%)
+			);
+		}
+	}
+}

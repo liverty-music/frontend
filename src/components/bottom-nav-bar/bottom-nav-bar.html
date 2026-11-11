@@ -1,13 +1,10 @@
+<import from="./bottom-nav-tab/bottom-nav-tab"></import>
+
 <nav class="[ nav-bar ]" data-notch.bind="fabMenu.actions.length > 0">
-  <a
+  <bottom-nav-tab
     repeat.for="tab of tabs; key.bind: tab.id"
-    href.bind="tab.path[0]"
+    tab.bind="tab"
+    active.bind="tab.isActive || tab.id === section"
     click.capture="switchTab($event, tab)"
-    data-nav.bind="tab.data.icon"
-    class="[ nav-tab ] [ state-layer ]"
-    data-active.bind="tab.isActive || tab.id === section"
-  >
-    <svg-icon name.bind="tab.data.icon" size="lg" class="nav-icon"></svg-icon>
-    <span class="[ nav-label ] [ md-typescale-label-medium ]" md-typescale-label-medium-emphasized.class="tab.isActive || tab.id === section" t.bind="tab.data.labelKey"></span>
-  </a>
+  ></bottom-nav-tab>
 </nav>

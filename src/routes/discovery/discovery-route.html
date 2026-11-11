@@ -5,6 +5,10 @@
   <import from="../../components/onboarding-progress/onboarding-progress"></import>
   <import from="../../components/all-nearby/nearby-concerts"></import>
   <import from="../../components/discovery-swap-button/discovery-swap-button"></import>
+  <import from="./discovery-starfield"></import>
+  <import from="./discovery-search-bar"></import>
+  <import from="./discovery-genre-bar"></import>
+  <import from="./discovery-search-results"></import>
 
   <!-- The page title ("Discovery") is owned by the shell-hosted <page-header>,
        driven from the route's data.titleKey. -->
@@ -15,51 +19,17 @@
 
   <main class="[ discovery-layout ]" data-search-mode.bind="search.isSearchMode" data-view.bind="view" data-revealing.bind="revealing">
 
-    <!-- Search bar -->
-    <search class="search-bar">
-      <svg-icon name="search" size="lg" class="search-icon"></svg-icon>
-      <input
-        type="text"
-        class="[ search-input ] [ md-typescale-body-large ]"
-        placeholder.bind="$this.i18n?.tr('discovery.searchPlaceholder') ?? ''"
-        value.bind="search.searchQuery"
-        aria-label.bind="$this.i18n?.tr('discovery.searchPlaceholder') ?? ''"
-      >
-      <button
-        if.bind="search.searchQuery"
-        class="[ clear-button ] [ state-layer ]"
-        click.trigger="clearSearch()"
-        aria-label.bind="$this.i18n?.tr('discovery.clearSearch') ?? ''"
-      >
-        <svg-icon name="x" size="md"></svg-icon>
-      </button>
-    </search>
+    <!-- Decorative stars behind the rows -->
+    <discovery-starfield aria-hidden="true"></discovery-starfield>
 
-    <!-- Genre row: pinned reset + scrollable chips (hidden during search) -->
-    <div class="genre-bar">
-      <button
-        type="button"
-        class="[ chip reset-chip ] [ state-layer ] [ md-typescale-label-large ]"
-        click.trigger="onReset()"
-        disabled.bind="genre.isLoadingTag"
-        aria-label.bind="$this.i18n?.tr('discovery.resetBubbles') ?? ''"
-      >
-        <svg-icon name="rotate-ccw" size="sm" class="chip-icon"></svg-icon>
-      </button>
-      <fieldset class="genre-chips">
-        <button
-          repeat.for="tag of genre.genreTags; key.bind: tag"
-          type="button"
-          class="[ chip ] [ state-layer ] [ md-typescale-label-large ]"
-          click.trigger="onGenreSelected(tag)"
-          disabled.bind="genre.isLoadingTag"
-          aria-pressed.bind="genre.activeTag === tag"
-        >
-          <svg-icon if.bind="genre.activeTag === tag" name="check" class="chip-icon"></svg-icon>
-          <span>${tag}</span>
-        </button>
-      </fieldset>
-    </div>
+    <discovery-search-bar search.bind="search" search-clear.trigger="clearSearch()"></discovery-search-bar>
+
+    <!-- Genre row (hidden during search) -->
+    <discovery-genre-bar
+      genre.bind="genre"
+      bubbles-reset.trigger="onReset()"
+      genre-select.trigger="onGenreSelected($event.detail)"
+    ></discovery-genre-bar>
 
     <!-- Onboarding progress row: outside the bubble field so it never covers a
          bubble or the orb (hidden during search and after onboarding) -->
@@ -84,31 +54,11 @@
     </div>
 
     <!-- Search results (shown during search) -->
-    <section class="search-results">
-      <p if.bind="search.isSearching" class="[ search-status ] [ md-typescale-body-medium ]" t="discovery.searching">
-      </p>
-
-      <p if.bind="!search.isSearching && search.isSearchMode && search.searchResults.length === 0 && search.searchQuery.trim().length > 0" class="[ search-status ] [ md-typescale-body-medium ]" t="discovery.noResults">
-      </p>
-
-      <ul class="results-list" role="list">
-        <li
-          repeat.for="artist of search.searchResults; key.bind: artist.id"
-          class="[ result-item ] [ state-layer ]"
-          data-followed.bind="followedIds.has(artist.id)"
-          busy-on-click.bind="() => followedIds.has(artist.id) ? undefined : onFollowFromSearch(artist)"
-          role="button"
-          aria-disabled.bind="followedIds.has(artist.id)"
-          aria-label.bind="followedIds.has(artist.id) ? ($this.i18n?.tr('discovery.alreadyFollowing', { name: artist.name }) ?? '') : ($this.i18n?.tr('discovery.followArtist', { name: artist.name }) ?? '')"
-        >
-          <div class="[ result-avatar ] [ md-typescale-title-large ]">
-            ${artist.name.charAt(0)}
-          </div>
-          <span class="[ result-name ] [ md-typescale-body-large ]">${artist.name}</span>
-          <svg-icon if.bind="followedIds.has(artist.id)" name="check" size="lg" class="followed-check"></svg-icon>
-        </li>
-      </ul>
-    </section>
+    <discovery-search-results
+      search.bind="search"
+      followed-ids.bind="followedIds"
+      follow.trigger="$event.detail.waitUntil(onFollowFromSearch($event.detail.artist))"
+    ></discovery-search-results>
 
     <!-- All Nearby view: in place of the search bar, the genre chips and the
          bubbles, which keep their size underneath (the field is not rebuilt). -->
@@ -133,7 +83,7 @@
     <output
       role="status"
       aria-live="polite"
-      class="sr-only"
+      class="visually-hidden"
       textcontent.bind="srStatusText"
     ></output>
   </main>

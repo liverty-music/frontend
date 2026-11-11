@@ -1,0 +1,97 @@
+/* An artist's row of the hype table. It renders on
+   `<tr as-element="artist-hype-row" class="artist-row">`, so the row is
+   the scope root and stays a subgrid row of the table. */
+@layer block {
+	@scope (.artist-row) {
+		:scope {
+			--_white-10: oklch(100% 0 0deg / 10%);
+			--_danger: oklch(60% 0.2 25deg);
+
+			/* stylelint-disable-next-line no-unknown-custom-properties -- set inline by the template, per artist */
+			view-transition-name: var(--_vt-name);
+
+			view-transition-group: nearest;
+
+			& td,
+			& th {
+				border-block: 1px solid var(--_white-10);
+				background: var(--md-sys-color-surface-container);
+			}
+
+			& th:first-child {
+				border-inline-start: 1px solid var(--_white-10);
+				border-start-start-radius: var(--md-sys-shape-corner-large);
+				border-end-start-radius: var(--md-sys-shape-corner-large);
+			}
+
+			& td:last-child {
+				border-inline-end: 1px solid var(--_white-10);
+				border-start-end-radius: var(--md-sys-shape-corner-large);
+				border-end-end-radius: var(--md-sys-shape-corner-large);
+			}
+		}
+
+		.artist-name-cell {
+			display: flex;
+			align-items: center;
+
+			min-inline-size: 0;
+			max-inline-size: 10rem;
+			padding-block: var(--space-3xs);
+
+			/* Start padding only: the first dot sits centred in its 48 px
+			   column, which already leaves 20 px before it, and a 320 px screen
+			   needs that width for the name. */
+			padding-inline-start: var(--space-s);
+
+			text-align: start;
+			white-space: nowrap;
+		}
+
+		.artist-row-name {
+			overflow: hidden;
+
+			min-inline-size: 0;
+
+			color: var(--md-sys-color-on-surface);
+			text-overflow: ellipsis;
+			white-space: nowrap;
+		}
+
+		.hype-col {
+			display: grid;
+			align-items: center;
+		}
+
+		/* In edit mode this cell replaces all hype columns, so the row uses the
+		   same structure as normal mode — no layout shift, no height change. */
+		.artist-remove-col {
+			display: flex;
+			grid-column: 2 / -1;
+			align-items: center;
+			justify-content: flex-end;
+
+			padding-inline: var(--space-2xs);
+		}
+
+		.artist-remove-btn {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+
+			/* The 48 px touch target on both pointer types. */
+			min-inline-size: var(--md-sys-target-size);
+			min-block-size: var(--md-sys-target-size);
+			border-radius: var(--md-sys-shape-corner-small);
+
+			/* Full colour at rest: hover and focus are the shared state layer
+			   (`state-layer`), not a brighter icon. */
+			color: var(--_danger);
+
+			& svg {
+				inline-size: 1rem;
+				block-size: 1rem;
+			}
+		}
+	}
+}

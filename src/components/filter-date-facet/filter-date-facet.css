@@ -1,0 +1,34 @@
+@layer block {
+	@scope (filter-date-facet) {
+		/* The host takes no box: the toggle and the field are items of the
+		   facet's stack. */
+		:scope {
+			display: contents;
+		}
+
+		.date-facet-toggle {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+		}
+
+		.date-facet-caret {
+			color: var(--md-sys-color-on-surface-variant);
+			transition: transform var(--md-sys-motion-duration-short3);
+
+			&[data-expanded="true"] {
+				transform: rotate(90deg);
+			}
+		}
+
+		.date-facet-field {
+			--stack-gap: var(--space-3xs);
+
+			padding-block-start: var(--space-2xs);
+		}
+
+		.date-field-label {
+			color: var(--md-sys-color-on-surface-variant);
+		}
+	}
+}

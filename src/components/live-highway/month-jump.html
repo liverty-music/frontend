@@ -1,0 +1,26 @@
+<template>
+  <import from="./month-jump.css"></import>
+
+  <div class="[ month-jump-capsule ]">
+    <button
+      type="button"
+      class="[ month-jump-button ] [ state-layer ]"
+      data-direction="prev"
+      t="[aria-label]dashboard.monthJump.prev"
+      t-params.bind="{ date: prevMonth }"
+      click.trigger="jump(-1)"
+    >
+      <svg-icon name="skip-up" size="lg"></svg-icon>
+    </button>
+    <button
+      type="button"
+      class="[ month-jump-button ] [ state-layer ]"
+      data-direction="next"
+      t="[aria-label]dashboard.monthJump.next"
+      t-params.bind="{ date: nextMonth }"
+      click.trigger="jump(1)"
+    >
+      <svg-icon name="skip-down" size="lg"></svg-icon>
+    </button>
+  </div>
+</template>

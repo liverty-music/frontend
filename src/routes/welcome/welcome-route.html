@@ -1,4 +1,7 @@
 <import from="../../components/coach-mark/coach-mark"></import>
+<import from="./welcome-hero"></import>
+<import from="./welcome-notification-demo"></import>
+<import from="./welcome-demo-timetable"></import>
 
 <!-- Ambient background: fixed, full-page, screen-blended particle glow behind
      all content. Decorative only (pointer-events: none, aria-hidden), disabled
@@ -6,70 +9,15 @@
 <canvas class="[ welcome-ambient ]" ambient-glow aria-hidden="true"></canvas>
 
 <!-- Screen 1: Hero-only hook screen -->
-<header class="[ welcome-hero ] [ flow ]">
-  <p class="[ welcome-brand ] [ md-typescale-headline-small ]">
-    Liverty Music
-  </p>
-  <h1 t="welcome.hero.title" class="[ welcome-title ] [ md-typescale-headline-large ]"></h1>
-  <p t="welcome.hero.subtitlePain" class="[ welcome-subtitle ] [ md-typescale-body-large ]"></p>
-  <p t="[html]welcome.hero.subtitleAction" class="[ welcome-subtitle welcome-subtitle-action ] [ md-typescale-body-large ]"></p>
-
-  <fieldset class="welcome-lang">
-    <legend class="[ visually-hidden ]">Language</legend>
-    <label repeat.for="lang of supportedLanguages" class="welcome-lang-label">
-      <input
-        type="radio"
-        class="[ visually-hidden ]"
-        name="welcome-lang"
-        model.bind="lang"
-        checked.to-view="currentLocale"
-        change.trigger="selectLanguage(lang)"
-      >
-      <span class="[ welcome-lang-text ] [ md-typescale-label-large ]" md-typescale-label-large-emphasized.class="lang === currentLocale">${lang === 'ja' ? '日本語' : 'EN'}</span>
-    </label>
-  </fieldset>
-
-  <!-- With preview data: single scroll-affordance that reveals the guided demo.
-       The button only triggers the scroll; smooth vs instant motion is governed by
-       the scroll container's CSS `scroll-behavior` (and its reduced-motion
-       override), so no motion logic lives in JS. A native `<a href="#…">` was
-       rejected because the Aurelia router intercepts URL/hash changes and tears
-       the route down. -->
-  <button
-    if.bind="dateGroups.length > 0"
-    click.trigger="scrollToPreview()"
-    class="[ button welcome-scroll-action ] [ state-layer ]"
-    data-variant="outlined"
-    data-testid="welcome-see-preview"
-  >
-    <span t="welcome.hero.seePreview"></span>
-    <span class="welcome-scroll-arrow" aria-hidden="true">↓</span>
-  </button>
-
-  <!-- Without preview data: no demo exists, so fall back to inline CTAs so
-       unauthenticated users can still start onboarding or sign in. The
-       guest-friendly note rides above the CTA group per the landing-page spec
-       so the no-account-required message stays visible without scrolling. -->
-  <div else class="[ welcome-hero-fallback ] [ stack ]">
-    <p t="welcome.guestFriendly" class="[ welcome-guest-friendly ] [ md-typescale-body-medium ]"></p>
-    <div class="[ welcome-action-group ] [ stack ]">
-      <button
-        busy-on-click.bind="() => handleGetStarted()"
-        class="[ button ] [ state-layer ]"
-        data-testid="welcome-get-started"
-        t="welcome.cta.getStarted"
-      ></button>
-      <button
-        busy-on-click.bind="() => handleLogin()"
-        class="[ button ] [ state-layer ]"
-        data-variant="outlined"
-        data-testid="welcome-login"
-        t="welcome.cta.login"
-      ></button>
-      <a href="/passkey-recovery" class="[ text-link welcome-help-link ] [ md-typescale-body-medium ]" data-variant="standalone" data-testid="welcome-cant-sign-in" t="welcome.cta.cantSignIn"></a>
-    </div>
-  </div>
-</header>
+<welcome-hero
+  has-preview.bind="dateGroups.length > 0"
+  languages.bind="supportedLanguages"
+  current-locale.bind="currentLocale"
+  get-started.trigger="$event.detail.waitUntil(handleGetStarted())"
+  login.trigger="$event.detail.waitUntil(handleLogin())"
+  see-preview.trigger="scrollToPreview()"
+  language-select.trigger="selectLanguage($event.detail)"
+></welcome-hero>
 
 <!-- Guided product demo: only rendered when preview data is available.
      S0 notification → tap / auto-advance → View Transitions morph → S2 interactive
@@ -85,65 +33,24 @@
 >
   <!-- S0 — mock new-concert push notification (the push pillar). Tapping it (or
        an auto-advance) plays the exit, then reveals the timetable — the two are
-       sequential, driven by `data-exiting` + the VM's swap. -->
-  <div
+       sequential, driven by `exiting` + the VM's swap. -->
+  <welcome-notification-demo
     if.bind="demoPhase === 'notification'"
-    class="[ welcome-demo-notification ] [ stack ]"
-    data-exiting.bind="demoExiting || undefined"
-    data-testid="welcome-demo-notification"
-  >
-    <p t="welcome.demo.notificationLead" class="[ welcome-demo-lead ] [ md-typescale-headline-small ]"></p>
-    <button
-      type="button"
-      class="[ welcome-notification-trigger ] [ state-layer ]"
-      click.trigger="onNotificationTap()"
-      aria-label.bind="'welcome.demo.notificationTap' | t"
-    >
-      <notification-mock-card></notification-mock-card>
-    </button>
-    <p t="welcome.demo.notificationTap" class="[ welcome-demo-hint ] [ md-typescale-body-large ]"></p>
-  </div>
+    exiting.bind="demoExiting"
+    notification-tap.trigger="onNotificationTap()"
+  ></welcome-notification-demo>
 
-  <!-- S2 — interactive timetable (the auto-collection pillar). Cards are NOT
-       read-only here: tapping one fires `event-selected`, which opens the real
-       detail sheet (the ticket/goods pillar). -->
-  <!-- S2 timetable + the commit CTAs, composed as one screen (auto / preview /
-       auto) — the same "preview + CTA footer" grouping as the original Screen 2.
-       Keeping the CTAs here preserves the two-layer intent: they never sit on the
-       hero when preview data exists. -->
-  <div
+  <!-- S2 — interactive timetable (the auto-collection pillar) + the commit
+       CTAs, as one screen. Cards are NOT read-only here: tapping one fires
+       `event-selected`, which opens the real detail sheet (the ticket/goods
+       pillar). -->
+  <welcome-demo-timetable
     else
-    class="[ welcome-demo-timetable ]"
-    data-testid="welcome-timetable"
-  >
-    <p t="welcome.preview.label" class="[ welcome-section-tagline ] [ md-typescale-headline-small ]"></p>
-    <div class="[ welcome-preview ]" data-testid="welcome-preview">
-      <concert-highway
-        date-groups.bind="dateGroups"
-        show-beams="true"
-        event-selected.trigger="onEventSelected($event)"
-      ></concert-highway>
-    </div>
-    <footer class="[ welcome-actions ] [ stack ]">
-      <p t="welcome.guestFriendly" class="[ welcome-guest-friendly ] [ md-typescale-body-medium ]"></p>
-      <div class="[ welcome-action-group ] [ stack ]">
-        <button
-          busy-on-click.bind="() => handleGetStarted()"
-          class="[ button ] [ state-layer ]"
-          data-testid="welcome-get-started"
-          t="welcome.cta.getStarted"
-        ></button>
-        <button
-          busy-on-click.bind="() => handleLogin()"
-          class="[ button ] [ state-layer ]"
-          data-variant="outlined"
-          data-testid="welcome-login"
-          t="welcome.cta.login"
-        ></button>
-        <a href="/passkey-recovery" class="[ text-link welcome-help-link ] [ md-typescale-body-medium ]" data-variant="standalone" data-testid="welcome-cant-sign-in" t="welcome.cta.cantSignIn"></a>
-      </div>
-    </footer>
-  </div>
+    date-groups.bind="dateGroups"
+    get-started.trigger="$event.detail.waitUntil(handleGetStarted())"
+    login.trigger="$event.detail.waitUntil(handleLogin())"
+    event-selected.trigger="onEventSelected($event)"
+  ></welcome-demo-timetable>
 </section>
 
 <!-- The product's real detail sheet, opened by a concert-card tap. The

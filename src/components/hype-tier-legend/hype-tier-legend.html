@@ -1,0 +1,32 @@
+<import from="./hype-tier-legend.css"></import>
+
+<!-- 3-column grid: icon (col 1), invariant English label (col 2),
+     notification scope description (col 3). Auto-sized columns 1 and 2
+     expand to fit the widest cell so label-column and description-column
+     edges align across all four tier rows. See onboarding-page-help spec:
+     "Hype tier table is a 3-column grid". Hype tier labels are Layer B
+     brand expressions (invariant English) per brand-vocabulary spec.
+
+     Markup uses <ul> + <li> rather than <dl> so the decorative emoji
+     icon is not promoted to a <dt> "description term". Each <li> is a
+     subgrid row, so the columns size across all rows. -->
+<li class="help-hype-row">
+  <span class="[ help-hype-icon ] [ md-typescale-body-large ]" aria-hidden="true">👀</span>
+  <span class="[ help-hype-label ] [ md-typescale-label-large ]">Watch</span>
+  <span class="help-hype-desc" t="pageHelp.myArtists.watchDesc"></span>
+</li>
+<li class="help-hype-row">
+  <span class="[ help-hype-icon ] [ md-typescale-body-large ]" aria-hidden="true">🔥</span>
+  <span class="[ help-hype-label ] [ md-typescale-label-large ]">Home</span>
+  <span class="help-hype-desc" t="pageHelp.myArtists.homeDesc"></span>
+</li>
+<li class="help-hype-row">
+  <span class="[ help-hype-icon ] [ md-typescale-body-large ]" aria-hidden="true">🔥🔥</span>
+  <span class="[ help-hype-label ] [ md-typescale-label-large ]">Nearby</span>
+  <span class="help-hype-desc" t="pageHelp.myArtists.nearbyDesc"></span>
+</li>
+<li class="help-hype-row">
+  <span class="[ help-hype-icon ] [ md-typescale-body-large ]" aria-hidden="true">🔥🔥🔥</span>
+  <span class="[ help-hype-label ] [ md-typescale-label-large ]">Away</span>
+  <span class="help-hype-desc" t="pageHelp.myArtists.awayDesc"></span>
+</li>

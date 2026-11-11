@@ -1,0 +1,27 @@
+@layer block {
+	@scope (ticket-device-notices) {
+		/* The notices keep the page's rhythm between them: its flow step (the
+		   host is a `flow`) and its gap. */
+		:scope {
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-m);
+		}
+
+		/* The `card` block draws each notice. */
+		.tickets-notice {
+			--wrapper-max: var(--page-max-inline-size);
+
+			display: block;
+			inline-size: 100%;
+
+			&[data-tone="warning"] {
+				border-color: color-mix(
+					in oklch,
+					var(--color-brand-primary) 45%,
+					transparent
+				);
+			}
+		}
+	}
+}

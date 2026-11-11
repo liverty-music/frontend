@@ -85,7 +85,7 @@ describe('checkBuildTemplates', () => {
 		assert(result.kind === 'failed')
 		expect(result.failures).toHaveLength(1)
 		expect(result.failures[0]).toMatch(
-			/welcome.*does not contain marker 'welcome-brand'/,
+			/welcome.*does not contain marker 'welcome-ambient'/,
 		)
 	})
 
