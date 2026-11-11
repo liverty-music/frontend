@@ -83,3 +83,16 @@ export const Saving = {
 		await expect(second).toBeDisabled()
 	},
 } satisfies Story
+
+/** The fan's follows are not known yet: every button waits. */
+export const FollowsLoading = {
+	render: story([]),
+	args: { followsLoaded: false },
+	play: async ({ canvasElement }) => {
+		const buttons = within(canvasElement).getAllByTestId('event-follow')
+		await expect(buttons).toHaveLength(2)
+		for (const b of buttons) {
+			await expect(b).toBeDisabled()
+		}
+	},
+} satisfies Story

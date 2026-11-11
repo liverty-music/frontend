@@ -57,3 +57,16 @@ export const Followed = {
 		await expect(canvas.queryByRole('button')).toBeNull()
 	},
 } satisfies Story
+
+/** The follow is being saved: the Follow button waits and a press does nothing. */
+export const Saving = {
+	render,
+	args: { updating: true },
+	play: async ({ canvasElement }) => {
+		followed.mockClear()
+		const button = within(canvasElement).getByRole('button')
+		await expect(button).toBeDisabled()
+		await userEvent.click(button)
+		await expect(followed).not.toHaveBeenCalled()
+	},
+} satisfies Story
