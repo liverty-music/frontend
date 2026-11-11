@@ -42,11 +42,6 @@
       "count": 2
     }
   },
-  "organizer/ui/console-button/console-button.css": {
-    "cube/block-max-lines": {
-      "count": 1
-    }
-  },
   "organizer/ui/console-field/console-field.css": {
     "cube/block-max-lines": {
       "count": 1
