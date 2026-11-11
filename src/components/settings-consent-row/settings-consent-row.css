@@ -1,0 +1,73 @@
+/* A Settings consent row: a disclosure (label, caret and collapsible
+   description) beside a switch. The card (settings-list.css) lays out the
+   row; this block lays out the two controls. */
+@layer block {
+	@scope (settings-consent-row) {
+		/* The host takes no box, so the row is still a subgrid item of the card. */
+		:scope {
+			display: contents;
+		}
+
+		/* Disclosure control (col2) wrapping the label + collapsible description.
+		   A sibling of `.settings-switch` — never a parent of it (a role="switch"
+		   must not nest another interactive control). */
+		.settings-expand {
+			--stack-gap: var(--space-3xs);
+
+			grid-column: 2;
+			align-items: flex-start;
+			min-inline-size: 0;
+			text-align: start;
+		}
+
+		/* The disclosure and the switch keep their size and take a 48 px tap
+		   through a transparent ::after, which reaches into the row's padding
+		   and stays clear of the 12 px gap between them. */
+		.settings-expand,
+		.settings-switch {
+			position: relative;
+		}
+
+		.settings-expand::after,
+		.settings-switch::after {
+			content: "";
+
+			position: absolute;
+			inset-block-start: 50%;
+			inset-inline-start: 50%;
+			translate: -50% -50%;
+
+			inline-size: max(100%, var(--md-sys-target-size));
+			block-size: max(100%, var(--md-sys-target-size));
+		}
+
+		/* Label + expand caret on one line, above the collapsible description. */
+		.settings-expand-head {
+			display: flex;
+			gap: var(--space-2xs);
+			align-items: center;
+		}
+
+		.settings-expand-caret {
+			color: var(--md-sys-color-on-surface-variant);
+			transition: transform var(--md-sys-motion-duration-short4);
+		}
+
+		.settings-expand-caret[data-expanded="true"] {
+			transform: rotate(90deg);
+		}
+
+		/* Switch control: the trailing (col3) cell. A button wrapping just the
+		   track, with no padding, so the track sits flush at col3's end edge,
+		   pixel-aligned with every other row's trailing control. The track
+		   (2.75rem × 1.5rem) is the activation target: ≥24px on both axes per
+		   WCAG 2.5.8 (AA), with the adjacent disclosure control offering a
+		   larger neighbouring target. */
+		.settings-switch {
+			display: flex;
+			grid-column: 3;
+			align-items: center;
+			justify-self: end;
+		}
+	}
+}

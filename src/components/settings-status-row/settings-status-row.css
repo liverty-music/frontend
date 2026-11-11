@@ -1,0 +1,70 @@
+/* A Settings row with a status and the action it allows. The card
+   (settings-list.css) lays out the row; this block places the status lines
+   and draws the badge. */
+@layer block {
+	@scope (settings-status-row) {
+		/* The host takes no box, so the row is still a subgrid item of the card. */
+		:scope {
+			display: contents;
+		}
+
+		/* The account rows are two grid rows: the icon and the label (the
+		   address, 本人確認) share the first, centred on each other; the status
+		   and its action (then any detail) take the rows below, spanning the
+		   action column too. The wrapper only groups them in the markup. */
+		.settings-row:has(> .settings-status-body) {
+			row-gap: var(--space-xs);
+		}
+
+		.settings-status-body {
+			display: contents;
+
+			> * {
+				grid-column: 2 / -1;
+				min-inline-size: 0;
+			}
+		}
+
+		/* A label longer than the row (an email address) breaks between words,
+		   never inside one. The column repeats the rule above: the row's own
+		   label column (settings-row.css) is nearer and would win otherwise. */
+		.settings-status-body > .settings-row-label {
+			grid-column: 2 / -1;
+			overflow-wrap: break-word;
+		}
+
+		/* A status and the action it allows: the badge at the start, the action
+		   at the end, wrapping under the badge when the row is too narrow. */
+		.settings-status-line {
+			--cluster-gap: var(--space-xs);
+
+			justify-content: space-between;
+		}
+
+		/* Status badge (<output>): a status icon + text, so verification state is
+		   conveyed by shape and label, not colour alone. */
+		.settings-verification-badge {
+			display: inline-flex;
+			gap: var(--space-3xs);
+			align-items: center;
+		}
+
+		/* A text button trailing a row (resend verification, start identity
+		   verification); the `button` block owns its look, at its compact size
+		   (`data-size="compact"`) like the action on a snack bar or a bottom
+		   banner, so it does not take the label's column. */
+		.settings-row-action {
+			grid-column: 3;
+			justify-self: end;
+			white-space: nowrap;
+		}
+
+		.settings-verification-badge[data-verified="true"] {
+			color: var(--color-success);
+		}
+
+		.settings-verification-badge[data-verified="false"] {
+			color: var(--color-warning);
+		}
+	}
+}

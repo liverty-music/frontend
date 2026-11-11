@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import settingsListCss from '../../src/components/settings-list/settings-list.css?raw'
+import settingsStatusRowCss from '../../src/components/settings-status-row/settings-status-row.css?raw'
 import successMarkCss from '../../src/components/success-mark/success-mark.css?raw'
 import discoveryCss from '../../src/routes/discovery/discovery-search-results.css?raw'
 import passkeyRecoveryCss from '../../src/routes/passkey-recovery/passkey-recovery-route.css?raw'
@@ -83,7 +83,7 @@ describe('status marks use the token of their meaning', () => {
 			colorOf(successMarkCss, ':scope'),
 			// Email and identity verification share the Settings badge.
 			colorOf(
-				settingsListCss,
+				settingsStatusRowCss,
 				'.settings-verification-badge[data-verified="true"]',
 			),
 			colorOf(passkeyRecoveryCss, '.passkey-recovery-icon'),

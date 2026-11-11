@@ -1,8 +1,9 @@
 /* The Settings list: a `card` of rows sharing one icon | content | control
-   grid. The rows pad themselves, so the card has no padding. Used by the Settings route and by the settings-*-row components, so
-   it is scoped to the card, not to a route. Row components keep their host
-   out of layout (display: contents), so each row is still a subgrid item of
-   the card. */
+   grid. The rows (settings-row.css) pad themselves, so the card has no
+   padding. Used by the Settings route and by the settings-*-row components,
+   so it is scoped to the card, not to a route. Row components keep their
+   host out of layout (display: contents), so each row is still a subgrid
+   item of the card. */
 @layer block {
 	@scope (.settings-card) {
 		:scope {
@@ -11,11 +12,6 @@
 			overflow: hidden;
 			display: grid;
 			grid-template-columns: auto 1fr auto;
-		}
-
-		/* Row components render their row inside a host that takes no box. */
-		:is(settings-switch-row, settings-consent-row, settings-status-row) {
-			display: contents;
 		}
 
 		/* A list item lays out its own row, across the whole card. */
@@ -28,110 +24,6 @@
 		   every row (icon | content | control). */
 		.settings-list-item {
 			display: contents;
-		}
-
-		.settings-row {
-			display: grid;
-			grid-column: 1 / -1;
-			grid-template-columns: auto 1fr auto;
-
-			/* biome-ignore lint/suspicious/noDuplicateProperties: the declaration above is the fallback for browsers without subgrid */
-			grid-template-columns: subgrid;
-			column-gap: var(--space-xs);
-			align-items: center;
-
-			/* The list item's measurements (list-item.css), so every row of
-			   the card has the same height and edges. */
-			min-block-size: 3.5rem;
-			padding: var(--space-2xs) var(--space-s);
-
-			/* Square, so the divider above a row runs straight to the card's
-			   edges; the global <button> rule rounds a button row's corners. */
-			border-radius: var(--md-sys-shape-corner-none);
-
-			/* Reset the UA `text-align: center` a <button>.settings-row would
-			   otherwise impose — its label is a stretched col2 grid item, so
-			   centred text would drift to the middle of the column. */
-			text-align: start;
-
-			/* A row that is itself the control (a <button> or <a>) carries the
-			   shared `state-layer`: hover, focus and press over the whole row. */
-		}
-
-		/* Column placement. Each property targets whichever element is a DIRECT
-		   row child; the same class nested inside a flex cell (e.g. a label inside
-		   the toggle column) ignores `grid-column` harmlessly. */
-		.settings-icon {
-			grid-column: 1;
-			color: var(--md-sys-color-on-surface-variant);
-		}
-
-		.settings-row-label,
-		.settings-toggle-col,
-		.settings-expand {
-			grid-column: 2;
-		}
-
-		/* The account rows are two grid rows: the icon and the label (the
-		   address, 本人確認) share the first, centred on each other; the status
-		   and its action (then any detail) take the rows below, spanning the
-		   action column too. The wrapper only groups them in the markup. */
-		.settings-row:has(> .settings-status-body) {
-			row-gap: var(--space-xs);
-		}
-
-		.settings-status-body {
-			display: contents;
-
-			> * {
-				grid-column: 2 / -1;
-				min-inline-size: 0;
-			}
-		}
-
-		.settings-toggle-track,
-		.settings-switch,
-		.settings-row-action {
-			grid-column: 3;
-			justify-self: end;
-		}
-
-		.settings-row-label {
-			color: var(--md-sys-color-on-surface);
-		}
-
-		/* Rows of the route itself that opt out of the 3-column model and span
-		   the full width: the sound volume slider and Sign Out. Kept after the
-		   shared .settings-row rules so they win by source order. */
-		.settings-volume-row,
-		.settings-sign-out {
-			grid-column: 1 / -1;
-		}
-
-		.settings-volume-row {
-			display: flex;
-			gap: var(--space-s);
-			align-items: center;
-		}
-
-		/* The slider's accent colour comes from global.css (Chrome/Android;
-		   iOS keeps the native control). */
-		.settings-volume-slider {
-			cursor: pointer;
-			flex: 1;
-
-			/* The 48 px touch target; the track stays centred in it. */
-			block-size: var(--md-sys-target-size);
-		}
-
-		/* Full-width, centred — overrides the subgrid column tracks. */
-		.settings-sign-out {
-			grid-template-columns: 1fr;
-			justify-items: center;
-		}
-
-		.settings-sign-out-text {
-			color: var(--md-sys-color-error);
 		}
 
 		/* Inter-row separator. Replaces the former <hr> dividers (an <ul> may not
@@ -149,172 +41,6 @@
 			> *
 			> :is(.settings-row, .list-item) {
 			border-block-start: 1px solid var(--md-sys-color-outline-variant);
-		}
-
-		/* Content column (col2) for whole-row toggle buttons: label + optional
-		   hint/description stacked. */
-		.settings-toggle-col {
-			--stack-gap: var(--space-3xs);
-
-			align-items: flex-start;
-			min-inline-size: 0;
-		}
-
-		/* Toggle rows align their icon + control to the first line of the label
-		   rather than the vertical centre of an expanded description. */
-		.settings-row-toggle {
-			align-items: start;
-		}
-
-		/* Disclosure control (col2) wrapping the label + collapsible description.
-		   A sibling of `.settings-switch` — never a parent of it (a role="switch"
-		   must not nest another interactive control). */
-		.settings-expand {
-			--stack-gap: var(--space-3xs);
-
-			align-items: flex-start;
-			min-inline-size: 0;
-			text-align: start;
-		}
-
-		/* The disclosure and the switch keep their size and take a 48 px tap
-		   through a transparent ::after, which reaches into the row's padding
-		   and stays clear of the 12 px gap between them. */
-		.settings-expand,
-		.settings-switch {
-			position: relative;
-		}
-
-		.settings-expand::after,
-		.settings-switch::after {
-			content: "";
-
-			position: absolute;
-			inset-block-start: 50%;
-			inset-inline-start: 50%;
-			translate: -50% -50%;
-
-			inline-size: max(100%, var(--md-sys-target-size));
-			block-size: max(100%, var(--md-sys-target-size));
-		}
-
-		/* Label + expand caret on one line, above the collapsible description. */
-		.settings-expand-head {
-			display: flex;
-			gap: var(--space-2xs);
-			align-items: center;
-		}
-
-		.settings-expand-caret {
-			color: var(--md-sys-color-on-surface-variant);
-			transition: transform var(--md-sys-motion-duration-short4);
-		}
-
-		/* Switch control: the trailing (col3) cell for split consent rows. A
-		   button wrapping just the track, with no padding, so the track sits
-		   flush at col3's end edge, pixel-aligned with every other row's
-		   trailing control. The track (2.75rem × 1.5rem) is the activation
-		   target: ≥24px on both axes per WCAG 2.5.8 (AA), with the adjacent
-		   disclosure control offering a larger neighbouring target. */
-		.settings-switch {
-			display: flex;
-			align-items: center;
-		}
-
-		/* Collapsible toggle description. Decoupled from `.settings-row-hint`'s
-		   icon-alignment indent so it can use the full column width. */
-		.settings-toggle-desc {
-			color: var(--md-sys-color-on-surface-variant);
-			text-wrap: pretty;
-		}
-
-		.settings-toggle-track {
-			position: relative;
-
-			/* Fixed-size control. Its grid cell (col3) already pins the size;
-			   `flex-shrink: 0` additionally guards the consent rows, where the
-			   track lives inside a flex `.settings-switch` — without it the track
-			   could shrink and the absolutely-positioned thumb would overflow. */
-			flex-shrink: 0;
-
-			inline-size: var(--toggle-track-inline);
-			block-size: var(--toggle-track-block);
-			border-radius: var(--md-sys-shape-corner-full);
-
-			transition: background var(--md-sys-motion-duration-short4);
-		}
-
-		.settings-toggle-thumb {
-			position: absolute;
-			inset-block-start: var(--toggle-thumb-inset);
-			inset-inline-start: var(--toggle-thumb-inset);
-
-			inline-size: var(--toggle-thumb-size);
-			block-size: var(--toggle-thumb-size);
-			border-radius: var(--md-sys-shape-corner-full);
-
-			background: var(--color-white);
-
-			transition: transform var(--md-sys-motion-duration-short4);
-		}
-
-		/* A label longer than the row (an email address) breaks between words,
-		   never inside one. */
-		.settings-status-body > .settings-row-label {
-			overflow-wrap: break-word;
-		}
-
-		/* A status and the action it allows: the badge at the start, the action
-		   at the end, wrapping under the badge when the row is too narrow. */
-		.settings-status-line {
-			--cluster-gap: var(--space-xs);
-
-			justify-content: space-between;
-		}
-
-		/* Status badge (<output>): a status icon + text, so verification state is
-		   conveyed by shape and label, not colour alone. */
-		.settings-verification-badge {
-			display: inline-flex;
-			gap: var(--space-3xs);
-			align-items: center;
-		}
-
-		/* A text button trailing a row (resend verification, start identity
-		   verification); the `button` block owns its look, at its compact size
-		   (`data-size="compact"`) like the action on a snack bar or a bottom
-		   banner, so it does not take the label's column. */
-		.settings-row-action {
-			white-space: nowrap;
-		}
-
-		.settings-row[data-disabled="true"] {
-			cursor: not-allowed;
-			opacity: 0.5;
-		}
-
-		.settings-expand-caret[data-expanded="true"] {
-			transform: rotate(90deg);
-		}
-
-		.settings-toggle-track[data-on="true"] {
-			background: var(--color-brand-primary);
-		}
-
-		.settings-toggle-track[data-on="false"] {
-			background: color-mix(in oklch, var(--color-white) 20%, transparent);
-		}
-
-		.settings-toggle-thumb[data-on="true"] {
-			transform: translateX(var(--toggle-thumb-translate));
-		}
-
-		.settings-verification-badge[data-verified="true"] {
-			color: var(--color-success);
-		}
-
-		.settings-verification-badge[data-verified="false"] {
-			color: var(--color-warning);
 		}
 	}
 }
