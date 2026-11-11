@@ -1,0 +1,102 @@
+@layer block {
+	@scope (snack-item) {
+		/* The item is the popover, which snack-bar.css places and colours.
+		   This block lays out the snack inside it: one constrained-width row
+		   of message, action and close, which a sideways swipe dismisses. */
+
+		/* A sideways swipe: the surface rests between two empty gutters as wide
+		   as the snack, and mandatory snapping carries a release past half its
+		   width into a gutter (which dismisses it, snack-item.ts) or back.
+		   The scroller reaches --_shadow-room past the snack on every side so
+		   the surface's shadow is not clipped, and lets taps through there. */
+		.snack-swipe {
+			--_shadow-room: var(--space-m);
+
+			pointer-events: none;
+			scrollbar-width: none;
+			scroll-snap-type: x mandatory;
+
+			overflow: auto hidden;
+			overscroll-behavior-x: contain;
+			display: grid;
+			grid-auto-columns: 100%;
+			grid-auto-flow: column;
+
+			/* stylelint-disable-next-line property-disallowed-list -- the scroller must reach past the snack's box by the shadow room on every side so the shadow is not clipped, while the snack keeps its size and place; only a negative margin outsets a box without moving or resizing its content */
+			margin: calc(-1 * var(--_shadow-room));
+			padding: var(--_shadow-room);
+		}
+
+		.snack-gutter {
+			scroll-snap-align: center;
+		}
+
+		.snack-surface {
+			pointer-events: auto;
+			scroll-snap-align: center;
+
+			display: flex;
+			gap: var(--space-2xs);
+			align-items: center;
+
+			padding-block: var(--space-2xs);
+			padding-inline: var(--space-s);
+
+			/* The close button's 40 px container reaches into the end padding,
+			   so its 24 px icon sits as far from the edge as the message's
+			   start. */
+			&:has(> .snack-close-btn) {
+				--_pad-end: calc(var(--space-s) - var(--space-2xs));
+
+				padding-inline-end: var(--_pad-end);
+			}
+		}
+
+		/* The action's look comes from the app: the fan app's shared button
+		   (on-container), or the organizer console's own rule. Only its place
+		   in the row is set here. */
+		.snack-action-btn {
+			flex-shrink: 0;
+		}
+
+		/* A two-line message breaks between phrases, never inside a word, and
+		   balances its lines (graceful no-op where unsupported). */
+		.snack-message {
+			flex: 1;
+			text-wrap: balance;
+			word-break: auto-phrase;
+
+			/* A message may also give its two lines itself, split by a newline. */
+			white-space: pre-line;
+		}
+
+		/* M3 snackbar close affordance: the shared icon button in the
+		   snack's text colour. */
+		.snack-close-btn {
+			--icon-button-color: currentcolor;
+
+			& svg {
+				fill: currentcolor;
+			}
+		}
+
+		/* An attention action (the fan app's update snack) glows three times
+		   when the snack appears, then stays still. */
+		@media (prefers-reduced-motion: no-preference) {
+			.snack-action-btn[data-attention] {
+				animation: snack-action-glow 1.2s ease-in-out 3;
+			}
+		}
+
+		@keyframes snack-action-glow {
+			0%,
+			100% {
+				box-shadow: var(--glow-attention-off);
+			}
+
+			50% {
+				box-shadow: var(--glow-attention);
+			}
+		}
+	}
+}
