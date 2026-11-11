@@ -3,10 +3,10 @@ import { createFixture } from '@aurelia/testing'
 import { describe, expect, it, vi } from 'vitest'
 import { BusyOnClickCustomAttribute } from '../../src/custom-attributes/busy-on-click'
 import type { Artist } from '../../src/entities/artist'
-import discoveryTemplate from '../../src/routes/discovery/discovery-route.html?raw'
+import discoveryTemplate from '../../src/routes/discovery/discovery-search-results.html?raw'
 
 /**
- * The search results list, taken from the Discovery template so the bindings
+ * The search results list, taken from its template so the bindings
  * under test are the ones that ship.
  */
 function resultsList(): string {
@@ -37,7 +37,7 @@ describe('Discovery search results', () => {
 						searchResults: [artist('a1', 'Vaundy'), artist('a2', 'YOASOBI')],
 					}
 					public followedIds = new Set(['a2'])
-					public onFollowFromSearch = onFollowFromSearch
+					public onFollow = onFollowFromSearch
 				},
 			)
 			.deps(BusyOnClickCustomAttribute)

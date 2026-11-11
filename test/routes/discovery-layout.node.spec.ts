@@ -6,6 +6,11 @@ const DIR = join(__dirname, '../../src/routes/discovery')
 const html = readFileSync(join(DIR, 'discovery-route.html'), 'utf8')
 const css = readFileSync(join(DIR, 'discovery-route.css'), 'utf8')
 const swapCss = readFileSync(join(DIR, 'discovery-swap.css'), 'utf8')
+const searchBarHtml = readFileSync(
+	join(DIR, 'discovery-search-bar.html'),
+	'utf8',
+)
+const searchBarCss = readFileSync(join(DIR, 'discovery-search-bar.css'), 'utf8')
 
 /** The rows of the `.discovery-layout` grid, top to bottom. */
 function layoutRows(): string[] {
@@ -32,8 +37,9 @@ describe('Discovery layout', () => {
 	// @spec components/infrastructure/fan/web/route/discovery "Search bar display"
 	it('puts the search bar in the top row', () => {
 		expect(layoutRows()[0]).toBe('search')
-		expect(css).toMatch(/\.search-bar \{[\s\S]*?grid-area: search;/)
-		expect(html).toMatch(/<search class="search-bar">/)
+		expect(html).toMatch(/<discovery-search-bar /)
+		expect(searchBarCss).toMatch(/\.search-bar \{[\s\S]*?grid-area: search;/)
+		expect(searchBarHtml).toMatch(/<search class="search-bar">/)
 	})
 
 	// @spec components/infrastructure/fan/web/route/discovery "Search mode"

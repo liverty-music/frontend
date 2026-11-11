@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import settingsListCss from '../../src/components/settings-list/settings-list.css?raw'
 import successMarkCss from '../../src/components/success-mark/success-mark.css?raw'
-import discoveryCss from '../../src/routes/discovery/discovery-route.css?raw'
+import discoveryCss from '../../src/routes/discovery/discovery-search-results.css?raw'
 import passkeyRecoveryCss from '../../src/routes/passkey-recovery/passkey-recovery-route.css?raw'
 import languageSelectorCss from '../../src/routes/settings/language-selector.css?raw'
 import tokensCss from '../../src/styles/tokens.css?raw'

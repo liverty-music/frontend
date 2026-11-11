@@ -1,0 +1,82 @@
+@layer block {
+	@scope (discovery-search-results) {
+		/* The results take the bubbles' row of the Discovery grid. */
+		:scope {
+			--_white-5: oklch(100% 0 0deg / 5%);
+			--_white-50: oklch(100% 0 0deg / 50%);
+			--_brand-60: oklch(58.5% 0.204 277deg / 60%);
+			--_magenta-60: oklch(62.7% 0.233 304deg / 60%);
+
+			display: contents;
+		}
+
+		.search-results {
+			container-name: search-results;
+			container-type: inline-size;
+			overflow-block: auto;
+			grid-area: bubbles;
+
+			min-block-size: 0;
+			padding: var(--space-xs) var(--space-s);
+			padding-block-end: calc(var(--space-2xl) + env(safe-area-inset-bottom));
+		}
+
+		.search-status {
+			padding: var(--space-l) 0;
+			color: var(--_white-50);
+			text-align: center;
+		}
+
+		.results-list {
+			display: grid;
+			grid-template-columns: auto 1fr auto;
+			gap: var(--space-3xs);
+		}
+
+		.result-item {
+			cursor: pointer;
+
+			display: grid;
+			grid-column: 1 / -1;
+			grid-template-columns: subgrid;
+			gap: var(--space-xs);
+			align-items: center;
+
+			min-block-size: var(--md-sys-target-size);
+			padding: var(--space-xs);
+			border-radius: var(--md-sys-shape-corner-medium);
+
+			background: var(--_white-5);
+
+			&[data-followed="true"] {
+				cursor: default;
+				opacity: 0.5;
+			}
+		}
+
+		.result-avatar {
+			display: grid;
+			place-items: center;
+
+			border-radius: var(--md-sys-shape-corner-full);
+
+			color: var(--color-white);
+
+			background: linear-gradient(135deg, var(--_brand-60), var(--_magenta-60));
+		}
+
+		.result-name {
+			overflow: hidden;
+
+			min-inline-size: 0;
+
+			color: var(--color-white);
+			text-overflow: ellipsis;
+			white-space: nowrap;
+		}
+
+		.followed-check {
+			color: color-mix(in oklch, var(--md-sys-color-primary) 90%, transparent);
+		}
+	}
+}

@@ -1,0 +1,49 @@
+@layer block {
+	@scope (discovery-genre-bar) {
+		/* The row is the genre row of the Discovery grid. */
+		:scope {
+			display: contents;
+		}
+
+		.genre-bar {
+			display: flex;
+			grid-area: genre;
+			gap: var(--space-2xs);
+			align-items: center;
+
+			padding-block: var(--space-3xs) 0;
+			padding-inline-start: var(--space-s);
+		}
+
+		/* The scroller's block padding holds the chips' 48px targets
+		   (src/styles/chip.css), which it would otherwise clip. */
+		fieldset {
+			scrollbar-width: none;
+
+			overflow-inline: auto;
+			display: flex;
+			flex: 1;
+			gap: var(--space-2xs);
+
+			padding-block: var(--space-2xs);
+			padding-inline: 0 var(--space-s);
+		}
+
+		/* An icon alone: 8px on both sides of it. Two classes outrank the
+		   chip's own padding, whose @scope root is nearer. */
+		.genre-bar > .reset-chip {
+			flex-shrink: 0;
+			padding-inline: var(--space-2xs);
+		}
+
+		/* stylelint-disable-next-line media-feature-name-disallowed-list -- viewport width needed alongside height to isolate SE-class devices (375px) from wider phones; container queries cannot combine with @media height */
+		@media (height <= 700px) and (width < 390px) {
+			/* Symmetric 8px whitespace: the room above the search bar
+			   (discovery-route.css) matches this top padding, so the search
+			   field sits evenly between the header and the genre chips. */
+			.genre-bar {
+				padding-block: var(--space-2xs) var(--space-3xs);
+			}
+		}
+	}
+}
