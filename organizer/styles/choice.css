@@ -1,0 +1,34 @@
+/* A checkbox or radio button with its label, the whole row one 48 px target:
+   `class="[ choice ] [ state-layer ]"` on the <label> that holds the <input>
+   and its text. Used by the console's screens (the concert editor's type,
+   visibility and performers, the concert page's dates to publish).
+   - row      12px between the control and the label, centred, small corners
+   - padding  16px at the sides; --choice-padding-inline sets another
+   - control  20 px, in `primary`
+   - disabled a disabled control's row shows the not-allowed cursor
+   The row sets no colour, fill or block padding: the caller's. */
+@layer block {
+	@scope (.choice) {
+		:scope {
+			cursor: pointer;
+
+			display: flex;
+			gap: var(--space-xs);
+			align-items: center;
+
+			min-block-size: var(--md-sys-target-size);
+			padding-inline: var(--choice-padding-inline, var(--space-s));
+			border-radius: var(--md-sys-shape-corner-small);
+		}
+
+		:scope:has(input:disabled) {
+			cursor: not-allowed;
+		}
+
+		input {
+			inline-size: 20px;
+			block-size: 20px;
+			accent-color: var(--md-sys-color-primary);
+		}
+	}
+}

@@ -32,7 +32,7 @@
       ></console-field>
       <fieldset class="series-type" disabled.bind="isCorrection">
         <legend class="[ legend ] [ md-typescale-title-medium ]">${'concertEditor.type' & t}</legend>
-        <label repeat.for="option of typeChoices" class="series-type-option state-layer">
+        <label repeat.for="option of typeChoices" class="[ choice ] [ state-layer ]">
           <input type="radio" name="series-type" model.bind="option.value" checked.bind="model.type">
           <span>${option.labelKey & t}</span>
         </label>
@@ -40,7 +40,7 @@
 
       <fieldset class="visibility" disabled.bind="isCorrection">
         <legend class="[ legend ] [ md-typescale-title-medium ]">${'concertEditor.visibility' & t}</legend>
-        <label repeat.for="option of visibilityChoices" class="visibility-option state-layer">
+        <label repeat.for="option of visibilityChoices" class="[ choice visibility-option ] [ state-layer ]">
           <span class="visibility-control"><input type="radio" name="visibility" model.bind="option.value" checked.bind="model.visibility"></span>
           <span class="visibility-text">
             <span class="[ visibility-label ] [ md-typescale-title-small ]">${option.labelKey & t}</span>
@@ -54,7 +54,7 @@
     <fieldset ref="performersFieldset" class="performers" aria-describedby.bind="submitted && errors.artistIds ? 'performers-error' : null">
       <legend><h2 class="[ section-title ] [ md-typescale-title-large ]">${'concertEditor.performers' & t} *</h2></legend>
       <p if.bind="performers.length === 0" class="note">${'concertEditor.noArtists' & t}</p>
-      <label repeat.for="option of performers" class="performer state-layer">
+      <label repeat.for="option of performers" class="[ choice ] [ state-layer ]">
         <input type="checkbox" checked.to-view="option.selected" change.trigger="togglePerformer(option)">
         <span>${option.name}</span>
       </label>

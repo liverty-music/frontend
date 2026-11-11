@@ -1,6 +1,9 @@
 @layer block {
 	@scope (concert-editor-route) {
-		.editor {
+		.editor,
+		.part,
+		.row,
+		.event {
 			display: grid;
 			gap: var(--space-s);
 		}
@@ -13,17 +16,9 @@
 			max-inline-size: var(--form-max-inline-size);
 		}
 
-		.part {
-			display: grid;
-			gap: var(--space-s);
-		}
-
-		.row {
-			display: grid;
-			gap: var(--space-s);
-		}
-
-		.note {
+		.note,
+		.label,
+		.visibility-effect {
 			color: var(--md-sys-color-on-surface-variant);
 		}
 
@@ -40,52 +35,18 @@
 			}
 		}
 
-		.series-type-option {
-			cursor: pointer;
-
-			display: flex;
-			gap: var(--space-xs);
-			align-items: center;
-
-			min-block-size: var(--md-sys-target-size);
-			padding-inline: var(--space-s);
-			border-radius: var(--md-sys-shape-corner-small);
-
-			& input {
-				inline-size: 20px;
-				block-size: 20px;
-				accent-color: var(--md-sys-color-primary);
-			}
-		}
-
-		.series-type:disabled .series-type-option {
-			cursor: not-allowed;
-		}
-
 		.visibility {
 			display: grid;
 			gap: var(--space-2xs);
 			padding-block-start: var(--space-2xs);
 		}
 
-		.visibility-option {
-			cursor: pointer;
-
-			display: flex;
-			gap: var(--space-xs);
+		/* A filled row, its radio at the first line; two classes, as the
+		   `choice` row's centring (its scope root is nearer) beats one. */
+		.visibility > .visibility-option {
 			align-items: flex-start;
-
-			min-block-size: var(--md-sys-target-size);
-			padding: var(--space-xs) var(--space-s);
-			border-radius: var(--md-sys-shape-corner-small);
-
+			padding-block: var(--space-xs);
 			background: var(--md-sys-color-surface-container-low);
-
-			& input {
-				inline-size: 20px;
-				block-size: 20px;
-				accent-color: var(--md-sys-color-primary);
-			}
 		}
 
 		/* Holds the radio a little lower, level with the label's first line;
@@ -95,17 +56,11 @@
 			padding-block-start: var(--space-3xs);
 		}
 
-		.visibility:disabled .visibility-option {
-			cursor: not-allowed;
-		}
-
-		.visibility-text {
+		.visibility-text,
+		.fixed-venue,
+		.cover-input {
 			display: grid;
 			gap: var(--space-3xs);
-		}
-
-		.visibility-effect {
-			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.performers,
@@ -121,40 +76,8 @@
 			row-gap: var(--space-l);
 		}
 
-		.performer {
-			cursor: pointer;
-
-			display: flex;
-			gap: var(--space-xs);
-			align-items: center;
-
-			min-block-size: var(--md-sys-target-size);
-			padding-inline: var(--space-s);
-			border-radius: var(--md-sys-shape-corner-small);
-
-			& input {
-				inline-size: 20px;
-				block-size: 20px;
-				accent-color: var(--md-sys-color-primary);
-			}
-		}
-
-		.event {
-			display: grid;
-			gap: var(--space-s);
-		}
-
 		.event-header {
 			--cluster-gap: var(--space-2xs);
-		}
-
-		.fixed-venue {
-			display: grid;
-			gap: var(--space-3xs);
-		}
-
-		.label {
-			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.error {
@@ -174,11 +97,6 @@
 			inline-size: 240px;
 			border-radius: var(--md-sys-shape-corner-medium);
 			object-fit: cover;
-		}
-
-		.cover-input {
-			display: grid;
-			gap: var(--space-3xs);
 		}
 	}
 }

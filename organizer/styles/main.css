@@ -18,6 +18,9 @@
    with the shadow root of every console component. */
 @import "./shared.css";
 
+/* The checkbox or radio row the screens use; no console component does. */
+@import "./choice.css";
+
 @layer reset {
 	:where(html, body) {
 		block-size: 100%;

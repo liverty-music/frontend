@@ -1,14 +1,4 @@
 {
-  "organizer/concert/concert-route.css": {
-    "cube/block-max-lines": {
-      "count": 1
-    }
-  },
-  "organizer/concert-editor/concert-editor-route.css": {
-    "cube/block-max-lines": {
-      "count": 1
-    }
-  },
   "organizer/organizer-shell/organizer-shell.css": {
     "declaration-property-custom-property-allowed-list": {
       "count": 1
