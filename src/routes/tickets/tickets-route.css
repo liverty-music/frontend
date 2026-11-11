@@ -98,7 +98,7 @@
 		.tickets-virtual {
 			--flow-space: var(--space-s);
 
-			padding: var(--space-m);
+			padding: var(--space-xs) var(--space-xs) var(--space-m);
 		}
 
 		/* Entry QR code sheet */

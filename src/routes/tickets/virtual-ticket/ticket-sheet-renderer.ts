@@ -1,3 +1,8 @@
+// The page's Content-Security-Policy has no 'unsafe-eval' (index.html), and
+// PixiJS builds its uniform and shader sync code with `new Function`. This
+// module, which must come before any other PixiJS import, swaps in versions
+// that need no eval; without it every renderer throws at start in the app.
+import 'pixi.js/unsafe-eval'
 import {
 	Application,
 	Container,
@@ -30,6 +35,7 @@ import {
 
 /** The canvas of a browser with HTML-in-Canvas. */
 interface SheetCanvas extends HTMLCanvasElement {
+	requestPaint?: () => void
 	updateElementGeometry?: (
 		element: Element,
 		options: { canvasTransform: DOMMatrix },
@@ -49,6 +55,8 @@ export interface TicketSheetOptions {
 	readonly look: TicketLook
 	/** The art's share of the front's height. */
 	readonly split: number
+	/** Device pixels per CSS pixel of the drawing. */
+	readonly resolution: number
 }
 
 /** Whether this browser can draw DOM into a WebGL texture. */
@@ -91,6 +99,8 @@ export class TicketSheetRenderer {
 	private readonly world = new Container()
 	private readonly sparks = new Container()
 	private readonly mesh: MeshPlane
+	private readonly frontSource: HTMLSource
+	private readonly backSource: HTMLSource
 	private readonly frontTexture: Texture
 	private readonly backTexture: Texture
 	private readonly holo: Filter
@@ -113,17 +123,34 @@ export class TicketSheetRenderer {
 	/** The foil's strength on the side that faces the fan, and the stamp's boost. */
 	private faceFoil = FRONT_FOIL
 	private boost = 0
+	/** The browser has painted the sides at least once. */
+	private painted = false
 	private destroyed = false
 
 	private constructor(
 		private readonly app: Application,
 		private readonly options: TicketSheetOptions,
 	) {
+		// The sources do not follow the browser's paints by themselves: their
+		// own listener uploads inside the `paint` event, and a side without a
+		// paint record yet (a frame or two after the card moves into the
+		// canvas) makes that throw where nothing can catch it. `onPaint` below
+		// does the same with the failure handled.
+		this.frontSource = new HTMLSource({
+			resource: options.front,
+			autoUpdate: false,
+		})
+		this.backSource = new HTMLSource({
+			resource: options.back,
+			autoUpdate: false,
+		})
+		options.canvas.addEventListener('paint', this.onPaint)
+		;(options.canvas as SheetCanvas).requestPaint?.()
 		this.frontTexture = new Texture({
-			source: new HTMLSource({ resource: options.front }),
+			source: this.frontSource,
 		})
 		this.backTexture = new Texture({
-			source: new HTMLSource({ resource: options.back }),
+			source: this.backSource,
 		})
 		this.mesh = new MeshPlane({
 			texture: this.frontTexture,
@@ -146,7 +173,14 @@ export class TicketSheetRenderer {
 			options.height + options.margin * 2,
 		)
 		app.stage.addChild(this.world)
-		app.ticker.add((ticker) => this.tick(ticker.deltaMS / 1000))
+		// The sheet draws its own frames: a side the browser has not painted
+		// yet makes the upload throw, and the application's own render call
+		// would let that escape as an unhandled error.
+		app.ticker.remove(app.render, app)
+		app.ticker.add((ticker) => {
+			this.tick(ticker.deltaMS / 1000)
+			this.draw()
+		})
 		this.place()
 	}
 
@@ -161,7 +195,7 @@ export class TicketSheetRenderer {
 			backgroundAlpha: 0,
 			antialias: true,
 			autoDensity: true,
-			resolution: Math.min(globalThis.devicePixelRatio || 1, 2),
+			resolution: options.resolution,
 			preference: 'webgl',
 		})
 		return new TicketSheetRenderer(app, options)
@@ -232,7 +266,42 @@ export class TicketSheetRenderer {
 	public destroy(): void {
 		if (this.destroyed) return
 		this.destroyed = true
+		this.options.canvas.removeEventListener('paint', this.onPaint)
 		this.app.destroy({ removeView: false }, { children: true, texture: true })
+	}
+
+	/** The browser painted the sides: take the new pixels. */
+	private readonly onPaint = (): void => {
+		if (this.destroyed) return
+		try {
+			this.frontSource.update()
+			this.backSource.update()
+			this.painted = true
+		} catch {
+			this.askForPaint()
+		}
+	}
+
+	private askForPaint(): void {
+		;(this.options.canvas as SheetCanvas).requestPaint?.()
+	}
+
+	/**
+	 * Draw a frame. The browser keeps a paint record per side, and uploading
+	 * a side that has none yet throws ("No cached paint record for
+	 * element"). Such a frame is skipped and a paint is asked for.
+	 */
+	private draw(): void {
+		if (this.destroyed) return
+		if (!this.painted) {
+			this.askForPaint()
+			return
+		}
+		try {
+			this.app.render()
+		} catch {
+			this.askForPaint()
+		}
 	}
 
 	private tick(dt: number): void {

@@ -5,6 +5,9 @@
 @layer block {
 	@scope (virtual-ticket) {
 		:scope {
+			/* Drawn as a sheet, the canvas reaches past the ticket for the bend;
+			   that room must not widen what scrolls. */
+			overflow-x: clip;
 			display: grid;
 			grid-template-columns: minmax(0, 1fr);
 			gap: var(--space-l);
@@ -26,7 +29,7 @@
 			container: virtual-ticket-stage / inline-size;
 
 			aspect-ratio: 10 / 17;
-			inline-size: min(20rem, 100%, 50dvh);
+			inline-size: min(26rem, 100%, 52dvh);
 		}
 
 		.virtual-ticket-fit {

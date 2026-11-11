@@ -1,3 +1,8 @@
+// The page's Content-Security-Policy has no 'unsafe-eval' (index.html), and
+// PixiJS builds its uniform and shader sync code with `new Function`. This
+// module, which must come before any other PixiJS import, swaps in versions
+// that need no eval; without it every renderer throws at start in the app.
+import 'pixi.js/unsafe-eval'
 import {
 	Application,
 	BlurFilter,
