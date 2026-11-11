@@ -1,7 +1,10 @@
 /* Under the ticket: the button that turns it over and the design picker. */
 @layer block {
 	@scope (virtual-ticket) {
+		/* Above the stage: drawn as a sheet, the ticket's canvas reaches past
+		   the ticket for the bend and would take the taps meant for these. */
 		.virtual-ticket-controls {
+			position: relative;
 			display: grid;
 			gap: var(--space-xs);
 			justify-items: center;

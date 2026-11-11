@@ -25,6 +25,24 @@ export interface ShareImageEnv {
 	download(file: File): void
 }
 
+/**
+ * The ticket's size as it is laid out, in CSS pixels: that of the box the
+ * card is laid out in. The front itself cannot be measured when the ticket
+ * is drawn as a sheet: a descendant of a canvas reports no size at all
+ * (`offsetWidth` 0, a computed width of `auto`), and on screen the ticket is
+ * tilted and scaled.
+ */
+export function ticketSize(face: HTMLElement): {
+	width: number
+	height: number
+} {
+	const box = face.closest<HTMLElement>('.virtual-ticket-fit')
+	return {
+		width: box?.clientWidth || face.offsetWidth,
+		height: box?.clientHeight || face.offsetHeight,
+	}
+}
+
 /** Device pixels per CSS pixel of the image: sharp on phones, bounded in size. */
 export function shareImageScale(): number {
 	return Math.min(Math.max(globalThis.devicePixelRatio || 1, 2), 3)
@@ -138,8 +156,7 @@ export async function renderShareImage(
 	const doc = face.ownerDocument
 	// The layout size: the ticket may be scaled to fit its stage, or drawn
 	// as a sheet, and neither changes what it measures here.
-	const width = face.offsetWidth
-	const height = face.offsetHeight
+	const { width, height } = ticketSize(face)
 	const host = doc.createElement('virtual-ticket')
 	host.setAttribute('aria-hidden', 'true')
 	host.inert = true
@@ -162,7 +179,11 @@ export async function renderShareImage(
 	host.append(shell)
 	doc.body.append(host)
 	let families: Set<string>
+	// Measured on the copy: the live front has no size when it is in a canvas.
+	let artHeight = 0
 	try {
+		artHeight =
+			clone.querySelector<HTMLElement>('.ticket-front-art')?.offsetHeight ?? 0
 		families = inlineStyles(clone)
 	} finally {
 		host.remove()
@@ -206,7 +227,7 @@ export async function renderShareImage(
 		ctx.clip()
 	}
 	if (art) ctx.drawImage(art, 0, 0, width, height)
-	else drawPlainArt(ctx, face, width, height)
+	else drawPlainArt(ctx, face, width, height, artHeight)
 	ctx.drawImage(image, 0, 0, width, height)
 
 	// The notches: `--_tear` is a share of the height, `--_notch` in rem.
@@ -241,11 +262,10 @@ function drawPlainArt(
 	face: HTMLElement,
 	width: number,
 	height: number,
+	artHeight: number,
 ): void {
 	ctx.fillStyle = getComputedStyle(face).backgroundColor
 	ctx.fillRect(0, 0, width, height)
-	const artHeight =
-		face.querySelector<HTMLElement>('.ticket-front-art')?.offsetHeight ?? 0
 	if (!artHeight) return
 	const cover = face.querySelector<HTMLImageElement>(
 		'.ticket-front-cover-image',

@@ -1,5 +1,5 @@
 import { I18N } from '@aurelia/i18n'
-import { BindingMode, bindable, INode, resolve } from 'aurelia'
+import { BindingMode, bindable, ILogger, INode, resolve } from 'aurelia'
 import { artistHue } from '../../../adapter/view/artist-color'
 import { toDomesticDisplay } from '../../../lib/to-e164'
 import { currentLanguage } from '../../../util/change-locale'
@@ -11,6 +11,7 @@ import {
 } from '../../event/event-page'
 import type { WalletPersonalDetails, WalletTicket } from '../wallet-view'
 import { STAMP_ANIMATION } from './admission-stamp'
+import { ticketSize } from './share-image'
 import { TICKET_LOOKS, type TicketPreset } from './ticket-presets'
 import type { TicketRenderer } from './ticket-renderer'
 import type { TicketSheetRenderer } from './ticket-sheet-renderer'
@@ -78,6 +79,7 @@ export class VirtualTicket {
 
 	private readonly i18n = resolve(I18N)
 	private readonly host = resolve(INode) as HTMLElement
+	private readonly logger = resolve(ILogger).scopeTo('VirtualTicket')
 
 	public readonly titleId = `virtual-ticket-title-${++nextId}`
 
@@ -108,6 +110,7 @@ export class VirtualTicket {
 	private resizeObserver: ResizeObserver | null = null
 	private stampTimer: ReturnType<typeof setTimeout> | undefined
 	private detached = false
+	private askedForTilt = false
 
 	public eventChanged(): void {
 		this.coverFailed = false
@@ -176,6 +179,7 @@ export class VirtualTicket {
 				margin: SHEET_MARGIN,
 				look: TICKET_LOOKS[this.preset] ?? TICKET_LOOKS.default,
 				split: ART_SPLIT,
+				resolution: this.drawResolution(),
 			})
 			if (this.detached) {
 				this.sheet.destroy()
@@ -185,7 +189,8 @@ export class VirtualTicket {
 			this.sheet.showBack(this.isBack)
 			if (this.pressing) this.scheduleImpact()
 			return true
-		} catch {
+		} catch (err) {
+			this.logger.warn('Drawing the ticket as a sheet failed', { error: err })
 			this.sheet = null
 			this.leaveSheet()
 			return false
@@ -237,6 +242,7 @@ export class VirtualTicket {
 				look: TICKET_LOOKS[this.preset] ?? TICKET_LOOKS.default,
 				split: ART_SPLIT,
 				still: reducedMotion(),
+				resolution: this.drawResolution(),
 				onTilt: (x, y) => this.onTilt(x, y),
 			})
 			if (this.detached) {
@@ -252,7 +258,10 @@ export class VirtualTicket {
 			this.drawCover()
 			this.drawn = true
 			if (this.pressing) this.scheduleImpact()
-		} catch {
+		} catch (err) {
+			// Said aloud: a silent fall back to the plain cover hid a renderer
+			// that could not start in the app at all.
+			this.logger.warn('Drawing the art with WebGL failed', { error: err })
 			this.drawn = false
 		}
 	}
@@ -265,8 +274,7 @@ export class VirtualTicket {
 	public async shareArt(scale: number): Promise<HTMLCanvasElement | null> {
 		const face = this.face
 		if (!face) return null
-		const width = face.offsetWidth
-		const height = face.offsetHeight
+		const { width, height } = ticketSize(face)
 		const picture = document.createElement('canvas')
 		picture.width = Math.round(width * scale)
 		picture.height = Math.round(height * scale)
@@ -300,11 +308,25 @@ export class VirtualTicket {
 				picture.height,
 			)
 			return picture
-		} catch {
+		} catch (err) {
+			this.logger.warn('Drawing the share image art failed', { error: err })
 			return null
 		} finally {
 			renderer?.destroy()
 		}
+	}
+
+	/**
+	 * Device pixels per CSS pixel the ticket is drawn at. The ticket is laid
+	 * out at its design size and scaled up to its stage, so the screen's own
+	 * ratio alone would draw it soft; 3 bounds the cost on a dense screen.
+	 */
+	private drawResolution(): number {
+		const fit = this.fit
+		const zoom = fit?.clientWidth
+			? fit.getBoundingClientRect().width / fit.clientWidth
+			: 1
+		return Math.min((globalThis.devicePixelRatio || 1) * Math.max(zoom, 1), 3)
 	}
 
 	/** Hand the loaded cover image to the renderer. */
@@ -317,6 +339,13 @@ export class VirtualTicket {
 	private onTilt(x: number, y: number): void {
 		this.card?.style.setProperty('--tilt-x', x.toFixed(3))
 		this.card?.style.setProperty('--tilt-y', y.toFixed(3))
+	}
+
+	/** The first touch of the ticket: ask for the device's tilt, once. */
+	public onPointerDown(): void {
+		if (this.askedForTilt || !followsDeviceTilt()) return
+		this.askedForTilt = true
+		void askForDeviceTilt()
 	}
 
 	/** Tilt the ticket towards the pointer. */
@@ -491,16 +520,40 @@ function rgbOf(color: string): number {
 }
 
 /**
- * Whether the ticket follows the device's tilt. Only where the browser gives
- * the orientation without asking: iOS asks for permission in a dialog, which
- * a ticket is not worth, and the ticket sways by itself there.
+ * Whether the ticket follows the device's tilt: wherever the browser has
+ * the orientation event, unless the fan asked to reduce motion. Listening
+ * asks for nothing; where the events need a permission that was not given
+ * (Safari on iOS), none arrive and the ticket sways by itself.
  */
 function followsDeviceTilt(): boolean {
-	return (
-		typeof DeviceOrientationEvent !== 'undefined' &&
-		!('requestPermission' in DeviceOrientationEvent) &&
-		!reducedMotion()
-	)
+	return typeof DeviceOrientationEvent !== 'undefined' && !reducedMotion()
+}
+
+/** `DeviceOrientationEvent` with the permission request newer browsers have. */
+type OrientationPermission = typeof DeviceOrientationEvent & {
+	requestPermission?: () => Promise<PermissionState>
+}
+
+/**
+ * Ask for the orientation events where that cannot open a dialog. Chrome has
+ * `requestPermission()` since 121 and may hold the events back until it is
+ * called, but grants the sensors by default; Safari on iOS answers the same
+ * call with a dialog, which a ticket is not worth. So the call is made only
+ * when the browser already reports the sensor as granted, which Safari does
+ * not report at all. Must run in a user gesture.
+ */
+async function askForDeviceTilt(): Promise<void> {
+	const request = (DeviceOrientationEvent as OrientationPermission)
+		.requestPermission
+	if (typeof request !== 'function') return
+	try {
+		const status = await navigator.permissions.query({
+			name: 'accelerometer' as PermissionName,
+		})
+		if (status.state === 'granted') await request()
+	} catch {
+		// The browser does not report the sensor: do not ask.
+	}
 }
 
 function reducedMotion(): boolean {
