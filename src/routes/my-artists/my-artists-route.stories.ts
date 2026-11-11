@@ -7,8 +7,10 @@ import {
 import { CustomElement, Registration } from 'aurelia'
 import { expect, userEvent, waitFor } from 'storybook/test'
 import { expectAriaTree } from '../../../.storybook/aria'
+import { resolveColor } from '../../../.storybook/contrast'
 import { capturePixels, expectScreenshot } from '../../../.storybook/screenshot'
 import { expectTargets } from '../../../.storybook/target-size'
+import { artistColor } from '../../adapter/view/artist-color'
 import { PageHelp } from '../../components/page-help/page-help'
 import { SignupPromptBanner } from '../../components/signup-prompt-banner/signup-prompt-banner'
 import { StatePlaceholder } from '../../components/state-placeholder/state-placeholder'
@@ -472,11 +474,7 @@ export const PickingHypeLevels = {
 			changes.push(`${input.name}:${input.checked}`)
 		})
 
-		// The structure the my-artists scenario "Native radio input semantics"
-		// describes. It is not annotated: the scenario's last line wants the
-		// selected radio `checked` through `model.bind`/`checked.bind`, and the
-		// app leaves every radio unchecked at first (the active dot is drawn
-		// from `data-active`), so the scenario needs the owner's decision.
+		// @spec components/infrastructure/fan/web/route/my-artists "Native radio input semantics"
 		const fieldset = table.closest('fieldset')
 		if (!fieldset) throw new Error('the table is not in a fieldset')
 		const legend = fieldset.querySelector(':scope > legend')
@@ -490,14 +488,39 @@ export const PickingHypeLevels = {
 			await expect(radio?.name).toBe('hype-artist-1')
 			await expect(label.querySelector(':scope > span.hype-dot')).not.toBeNull()
 		}
+		// Each radio carries its level as its model, and the radio of the
+		// artist's current level is the checked one from the first display on.
+		await expect(first.radios.map((r) => r?.checked)).toEqual([
+			true,
+			false,
+			false,
+			false,
+		])
 		await expect(first.active()).toBe('watch')
 
+		// @spec components/infrastructure/fan/web/route/my-artists "User taps a dot"
 		// A dot is tapped.
+		const picks: Array<{ id: string; level: string }> = []
+		table.addEventListener('hype-changed', (e) => {
+			const { artist, level } = (
+				e as CustomEvent<{ artist: { artist: { id: string } }; level: string }>
+			).detail
+			picks.push({ id: artist.artist.id, level })
+		})
 		await userEvent.click(first.labelOf('nearby'))
 		// The radio takes the tap natively, and its `change` event crosses the
 		// custom element boundary up to the table.
-		await expect(first.radios[2]?.checked).toBe(true)
+		await expect(first.radios.map((r) => r?.checked)).toEqual([
+			false,
+			false,
+			true,
+			false,
+		])
 		await expect(changes).toEqual(['hype-artist-1:true'])
+		// The row tells the page which artist and level, with a bubbling
+		// `hype-changed` event, and the page handles it (it saves the pick).
+		await expect(picks).toEqual([{ id: 'artist-1', level: 'nearby' }])
+		await waitFor(() => expect(saved).toContain('artist-1:nearby'))
 
 		// @spec components/infrastructure/fan/web/route/my-artists "Parent accepts hype selection"
 		// The route keeps the pick: the save succeeded, and the dot stays.
@@ -507,23 +530,35 @@ export const PickingHypeLevels = {
 		await expect(first.active()).toBe('nearby')
 		await expect(first.radios[2]?.checked).toBe(true)
 
+		// @spec components/infrastructure/fan/web/route/my-artists "Parent reverts hype selection"
 		// The route reverts a pick whose save fails (after its one retry).
 		const second = hypeRow(canvasElement, 'artist-2')
 		await expect(second.active()).toBe('home')
 		changes.length = 0
 		await userEvent.click(second.labelOf('away'))
 		await expect(second.active()).toBe('away')
+		await expect(second.radios.map((r) => r?.checked)).toEqual([
+			false,
+			false,
+			false,
+			true,
+		])
 		await waitFor(() => expect(second.active()).toBe('home'))
+		// The previous level's radio is the checked one again, the tapped one
+		// is not.
+		await expect(second.radios.map((r) => r?.checked)).toEqual([
+			false,
+			true,
+			false,
+			false,
+		])
 		// The revert is a programmatic update: no second `change` event.
+		await new Promise((r) => setTimeout(r, 50))
 		await expect(changes).toEqual(['hype-artist-2:true'])
 		await expect(saved.filter((s) => s.startsWith('artist-2:'))).toEqual([
 			'artist-2:away',
 			'artist-2:away',
 		])
-		// Not asserted, and the reason this part of "Parent reverts hype
-		// selection" is not annotated: the radio keeps the tap's `checked` state
-		// after the revert (AWAY stays checked while the dot shows HOME), because
-		// no binding ties `checked` to the level.
 	},
 } satisfies Story
 
@@ -572,6 +607,105 @@ export const HypeDotMotionFollowsSystemPreference = {
 			if (dot.dataset.level !== 'watch') {
 				await expect(style.boxShadow).not.toBe('none')
 			}
+		}
+	},
+} satisfies Story
+
+/**
+ * The active dot of each level, in the artist's own colour: a row per level.
+ * Runs in the project without reduced motion, where the pulses play.
+ */
+export const ActiveDotByLevel = {
+	render: () =>
+		defineAureliaStory({
+			template: frame(375, 400),
+			register,
+			items: items(4, { hypes: ['watch', 'home', 'nearby', 'away'] }),
+		}),
+	play: async ({ canvasElement }) => {
+		await rendered(canvasElement, 4)
+		const dotOf = (id: string) => {
+			const dot = hypeRow(canvasElement, id).dots.find(
+				(d) => d?.dataset.active === 'true',
+			)
+			if (!dot) throw new Error(`no active dot for ${id}`)
+			return dot
+		}
+		/** What the browser makes of a box-shadow written with the dot's colour. */
+		const shadow = (dot: HTMLElement, value: string) => {
+			const probe = document.createElement('span')
+			probe.style.boxShadow = value
+			dot.append(probe)
+			const resolved = getComputedStyle(probe).boxShadow
+			probe.remove()
+			return resolved
+		}
+		const tone = (alpha: string) => `oklch(from var(--_color) l c h / ${alpha})`
+
+		// @spec components/infrastructure/fan/web/route/my-artists "Active dot reflects hype tier CSS effects"
+		// The level's name is the dot's `data-level`.
+		const levels = ['watch', 'home', 'nearby', 'away']
+		await expect(
+			levels.map((_, i) => dotOf(`artist-${i + 1}`).dataset.level),
+		).toEqual(levels)
+
+		// WATCH: a 1px border of white at 10%, no glow.
+		const watch = dotOf('artist-1')
+		await expect(getComputedStyle(watch).boxShadow).toBe('none')
+		await expect(getComputedStyle(watch).borderTopWidth).toBe('1px')
+		await expect(getComputedStyle(watch).borderTopStyle).toBe('solid')
+		await expect(getComputedStyle(watch).borderTopColor).toBe(
+			resolveColor(watch, 'oklch(100% 0 0deg / 10%)'),
+		)
+		await expect(getComputedStyle(watch).animationName).toBe('none')
+
+		// HOME: a 1px border in the artist's colour, the dot at 40%, a soft glow.
+		const home = dotOf('artist-2')
+		const homeStyle = getComputedStyle(home)
+		await expect(homeStyle.borderTopWidth).toBe('1px')
+		await expect(homeStyle.borderTopStyle).toBe('solid')
+		await expect(homeStyle.borderTopColor).toBe(
+			resolveColor(home, 'var(--_color)'),
+		)
+		await expect(homeStyle.opacity).toBe('0.4')
+		await expect(homeStyle.boxShadow).toBe(
+			shadow(home, `0 0 8px ${tone('30%')}`),
+		)
+		await expect(homeStyle.animationName).toBe('none')
+
+		// NEARBY: a 2px border, a wider glow, the gentle pulse.
+		const nearby = dotOf('artist-3')
+		const nearbyStyle = getComputedStyle(nearby)
+		await expect(nearbyStyle.borderTopWidth).toBe('2px')
+		await expect(nearbyStyle.borderTopColor).toBe(
+			resolveColor(nearby, 'var(--_color)'),
+		)
+		await expect(nearbyStyle.boxShadow).toBe(
+			shadow(nearby, `0 0 16px ${tone('50%')}`),
+		)
+		await expect(nearbyStyle.animationName).toBe('dot-pulse')
+
+		// AWAY: a 2px border, two glows, the strong (faster) pulse.
+		const away = dotOf('artist-4')
+		const awayStyle = getComputedStyle(away)
+		await expect(awayStyle.borderTopWidth).toBe('2px')
+		await expect(awayStyle.borderTopColor).toBe(
+			resolveColor(away, 'var(--_color)'),
+		)
+		await expect(awayStyle.boxShadow).toBe(
+			shadow(away, `0 0 24px ${tone('60%')}, 0 0 48px ${tone('20%')}`),
+		)
+		await expect(awayStyle.animationName).toBe('dot-pulse')
+		await expect(Number.parseFloat(awayStyle.animationDuration)).toBeLessThan(
+			Number.parseFloat(nearbyStyle.animationDuration),
+		)
+
+		// The colour is the artist's own, from the deterministic generator.
+		for (const [i, dot] of [home, nearby, away].entries()) {
+			const name = `Artist ${i + 2}`
+			await expect(resolveColor(dot, 'var(--_color)')).toBe(
+				resolveColor(dot, artistColor(name)),
+			)
 		}
 	},
 } satisfies Story

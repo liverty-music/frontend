@@ -15,4 +15,26 @@ export class HypeDotRadio {
 	@bindable public text = ''
 	/** Whether this is the artist's current level. */
 	@bindable public active = false
+
+	/** The radio input, set by `ref` in the template. */
+	public radio?: HTMLInputElement
+
+	public attached(): void {
+		this.follow()
+	}
+
+	public activeChanged(): void {
+		this.follow()
+	}
+
+	/**
+	 * Make the radio's `checked` agree with `active`, which the page owns (it
+	 * is the artist's current level). A tap checks a radio natively before
+	 * the page has decided; this puts `checked` back in step whenever the
+	 * page's answer arrives. `checked.bind` cannot do it: it matches the group's
+	 * value, and a pick the page reverts leaves that value unchanged.
+	 */
+	public follow(): void {
+		if (this.radio) this.radio.checked = this.active
+	}
 }

@@ -37,6 +37,15 @@ export class ArtistHypeRow {
 				detail: { artist: this.artist, level },
 			}),
 		)
+		// The page has answered by now, synchronously: it keeps the pick, or
+		// puts `artist.hype` back. A pick put back in the same turn leaves the
+		// dots' `active` as it was, so their radios would not hear of it; this
+		// makes every radio of the row follow `artist.hype` again.
+		this.element
+			.querySelectorAll<HTMLInputElement>('input[type="radio"]')
+			.forEach((radio, i) => {
+				radio.checked = this.hypeLevels[i] === this.artist.hype
+			})
 	}
 
 	public unfollow(): void {

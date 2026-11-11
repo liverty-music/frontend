@@ -1640,18 +1640,56 @@ describe('DashboardRoute', () => {
 			).toBe(false)
 		})
 
-		it('shows the error state, and not the empty state, when the load fails with nothing to show', async () => {
+		const skeletonShown = () =>
+			evaluate(
+				new DOMParser()
+					.parseFromString(`<body>${dashboardTemplate}</body>`, 'text/html')
+					.querySelector('concert-highway')
+					?.getAttribute('loading.bind') as string,
+			)
+
+		// @spec components/infrastructure/fan/web/global/live-highway "Dashboard data loading uses promise.bind"
+		it('shows the skeletons until the first load settles, then the error and Retry in their place when it fails', async () => {
 			mockAuth.isAuthenticated = true
 			mockConcertService.peekDateGroups.mockReturnValue(null)
-			mockConcertService.listFollowed.mockRejectedValue(new Error('boom'))
+			let fail: (e: Error) => void = () => {}
+			mockConcertService.listFollowed.mockReturnValueOnce(
+				new Promise((_, reject) => {
+					fail = reject
+				}),
+			)
 			sut.needsRegion = false
 
-			await sut.loadData()
+			// Pending: the highway holds the loading skeletons (its `loading`
+			// binding), and neither the error nor an empty state is shown.
+			const load = sut.loadData()
+			expect(skeletonShown()).toBe(true)
+			expect(evaluate(errorGate())).toBeFalsy()
+			expect(evaluate(emptyGate())).toBe(false)
 
-			// The same "no events" list, told apart by the error.
+			// The first load fails with nothing to show: the skeletons go, the
+			// error is shown instead of the lanes, with a Retry that loads again.
+			fail(new Error('boom'))
+			await load
+			expect(skeletonShown()).toBe(false)
 			expect(sut.filteredDateGroups).toEqual([])
 			expect(evaluate(errorGate())).toBeTruthy()
 			expect(evaluate(emptyGate())).toBe(false)
+			const doc = new DOMParser().parseFromString(
+				`<body>${dashboardTemplate}</body>`,
+				'text/html',
+			)
+			const retry = evaluate(
+				doc
+					.querySelector('inline-error')
+					?.getAttribute('retry-action.bind') as string,
+			) as () => void
+			mockConcertService.listFollowed.mockResolvedValue([])
+			mockConcertService.listFollowed.mockClear()
+			retry()
+			await flushMicrotasks()
+			expect(mockConcertService.listFollowed).toHaveBeenCalledTimes(1)
+			expect(sut.loadError).toBeNull()
 		})
 
 		// @spec components/infrastructure/fan/web/global/live-highway "Dashboard silently displays cached data on refresh failure"
