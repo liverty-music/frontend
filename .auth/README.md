@@ -42,7 +42,7 @@ The file's contents are read verbatim (whitespace trimmed). No markdown formatti
 
 ### 3. Start the dev server
 
-The capture script navigates to the local dev server (default: `http://localhost:9000`; set `E2E_PORT` to use another port):
+The capture script navigates to the local dev server (default: `http://localhost:9000`):
 
 ```bash
 npm start

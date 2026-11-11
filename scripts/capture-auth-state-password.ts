@@ -38,12 +38,11 @@
 import * as fs from 'node:fs'
 import * as path from 'node:path'
 import { chromium, type Locator, type Page } from '@playwright/test'
-import { APP_ORIGIN } from '../e2e/support/app-origin'
 
 /** Where each environment's test user signs in and its files live. */
 const TARGETS = {
 	dev: {
-		appUrl: APP_ORIGIN,
+		appUrl: 'http://localhost:9000',
 		authHost: /auth\.dev\.liverty-music\.app/,
 		username: 'e2e-test-password@dev.liverty-music.app',
 		passwordFile: 'password.md',
