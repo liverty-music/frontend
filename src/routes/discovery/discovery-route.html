@@ -57,7 +57,7 @@
     <discovery-search-results
       search.bind="search"
       followed-ids.bind="followedIds"
-      on-follow.bind="(artist) => onFollowFromSearch(artist)"
+      follow.trigger="$event.detail.waitUntil(onFollowFromSearch($event.detail.artist))"
     ></discovery-search-results>
 
     <!-- All Nearby view: in place of the search bar, the genre chips and the

@@ -9,10 +9,4 @@ import type { DateGroup } from '../../entities/concert'
 export class WelcomeDemoTimetable {
 	/** The preview concerts, by date. */
 	@bindable public dateGroups: DateGroup[] = []
-
-	/** Starts onboarding. */
-	@bindable public onGetStarted?: () => Promise<void>
-
-	/** Signs in. */
-	@bindable public onLogin?: () => Promise<void>
 }

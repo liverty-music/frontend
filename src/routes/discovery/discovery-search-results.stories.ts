@@ -26,7 +26,7 @@ function render(search: Record<string, unknown>): Story['render'] {
 				<discovery-search-results
 					search.bind="search"
 					followed-ids.bind="followedIds"
-					on-follow.bind="() => follow()"
+					follow.trigger="$event.detail.waitUntil(follow())"
 				></discovery-search-results>
 			</div>`,
 			props: {

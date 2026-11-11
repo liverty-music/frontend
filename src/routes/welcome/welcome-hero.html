@@ -33,9 +33,6 @@
        guest-friendly note rides above the CTA group per the landing-page spec
        so the no-account-required message stays visible without scrolling. -->
   <div else class="[ welcome-hero-fallback ] [ stack ]">
-    <welcome-cta
-      on-get-started.bind="() => onGetStarted()"
-      on-login.bind="() => onLogin()"
-    ></welcome-cta>
+    <welcome-cta></welcome-cta>
   </div>
 </header>

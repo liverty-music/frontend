@@ -13,8 +13,8 @@
   has-preview.bind="dateGroups.length > 0"
   languages.bind="supportedLanguages"
   current-locale.bind="currentLocale"
-  on-get-started.bind="() => handleGetStarted()"
-  on-login.bind="() => handleLogin()"
+  get-started.trigger="$event.detail.waitUntil(handleGetStarted())"
+  login.trigger="$event.detail.waitUntil(handleLogin())"
   see-preview.trigger="scrollToPreview()"
   language-select.trigger="selectLanguage($event.detail)"
 ></welcome-hero>
@@ -47,8 +47,8 @@
   <welcome-demo-timetable
     else
     date-groups.bind="dateGroups"
-    on-get-started.bind="() => handleGetStarted()"
-    on-login.bind="() => handleLogin()"
+    get-started.trigger="$event.detail.waitUntil(handleGetStarted())"
+    login.trigger="$event.detail.waitUntil(handleLogin())"
     event-selected.trigger="onEventSelected($event)"
   ></welcome-demo-timetable>
 </section>

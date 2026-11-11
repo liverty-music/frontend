@@ -3,13 +3,13 @@
 <p t="welcome.guestFriendly" class="[ welcome-guest-friendly ] [ md-typescale-body-medium ]"></p>
 <div class="[ welcome-action-group ] [ stack ]">
   <button
-    busy-on-click.bind="() => onGetStarted()"
+    busy-on-click.bind="() => getStarted()"
     class="[ button ] [ state-layer ]"
     data-testid="welcome-get-started"
     t="welcome.cta.getStarted"
   ></button>
   <button
-    busy-on-click.bind="() => onLogin()"
+    busy-on-click.bind="() => login()"
     class="[ button ] [ state-layer ]"
     data-variant="outlined"
     data-testid="welcome-login"

@@ -19,12 +19,6 @@ export class WelcomeHero {
 	/** The language in use. */
 	@bindable public currentLocale = ''
 
-	/** Starts onboarding. */
-	@bindable public onGetStarted?: () => Promise<void>
-
-	/** Signs in. */
-	@bindable public onLogin?: () => Promise<void>
-
 	public seePreview(): void {
 		this.host.dispatchEvent(new CustomEvent('see-preview', { bubbles: true }))
 	}

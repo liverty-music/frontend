@@ -30,15 +30,12 @@ const render: Story['render'] = (args) =>
 			has-preview.bind="hasPreview"
 			languages.bind="languages"
 			current-locale.bind="current"
-			on-get-started.bind="() => noop()"
-			on-login.bind="() => noop()"
 			language-select.trigger="current = $event.detail"
 		></welcome-hero>`,
 		props: {
 			hasPreview: args.hasPreview,
 			languages: ['ja', 'en'],
 			current: 'ja',
-			noop: async () => {},
 		},
 		register: [WelcomeHero, BusyOnClickCustomAttribute],
 	})

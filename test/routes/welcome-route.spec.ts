@@ -330,4 +330,112 @@ describe('WelcomeRoute', () => {
 			expect(scrollIntoViewSpy).not.toHaveBeenCalled()
 		})
 	})
+
+	describe('guided demo', () => {
+		const reducedMotion = (reduced: boolean) =>
+			vi.spyOn(window, 'matchMedia').mockImplementation(
+				(query: string) =>
+					({
+						matches: reduced,
+						media: query,
+						addEventListener: () => {},
+						removeEventListener: () => {},
+					}) as unknown as MediaQueryList,
+			)
+
+		beforeEach(() => {
+			vi.useFakeTimers()
+		})
+
+		afterEach(() => {
+			sut.detaching()
+			vi.useRealTimers()
+		})
+
+		it('moves from the notification to the timetable after the exit, then shows the coach-mark', () => {
+			reducedMotion(false)
+			sut.onNotificationTap()
+			expect(sut.demoExiting).toBe(true)
+			// A second tap while the notification leaves does nothing.
+			sut.onNotificationTap()
+			vi.advanceTimersByTime(380)
+			expect(sut.demoExiting).toBe(false)
+			expect(sut.demoPhase).toBe('timetable')
+			vi.advanceTimersByTime(5000)
+			expect(sut.coachActive).toBe(true)
+			sut.onCoachTap()
+			expect(sut.coachActive).toBe(false)
+			sut.coachActive = true
+			sut.onCoachDismiss()
+			expect(sut.coachActive).toBe(false)
+		})
+
+		it('goes straight to the timetable under reduced motion', () => {
+			reducedMotion(true)
+			sut.onNotificationTap()
+			expect(sut.demoExiting).toBe(false)
+			expect(sut.demoPhase).toBe('timetable')
+		})
+
+		it('cancels the coach-mark when a card is selected', () => {
+			reducedMotion(true)
+			sut.onNotificationTap()
+			sut.onEventSelected(
+				new CustomEvent('x', { detail: { event: {} } }) as never,
+			)
+			vi.advanceTimersByTime(5000)
+			expect(sut.coachActive).toBe(false)
+		})
+
+		it('starts the demo when it scrolls into view, advancing by itself with motion', async () => {
+			reducedMotion(false)
+			let notify: (entries: { isIntersecting: boolean }[]) => void = () => {}
+			const observe = vi.fn()
+			const disconnect = vi.fn()
+			vi.stubGlobal(
+				'IntersectionObserver',
+				class {
+					constructor(cb: typeof notify) {
+						notify = cb
+					}
+					observe = observe
+					disconnect = disconnect
+				},
+			)
+			sut.demoEl = document.createElement('div')
+			sut.dateGroups = [{ home: [], nearby: [], away: [] } as never]
+			await vi.advanceTimersByTimeAsync(0)
+			expect(observe).toHaveBeenCalledWith(sut.demoEl)
+
+			notify([{ isIntersecting: false }])
+			expect(sut.demoEntered).toBe(false)
+			notify([{ isIntersecting: true }])
+			expect(sut.demoEntered).toBe(true)
+			expect(disconnect).toHaveBeenCalled()
+			vi.advanceTimersByTime(5000)
+			expect(sut.demoExiting).toBe(true)
+			vi.unstubAllGlobals()
+		})
+
+		it('shows the timetable at once when the demo scrolls into view under reduced motion', async () => {
+			reducedMotion(true)
+			let notify: (entries: { isIntersecting: boolean }[]) => void = () => {}
+			vi.stubGlobal(
+				'IntersectionObserver',
+				class {
+					constructor(cb: typeof notify) {
+						notify = cb
+					}
+					observe = vi.fn()
+					disconnect = vi.fn()
+				},
+			)
+			sut.demoEl = document.createElement('div')
+			sut.dateGroups = [{ home: [], nearby: [], away: [] } as never]
+			await vi.advanceTimersByTimeAsync(0)
+			notify([{ isIntersecting: true }])
+			expect(sut.demoPhase).toBe('timetable')
+			vi.unstubAllGlobals()
+		})
+	})
 })

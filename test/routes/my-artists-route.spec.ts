@@ -969,6 +969,9 @@ describe('MyArtistsRoute', () => {
 			const { default: routeHtml } = await import(
 				'../../src/routes/my-artists/my-artists-route.html?raw'
 			)
+			const { default: tableHtml } = await import(
+				'../../src/routes/my-artists/artist-hype-table.html?raw'
+			)
 			const remove = rowHtml.match(
 				/<td if\.bind="editing" class="artist-remove-col">[\s\S]*?<\/td>/,
 			)?.[0]
@@ -983,7 +986,7 @@ describe('MyArtistsRoute', () => {
 			expect(remove).toMatch(
 				/<button[\s\S]*type="button"[\s\S]*click\.trigger="unfollow\(\)"/,
 			)
-			for (const html of [rowHtml, routeHtml]) {
+			for (const html of [rowHtml, tableHtml, routeHtml]) {
 				expect(html).not.toMatch(/long-?press|swipe|pointerdown|touchstart/i)
 			}
 			expect(rowHtml.match(/unfollow\(\)/g)).toHaveLength(1)

@@ -113,3 +113,14 @@ export const MovedHere = {
 		).toHaveLength(1)
 	},
 } satisfies Story
+
+/** The device check failed: a warning notice. */
+export const DeviceFailed = {
+	render,
+	args: { device: 'failed' },
+	play: async ({ canvasElement }) => {
+		const notices = canvasElement.querySelectorAll('.tickets-notice')
+		await expect(notices).toHaveLength(1)
+		await expect(notices[0]).toHaveAttribute('data-tone', 'warning')
+	},
+} satisfies Story
