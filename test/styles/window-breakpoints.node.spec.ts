@@ -36,18 +36,22 @@ describe('window-width layout breakpoints (fan)', () => {
 	// stylesheet scan can: no fan screen changes layout by window width today,
 	// so the scenario's WHEN has nothing to run against (see the organizer story).
 	it('changes layout only at the Material 3 breakpoints', () => {
-		const off = windowWidthQueries()
-			.flatMap(({ file, query, px }) =>
-				px.filter((w) => !BREAKPOINTS.has(w)).map(() => `${file}: ${query}`),
-			)
-			.sort()
+		const off = windowWidthQueries().flatMap(({ file, query, px }) =>
+			px.filter((w) => !BREAKPOINTS.has(w)).map(() => ({ file, query })),
+		)
 
-		// The two SE-class phone rules combine the window's width with its height
-		// (a container query cannot), each carrying a stylelint-disable with that
-		// reason. Nothing else may leave the breakpoints.
-		expect(off).toEqual([
-			'src/components/page-header/page-header.css: (height <= 700px) and (width < 390px)',
-			'src/routes/discovery/discovery-route.css: (height <= 700px) and (width < 390px)',
-		])
+		// The one exception the requirement allows: the SE-class phone rule
+		// combines the window's width with its height (a container query cannot)
+		// to tighten spacing, and each use carries a stylelint-disable with that
+		// reason. It is allowed by its query, not by file, so a stylesheet split
+		// does not break the check. Nothing else may leave the breakpoints.
+		const SPACING_ONLY = '(height <= 700px) and (width < 390px)'
+		expect(
+			off
+				.filter(({ query }) => query !== SPACING_ONLY)
+				.map(({ file, query }) => `${file}: ${query}`),
+		).toEqual([])
+		// The exception still exists (a removed rule should drop it from here).
+		expect(off.some(({ query }) => query === SPACING_ONLY)).toBe(true)
 	})
 })
