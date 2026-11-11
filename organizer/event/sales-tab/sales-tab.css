@@ -16,10 +16,6 @@
 			justify-content: flex-end;
 		}
 
-		.note {
-			color: var(--md-sys-color-on-surface-variant);
-		}
-
 		.sales,
 		.stock-list,
 		.lottery-stocks {
@@ -27,9 +23,12 @@
 			gap: var(--space-s);
 		}
 
-		/* M3 outlined card: a sale, or a seat type's stock, holds several actions. */
+		/* M3 outlined card: a sale, or a seat type's stock, holds several actions.
+		   The gap spaces its rows; a sale's flow adds space above verification. */
 		.sale,
 		.stock {
+			--flow-space: 0;
+
 			display: grid;
 			gap: var(--space-xs);
 
@@ -47,9 +46,11 @@
 			justify-content: space-between;
 		}
 
+		.note,
 		.window,
 		.terms,
-		.locked {
+		.locked,
+		.referrals-note {
 			color: var(--md-sys-color-on-surface-variant);
 		}
 
@@ -85,20 +86,10 @@
 			}
 		}
 
-		/* In a sale card the grid gap spaces the rows; the flow composition
-		   adds only the extra space above the verification field. */
-		.sale {
-			--flow-space: 0;
-		}
-
 		.verification {
 			--flow-space: var(--space-2xs);
 
 			max-inline-size: 420px;
-		}
-
-		.referrals-note {
-			color: var(--md-sys-color-on-surface-variant);
 		}
 
 		.message {

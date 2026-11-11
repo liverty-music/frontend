@@ -1,0 +1,64 @@
+@layer block {
+	@scope (brand-lockup) {
+		/* The link, not this element, is the top app bar's flex item. */
+		:scope {
+			display: contents;
+		}
+
+		/* Liverty Music over Organizer Console. The logo is one of the three
+		   places the brand color may appear. */
+		.brand {
+			display: inline-grid;
+			flex-shrink: 0;
+			align-content: center;
+
+			min-block-size: var(--md-sys-target-size);
+			padding-inline: var(--space-xs);
+
+			text-decoration: none;
+		}
+
+		.brand-mark {
+			color: var(--md-sys-color-primary);
+		}
+
+		.brand-product {
+			color: var(--md-sys-color-on-surface-variant);
+		}
+
+		/* Medium and wider: the lockup on one line above the rail. */
+		@container shell (width >= 600px) {
+			.brand {
+				display: inline-flex;
+				gap: var(--space-2xs);
+				align-items: center;
+			}
+
+			/* stylelint-disable property-disallowed-list -- the brand grows with the window class, which a template cannot see */
+			.brand-mark {
+				font-family: var(--md-sys-typescale-title-medium-font);
+				font-weight: var(--md-sys-typescale-title-medium-emphasized-weight);
+				font-size: var(--md-sys-typescale-title-medium-size);
+				line-height: var(--md-sys-typescale-title-medium-line-height);
+				letter-spacing: var(--md-sys-typescale-title-medium-tracking);
+			}
+
+			.brand-product {
+				font-family: var(--md-sys-typescale-title-medium-font);
+				font-weight: var(--md-sys-typescale-title-medium-weight);
+				font-size: var(--md-sys-typescale-title-medium-size);
+				line-height: var(--md-sys-typescale-title-medium-line-height);
+				letter-spacing: var(--md-sys-typescale-title-medium-tracking);
+			}
+			/* stylelint-enable property-disallowed-list */
+		}
+
+		/* Compact, below a destination: the back arrow and the page title
+		   take the brand's place. */
+		@container shell (width < 600px) {
+			.brand[data-deep="true"] {
+				display: none;
+			}
+		}
+	}
+}

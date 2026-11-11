@@ -1,0 +1,52 @@
+@layer block {
+	@scope (concert-summary) {
+		/* The pane, not this element, is the page's grid item. */
+		:scope {
+			display: contents;
+		}
+
+		.supporting {
+			display: grid;
+			gap: var(--space-xs);
+			align-content: start;
+		}
+
+		.cover {
+			aspect-ratio: 1;
+			inline-size: 100%;
+			max-inline-size: 360px;
+			border-radius: var(--md-sys-shape-corner-medium);
+
+			object-fit: cover;
+		}
+
+		/* The processing note under a picked cover (design D9a). */
+		.cover-note {
+			max-inline-size: 360px;
+			color: var(--md-sys-color-on-surface-variant);
+		}
+
+		.summary {
+			display: grid;
+			gap: var(--space-2xs);
+		}
+
+		.summary-row {
+			display: grid;
+			gap: var(--space-3xs);
+
+			& dt {
+				color: var(--md-sys-color-on-surface-variant);
+			}
+		}
+
+		/* Expanded window: a filled pane beside the dates. */
+		@container shell (width >= 840px) {
+			.supporting {
+				padding: var(--space-s);
+				border-radius: var(--md-sys-shape-corner-large);
+				background: var(--md-sys-color-surface-container-low);
+			}
+		}
+	}
+}

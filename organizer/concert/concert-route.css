@@ -23,17 +23,14 @@
 			gap: var(--space-m);
 		}
 
-		.focus,
-		.supporting {
-			display: grid;
-			gap: var(--space-xs);
-			align-content: start;
-		}
-
 		/* The grid gap spaces the pane; the flow composition adds only the
 		   extra space above the seat types. */
 		.focus {
 			--flow-space: 0;
+
+			display: grid;
+			gap: var(--space-xs);
+			align-content: start;
 		}
 
 		.seat-types {
@@ -75,71 +72,24 @@
 			}
 		}
 
-		.cover {
-			aspect-ratio: 1;
-			inline-size: 100%;
-			max-inline-size: 360px;
-			border-radius: var(--md-sys-shape-corner-medium);
-
-			object-fit: cover;
-		}
-
-		/* The processing note under a picked cover (design D9a). */
-		.cover-note {
-			max-inline-size: 360px;
-			color: var(--md-sys-color-on-surface-variant);
-		}
-
-		.summary {
-			display: grid;
-			gap: var(--space-2xs);
-		}
-
-		.summary-row {
-			display: grid;
-			gap: var(--space-3xs);
-
-			& dt {
-				color: var(--md-sys-color-on-surface-variant);
-			}
-		}
-
 		.choices {
 			display: grid;
 			gap: var(--space-3xs);
 		}
 
+		/* The dates to publish (the shared `choice` row), nearer the dialog's
+		   edge and in the dialog's body colour. */
 		.choice {
-			cursor: pointer;
-
-			display: flex;
-			gap: var(--space-xs);
-			align-items: center;
-
-			min-block-size: var(--md-sys-target-size);
-			padding-inline: var(--space-2xs);
-			border-radius: var(--md-sys-shape-corner-small);
+			--choice-padding-inline: var(--space-2xs);
 
 			color: var(--md-sys-color-on-surface);
-
-			& input {
-				inline-size: 20px;
-				block-size: 20px;
-				accent-color: var(--md-sys-color-primary);
-			}
 		}
 
-		/* Expanded window: the summary pane beside the dates. */
+		/* Expanded window: the summary pane (`concert-summary`) beside the dates. */
 		@container shell (width >= 840px) {
 			.panes {
 				grid-template-columns: minmax(0, 1fr) minmax(240px, 360px);
 				align-items: start;
-			}
-
-			.supporting {
-				padding: var(--space-s);
-				border-radius: var(--md-sys-shape-corner-large);
-				background: var(--md-sys-color-surface-container-low);
 			}
 		}
 	}

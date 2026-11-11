@@ -1,31 +1,11 @@
 {
-  "organizer/concert/concert-route.css": {
-    "cube/block-max-lines": {
-      "count": 1
-    }
-  },
-  "organizer/concert-editor/concert-editor-route.css": {
-    "cube/block-max-lines": {
-      "count": 1
-    }
-  },
   "organizer/organizer-shell/organizer-shell.css": {
     "declaration-property-custom-property-allowed-list": {
       "count": 1
     }
   },
-  "organizer/event/sales-tab/sales-tab.css": {
-    "cube/block-max-lines": {
-      "count": 1
-    }
-  },
   "organizer/shell/console-navigation/console-navigation.css": {
     "declaration-property-custom-property-allowed-list": {
-      "count": 1
-    }
-  },
-  "organizer/shell/top-app-bar/top-app-bar.css": {
-    "cube/block-max-lines": {
       "count": 1
     }
   },
@@ -40,16 +20,6 @@
     },
     "declaration-property-custom-property-allowed-list": {
       "count": 2
-    }
-  },
-  "organizer/ui/console-button/console-button.css": {
-    "cube/block-max-lines": {
-      "count": 1
-    }
-  },
-  "organizer/ui/console-field/console-field.css": {
-    "cube/block-max-lines": {
-      "count": 1
     }
   },
   "src/components/bottom-nav-bar/bottom-nav-bar.css": {

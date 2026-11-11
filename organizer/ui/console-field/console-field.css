@@ -1,3 +1,10 @@
+/*
+ * The field frame the console's fields share: the label, the box around the
+ * control and its focus, the affix, the supporting and error text, and the
+ * invalid, disabled and read-only states. `venue-field` and
+ * `console-time-field` import it too. The console field's multi-line and
+ * select controls are in `./console-field-controls.css`.
+ */
 @layer block {
 	:host {
 		display: block;
@@ -8,11 +15,16 @@
 		gap: var(--space-3xs);
 	}
 
-	.label {
+	.label,
+	.affix,
+	.supporting {
 		color: var(--md-sys-color-on-surface-variant);
 	}
 
-	.required {
+	.required,
+	.error,
+	.error-icon,
+	.field[data-invalid="true"] .label {
 		color: var(--md-sys-color-error);
 	}
 
@@ -67,109 +79,13 @@
 		}
 	}
 
-	/*
-	 * Customizable select: the picker and its options take the values of the
-	 * shared `menu` block (`shared/styles/menu.css`), which a pseudo-element
-	 * cannot carry as a class: surface container, extra-small corners,
-	 * elevation level 2, 48 px options with 12 px side padding; the chosen
-	 * option is in the secondary container. The element stays a native
-	 * select for the keyboard, the form value and screen readers. A browser
-	 * without `base-select` shows its own picker, readable in dark because
-	 * the control inherits the page's `color-scheme`.
-	 */
-	select,
-	::picker(select) {
-		appearance: base-select;
-	}
-
-	select {
-		cursor: pointer;
-		display: flex;
-		align-items: center;
-
-		&::picker-icon {
-			color: var(--md-sys-color-on-surface-variant);
-		}
-	}
-
-	::picker(select) {
-		padding-block: var(--space-2xs);
-		border: none;
-		border-radius: var(--md-sys-shape-corner-extra-small);
-
-		color: var(--md-sys-color-on-surface);
-
-		background: var(--md-sys-color-surface-container);
-		box-shadow: var(--md-sys-elevation-level2);
-	}
-
-	option {
-		gap: var(--space-xs);
-
-		min-block-size: var(--md-sys-target-size);
-		padding-inline: var(--space-xs);
-
-		color: var(--md-sys-color-on-surface);
-
-		background: var(--md-sys-color-surface-container);
-
-		/* The options mix the shared hover and focus opacities into their
-		   fill; whether a customizable select's <option> can carry the shared
-		   `state-layer` (::before) is not yet checked. */
-		&:hover {
-			background: color-mix(
-				in oklch,
-				var(--md-sys-color-on-surface)
-					calc(var(--md-sys-state-hover-opacity) * 100%),
-				var(--md-sys-color-surface-container)
-			);
-		}
-
-		&:focus-visible {
-			background: color-mix(
-				in oklch,
-				var(--md-sys-color-on-surface)
-					calc(var(--md-sys-state-focus-opacity) * 100%),
-				var(--md-sys-color-surface-container)
-			);
-		}
-
-		&:checked {
-			color: var(--md-sys-color-on-secondary-container);
-			background: var(--md-sys-color-secondary-container);
-		}
-	}
-
-	textarea {
-		resize: vertical;
-		min-block-size: 96px;
-		padding-block: var(--space-xs);
-	}
-
-	.affix {
-		color: var(--md-sys-color-on-surface-variant);
-	}
-
 	.supporting,
 	.error {
 		padding-inline: var(--space-s);
 	}
 
-	.supporting {
-		color: var(--md-sys-color-on-surface-variant);
-	}
-
-	.error,
-	.error-icon {
-		color: var(--md-sys-color-error);
-	}
-
 	.field[data-invalid="true"] .control {
 		border-color: var(--md-sys-color-error);
-	}
-
-	.field[data-invalid="true"] .label {
-		color: var(--md-sys-color-error);
 	}
 
 	.field[data-disabled="true"] {

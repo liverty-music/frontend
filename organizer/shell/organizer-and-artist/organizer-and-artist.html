@@ -1,0 +1,13 @@
+<import from="./organizer-and-artist.css"></import>
+<import from="../artist-menu/artist-menu"></import>
+
+<div class="context" data-deep.bind="deep">
+  <span class="[ organizer-name ] [ md-typescale-label-medium ]" data-testid="organizer-name">${context.organizerName}</span>
+  <artist-menu
+    if.bind="artists.length > 1"
+    artists.bind="artists"
+    current-id.bind="context.artistId"
+    current-name.bind="artistName"
+  ></artist-menu>
+  <span else class="[ artist-name ] [ md-typescale-label-large ]" data-testid="artist-name">${artistName}</span>
+</div>
