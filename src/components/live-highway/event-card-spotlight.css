@@ -1,0 +1,73 @@
+/* stylelint-disable no-unknown-custom-properties -- --artist-hue is set inline by the template from the concert data */
+@layer block {
+	/* A matched concert's card: a festival spotlight from above, in the
+	   artist's hue. The card's shape and content are event-card.css. */
+	@scope (.event-card[data-matched]) {
+		:scope {
+			/* The artist's hue, set on the card from the concert data. */
+			--_hue: var(--artist-hue);
+			--_spot-white: oklch(98% 0.05 var(--_hue));
+			--_spot-bright: oklch(80% 0.4 var(--_hue));
+			--_spot-mid: oklch(65% 0.3 var(--_hue));
+			--_spot-dim: oklch(55% 0.2 var(--_hue));
+			--_spot-glow: oklch(75% 0.4 var(--_hue) / 50%);
+
+			/* Vivid neon border */
+			border: 2px solid var(--_spot-bright);
+
+			/* Vivid diagonal gradient — slightly deeper than unmatched */
+			background: linear-gradient(
+				135deg,
+				oklch(62% 0.3 var(--_hue)) 0%,
+				oklch(62% 0.3 calc(var(--_hue) + 40)) 100%
+			);
+
+			/* Massive multi-layer outer glow — festival spotlight spill */
+			/* stylelint-disable declaration-property-value-allowed-list -- the matched card's glow in the artist's own hue is spec-defined (live-highway "Matched event card glow opacity"); a hue set per card cannot be a root token */
+			box-shadow:
+				0 -8px 20px var(--_spot-bright),
+				0 -4px 40px var(--_spot-glow),
+				0 0 15px var(--_spot-bright),
+				0 0 40px var(--_spot-glow),
+				0 0 80px oklch(60% 0.3 var(--_hue) / 25%),
+				inset 0 4px 30px var(--_spot-mid);
+			/* stylelint-enable declaration-property-value-allowed-list */
+		}
+
+		/* Spotlight beam cone — contained within card using clipped ::after (the
+		   shared state layer keeps ::before) */
+		:scope::after {
+			pointer-events: none;
+			content: "";
+
+			position: absolute;
+			inset-block-start: 0;
+			inset-inline: 0;
+
+			block-size: 100%;
+
+			/* Vertical light beam stripe through center */
+			background: linear-gradient(
+				to bottom,
+				oklch(95% 0.1 var(--_hue) / 80%) 0%,
+				oklch(80% 0.2 var(--_hue) / 40%) 30%,
+				transparent 70%
+			);
+
+			/* Narrow beam shape via mask */
+			mask-image: radial-gradient(
+				ellipse 30% 100% at 50% 0%,
+				black 0%,
+				transparent 100%
+			);
+		}
+
+		/* Artist name neon glow — triple layer */
+		.artist-name {
+			text-shadow:
+				0 0 6px var(--_spot-bright),
+				0 0 14px var(--_spot-glow),
+				0 0 28px var(--_spot-dim);
+		}
+	}
+}

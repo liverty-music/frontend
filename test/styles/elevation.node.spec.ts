@@ -79,7 +79,7 @@ describe('elevation', () => {
 			// The coach mark's dimmed layer around the spotlight.
 			'src/components/coach-mark/coach-mark.css',
 			// The matched card's glow in its artist's hue.
-			'src/components/live-highway/event-card.css',
+			'src/components/live-highway/event-card-spotlight.css',
 			// The hype tier glows in the artist's colour.
 			'src/routes/my-artists/my-artists-route.css',
 		])
