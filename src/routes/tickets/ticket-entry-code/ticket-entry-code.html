@@ -1,0 +1,45 @@
+<import from="./ticket-entry-code.css"></import>
+
+<p class="[ tickets-code-event ] [ md-typescale-title-medium ]">${eventTitle}</p>
+
+<p class="[ tickets-code-count ] [ md-typescale-headline-large ]" if.bind="numbers.length > 0">
+	<span t="tickets.code.headCount" t-params.bind="{ count: numbers.length }"></span>
+</p>
+
+<figure class="[ tickets-code-figure ] [ wrapper ]" if.bind="numbers.length > 0">
+	<img
+		class="tickets-code-image"
+		if.bind="image"
+		src.bind="image"
+		alt.bind="'tickets.code.alt' | t: { count: numbers.length }"
+	>
+	<p class="[ tickets-lead ] [ md-typescale-body-medium ]" else t="tickets.code.making"></p>
+</figure>
+<p class="[ tickets-lead ] [ md-typescale-body-medium ]" if.bind="numbers.length === 0" t="tickets.code.allEntered"></p>
+
+<p class="[ tickets-lead ] [ md-typescale-body-medium ]" t="tickets.code.rotation"></p>
+<p class="[ tickets-lead ] [ md-typescale-body-medium ]" t="tickets.code.brightness"></p>
+
+<!-- The tickets the code presents; none can be left out -->
+<section
+	class="[ tickets-code-who ] [ flow ]"
+	if.bind="numbers.length > 0"
+	aria-labelledby="tickets-code-who"
+>
+	<h3 class="[ tickets-code-who-title ] [ md-typescale-label-large ]" id="tickets-code-who" t="tickets.code.who"></h3>
+	<ul class="[ tickets-code-tickets ] [ cluster ]" role="list">
+		<li
+			repeat.for="n of numbers"
+			t="tickets.ticketN"
+			t-params.bind="{ n: n }"
+		></li>
+	</ul>
+</section>
+
+<button
+	type="button"
+	class="[ button tickets-action ] [ state-layer ]"
+	data-variant="outlined"
+	click.trigger="close()"
+	t="tickets.code.close"
+></button>

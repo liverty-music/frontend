@@ -1,72 +1,30 @@
 <import from="./virtual-ticket/virtual-ticket"></import>
+<import from="../../components/ticket-resale-notice/ticket-resale-notice"></import>
+<import from="./ticket-entry-code/ticket-entry-code"></import>
+<import from="./ticket-device-notices/ticket-device-notices"></import>
 
 <template class="[ tickets-route ] [ flow ]">
 	<header class="tickets-header">
 		<h1 class="[ tickets-title ] [ md-typescale-headline-small ]" t="tickets.title"></h1>
 	</header>
 
-	<!-- Saved list shown without a connection -->
-	<output class="[ tickets-notice card ] [ wrapper ] [ md-typescale-body-medium ]" if.bind="offline && step === 'loaded'">
-		<span t="tickets.offline" t-params.bind="{ time: savedAtLabel() }"></span>
-	</output>
-
-	<!-- Device preparation messages -->
-	<output
-		class="[ tickets-notice card ] [ wrapper ] [ md-typescale-body-medium ]"
-		data-tone="warning"
-		if.bind="device === 'needs-connection' && step === 'loaded'"
-		t="tickets.device.needsConnection"
-	></output>
-	<output
-		class="[ tickets-notice card ] [ wrapper ] [ md-typescale-body-medium ]"
-		data-tone="warning"
-		if.bind="device === 'failed' && step === 'loaded'"
-		t="tickets.device.failed"
-	></output>
-	<output
-		class="[ tickets-notice card ] [ wrapper ] [ md-typescale-body-medium ]"
-		if.bind="movedToThisDevice"
-		t="tickets.device.movedHere"
-	></output>
-
-	<!-- The entry QR code is set to another device: offer to move it here -->
-	<section
-		class="[ tickets-notice card ] [ flow wrapper ] [ md-typescale-body-medium ]"
-		data-tone="warning"
-		if.bind="device === 'other-device' && step === 'loaded'"
-		aria-labelledby="tickets-other-device"
-	>
-		<p id="tickets-other-device" t="tickets.device.otherDevice"></p>
-		<button
-			type="button"
-			class="[ button tickets-action ] [ state-layer ]"
-			data-variant="outlined"
-			if.bind="canOfferMove && !confirmingMove"
-			click.trigger="askToUseThisDevice()"
-			t="tickets.device.useThisDevice"
-		></button>
-		<template if.bind="canOfferMove && confirmingMove">
-			<p t="tickets.device.confirmMove"></p>
-			<output class="[ tickets-error ] [ md-typescale-body-medium ]" if.bind="moveFailed" t="tickets.device.moveFailed"></output>
-			<div class="cluster">
-				<button
-					type="button"
-					class="[ button tickets-action ] [ state-layer ]"
-					disabled.bind="moving"
-					click.trigger="confirmUseThisDevice()"
-					t="tickets.device.confirm"
-				></button>
-				<button
-					type="button"
-					class="[ button tickets-action ] [ state-layer ]"
-					data-variant="outlined"
-					disabled.bind="moving"
-					click.trigger="cancelMove()"
-					t="tickets.device.cancel"
-				></button>
-			</div>
-		</template>
-	</section>
+	<!-- Notices about this device and the saved list -->
+	<ticket-device-notices
+		class="[ flow ]"
+		if.bind="hasDeviceNotice"
+		loaded.bind="step === 'loaded'"
+		offline.bind="offline"
+		saved-at.bind="savedAtLabel()"
+		device.bind="device"
+		moved-here.bind="movedToThisDevice"
+		can-offer-move.bind="canOfferMove"
+		confirming.bind="confirmingMove"
+		moving.bind="moving"
+		move-failed.bind="moveFailed"
+		use-this-device.trigger="askToUseThisDevice()"
+		move-confirm.trigger="confirmUseThisDevice()"
+		move-cancel.trigger="cancelMove()"
+	></ticket-device-notices>
 
 	<!-- Loading -->
 	<section class="[ tickets-panel card ] [ wrapper ]" if.bind="step === 'loading'">
@@ -171,10 +129,7 @@
 							<dd class="md-typescale-body-large" t="tickets.field.noSeat"></dd>
 						</div>
 					</dl>
-					<p
-						class="[ tickets-resale-notice ] [ md-typescale-body-small ]"
-						t="tickets.resaleProhibited"
-					></p>
+					<ticket-resale-notice></ticket-resale-notice>
 
 					<!-- Official resale (公式リセール) of this ticket -->
 					<template switch.bind="shownState(ticket, listings)">
@@ -363,50 +318,13 @@
 		sheet-closed.trigger="closeCode()"
 		heading.bind="i18n.tr('tickets.code.title')"
 	>
-		<div class="[ tickets-code ] [ flow ]" if.bind="codeGroup">
-			<p class="[ tickets-code-event ] [ md-typescale-title-medium ]">${codeGroup.event?.title}</p>
-
-			<p class="[ tickets-code-count ] [ md-typescale-headline-large ]" if.bind="headCount > 0">
-				<span t="tickets.code.headCount" t-params.bind="{ count: headCount }"></span>
-			</p>
-
-			<figure class="[ tickets-code-figure ] [ wrapper ]" if.bind="headCount > 0">
-				<img
-					class="tickets-code-image"
-					if.bind="codeImage"
-					src.bind="codeImage"
-					alt.bind="i18n.tr('tickets.code.alt', { count: headCount })"
-				>
-				<p class="[ tickets-lead ] [ md-typescale-body-medium ]" else t="tickets.code.making"></p>
-			</figure>
-			<p class="[ tickets-lead ] [ md-typescale-body-medium ]" if.bind="headCount === 0" t="tickets.code.allEntered"></p>
-
-			<p class="[ tickets-lead ] [ md-typescale-body-medium ]" t="tickets.code.rotation"></p>
-			<p class="[ tickets-lead ] [ md-typescale-body-medium ]" t="tickets.code.brightness"></p>
-
-			<!-- The tickets the code presents; none can be left out -->
-			<section
-				class="[ tickets-code-who ] [ flow ]"
-				if.bind="headCount > 0"
-				aria-labelledby="tickets-code-who"
-			>
-				<h3 class="[ tickets-code-who-title ] [ md-typescale-label-large ]" id="tickets-code-who" t="tickets.code.who"></h3>
-				<ul class="[ tickets-code-tickets ] [ cluster ]" role="list">
-					<li
-						repeat.for="ticket of presented"
-						t="tickets.ticketN"
-						t-params.bind="{ n: ticketNumber(codeGroup, ticket) }"
-					></li>
-				</ul>
-			</section>
-
-			<button
-				type="button"
-				class="[ button tickets-action ] [ state-layer ]"
-				data-variant="outlined"
-				click.trigger="closeCode()"
-				t="tickets.code.close"
-			></button>
-		</div>
+		<ticket-entry-code
+			class="[ tickets-code ] [ flow ]"
+			if.bind="codeGroup"
+			event-title.bind="codeGroup.event?.title ?? ''"
+			numbers.bind="presentedNumbers"
+			image.bind="codeImage"
+			code-close.trigger="closeCode()"
+		></ticket-entry-code>
 	</bottom-sheet>
 </template>

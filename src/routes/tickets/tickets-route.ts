@@ -383,6 +383,22 @@ export class TicketsRoute {
 		return this.device === 'other-device' && !this.offline
 	}
 
+	/**
+	 * Whether any notice about this device or the saved list is shown (see
+	 * `ticket-device-notices`). Without one the notices take no place in the
+	 * page's rhythm.
+	 */
+	public get hasDeviceNotice(): boolean {
+		if (this.movedToThisDevice) return true
+		if (this.step !== 'loaded') return false
+		return (
+			this.offline ||
+			this.device === 'needs-connection' ||
+			this.device === 'failed' ||
+			this.device === 'other-device'
+		)
+	}
+
 	/** Offer to move the entry QR code to this device (asks first). */
 	public askToUseThisDevice(): void {
 		if (!this.canOfferMove) return
@@ -427,6 +443,12 @@ export class TicketsRoute {
 
 	public get headCount(): number {
 		return this.presented.length
+	}
+
+	/** The number of each ticket the open code presents, in order. */
+	public get presentedNumbers(): number[] {
+		const group = this.codeGroup
+		return group ? this.presented.map((t) => this.ticketNumber(group, t)) : []
 	}
 
 	/** The QR image of the current code, or empty when none may be shown. */

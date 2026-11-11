@@ -1,0 +1,43 @@
+@layer block {
+	@scope (ticket-entry-code) {
+		/* The sheet's body. The page gives the host its padding (`.tickets-code`)
+		   and the look of its lead text and buttons. */
+		:scope {
+			display: block;
+		}
+
+		.tickets-code-figure {
+			--gutter: 0;
+			--wrapper-max: none;
+
+			display: grid;
+			place-items: center;
+
+			aspect-ratio: 1;
+			inline-size: min(100%, 20rem);
+			border-radius: var(--md-sys-shape-corner-large);
+
+			/* High contrast whatever the theme; the SVG carries its own quiet zone */
+			background: var(--color-white);
+		}
+
+		.tickets-code-image {
+			inline-size: 100%;
+			block-size: 100%;
+		}
+
+		.tickets-code-who {
+			--flow-space: var(--space-2xs);
+
+			text-align: start;
+		}
+
+		.tickets-code-tickets {
+			--cluster-gap: var(--space-xs);
+		}
+
+		.tickets-code-who-title {
+			color: var(--md-sys-color-on-surface-variant);
+		}
+	}
+}

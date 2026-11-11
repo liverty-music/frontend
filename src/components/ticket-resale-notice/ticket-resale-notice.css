@@ -1,0 +1,14 @@
+@layer block {
+	@scope (ticket-resale-notice) {
+		/* The host is its list's flow item; the notice fills it. */
+		:scope {
+			display: block;
+		}
+
+		.ticket-resale-notice {
+			padding: var(--space-xs);
+			border-inline-start: 2px solid var(--md-sys-color-outline-variant);
+			color: var(--md-sys-color-on-surface-variant);
+		}
+	}
+}

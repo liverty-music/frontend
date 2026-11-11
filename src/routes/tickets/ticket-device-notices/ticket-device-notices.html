@@ -1,0 +1,64 @@
+<import from="./ticket-device-notices.css"></import>
+
+<!-- Saved list shown without a connection -->
+<output class="[ tickets-notice card ] [ wrapper ] [ md-typescale-body-medium ]" if.bind="offline && loaded">
+	<span t="tickets.offline" t-params.bind="{ time: savedAt }"></span>
+</output>
+
+<!-- Device preparation messages -->
+<output
+	class="[ tickets-notice card ] [ wrapper ] [ md-typescale-body-medium ]"
+	data-tone="warning"
+	if.bind="device === 'needs-connection' && loaded"
+	t="tickets.device.needsConnection"
+></output>
+<output
+	class="[ tickets-notice card ] [ wrapper ] [ md-typescale-body-medium ]"
+	data-tone="warning"
+	if.bind="device === 'failed' && loaded"
+	t="tickets.device.failed"
+></output>
+<output
+	class="[ tickets-notice card ] [ wrapper ] [ md-typescale-body-medium ]"
+	if.bind="movedHere"
+	t="tickets.device.movedHere"
+></output>
+
+<!-- The entry QR code is set to another device: offer to move it here -->
+<section
+	class="[ tickets-notice card ] [ flow wrapper ] [ md-typescale-body-medium ]"
+	data-tone="warning"
+	if.bind="device === 'other-device' && loaded"
+	aria-labelledby="tickets-other-device"
+>
+	<p id="tickets-other-device" t="tickets.device.otherDevice"></p>
+	<button
+		type="button"
+		class="[ button tickets-action ] [ state-layer ]"
+		data-variant="outlined"
+		if.bind="canOfferMove && !confirming"
+		click.trigger="send('use-this-device')"
+		t="tickets.device.useThisDevice"
+	></button>
+	<template if.bind="canOfferMove && confirming">
+		<p t="tickets.device.confirmMove"></p>
+		<output class="[ tickets-error ] [ md-typescale-body-medium ]" if.bind="moveFailed" t="tickets.device.moveFailed"></output>
+		<div class="cluster">
+			<button
+				type="button"
+				class="[ button tickets-action ] [ state-layer ]"
+				disabled.bind="moving"
+				click.trigger="send('move-confirm')"
+				t="tickets.device.confirm"
+			></button>
+			<button
+				type="button"
+				class="[ button tickets-action ] [ state-layer ]"
+				data-variant="outlined"
+				disabled.bind="moving"
+				click.trigger="send('move-cancel')"
+				t="tickets.device.cancel"
+			></button>
+		</div>
+	</template>
+</section>
