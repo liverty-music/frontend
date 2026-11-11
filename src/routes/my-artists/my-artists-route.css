@@ -64,8 +64,12 @@
 			inset-inline: 0;
 
 			display: flex;
+			align-items: center;
 			justify-content: center;
 
+			/* Exactly this tall, so the snack bar's clearance (global.css) is
+			   known in the frame the bar appears. */
+			block-size: var(--edit-action-bar-block-size);
 			padding-block: var(--space-2xs);
 			padding-inline: var(--space-s);
 			border-block-start: 1px solid var(--md-sys-color-outline-variant);

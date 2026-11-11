@@ -199,6 +199,12 @@
 		   frame, with no measuring script. */
 		--bottom-banner-block-size: calc(2rem + 2 * var(--space-xs) + 2px);
 
+		/* My Artists' edit-mode Done bar: the default button (2.5rem), the
+		   bar's block padding and its 1px top line. The bar takes it as its
+		   block size, and global.css adds it to the snack bar's clearance
+		   while the bar shows, from the first frame. */
+		--edit-action-bar-block-size: calc(2.5rem + 2 * var(--space-2xs) + 1px);
+
 		/* Discovery keeps --discovery-floor clear above the route area's bottom
 		   edge for the FAB, which rises into it from the notch: the orb and the
 		   bubbles stay above it, and the swap tile (--swap-tile-size square)
