@@ -42,7 +42,7 @@ const meta = {
 		},
 		size: {
 			control: 'select',
-			options: ['xs', 'sm', 'md', 'lg', 'xl'],
+			options: ['sm', 'md', 'lg', 'xl'],
 			description: 'Size preset written to the host `data-size` attribute.',
 		},
 	},
@@ -99,7 +99,9 @@ export const ExtraLarge = {
 	args: { name: 'shield-check', size: 'xl' },
 } satisfies Story
 
-const SIZE_STEPS = { xs: 12, sm: 16, md: 20, lg: 24, xl: 40 } as const
+// Material 3: 24 px is the standard size of an icon that stands on its own
+// (lg); 16 px is the smallest step.
+const SIZE_STEPS = { sm: 16, md: 20, lg: 24, xl: 40 } as const
 
 // Each `size` step sets the host `data-size`, and the drawn SVG takes it.
 export const SizeVariants = {
@@ -114,7 +116,7 @@ export const SizeVariants = {
 	play: async ({ canvasElement }) => {
 		// @spec components/infrastructure/fan/web/global/ui-primitives "Size variants"
 		const hosts = [...canvasElement.querySelectorAll<HTMLElement>('svg-icon')]
-		await expect(hosts).toHaveLength(5)
+		await expect(hosts).toHaveLength(4)
 		for (const host of hosts) {
 			const step = host.dataset.size as keyof typeof SIZE_STEPS
 			await expect(step).toBeTruthy()

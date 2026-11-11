@@ -79,7 +79,7 @@
     <!-- Date and times -->
     <section class="event-details">
       <div class="event-detail-row">
-        <svg-icon name="calendar" size="md" class="event-detail-icon"></svg-icon>
+        <svg-icon name="calendar" size="lg" class="event-detail-icon"></svg-icon>
         <div>
           <time datetime.bind="event.dateKey" class="[ event-detail-primary ] [ md-typescale-title-medium ]" data-testid="event-date">${dateLabel}</time>
           <p class="event-times" data-testid="event-times">
@@ -91,7 +91,7 @@
 
       <!-- Venue -->
       <div class="event-detail-row">
-        <svg-icon name="map-pin" size="md" class="event-detail-icon"></svg-icon>
+        <svg-icon name="map-pin" size="lg" class="event-detail-icon"></svg-icon>
         <div>
           <p class="[ event-detail-primary ] [ md-typescale-title-medium ]" data-testid="event-venue">${event.venueName}</p>
           <p if.bind="prefecture" class="event-detail-secondary" data-testid="event-prefecture">${prefecture}</p>

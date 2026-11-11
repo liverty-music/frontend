@@ -39,8 +39,6 @@
 		}
 
 		.language-check {
-			inline-size: 1.25rem;
-			block-size: 1.25rem;
 			color: var(--md-sys-color-primary);
 		}
 	}

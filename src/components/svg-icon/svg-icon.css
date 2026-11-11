@@ -22,10 +22,6 @@
 			block-size: 100%;
 		}
 
-		:scope[data-size="xs"] {
-			--icon-size: 0.75rem;
-		}
-
 		:scope[data-size="sm"] {
 			--icon-size: 1rem;
 		}

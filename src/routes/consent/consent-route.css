@@ -61,8 +61,6 @@
 		}
 
 		.consent-row-icon {
-			inline-size: 1.1rem;
-			block-size: 1.1rem;
 			color: var(--md-sys-color-on-surface-variant);
 		}
 

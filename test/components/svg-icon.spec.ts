@@ -9,7 +9,7 @@ describe('SvgIcon', () => {
 
 	function create(
 		name = 'home',
-		size: 'xs' | 'sm' | 'md' | 'lg' | 'xl' = 'md',
+		size: 'sm' | 'md' | 'lg' | 'xl' = 'md',
 	): SvgIcon {
 		hostElement = document.createElement('svg-icon')
 		const container = createTestContainer(

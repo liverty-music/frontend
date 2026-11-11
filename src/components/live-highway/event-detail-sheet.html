@@ -31,7 +31,7 @@
       <section class="[ sheet-details ] [ stack ]">
         <!-- Date & Time, with the add-to-calendar link -->
         <div class="detail-row">
-          <span class="detail-icon"><svg-icon name="calendar" size="md"></svg-icon></span>
+          <span class="detail-icon"><svg-icon name="calendar" size="lg"></svg-icon></span>
           <div>
             <time datetime.bind="event.date.toISOString()" class="[ detail-primary ] [ md-typescale-title-medium ]">${event.date | date:'long'}</time>
             <p
@@ -54,7 +54,7 @@
 
         <!-- Venue -->
         <div class="detail-row">
-          <span class="detail-icon"><svg-icon name="map-pin" size="md"></svg-icon></span>
+          <span class="detail-icon"><svg-icon name="map-pin" size="lg"></svg-icon></span>
           <div>
             <p class="[ detail-primary ] [ md-typescale-title-medium ]">${event.venueName}</p>
             <p if.bind="event.locationLabel" class="[ detail-secondary ] [ md-typescale-body-medium ]">${event.locationLabel}</p>

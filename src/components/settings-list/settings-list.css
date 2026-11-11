@@ -63,8 +63,6 @@
 		   the toggle column) ignores `grid-column` harmlessly. */
 		.settings-icon {
 			grid-column: 1;
-			inline-size: 1.25rem;
-			block-size: 1.25rem;
 			color: var(--md-sys-color-on-surface-variant);
 		}
 
@@ -208,8 +206,6 @@
 		}
 
 		.settings-expand-caret {
-			inline-size: 1rem;
-			block-size: 1rem;
 			color: var(--md-sys-color-on-surface-variant);
 			transition: transform var(--md-sys-motion-duration-short4);
 		}
@@ -282,11 +278,6 @@
 			display: inline-flex;
 			gap: var(--space-3xs);
 			align-items: center;
-		}
-
-		.settings-verification-icon {
-			inline-size: 0.875rem;
-			block-size: 0.875rem;
 		}
 
 		/* A text button trailing a row (resend verification, start identity
