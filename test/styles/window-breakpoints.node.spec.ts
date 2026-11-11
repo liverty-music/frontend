@@ -32,7 +32,9 @@ function windowWidthQueries(): { file: string; query: string; px: number[] }[] {
 }
 
 describe('window-width layout breakpoints (fan)', () => {
-	// @spec components/infrastructure/fan/web/global/design-tokens "Window width crosses a breakpoint"
+	// Guards the fan half of "Window width crosses a breakpoint" only as far as a
+	// stylesheet scan can: no fan screen changes layout by window width today,
+	// so the scenario's WHEN has nothing to run against (see the organizer story).
 	it('changes layout only at the Material 3 breakpoints', () => {
 		const off = windowWidthQueries()
 			.flatMap(({ file, query, px }) =>

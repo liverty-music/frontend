@@ -222,8 +222,12 @@ export const SelectionSprings = {
 
 		// @spec components/infrastructure/fan/web/global/bottom-nav-bar "Selecting a nav tab springs into state"
 		const before = resolveColor(canvasElement, 'var(--color-brand-accent)')
-		home.dataset.active = 'false'
-		discovery.dataset.active = 'true'
+		// The router's navigation model marks the new route current; the bar's
+		// own binding sets the attribute.
+		const [homeRoute, discoveryRoute] = TABS
+		homeRoute.isActive = false
+		discoveryRoute.isActive = true
+		await waitFor(() => expect(discovery.dataset.active).toBe('true'))
 		const running = discovery
 			.getAnimations()
 			.filter((a): a is CSSTransition => a instanceof CSSTransition)
@@ -235,6 +239,8 @@ export const SelectionSprings = {
 		await expect(getComputedStyle(discovery).borderTopLeftRadius).toBe(rounded)
 		await expect(getComputedStyle(discovery).color).toBe(before)
 		await expect(getComputedStyle(home).borderTopLeftRadius).toBe('0px')
+		homeRoute.isActive = true
+		discoveryRoute.isActive = false
 	},
 } satisfies Story
 
