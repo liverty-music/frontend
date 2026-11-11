@@ -62,6 +62,8 @@ describe('Discovery search results', () => {
 		await new Promise((r) => setTimeout(r, 0))
 		expect(rows[0].hasAttribute('data-busy')).toBe(false)
 
+		expect(rows[0].querySelector('svg-icon[name="check"]')).toBeNull()
+		expect(rows[1].querySelector('svg-icon[name="check"]')).not.toBeNull()
 		expect(rows[1].getAttribute('aria-disabled')).toBe('true')
 		expect(rows[1].getAttribute('data-followed')).toBe('true')
 
