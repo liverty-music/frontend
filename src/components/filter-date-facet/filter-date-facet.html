@@ -1,0 +1,23 @@
+<import from="./filter-date-facet.css"></import>
+
+<!-- The facet's <section> and its heading's look belong to the filter sheet
+     (artist-filter-bar), which places this control in it. -->
+<button
+  type="button"
+  class="[ date-facet-toggle ] [ state-layer ]"
+  click.trigger="toggle()"
+  aria-expanded.bind="expanded"
+  aria-controls="filter-date-field"
+>
+  <h3 class="[ facet-heading ] [ md-typescale-title-small ]" id="filter-date-heading">過去のコンサートも表示</h3>
+  <svg-icon name="chevron-right" size="sm" class="date-facet-caret" data-expanded.bind="expanded"></svg-icon>
+</button>
+<div if.bind="expanded" id="filter-date-field" class="[ date-facet-field ] [ stack ]">
+  <label class="[ date-field-label ] [ md-typescale-body-medium ]" for="filter-from-input">この日付以降を表示</label>
+  <input
+    id="filter-from-input"
+    type="date"
+    class="[ text-field ] [ md-typescale-body-large ]"
+    value.bind="from"
+  />
+</div>
