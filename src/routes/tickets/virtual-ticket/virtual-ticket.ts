@@ -27,8 +27,6 @@ const ART_SPLIT = 0.54
 const SHEET_MARGIN = 56
 /** The stamp lands this far into its pressing animation (its 20% keyframe). */
 const STAMP_LANDS_AT = 0.2
-/** A stamp that landed longer ago than this gets no impact (reopened late). */
-const IMPACT_LATE_MS = 250
 /**
  * The stamp's centre on the front at the design size (20rem by 34rem): a
  * 6.5rem seal, 6% from the right edge and 2.5% from the foot
@@ -120,8 +118,11 @@ export class VirtualTicket {
 	private sheet: TicketSheetRenderer | null = null
 	private resizeObserver: ResizeObserver | null = null
 	private stampTimer: ReturnType<typeof setTimeout> | undefined
-	/** The pressing animation whose impact has been drawn. */
-	private impactedPress: Animation | null = null
+	/**
+	 * Both renderers have started, or failed to. A stamp to be pressed waits
+	 * for this; one at rest does not.
+	 */
+	public settled = false
 	private detached = false
 	private askedForTilt = false
 
@@ -158,9 +159,17 @@ export class VirtualTicket {
 	 * and a light foil.
 	 */
 	private async start(): Promise<void> {
-		await this.startRenderer()
-		if (this.drawing === 'canvas' && !reducedMotion() && !this.detached) {
-			await this.startSheet()
+		try {
+			await this.startRenderer()
+			if (this.drawing === 'canvas' && !reducedMotion() && !this.detached) {
+				await this.startSheet()
+			}
+		} finally {
+			// The stamp is pressed only now, so its impact lands in the drawing
+			// that is shown, however long the renderers took to start.
+			if (!this.detached) {
+				this.settled = true
+			}
 		}
 	}
 
@@ -202,7 +211,6 @@ export class VirtualTicket {
 				return true
 			}
 			this.sheet.showBack(this.isBack)
-			if (this.pressing) this.scheduleImpact()
 			return true
 		} catch (err) {
 			this.logger.warn('Drawing the ticket as a sheet failed', { error: err })
@@ -228,6 +236,7 @@ export class VirtualTicket {
 
 	public detaching(): void {
 		this.detached = true
+		this.settled = false
 		removeEventListener('deviceorientation', this.onDeviceTilt)
 		clearTimeout(this.stampTimer)
 		this.resizeObserver?.disconnect()
@@ -426,39 +435,41 @@ export class VirtualTicket {
 	}
 
 	public pressStampChanged(): void {
-		if (this.pressing && (this.renderer || this.sheet)) this.scheduleImpact()
+		if (this.pressing && this.settled) this.scheduleImpact()
 	}
 
 	/** Burst from where the stamp sits, at the moment it lands. */
+	/**
+	 * Draw the impact where the stamp lands, timed from its pressing
+	 * animation. The stamp is rendered once the drawing has settled, so it is
+	 * looked up a frame later.
+	 */
 	private scheduleImpact(): void {
 		clearTimeout(this.stampTimer)
-		const stamp = this.face?.querySelector<HTMLElement>('.admission-stamp')
-		if (!stamp) return
-		// Timed from the stamp's own animation, which started when the ticket
-		// opened: the renderers start later, and each asks for the impact
-		// again once it is ready, so the delay must not restart with them.
-		const press = stamp
-			.getAnimations()
-			.find((a) => (a as CSSAnimation).animationName === STAMP_ANIMATION)
-		const seconds = Number.parseFloat(getComputedStyle(stamp).animationDuration)
-		const landsAt =
-			(Number.isFinite(seconds) ? seconds : 1.5) * 1000 * STAMP_LANDS_AT
-		const elapsed = Number(press?.currentTime ?? 0)
-		if (press && elapsed > landsAt + IMPACT_LATE_MS) return
-		// One impact per pressing, whichever renderer was ready for it.
-		if (press && press === this.impactedPress) return
-		this.stampTimer = setTimeout(
-			() => {
-				this.impactedPress = press ?? null
-				const [x, y] = this.stampCentre(stamp)
-				// One shockwave: the sheet's runs through the whole ticket, the
-				// art's through the art alone.
-				if (this.sheet) this.sheet.impact(x, y)
-				else this.renderer?.impact(x, y)
-				this.card?.setAttribute('data-thump', '')
-			},
-			Math.max(0, landsAt - elapsed),
-		)
+		requestAnimationFrame(() => {
+			const stamp = this.face?.querySelector<HTMLElement>('.admission-stamp')
+			if (!stamp || this.detached) return
+			const press = stamp
+				.getAnimations()
+				.find((a) => (a as CSSAnimation).animationName === STAMP_ANIMATION)
+			const seconds = Number.parseFloat(
+				getComputedStyle(stamp).animationDuration,
+			)
+			const landsAt =
+				(Number.isFinite(seconds) ? seconds : 1.5) * 1000 * STAMP_LANDS_AT
+			const elapsed = Number(press?.currentTime ?? 0)
+			this.stampTimer = setTimeout(
+				() => {
+					const [x, y] = this.stampCentre(stamp)
+					// Drawn as a sheet, the shockwave runs through the whole ticket;
+					// otherwise through the art.
+					if (this.sheet) this.sheet.impact(x, y)
+					else this.renderer?.impact(x, y)
+					this.card?.setAttribute('data-thump', '')
+				},
+				Math.max(0, landsAt - elapsed),
+			)
+		})
 	}
 
 	/**

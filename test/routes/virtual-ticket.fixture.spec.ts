@@ -319,6 +319,12 @@ describe('virtual-ticket', () => {
 
 	it('presses the stamp and tells the screen once the animation has played', async () => {
 		const { face, host } = await mount({ ticket: ENTERED, press: true })
+		// A stamp to be pressed appears once the drawing has settled (here,
+		// without WebGL, as soon as the renderers have failed to start).
+		await vi.waitFor(
+			() => expect(face.querySelector('[data-stamp]')).not.toBeNull(),
+			{ timeout: 10_000 },
+		)
 		const stamp = face.querySelector('[data-stamp]')
 		expect(stamp?.getAttribute('data-stamp')).toBe('press')
 

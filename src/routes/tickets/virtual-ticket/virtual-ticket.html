@@ -113,8 +113,9 @@
 			</div>
 
 			<!-- The admission stamp: real text, pressed once per ticket on a device -->
+			<!-- A stamp to be pressed appears when the drawing has settled. -->
 			<admission-stamp
-				if.bind="entered"
+				if.bind="entered && (settled || !pressing)"
 				date.bind="stubDate"
 				pressing.bind="pressing"
 				animationend.trigger="onStampAnimationEnd($event)"

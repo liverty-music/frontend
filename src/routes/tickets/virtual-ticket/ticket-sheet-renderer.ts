@@ -375,11 +375,8 @@ export class TicketSheetRenderer {
 	 */
 	private place(): void {
 		const { width, height, margin, front, back, canvas } = this.options
-		// Eased: it gets going at once and lands softly.
-		const eased =
-			this.turn < 0.5
-				? 2 * this.turn * this.turn * (1.5 - this.turn)
-				: 1 - 2 * (1 - this.turn) ** 2 * (0.5 + this.turn)
+		// Eased, so the turn starts and lands softly.
+		const eased = this.turn * this.turn * (3 - 2 * this.turn)
 		const curl = Math.sin(eased * Math.PI)
 		const showsBack = eased > 0.5
 		const base = (showsBack ? eased - 1 : eased) * Math.PI
