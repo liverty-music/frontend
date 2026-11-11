@@ -5,6 +5,7 @@ import { IUserRpcClient } from '../adapter/rpc/client/user-client'
 import { loadHome, saveHome } from '../adapter/storage/guest-storage'
 import { clearNearbyFilter } from '../adapter/storage/nearby-filter-storage'
 import { clearOnboardingSeenFlags } from '../adapter/storage/onboarding-storage'
+import { clearTicketPresets } from '../adapter/storage/ticket-preset-storage'
 import { codeToHome, type User } from '../entities/user'
 import { normalizeToSupportedLanguage } from '../util/change-locale'
 import { IAuthService } from './auth-service'
@@ -113,10 +114,12 @@ export class UserStore {
 		// Sign-out and account switch: forget the previous account's User so no
 		// later read or write can act on it (design D15 of unify-ticket-sales).
 		// The All Nearby filter kept on the device goes too, so the next person
-		// on this device does not inherit the area and period.
+		// on this device does not inherit the area and period; so do the
+		// designs chosen for the account's tickets.
 		this.ea.subscribe(SignedOut, () => {
 			this.clear()
 			clearNearbyFilter()
+			clearTicketPresets()
 		})
 		// The i18n subsystem publishes `{ oldLocale, newLocale }` on this EA
 		// channel after every successful setLocale. Mirroring it into an

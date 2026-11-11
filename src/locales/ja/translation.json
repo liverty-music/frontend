@@ -544,7 +544,24 @@
 			"stamp": "入場済",
 			"share": "画像を共有",
 			"shareFailed": "画像を作れませんでした。もう一度お試しください。",
-			"close": "閉じる"
+			"close": "閉じる",
+			"flipToBack": "裏面を見る",
+			"flipToFront": "表面に戻る",
+			"back": "チケットの裏面",
+			"eligiblePerson": "入場資格者",
+			"noResale": "無断有償譲渡禁止",
+			"noResaleDetail": "主催者の同意なく有償で譲渡することは禁止します。",
+			"verified": "入場資格者の氏名・連絡先確認済み",
+			"verifiedDetail": "本券は、購入時に入場資格者の氏名及び連絡先を確認した上で販売されたものです。",
+			"design": "デザイン",
+			"preset": {
+				"default": "スタンダード",
+				"rock": "ロック",
+				"pop": "ポップ",
+				"jazz": "ジャズ",
+				"classic": "クラシック",
+				"electronic": "エレクトロニック"
+			}
 		}
 	},
 	"order": {

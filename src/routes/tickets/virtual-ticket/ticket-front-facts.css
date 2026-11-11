@@ -1,0 +1,83 @@
+/* stylelint-disable no-unknown-custom-properties -- --_rule and --_ink-muted are set on .ticket-front (ticket-front.css) and by each preset (ticket-presets.css) */
+
+/* The facts on the front: two rows of cells ruled like a printed form, a
+   small label over a large value. */
+@layer block {
+	@scope (virtual-ticket) {
+		/* Two rows of cells, ruled like a printed form. */
+		.ticket-front-facts {
+			position: relative;
+
+			overflow: hidden;
+			display: grid;
+			grid-template-columns: repeat(6, minmax(0, 1fr));
+			grid-template-rows: repeat(2, minmax(0, 1fr));
+
+			min-block-size: 0;
+		}
+
+		.ticket-front-facts > div {
+			overflow: hidden;
+			display: flex;
+			grid-column: span 2;
+			flex-direction: column;
+			gap: 0.25rem;
+			justify-content: center;
+
+			min-inline-size: 0;
+			padding: 0.25rem 0.75rem;
+			border-block-start: 1px solid var(--_rule);
+			border-inline-start: 1px solid var(--_rule);
+		}
+
+		.ticket-front-facts > .ticket-front-venue {
+			grid-column: span 3;
+			border-inline-start: 0;
+		}
+
+		.ticket-front-facts > .ticket-front-date {
+			grid-column: span 3;
+		}
+
+		.ticket-front-date dd {
+			white-space: nowrap;
+		}
+
+		.ticket-front-facts > .ticket-front-venue + .ticket-front-date + div {
+			border-inline-start: 0;
+		}
+
+		.ticket-front-facts dt,
+		.ticket-front-seat dt {
+			display: flex;
+			gap: 0.5rem;
+
+			font: 600 0.5625rem / 1 var(--md-ref-typeface-plain);
+			color: var(--_ink-muted);
+			text-transform: uppercase;
+			letter-spacing: 0.16em;
+			white-space: nowrap;
+		}
+
+		.ticket-front-facts dd {
+			overflow: hidden;
+			display: -webkit-box;
+			-webkit-box-orient: vertical;
+			-webkit-line-clamp: 2;
+
+			font: var(
+				--_value-font,
+				800 1.125rem /
+				1.05 var(--md-ref-typeface-brand)
+			);
+			overflow-wrap: anywhere;
+		}
+
+		/* Names run longer than times: set them a size down. */
+		.ticket-front-venue dd,
+		.ticket-front-seat-type dd {
+			font-size: 0.875rem;
+			line-height: 1.15;
+		}
+	}
+}

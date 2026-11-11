@@ -1,0 +1,62 @@
+/* stylelint-disable no-unknown-custom-properties -- --artist-hue is set inline by the template from the first performer's name */
+
+/* The front of the virtual ticket, set like a printed concert ticket: the
+   art (drawn on the canvas, or the plain cover image without WebGL) with the
+   headline over it, the facts as ruled cells, and below the tear a stub.
+   Every row has a fixed share of the height and clips, so no text can leave
+   the ticket whatever its length. */
+@layer block {
+	@scope (virtual-ticket) {
+		.ticket-front {
+			--_paper: oklch(96% 0.03 var(--artist-hue));
+			--_ink: oklch(22% 0.04 var(--artist-hue));
+			--_ink-muted: oklch(50% 0.06 var(--artist-hue));
+			--_rule: oklch(22% 0.04 var(--artist-hue) / 18%);
+			--_accent: oklch(88% 0.16 95deg);
+			--_art: 54%;
+
+			display: grid;
+			grid-template-rows: var(--_art) minmax(0, 1fr) calc(100% - var(--_tear));
+			color: var(--_ink);
+			background: var(--_paper);
+		}
+
+		/* Under the canvas: seen without WebGL, and read by the renderer. */
+		.ticket-front-cover {
+			--_cover: oklch(30% 0.12 var(--artist-hue));
+
+			position: absolute;
+			inset: 0 0 auto;
+			block-size: var(--_art);
+			background: var(--_cover);
+		}
+
+		.ticket-front-cover-image {
+			inline-size: 100%;
+			block-size: 100%;
+			object-fit: cover;
+		}
+
+		.ticket-front-canvas {
+			position: absolute;
+			inset: 0;
+
+			inline-size: 100%;
+			block-size: 100%;
+
+			opacity: 0;
+		}
+
+		.ticket-front[data-drawn="true"] .ticket-front-canvas {
+			opacity: 1;
+		}
+
+		/* The tear: a dotted line from notch to notch. */
+		.ticket-front-tear {
+			position: absolute;
+			inset: var(--_tear) var(--_notch) auto;
+			border-block-start: 2px dotted var(--_ink-muted);
+			opacity: 0.7;
+		}
+	}
+}

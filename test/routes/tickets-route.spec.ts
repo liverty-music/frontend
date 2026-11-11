@@ -35,7 +35,12 @@ import { IResaleListingRpcClient } from '../../src/adapter/rpc/client/resale-lis
 import { ITicketRpcClient } from '../../src/adapter/rpc/client/ticket-client'
 import { ITicketSaleRpcClient } from '../../src/adapter/rpc/client/ticket-sale-client'
 import { IWalletPublicKeyRpcClient } from '../../src/adapter/rpc/client/wallet-public-key-client'
+import {
+	clearTicketPresets,
+	loadTicketPreset,
+} from '../../src/adapter/storage/ticket-preset-storage'
 import { IWalletStorage } from '../../src/adapter/storage/wallet-storage'
+import { StorageKeys } from '../../src/constants/storage-keys'
 import type { ResaleListing } from '../../src/entities/resale-listing'
 import {
 	type EventTicketSales,
@@ -945,11 +950,23 @@ describe('TicketsRoute', () => {
 				'18:30',
 				'S席',
 				'指定なし',
-				'山田太郎',
-				'090-1234-5678',
-				ja.tickets.resaleProhibited,
 			]) {
 				expect(text).toContain(item)
+			}
+			// The front holds no personal details; they are on the back, with
+			// the two statements of a 特定興行入場券.
+			expect(text).not.toContain('山田太郎')
+			expect(text).not.toContain('090-1234-5678')
+			const back = (
+				sheet?.querySelector('.ticket-back')?.textContent ?? ''
+			).replace(/\s+/g, ' ')
+			for (const item of [
+				'山田太郎',
+				'090-1234-5678',
+				ja.tickets.virtual.noResale,
+				ja.tickets.virtual.verified,
+			]) {
+				expect(back).toContain(item)
 			}
 			expect(face?.querySelector('admission-stamp')).toBeNull()
 			// The QR code button sits below the face, outside it.
@@ -1024,7 +1041,8 @@ describe('TicketsRoute', () => {
 			const stamp = $('virtual-ticket-stamp')
 			expect(stamp?.getAttribute('data-stamp')).toBe('press')
 			expect(stamp?.textContent).toContain('入場済')
-			expect(stamp?.querySelector('time')?.textContent).toContain('12:00')
+			// The stamp carries the event's date, not the admit time.
+			expect(stamp?.querySelector('time')).toBeNull()
 
 			// Once the animation has played, this device remembers it.
 			const end = new Event('animationend', { bubbles: true })
@@ -1146,11 +1164,12 @@ describe('TicketsRoute', () => {
 
 			$('tickets-virtual-share')?.click()
 			await vi.waitFor(() => expect(shareImage.share).toHaveBeenCalledTimes(1))
-			const [face, coverUrl] = shareImage.share.mock.calls[0]
-			expect((face as HTMLElement).classList.contains('virtual-ticket')).toBe(
+			// The front, with its art as a picture (none here: no WebGL).
+			const [face, art] = shareImage.share.mock.calls[0]
+			expect((face as HTMLElement).classList.contains('ticket-front')).toBe(
 				true,
 			)
-			expect(coverUrl).toBe(COVER_URL)
+			expect(art).toBeNull()
 			expect(sut.shareFailed).toBe(false)
 
 			shareImage.share.mockRejectedValueOnce(new Error('decode failed'))
@@ -1160,6 +1179,48 @@ describe('TicketsRoute', () => {
 			expect($('tickets-virtual')?.textContent).toContain(
 				ja.tickets.virtual.shareFailed,
 			)
+			await fixture.stop(true)
+		})
+		it('keeps the design the fan picks for a ticket on this device', async () => {
+			// @spec components/infrastructure/fan/web/route/tickets "Design kept on the device"
+			localStorage.removeItem(StorageKeys.ticketPresets)
+			ticketClient.list.mockResolvedValue([protoTicket(1)])
+			const { fixture, sut, $ } = await render()
+			const cardPreset = () =>
+				$('tickets-virtual')
+					?.querySelector('.virtual-ticket-card')
+					?.getAttribute('data-preset')
+			$('tickets-open-virtual')?.click()
+			await vi.waitFor(() => expect(sut.isTicketOpen).toBe(true))
+			await tasksSettled()
+			expect(cardPreset()).toBe('default')
+
+			$('tickets-virtual')
+				?.querySelector<HTMLElement>(
+					'[data-testid="virtual-ticket-preset"][data-preset="rock"]',
+				)
+				?.click()
+			await tasksSettled()
+			expect(cardPreset()).toBe('rock')
+			expect(loadTicketPreset(ticketId(1))).toBe('rock')
+
+			// Closed and opened again, the ticket is in the picked design.
+			sut.closeTicket()
+			await tasksSettled()
+			$('tickets-open-virtual')?.click()
+			await vi.waitFor(() => expect(sut.isTicketOpen).toBe(true))
+			await tasksSettled()
+			expect(cardPreset()).toBe('rock')
+
+			// Sign-out removes what the device kept (user-store.spec.ts); the
+			// ticket then opens in the standard design again.
+			sut.closeTicket()
+			await tasksSettled()
+			clearTicketPresets()
+			$('tickets-open-virtual')?.click()
+			await vi.waitFor(() => expect(sut.isTicketOpen).toBe(true))
+			await tasksSettled()
+			expect(cardPreset()).toBe('default')
 			await fixture.stop(true)
 		})
 	})

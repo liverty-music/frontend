@@ -179,6 +179,22 @@ export default {
 				'cube/block-max-lines': [true, { max: 100 }],
 			},
 		},
+		// The virtual ticket is a printed object: it keeps its own inks, faces and
+		// measures in every theme, and each design preset sets them. So its
+		// stylesheets may set type and literal colours and sizes; margins, focus
+		// outlines, z-index and the block length stay bound as everywhere else.
+		{
+			files: ['src/routes/tickets/virtual-ticket/*.css'],
+			rules: {
+				'property-disallowed-list': [
+					...PROPERTY_DISALLOWED,
+					'/^margin/',
+					'/^outline/',
+				],
+				'color-no-hex': null,
+				'cube/require-token-variables': null,
+			},
+		},
 		// The console's reset zeroes margins only (organizer/styles/shared.css),
 		// so a console stylesheet's `padding: 0` or `list-style: none` undoes a
 		// browser default rather than repeating the reset.

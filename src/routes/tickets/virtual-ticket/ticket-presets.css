@@ -1,0 +1,93 @@
+/* The design presets of the virtual ticket, one per kind of concert. The
+   layout is the same in all of them; a preset sets two inks, one accent and
+   the faces of the headline and the values. The art's grading and foil are
+   in ticket-presets.ts under the same names. */
+@layer block {
+	@scope (virtual-ticket) {
+		/* Rock: black stock, hot pink, a condensed poster face. */
+		.virtual-ticket-card[data-preset="rock"] :is(.ticket-front, .ticket-back) {
+			--_paper: #111113;
+			--_ink: #f5f1e8;
+			--_ink-muted: #9b979f;
+			--_rule: #f5f1e826;
+			--_accent: #ff4fa3;
+			--_display-font:
+				400 3.125rem / 0.92 "Anton", var(--md-ref-typeface-brand);
+			--_display-spacing: 0.01em;
+			--_value-font: 400 1.375rem / 1 "Anton", var(--md-ref-typeface-brand);
+			--stamp-color: #ff5fae;
+			--stamp-blend: screen;
+		}
+
+		/* Pop: pastel stock, violet ink, a rounded face. */
+		.virtual-ticket-card[data-preset="pop"] :is(.ticket-front, .ticket-back) {
+			--_paper: #ffe9f6;
+			--_ink: #2b1650;
+			--_ink-muted: #8d6fc0;
+			--_rule: #2b165024;
+			--_accent: #fff36b;
+			--_display-font:
+				700 2.5rem / 0.98 "Fredoka", var(--md-ref-typeface-brand);
+			--_display-case: none;
+			--_value-font:
+				700 1.1875rem / 1.05 "Fredoka", var(--md-ref-typeface-brand);
+			--stamp-color: #e0218a;
+		}
+
+		/* Jazz: cream stock, brown ink, a fat didone with an italic. */
+		.virtual-ticket-card[data-preset="jazz"] :is(.ticket-front, .ticket-back) {
+			--_paper: #f3e3c3;
+			--_ink: #2a1608;
+			--_ink-muted: #8a6a48;
+			--_rule: #2a160830;
+			--_accent: #ffb168;
+			--_display-font:
+				400 2.5rem / 1 "Abril Fatface", var(--md-ref-typeface-brand);
+			--_display-case: none;
+			--_title-font:
+				italic 500 1rem / 1.2 "Playfair Display", var(--md-ref-typeface-plain);
+			--_title-case: none;
+			--_title-spacing: 0.01em;
+			--_value-font:
+				800 1.1875rem / 1.05 "Playfair Display", var(--md-ref-typeface-brand);
+			--stamp-color: #a3281c;
+		}
+
+		/* Classic: black stock, gold, an italic serif. */
+		.virtual-ticket-card[data-preset="classic"]
+			:is(.ticket-front, .ticket-back) {
+			--_paper: #12100d;
+			--_ink: #efe6d2;
+			--_ink-muted: #a89468;
+			--_rule: #c8a45a4d;
+			--_accent: #e9c877;
+			--_display-font:
+				italic 700 2.25rem / 1.05 "Playfair Display",
+				var(--md-ref-typeface-brand);
+			--_display-case: none;
+			--_display-spacing: 0;
+			--_title-spacing: 0.24em;
+			--_value-font:
+				600 1.1875rem / 1.05 "Playfair Display", var(--md-ref-typeface-brand);
+			--stamp-color: #e9c877;
+			--stamp-blend: screen;
+		}
+
+		/* Electronic: navy stock, cyan, a wide display face and mono values. */
+		.virtual-ticket-card[data-preset="electronic"]
+			:is(.ticket-front, .ticket-back) {
+			--_paper: #070b24;
+			--_ink: #dff9ff;
+			--_ink-muted: #6fa8c9;
+			--_rule: #39e6ff3d;
+			--_accent: #5cf0ff;
+			--_display-font:
+				800 1.875rem / 1.08 "Orbitron", var(--md-ref-typeface-brand);
+			--_display-spacing: 0.03em;
+			--_title-font: 700 0.6875rem / 1.3 "Space Mono", monospace;
+			--_value-font: 700 1.0625rem / 1.1 "Space Mono", monospace;
+			--stamp-color: #5cf0ff;
+			--stamp-blend: screen;
+		}
+	}
+}

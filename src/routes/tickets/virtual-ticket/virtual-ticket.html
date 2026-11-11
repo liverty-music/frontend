@@ -1,86 +1,207 @@
 <import from="./virtual-ticket.css"></import>
+<import from="./ticket-card.css"></import>
+<import from="./ticket-controls.css"></import>
+<import from="./ticket-front.css"></import>
+<import from="./ticket-front-art.css"></import>
+<import from="./ticket-front-facts.css"></import>
+<import from="./ticket-front-stub.css"></import>
+<import from="./ticket-back.css"></import>
+<import from="./ticket-presets.css"></import>
 <import from="./admission-stamp"></import>
 
-<!-- The face. Everything on it is text; it holds no QR code and no ticket id.
-     `data-share` (set on a clone for the share image) masks the
-     `data-personal` items, hides the stamp and empties the cover's area. -->
-<article
-	ref="face"
-	class="virtual-ticket"
-	style="--artist-hue: ${hue}"
-	aria-labelledby.bind="titleId"
-	data-testid="virtual-ticket"
+<!-- The stage gives the ticket depth; the card tilts with the pointer and
+     turns over at a tap (or with the button below). Each side is a separate element so the other can be inert. -->
+<div
+	class="virtual-ticket-stage"
+	pointermove.trigger="onPointerMove($event)"
+	pointerleave.trigger="onPointerLeave()"
+	click.trigger="onTap($event)"
 >
-	<!-- The cover is loaded with CORS so it can be drawn into the share image;
-	     the CDN sends Access-Control-Allow-Origin on every cover. -->
-	<div class="virtual-ticket-cover" if.bind="showsCover" data-testid="virtual-ticket-cover">
-		<img
-			ref="coverImage"
-			class="virtual-ticket-cover-image"
-			src.bind="event.coverUrl"
-			alt=""
-			crossorigin="anonymous"
-			error.trigger="onCoverError()"
+	<div class="virtual-ticket-fit">
+	<div
+		ref="card"
+		class="virtual-ticket-card"
+		style="--artist-hue: ${hue}"
+		data-side.bind="side"
+		data-preset.bind="preset"
+		data-sheeted.bind="sheeted"
+	>
+		<!-- The front. Everything on it is text over the drawn art; it holds no
+		     personal details, no QR code and no ticket id. -->
+		<article
+			ref="face"
+			class="[ virtual-ticket ] [ ticket-front ]"
+			aria-labelledby.bind="titleId"
+			inert.bind="isBack"
+			data-drawn.bind="drawn"
+			data-entered.bind="entered"
+			data-testid="virtual-ticket"
 		>
+			<!-- The cover is loaded with CORS so it can be drawn into the art and
+			     the share image; the CDN sends Access-Control-Allow-Origin. -->
+			<div class="ticket-front-cover" if.bind="showsCover" data-testid="virtual-ticket-cover">
+				<img
+					ref="coverImage"
+					class="ticket-front-cover-image"
+					src.bind="event.coverUrl"
+					alt=""
+					crossorigin="anonymous"
+					load.trigger="drawCover()"
+					error.trigger="onCoverError()"
+				>
+			</div>
+			<canvas ref="canvas" class="ticket-front-canvas" aria-hidden="true"></canvas>
+
+			<div class="ticket-front-art">
+				<p class="ticket-front-marks" aria-hidden="true">
+					<span>LIVERTY MUSIC</span>
+					<span>ADMIT ONE</span>
+				</p>
+				<div class="ticket-front-headline">
+					<h2 class="ticket-front-title" id.bind="titleId">
+						<template if.bind="event">${event.title}</template>
+						<template else><span t="tickets.event.unknown"></span></template>
+					</h2>
+					<p class="ticket-front-performers" if.bind="performers">${performers}</p>
+				</div>
+			</div>
+
+			<!-- The facts, set as ruled cells: a small label over a large value. -->
+			<dl class="ticket-front-facts">
+				<div class="ticket-front-venue" if.bind="event">
+					<dt>
+						<span t="tickets.event.venue"></span>
+						<span if.bind="prefecture" data-testid="virtual-ticket-prefecture">${prefecture}</span>
+					</dt>
+					<dd>${event.venueName}</dd>
+				</div>
+				<div class="ticket-front-date" if.bind="event">
+					<dt>
+						<span t="tickets.event.date"></span>
+						<span>${weekday}</span>
+					</dt>
+					<dd>${stubDate}</dd>
+				</div>
+				<div if.bind="event.openTime">
+					<dt t="tickets.event.open"></dt>
+					<dd>${time(event.openTime)}</dd>
+				</div>
+				<div if.bind="event.startTime">
+					<dt t="tickets.event.start"></dt>
+					<dd>${time(event.startTime)}</dd>
+				</div>
+				<div class="ticket-front-seat-type" if.bind="ticket.seatTypeName">
+					<dt t="tickets.field.seatType"></dt>
+					<dd data-testid="virtual-ticket-seat-type">${ticket.seatTypeName}</dd>
+				</div>
+			</dl>
+
+			<div class="ticket-front-tear" aria-hidden="true"></div>
+
+			<!-- The stub: the act again in small, the seat, and bars that are
+			     decoration only (they encode nothing). -->
+			<div class="ticket-front-stub">
+				<div class="ticket-front-stub-text">
+					<p class="ticket-front-stub-name" aria-hidden="true">${performers}</p>
+					<dl class="ticket-front-seat">
+						<dt t="tickets.field.seat"></dt>
+						<dd t="tickets.field.noSeat"></dd>
+					</dl>
+				</div>
+				<div class="ticket-front-bars" aria-hidden="true"></div>
+			</div>
+
+			<!-- The admission stamp: real text, pressed once per ticket on a device -->
+			<admission-stamp
+				if.bind="entered"
+				date.bind="stubDate"
+				pressing.bind="pressing"
+				animationend.trigger="onStampAnimationEnd($event)"
+			></admission-stamp>
+		</article>
+
+		<!-- The back: the 特定興行入場券 face, with the eligible person's details. -->
+		<section
+			ref="back"
+			class="ticket-back"
+			aria-label.bind="'tickets.virtual.back' & t"
+			inert.bind="!isBack"
+			data-testid="virtual-ticket-back"
+		>
+			<p class="ticket-back-performers" if.bind="performers">${performers}</p>
+			<p class="ticket-back-title">
+				<template if.bind="event">${event.title}</template>
+				<template else><span t="tickets.event.unknown"></span></template>
+			</p>
+
+			<dl class="ticket-back-details">
+				<div if.bind="event">
+					<dt t="tickets.event.date"></dt>
+					<dd>${date}</dd>
+				</div>
+				<div if.bind="event">
+					<dt t="tickets.event.venue"></dt>
+					<dd>${event.venueName}<template if.bind="prefecture"> (${prefecture})</template></dd>
+				</div>
+				<div if.bind="event.openTime || event.startTime">
+					<dt>${'tickets.event.open' & t} / ${'tickets.event.start' & t}</dt>
+					<dd>${time(event.openTime)} / ${time(event.startTime)}</dd>
+				</div>
+				<div>
+					<dt>${'tickets.field.seatType' & t} / ${'tickets.field.seat' & t}</dt>
+					<dd>${ticket.seatTypeName} / ${'tickets.field.noSeat' & t}</dd>
+				</div>
+				<div>
+					<dt t="tickets.virtual.eligiblePerson"></dt>
+					<dd>
+						<span data-testid="virtual-ticket-full-name">${personalDetails.fullName}</span>
+						<span class="ticket-back-phone" data-testid="virtual-ticket-phone-number">${phoneNumber}</span>
+					</dd>
+				</div>
+			</dl>
+
+			<div class="ticket-back-notices" data-testid="virtual-ticket-notices">
+				<div if.bind="ticket.resaleWithoutConsentProhibited">
+					<p class="ticket-back-mark" t="tickets.virtual.noResale"></p>
+					<p t="tickets.virtual.noResaleDetail"></p>
+				</div>
+				<div>
+					<p class="ticket-back-mark" t="tickets.virtual.verified"></p>
+					<p t="tickets.virtual.verifiedDetail"></p>
+				</div>
+			</div>
+
+			<p class="ticket-back-brand" aria-hidden="true">LIVERTY MUSIC</p>
+		</section>
 	</div>
-
-	<div class="[ virtual-ticket-body ] [ flow ]">
-		<p class="[ virtual-ticket-performers ] [ md-typescale-label-large ]" if.bind="performers">${performers}</p>
-		<h2 class="[ virtual-ticket-title ] [ md-typescale-headline-small ]" id.bind="titleId">
-			<template if.bind="event">${event.title}</template>
-			<template else><span t="tickets.event.unknown"></span></template>
-		</h2>
-
-		<dl class="virtual-ticket-details">
-			<div if.bind="event">
-				<dt class="md-typescale-label-medium" t="tickets.event.date"></dt>
-				<dd class="md-typescale-body-large">${date}</dd>
-			</div>
-			<div if.bind="event">
-				<dt class="md-typescale-label-medium" t="tickets.event.venue"></dt>
-				<dd class="md-typescale-body-large">
-					${event.venueName}<template if.bind="prefecture"> <span class="virtual-ticket-area" data-testid="virtual-ticket-prefecture">${prefecture}</span></template>
-				</dd>
-			</div>
-			<div if.bind="event.openTime">
-				<dt class="md-typescale-label-medium" t="tickets.event.open"></dt>
-				<dd class="md-typescale-body-large">${time(event.openTime)}</dd>
-			</div>
-			<div if.bind="event.startTime">
-				<dt class="md-typescale-label-medium" t="tickets.event.start"></dt>
-				<dd class="md-typescale-body-large">${time(event.startTime)}</dd>
-			</div>
-			<div if.bind="ticket.seatTypeName">
-				<dt class="md-typescale-label-medium" t="tickets.field.seatType"></dt>
-				<dd class="md-typescale-body-large" data-testid="virtual-ticket-seat-type">${ticket.seatTypeName}</dd>
-			</div>
-			<div>
-				<dt class="md-typescale-label-medium" t="tickets.field.seat"></dt>
-				<dd class="md-typescale-body-large" t="tickets.field.noSeat"></dd>
-			</div>
-			<div data-personal>
-				<dt class="md-typescale-label-medium" t="tickets.field.fullName"></dt>
-				<dd class="md-typescale-body-large" data-testid="virtual-ticket-full-name">${personalDetails.fullName}</dd>
-			</div>
-			<div data-personal>
-				<dt class="md-typescale-label-medium" t="tickets.field.phoneNumber"></dt>
-				<dd class="md-typescale-body-large" data-testid="virtual-ticket-phone-number">${phoneNumber}</dd>
-			</div>
-		</dl>
-
-		<p
-			class="[ virtual-ticket-notice ] [ md-typescale-body-small ]"
-			if.bind="ticket.resaleWithoutConsentProhibited"
-			t="tickets.resaleProhibited"
-		></p>
 	</div>
+</div>
 
-	<!-- The admission stamp: real text, pressed once per ticket on a device -->
-	<admission-stamp
-		if.bind="entered"
-		time.bind="admitTime"
-		datetime.bind="admitIso"
-		pressing.bind="pressing"
-		animationend.trigger="onStampAnimationEnd($event)"
-	></admission-stamp>
-</article>
+<div class="virtual-ticket-controls">
+	<button
+		type="button"
+		class="[ virtual-ticket-flip ] [ md-typescale-label-large ]"
+		click.trigger="flip()"
+		aria-pressed.bind="isBack"
+		data-testid="virtual-ticket-flip"
+	>
+		<span aria-hidden="true">⟲</span>
+		<span if.bind="isBack" t="tickets.virtual.flipToFront"></span>
+		<span else t="tickets.virtual.flipToBack"></span>
+	</button>
+
+	<!-- The fan picks the ticket's design. -->
+	<div class="virtual-ticket-presets" role="group" aria-label.bind="'tickets.virtual.design' & t">
+		<button
+			repeat.for="option of presetOptions"
+			type="button"
+			class="virtual-ticket-preset"
+			data-preset.bind="option"
+			aria-pressed.bind="option === preset"
+			aria-label.bind="`tickets.virtual.preset.${option}` & t"
+			title.bind="`tickets.virtual.preset.${option}` & t"
+			click.trigger="choosePreset(option)"
+			data-testid="virtual-ticket-preset"
+		></button>
+	</div>
+</div>

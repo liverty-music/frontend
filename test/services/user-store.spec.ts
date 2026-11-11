@@ -355,6 +355,19 @@ describe('UserStore', () => {
 
 			expect(localStorage.getItem('discovery.nearbyFilter')).toBeNull()
 		})
+
+		// @spec components/infrastructure/fan/web/route/tickets "Design forgotten on sign-out"
+		it('sign-out forgets the designs picked for the virtual tickets', () => {
+			localStorage.setItem(
+				'tickets.presets',
+				JSON.stringify({ 'ticket-1': 'rock' }),
+			)
+			const { emitSignedOut } = build({ auth: makeAuth(true) })
+
+			emitSignedOut()
+
+			expect(localStorage.getItem('tickets.presets')).toBeNull()
+		})
 	})
 
 	// These exercise the auth-bootstrap chain that runs on every authed boot and

@@ -5,6 +5,23 @@
 	data-stamp.bind="stamp"
 	data-testid="virtual-ticket-stamp"
 >
-	<span class="md-typescale-title-large-emphasized" t="tickets.virtual.stamp"></span>
-	<time class="md-typescale-label-medium" datetime.bind="datetime">${time}</time>
+	<!-- The seal's rings and the lettering around it, worn like real ink. -->
+	<svg class="admission-stamp-seal" viewBox="0 0 120 120" aria-hidden="true">
+		<defs>
+			<filter id.bind="inkId">
+				<feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves="2" seed="4" result="grain" />
+				<feColorMatrix in="grain" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -1.3 1.45" result="worn" />
+				<feComposite in="SourceGraphic" in2="worn" operator="in" />
+			</filter>
+			<path id.bind="arcId" d="M60,60 m-45,0 a45,45 0 1,1 90,0 a45,45 0 1,1 -90,0" />
+		</defs>
+		<g filter="url(#${inkId})">
+			<circle cx="60" cy="60" r="56" fill="none" stroke="currentColor" stroke-width="5" />
+			<circle cx="60" cy="60" r="35" fill="none" stroke="currentColor" stroke-width="1.6" />
+			<text class="admission-stamp-around" fill="currentColor">
+				<textPath href="#${arcId}">ADMITTED · LIVERTY MUSIC · ${date} ·</textPath>
+			</text>
+		</g>
+	</svg>
+	<span class="admission-stamp-word" t="tickets.virtual.stamp"></span>
 </p>

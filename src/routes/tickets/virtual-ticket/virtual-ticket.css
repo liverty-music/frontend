@@ -1,107 +1,79 @@
-/* stylelint-disable no-unknown-custom-properties -- --artist-hue is set inline by the template from the first performer's name */
-
-/* The virtual ticket's face. It is a printed object, so its colours do not
-   follow the theme: a paper-light lower part tinted with the first
-   performer's hue and dark ink on it.
-
-   The share image is made from a clone of the face carrying `data-share`:
-   the full name and phone number become solid bars, the stamp is left out,
-   and the cover's area stays empty for the cover bitmap drawn under it. */
+/* The virtual ticket as an object: a card that floats over its own glow,
+   tilts towards the pointer and turns over. It is a printed object, so its
+   colours do not follow the theme. The two sides are styled in
+   ticket-front.css and ticket-back.css. */
 @layer block {
 	@scope (virtual-ticket) {
 		:scope {
-			display: block;
-		}
-
-		/* The colours are set here, where the template sets --artist-hue. */
-		.virtual-ticket {
-			--_paper: oklch(96% 0.03 var(--artist-hue));
-			--_ink: oklch(22% 0.03 var(--artist-hue));
-			--_ink-muted: oklch(40% 0.05 var(--artist-hue));
-			--_rule: oklch(80% 0.06 var(--artist-hue));
-			--_band: oklch(62% 0.16 var(--artist-hue));
-
-			position: relative;
-
-			overflow: hidden;
-			display: flex;
-			flex-direction: column;
-
-			border-radius: var(--md-sys-shape-corner-large);
-
-			color: var(--_ink);
-		}
-
-		/* Always 16:9 whatever the cover's own shape: the image is taken out
-		   of the flow, so it cannot stretch the area (and the share image's
-		   copy, whose image is not loaded, lays out the same). */
-		.virtual-ticket-cover {
-			position: relative;
-			aspect-ratio: 16 / 9;
-			background: var(--_band);
-		}
-
-		.virtual-ticket-cover-image {
-			position: absolute;
-			inset: 0;
+			display: grid;
+			grid-template-columns: minmax(0, 1fr);
+			gap: var(--space-l);
+			justify-items: center;
 
 			inline-size: 100%;
-			block-size: 100%;
-
-			object-fit: cover;
+			padding-block-start: var(--space-s);
 		}
 
-		/* The paper is the body's, not the face's: the cover's area must stay
-		   empty in the share image, where the cover is drawn under the face. */
-		.virtual-ticket-body {
-			--flow-space: var(--space-xs);
+		/* The room the ticket takes. The ticket is laid out at one design
+		   size (20rem wide) and scaled to fit the stage, so its type and
+		   spacing keep their proportions on a narrow or short screen. */
+		.virtual-ticket-stage {
+			touch-action: none;
 
-			flex-grow: 1;
-			padding: var(--space-m);
-			border-block-start: var(--space-3xs) solid var(--_band);
-			background: var(--_paper);
+			isolation: isolate;
+			position: relative;
+
+			container: virtual-ticket-stage / inline-size;
+
+			aspect-ratio: 10 / 17;
+			inline-size: min(20rem, 100%, 50dvh);
 		}
 
-		.virtual-ticket-details {
-			display: grid;
-			grid-template-columns: max-content 1fr;
-			gap: var(--space-2xs) var(--space-s);
+		.virtual-ticket-fit {
+			position: absolute;
+			inset: 0 auto auto 0;
+			transform-origin: 0 0;
 
-			& > div {
-				display: contents;
-			}
+			/* The unitless ratio of the stage's width to the design width. */
+			scale: tan(atan2(100cqi, 20rem));
+
+			inline-size: 20rem;
+			block-size: 34rem;
+
+			perspective: 60rem;
 		}
 
-		.virtual-ticket-performers,
-		.virtual-ticket-details dt,
-		.virtual-ticket-area {
-			color: var(--_ink-muted);
+		/* The light the ticket throws on what is behind it, and its shadow.
+		   Both come before the card in the paint order, so they lie under it. */
+		.virtual-ticket-stage::before,
+		.virtual-ticket-fit::before {
+			pointer-events: none;
+			content: "";
+			position: absolute;
 		}
 
-		.virtual-ticket-notice {
-			padding-block-start: var(--space-xs);
-			border-block-start: 1px dashed var(--_rule);
-			color: var(--_ink-muted);
+		.virtual-ticket-stage::before {
+			--_glow: radial-gradient(
+				closest-side,
+				oklch(70% 0.2 var(--artist-hue, 0) / 45%),
+				transparent
+			);
+
+			inset: 8% -6% 14%;
+			background: var(--_glow);
+			filter: blur(var(--space-l));
 		}
 
-		.virtual-ticket[data-share] {
-			& [data-personal] dd {
-				border-radius: var(--md-sys-shape-corner-extra-small);
-				color: transparent;
-				background: var(--_ink);
-			}
+		.virtual-ticket-fit::before {
+			--_shadow: radial-gradient(
+				closest-side,
+				oklch(0% 0 0deg / 55%),
+				transparent
+			);
 
-			& admission-stamp {
-				display: none;
-			}
-
-			& .virtual-ticket-cover {
-				background: transparent;
-			}
-
-			& .virtual-ticket-cover-image {
-				visibility: hidden;
-			}
+			inset: auto 12% calc(var(--space-l) * -1);
+			block-size: var(--space-l);
+			background: var(--_shadow);
 		}
 	}
 }

@@ -30,6 +30,10 @@ export const StorageKeys = {
 	// The language last applied on this device, in every auth state; the
 	// i18next detector reads it on boot (see FanI18nConfiguration).
 	language: 'language',
+	// The design the fan chose for each virtual ticket: JSON { [ticketId]:
+	// preset } (see ticket-preset-storage.ts). Kept on this device only and
+	// cleared on sign-out.
+	ticketPresets: 'tickets.presets',
 } as const
 
 /**
