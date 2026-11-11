@@ -5,9 +5,8 @@ import type { DateGroup, JourneyStatus } from '../../entities/concert'
 // ── Mocks ──────────────────────────────────────────────────────────────────
 
 const mockHistory = { replaceState: vi.fn() }
-const mockLogger = {
-	scopeTo: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn() }),
-}
+const scopedLogger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() }
+const mockLogger = { scopeTo: () => scopedLogger }
 const mockAuth = { isAuthenticated: false }
 type Anchor = { dateKey: string; offset: number }
 /** The store's rendered timetable, keyed by the inputs it was built from. */
@@ -137,6 +136,7 @@ import { queueTask, runTasks } from 'aurelia'
 import { todayCalendarDate } from '../../lib/plain-date'
 import { ResumeRevalidator } from '../../services/resume-revalidator'
 import { DashboardRoute } from './dashboard-route'
+import dashboardTemplate from './dashboard-route.html?raw'
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -1580,6 +1580,153 @@ describe('DashboardRoute', () => {
 			expect(mockOnboarding.finish).toHaveBeenCalledTimes(1)
 		})
 	})
+	describe('loading, empty and error states of the timetable', () => {
+		/**
+		 * Evaluates a binding expression of the shipped template against the
+		 * route, so the gate under test is the one that renders.
+		 */
+		function evaluate(expression: string): unknown {
+			return new Function(`with (this) { return (${expression}) }`).call(sut)
+		}
+
+		/** The `if.bind` gate of the element matching `selector` in the template. */
+		function gateOf(selector: string): string {
+			const doc = new DOMParser().parseFromString(
+				`<body>${dashboardTemplate}</body>`,
+				'text/html',
+			)
+			const gate = doc.querySelector(selector)?.getAttribute('if.bind')
+			if (!gate) throw new Error(`no gated element for ${selector}`)
+			return gate
+		}
+
+		const emptyGate = () =>
+			gateOf('state-placeholder:has([t="dashboard.empty.title"])')
+		const errorGate = () => gateOf('inline-error')
+
+		// @spec components/infrastructure/fan/web/global/live-highway "Dashboard displays empty state"
+		it('shows the empty state, and not the error state, when the load succeeds with no events', async () => {
+			mockAuth.isAuthenticated = true
+			mockFollowStore.followedCount = 3
+			mockConcertService.peekDateGroups.mockReturnValue(null)
+			mockConcertService.listFollowed.mockResolvedValue([])
+			sut.needsRegion = false
+
+			await sut.loadData()
+
+			// Loaded with nothing to show: the empty state's message (its title
+			// and subtitle) is shown ...
+			expect(evaluate(emptyGate())).toBe(true)
+			const doc = new DOMParser().parseFromString(
+				`<body>${dashboardTemplate}</body>`,
+				'text/html',
+			)
+			const empty = doc.querySelector(
+				'state-placeholder:has([t="dashboard.empty.title"])',
+			)
+			expect(empty?.querySelector('[t="dashboard.empty.title"]')).not.toBeNull()
+			expect(
+				empty?.querySelector('[t="dashboard.empty.subtitle"]'),
+			).not.toBeNull()
+			// ... while the error state and the loading placeholder stay away, so
+			// nothing reads as a failed or a pending load.
+			expect(evaluate(errorGate())).toBeFalsy()
+			expect(
+				evaluate(
+					doc
+						.querySelector('concert-highway')
+						?.getAttribute('loading.bind') as string,
+				),
+			).toBe(false)
+		})
+
+		it('shows the error state, and not the empty state, when the load fails with nothing to show', async () => {
+			mockAuth.isAuthenticated = true
+			mockConcertService.peekDateGroups.mockReturnValue(null)
+			mockConcertService.listFollowed.mockRejectedValue(new Error('boom'))
+			sut.needsRegion = false
+
+			await sut.loadData()
+
+			// The same "no events" list, told apart by the error.
+			expect(sut.filteredDateGroups).toEqual([])
+			expect(evaluate(errorGate())).toBeTruthy()
+			expect(evaluate(emptyGate())).toBe(false)
+		})
+
+		// @spec components/infrastructure/fan/web/global/live-highway "Dashboard silently displays cached data on refresh failure"
+		it('keeps the loaded timetable, with no error state, when a refresh fails, and logs the failure', async () => {
+			mockAuth.isAuthenticated = true
+			const loaded = makeTimetable(1)
+			mockConcertService.peekDateGroups.mockReturnValue(null)
+			mockConcertService.listFollowed.mockResolvedValue([{}] as never)
+			mockConcertService.toDateGroups.mockReturnValue(loaded)
+			sut.needsRegion = false
+			await sut.loadData()
+			expect(sut.dateGroups).toEqual(loaded)
+			scopedLogger.warn.mockClear()
+			scopedLogger.error.mockClear()
+
+			// A refresh, as on a return to the foreground, fails.
+			const failure = new Error('network down')
+			mockConcertService.revalidateFollower.mockRejectedValueOnce(failure)
+			sut.revalidate()
+			await flushMicrotasks()
+
+			// The timetable on screen is unchanged, and nothing the template
+			// shows for a failure appears: no error state, no empty state.
+			expect(sut.dateGroups).toEqual(loaded)
+			expect(sut.filteredDateGroups).toHaveLength(1)
+			expect(sut.loadError).toBeNull()
+			expect(evaluate(errorGate())).toBeFalsy()
+			expect(evaluate(emptyGate())).toBe(false)
+			// The template has no banner or stale-data indicator of its own for a
+			// failed refresh: the only element shown on a failure is the error
+			// state (above); the others are gated on there being no failure.
+			const doc = new DOMParser().parseFromString(
+				`<body>${dashboardTemplate}</body>`,
+				'text/html',
+			)
+			expect(
+				[...doc.querySelectorAll('[if\\.bind]')]
+					.filter((el) =>
+						/(?<!!)\bloadError\b|refresh|stale/i.test(
+							el.getAttribute('if.bind') ?? '',
+						),
+					)
+					.map((el) => el.localName),
+			).toEqual(['inline-error'])
+			// The failure is logged for observability.
+			expect(scopedLogger.warn).toHaveBeenCalledWith(
+				'Dashboard background refresh failed',
+				{ error: failure },
+			)
+		})
+
+		it('keeps the loaded timetable, with no error state, when a reload for the same fan fails', async () => {
+			mockAuth.isAuthenticated = true
+			const loaded = makeTimetable(1)
+			mockConcertService.peekDateGroups.mockReturnValue(null)
+			mockConcertService.listFollowed.mockResolvedValue([{}] as never)
+			mockConcertService.toDateGroups.mockReturnValue(loaded)
+			sut.needsRegion = false
+			await sut.loadData()
+			scopedLogger.error.mockClear()
+
+			// The reload takes the cold path (the inputs changed) and fails.
+			mockConcertService.listFollowed.mockRejectedValue(new Error('timeout'))
+			await sut.loadData()
+
+			expect(sut.dateGroups).toEqual(loaded)
+			expect(sut.loadError).toBeNull()
+			expect(evaluate(errorGate())).toBeFalsy()
+			expect(scopedLogger.error).toHaveBeenCalledWith(
+				'Failed to load dashboard',
+				{ error: expect.any(Error) },
+			)
+		})
+	})
+
 	describe('PWA resume revalidation', () => {
 		// @spec components/infrastructure/fan/web/route/dashboard "Revalidation on PWA resume"
 		it('forces a ListFollowed refetch on foreground return and swaps the fresh timetable in place', async () => {

@@ -1,5 +1,10 @@
+import { EventSchema } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/event_pb.js'
+import { create } from '@bufbuild/protobuf'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { ProximityGroup } from '../adapter/rpc/client/concert-client'
+import type {
+	ProximityGroup,
+	ResolvedConcert,
+} from '../adapter/rpc/client/concert-client'
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
 
@@ -352,6 +357,45 @@ describe('ConcertStore', () => {
 			expect(sut.artistsWithConcertsCount).toBe(0)
 			await sut.listFollowed()
 			expect(mockRpcClient.listFollowed).toHaveBeenCalledTimes(2)
+		})
+	})
+
+	describe('toDateGroups — lanes', () => {
+		/** A concert of artist `a1` with the given event id on 2026-07-15. */
+		function concertOf(eventId: string): ResolvedConcert {
+			return {
+				event: create(EventSchema, {
+					id: { value: eventId },
+					localDate: { value: { year: 2026, month: 7, day: 15 } },
+				}),
+				artists: [{ id: { value: 'a1' }, name: { value: 'Band' } }],
+			} as unknown as ResolvedConcert
+		}
+
+		// @spec components/infrastructure/fan/web/global/live-highway "Lane 1 - HOME STAGE"
+		// @spec components/infrastructure/fan/web/global/live-highway "Lane 2 - NEAR STAGE"
+		// @spec components/infrastructure/fan/web/global/live-highway "Lane 3 - AWAY STAGE"
+		it('puts the proto fields home, nearby and away into the HOME, NEAR and AWAY lanes', () => {
+			const [group] = sut.toDateGroups(
+				[
+					{
+						date: { value: { year: 2026, month: 7, day: 15 } },
+						home: [concertOf('in-home-1'), concertOf('in-home-2')],
+						nearby: [concertOf('in-nearby')],
+						away: [concertOf('in-away')],
+					},
+				] as unknown as ProximityGroup[],
+				new Map([
+					[
+						'a1',
+						{ artist: { id: 'a1', name: 'Band', mbid: '' }, hype: 'home' },
+					],
+				]),
+			)
+
+			expect(group.home.map((c) => c.id)).toEqual(['in-home-1', 'in-home-2'])
+			expect(group.nearby.map((c) => c.id)).toEqual(['in-nearby'])
+			expect(group.away.map((c) => c.id)).toEqual(['in-away'])
 		})
 	})
 

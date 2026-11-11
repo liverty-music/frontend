@@ -290,6 +290,161 @@ export const PopulatedTimetable = {
 	},
 } satisfies Story
 
+/**
+ * What each lane of the timetable holds and how its columns, accents and date
+ * separators are drawn. Two date groups fill the lanes unevenly (one lane of
+ * the second is empty), so a lane that shows another lane's concerts, or all of
+ * them, fails.
+ */
+export const LanesAndDateSeparators = {
+	render: () => highwayStory(DATE_GROUPS),
+	play: async ({ canvasElement }) => {
+		const scroll = canvasElement.querySelector<HTMLElement>('.concert-scroll')
+		if (!scroll) throw new Error('concert-scroll not rendered')
+		const groups = [
+			...scroll.querySelectorAll<HTMLElement>(':scope > .date-group'),
+		]
+		await expect(groups.length).toBe(DATE_GROUPS.length)
+
+		/** The lane of `group` for `name`, with the cards it holds. */
+		const laneOf = (group: HTMLElement, name: 'home' | 'near' | 'away') => {
+			const lane = group.querySelector<HTMLElement>(
+				`.lane[data-lane="${name}"]`,
+			)
+			if (!lane) throw new Error(`no ${name} lane`)
+			const cards = [...lane.querySelectorAll<HTMLElement>('.event-card')]
+			return { lane, cards }
+		}
+		const names = (cards: HTMLElement[]) =>
+			cards.map((c) => c.querySelector('.artist-name')?.textContent?.trim())
+
+		// @spec components/infrastructure/fan/web/global/live-highway "Equal-width three-lane grid"
+		for (const group of groups) {
+			// The columns are three equal fractions of the row: three tracks of
+			// one width, and each lane is one third of the timetable's width (the
+			// list's own width, less its scrollbar).
+			const tracks = getComputedStyle(group).gridTemplateColumns.split(' ')
+			await expect(tracks).toHaveLength(3)
+			await expect(new Set(tracks.map((t) => Number.parseFloat(t))).size).toBe(
+				1,
+			)
+			for (const name of ['home', 'near', 'away'] as const) {
+				const { lane } = laneOf(group, name)
+				await expect(
+					Math.abs(layoutBox(lane).width - scroll.clientWidth / 3),
+				).toBeLessThanOrEqual(1)
+			}
+		}
+
+		// @spec components/infrastructure/fan/web/global/live-highway "Lane 1 - HOME STAGE"
+		// (The proto field `home` reaching this lane is checked where the
+		// timetable is built: ConcertStore, "Lane 1 - HOME STAGE".)
+		for (const [i, group] of groups.entries()) {
+			const { lane, cards } = laneOf(group, 'home')
+			await expect(names(cards)).toEqual(
+				DATE_GROUPS[i].home.map((e) => e.artistName),
+			)
+			for (const card of cards) {
+				// The artist name is the card's whole content here: no location
+				// label, no second line to compete with it.
+				await expect(card.textContent?.trim()).toBe(
+					card.querySelector('.artist-name')?.textContent?.trim(),
+				)
+				await expect(card.querySelector('.location-label')).toBeNull()
+				// Its size follows the lane it sits in: the lane is the container
+				// (inline size), and the name is `8cqi` of it, between 14 and 32 px.
+				const style = getComputedStyle(lane)
+				await expect(style.containerType).toBe('inline-size')
+				const inner =
+					lane.clientWidth -
+					Number.parseFloat(style.paddingInlineStart) -
+					Number.parseFloat(style.paddingInlineEnd)
+				const name = card.querySelector<HTMLElement>('.artist-name')
+				if (!name) throw new Error('artist name not rendered')
+				await expect(
+					Math.abs(
+						Number.parseFloat(getComputedStyle(name).fontSize) -
+							Math.min(32, Math.max(14, inner * 0.08)),
+					),
+				).toBeLessThanOrEqual(0.5)
+			}
+		}
+
+		// @spec components/infrastructure/fan/web/global/live-highway "Lane 2 - NEAR STAGE"
+		// @spec components/infrastructure/fan/web/global/live-highway "Lane 3 - AWAY STAGE"
+		// (The proto fields `nearby` and `away` reaching these lanes are checked
+		// where the timetable is built: ConcertStore.)
+		for (const [name, field, scenario] of [
+			['near', 'nearby', 'Lane 2 - NEAR STAGE'],
+			['away', 'away', 'Lane 3 - AWAY STAGE'],
+		] as const) {
+			for (const [i, group] of groups.entries()) {
+				const { cards } = laneOf(group, name)
+				const expected = DATE_GROUPS[i][field]
+				await expect(names(cards)).toEqual(expected.map((e) => e.artistName))
+				for (const [j, card] of cards.entries()) {
+					// The artist name and the location label, the name the larger.
+					const label = card.querySelector<HTMLElement>('.location-label')
+					if (!label) throw new Error(`${scenario}: no location label`)
+					await expect(label.textContent?.trim()).toBe(
+						expected[j].locationLabel,
+					)
+					const nameEl = card.querySelector<HTMLElement>('.artist-name')
+					if (!nameEl) throw new Error('artist name not rendered')
+					await expect(
+						Number.parseFloat(getComputedStyle(nameEl).fontSize),
+					).toBeGreaterThan(Number.parseFloat(getComputedStyle(label).fontSize))
+				}
+			}
+		}
+		// The empty NEAR lane of the second date holds no card.
+		await expect(laneOf(groups[1], 'near').cards).toHaveLength(0)
+
+		// Each lane's top edge: a 2 px line in its stage colour at 40% opacity
+		// (not tagged: the scenario's second line, the lane separators, says
+		// "the adjacent stage colour at 15%", while the app draws a faint white
+		// line at 5%, see the report of task 9.1).
+		for (const name of ['home', 'near', 'away'] as const) {
+			const { lane } = laneOf(groups[0], name)
+			const style = getComputedStyle(lane)
+			await expect(style.borderBlockStartWidth).toBe('2px')
+			await expect(style.borderBlockStartStyle).toBe('solid')
+			await expect(style.borderBlockStartColor).toBe(
+				resolveColor(
+					lane,
+					`oklch(from var(--color-stage-${name}) l c h / 40%)`,
+				),
+			)
+		}
+
+		// @spec components/infrastructure/fan/web/global/live-highway "Date separator gradient treatment"
+		for (const group of groups) {
+			const separator = group.querySelector<HTMLElement>('.date-separator')
+			if (!separator) throw new Error('date-separator not rendered')
+			const style = getComputedStyle(separator)
+			// A left-to-right gradient from the HOME colour through NEAR to AWAY,
+			// each at 10%: the same value as one drawn from the tokens here.
+			const probe = document.createElement('div')
+			probe.style.backgroundImage = `linear-gradient(to right, oklch(from var(--color-stage-home) l c h / 10%), oklch(from var(--color-stage-near) l c h / 10%), oklch(from var(--color-stage-away) l c h / 10%))`
+			separator.append(probe)
+			const expected = getComputedStyle(probe).backgroundImage
+			probe.remove()
+			await expect(expected).toContain('linear-gradient')
+			await expect(style.backgroundImage).toBe(expected)
+			// The date in the accent colour; the row sticks to the top of the
+			// list, behind a 4 px blur.
+			const time = separator.querySelector<HTMLElement>('time')
+			if (!time) throw new Error('date not rendered')
+			await expect(getComputedStyle(time).color).toBe(
+				resolveColor(time, 'var(--color-brand-accent)'),
+			)
+			await expect(style.position).toBe('sticky')
+			await expect(style.insetBlockStart).toBe('0px')
+			await expect(style.backdropFilter).toBe('blur(4px)')
+		}
+	},
+} satisfies Story
+
 /** A long timetable: 225 dates, the size of the reference account. */
 const LONG_GROUPS: DateGroup[] = Array.from({ length: 225 }, (_, i) => {
 	const d = new Date(Date.UTC(2026, 0, 1 + i))
