@@ -5,6 +5,7 @@
 		:scope {
 			display: block;
 			block-size: calc(var(--nav-bar-height) + var(--safe-area-block-end));
+			/* stylelint-disable-next-line declaration-property-custom-property-allowed-list -- the device's bottom safe area (an env() value the console's tokens publish), not a spacing choice from the scale */
 			padding-block-end: var(--safe-area-block-end);
 			background: var(--md-sys-color-surface-container);
 		}

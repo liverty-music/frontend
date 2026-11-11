@@ -107,6 +107,7 @@
 		.page {
 			display: grid;
 			gap: var(--space-s);
+			/* stylelint-disable-next-line declaration-property-custom-property-allowed-list -- the page's side padding the shell sets per window class from --space-* and the full-bleed composition reads back */
 			padding: var(--space-2xs) var(--page-inline-padding) var(--space-l);
 		}
 

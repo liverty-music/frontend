@@ -75,16 +75,17 @@
 		}
 
 		/* The selected tab's persistent state layer (bottom-nav-tab draws the
-		   rest of the selected treatment). Kept here, where its fan-local
-		   --md-state-selected opacity is a recorded exception
-		   (stylelint-suppressions.json), until that token joins the shared
-		   --md-sys-state-* family. */
+		   rest of the selected treatment). The fan-local --md-state-selected
+		   opacity is read through a local property until that token joins the
+		   shared --md-sys-state-* family. */
 		bottom-nav-tab > .nav-tab[data-active="true"] {
-			background: color-mix(
+			--_selected: color-mix(
 				in oklab,
 				var(--color-brand-accent) var(--md-state-selected),
 				transparent
 			);
+
+			background: var(--_selected);
 		}
 	}
 }

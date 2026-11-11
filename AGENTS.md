@@ -84,12 +84,8 @@ General Aurelia 2 guidance comes from the `aurelia` skill (web-frontend plugin) 
   `stylelint.config.js`; `stylelint-plugin-cube-css/test/config/` shows what passes and fails).
 - A `stylelint-disable` comment needs a rule name and a reason after `--`, and it must disable a
   real problem; lint fails otherwise. Reviewers check the reason.
-- `stylelint-suppressions.json` is the list of violations not fixed yet, with a count per file and
-  rule. It belongs to the change `adopt-m3-cube-ui-foundation`, which is complete when the list is
-  empty. Lint fails when a file exceeds its count, so new violations cannot be added, but it does not
-  notice a count that is too high. After fixing violations, run `npm run lint:css:suppress` and
-  commit the smaller list. Check that diff: the command also records any new violation, so no count
-  may rise.
+- There is no list of known violations: `npm run lint:css` passes with no suppressions file, so a new
+  violation fails at once. Fix it, or disable the one line with a reason.
 
 ### Inline styles (CUBE CSS)
 
