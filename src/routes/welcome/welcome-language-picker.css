@@ -1,0 +1,58 @@
+@layer block {
+	@scope (welcome-language-picker) {
+		/* A line of the hero's flow, a step below the subtitle. */
+		:scope {
+			--flow-space: var(--space-xl);
+
+			display: block;
+		}
+
+		.welcome-lang {
+			display: flex;
+			gap: var(--space-xs);
+			justify-content: center;
+			padding-block-start: var(--space-xs);
+		}
+
+		/* The language keeps its size and takes a 48 px tap through a
+		   transparent ::after; the 12 px gap keeps the two apart. */
+		.welcome-lang-label {
+			cursor: pointer;
+			position: relative;
+		}
+
+		.welcome-lang-label::after {
+			content: "";
+
+			position: absolute;
+			inset-block-start: 50%;
+			inset-inline-start: 50%;
+			translate: -50% -50%;
+
+			inline-size: max(100%, var(--md-sys-target-size));
+			block-size: max(100%, var(--md-sys-target-size));
+		}
+
+		.welcome-lang-text {
+			padding: var(--space-3xs) var(--space-xs);
+			border-radius: var(--md-sys-shape-corner-medium);
+			color: var(--md-sys-color-on-surface-variant);
+			transition: color var(--md-sys-motion-duration-short4);
+		}
+
+		/* The radio is visually hidden, so its text shows the focus ring. */
+		.welcome-lang-label:has(input:focus-visible) > .welcome-lang-text {
+			/* stylelint-disable property-disallowed-list -- the radio a language stands for is visually hidden, so its visible text draws the global ring in its place */
+			outline: var(--md-sys-state-focus-indicator-thickness) solid
+				var(--md-sys-color-focus-indicator);
+			outline-offset: var(--md-sys-state-focus-indicator-outer-offset);
+			/* stylelint-enable property-disallowed-list */
+		}
+
+		.welcome-lang-label:has(input:checked) > .welcome-lang-text {
+			color: var(--md-sys-color-on-surface);
+			text-decoration: underline;
+			text-underline-offset: 4px;
+		}
+	}
+}

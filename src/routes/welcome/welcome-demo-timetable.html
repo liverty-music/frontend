@@ -1,0 +1,21 @@
+<import from="./welcome-demo-timetable.css"></import>
+<import from="./welcome-cta"></import>
+
+<!-- One screen (auto / preview / auto), the "preview + CTA footer" grouping:
+     the CTAs never sit on the hero when preview data exists. Cards are not
+     read-only here: `event-selected` bubbles to Welcome. -->
+<div class="[ welcome-demo-timetable ]" data-testid="welcome-timetable">
+  <p t="welcome.preview.label" class="[ welcome-section-tagline ] [ md-typescale-headline-small ]"></p>
+  <div class="[ welcome-preview ]" data-testid="welcome-preview">
+    <concert-highway
+      date-groups.bind="dateGroups"
+      show-beams="true"
+    ></concert-highway>
+  </div>
+  <footer class="[ welcome-actions ] [ stack ]">
+    <welcome-cta
+      on-get-started.bind="() => onGetStarted()"
+      on-login.bind="() => onLogin()"
+    ></welcome-cta>
+  </footer>
+</div>

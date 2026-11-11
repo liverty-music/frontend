@@ -1,0 +1,18 @@
+<import from="./welcome-notification-demo.css"></import>
+
+<div
+  class="[ welcome-demo-notification ] [ stack ]"
+  data-exiting.bind="exiting || undefined"
+  data-testid="welcome-demo-notification"
+>
+  <p t="welcome.demo.notificationLead" class="[ welcome-demo-lead ] [ md-typescale-headline-small ]"></p>
+  <button
+    type="button"
+    class="[ welcome-notification-trigger ] [ state-layer ]"
+    click.trigger="tap()"
+    aria-label.bind="'welcome.demo.notificationTap' | t"
+  >
+    <notification-mock-card></notification-mock-card>
+  </button>
+  <p t="welcome.demo.notificationTap" class="[ welcome-demo-hint ] [ md-typescale-body-large ]"></p>
+</div>

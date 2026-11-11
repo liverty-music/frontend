@@ -1,0 +1,19 @@
+<import from="./welcome-cta.css"></import>
+
+<p t="welcome.guestFriendly" class="[ welcome-guest-friendly ] [ md-typescale-body-medium ]"></p>
+<div class="[ welcome-action-group ] [ stack ]">
+  <button
+    busy-on-click.bind="() => onGetStarted()"
+    class="[ button ] [ state-layer ]"
+    data-testid="welcome-get-started"
+    t="welcome.cta.getStarted"
+  ></button>
+  <button
+    busy-on-click.bind="() => onLogin()"
+    class="[ button ] [ state-layer ]"
+    data-variant="outlined"
+    data-testid="welcome-login"
+    t="welcome.cta.login"
+  ></button>
+  <a href="/passkey-recovery" class="[ text-link welcome-help-link ] [ md-typescale-body-medium ]" data-variant="standalone" data-testid="welcome-cant-sign-in" t="welcome.cta.cantSignIn"></a>
+</div>

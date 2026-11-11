@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import html from '../../src/routes/welcome/welcome-route.html?raw'
+import html from '../../src/routes/welcome/welcome-cta.html?raw'
+import timetableHtml from '../../src/routes/welcome/welcome-demo-timetable.html?raw'
+import heroHtml from '../../src/routes/welcome/welcome-hero.html?raw'
 import css from '../../src/styles/text-link.css?raw'
 
-/** The welcome template, parsed (bindings stay as attributes). */
+/** Welcome's commit actions, parsed (bindings stay as attributes). */
 function welcomeTemplate(): DocumentFragment {
 	const t = document.createElement('template')
 	t.innerHTML = html
@@ -12,11 +14,13 @@ function welcomeTemplate(): DocumentFragment {
 describe('Welcome "can\'t sign in" link', () => {
 	it('sits directly below every [Log In] CTA as a native link', () => {
 		// @spec components/infrastructure/fan/web/route/welcome "Link below Log In"
+		// Screen 2 (demo footer) and the Screen 1 fallback show the same actions.
+		expect(timetableHtml.match(/<welcome-cta\b/g)).toHaveLength(1)
+		expect(heroHtml.match(/<welcome-cta\b/g)).toHaveLength(1)
 		const logins = welcomeTemplate().querySelectorAll(
 			'[data-testid="welcome-login"]',
 		)
-		// Screen 2 (demo footer) and the Screen 1 fallback.
-		expect(logins).toHaveLength(2)
+		expect(logins).toHaveLength(1)
 		for (const login of logins) {
 			const link = login.nextElementSibling
 			expect(link?.tagName).toBe('A')

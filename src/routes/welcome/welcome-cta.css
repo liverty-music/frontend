@@ -1,0 +1,25 @@
+@layer block {
+	@scope (welcome-cta) {
+		/* The note and the actions are items of the caller's stack. */
+		:scope {
+			display: contents;
+		}
+
+		.welcome-guest-friendly {
+			color: var(--md-sys-color-on-surface-variant);
+		}
+
+		.welcome-action-group {
+			--stack-gap: var(--space-2xs);
+
+			inline-size: 100%;
+			max-inline-size: 28rem;
+		}
+
+		/* "Can't sign in" directly below [Log In], centred; the `text-link` block
+		   draws it. */
+		.welcome-help-link {
+			align-self: center;
+		}
+	}
+}

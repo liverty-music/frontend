@@ -21,7 +21,7 @@ export interface RouteMarker {
 }
 
 export const ROUTE_MARKERS: readonly RouteMarker[] = [
-	{ route: 'welcome', marker: 'welcome-brand' },
+	{ route: 'welcome', marker: 'welcome-ambient' },
 	{ route: 'about', marker: 'about-title' },
 	{ route: 'auth-callback', marker: 'callback-loading' },
 	{ route: 'dashboard', marker: 'dashboard-empty-subtitle' },

@@ -1,0 +1,41 @@
+<import from="./welcome-hero.css"></import>
+<import from="./welcome-wordmark"></import>
+<import from="./welcome-language-picker"></import>
+<import from="./welcome-cta"></import>
+
+<header class="[ welcome-hero ] [ flow ]">
+  <welcome-wordmark></welcome-wordmark>
+  <h1 t="welcome.hero.title" class="[ welcome-title ] [ md-typescale-headline-large ]"></h1>
+  <p t="welcome.hero.subtitlePain" class="[ welcome-subtitle ] [ md-typescale-body-large ]"></p>
+  <p t="[html]welcome.hero.subtitleAction" class="[ welcome-subtitle welcome-subtitle-action ] [ md-typescale-body-large ]"></p>
+
+  <welcome-language-picker languages.bind="languages" current.bind="currentLocale"></welcome-language-picker>
+
+  <!-- With preview data: single scroll-affordance that reveals the guided demo.
+       The button only triggers the scroll; smooth vs instant motion is governed by
+       the scroll container's CSS `scroll-behavior` (and its reduced-motion
+       override), so no motion logic lives in JS. A native `<a href="#…">` was
+       rejected because the Aurelia router intercepts URL/hash changes and tears
+       the route down. -->
+  <button
+    if.bind="hasPreview"
+    click.trigger="seePreview()"
+    class="[ button welcome-scroll-action ] [ state-layer ]"
+    data-variant="outlined"
+    data-testid="welcome-see-preview"
+  >
+    <span t="welcome.hero.seePreview"></span>
+    <span class="welcome-scroll-arrow" aria-hidden="true">↓</span>
+  </button>
+
+  <!-- Without preview data: no demo exists, so fall back to inline CTAs so
+       unauthenticated users can still start onboarding or sign in. The
+       guest-friendly note rides above the CTA group per the landing-page spec
+       so the no-account-required message stays visible without scrolling. -->
+  <div else class="[ welcome-hero-fallback ] [ stack ]">
+    <welcome-cta
+      on-get-started.bind="() => onGetStarted()"
+      on-login.bind="() => onLogin()"
+    ></welcome-cta>
+  </div>
+</header>

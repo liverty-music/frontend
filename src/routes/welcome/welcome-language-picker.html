@@ -1,0 +1,16 @@
+<import from="./welcome-language-picker.css"></import>
+
+<fieldset class="welcome-lang">
+  <legend class="[ visually-hidden ]">Language</legend>
+  <label repeat.for="lang of languages" class="welcome-lang-label">
+    <input
+      type="radio"
+      class="[ visually-hidden ]"
+      name="welcome-lang"
+      model.bind="lang"
+      checked.to-view="current"
+      change.trigger="select(lang)"
+    >
+    <span class="[ welcome-lang-text ] [ md-typescale-label-large ]" md-typescale-label-large-emphasized.class="lang === current">${lang === 'ja' ? '日本語' : 'EN'}</span>
+  </label>
+</fieldset>

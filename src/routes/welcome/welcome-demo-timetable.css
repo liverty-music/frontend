@@ -1,0 +1,83 @@
+@layer block {
+	@scope (welcome-demo-timetable) {
+		/* The step is an item of the demo section's column. */
+		:scope {
+			display: contents;
+		}
+
+		/* Tagline (auto) / timetable (1fr) / CTA (auto), filling the demo
+		   section — the original Screen 2 "preview + footer" shape. */
+		.welcome-demo-timetable {
+			display: grid;
+			grid-template-rows: auto 1fr auto;
+			flex: 1;
+			gap: var(--space-s);
+
+			inline-size: 100%;
+			min-block-size: 0;
+
+			/* Enters only after the notification has fully dismissed (Welcome
+			   swaps this in once the exit completes), so the two never overlap. */
+			animation: timetable-in var(--md-sys-motion-duration-long1) ease-out both;
+		}
+
+		/* CTA footer under the timetable (commit CTAs live here, never on hero). */
+		.welcome-actions {
+			--stack-gap: var(--space-2xs);
+
+			align-items: center;
+		}
+
+		.welcome-section-tagline {
+			color: var(--color-brand-accent);
+			text-align: center;
+			text-shadow:
+				0 0 6px oklch(from var(--color-brand-accent) l c h / 40%),
+				0 0 16px oklch(from var(--color-brand-accent) l c h / 25%);
+			text-wrap: balance;
+			word-break: auto-phrase;
+		}
+
+		/* Timetable presented full, composed (no cropped peek). */
+		.welcome-preview {
+			position: relative;
+
+			/* Clip the internally-scrolled timetable at the bottom fade mask so it
+			   never spills past the demo screen (concert-highway keeps its own
+			   .concert-scroll — this only trims sub-pixel overflow at the frame). */
+			overflow: hidden;
+			inline-size: 100%;
+			min-block-size: 0;
+
+			/* Bottom fade-out mask */
+			&::after {
+				pointer-events: none;
+				content: "";
+
+				position: absolute;
+				inset-block-end: 0;
+				inset-inline: 0;
+
+				block-size: 60px;
+
+				background: linear-gradient(
+					to bottom,
+					transparent,
+					var(--md-sys-color-surface)
+				);
+			}
+		}
+
+		.welcome-preview > concert-highway {
+			block-size: 100%;
+		}
+
+		/* Timetable arrival: fade + slight rise, after the notification has left. */
+		@keyframes timetable-in {
+			from {
+				transform: translateY(1.5rem) scale(0.99);
+				opacity: 0;
+			}
+		}
+	}
+}
