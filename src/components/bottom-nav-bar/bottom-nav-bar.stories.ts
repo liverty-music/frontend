@@ -6,6 +6,8 @@ import {
 } from '@aurelia/storybook'
 import { Registration } from 'aurelia'
 import { expect, waitFor } from 'storybook/test'
+import { resolveColor } from '../../../.storybook/contrast'
+import { hoverPointer } from '../../../.storybook/gestures'
 import { expectScreenshot } from '../../../.storybook/screenshot'
 import { expectTargets } from '../../../.storybook/target-size'
 import { atWidth } from '../../../.storybook/viewport'
@@ -173,5 +175,99 @@ export const NarrowWindow = {
 			}
 			await expectScreenshot(bar(canvasElement), 'bottom-nav-bar-320')
 		})
+	},
+} satisfies Story
+
+/** The radius token a selected tab rounds to, as the browser computes it. */
+const selectedRadius = (root: HTMLElement) => {
+	const probe = document.createElement('span')
+	probe.style.borderRadius = 'var(--md-sys-shape-corner-large-increased)'
+	root.append(probe)
+	const value = getComputedStyle(probe).borderTopLeftRadius
+	probe.remove()
+	return value
+}
+
+/**
+ * Selecting a tab: the tab that becomes selected takes the rounder shape and
+ * the accent colour through transitions, the radius on the spatial spring,
+ * not as a static switch. The selected attribute drives it.
+ */
+export const SelectionSprings = {
+	render: render(),
+	play: async ({ canvasElement }) => {
+		const tabs = await tabsShown(canvasElement)
+		const [home, discovery] = tabs
+		const rounded = selectedRadius(canvasElement)
+		await expect(rounded).not.toBe('0px')
+		await expect(getComputedStyle(home).borderTopLeftRadius).toBe(rounded)
+		await expect(getComputedStyle(discovery).borderTopLeftRadius).toBe('0px')
+
+		// The transition is declared on the tab: colour and a spring on the radius.
+		const declared = getComputedStyle(discovery)
+		await expect(declared.transitionProperty).toContain('border-radius')
+		await expect(declared.transitionProperty).toContain('color')
+		// The radius is the second of the two: its curve overshoots (a control
+		// point above 1), the spatial spring; colour's does not.
+		const [colourCurve, radiusCurve] =
+			declared.transitionTimingFunction.split(/,\s*(?=cubic-bezier)/)
+		const rise = (curve: string) =>
+			Math.max(
+				...[...curve.matchAll(/,\s*(-?[\d.]+)\s*(?=,)/g)].map((m) =>
+					Number(m[1]),
+				),
+			)
+		await expect(rise(radiusCurve)).toBeGreaterThan(1)
+		await expect(rise(colourCurve)).toBeLessThanOrEqual(1)
+
+		// @spec components/infrastructure/fan/web/global/bottom-nav-bar "Selecting a nav tab springs into state"
+		const before = resolveColor(canvasElement, 'var(--color-brand-accent)')
+		home.dataset.active = 'false'
+		discovery.dataset.active = 'true'
+		const running = discovery
+			.getAnimations()
+			.filter((a): a is CSSTransition => a instanceof CSSTransition)
+		// The radius shorthand runs as its four corner longhands.
+		await expect(running.map((a) => a.transitionProperty)).toContain(
+			'border-top-left-radius',
+		)
+		await Promise.all(running.map((a) => a.finished))
+		await expect(getComputedStyle(discovery).borderTopLeftRadius).toBe(rounded)
+		await expect(getComputedStyle(discovery).color).toBe(before)
+		await expect(getComputedStyle(home).borderTopLeftRadius).toBe('0px')
+	},
+} satisfies Story
+
+/**
+ * Hover alone selects nothing: a pointer over an unselected tab leaves its
+ * shape and colour as they were, while the tab that is selected keeps its
+ * treatment with no pointer over it. Only the state attribute changes either.
+ */
+export const SelectionIgnoresHover = {
+	render: render(),
+	play: async ({ canvasElement }) => {
+		const [home, discovery] = await tabsShown(canvasElement)
+		const unselected = getComputedStyle(discovery)
+		const shape = unselected.borderTopLeftRadius
+		const color = unselected.color
+
+		// @spec components/infrastructure/fan/web/global/bottom-nav-bar "Selection is driven by state, not hover"
+		const hovered = await hoverPointer(discovery)
+		if (hovered) await expect(discovery.matches(':hover')).toBe(true)
+		await new Promise((r) => setTimeout(r, 500))
+		await expect(discovery.dataset.active).toBe('false')
+		await expect(getComputedStyle(discovery).borderTopLeftRadius).toBe(shape)
+		await expect(getComputedStyle(discovery).color).toBe(color)
+		await expect(shape).toBe('0px')
+
+		// The selected tab's treatment does not depend on the pointer.
+		await expect(home.dataset.active).toBe('true')
+		await expect(home.matches(':hover')).toBe(false)
+		await expect(getComputedStyle(home).borderTopLeftRadius).toBe(
+			selectedRadius(canvasElement),
+		)
+		await expect(getComputedStyle(home).color).toBe(
+			resolveColor(canvasElement, 'var(--color-brand-accent)'),
+		)
 	},
 } satisfies Story
