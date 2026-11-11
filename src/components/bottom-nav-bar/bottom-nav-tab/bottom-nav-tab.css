@@ -1,0 +1,85 @@
+@layer block {
+	@scope (bottom-nav-tab) {
+		:scope {
+			/* Material 3: 4 dp between the icon and the label. */
+			--_tab-gap: var(--space-3xs);
+
+			/* No box of its own: the link is the bar's grid item. */
+			display: contents;
+		}
+
+		.nav-tab {
+			/* Hover, focus and press: the shared state layer (`state-layer`,
+			   ::before), with no scale (Material 3 navigation bar). */
+			position: relative;
+
+			display: flex;
+			flex-direction: column;
+			gap: var(--_tab-gap);
+			align-items: center;
+			justify-content: center;
+
+			block-size: 100%;
+
+			/* Selection spring-morph (design 2.6): the corner radius rounds with a
+			   spatial spring (overshoot) when selected; color/box-shadow use the
+			   non-bouncy effects family. Owned here (not via the shared
+			   [data-selected-morph] utility) because the component's own
+			   transition would otherwise clobber the utility's. */
+			transition:
+				color var(--md-sys-motion-duration-medium1)
+				var(--md-sys-motion-spring-effects),
+				border-radius var(--md-sys-motion-spring-spatial-duration)
+				var(--md-sys-motion-spring-spatial);
+		}
+
+		/* Active tab: 3-layer treatment so "current page" reads instantly:
+		   1) brand-accent color, 2) bolder label weight,
+		   3) a 2px accent bar at the top edge as a visual anchor. */
+		.nav-tab[data-active="true"] {
+			/* Rounder shape (spring-morphed via the transition above) + a persistent
+			   selected state layer, per the M3 selection treatment. */
+			border-radius: var(--md-sys-shape-corner-large-increased);
+			color: var(--color-brand-accent);
+
+			/* Its selected state layer is drawn by bottom-nav-bar.css. */
+
+			/* On ::after: the shared state layer takes ::before. */
+			&::after {
+				content: "";
+
+				position: absolute;
+				inset-block-start: 0;
+				inset-inline: 25%;
+
+				block-size: 2px;
+				border-radius: 0 0 var(--md-sys-shape-corner-small)
+					var(--md-sys-shape-corner-small);
+
+				background: var(--color-brand-accent);
+			}
+		}
+
+		.nav-tab[data-active="false"] {
+			color: var(--md-sys-color-on-surface-variant);
+		}
+
+		/* Below 360 px the four tabs beside the FAB's 72 px slot are 62 px
+		   wide. In Noto Sans JP label-medium (12 px), and still in label-small
+		   (11 px) with its 0.5 px tracking, the selected "Timetable" comes
+		   within 2 px of "Discovery". There the labels take label-small's
+		   size with no tracking, which leaves 6 px or more between two labels
+		   (Pixel 7, the widest rendering measured). Line height and weights
+		   are the same in both styles. A container query cannot switch the
+		   type class in the template, so the two values are set here. The
+		   container is the bar (bottom-nav-bar). */
+		@container nav-bar (inline-size < 360px) {
+			.nav-label {
+				/* stylelint-disable-next-line property-disallowed-list -- a narrow bar switches its labels to label-small, which only CSS can do by width; the value is the shared label-small token */
+				font-size: var(--md-sys-typescale-label-small-size);
+				/* stylelint-disable-next-line property-disallowed-list -- the labels need the 0.5 px tracking back to fit four tabs beside the FAB at 320 px (measured 1.5 px between labels with it, 6 px without) */
+				letter-spacing: 0;
+			}
+		}
+	}
+}

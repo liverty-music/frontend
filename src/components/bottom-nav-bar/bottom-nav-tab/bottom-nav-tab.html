@@ -1,0 +1,11 @@
+<import from="./bottom-nav-tab.css"></import>
+
+<a
+  href.bind="tab.path[0]"
+  data-nav.bind="tab.data.icon"
+  class="[ nav-tab ] [ state-layer ]"
+  data-active.bind="active"
+>
+  <svg-icon name.bind="tab.data.icon" size="lg" class="nav-icon"></svg-icon>
+  <span class="[ nav-label ] [ md-typescale-label-medium ]" md-typescale-label-medium-emphasized.class="active" t.bind="tab.data.labelKey"></span>
+</a>
