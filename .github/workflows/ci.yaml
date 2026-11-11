@@ -183,6 +183,14 @@ jobs:
     name: Smoke
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # Runs in the pinned official Playwright image, as the Storybook job does:
+    # it ships Chromium, WebKit and their system libraries, so there is no
+    # `playwright install --with-deps` (its `apt-get update` failed for hours on
+    # 2026-11-11 when the runners could not resolve the Ubuntu mirrors) and no
+    # browser cache to maintain. Keep the tag in lockstep with `@playwright/test`
+    # (Renovate moves them together).
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-noble
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -196,16 +204,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # See the E2E job for rationale — cache browsers so a slow Playwright CDN
-      # can't consume the job timeout mid-download. Chromium-only key.
-      - name: Cache Playwright browsers
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-chromium-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
-
-      - name: Install Playwright Chromium
-        run: npx playwright install --with-deps chromium
 
       - name: Run smoke tests
         run: npx playwright test --project=smoke
@@ -219,6 +217,14 @@ jobs:
     name: E2E (${{ matrix.shard }}/2)
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # Runs in the pinned official Playwright image, as the Storybook job does:
+    # it ships Chromium, WebKit and their system libraries, so there is no
+    # `playwright install --with-deps` (its `apt-get update` failed for hours on
+    # 2026-11-11 when the runners could not resolve the Ubuntu mirrors) and no
+    # browser cache to maintain. Keep the tag in lockstep with `@playwright/test`
+    # (Renovate moves them together).
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-noble
     # Two shards, each with the whole time limit: one job ran ~505 tests in
     # 8-15 minutes and was cancelled at 15 (#989). `CI Success` reads the
     # matrix as one result, which fails when either shard fails. No fail-fast,
@@ -240,20 +246,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # Cache the downloaded browser binaries. Without this, every run
-      # re-downloads chromium + webkit; when the Playwright CDN is slow the
-      # download can consume the whole job timeout and the job is canceled
-      # mid-install. On a cache hit `playwright install` skips the download and
-      # only (re)installs the small apt --with-deps set. Key on the lockfile so
-      # a @playwright/test bump invalidates it.
-      - name: Cache Playwright browsers
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-chromium-webkit-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
-
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium webkit
 
       # webkit-repro / chromium-control are the owners of
       # page-help-sheet-webkit.spec.ts, which the `functional` project excludes
@@ -286,6 +278,14 @@ jobs:
     name: Production Build Checks
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # Runs in the pinned official Playwright image, as the Storybook job does:
+    # it ships Chromium, WebKit and their system libraries, so there is no
+    # `playwright install --with-deps` (its `apt-get update` failed for hours on
+    # 2026-11-11 when the runners could not resolve the Ubuntu mirrors) and no
+    # browser cache to maintain. Keep the tag in lockstep with `@playwright/test`
+    # (Renovate moves them together).
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-noble
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -299,16 +299,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # See the E2E job for rationale — cache browsers so a slow Playwright CDN
-      # can't consume the job timeout mid-download. Chromium-only key.
-      - name: Cache Playwright browsers
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-chromium-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
-
-      - name: Install Playwright Chromium
-        run: npx playwright install --with-deps chromium
 
       # Builds the production bundle, serves it with `vite preview` and opens
       # the public screens of the fan, organizer and admin entries and every
