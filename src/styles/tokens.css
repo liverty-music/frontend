@@ -213,7 +213,7 @@
 		   above it from the same value — so the launcher never hard-codes a nav
 		   pixel constant (design D7). Excludes the safe-area inset, which each
 		   consumer adds on its own. */
-		--bottom-nav-height: 3.5rem;
+		--bottom-nav-height: 4rem; /* Material 3 navigation bar: 64 dp */
 
 		/* Shadow colour of the shared elevation levels. */
 		--md-sys-color-shadow: oklch(0% 0 0deg);
