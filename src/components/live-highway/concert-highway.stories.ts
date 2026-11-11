@@ -994,7 +994,14 @@ export const DealIn = {
 			await expect(inDepth).toBeLessThan(flat * 0.9)
 
 			// The rows in view were triggered: they settle, fully shown, in place.
-			await new Promise((r) => setTimeout(r, 1300))
+			// Wait for the motion itself to end, not a fixed time: on a loaded
+			// runner the row is triggered, and its frames advance, late.
+			await Promise.all(
+				full
+					.getAnimations({ subtree: true })
+					.filter((a) => (a as CSSAnimation).animationName === 'deal-in')
+					.map((a) => a.finished),
+			)
 			for (const card of full.querySelectorAll<HTMLElement>('event-card')) {
 				await expect(getComputedStyle(card).opacity).toBe('1')
 				await expect(

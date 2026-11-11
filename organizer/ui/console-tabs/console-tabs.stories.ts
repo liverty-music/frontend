@@ -4,7 +4,6 @@ import {
 	type StoryObj,
 } from '@aurelia/storybook'
 import { expect, waitFor } from 'storybook/test'
-import { userEvent } from 'vitest/browser'
 import { canvasOf, consoleStoryParameters, deepQuery } from '../story-support'
 import { ConsoleTabs } from './console-tabs'
 
@@ -83,23 +82,37 @@ export const ReducedMotion = {
 			),
 		)
 
-		await userEvent.click(reception)
+		const from = indicator.getBoundingClientRect().left
+		const to = reception.getBoundingClientRect().left
+		// Select the tab and read the slide in the same task (the tabs measure
+		// in a microtask, which runs before this one resumes), so no frame can
+		// advance the slide before it is held. A pointer click returns some
+		// frames later, and on a loaded runner the slide may be over by then.
+		reception.click()
+		await Promise.resolve()
 
 		await expect(reception).toHaveAttribute('aria-current', 'page')
 		const duration = Number.parseFloat(
 			getComputedStyle(indicator).transitionDuration,
 		)
+		const slide = indicator.getAnimations()
 		if (reduce) {
 			await expect(duration).toBe(0)
+			await expect(slide).toHaveLength(0)
 		} else {
 			await expect(duration).toBeCloseTo(0.3, 5)
 			await expect(duration).toBeLessThanOrEqual(0.5)
+			// Halfway through, the indicator is between the two tabs.
+			await expect(slide.length).toBeGreaterThan(0)
+			for (const a of slide) {
+				a.pause()
+				a.currentTime = Number(a.effect?.getTiming().duration) / 2
+			}
+			const midway = indicator.getBoundingClientRect().left
+			await expect(midway).toBeGreaterThan(from + 1)
+			await expect(midway).toBeLessThan(to - 1)
+			for (const a of slide) a.finish()
 		}
-		await waitFor(() =>
-			expect(indicator.getBoundingClientRect().left).toBeCloseTo(
-				reception.getBoundingClientRect().left,
-				0,
-			),
-		)
+		await expect(indicator.getBoundingClientRect().left).toBeCloseTo(to, 0)
 	},
 } satisfies Story

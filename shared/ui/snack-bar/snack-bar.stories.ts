@@ -261,6 +261,10 @@ export const UpdateAction = {
 			await expect(style.animationName).toBe('snack-action-glow')
 			await expect(style.animationIterationCount).toBe('3')
 			const glow = action.getAnimations()[0]
+			await expect(glow.effect?.getComputedTiming().iterations).toBe(3)
+			// Seek to the end instead of waiting 3.6 s: `finish()` throws for an
+			// endless animation, so reaching `finished` proves the glow stops.
+			glow.finish()
 			await glow.finished
 			await expect(glow.playState).toBe('finished')
 		}
@@ -364,22 +368,38 @@ export const ExitMotion = {
 		await userEvent.click(canvas.getByRole('button', { name: 'Show snack' }))
 		const { item } = await openSnack(canvasElement)
 		await settled(item)
-		await userEvent.click(canvas.getByRole('button', { name: 'Dismiss' }))
+		// Dismiss and read the exit motion in one task: the dismissal starts the
+		// transitions synchronously, and no frame can advance them before they
+		// are held. A sample taken some milliseconds later depends on how soon
+		// the runner paints.
+		canvas.getByRole('button', { name: 'Dismiss' }).click()
+		const exit = item.getAnimations()
 
 		if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
 			// @spec components/infrastructure/fan/web/global/snack-bar "Reduced motion preference"
-			await waitFor(() => expect(item.isConnected).toBe(false), {
-				timeout: 100,
-			})
+			await expect(exit).toHaveLength(0)
+			await waitFor(() => expect(item.isConnected).toBe(false))
 			return
 		}
 		// @spec components/infrastructure/fan/web/global/snack-bar "DOM cleanup after exit transition"
-		await sleep(100)
+		// Halfway through, the snack is fading and still in the document.
+		const fade = exit.find(
+			(a) => (a as CSSTransition).transitionProperty === 'opacity',
+		)
+		if (!fade) throw new Error('no exit fade')
+		for (const a of exit) {
+			a.pause()
+			a.currentTime = Number(a.effect?.getTiming().duration) / 2
+		}
+		const opacity = Number(getComputedStyle(item).opacity)
+		await expect(opacity).toBeGreaterThan(0)
+		await expect(opacity).toBeLessThan(1)
+		// Held, it stays in the document: the removal waits for the motion.
+		await new Promise((r) => requestAnimationFrame(() => r(null)))
 		await expect(item.isConnected).toBe(true)
-		await expect(Number(getComputedStyle(item).opacity)).toBeLessThan(1)
-		await waitFor(() => expect(item.isConnected).toBe(false), {
-			timeout: 1000,
-		})
+		for (const a of exit) a.play()
+		await Promise.all(exit.map((a) => a.finished))
+		await waitFor(() => expect(item.isConnected).toBe(false))
 	},
 } satisfies Story
 
@@ -397,6 +417,17 @@ export const SwipePastHalf = {
 		const { item, surface } = await openSnack(canvasElement)
 		await settled(item)
 		const before = surface.getBoundingClientRect()
+		// Where the surface went, recorded on every scroll of the swipe and its
+		// snap: by the time the gesture command returns on a loaded runner, the
+		// snack may already have left the document.
+		let leftmost = before.left
+		const scroller = item.querySelector<HTMLElement>('.snack-swipe')
+		const track = () => {
+			if (item.isConnected) {
+				leftmost = Math.min(leftmost, surface.getBoundingClientRect().left)
+			}
+		}
+		scroller?.addEventListener('scroll', track)
 
 		const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches
 		if (!(await swipeSideways('.snack-surface', -0.7 * before.width))) return
@@ -404,18 +435,15 @@ export const SwipePastHalf = {
 		if (!reduced) {
 			// @spec components/infrastructure/fan/web/global/snack-bar "Swipe past the dismiss point"
 			// It leaves to the left, the way it was swiped.
-			await waitFor(() =>
-				expect(surface.getBoundingClientRect().left).toBeLessThan(
-					before.left - before.width / 2,
-				),
-			)
+			await expect(leftmost).toBeLessThan(before.left - before.width / 2)
 		} else {
 			// @spec components/infrastructure/fan/web/global/snack-bar "Swipe under reduced motion"
 			await expect(item.getAnimations()).toHaveLength(0)
 		}
 		await waitFor(() => expect(item.isConnected).toBe(false), {
-			timeout: 1000,
+			timeout: 3000,
 		})
+		scroller?.removeEventListener('scroll', track)
 		await expect(record.dismissals).toBe(1)
 	},
 } satisfies Story

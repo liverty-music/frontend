@@ -49,6 +49,9 @@ describe('ConcertHighway', () => {
 	})
 
 	afterEach(() => {
+		// Releases a month jump's pending frame and timer, so none fires after
+		// the test environment is torn down.
+		sut.detaching()
 		vi.restoreAllMocks()
 	})
 
@@ -382,6 +385,21 @@ describe('ConcertHighway', () => {
 				sut.onEdgesSeen([{ isIntersecting: true, target: sut.topEdge }])
 				expect(built(sut).length).toBeGreaterThan(after.length)
 				expect(built(sut)[0] < after[0]).toBe(true)
+			} finally {
+				vi.useRealTimers()
+			}
+		})
+
+		it('leaves no frame or timer pending once detached', () => {
+			vi.useFakeTimers()
+			try {
+				openAt(sut, months(['2026-11', 30], ['2026-12', 31]), '2026-11-14')
+				sut.jumpToMonth(1)
+				expect(vi.getTimerCount()).toBe(2)
+
+				sut.detaching()
+
+				expect(vi.getTimerCount()).toBe(0)
 			} finally {
 				vi.useRealTimers()
 			}
