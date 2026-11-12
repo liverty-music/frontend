@@ -1,5 +1,8 @@
+import { I18N } from '@aurelia/i18n'
+import { CustomElement } from 'aurelia'
 import { expect } from 'storybook/test'
 import { composite, contrast, resolveColor, WCAG_AA } from './contrast'
+import { atWidth } from './viewport'
 
 /**
  * Shared assertions for the fan app's persistent bottom banners (the install
@@ -200,4 +203,74 @@ export function defaultButtonLabel(near: Element): {
 	}
 	probe.remove()
 	return label
+}
+
+/**
+ * The message and the action each fit on one line with nothing clipped, side
+ * by side: the message at a size between 12px and 16px that follows the
+ * banner's full width (4.2 %, not its padded content box), the label at the
+ * compact button's label-large (14px, the Material 3 extra-small button).
+ * Measured once the web fonts are in: the button label's fallback font is
+ * wider than Noto Sans JP.
+ */
+export async function expectFitsOneLine(
+	message: HTMLElement,
+	action: HTMLElement,
+): Promise<void> {
+	await document.fonts.ready
+	const read = (el: HTMLElement) => {
+		const rect = el.getBoundingClientRect()
+		const range = document.createRange()
+		range.selectNodeContents(el)
+		return {
+			clipped: el.scrollWidth > el.clientWidth,
+			lines: new Set([...range.getClientRects()].map((r) => Math.round(r.top)))
+				.size,
+			fontSize: Number.parseFloat(getComputedStyle(el).fontSize),
+			left: rect.left,
+			right: rect.right,
+			middle: rect.top + rect.height / 2,
+		}
+	}
+	const m = read(message)
+	const a = read(action)
+	for (const part of [m, a]) {
+		await expect(part.clipped).toBe(false)
+		await expect(part.lines).toBe(1)
+	}
+	await expect(a.left).toBeGreaterThanOrEqual(m.right)
+	await expect(Math.abs(a.middle - m.middle)).toBeLessThan(0.5)
+	await expect(a.fontSize).toBe(14)
+	await expect(m.fontSize).toBeGreaterThanOrEqual(12)
+	await expect(m.fontSize).toBeLessThanOrEqual(16)
+	await expect(
+		Math.abs(m.fontSize - Math.min(16, Math.max(12, innerWidth * 0.042))),
+	).toBeLessThan(0.05)
+}
+
+/**
+ * Runs `check` at each phone width in each language, then puts the language
+ * back. `host` is any element of the story's app, which holds its translator.
+ */
+export async function atEveryPhoneWidthAndLanguage(
+	host: HTMLElement,
+	check: (language: 'ja' | 'en') => Promise<void>,
+): Promise<void> {
+	const i18n = CustomElement.for(host).container.get(I18N)
+	const original = i18n.getLocale()
+	try {
+		for (const width of [320, 360, 375, 412]) {
+			for (const language of ['ja', 'en'] as const) {
+				await atWidth(width, async () => {
+					await i18n.setLocale(language)
+					await new Promise((r) =>
+						requestAnimationFrame(() => requestAnimationFrame(r)),
+					)
+					await check(language)
+				})
+			}
+		}
+	} finally {
+		await i18n.setLocale(original)
+	}
 }
