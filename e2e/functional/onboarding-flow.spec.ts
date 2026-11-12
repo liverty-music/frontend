@@ -632,7 +632,13 @@ test.describe('Onboarding flow (single-flag model)', () => {
 		})
 		await page.goto('/dashboard')
 
-		await expect(page.locator('.celebration-overlay')).toHaveCount(0)
+		// The overlay element is always in the DOM; `data-state` says whether it
+		// is showing. Waiting for the element also makes sure the dashboard has
+		// rendered, so the check cannot pass before the page exists.
+		await expect(page.locator('.celebration-overlay')).toHaveAttribute(
+			'data-state',
+			'hidden',
+		)
 	})
 
 	test('Dashboard is interactive after reload (no stuck overlay)', async ({
@@ -646,7 +652,13 @@ test.describe('Onboarding flow (single-flag model)', () => {
 		await page.goto('/dashboard')
 
 		await expect(page.locator('au-viewport')).toBeVisible({ timeout: 10_000 })
-		await expect(page.locator('.celebration-overlay')).toHaveCount(0)
+		// The overlay element is always in the DOM; `data-state` says whether it
+		// is showing. Waiting for the element also makes sure the dashboard has
+		// rendered, so the check cannot pass before the page exists.
+		await expect(page.locator('.celebration-overlay')).toHaveAttribute(
+			'data-state',
+			'hidden',
+		)
 	})
 
 	// -------------------------------------------------------------------------

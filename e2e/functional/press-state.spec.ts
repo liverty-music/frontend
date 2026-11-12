@@ -102,6 +102,19 @@ async function openCard(page: Page): Promise<Locator> {
 	await page.goto(`/dashboard`)
 	const card = page.locator('[data-live-card]').first()
 	await card.waitFor({ timeout: 10000 })
+	// The row deals in with a finite animation. The press point is read from the
+	// card's box, so a press while it still moves lands beside the card. A dev
+	// server renders late enough for the deal-in to be over; a build does not.
+	await card.evaluate((el) =>
+		Promise.all(
+			el
+				.getAnimations({ subtree: true })
+				.filter(
+					(a) => a.playState === 'running' && a.timeline === document.timeline,
+				)
+				.map((a) => a.finished),
+		),
+	)
 	return card
 }
 
