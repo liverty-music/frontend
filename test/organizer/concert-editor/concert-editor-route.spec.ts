@@ -342,7 +342,12 @@ describe('concert editor', () => {
 
 			const cancel = controlNamed(m.host, 'キャンセル')
 			expect(cancel?.getAttribute('href')).toBe(`${BAND_A_HREF}/s-solo`)
+			// Pressing it is a plain link: jsdom cannot follow it, so stop the default.
+			cancel?.addEventListener('click', (e) => e.preventDefault())
+			cancel?.click()
+			await tasksSettled()
 			expect(m.update).not.toHaveBeenCalled()
+			expect(m.createSeries).not.toHaveBeenCalled()
 			await m.fixture.tearDown()
 		})
 
@@ -437,41 +442,6 @@ describe('concert editor', () => {
 			expect(group.disabled).toBe(true)
 			expect(radios.every((r) => r.matches(':disabled'))).toBe(true)
 			expect(deepText(group)).toContain('公開範囲は変更できません')
-			await m.fixture.tearDown()
-		})
-	})
-
-	describe('times', () => {
-		it(`@spec ${SPEC} "Device using a 12-hour clock"`, async () => {
-			// An English (United States) device writes 18:00 as 6:00 PM; the
-			// console's own language stays Japanese.
-			expect(
-				new Date(2026, 11, 20, 18).toLocaleTimeString('en-US', {
-					hour: 'numeric',
-					minute: '2-digit',
-				}),
-			).toMatch(/PM/)
-			const m = await mount({ edit: XX_SOLO })
-
-			const first = row(m, 0)
-			for (const label of ['開場', '開演']) {
-				const field = deepAll(first, 'console-time-field').find(
-					(el) =>
-						CustomElement.for<ConsoleTimeField>(el).viewModel.label === label,
-				) as HTMLElement
-				const hours = deepOne<HTMLSelectElement>(
-					field,
-					'select[aria-label="時"]',
-				) as HTMLSelectElement
-				const texts = [...hours.options]
-					.map((o) => o.textContent?.trim() ?? '')
-					.filter((t) => t !== '--')
-				expect(texts).toEqual(
-					Array.from({ length: 24 }, (_, h) => String(h).padStart(2, '0')),
-				)
-			}
-			expect(shownTime(first, '開演')).toBe('18:00')
-			expect(deepText(first)).not.toMatch(/AM|PM|午前|午後/)
 			await m.fixture.tearDown()
 		})
 	})

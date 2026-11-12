@@ -344,6 +344,37 @@ test.describe('times in another time zone', () => {
 	})
 })
 
+test.describe('times on a 12-hour device', () => {
+	// An English (United States) device writes 18:00 as 6:00 PM.
+	test.use({ locale: 'en-US' })
+
+	test(`@spec ${SPEC} "Device using a 12-hour clock"`, async ({ page }) => {
+		await openEditor(page, `${SERIES}/s-solo/edit`)
+		expect(
+			await page.evaluate(() =>
+				new Date(2026, 11, 20, 18).toLocaleTimeString(undefined, {
+					hour: 'numeric',
+					minute: '2-digit',
+				}),
+			),
+		).toMatch(/PM/)
+
+		for (const label of ['開場', '開演']) {
+			const hours = timeField(row(page, 0), label).getByRole('combobox', {
+				name: '時',
+			})
+			const texts = (await hours.locator('option').allTextContents()).map((t) =>
+				t.trim(),
+			)
+			expect(texts.filter((t) => t !== '--')).toEqual(
+				Array.from({ length: 24 }, (_, h) => String(h).padStart(2, '0')),
+			)
+		}
+		expect(await shownTime(row(page, 0), '開演')).toBe('18:00')
+		await expect(row(page, 0)).not.toContainText(/AM|PM|午前|午後/)
+	})
+})
+
 test.describe('unsaved changes', () => {
 	test(`@spec ${FEEDBACK} "Leaving the editor with changes"`, async ({
 		page,
