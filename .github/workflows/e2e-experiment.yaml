@@ -1,0 +1,116 @@
+# Experiment only (never merged): measures E2E wall time per variant.
+name: E2E experiment
+
+on:
+  pull_request:
+    paths: ['.github/workflows/e2e-experiment.yaml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    name: ${{ matrix.variant }} (${{ matrix.shard }}/2)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-noble
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [base, w3, w4, warmup, preview, preview-w4]
+        shard: [1, 2]
+    env:
+      CI: 'true'
+      VARIANT: ${{ matrix.variant }}
+      SHARD: ${{ matrix.shard }}
+    steps:
+      - name: Start clock
+        run: echo "T0=$(date +%s)" >> "$GITHUB_ENV"
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version-file: .nvmrc
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build (preview variants)
+        run: |
+          echo "T1=$(date +%s)" >> "$GITHUB_ENV"
+          case "$VARIANT" in
+            preview|preview-w4)
+              NODE_ENV=development npx vite build
+              grep -l "__lm_publishSnack" dist/assets/*.js | head -1
+              ;;
+          esac
+          echo "T2=$(date +%s)" >> "$GITHUB_ENV"
+
+      - name: Run Playwright
+        run: |
+          mkdir -p exp
+          EXTRA=""
+          case "$VARIANT" in
+            w3) EXTRA="--workers=3" ;;
+            w4) EXTRA="--workers=4" ;;
+            warmup) export E2E_WARMUP=1 ;;
+            preview|preview-w4)
+              export E2E_SERVER_COMMAND="npx vite preview --port 9000 --strictPort"
+              if [ -n "$E2E_BLOCK_SW_ON" ]; then export E2E_BLOCK_SW=1; fi
+              if [ "$VARIANT" = preview-w4 ]; then EXTRA="--workers=4"; fi
+              ;;
+          esac
+          T3=$(date +%s)
+          set +e
+          PLAYWRIGHT_JSON_OUTPUT_NAME=exp/playwright.json npx playwright test --shard=${SHARD}/2 --retries=0 --reporter=json,line $EXTRA --project=functional --project=webkit-repro --project=chromium-control --project=webkit-shell --project=webkit-virtual-ticket --project=webkit-organizer-guide --project=typefaces-pixel7 --project=typefaces-iphone
+          RC=$?
+          T4=$(date +%s)
+          echo "{\"variant\":\"$VARIANT\",\"shard\":$SHARD,\"setup\":$((T1-T0)),\"build\":$((T2-T1)),\"playwright\":$((T4-T3)),\"exit\":$RC}" > exp/phases.json
+          exit 0
+
+      - name: Upload
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: exp-${{ matrix.variant }}-${{ matrix.shard }}
+          path: exp/
+          retention-days: 7
+
+  summary:
+    needs: e2e
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b4b4b5e5c5 # v7
+        with:
+          path: arts
+      - name: Summarize
+        run: |
+          python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json, glob, os
+          print("| variant | shard | setup s | build s | playwright s | passed | failed | skipped | failed tests |")
+          print("|---|---|---|---|---|---|---|---|---|")
+          def walk(suite, out):
+              for s in suite.get("suites", []): walk(s, out)
+              for sp in suite.get("specs", []):
+                  for t in sp.get("tests", []):
+                      out.append((t.get("projectName"), sp["title"], t.get("status")))
+          for d in sorted(glob.glob("arts/exp-*")):
+              try: ph = json.load(open(d + "/phases.json"))
+              except Exception: print("| %s | missing |" % d); continue
+              r = []
+              try:
+                  j = json.load(open(d + "/playwright.json"))
+                  for s in j.get("suites", []): walk(s, r)
+              except Exception as e: pass
+              p = sum(1 for x in r if x[2] == "expected"); f = [x for x in r if x[2] in ("unexpected", "flaky")]
+              k = sum(1 for x in r if x[2] == "skipped")
+              names = "; ".join("%s: %s" % (x[0], x[1]) for x in f)[:1500].replace("|", "/")
+              print("| %s | %s | %s | %s | %s | %d | %d | %d | %s |" % (ph["variant"], ph["shard"], ph["setup"], ph["build"], ph["playwright"], p, len(f), k, names))
+          PY

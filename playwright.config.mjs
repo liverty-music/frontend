@@ -34,6 +34,8 @@ export default defineConfig({
 	reporter: 'html',
 	/* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
 	use: {
+		/* Experiment hook: E2E_BLOCK_SW=1 blocks service workers. */
+		...(process.env.E2E_BLOCK_SW ? { serviceWorkers: 'block' } : {}),
 		/* Maximum time each action such as `click()` can take. Defaults to 0 (no limit). */
 		actionTimeout: 0,
 		/* Base URL to use in actions like `await page.goto('/')`. */
@@ -231,7 +233,9 @@ export default defineConfig({
 	webServer: {
 		/* `--strictPort`: if E2E_PORT is taken, vite exits instead of moving to
        another port that Playwright would never find. */
-		command: `npm start -- --port ${E2E_PORT} --strictPort`,
+		command:
+			process.env.E2E_SERVER_COMMAND ||
+			`npm start -- --port ${E2E_PORT} --strictPort`,
 		port: E2E_PORT,
 		reuseExistingServer: !process.env.CI,
 	},

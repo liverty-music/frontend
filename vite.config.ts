@@ -77,6 +77,18 @@ export default defineConfig({
 		open: process.env.CI ? false : '/index.html',
 		port: 9000,
 		strictPort: true,
+		// Experiment hook: E2E_WARMUP=1 transforms the entry modules at start.
+		...(process.env.E2E_WARMUP
+			? {
+					warmup: {
+						clientFiles: [
+							'./src/main.ts',
+							'./src/app-shell.ts',
+							'./src/routes/**/*.ts',
+						],
+					},
+				}
+			: {}),
 		proxy: {
 			'/liverty_music': {
 				target: devApiTarget,
@@ -157,6 +169,9 @@ export default defineConfig({
 	// plugin, as `@aurelia/storybook` does for Storybook.
 	optimizeDeps: {
 		exclude: aureliaRuntimePackages,
+		...(process.env.E2E_WARMUP
+			? { include: ['matter-js', 'oidc-client-ts', 'i18next'] }
+			: {}),
 	},
 	plugins: [
 		aurelia({
