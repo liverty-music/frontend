@@ -175,7 +175,9 @@ describe('AuthCallbackRoute', () => {
 		})
 
 		// @spec stories/merge-guest-data-on-signup "Identity already has an account"
+		// @spec stories/merge-guest-data-on-signup "Follow call fails during merge"
 		// @spec stories/sign-up-or-sign-in "Registration Callback for an already registered identity"
+		// The merge is a published event, so onboarding completes whatever its outcome.
 		// The store answers the guest's Create with the account that exists
 		// (created=false, test/services/user-store.spec.ts: "returns an existing
 		// User as stored"), so no Create RPC runs and the guest home is not applied.

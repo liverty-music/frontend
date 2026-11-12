@@ -94,6 +94,24 @@ test.describe('starts of sign-up and sign-in are reported', () => {
 		expect(Date.parse(started.timestamp ?? '')).toBeLessThanOrEqual(leftAt)
 	})
 
+	test(`@spec ${STORY} "Sign-in from the landing page"`, async ({ page }) => {
+		const events = await recordPostHog(page)
+		const left = leavesForHostedLogin(page)
+		await page.goto('/welcome')
+		await analyticsReady(events)
+
+		await page.getByTestId('welcome-login').first().click({ timeout: 20_000 })
+		await left
+
+		await expect
+			.poll(() => named(events, 'auth.started'), { timeout: 15_000 })
+			.toHaveLength(1)
+		expect(named(events, 'auth.started')[0].properties).toMatchObject({
+			kind: 'sign_in',
+			source: 'welcome',
+		})
+	})
+
 	test(`@spec ${STORY} "Analytics off"`, async ({ page }) => {
 		await seedGuest(page, {
 			'consent.state': JSON.stringify({
