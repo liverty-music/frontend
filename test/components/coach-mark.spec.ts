@@ -459,6 +459,9 @@ describe('Where a coach mark is rendered', () => {
 	}) as Record<string, string>
 	/** `<coach-mark>` elements a template renders (comments are not elements). */
 	const coachMarksIn = (html: string): number => {
+		// Parsing every template in the app costs seconds in jsdom; only a
+		// template that names the element can render one.
+		if (!html.includes('coach-mark')) return 0
 		const doc = new DOMParser().parseFromString(
 			`<template>${html}</template>`,
 			'text/html',
