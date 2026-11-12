@@ -336,7 +336,9 @@ jobs:
         if: failure()
         with:
           name: prod-build-results
-          path: test-results/prod-build/
+          path: |
+            test-results/prod-build/
+            test-results/pwa/
           retention-days: 7
 
   storybook-test:
