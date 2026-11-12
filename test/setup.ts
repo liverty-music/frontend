@@ -120,6 +120,7 @@ if (hasDOM) {
 		})
 	}
 
+	const { Platform } = await import('@aurelia/platform')
 	const { BrowserPlatform } = await import('@aurelia/platform-browser')
 	const { onFixtureCreated, setPlatform } = await import('@aurelia/testing')
 
@@ -128,12 +129,35 @@ if (hasDOM) {
 		tearDown?: () => unknown
 	}[] = []
 
+	// Aurelia's platform copies `setTimeout` and the other timer functions when it
+	// is made and keeps the copies for the whole file. A spec that installs fake
+	// timers per test (`vi.useFakeTimers()` in `beforeEach`) would leave the
+	// task queue, which asks the platform for its timers, holding a clock that no
+	// longer runs: a task waiting on a timer (the queue yields to one when a
+	// flush runs long, as it does on a loaded machine) never runs and
+	// `tasksSettled()` never returns. These timers look up the current global
+	// one on every call, so they follow whichever clock is installed.
+	const currentTimers = {
+		setTimeout: (...args: Parameters<typeof setTimeout>) =>
+			globalThis.setTimeout(...args),
+		clearTimeout: (...args: Parameters<typeof clearTimeout>) =>
+			globalThis.clearTimeout(...args),
+		setInterval: (...args: Parameters<typeof setInterval>) =>
+			globalThis.setInterval(...args),
+		clearInterval: (...args: Parameters<typeof clearInterval>) =>
+			globalThis.clearInterval(...args),
+	}
+
 	beforeAll(() => {
 		const platform = new BrowserPlatform(
 			window as unknown as Window & typeof globalThis,
+			currentTimers,
 		)
 		setPlatform(platform)
 		BrowserPlatform.set(globalThis, platform)
+		// The runtime's task queue looks its platform up by `Platform`, not by
+		// `BrowserPlatform`.
+		Platform.set(globalThis, new Platform(globalThis, currentTimers))
 
 		onFixtureCreated((fixture: any) => {
 			fixtures.push(fixture)
