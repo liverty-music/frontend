@@ -1,6 +1,6 @@
 // @vitest-environment node
 
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Artist } from '../../entities/artist'
 import { MAX_BUBBLES } from '../../services/bubble-invariants'
 import type { BubbleArtistParams, PhysicsBubble } from './bubble-physics'
@@ -120,6 +120,10 @@ async function mkPhysics(): Promise<BubblePhysics> {
 }
 
 describe('BubblePhysics.reconcile', () => {
+	afterEach(() => {
+		vi.restoreAllMocks()
+	})
+
 	// @spec components/infrastructure/fan/web/route/discovery "Reconcile to a target list"
 	it('adds new target artists and fades out stale ones', async () => {
 		const physics = await mkPhysics()
@@ -207,6 +211,10 @@ describe('BubblePhysics.reconcile', () => {
 	})
 
 	it('spawns a placed new target from its placement point with the pop animation', async () => {
+		// Where 'a' starts and the pop force of 'b' are random draws; fix them so
+		// the distance checked below does not depend on them ('a' landing next to
+		// the tap point would push 'b' off it).
+		vi.spyOn(Math, 'random').mockReturnValue(0.5)
 		const physics = await mkPhysics()
 		physics.addBubbles(params(['a']))
 
