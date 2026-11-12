@@ -99,7 +99,7 @@ a controller to every element it sits on.
 
 ## Component Stories & Testing (Storybook + Vitest)
 
-- `make test` runs `unit` + `scripts` only; the three storybook projects (`storybook`, `storybook-reduced-motion`, `storybook-more-contrast`; see `vitest.config.ts`) run in a separate CI job (`storybook-test`).
+- `make test` runs `unit`, `unit-node` and `scripts` only. `unit-node` runs the specs listed in `test/node-environment-specs.json` in Node instead of jsdom (a spec not listed runs in jsdom; `node scripts/classify-node-specs.mjs` regenerates the list); the three storybook projects (`storybook`, `storybook-reduced-motion`, `storybook-more-contrast`; see `vitest.config.ts`) run in a separate CI job (`storybook-test`).
 - A story tagged `reduced-motion` runs in both storybook projects. It reads
   `matchMedia('(prefers-reduced-motion: reduce)')` and asserts the motion that matches, so one story
   covers both presentations. A story tagged `more-contrast` does the same with

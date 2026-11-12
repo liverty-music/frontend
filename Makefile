@@ -40,7 +40,7 @@ fix:
 ## test: unit + scripts projects with coverage (Vitest 4 test.projects layout)
 ## The `storybook` browser project is gated separately in CI (test-storybook).
 test:
-	npx vitest run --coverage --project=unit --project=scripts
+	npx vitest run --coverage --project=unit --project=unit-node --project=scripts
 
 ## lint-no-style: ban style attributes in templates (CSS owns presentation).
 ## The one exception (AGENTS.md "Inline styles"): an attribute that only sets CSS
