@@ -393,16 +393,19 @@ describe('AnalyticsService', () => {
 			sut.dispose()
 		})
 
+		// @spec stories/sign-up-or-sign-in "Sign-in from the landing page"
 		it('reports each start of sign-up or sign-in with its source', async () => {
 			const sut = new AnalyticsService()
 			await sut._waitForInitForTests()
 
 			mockEa.publish(new AuthStarted('sign_up', 'dashboard_prompt'))
+			mockEa.publish(new AuthStarted('sign_in', 'welcome'))
 			// A start without a source (the admin app's) is not reported.
 			mockEa.publish(new AuthStarted('sign_in', undefined))
 
 			expect(posthogStub.capture.mock.calls.map(([n, p]) => [n, p])).toEqual([
 				[Events.AuthStarted, { kind: 'sign_up', source: 'dashboard_prompt' }],
+				[Events.AuthStarted, { kind: 'sign_in', source: 'welcome' }],
 			])
 			sut.dispose()
 		})

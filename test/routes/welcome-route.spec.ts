@@ -207,6 +207,7 @@ describe('WelcomeRoute', () => {
 		})
 
 		// @spec components/infrastructure/fan/web/global/i18n "Login from the Welcome page in Japanese"
+		// @spec stories/sign-up-or-sign-in "Sign-in from the landing page"
 		it('asks the hosted login for the language the page shows', async () => {
 			await mockI18n.setLocale('en')
 			await mockI18n.setLocale('ja')

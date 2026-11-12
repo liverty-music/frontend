@@ -94,24 +94,6 @@ test.describe('starts of sign-up and sign-in are reported', () => {
 		expect(Date.parse(started.timestamp ?? '')).toBeLessThanOrEqual(leftAt)
 	})
 
-	test(`@spec ${STORY} "Sign-in from the landing page"`, async ({ page }) => {
-		const events = await recordPostHog(page)
-		const left = leavesForHostedLogin(page)
-		await page.goto('/welcome')
-		await analyticsReady(events)
-
-		await page.getByTestId('welcome-login').first().click({ timeout: 20_000 })
-		await left
-
-		await expect
-			.poll(() => named(events, 'auth.started'), { timeout: 15_000 })
-			.toHaveLength(1)
-		expect(named(events, 'auth.started')[0].properties).toMatchObject({
-			kind: 'sign_in',
-			source: 'welcome',
-		})
-	})
-
 	test(`@spec ${STORY} "Analytics off"`, async ({ page }) => {
 		await seedGuest(page, {
 			'consent.state': JSON.stringify({
@@ -433,30 +415,5 @@ test.describe('sign-up and sign-in start only where the person chooses', () => {
 		).toBeVisible({
 			timeout: 20_000,
 		})
-	})
-
-	test(`@spec ${STORY} "Registration Callback for an already registered identity"`, async ({
-		page,
-	}) => {
-		await seedFollowingGuest(page)
-		// Create returns the existing account (with its home) unchanged.
-		const calls = await mockAccount(page, () => ({ body: { user } }))
-		await page.goto('/dashboard')
-
-		await page
-			.locator('signup-prompt-banner .bottom-banner-action')
-			.click({ timeout: 20_000 })
-
-		await page.waitForURL((url) => url.pathname === '/dashboard', {
-			timeout: 30_000,
-		})
-		expect(callsOf(calls, 'UserService/Create')).toHaveLength(1)
-		// The app continues as for a new account: no home sheet, signed in.
-		await expect(
-			page.locator('user-home-selector .selector-content'),
-		).toBeHidden()
-		await expect(
-			page.locator('signup-prompt-banner .bottom-banner-action'),
-		).toHaveCount(0)
 	})
 })

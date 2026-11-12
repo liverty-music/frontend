@@ -315,6 +315,7 @@ describe('AuthService', () => {
 		})
 	})
 
+	// @spec stories/sign-up-or-sign-in "Sign-in from the landing page"
 	it('publishes each start with its kind and source before the redirect', async () => {
 		const publish = vi.fn()
 		const container = createTestContainer(
