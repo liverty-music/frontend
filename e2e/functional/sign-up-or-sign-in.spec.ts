@@ -434,29 +434,4 @@ test.describe('sign-up and sign-in start only where the person chooses', () => {
 			timeout: 20_000,
 		})
 	})
-
-	test(`@spec ${STORY} "Registration Callback for an already registered identity"`, async ({
-		page,
-	}) => {
-		await seedFollowingGuest(page)
-		// Create returns the existing account (with its home) unchanged.
-		const calls = await mockAccount(page, () => ({ body: { user } }))
-		await page.goto('/dashboard')
-
-		await page
-			.locator('signup-prompt-banner .bottom-banner-action')
-			.click({ timeout: 20_000 })
-
-		await page.waitForURL((url) => url.pathname === '/dashboard', {
-			timeout: 30_000,
-		})
-		expect(callsOf(calls, 'UserService/Create')).toHaveLength(1)
-		// The app continues as for a new account: no home sheet, signed in.
-		await expect(
-			page.locator('user-home-selector .selector-content'),
-		).toBeHidden()
-		await expect(
-			page.locator('signup-prompt-banner .bottom-banner-action'),
-		).toHaveCount(0)
-	})
 })

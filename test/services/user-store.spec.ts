@@ -305,6 +305,7 @@ describe('UserStore', () => {
 	// single-source locale contract: the store never writes a `guest.language`
 	// key and clearGuest never touches the detector's 'language' cache.
 	describe('guest slice — real localStorage round-trip', () => {
+		// @spec stories/merge-guest-data-on-signup "Home area selection stored locally"
 		it('persists the guest home via the dedicated key', () => {
 			const { store } = build({ auth: makeAuth(false) })
 
@@ -386,6 +387,8 @@ describe('UserStore', () => {
 
 			expect(rpc.get).toHaveBeenCalledWith()
 			expect(rpc.create).not.toHaveBeenCalled()
+			// The guest's home is not applied to the existing account.
+			expect(rpc.setHome).not.toHaveBeenCalled()
 			expect(result).toEqual({ user: stubUser, created: false })
 			expect(localStorage.length).toBe(0)
 		})
@@ -452,6 +455,8 @@ describe('UserStore', () => {
 			expect(result).toEqual({ user: stubUser, created: true })
 		})
 
+		// @spec stories/merge-guest-data-on-signup "Identity already has an account"
+		// @spec stories/sign-up-or-sign-in "Registration Callback for an already registered identity"
 		it('returns an existing User as stored and reports created=false (returning identity tapping Sign up)', async () => {
 			const rpc = makeRpcClient()
 			rpc.get.mockResolvedValue(stubUser)
@@ -463,6 +468,8 @@ describe('UserStore', () => {
 			})
 
 			expect(rpc.create).not.toHaveBeenCalled()
+			// The guest's home is not applied to the existing account.
+			expect(rpc.setHome).not.toHaveBeenCalled()
 			expect(result).toEqual({ user: stubUser, created: false })
 		})
 	})

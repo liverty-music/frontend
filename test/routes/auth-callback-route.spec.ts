@@ -174,6 +174,36 @@ describe('AuthCallbackRoute', () => {
 			expect(result).toBe('/dashboard')
 		})
 
+		// @spec stories/merge-guest-data-on-signup "Identity already has an account"
+		// @spec stories/merge-guest-data-on-signup "Follow call fails during merge"
+		// @spec stories/sign-up-or-sign-in "Registration Callback for an already registered identity"
+		// The merge is a published event, so onboarding completes whatever its outcome.
+		// The store answers the guest's Create with the account that exists
+		// (created=false, test/services/user-store.spec.ts: "returns an existing
+		// User as stored"), so no Create RPC runs and the guest home is not applied.
+		it('keeps the existing account and still requests the guest merge when a guest with a chosen home signs in', async () => {
+			mockAuth.handleCallback = vi
+				.fn()
+				.mockResolvedValue(authUser('existing@example.com'))
+			setup('JP-27')
+			mockUserService.create = vi
+				.fn()
+				.mockResolvedValue({ user: mockUserService.current, created: false })
+
+			storage.removeItem('postSignup.shown')
+			const result = await sut.canLoad({}, {} as RouteNode)
+
+			// Treated as a returning fan: no post-signup dialog, the guest slice is
+			// cleared, and the follow migration continues.
+			expect(storage.getItem('postSignup.shown')).toBeNull()
+			expect(mockEa.publish).toHaveBeenCalledWith(
+				expect.any(GuestMigrationRequested),
+			)
+			expect(mockUserService.clearGuest).toHaveBeenCalled()
+			expect(mockOnboarding.finish).toHaveBeenCalled()
+			expect(result).toBe('/dashboard')
+		})
+
 		it('delegates Get-or-Create to UserStore.ensureLoaded — Create is NOT called from auth-callback when there is no guest home', async () => {
 			mockAuth.handleCallback = vi
 				.fn()

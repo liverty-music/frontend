@@ -141,6 +141,7 @@ describe('runFollowReconcile', () => {
 		expect(mockFollowStore.clearGuestFollows).toHaveBeenCalledOnce()
 	})
 
+	// @spec stories/merge-guest-data-on-signup "Reconciliation does not resurrect reverted state"
 	it('clears WITHOUT migrating when the receipt already exists (no resurrection)', async () => {
 		mockFollowStore.guestFollowsState = [makeFollow('a1')]
 		mockFollowStore.hasReceipt.mockReturnValue(true)

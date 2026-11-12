@@ -15,13 +15,14 @@ import { SignedOut } from './events/signed-out'
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
 
+const scopedLogger = {
+	info: vi.fn(),
+	warn: vi.fn(),
+	error: vi.fn(),
+	debug: vi.fn(),
+}
 const mockLogger = {
-	scopeTo: () => ({
-		info: vi.fn(),
-		warn: vi.fn(),
-		error: vi.fn(),
-		debug: vi.fn(),
-	}),
+	scopeTo: () => scopedLogger,
 }
 
 const mockAuth = {
@@ -544,6 +545,7 @@ describe('FollowStore', () => {
 			expect(mockAnalytics.capture).not.toHaveBeenCalled()
 		})
 
+		// @spec stories/merge-guest-data-on-signup "Guest data cleared after merge"
 		it('follows each guest artist, drains the batch, and writes the receipt', async () => {
 			guestSeed = [makeFollow('a1'), makeFollow('a2')]
 			sut = new FollowStore()
@@ -619,8 +621,9 @@ describe('FollowStore', () => {
 			expect(mockRpcClient.setHype).toHaveBeenCalledWith('a1', 'away')
 		})
 
-		it('leaves only the failed item in the queue and DEFERS the receipt', async () => {
-			guestSeed = [makeFollow('a1'), makeFollow('a2')]
+		// @spec stories/merge-guest-data-on-signup "Per-item drain for the follow queue"
+		it('leaves only the failed item in the queue and DEFERS the receipt, then retries only that item', async () => {
+			guestSeed = [makeFollow('a1'), makeFollow('a2'), makeFollow('a3')]
 			sut = new FollowStore()
 			mockRpcClient.follow.mockImplementation(async (id: string) => {
 				if (id === 'a2') throw new Error('network')
@@ -628,21 +631,75 @@ describe('FollowStore', () => {
 
 			await sut.migrateGuestFollows('user-1')
 
-			// a1 drained, a2 failed → remains.
+			// a1 and a3 drained, a2 failed → remains.
+			expect(mockRpcClient.follow).toHaveBeenCalledTimes(3)
 			expect(sut.guestFollows.map((f) => f.artist.id)).toEqual(['a2'])
 			// No receipt: the next reconcile must retry the failed item.
 			expect(lsMap.has(guestMergedReceiptKey('user-1'))).toBe(false)
+
+			// The next pass (the next authenticated start) follows only the
+			// failed artist and then writes the receipt.
+			mockRpcClient.follow.mockClear()
+			mockRpcClient.follow.mockImplementation(async () => undefined)
+			await sut.migrateGuestFollows('user-1')
+
+			expect(mockRpcClient.follow.mock.calls).toEqual([['a2']])
+			expect(sut.guestFollows).toHaveLength(0)
+			expect(lsMap.get(guestMergedReceiptKey('user-1'))).toBe('1')
 		})
 
+		// @spec stories/merge-guest-data-on-signup "Follow call fails during merge"
+		it('continues after a failed Follow, logs it, and keeps only the failed artist', async () => {
+			guestSeed = [makeFollow('a1'), makeFollow('a2'), makeFollow('a3', 'away')]
+			sut = new FollowStore()
+			mockRpcClient.follow.mockImplementation(async (id: string) => {
+				if (id === 'a2') throw new Error('unavailable')
+			})
+
+			await sut.migrateGuestFollows('user-1')
+
+			// Best-effort: the calls after the failed one still run.
+			expect(mockRpcClient.follow.mock.calls.map(([id]) => id)).toEqual([
+				'a1',
+				'a2',
+				'a3',
+			])
+			expect(mockRpcClient.setHype.mock.calls).toEqual([['a3', 'away']])
+			// The failure is logged.
+			expect(scopedLogger.warn).toHaveBeenCalledWith(
+				'Failed to follow artist during migration',
+				expect.objectContaining({ id: 'a2' }),
+			)
+			// Only the failed artist is left for boot reconciliation.
+			expect(sut.guestFollows.map((f) => f.artist.id)).toEqual(['a2'])
+			expect(lsMap.has(guestMergedReceiptKey('user-1'))).toBe(false)
+		})
+
+		// @spec stories/merge-guest-data-on-signup "Hype merge failure is non-blocking"
 		it('does NOT drain an item whose SetHype fails, and DEFERS the receipt', async () => {
 			// a1 has a non-default hype; its Follow succeeds but SetHype throws.
-			guestSeed = [makeFollow('a1', 'away'), makeFollow('a2')]
+			guestSeed = [
+				makeFollow('a1', 'away'),
+				makeFollow('a2'),
+				makeFollow('a3', 'home'),
+			]
 			sut = new FollowStore()
 			mockRpcClient.setHype.mockImplementation(async (id: string) => {
 				if (id === 'a1') throw new Error('hype rpc failed')
 			})
 
 			await sut.migrateGuestFollows('user-1')
+
+			// The hype calls after the failed one still run, and the failure is
+			// logged.
+			expect(mockRpcClient.setHype.mock.calls).toEqual([
+				['a1', 'away'],
+				['a3', 'home'],
+			])
+			expect(scopedLogger.warn).toHaveBeenCalledWith(
+				'Failed to set hype during migration',
+				expect.objectContaining({ artistId: 'a1' }),
+			)
 
 			// a1 Follow succeeded but its hype did not migrate → keep it for retry
 			// so the non-default hype is not lost; a2 (default hype) drains.
