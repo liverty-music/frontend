@@ -11,7 +11,6 @@ import {
 	LANGUAGE_STORAGE_KEY,
 } from '../../../organizer/i18n/console-language'
 import { ConsoleFormatters } from '../../../organizer/i18n/converters'
-import ja from '../../../organizer/locales/ja/translation.json'
 import { LotterySaleEditorRoute } from '../../../organizer/lottery-sale-editor/lottery-sale-editor-route'
 import { IClock } from '../../../organizer/services/clock'
 import { IOrganizerClient } from '../../../organizer/services/organizer-client'
