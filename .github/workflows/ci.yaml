@@ -275,16 +275,6 @@ jobs:
           E2E_SERVER: preview
         run: npx playwright test --shard=${{ matrix.shard }}/2 --project=functional --project=webkit-repro --project=chromium-control --project=webkit-shell --project=webkit-virtual-ticket --project=webkit-organizer-guide --project=typefaces-pixel7 --project=typefaces-iphone
 
-      # PWA / service-worker specs run from their own config against a
-      # production build (`vite preview`). vite-plugin-pwa disables the service
-      # worker in dev, so running these against the dev server verifies
-      # nothing — which is why the offline-cache spec sat excluded from CI with
-      # a stale reason. Separate step so the production build it needs does not
-      # slow the rest of the e2e run. It runs in one shard only.
-      - name: Run PWA tests
-        if: matrix.shard == 2
-        run: npm run test:pwa
-
       - name: Upload test results
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: failure()
@@ -330,6 +320,16 @@ jobs:
       # `redesign-organizer-console`, design D22.
       - name: Run production-build checks
         run: npm run test:prod-build
+
+      # PWA / service-worker specs run from their own config against a
+      # production build (`vite preview`). vite-plugin-pwa disables the service
+      # worker in dev, so running these against the dev server verifies
+      # nothing — which is why the offline-cache spec sat excluded from CI with
+      # a stale reason. They belong in this job: it already runs against a
+      # production build, and in the e2e job's second shard they made it the
+      # slowest job (about 25 s of tests plus a second build).
+      - name: Run PWA tests
+        run: npm run test:pwa
 
       - name: Upload test results
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
