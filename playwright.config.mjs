@@ -241,7 +241,9 @@ export default defineConfig({
        unregistered. */
 				command: `npx vite preview --port ${E2E_PORT} --strictPort`,
 				port: E2E_PORT,
-				reuseExistingServer: !process.env.CI,
+				/* Never reuse: the default port is the one `npm start` listens on, and a
+       dev server found there would be tested in place of the build. */
+				reuseExistingServer: false,
 			}
 		: {
 				/* `--strictPort`: if E2E_PORT is taken, vite exits instead of moving to

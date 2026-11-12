@@ -1,5 +1,6 @@
 import { concertWire } from '../support/concert-wire'
 import { expect, type Locator, type Page, test } from '../support/test'
+import { frames } from '../support/timetable'
 
 /**
  * Press acknowledgement is CSS on `:active`: the shared state layer
@@ -102,9 +103,12 @@ async function openCard(page: Page): Promise<Locator> {
 	await page.goto(`/dashboard`)
 	const card = page.locator('[data-live-card]').first()
 	await card.waitFor({ timeout: 10000 })
-	// The card's `event-card` host deals in with a finite animation. The press point is read from the
-	// card's box, so a press while it still moves lands beside the card. A dev
-	// server renders late enough for the deal-in to be over; a build does not.
+	// The card's `event-card` host deals in with a finite animation. The press
+	// point is read from the card's box, so a press while it still moves lands
+	// beside the card. A dev server renders late enough for the deal-in to be
+	// over; a build does not. The scroll trigger starts it in the frames after
+	// the card appears, so wait for them before reading the animations.
+	await frames(page)
 	await card.evaluate((el) =>
 		Promise.all(
 			document
@@ -113,13 +117,13 @@ async function openCard(page: Page): Promise<Locator> {
 					const target =
 						a.effect instanceof KeyframeEffect ? a.effect.target : null
 					return (
+						(a as CSSAnimation).animationName === 'deal-in' &&
 						a.playState === 'running' &&
-						a.timeline === document.timeline &&
 						target != null &&
 						(target.contains(el) || el.contains(target))
 					)
 				})
-				.map((a) => a.finished),
+				.map((a) => a.finished.catch(() => undefined)),
 		),
 	)
 	return card
