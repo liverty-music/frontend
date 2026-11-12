@@ -4,6 +4,7 @@ import {
 	type StoryObj,
 } from '@aurelia/storybook'
 import { expect, userEvent, within } from 'storybook/test'
+import { expectTargets } from '../../../.storybook/target-size'
 import { WelcomeLanguagePicker } from './welcome-language-picker'
 
 const meta = {
@@ -42,6 +43,11 @@ export const Japanese = {
 		await expect(
 			within(canvasElement).getByRole('radio', { name: '日本語' }),
 		).toBeChecked()
+		// Each language choice takes a 48 px tap of its own.
+		await expect(
+			canvasElement.querySelectorAll('.welcome-lang-label'),
+		).toHaveLength(2)
+		expectTargets(canvasElement, '.welcome-lang-label')
 	},
 } satisfies Story
 
