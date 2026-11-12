@@ -4,7 +4,7 @@ import {
 	type StoryObj,
 } from '@aurelia/storybook'
 import { CustomElement } from 'aurelia'
-import { expect } from 'storybook/test'
+import { expect, waitFor } from 'storybook/test'
 import { composite, contrast, resolveColor } from '../../../.storybook/contrast'
 import { artistHue } from '../../adapter/view/artist-color'
 import { BeamVarsCustomAttribute } from '../../custom-attributes/beam-vars'
@@ -120,6 +120,33 @@ function cardFor(root: HTMLElement, timeline: string): HTMLElement | undefined {
 	return [...root.querySelectorAll<HTMLElement>('[data-live-card]')].find(
 		(card) => card.dataset.beamName === timeline,
 	)
+}
+
+/**
+ * Each beam is linked to its card: the host scopes the beam's timeline name,
+ * the beam binds it as its `animation-timeline`, and the card declares it as
+ * its `view-timeline`.
+ */
+async function expectBeamWiring(
+	canvasElement: HTMLElement,
+	beams: HTMLElement[],
+): Promise<void> {
+	const host = canvasElement.querySelector<HTMLElement>('concert-highway')
+	if (!host) throw new Error('concert-highway not rendered')
+	const scope = getComputedStyle(host).timelineScope
+
+	for (const beam of beams) {
+		const name = beam.dataset.beamTimeline ?? ''
+
+		// The beam is not a descendant of its card, so the name must be scoped
+		// on a common ancestor or the timeline silently fails to resolve.
+		await expect(scope).toContain(name)
+		await expect(getComputedStyle(beam).animationTimeline).toBe(name)
+
+		const card = cardFor(canvasElement, name)
+		if (!card) throw new Error(`no card for beam ${name}`)
+		await expect(getComputedStyle(card).viewTimelineName).toBe(name)
+	}
 }
 
 function highwayStory(dateGroups: DateGroup[], hideAway = false) {
@@ -656,22 +683,46 @@ export const BeamsEnabled = {
 			...canvasElement.querySelectorAll<HTMLElement>('.laser-beam'),
 		]
 		await expect(beams.length).toBe(MATCHED_COUNT)
+		await expectBeamWiring(canvasElement, beams)
+	},
+} satisfies Story
 
-		const host = canvasElement.querySelector<HTMLElement>('concert-highway')
-		if (!host) throw new Error('concert-highway not rendered')
-		const scope = getComputedStyle(host).timelineScope
+/**
+ * One concert of a followed artist in each lane, each of them matched: every
+ * lane carries a beam wired to its card, so a beam does not depend on the
+ * lane its concert sits in.
+ */
+const EVERY_LANE: DateGroup[] = [
+	{
+		label: '7月15日 (水)',
+		dateKey: '2026-07-15',
+		isFirstOfMonth: true,
+		monthSeparatorLabel: '2026年7月',
+		home: [ev('VAUNDY', 'home', true, '2026-07-15T19:00:00+09:00')],
+		nearby: [
+			ev('Mrs. GREEN APPLE', 'nearby', true, '2026-07-15T19:00:00+09:00'),
+		],
+		away: [ev('YOASOBI', 'away', true, '2026-07-15T19:00:00+09:00')],
+	},
+]
 
-		for (const beam of beams) {
-			const name = beam.dataset.beamTimeline ?? ''
-
-			// The beam is not a descendant of its card, so the name must be scoped
-			// on a common ancestor or the timeline silently fails to resolve.
-			await expect(scope).toContain(name)
-			await expect(getComputedStyle(beam).animationTimeline).toBe(name)
-
-			const card = cardFor(canvasElement, name)
-			if (!card) throw new Error(`no card for beam ${name}`)
-			await expect(getComputedStyle(card).viewTimelineName).toBe(name)
+export const BeamsInEveryLane = {
+	render: () => highwayStory(EVERY_LANE),
+	play: async ({ canvasElement }) => {
+		const beams = [
+			...canvasElement.querySelectorAll<HTMLElement>('.laser-beam'),
+		]
+		await expect(beams.length).toBe(3)
+		await expectBeamWiring(canvasElement, beams)
+		for (const lane of ['home', 'nearby', 'away']) {
+			const card = canvasElement.querySelector<HTMLElement>(
+				`[data-live-card][data-lane="${lane}"]`,
+			)
+			await expect(card?.dataset.matched).toBe('true')
+			// The card names its beam, and that beam is one of the three.
+			await expect(
+				beams.some((b) => b.dataset.beamTimeline === card?.dataset.beamName),
+			).toBe(true)
 		}
 	},
 } satisfies Story
@@ -1193,5 +1244,199 @@ export const DealIn = {
 		).toBeGreaterThan(12)
 		const grown = rowsInView()
 		await check(grown.full, grown.empty)
+	},
+} satisfies Story
+
+/**
+ * The deal-in as it runs when rows come into view in one go, in a browser that
+ * can start an animation when an element comes into view (Chromium; Safari
+ * keeps this check in the end-to-end suite, where it has its own engine
+ * project). Under reduced motion there is nothing to run, so this story does
+ * not carry the `reduced-motion` tag.
+ */
+export const DealInWhenRowsArrive = {
+	render: () => highwayStory(DEAL_GROUPS),
+	play: async ({ canvasElement }) => {
+		const scroll = canvasElement.querySelector<HTMLElement>('.concert-scroll')
+		if (!scroll) throw new Error('concert-scroll not rendered')
+		await frames()
+
+		const scrollBy = async (dy: number) => {
+			scroll.scrollBy({ top: dy, behavior: 'instant' })
+			await frames()
+		}
+
+		/**
+		 * The deal-in animations of the first row wholly inside the scroll area,
+		 * one entry per concert card, and that row's date.
+		 */
+		const rowInView = () => {
+			const box = scroll.getBoundingClientRect()
+			const row = [
+				...scroll.querySelectorAll<HTMLElement>('.date-group[data-date-key]'),
+			].find((g) => {
+				const r = g.getBoundingClientRect()
+				return r.top >= box.top && r.bottom <= box.bottom
+			})
+			if (!row) return null
+			const all = row
+				.getAnimations({ subtree: true })
+				.filter((a) => (a as CSSAnimation).animationName === 'deal-in')
+			const others = all.filter(
+				(a) =>
+					(a.effect as KeyframeEffect).target?.localName !== 'event-card' ||
+					(a.effect as KeyframeEffect).pseudoElement !== null,
+			).length
+			const cards = [...row.querySelectorAll<HTMLElement>('.lane')].flatMap(
+				(lane, laneAt) =>
+					[...lane.querySelectorAll<HTMLElement>('event-card')].map(
+						(card, index) => {
+							const mine = all.filter(
+								(a) => (a.effect as KeyframeEffect).target === card,
+							)
+							const a = mine[0]
+							return {
+								lane: laneAt,
+								index,
+								count: mine.length,
+								delay: Math.round(Number(a?.effect?.getTiming().delay ?? 0)),
+								duration: Number(a?.effect?.getComputedTiming().duration ?? 0),
+								currentTime: Number(a?.currentTime ?? 0),
+								playState: a?.playState ?? 'none',
+								others,
+							}
+						},
+					),
+			)
+			return { key: row.dataset.dateKey ?? '', cards }
+		}
+
+		/**
+		 * A row that has just been dealt in: only its concert cards move, each
+		 * running, early in its run, 100 ms after the card above it in its lane
+		 * and 100 ms per lane (HOME, NEAR, AWAY).
+		 */
+		const expectDealing = async (
+			cards: NonNullable<ReturnType<typeof rowInView>>['cards'],
+			stage: string,
+		) => {
+			await expect(cards.length).toBeGreaterThan(0)
+			// Judged in one pass over what was read at the same moment, so the
+			// run's progress cannot move between two checks.
+			const wrong = cards.filter(
+				(card) =>
+					card.others !== 0 ||
+					card.count !== 1 ||
+					card.delay !== (card.lane + card.index) * 100 ||
+					card.duration !== 800 ||
+					// Started: the row's trigger fired.
+					card.playState === 'paused',
+			)
+			await expect(wrong, stage).toEqual([])
+		}
+
+		/**
+		 * Waits for the row `pick` returns to have started (the browser starts
+		 * it a frame or more after the scroll, later on a busy machine), then
+		 * reads it at once.
+		 */
+		const started = async (
+			pick: () => ReturnType<typeof rowInView>,
+			stage: string,
+		): Promise<NonNullable<ReturnType<typeof rowInView>>> => {
+			const deadline = performance.now() + 8000
+			for (;;) {
+				const row = pick()
+				if (row && row.cards[0].playState !== 'paused') return row
+				if (performance.now() > deadline)
+					throw new Error(
+						`${stage}: the row has not started (${JSON.stringify(row?.cards[0])})`,
+					)
+				await new Promise((r) => requestAnimationFrame(r))
+			}
+		}
+
+		// Where the system under test cannot start an animation when an element
+		// comes into view there is nothing to check here.
+		if (!CSS.supports('timeline-trigger: --t view()')) return
+
+		// @spec components/infrastructure/fan/web/global/live-highway "Fast scroll"
+		// 1500 px in one frame: rows cross into view far faster than 100 ms.
+		await scrollBy(1500)
+		const first = await started(rowInView, 'fast scroll')
+		await expectDealing(first.cards, 'fast scroll')
+		// With no further scrolling, it runs on to its end: its pace is time,
+		// not scroll, so the 800 ms are not cut short.
+		const dealIns = (key: string) =>
+			(scroll
+				.querySelector<HTMLElement>(`[data-date-key="${key}"]`)
+				?.getAnimations({ subtree: true })
+				.filter((a) => (a as CSSAnimation).animationName === 'deal-in') ??
+				[]) as CSSAnimation[]
+		const ran = dealIns(first.key)
+		await expect(ran.length).toBe(first.cards.length)
+		await Promise.all(ran.map((a) => a.finished))
+		await expect(
+			ran.every((a) => {
+				const t = a.effect?.getComputedTiming()
+				return a.currentTime === Number(t?.endTime)
+			}),
+			'ran to its end',
+		).toBe(true)
+
+		// @spec components/infrastructure/fan/web/global/live-highway "A row comes back"
+		// Fully out of view, the row is reset; back at the same place it is
+		// dealt in again.
+		const place = scroll.scrollTop
+		await scrollBy(2000)
+		await expect(
+			dealIns(first.key).every((a) => a.playState === 'paused'),
+			`reset out of view: ${dealIns(first.key).map((a) => `${a.playState}@${a.currentTime}`)}`,
+		).toBe(true)
+		await scrollBy(place - scroll.scrollTop)
+		const again = await started(rowInView, 'row comes back')
+		await expect(again.key).toBe(first.key)
+		await expectDealing(again.cards, 'row comes back')
+
+		// @spec components/infrastructure/fan/web/global/live-highway "Scrolling up after a month jump"
+		const next = canvasElement.querySelector<HTMLElement>(
+			'.month-jump-button[data-direction="next"]',
+		)
+		const prev = canvasElement.querySelector<HTMLElement>(
+			'.month-jump-button[data-direction="prev"]',
+		)
+		if (!next || !prev) throw new Error('month jump buttons not rendered')
+		next.click()
+		// The jump has landed once its target month is at the top.
+		await new Promise<void>((resolve) => {
+			scroll.addEventListener('scrollend', () => resolve(), { once: true })
+			setTimeout(resolve, 1500)
+		})
+		await waitFor(() => expect(prev.checkVisibility()).toBe(true), {
+			timeout: 5000,
+		})
+		await new Promise((r) => setTimeout(r, 300))
+		// Let every deal-in finish first, so that one running afterwards was
+		// started by what follows. Then upward, by more than the list is tall:
+		// rows come in at the top edge, built by the upward growth.
+		await waitFor(
+			() => {
+				const running = scroll
+					.getAnimations({ subtree: true })
+					.filter(
+						(a) =>
+							(a as CSSAnimation).animationName === 'deal-in' &&
+							a.playState === 'running',
+					)
+				if (running.length > 0) throw new Error('still dealing in')
+			},
+			{ timeout: 8000 },
+		)
+		const before = rowInView()
+		await scrollBy(-2 * scroll.clientHeight)
+		const row = await started(rowInView, 'scrolling up after a jump')
+		if (!before) throw new Error('no row in view')
+		await expect(row.key < before.key).toBe(true)
+		await expectDealing(row.cards, 'scrolling up after a jump')
 	},
 } satisfies Story

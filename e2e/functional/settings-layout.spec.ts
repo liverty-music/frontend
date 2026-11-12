@@ -21,6 +21,9 @@ const SETTINGS = 'components/infrastructure/fan/web/route/settings'
  * at or below the header's bottom edge — i.e. the content never slides behind the
  * pinned header. RPC is mocked so the assertion never depends on a live backend.
  *
+ * The "Content track item can shrink" scenario is a story of the route
+ * (`src/routes/settings/settings-route.stories.ts`).
+ *
  * The authenticated-context screenshot + geometry assertions live in
  * `e2e/visual/settings.auth.visual.spec.ts` (run locally / in the authenticated
  * suite); this spec is the always-on PR gate for the same CSS mechanism.
@@ -100,29 +103,5 @@ test.describe('Settings layout (guest)', () => {
 		).toBe(0)
 		expect(await box(page.locator('page-header'))).toEqual(header)
 		expect(await box(nav(page))).toEqual(bar)
-	})
-
-	test(`@spec ${SETTINGS} "Content track item can shrink"`, async ({
-		page,
-	}) => {
-		await mockRpcRoutes(page)
-		await page.goto('/settings')
-		const scroll = page.getByTestId('settings-scroll')
-		await expect(scroll).toBeVisible({ timeout: 10_000 })
-		const main = page.locator('settings-route > main')
-		expect(await main.evaluate((el) => getComputedStyle(el).minBlockSize)).toBe(
-			'0px',
-		)
-		expect(await scroll.evaluate((el) => getComputedStyle(el).overflowY)).toBe(
-			'auto',
-		)
-		// The grid item stays inside the route box instead of growing to the
-		// content's full height.
-		const route = await box(page.locator('settings-route'))
-		const item = await box(main)
-		expect(item.height).toBeLessThanOrEqual(route.height + 1)
-		expect(
-			await scroll.evaluate((el) => el.scrollHeight > el.clientHeight),
-		).toBe(true)
 	})
 })
