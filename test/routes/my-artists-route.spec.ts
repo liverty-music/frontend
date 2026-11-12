@@ -528,6 +528,7 @@ describe('MyArtistsRoute', () => {
 				expect(mockRouter.load).not.toHaveBeenCalled()
 			})
 
+			// @spec components/infrastructure/fan/web/route/my-artists "Repeated hype change applies every time"
 			it('applies every repeated hype change and never reverts (the #444 bug)', () => {
 				const artist = onboardingSut.artists[0]
 
@@ -552,7 +553,13 @@ describe('MyArtistsRoute', () => {
 					'away',
 				)
 
-				expect(mockFollowService.setHype).toHaveBeenCalledTimes(3)
+				// Another artist's change applies as well.
+				const other = onboardingSut.artists[1]
+				onboardingSut.onHypeInput(other, 'watch')
+				expect(other.hype).toBe('watch')
+				expect(artist.hype).toBe('away')
+
+				expect(mockFollowService.setHype).toHaveBeenCalledTimes(4)
 				expect(onboardingOnboarding.finish).not.toHaveBeenCalled()
 			})
 		})

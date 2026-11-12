@@ -99,29 +99,6 @@ test(`@spec ${CAPABILITY} "Guest user changes hype during onboarding"`, async ({
 	await expect(page.locator('signup-prompt-banner aside')).toBeVisible()
 })
 
-test(`@spec ${CAPABILITY} "Repeated hype change applies every time"`, async ({
-	page,
-}) => {
-	await open(page, 'false')
-
-	await setHype(page, 0, 'home')
-	await expect
-		.poll(() => stored(page))
-		.toEqual({ [A.id]: 'home', [B.id]: 'nearby' })
-	await setHype(page, 0, 'watch')
-	await expect
-		.poll(() => stored(page))
-		.toEqual({ [A.id]: 'watch', [B.id]: 'nearby' })
-	await setHype(page, 1, 'away')
-	await expect
-		.poll(() => stored(page))
-		.toEqual({ [A.id]: 'watch', [B.id]: 'away' })
-
-	await expect(activeLevel(page, 0)).toHaveAttribute('data-level', 'watch')
-	await expect(activeLevel(page, 1)).toHaveAttribute('data-level', 'away')
-	expect(await onboardingFlag(page)).toBe('false')
-})
-
 test(`@spec ${CAPABILITY} "Guest user changes hype after onboarding completion"`, async ({
 	page,
 }) => {
