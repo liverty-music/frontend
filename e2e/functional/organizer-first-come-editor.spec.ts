@@ -1,11 +1,9 @@
 import {
 	chooseTime,
-	expectGuideLink,
 	installConsole,
 	type RpcLog,
 	type RpcMocks,
 	SERIES,
-	shownTime,
 } from '../support/organizer'
 import {
 	A_SEAT,
@@ -23,10 +21,9 @@ import {
 import { expect, type Page, test } from '../support/test'
 
 /**
- * The first-come sale editor at `sales/first-come` under the event: a new
- * sale with sensible defaults that sells the event's seat types, only its
- * window changing once it exists, the prerequisites, and back to the event's
- * Sales tab.
+ * The first-come sale editor reached from the event's Sales tab: only the
+ * journey across two screens stays here (the form, its prerequisites and its
+ * validation are tested in test/organizer/ticket-sale-editor/).
  */
 
 const SPEC = 'components/infrastructure/organizer/web/route/ticket-sale-editor'
@@ -52,7 +49,6 @@ const SHOW: ConcertSpec = {
 }
 
 const SALES = `${SERIES}/s-show/events/e-1120/ticket-sales`
-const EDITOR = `${SALES}/new?method=first-come`
 
 /** The first-come sale of the show: 11 November 12:00 to 20 November 18:00. */
 const GENERAL: SaleSpec = {
@@ -61,14 +57,6 @@ const GENERAL: SaleSpec = {
 	method: 'FIRST_COME',
 	start: jst('2026-11-11', '12:00'),
 	end: jst('2026-11-20', '18:00'),
-}
-
-const PRESALE: SaleSpec = {
-	id: 'l-1',
-	name: 'ファンクラブ先行',
-	method: 'LOTTERY',
-	start: jst('2026-11-01', '12:00'),
-	end: jst('2026-11-10', '12:00'),
 }
 
 /** The show's stocks: S席 8,000円 × 300 and A席 6,000円 × 700. */
@@ -95,15 +83,6 @@ async function boot(page: Page, rpc: RpcMocks = {}): Promise<RpcLog> {
 	return installConsole(page, { rpc: { ...BASE, ...rpc }, language: 'ja' })
 }
 
-async function openEditor(page: Page, path = EDITOR, rpc: RpcMocks = {}) {
-	const log = await boot(page, rpc)
-	await page.goto(path)
-	await expect(
-		page.getByRole('button', { name: /先着販売を始める|保存する/ }),
-	).toBeVisible()
-	return log
-}
-
 /** Sales of the event that change once the sale is saved. */
 function salesStore(eventId: string, initial: SaleSpec[]) {
 	let sales = [...initial]
@@ -120,9 +99,6 @@ function oneSale(eventId: string, sale: SaleSpec) {
 }
 
 const field = (page: Page, label: string) => page.getByLabel(label)
-/** The whole field (label, control, hint and error) around a control. */
-const fieldBox = (page: Page, label: string) =>
-	page.locator('console-field').filter({ has: page.getByLabel(label) })
 /** Enters when the sale opens (`start`) or closes (`end`), in JST. */
 async function enterWindow(
 	page: Page,
@@ -135,11 +111,6 @@ async function enterWindow(
 	await chooseTime(page, `${label}時刻`, time)
 }
 
-/** The sale's opening or closing date and time as the form shows them. */
-async function _shownWindow(page: Page, which: 'start' | 'end') {
-	const label = which === 'start' ? '販売開始' : '販売終了'
-	return `${await field(page, `${label}日`).inputValue()} ${await shownTime(page, `${label}時刻`)}`
-}
 const snackbar = (page: Page) => page.locator('.snack-item')
 const calls = (log: RpcLog, method: string) =>
 	log.calls.filter((c) => c.method === method)
@@ -147,35 +118,6 @@ const save = (page: Page) =>
 	page.getByRole('button', { name: /先着販売を始める|保存する/ }).click()
 
 test.describe('a new first-come sale', () => {
-	test(`@spec ${SPEC} "End after the show starts"`, async ({ page }) => {
-		const log = await openEditor(page)
-		await enterWindow(page, 'start', '2026-11-11', '12:00')
-		await enterWindow(page, 'end', '2026-11-20', '19:30')
-		await save(page)
-
-		await expect(fieldBox(page, '販売終了日')).toContainText(
-			'販売終了は開演時刻',
-		)
-		await expect(field(page, '販売終了日')).toHaveAttribute(
-			'aria-invalid',
-			'true',
-		)
-		expect(calls(log, 'TicketSaleService/Create')).toHaveLength(0)
-	})
-
-	test(`@spec ${SPEC} "Overlapping a presale"`, async ({ page }) => {
-		const log = await openEditor(page, EDITOR, {
-			'TicketSaleService/ListByEvent': salesOf('e-1120', [PRESALE]),
-		})
-		await enterWindow(page, 'start', '2026-11-08', '12:00')
-		await save(page)
-
-		await expect(
-			page.getByText(/販売「ファンクラブ先行」.*と期間が重なっています/),
-		).toBeVisible()
-		expect(calls(log, 'TicketSaleService/Create')).toHaveLength(0)
-	})
-
 	test(`@spec ${SPEC} "Back after saving"`, async ({ page }) => {
 		const store = salesStore('e-1120', [])
 		const log = await boot(page, {
@@ -215,74 +157,5 @@ test.describe('a new first-come sale', () => {
 		expect(new Date(body.saleEndTime).toISOString()).toBe(
 			jst('2026-11-20', '19:00'),
 		)
-	})
-
-	test(`@spec ${SPEC} "Breadcrumb"`, async ({ page }) => {
-		await page.setViewportSize({ width: 1280, height: 800 })
-		await openEditor(
-			page,
-			`${SERIES}/s-tour/events/e-1103/ticket-sales/new?method=first-come`,
-			{
-				'TicketSaleService/ListByEvent': salesOf('e-1103', []),
-			},
-		)
-		const crumbs = page.getByRole('navigation', { name: 'パンくずリスト' })
-		await expect(crumbs.getByRole('listitem')).toHaveText([
-			'公演',
-			'XX Tour 2026',
-			'11月3日(火)',
-			'先着で販売',
-		])
-		await expect(
-			crumbs.getByRole('link', { name: '11月3日(火)' }),
-		).toHaveAttribute('href', /\/series\/s-tour\/events\/e-1103\/ticket-sales$/)
-	})
-})
-
-test.describe('a sale that has started', () => {})
-
-test.describe('prerequisites', () => {
-	test(`@spec ${SPEC} "No start time"`, async ({ page }) => {
-		const untimed: ConcertSpec = {
-			...SHOW,
-			events: [{ ...SHOW.events[0], start: undefined }],
-		}
-		await boot(page, { 'SeriesService/List': seriesList([untimed]) })
-		await page.goto(EDITOR)
-
-		await expect(
-			page.getByRole('heading', { name: '開始時刻を設定してください' }),
-		).toBeVisible()
-		await expect(
-			page.getByRole('link', { name: '公演を編集' }),
-		).toHaveAttribute('href', /\/series\/s-show\/edit$/)
-		await expectGuideLink(
-			page.locator('prerequisite-callout').filter({
-				hasText: '開始時刻を設定してください',
-			}),
-			'publish',
-		)
-		await expect(
-			page.getByRole('button', { name: /先着販売を始める|保存する/ }),
-		).toHaveCount(0)
-	})
-
-	test(`@spec ${SPEC} "Business details incomplete"`, async ({ page }) => {
-		await boot(page, {
-			'OrganizerService/Get': organizer('XX Records', ['businessPhoneNumber']),
-		})
-		await page.goto(EDITOR)
-
-		const callout = page.locator('prerequisite-callout')
-		await expect(
-			callout.getByRole('heading', { name: '事業者情報が未登録です' }),
-		).toBeVisible()
-		await expect(callout).toContainText(
-			'審査のときに Liverty Music が登録します',
-		)
-		await expectGuideLink(callout, 'business-and-payout')
-		await expect(
-			page.getByRole('button', { name: /先着販売を始める|保存する/ }),
-		).toHaveCount(0)
 	})
 })

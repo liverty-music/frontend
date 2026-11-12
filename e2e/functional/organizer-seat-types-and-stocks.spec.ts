@@ -363,31 +363,3 @@ test("seat types, a date's stocks and limit, a presale, and deleting them", asyn
 		{ seatTypeId: { value: 'seat-1' } },
 	])
 })
-
-test('a seat type the server finds stocked is refused with its reason', async ({
-	page,
-}) => {
-	// The page read no stock, but a date stocked S席 since (another member).
-	await page.clock.setFixedTime(NOW)
-	const api = server()
-	api.rpc['SeatTypeService/ListBySeries'] = seatTypesOf('s-solo', [
-		{ id: 'seat-1', name: 'S席', price: 8000 },
-	])
-	api.rpc['SeatTypeService/Delete'] = () =>
-		connectError('failed_precondition', 'seat type in use')
-	const log = await installConsole(page, { rpc: api.rpc, language: 'ja' })
-	await page.goto(CONCERT)
-
-	await seatTypeItem(page, 'S席').getByRole('button', { name: '削除' }).click()
-	await confirmDialog(page, { name: 'S席を削除しますか？' })
-		.getByRole('button', { name: '削除' })
-		.click()
-
-	await expect(
-		snack(page).filter({
-			hasText: 'S席は公演日に枚数があるため削除できません。',
-		}),
-	).toBeVisible()
-	await expect(seatTypeItem(page, 'S席')).toBeVisible()
-	expect(calls(log, 'SeatTypeService/Delete')).toHaveLength(1)
-})

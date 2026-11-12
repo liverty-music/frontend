@@ -1,10 +1,12 @@
 import { IRouter } from '@aurelia/router'
 import { tasksSettled } from '@aurelia/runtime'
 import { createFixture } from '@aurelia/testing'
+import { SeatTypeSchema } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/seat_type_pb.js'
 import {
 	PublishState,
 	Visibility,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
+import { create } from '@bufbuild/protobuf'
 import { timestampFromDate } from '@bufbuild/protobuf/wkt'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { Registration } from 'aurelia'
@@ -48,7 +50,13 @@ const draftConcert = authoredSeries({
  * stubbed; the console's real snackbar host is rendered so a message is read
  * as the member sees it.
  */
-async function mount(publish: ReturnType<typeof vi.fn>) {
+async function mount(
+	publish: ReturnType<typeof vi.fn>,
+	seatTypes: {
+		list?: ReturnType<typeof vi.fn>
+		delete?: ReturnType<typeof vi.fn>
+	} = {},
+) {
 	const list = vi.fn().mockResolvedValue([draftConcert])
 	const fixture = createFixture(
 		'<console-snackbar></console-snackbar>',
@@ -61,10 +69,11 @@ async function mount(publish: ReturnType<typeof vi.fn>) {
 				listByEvent: vi.fn().mockResolvedValue([]),
 			}),
 			Registration.instance(ISeatTypeClient, {
-				listBySeries: vi.fn().mockResolvedValue([]),
+				listBySeries: seatTypes.list ?? vi.fn().mockResolvedValue([]),
+				delete: seatTypes.delete ?? vi.fn(),
 			}),
 			Registration.instance(ITicketStockClient, {
-				listByEvent: vi.fn().mockResolvedValue([]),
+				listByEvent: vi.fn().mockResolvedValue({ ticketStocks: [] }),
 			}),
 			Registration.instance(IBreadcrumbs, { set: vi.fn() }),
 			Registration.instance(IRouter, { load: vi.fn() }),
@@ -84,6 +93,7 @@ async function mount(publish: ReturnType<typeof vi.fn>) {
 	const host = fixture.appHost.querySelector('console-snackbar')
 	if (!host?.shadowRoot) throw new Error('console-snackbar did not render')
 	const root = host.shadowRoot
+	vm.deleteSeatTypeDialog = { ask: vi.fn().mockResolvedValue(true) } as never
 	const done = async () => {
 		await tasksSettled()
 		vm.detaching()
@@ -145,6 +155,52 @@ describe('concert page publish', () => {
 
 		expect(showError).toHaveBeenCalledWith('event.publishFailed')
 		expect(list).toHaveBeenCalledTimes(1)
+		await done()
+	})
+})
+
+describe('concert page seat types', () => {
+	beforeEach(() => {
+		localStorage.clear()
+		vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['ja-JP', 'ja'])
+		vi.spyOn(navigator, 'language', 'get').mockReturnValue('ja-JP')
+		HTMLElement.prototype.showPopover ??= () => {}
+		HTMLElement.prototype.hidePopover ??= () => {}
+	})
+	afterEach(() => {
+		vi.restoreAllMocks()
+	})
+
+	it('refuses to delete a seat type the server finds stocked, with its reason', async () => {
+		// The page read no stock, but a date stocked S席 since (another member).
+		const sSeat = create(SeatTypeSchema, {
+			id: { value: 'seat-1' },
+			seriesId: { value: 's-1' },
+			name: { value: 'S席' },
+			price: { value: 8000n },
+		})
+		const list = vi.fn().mockResolvedValue([sSeat])
+		const del = vi
+			.fn()
+			.mockRejectedValue(
+				new ConnectError('seat type in use', Code.FailedPrecondition),
+			)
+		const { vm, root, done } = await mount(vi.fn(), { list, delete: del })
+		await vi.waitFor(() => expect(vm.seatTypes).toHaveLength(1))
+		expect(vm.seatTypes.map((t) => t.name)).toEqual(['S席'])
+
+		await vm.deleteSeatType(vm.seatTypes[0])
+		await tasksSettled()
+
+		expect(vm.deleteSeatTypeDialog.ask).toHaveBeenCalledTimes(1)
+		expect(del).toHaveBeenCalledTimes(1)
+		expect(del.mock.calls[0][0]).toBe('seat-1')
+		expect(root.querySelector('.snack-message')?.textContent?.trim()).toBe(
+			'S席は公演日に枚数があるため削除できません。',
+		)
+		// The page reads the seat types again and still lists S席.
+		expect(list).toHaveBeenCalledTimes(2)
+		expect(vm.seatTypes.map((t) => t.name)).toEqual(['S席'])
 		await done()
 	})
 })
