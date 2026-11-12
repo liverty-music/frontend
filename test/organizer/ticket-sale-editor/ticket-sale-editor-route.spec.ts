@@ -1,4 +1,4 @@
-import { IRouteContext, IRouter } from '@aurelia/router'
+import { IRouteContext, IRouter, IRouterEvents } from '@aurelia/router'
 import { tasksSettled } from '@aurelia/runtime'
 import { createFixture } from '@aurelia/testing'
 import { OrganizerSchema } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/organizer_pb.js'
@@ -32,7 +32,9 @@ import {
 	ITicketStockClient,
 } from '../../../organizer/services/ticket-stock-client'
 import { IBreadcrumbs } from '../../../organizer/shell/breadcrumbs'
+import { ConsoleBreadcrumb } from '../../../organizer/shell/console-breadcrumb/console-breadcrumb'
 import { IConsoleContext } from '../../../organizer/shell/console-context'
+import { CrumbText } from '../../../organizer/shell/crumb-text/crumb-text'
 import {
 	firstComeSaleOf,
 	TicketSaleEditorRoute,
@@ -49,6 +51,12 @@ import { StatTile } from '../../../organizer/ui/stat-tile/stat-tile'
 import { StatusBadge } from '../../../organizer/ui/status-badge/status-badge'
 import { UnsavedChanges } from '../../../organizer/ui/unsaved-changes/unsaved-changes'
 import { authoredSeries } from '../authored-series'
+import {
+	controlsNamed,
+	deepAll,
+	deepOne,
+	deepText,
+} from '../event/event-tab-support'
 
 const SPEC = 'components/infrastructure/organizer/web/global/error-messages'
 const EDITOR_SPEC =
@@ -178,7 +186,7 @@ function concertWith(event: ReturnType<typeof eventInit>) {
 	]
 }
 
-function registrations(d: Doubles) {
+function registrations(d: Doubles, withTrail: boolean) {
 	return [
 		Registration.instance(ISeriesClient, { list: d.list }),
 		Registration.instance(IOrganizerClient, { get: d.getOrganizer }),
@@ -192,7 +200,10 @@ function registrations(d: Doubles) {
 		Registration.instance(IRouteContext, {
 			getRouteParameters: () => ({ seriesId: 's-1', eventId: 'e-1' }),
 		}),
-		Registration.instance(IBreadcrumbs, { set: vi.fn() }),
+		// The real trail, rendered by the console's breadcrumb, when asked for.
+		...(withTrail
+			? [Registration.instance(IRouterEvents, { subscribe: vi.fn() })]
+			: [Registration.instance(IBreadcrumbs, { set: vi.fn() })]),
 		Registration.instance(IConsoleContext, {
 			scope: { organizer: 'org-1', artist: 'a-1' },
 		}),
@@ -204,10 +215,11 @@ function registrations(d: Doubles) {
 async function mount(
 	over: Partial<Doubles> = {},
 	settled: Route['state'] = 'ready',
+	withTrail = false,
 ) {
 	const d = doubles(over)
 	const fixture = createFixture(
-		'<ticket-sale-editor-route></ticket-sale-editor-route>',
+		'<console-breadcrumb></console-breadcrumb><ticket-sale-editor-route></ticket-sale-editor-route>',
 		class {},
 		[
 			ConsoleI18nConfiguration,
@@ -215,6 +227,8 @@ async function mount(
 			ActionBar,
 			ConfirmDialog,
 			ConsoleButton,
+			ConsoleBreadcrumb,
+			CrumbText,
 			ConsoleField,
 			ConsoleIcon,
 			ConsoleTimeField,
@@ -223,7 +237,7 @@ async function mount(
 			StatusBadge,
 			UnsavedChanges,
 			TicketSaleEditorRoute,
-			...registrations(d),
+			...registrations(d, withTrail),
 		],
 	)
 	await fixture.startPromise
@@ -242,6 +256,15 @@ function validModel() {
 		saleStart: { date: '2026-11-01', time: '12:00' },
 		saleEnd: { date: '2026-11-20', time: '19:00' },
 	}
+}
+
+/** The console-field of the form that is labelled `label`. */
+function fieldLabelled(host: Element, label: string): HTMLElement {
+	const field = [...host.querySelectorAll<HTMLElement>('console-field')].find(
+		(f) => CustomElement.for<ConsoleField>(f).viewModel.label === label,
+	)
+	if (!field) throw new Error(`no field labelled ${label}`)
+	return field
 }
 
 const SALES_HREF =
@@ -484,7 +507,7 @@ describe('first-come sale editor', () => {
 		await fixture.tearDown()
 	})
 
-	it('refuses a window that overlaps another sale and names it in Japan time', async () => {
+	it(`@spec ${EDITOR_SPEC} "Overlapping a presale"`, async () => {
 		const other = firstComeSale({
 			id: 'other',
 			name: '先行販売',
@@ -493,14 +516,19 @@ describe('first-come sale editor', () => {
 			eventId: 'e-9',
 			method: TicketSaleMethod.LOTTERY,
 		})
-		const { fixture, vm, d } = await mount({
+		const { fixture, vm, host, d } = await mount({
 			listByEvent: vi.fn().mockResolvedValue({ ticketSales: [other] }),
 		})
 		vm.model = validModel()
 
 		await vm.save()
+		await tasksSettled()
 
 		expect(d.create).not.toHaveBeenCalled()
+		// The refusal names the other sale and its window in Japan time.
+		expect(deepText(fieldLabelled(host, ja.firstComeEditor.startDate))).toMatch(
+			/販売「先行販売」.*と期間が重なっています/,
+		)
 		expect(vm.error(vm.errors.saleStartDate)).toEqual({
 			key: 'firstComeEditor.error.overlap',
 			params: {
@@ -563,6 +591,84 @@ describe('first-come sale editor', () => {
 
 		d.showError.mock.calls[0][1].retry()
 		await vi.waitFor(() => expect(d.create).toHaveBeenCalledTimes(2))
+		await fixture.tearDown()
+	})
+
+	it(`@spec ${EDITOR_SPEC} "End after the show starts"`, async () => {
+		const { fixture, vm, host, d } = await mount()
+		vm.model = {
+			...validModel(),
+			saleEnd: { date: '2026-11-20', time: '19:30' },
+		}
+
+		await vm.save()
+		await tasksSettled()
+
+		const end = fieldLabelled(host, ja.firstComeEditor.endDate)
+		expect(deepText(end)).toContain('販売終了は開演時刻')
+		expect(deepOne(end, 'input')?.getAttribute('aria-invalid')).toBe('true')
+		expect(d.create).not.toHaveBeenCalled()
+		await fixture.tearDown()
+	})
+
+	it(`@spec ${EDITOR_SPEC} "Breadcrumb"`, async () => {
+		const { fixture, host } = await mount({}, 'ready', true)
+
+		const trail = fixture.appHost.querySelector(
+			'nav[aria-label="パンくずリスト"]',
+		)
+		expect(trail, 'the console breadcrumb renders the trail').not.toBeNull()
+		const parts = [...(trail?.querySelectorAll('li') ?? [])].map((li) =>
+			li.textContent?.trim(),
+		)
+		expect(parts).toEqual(['公演', 'XX Tour', '11月20日(金)', '先着で販売'])
+		expect(
+			[...(trail?.querySelectorAll('a') ?? [])]
+				.find((a) => a.textContent?.includes('11月20日(金)'))
+				?.getAttribute('href'),
+		).toBe(SALES_HREF)
+		expect(host).not.toBeNull()
+		await fixture.tearDown()
+	})
+
+	it(`@spec ${EDITOR_SPEC} "No start time"`, async () => {
+		const { fixture, host } = await mount({
+			list: vi.fn().mockResolvedValue(concertWith(eventInit({ start: null }))),
+		})
+
+		const callout = host.querySelector('prerequisite-callout') as HTMLElement
+		expect(deepText(callout)).toContain('開始時刻を設定してください')
+		expect(
+			deepAll(callout, 'a')
+				.filter((a) => a.textContent?.trim() === '公演を編集')
+				.map((a) => a.getAttribute('href')),
+		).toEqual(['/organizers/org-1/artists/a-1/series/s-1/edit'])
+		const guide = deepOne(callout, 'a.guide')
+		expect(guide?.getAttribute('href')).toBe('/guide.html#publish')
+		expect(guide?.getAttribute('target')).toBe('_blank')
+		expect(guide?.getAttribute('rel')).toBe('noopener')
+		expect(controlsNamed(host, ja.firstComeEditor.create)).toHaveLength(0)
+		await fixture.tearDown()
+	})
+
+	it(`@spec ${EDITOR_SPEC} "Business details incomplete"`, async () => {
+		const { fixture, host } = await mount({
+			getOrganizer: vi.fn().mockResolvedValue(
+				create(OrganizerSchema, {
+					...COMPLETE_ORGANIZER,
+					businessPhoneNumber: undefined,
+				}),
+			),
+		})
+
+		const callout = host.querySelector('prerequisite-callout') as HTMLElement
+		const text = deepText(callout)
+		expect(text).toContain('事業者情報が未登録です')
+		expect(text).toContain('審査のときに Liverty Music が登録します')
+		const guide = deepOne(callout, 'a.guide')
+		expect(guide?.getAttribute('href')).toBe('/guide.html#business-and-payout')
+		expect(guide?.getAttribute('target')).toBe('_blank')
+		expect(controlsNamed(host, ja.firstComeEditor.create)).toHaveLength(0)
 		await fixture.tearDown()
 	})
 
