@@ -5,13 +5,16 @@ import {
 } from '@aurelia/storybook'
 import { expect, within } from 'storybook/test'
 import {
+	atEveryPhoneWidthAndLanguage,
 	expectBannerMessage,
 	expectBannerMotion,
 	expectBannerOffset,
 	expectBannerSurface,
 	expectCompactFilledButton,
+	expectFitsOneLine,
 	expectOneRow,
 } from '../../../.storybook/bottom-banner'
+import en from '../../locales/en/translation.json'
 import ja from '../../locales/ja/translation.json'
 import { SignupPromptBanner } from './signup-prompt-banner'
 
@@ -78,5 +81,43 @@ export const Visible = {
 		// @spec components/infrastructure/fan/web/global/signup-prompt-banner "Banner slides in on appearance"
 		// @spec components/infrastructure/fan/web/global/signup-prompt-banner "Banner appears instantly for reduced motion"
 		await expectBannerMotion(surface, action)
+	},
+} satisfies Story
+
+/**
+ * The prompt's one row at the phone widths in both languages: the message and
+ * the button each on one line, nothing clipped, and the copy in each language.
+ */
+export const FitsOneLineAtEveryPhoneWidth = {
+	render: () =>
+		defineAureliaStory({
+			template: `<signup-prompt-banner visible.bind="true" message.bind="'myArtists.signupBanner.message' | t"></signup-prompt-banner>`,
+			register: [SignupPromptBanner],
+		}),
+	play: async ({ canvasElement }) => {
+		const host = canvasElement.querySelector<HTMLElement>(
+			'signup-prompt-banner',
+		)
+		const message = canvasElement.querySelector<HTMLElement>(
+			'signup-prompt-banner .bottom-banner-message',
+		)
+		const action = canvasElement.querySelector<HTMLElement>(
+			'signup-prompt-banner .bottom-banner-action',
+		)
+		if (!host || !message || !action) throw new Error('no banner')
+		// @spec components/infrastructure/fan/web/global/signup-prompt-banner "Message and button fit one line"
+		// @spec components/infrastructure/fan/web/global/signup-prompt-banner "Banner copy — Japanese"
+		// @spec components/infrastructure/fan/web/global/signup-prompt-banner "Banner copy — English"
+		await atEveryPhoneWidthAndLanguage(host, async (language) => {
+			await expectFitsOneLine(message, action)
+			await expect(message.textContent).toBe(
+				language === 'en' ? 'Save your follows!' : 'フォロー履歴を保存しよう！',
+			)
+			await expect(action.textContent?.trim()).toBe('Sign Up')
+		})
+		await expect(en.myArtists.signupBanner.message).toBe('Save your follows!')
+		await expect(ja.myArtists.signupBanner.message).toBe(
+			'フォロー履歴を保存しよう！',
+		)
 	},
 } satisfies Story

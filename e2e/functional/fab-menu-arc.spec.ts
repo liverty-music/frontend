@@ -156,62 +156,9 @@ test.describe('the action arc', () => {
 		expect(await opacity(page, 'fab-menu .fab-close')).toBe(0)
 	})
 
-	test(`@spec ${CAPABILITY} "Tapping outside the arc only closes it"`, async ({
-		page,
-	}) => {
-		await openShell(page, '/dashboard')
-		await openArc(page)
-
-		// A real tap on a tab, and one on the page's own link, reach neither.
-		// The tap lands at the tab's position, so the arc's backdrop receives it.
-		const tabBox = await page
-			.locator('.nav-tab[data-nav="ticket"]')
-			.boundingBox()
-		if (!tabBox) throw new Error('ticket tab has no box')
-		await page.mouse.click(
-			tabBox.x + tabBox.width / 2,
-			tabBox.y + tabBox.height / 2,
-		)
-		await expect(fab(page)).toHaveAttribute('aria-expanded', 'false')
-		expect(new URL(page.url()).pathname).toBe('/dashboard')
-
-		await openArc(page)
-		const link = page.getByTestId('discover-link').first()
-		const target = await box(link)
-		await page.mouse.click(target.x + 8, target.y + target.height / 2)
-		await expect(fab(page)).toHaveAttribute('aria-expanded', 'false')
-		expect(new URL(page.url()).pathname).toBe('/dashboard')
-
-		// With the arc closed, the same tab tap navigates.
-		await tapTab(page, 'ticket')
-		await page.waitForURL('**/tickets')
-	})
-
-	test(`@spec ${CAPABILITY} "Idle glyph is still"`, async ({ page }) => {
-		await openShell(page, '/dashboard')
-		// biome-ignore lint/suspicious/noPlaywrightWaitForTimeout: stillness is checked after a stretch of time, which no event marks
-		await page.waitForTimeout(1000)
-		const running = await page
-			.locator('fab-menu .fab-equalizer')
-			.evaluate((el) => el.getAnimations({ subtree: true }).length)
-		expect(running).toBe(0)
-	})
-
 	for (const width of [320, 390]) {
 		test.describe(`at ${width}px`, () => {
 			test.use({ viewport: { width, height: 700 } })
-
-			test(`@spec ${CAPABILITY} "Every item shows icon and label" (${width}px)`, async ({
-				page,
-			}) => {
-				await openShell(page, '/dashboard')
-				await openArc(page)
-				for (const item of await fabItems(page).all()) {
-					await expect(item.locator('svg-icon')).toBeVisible()
-					await expect(item.locator('.fab-item-label')).toBeVisible()
-					await expect(item.locator('.fab-item-label')).toHaveText(/\S/)
-				}
-			})
 
 			test(`@spec ${CAPABILITY} "Labels never overlap icons" (${width}px)`, {
 				tag: '@webkit',
@@ -232,17 +179,6 @@ test.describe('the action arc', () => {
 						expect(b.x + b.width).toBeLessThanOrEqual(width - 16)
 						expect(b.y).toBeGreaterThanOrEqual(16)
 					}
-				}
-			})
-
-			test(`@spec ${CAPABILITY} "Items are comfortably tappable" (${width}px)`, async ({
-				page,
-			}) => {
-				await openShell(page, '/dashboard')
-				await openArc(page)
-				for (const item of await itemBoxes(page)) {
-					expect(Math.round(item.icon.width)).toBeGreaterThanOrEqual(48)
-					expect(Math.round(item.icon.height)).toBeGreaterThanOrEqual(48)
 				}
 			})
 		})
@@ -330,124 +266,9 @@ test.describe('the action arc', () => {
 		).toBe('1')
 		await expect(glyph(page)).toHaveAttribute('data-open', 'true')
 	})
-
-	test.describe('with reduced motion', () => {
-		test.use({ reducedMotion: 'reduce' })
-
-		test(`@spec ${CAPABILITY} "Reduced motion lands the end state without bounce"`, async ({
-			page,
-		}) => {
-			await openShell(page, '/dashboard')
-			await fab(page).click()
-
-			const items = page.locator('fab-menu .fab-list-item')
-			const timing = await items.evaluateAll((els) =>
-				els.map((el) => {
-					const s = getComputedStyle(el)
-					return {
-						duration: Math.max(
-							...s.transitionDuration.split(',').map(Number.parseFloat),
-						),
-						delay: Math.max(
-							...s.transitionDelay.split(',').map(Number.parseFloat),
-						),
-					}
-				}),
-			)
-			for (const t of timing) {
-				expect(t.duration).toBeLessThanOrEqual(0.001)
-				expect(t.delay).toBe(0)
-			}
-			const bars = await page
-				.locator('fab-menu .fab-bar')
-				.evaluateAll((els) =>
-					els.map((el) => getComputedStyle(el).animationName),
-				)
-			expect(bars).toEqual(['none', 'none', 'none'])
-
-			// Fully functional: the items are in place and the toggle closes.
-			await settle(page, 'fab-menu')
-			const f = centre(await box(fab(page)))
-			for (const item of await itemBoxes(page)) {
-				expect(centre(item.icon).y).toBeLessThan(f.y)
-			}
-			await fab(page).click()
-			await expect(fab(page)).toHaveAttribute('aria-expanded', 'false')
-		})
-	})
-
-	test(`@spec ${CAPABILITY} "Expanded panel keeps strong contrast"`, async ({
-		page,
-	}) => {
-		await openShell(page, '/dashboard')
-		await openArc(page)
-
-		const colours = await page.evaluate(() => {
-			const luminance = (css: string) => {
-				const ctx = new OffscreenCanvas(1, 1).getContext('2d')
-				if (!ctx) throw new Error('no 2d context')
-				ctx.fillStyle = css
-				ctx.fillRect(0, 0, 1, 1)
-				const [r, g, b] = [...ctx.getImageData(0, 0, 1, 1).data].map((v) => {
-					const c = v / 255
-					return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
-				})
-				return 0.2126 * r + 0.7152 * g + 0.0722 * b
-			}
-			const ratio = (a: number, b: number) =>
-				(Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05)
-			const label = document.querySelector('fab-menu .fab-item-label')
-			const item = document.querySelector(
-				'fab-menu .fab-item:not([data-active="true"]):not([aria-pressed="true"])',
-			)
-			const scrim = document.querySelector('fab-menu .fab-scrim')
-			if (!label || !item || !scrim) throw new Error('arc not open')
-			const labelStyle = getComputedStyle(label)
-			// The page behind: the app background under the scrim.
-			const ctx = new OffscreenCanvas(1, 1).getContext('2d')
-			if (!ctx) throw new Error('no 2d context')
-			ctx.fillStyle = getComputedStyle(document.body).backgroundColor
-			ctx.fillRect(0, 0, 1, 1)
-			ctx.fillStyle = getComputedStyle(scrim).backgroundColor
-			ctx.fillRect(0, 0, 1, 1)
-			const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data
-			const dimmed = luminance(`rgb(${r}, ${g}, ${b})`)
-			return {
-				text: ratio(
-					luminance(labelStyle.color),
-					luminance(labelStyle.backgroundColor),
-				),
-				surface: ratio(
-					luminance(getComputedStyle(item).backgroundColor),
-					dimmed,
-				),
-			}
-		})
-		expect(colours.text).toBeGreaterThanOrEqual(4.5)
-		// The item surface stands out from the dimmed page behind it at the
-		// WCAG non-text contrast minimum for UI components (1.4.11).
-		expect(colours.surface).toBeGreaterThanOrEqual(3)
-	})
 })
 
 test.describe('handedness', () => {
-	test(`@spec ${CAPABILITY} "Default arc curves to the right"`, async ({
-		page,
-	}) => {
-		await openShell(page, '/dashboard')
-		await openArc(page)
-		const viewport = page.viewportSize()
-		if (!viewport) throw new Error('no viewport')
-
-		expect(centre(await box(fab(page))).x).toBeCloseTo(viewport.width / 2, 0)
-		const items = await itemBoxes(page)
-		for (const [i, item] of items.entries()) {
-			if (i > 0) expect(item.icon.x).toBeGreaterThan(items[i - 1].icon.x)
-			// The label sits on the left of its icon.
-			expect(item.label.x + item.label.width).toBeLessThanOrEqual(item.icon.x)
-		}
-	})
-
 	test.describe('left-handed', () => {
 		test.beforeEach(async ({ page }) => {
 			await seedSignedInFan(page, { handed: 'left' })

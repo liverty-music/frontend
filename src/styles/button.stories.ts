@@ -3,8 +3,13 @@ import {
 	type Meta,
 	type StoryObj,
 } from '@aurelia/storybook'
-import { expect } from 'storybook/test'
+import { expect, waitFor } from 'storybook/test'
 import { composite, contrast, WCAG_AA } from '../../.storybook/contrast'
+import {
+	parkPointerAway,
+	pressAndHold,
+	releasePointer,
+} from '../../.storybook/gestures'
 import { expectScreenshot } from '../../.storybook/screenshot'
 import { expectTargets } from '../../.storybook/target-size'
 
@@ -190,5 +195,38 @@ export const Compact = {
 		// @spec components/infrastructure/fan/web/global/design-tokens "Compact button"
 		expectTargets(canvasElement, '.button')
 		await expectScreenshot(canvasElement, 'button-compact')
+	},
+} satisfies Story
+
+/**
+ * A real press on a button drawn as a link (the discover call to action):
+ * the state layer rises to 10 % and the corners square from 12 px to the
+ * Material 3 Expressive pressed 8 px; nothing scales. Released, both go back.
+ */
+export const PressedShape = {
+	render: () =>
+		defineAureliaStory({
+			template: `<div style="padding:1rem"><a href="#discover" class="[ button ] [ state-layer ]" data-testid="discover-link" onclick="event.preventDefault()">発見する</a></div>`,
+		}),
+	play: async ({ canvasElement }) => {
+		const cta = canvasElement.querySelector<HTMLElement>('a.button')
+		if (!cta) throw new Error('no button')
+		const layer = () =>
+			Number.parseFloat(getComputedStyle(cta, '::before').opacity)
+		const radius = () => getComputedStyle(cta).borderTopLeftRadius
+		await expect(radius()).toBe('12px')
+		await expect(layer()).toBe(0)
+		// @spec components/infrastructure/fan/web/global/app-shell "Pressing a control shows the state layer and shape change"
+		if (!(await pressAndHold('a.button'))) return
+		try {
+			await waitFor(() => expect(layer()).toBeCloseTo(0.1, 5))
+			// The Material 3 Expressive pressed shape: the corners square to 8px.
+			await waitFor(() => expect(radius()).toBe('8px'))
+			await expect(getComputedStyle(cta).transform).toBe('none')
+		} finally {
+			await releasePointer()
+			await parkPointerAway()
+		}
+		await waitFor(() => expect(radius()).toBe('12px'))
 	},
 } satisfies Story

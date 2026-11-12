@@ -3,7 +3,12 @@ import {
 	type Meta,
 	type StoryObj,
 } from '@aurelia/storybook'
-import { expect, within } from 'storybook/test'
+import { expect, waitFor, within } from 'storybook/test'
+import {
+	parkPointerAway,
+	pressAndHold,
+	releasePointer,
+} from '../../../.storybook/gestures'
 import { artistHue } from '../../adapter/view/artist-color'
 import type { Concert, JourneyStatus, LaneType } from '../../entities/concert'
 import { EventCard } from './event-card'
@@ -217,5 +222,56 @@ export const FirstPartyPurchased = {
 		const canvas = within(canvasElement)
 		await expect(canvas.getByTestId('purchased-badge')).toBeInTheDocument()
 		await expect(canvas.queryByTestId('journey-badge')).toBeNull()
+	},
+} satisfies Story
+
+/**
+ * A real press on a card: the shared state layer rises to 10 % over it, and
+ * nothing scales or changes shape; the layout box, which the pointer
+ * hit-tests against, stays at least 48 px and does not move. Released, the
+ * layer goes. Tagged `reduced-motion`: under reduced motion the layer has no
+ * transition time and is there at the first read.
+ */
+export const Pressed = {
+	tags: ['reduced-motion'],
+	render: () => cardStory(makeEvent({ matched: true }), 'home'),
+	play: async ({ canvasElement, globals }) => {
+		const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches
+		if (import.meta.env.MODE === 'test') {
+			await expect(reduce).toBe(globals.reducedMotion)
+		}
+		const card = canvasElement.querySelector<HTMLElement>('[data-live-card]')
+		if (!card) throw new Error('card not rendered')
+		const layer = () =>
+			Number.parseFloat(getComputedStyle(card, '::before').opacity)
+		const radius = () => getComputedStyle(card).borderTopLeftRadius
+		const layoutSize = () => ({ w: card.offsetWidth, h: card.offsetHeight })
+		const rest = layoutSize()
+		const restRadius = radius()
+
+		// @spec components/infrastructure/fan/web/global/app-shell "Hit target is preserved during the shape change"
+		await expect(Math.min(rest.w, rest.h)).toBeGreaterThanOrEqual(48)
+		await expect(layer()).toBe(0)
+		if (!(await pressAndHold('[data-live-card]'))) return
+		try {
+			// @spec components/infrastructure/fan/web/global/app-shell "Pressing a control shows the state layer and shape change"
+			// @spec components/infrastructure/fan/web/global/app-shell "Reduced motion still acknowledges"
+			if (reduce) {
+				// No animation to wait for: the state layer is there on the first read.
+				await expect(
+					getComputedStyle(card, '::before').transitionDuration,
+				).toBe('0s')
+				await expect(layer()).toBeGreaterThan(0)
+			}
+			await waitFor(() => expect(layer()).toBeCloseTo(0.1, 5))
+			// Material 3 scales no pressed card, and a card keeps its shape.
+			await expect(getComputedStyle(card).transform).toBe('none')
+			await expect(radius()).toBe(restRadius)
+			await expect(layoutSize()).toEqual(rest)
+		} finally {
+			await releasePointer()
+			await parkPointerAway()
+		}
+		await waitFor(() => expect(layer()).toBe(0))
 	},
 } satisfies Story

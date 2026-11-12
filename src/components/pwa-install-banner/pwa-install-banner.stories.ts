@@ -6,15 +6,18 @@ import {
 import { Registration } from 'aurelia'
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test'
 import {
+	atEveryPhoneWidthAndLanguage,
 	expectBannerMessage,
 	expectBannerMotion,
 	expectBannerOffset,
 	expectBannerSurface,
 	expectCompactFilledButton,
+	expectFitsOneLine,
 	expectOneRow,
 } from '../../../.storybook/bottom-banner'
 import { BusyOnClickCustomAttribute } from '../../custom-attributes/busy-on-click'
 import { IAnalyticsService } from '../../lib/analytics/analytics-service'
+import en from '../../locales/en/translation.json'
 import ja from '../../locales/ja/translation.json'
 import { IPwaInstallService } from '../../services/pwa-install-service'
 import { PwaInstallBanner } from './pwa-install-banner'
@@ -66,6 +69,43 @@ export const Hidden = {
 			canvasElement.querySelector('pwa-install-banner .bottom-banner'),
 		).toBe(null)
 		await expect(within(canvasElement).queryAllByRole('button')).toHaveLength(0)
+	},
+} satisfies Story
+
+/**
+ * The banner's one row at the phone widths in both languages: the message and
+ * the button each on one line, nothing clipped, and the English copy. Kept
+ * before Visible, which ends with a modal <dialog> open (see Hidden).
+ */
+export const FitsOneLineAtEveryPhoneWidth = {
+	render: () =>
+		defineAureliaStory({
+			template: '<pwa-install-banner></pwa-install-banner>',
+			register: [PwaInstallBanner, BusyOnClickCustomAttribute],
+			items: [
+				Registration.instance(IPwaInstallService, mockPwaInstall()),
+				Registration.instance(IAnalyticsService, noAnalytics),
+			],
+		}),
+	play: async ({ canvasElement }) => {
+		const host = canvasElement.querySelector<HTMLElement>('pwa-install-banner')
+		const message = canvasElement.querySelector<HTMLElement>(
+			'pwa-install-banner .bottom-banner-message',
+		)
+		const action = canvasElement.querySelector<HTMLElement>(
+			'pwa-install-banner .bottom-banner-action',
+		)
+		if (!host || !message || !action) throw new Error('no banner')
+		// @spec components/infrastructure/fan/web/global/pwa-install-banner "Message and button fit one line"
+		// @spec components/infrastructure/fan/web/global/pwa-install-banner "PWA install prompt displays localized text"
+		await atEveryPhoneWidthAndLanguage(host, async (language) => {
+			await expectFitsOneLine(message, action)
+			const t = language === 'en' ? en.pwaInstallBanner : ja.pwaInstallBanner
+			await expect(message.textContent).toBe(t.label)
+			await expect(action.textContent?.trim()).toBe(t.cta)
+		})
+		await expect(en.pwaInstallBanner.label).toBe('Get new show alerts!')
+		await expect(en.pwaInstallBanner.cta).toBe('Install')
 	},
 } satisfies Story
 

@@ -52,3 +52,19 @@ export async function hoverPointer(element: Element): Promise<boolean> {
 	await userEvent.hover(element)
 	return true
 }
+
+/** A real mouse click on `element`: it takes focus without keyboard focus-visible. */
+export async function clickPointer(element: Element): Promise<boolean> {
+	if (import.meta.env.MODE !== 'test') return false
+	const { userEvent } = await import('vitest/browser')
+	await userEvent.click(element)
+	return true
+}
+
+/** Moves the real pointer to the page's top-left corner, over no control. */
+export async function parkPointerAway(): Promise<boolean> {
+	if (import.meta.env.MODE !== 'test') return false
+	const { commands } = await import('vitest/browser')
+	await commands.parkPointer()
+	return true
+}
