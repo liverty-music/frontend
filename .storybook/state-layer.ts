@@ -1,5 +1,11 @@
 import { expect, waitFor } from 'storybook/test'
-import { hoverPointer, pressAndHold, releasePointer } from './gestures'
+import {
+	clickPointer,
+	hoverPointer,
+	parkPointerAway,
+	pressAndHold,
+	releasePointer,
+} from './gestures'
 
 /**
  * The shared state layer (`shared/styles/state-layer.css`), checked the same
@@ -22,6 +28,15 @@ export const STATE_LAYER_SAMPLES = `
 			style="padding:12px 16px; border:1px solid currentcolor; border-radius:12px; background:transparent">Bare</button>
 	</div>
 `
+
+/** Alpha of a computed colour (`oklab(… / 0.08)`, `rgba(0, 0, 0, 0)`, …). */
+export function alphaOf(color: string): number {
+	const slash = color.match(/\/\s*([\d.]+)\s*\)$/)
+	if (slash) return Number(slash[1])
+	const rgba = color.match(/^rgba\((?:[^,]+,){3}\s*([\d.]+)\)$/)
+	if (rgba) return Number(rgba[1])
+	return 1
+}
 
 /** Opacity of the state layer on `el`. */
 export const layerOpacity = (el: Element): number =>
@@ -53,6 +68,21 @@ export async function expectHover(root: ParentNode): Promise<void> {
 	const el = sample(root, 'hover')
 	if (!(await hoverPointer(el))) return
 	await waitFor(() => expect(layerOpacity(el)).toBeCloseTo(0.08, 5))
+	// The layer is the content colour over the control, not a new fill.
+	expect(alphaOf(getComputedStyle(el).backgroundColor)).toBe(0)
+	// The value is the shared system token, not a literal of the fan app.
+	expect(
+		Number(
+			getComputedStyle(document.documentElement)
+				.getPropertyValue('--md-sys-state-hover-opacity')
+				.trim(),
+		),
+	).toBe(0.08)
+	// A bare control draws no layer and no fill under the pointer.
+	const bare = sample(root, 'bare')
+	await hoverPointer(bare)
+	expect(getComputedStyle(bare, '::before').content).toBe('none')
+	expect(alphaOf(getComputedStyle(bare).backgroundColor)).toBe(0)
 	const disabled = sample(root, 'disabled')
 	await hoverPointer(disabled)
 	await waitFor(() => expect(layerOpacity(el)).toBe(0))
@@ -70,6 +100,13 @@ export async function expectKeyboardFocus(root: ParentNode): Promise<void> {
 	// the sample has focus. Only while Vitest runs the story.
 	if (import.meta.env.MODE !== 'test') return
 	const { userEvent } = await import('vitest/browser')
+	// A mouse click focuses the button but leaves no layer once the pointer has
+	// moved away (`:focus-visible` does not match a click).
+	const clicked = sample(root, 'hover')
+	await clickPointer(clicked)
+	await parkPointerAway()
+	await expect(active()).toBe(clicked)
+	await waitFor(() => expect(layerOpacity(clicked)).toBe(0))
 	for (let i = 0; i < 20 && active() !== focus; i++) {
 		await userEvent.keyboard('{Tab}')
 	}
@@ -91,5 +128,6 @@ export async function expectPress(
 	} finally {
 		await releasePointer()
 	}
-	await waitFor(() => expect(layerOpacity(el)).toBeLessThan(0.1))
+	// The pointer is still over the control: back to the hover layer.
+	await waitFor(() => expect(layerOpacity(el)).toBeCloseTo(0.08, 5))
 }

@@ -3,8 +3,10 @@ import {
 	type Meta,
 	type StoryObj,
 } from '@aurelia/storybook'
-import { expect } from 'storybook/test'
+import { expect, waitFor } from 'storybook/test'
+import { hoverPointer } from '../../.storybook/gestures'
 import {
+	alphaOf,
 	expectHover,
 	expectKeyboardFocus,
 	expectPress,
@@ -43,8 +45,7 @@ export const Hovered = {
 export const KeyboardFocused = {
 	render: () => defineAureliaStory({ template: STATE_LAYER_SAMPLES }),
 	play: async ({ canvasElement }) => {
-		// The mouse half of design-tokens "Keyboard focus uses focus-visible" is
-		// checked in e2e/functional/state-layers.spec.ts.
+		// @spec components/infrastructure/fan/web/global/design-tokens "Keyboard focus uses focus-visible"
 		await expectKeyboardFocus(canvasElement)
 	},
 } satisfies Story
@@ -98,5 +99,49 @@ export const BusyButton = {
 		await expect(
 			getComputedStyle(button).getPropertyValue('-webkit-text-fill-color'),
 		).toBe('rgba(0, 0, 0, 0)')
+	},
+} satisfies Story
+
+/**
+ * A selected control keeps its 12 % selected layer at rest and under the
+ * pointer, with the 8 % hover layer drawn over it.
+ */
+export const SelectedStacksWithHover = {
+	render: () =>
+		defineAureliaStory({
+			template: `<div style="padding:16px; color:oklch(98% 0 0deg); background:oklch(20% 0.04 275deg)"><button type="button" class="state-layer" data-selected-morph aria-pressed="true" data-sample="selected">Selected</button></div>`,
+		}),
+	play: async ({ canvasElement }) => {
+		// @spec components/infrastructure/fan/web/global/design-tokens "Selected state persists and stacks"
+		const el = canvasElement.querySelector<HTMLElement>('button')
+		if (!el) throw new Error('no button')
+		await expect(alphaOf(getComputedStyle(el).backgroundColor)).toBeCloseTo(
+			0.12,
+			5,
+		)
+		await expect(layerOpacity(el)).toBe(0)
+		if (!(await hoverPointer(el))) return
+		// The selected layer stays and the hover layer is drawn over it.
+		await waitFor(() => expect(layerOpacity(el)).toBeCloseTo(0.08, 5))
+		await expect(alphaOf(getComputedStyle(el).backgroundColor)).toBeCloseTo(
+			0.12,
+			5,
+		)
+	},
+} satisfies Story
+
+/** A leaving element accelerates: the accelerate easing token's curve. */
+export const LeavingAccelerates = {
+	render: () =>
+		defineAureliaStory({
+			template: `<span style="transition: opacity var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-emphasized-accelerate)">Leaving</span>`,
+		}),
+	play: async ({ canvasElement }) => {
+		// @spec components/infrastructure/fan/web/global/design-tokens "Leaving element accelerates"
+		const el = canvasElement.querySelector('span')
+		if (!el) throw new Error('no element')
+		await expect(getComputedStyle(el).transitionTimingFunction).toBe(
+			'cubic-bezier(0.3, 0, 0.8, 0.15)',
+		)
 	},
 } satisfies Story
