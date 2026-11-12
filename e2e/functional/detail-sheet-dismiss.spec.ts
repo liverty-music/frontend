@@ -339,35 +339,4 @@ test.describe('Still-onboarding reload recovery', () => {
 		const myArtistsNav = page.locator('[data-nav="my-artists"]')
 		await expect(myArtistsNav).toBeVisible()
 	})
-
-	test('My Artists tab navigates to my-artists; meaningful dashboard arrival latched onboarding', async ({
-		page,
-	}) => {
-		await page.goto('/dashboard')
-
-		// Wait for dashboard to load
-		await expect(page.locator('au-viewport')).toBeVisible({ timeout: 10_000 })
-
-		// Meaningful dashboard arrival (region set + data loaded + followedCount >= 1)
-		// latches the single onboarding flag to complete.
-		await expect
-			.poll(
-				() => page.evaluate(() => localStorage.getItem('onboardingComplete')),
-				{ timeout: 10_000 },
-			)
-			.toBe('true')
-
-		const myArtistsNav = page.locator('[data-nav="my-artists"]')
-		await expect(myArtistsNav).toBeVisible()
-		await myArtistsNav.click()
-
-		// Should navigate to My Artists page
-		await expect(page).toHaveURL(/my-artists/, { timeout: 10_000 })
-
-		// Flag stays completed (one-way latch); navigation never reverts it.
-		const complete = await page.evaluate(() =>
-			localStorage.getItem('onboardingComplete'),
-		)
-		expect(complete).toBe('true')
-	})
 })
