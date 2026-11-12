@@ -107,6 +107,8 @@ export async function expectKeyboardFocus(root: ParentNode): Promise<void> {
 	await parkPointerAway()
 	await expect(active()).toBe(clicked)
 	await waitFor(() => expect(layerOpacity(clicked)).toBe(0))
+	// No keyboard ring either.
+	expect(getComputedStyle(clicked).outlineStyle).toBe('none')
 	for (let i = 0; i < 20 && active() !== focus; i++) {
 		await userEvent.keyboard('{Tab}')
 	}

@@ -6,7 +6,8 @@ import { expect, type Page, test } from '../support/test'
  * One keyboard focus ring in both apps: a real keyboard tabs through a real
  * screen, and every element that takes focus shows the shared ring (3 px, in
  * the app's ring colour, 2 px outside the element). A pointer click shows
- * none. The ring colour reaches 3:1 against every surface tier.
+ * none. The pointer-click half and the ring colour's 3:1 against every
+ * surface tier are checked in stories and unit tests.
  *
  * A few controls draw the ring for something else, and are where the ring
  * is looked for: a field around its input, a chip around its hidden
@@ -128,62 +129,6 @@ function expectSharedRing(rings: Ring[]): void {
 	expect(outside / rings.length).toBeGreaterThan(0.5)
 }
 
-/** WCAG contrast of the ring colour against each surface tier the app defines. */
-function ringContrastOnSurfaces(page: Page): Promise<Record<string, number>> {
-	return page.evaluate(() => {
-		const rgb = (value: string): [number, number, number] => {
-			const probe = document.createElement('span')
-			probe.style.color = value
-			document.body.append(probe)
-			const ctx = document.createElement('canvas').getContext('2d')
-			if (!ctx) throw new Error('no 2d context')
-			ctx.fillStyle = getComputedStyle(probe).color
-			probe.remove()
-			ctx.fillRect(0, 0, 1, 1)
-			const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data
-			return [r, g, b]
-		}
-		const lum = (c: [number, number, number]) => {
-			const [r, g, b] = c.map((v) => {
-				const s = v / 255
-				return s <= 0.04045 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4
-			})
-			return 0.2126 * r + 0.7152 * g + 0.0722 * b
-		}
-		const ratio = (a: string, b: string) => {
-			const [hi, lo] = [lum(rgb(a)), lum(rgb(b))].sort((x, y) => y - x)
-			return (hi + 0.05) / (lo + 0.05)
-		}
-		const root = getComputedStyle(document.documentElement)
-		const out: Record<string, number> = {}
-		for (const tier of [
-			'surface',
-			'surface-container-lowest',
-			'surface-container-low',
-			'surface-container',
-			'surface-container-high',
-			'surface-container-highest',
-		]) {
-			if (root.getPropertyValue(`--md-sys-color-${tier}`).trim() === '')
-				continue
-			out[tier] = ratio(
-				'var(--md-sys-color-focus-indicator)',
-				`var(--md-sys-color-${tier})`,
-			)
-		}
-		return out
-	})
-}
-
-/** A real pointer click on `selector`'s centre. */
-async function click(page: Page, selector: string): Promise<void> {
-	const target = page.locator(selector).first()
-	await target.scrollIntoViewIfNeeded()
-	const box = await target.boundingBox()
-	if (!box) throw new Error(`${selector} not laid out`)
-	await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2)
-}
-
 test.describe('fan app', () => {
 	test.use({ viewport: { width: 390, height: 844 }, locale: 'ja-JP' })
 
@@ -195,30 +140,6 @@ test.describe('fan app', () => {
 
 	test(`@spec ${FAN_TOKENS} "Tabbing through a screen"`, async ({ page }) => {
 		expectSharedRing(await tabThrough(page, 30))
-	})
-
-	test(`@spec ${FAN_TOKENS} "Pointer click"`, async ({ page }) => {
-		const button = 'settings-route .settings-expand'
-		await click(page, button)
-		const style = await page
-			.locator(button)
-			.first()
-			.evaluate((el) => ({
-				focused: el === document.activeElement,
-				outline: getComputedStyle(el).outlineStyle,
-			}))
-		expect(style.focused).toBe(true)
-		expect(style.outline).toBe('none')
-	})
-
-	test('the ring colour reaches 3:1 on every surface tier', async ({
-		page,
-	}) => {
-		const ratios = await ringContrastOnSurfaces(page)
-		expect(Object.keys(ratios).length).toBe(6)
-		for (const [tier, ratio] of Object.entries(ratios)) {
-			expect(ratio, tier).toBeGreaterThanOrEqual(3)
-		}
 	})
 })
 
@@ -237,20 +158,6 @@ test.describe('organizer console', () => {
 				page,
 			}) => {
 				expectSharedRing(await tabThrough(page, 30))
-			})
-
-			test(`@spec ${CONSOLE_TOKENS} "Pointer click" (${scheme})`, async ({
-				page,
-			}) => {
-				// The first button of the page, in its component's shadow root.
-				const target = page.locator('organizer-shell').getByRole('button')
-				const first = target.first()
-				const box = await first.boundingBox()
-				if (!box) throw new Error('no button laid out')
-				await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2)
-				const ring = await focusedRing(page)
-				expect(ring?.focused).toMatch(/^button/)
-				expect(ring?.style).toBe('none')
 			})
 		})
 	}

@@ -299,6 +299,7 @@ export const PointerClick = {
 	render: () => defineAureliaStory({ template: stateTemplate }),
 	play: async ({ canvasElement }) => {
 		// @spec components/infrastructure/organizer/web/global/action-feedback "Pointer click"
+		// @spec components/infrastructure/organizer/web/global/design-tokens "Pointer click"
 		const save = canvasElement.querySelector<HTMLElement>(
 			'[data-testid="save"]',
 		)

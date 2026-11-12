@@ -4,6 +4,7 @@ import {
 	type StoryObj,
 } from '@aurelia/storybook'
 import { expect, waitFor } from 'storybook/test'
+import { composite, contrast, resolveColor } from '../../.storybook/contrast'
 import { hoverPointer } from '../../.storybook/gestures'
 import {
 	alphaOf,
@@ -46,6 +47,7 @@ export const KeyboardFocused = {
 	render: () => defineAureliaStory({ template: STATE_LAYER_SAMPLES }),
 	play: async ({ canvasElement }) => {
 		// @spec components/infrastructure/fan/web/global/design-tokens "Keyboard focus uses focus-visible"
+		// @spec components/infrastructure/fan/web/global/design-tokens "Pointer click"
 		await expectKeyboardFocus(canvasElement)
 	},
 } satisfies Story
@@ -143,5 +145,30 @@ export const LeavingAccelerates = {
 		await expect(getComputedStyle(el).transitionTimingFunction).toBe(
 			'cubic-bezier(0.3, 0, 0.8, 0.15)',
 		)
+	},
+} satisfies Story
+
+/** The focus ring colour reaches 3:1 against every surface tier of the app. */
+export const FocusRingContrast = {
+	render: () => defineAureliaStory({ template: '<div></div>' }),
+	play: async ({ canvasElement }) => {
+		const host = canvasElement
+		const ring = composite(
+			resolveColor(host, 'var(--md-sys-color-focus-indicator)'),
+		)
+		const tiers = [
+			'surface',
+			'surface-container-lowest',
+			'surface-container-low',
+			'surface-container',
+			'surface-container-high',
+			'surface-container-highest',
+		]
+		for (const tier of tiers) {
+			const surface = composite(
+				resolveColor(host, `var(--md-sys-color-${tier})`),
+			)
+			await expect(contrast(ring, surface), tier).toBeGreaterThanOrEqual(3)
+		}
 	},
 } satisfies Story
