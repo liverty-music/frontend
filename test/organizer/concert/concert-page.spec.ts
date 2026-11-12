@@ -306,7 +306,7 @@ describe('concert page', () => {
 			await m.fixture.tearDown()
 		})
 
-		it(`@spec components/infrastructure/organizer/web/route/concerts "Another Artist's concert"`, async () => {
+		it('is not found under an Artist who does not perform in it', async () => {
 			// Under Band B the concert of Band A is not found, though the
 			// Organizer has it.
 			const m = await mount({ artist: 'a-2' })
