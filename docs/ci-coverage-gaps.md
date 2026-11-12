@@ -46,7 +46,7 @@ named control.
 |---|---|---|
 | `playwright.config.mjs` | `functional`, `webkit-repro`, `chromium-control` | `ci.yaml` → `e2e` job |
 | `playwright.config.mjs` | `smoke`, `onboarding` | `ci.yaml` → `smoke` job |
-| `playwright.pwa.config.mjs` | `pwa` | `ci.yaml` → `e2e` job, "Run PWA tests" |
+| `playwright.pwa.config.mjs` | `pwa` | `ci.yaml` → `prod-build` job, "Run PWA tests" |
 | `playwright.smoke.config.mjs` | `post-deploy` | `push-image.yaml`, against the deployed URL |
 
 ## Known gaps
