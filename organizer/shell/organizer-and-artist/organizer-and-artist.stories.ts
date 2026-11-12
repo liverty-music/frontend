@@ -32,11 +32,11 @@ const artist = (id: string, name: string) => ({
 })
 
 /** The console context with `names` as the represented Artists, the first worked on. */
-const contextOf = (names: string[]) => {
+const contextOf = (names: string[], organizerName = 'XX Records') => {
 	const artists = names.map((name, i) => artist(`a-${i + 1}`, name))
 	return {
 		organizerId: 'org-1',
-		organizerName: 'XX Records',
+		organizerName,
 		artists,
 		artist: artists[0],
 		artistId: 'a-1',
@@ -45,7 +45,11 @@ const contextOf = (names: string[]) => {
 
 /** The window width the bar's container query reads (`shell`). */
 const render =
-	(names: string[], windowWidth: number): Story['render'] =>
+	(
+		names: string[],
+		windowWidth: number,
+		organizerName?: string,
+	): Story['render'] =>
 	(args) =>
 		defineAureliaStory({
 			template: `
@@ -55,7 +59,9 @@ const render =
 			`,
 			props: args,
 			register: [OrganizerAndArtist, ArtistMenu],
-			items: [Registration.instance(IConsoleContext, contextOf(names))],
+			items: [
+				Registration.instance(IConsoleContext, contextOf(names, organizerName)),
+			],
 		})
 
 /** One Artist on a compact window: the two names stacked, the Artist named only. */
@@ -98,5 +104,29 @@ export const CompactBelowDestination = {
 		const context = canvasElement.querySelector<HTMLElement>('.context')
 		if (!context) throw new Error('names not rendered')
 		await expect(getComputedStyle(context).maxInlineSize).toBe('45%')
+	},
+} satisfies Story
+
+/** Compact: names too long for the bar shorten instead of widening it. */
+export const LongNames = {
+	render: render(
+		['とても長い名前のアーティスト'.repeat(3)],
+		390,
+		'とても長い名前のレコード会社株式会社'.repeat(3),
+	),
+	play: async ({ canvasElement }) => {
+		const bar = canvasElement.querySelector<HTMLElement>('[style*="container"]')
+		const context = canvasElement.querySelector<HTMLElement>('.context')
+		if (!bar || !context) throw new Error('names not rendered')
+		// The bar does not scroll sideways and the names stay inside it.
+		await expect(bar.scrollWidth - bar.clientWidth).toBe(0)
+		await expect(context.getBoundingClientRect().right).toBeLessThanOrEqual(
+			bar.getBoundingClientRect().right,
+		)
+		// The names are cut with an ellipsis rather than wrapped.
+		const name = canvasElement.querySelector<HTMLElement>('.organizer-name')
+		if (!name) throw new Error('organizer name not rendered')
+		await expect(getComputedStyle(name).textOverflow).toBe('ellipsis')
+		await expect(name.scrollWidth).toBeGreaterThan(name.clientWidth)
 	},
 } satisfies Story
