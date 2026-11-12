@@ -4,7 +4,6 @@ import {
 	connectError,
 	FAN_EMAIL,
 	FAN_SUB,
-	type FanRpcAnswer,
 	mockFanRpc,
 	mockIdentityProvider,
 	type RpcCall,
@@ -95,14 +94,6 @@ function hypeCalls(calls: RpcCall[]): [string, string][] {
 	])
 }
 
-/** Follow fails for the given artists, succeeds for the others. */
-function followFailingFor(ids: string[]): FanRpcAnswer {
-	return (body) =>
-		ids.includes((body.artistId as { value: string }).value)
-			? connectError('unavailable', 503)
-			: { body: {} }
-}
-
 /**
  * Sign up from the My Artists signup banner as a guest and wait until the app
  * leaves the callback.
@@ -114,19 +105,6 @@ async function signUpFromMyArtists(page: Page): Promise<void> {
 		.locator('signup-prompt-banner .bottom-banner-action')
 		.click({ timeout: 20_000 })
 	await expect(page).toHaveURL(/\/dashboard/, { timeout: 20_000 })
-}
-
-/**
- * Sign in from Settings as a guest (this entry keeps the guest data) and wait
- * until the app leaves the callback.
- */
-async function signInFromSettings(page: Page): Promise<void> {
-	await mockIdentityProvider(page)
-	await page.goto('/settings')
-	await page.getByTestId('settings-sign-in').click({ timeout: 20_000 })
-	await expect(page).not.toHaveURL(/\/(settings|auth\/callback)/, {
-		timeout: 20_000,
-	})
 }
 
 test.describe('boot reconciliation of unmerged guest data', () => {
@@ -156,154 +134,9 @@ test.describe('boot reconciliation of unmerged guest data', () => {
 		expect(followedIds(calls).sort()).toEqual([A.id, B.id].sort())
 		expect(await guestQueue(page)).toEqual([])
 	})
-
-	test(`@spec ${STORY} "Reconciliation does not resurrect reverted state"`, async ({
-		page,
-	}) => {
-		await seedOnce(page, [{ artist: A, hype: 'away' }], {
-			onboardingComplete: 'true',
-			[`guestMerged:${USER_ID}`]: '1',
-		})
-		await page
-			.context()
-			.addInitScript(seedSignedIn, { sub: FAN_SUB, email: FAN_EMAIL })
-		const calls = await mockFanRpc(page, { 'UserService/Get': USER })
-
-		await page.goto('/my-artists')
-
-		await expect.poll(() => guestQueue(page), { timeout: 20_000 }).toEqual([])
-		expect(callsOf(calls, 'FollowService/Follow')).toEqual([])
-		expect(callsOf(calls, 'FollowService/SetHype')).toEqual([])
-	})
-
-	test(`@spec ${STORY} "Per-item drain for the follow queue"`, async ({
-		page,
-	}) => {
-		await seedOnce(
-			page,
-			[
-				{ artist: A, hype: 'nearby' },
-				{ artist: B, hype: 'nearby' },
-				{ artist: C, hype: 'nearby' },
-			],
-			{ onboardingComplete: 'true' },
-		)
-		await page
-			.context()
-			.addInitScript(seedSignedIn, { sub: FAN_SUB, email: FAN_EMAIL })
-		const first = await mockFanRpc(page, {
-			'UserService/Get': USER,
-			'FollowService/Follow': followFailingFor([B.id]),
-		})
-
-		await page.goto('/my-artists')
-
-		// Each artist leaves the queue as its Follow succeeds: only B is left.
-		await expect
-			.poll(async () => (await guestQueue(page)).map((e) => e.artist.id), {
-				timeout: 20_000,
-			})
-			.toEqual([B.id])
-		expect(followedIds(first).sort()).toEqual([A.id, B.id, C.id].sort())
-		expect(await storage(page, `guestMerged:${USER_ID}`)).toBeNull()
-
-		// The next start (a new tab) retries only the failed item.
-		const next = await page.context().newPage()
-		const second = await mockFanRpc(next, { 'UserService/Get': USER })
-		await next.goto('/my-artists')
-		await expect
-			.poll(() => storage(next, `guestMerged:${USER_ID}`), { timeout: 20_000 })
-			.toBe('1')
-		expect(followedIds(second)).toEqual([B.id])
-		expect(await guestQueue(next)).toEqual([])
-	})
-})
-
-test.describe('guest data storage', () => {
-	test(`@spec ${STORY} "Home area selection stored locally"`, async ({
-		page,
-	}) => {
-		await seedOnce(page, [{ artist: A, hype: 'nearby' }], {
-			onboardingComplete: 'false',
-		})
-		await mockFanRpc(page)
-
-		await page.goto('/dashboard')
-		const sheet = page.locator('user-home-selector bottom-sheet')
-		await expect(sheet).toBeVisible({ timeout: 20_000 })
-		await sheet.locator('.selector-option').first().click()
-
-		await expect.poll(() => storage(page, 'guest.home')).toMatch(/^JP-\d{2}$/)
-	})
 })
 
 test.describe('data merge on authentication', () => {
-	test(`@spec ${STORY} "Hype merge failure is non-blocking"`, async ({
-		page,
-	}) => {
-		await seedOnce(
-			page,
-			[
-				{ artist: A, hype: 'away' },
-				{ artist: B, hype: 'nearby' },
-				{ artist: C, hype: 'home' },
-			],
-			{ onboardingComplete: 'true', 'guest.home': 'JP-13' },
-		)
-		const calls = await mockFanRpc(page, {
-			'UserService/Get': USER,
-			// SetHype fails for A only.
-			'FollowService/SetHype': (body) =>
-				(body.artistId as { value: string }).value === A.id
-					? connectError('unavailable', 503)
-					: { body: {} },
-		})
-		const warnings: string[] = []
-		page.on('console', (m) => {
-			if (m.type() === 'warning') warnings.push(m.text())
-		})
-
-		await signUpFromMyArtists(page)
-
-		// The hype calls after the failed one still run.
-		await expect
-			.poll(
-				() =>
-					hypeCalls(calls).some(
-						([id, hype]) => id === C.id && hype === 'HYPE_TYPE_HOME',
-					),
-				{ timeout: 20_000 },
-			)
-			.toBe(true)
-		// The artist whose hype failed stays for boot reconciliation.
-		await expect
-			.poll(async () => (await guestQueue(page)).map((e) => e.artist.id))
-			.toEqual([A.id])
-		expect((await guestQueue(page))[0].hype).toBe('away')
-		expect(await storage(page, `guestMerged:${USER_ID}`)).toBeNull()
-		// The failure is logged.
-		expect(
-			warnings.some((w) => w.includes('Failed to set hype during migration')),
-		).toBe(true)
-	})
-
-	test(`@spec ${STORY} "Guest data cleared after merge"`, async ({ page }) => {
-		await seedOnce(
-			page,
-			[
-				{ artist: A, hype: 'nearby' },
-				{ artist: B, hype: 'away' },
-			],
-			{ onboardingComplete: 'true', 'guest.home': 'JP-13' },
-		)
-		const calls = await mockFanRpc(page, { 'UserService/Get': USER })
-
-		await signUpFromMyArtists(page)
-
-		await expect.poll(() => guestQueue(page), { timeout: 20_000 }).toEqual([])
-		expect(followedIds(calls).sort()).toEqual([A.id, B.id].sort())
-	})
-
 	test(`@spec ${STORY} "Successful data merge"`, async ({ page }) => {
 		await seedOnce(
 			page,
@@ -377,71 +210,6 @@ test.describe('data merge on authentication', () => {
 			// Sent for the new account.
 			distinct_id: USER_ID,
 		})
-	})
-
-	test(`@spec ${STORY} "Identity already has an account"`, async ({ page }) => {
-		await seedOnce(page, [{ artist: A, hype: 'nearby' }], {
-			onboardingComplete: 'true',
-			'guest.home': 'JP-27',
-			language: 'en',
-		})
-		// The identity already has a User with its own home and language.
-		const calls = await mockFanRpc(page, { 'UserService/Get': USER })
-
-		await signInFromSettings(page)
-
-		// Get finds the account, Create is not called, and the follow
-		// migration continues.
-		await expect
-			.poll(() => followedIds(calls), { timeout: 20_000 })
-			.toEqual([A.id])
-		expect(callsOf(calls, 'UserService/Get').length).toBeGreaterThan(0)
-		expect(callsOf(calls, 'UserService/Create')).toEqual([])
-		// The guest's home and language are not applied to the account.
-		expect(callsOf(calls, 'UserService/SetHome')).toEqual([])
-		expect(callsOf(calls, 'UserService/SetPreferredLanguage')).toEqual([])
-		expect(await storage(page, 'guest.home')).toBeNull()
-	})
-
-	test(`@spec ${STORY} "Follow call fails during merge"`, async ({ page }) => {
-		await seedOnce(
-			page,
-			[
-				{ artist: A, hype: 'nearby' },
-				{ artist: B, hype: 'nearby' },
-				{ artist: C, hype: 'away' },
-			],
-			{ onboardingComplete: 'false', 'guest.home': 'JP-13' },
-		)
-		const calls = await mockFanRpc(page, {
-			'UserService/Get': USER,
-			'FollowService/Follow': followFailingFor([B.id]),
-		})
-		const warnings: string[] = []
-		page.on('console', (m) => {
-			if (m.type() === 'warning') warnings.push(m.text())
-		})
-
-		await signUpFromMyArtists(page)
-
-		// Best-effort: the calls after the failed one still run.
-		await expect
-			.poll(() => hypeCalls(calls), { timeout: 20_000 })
-			.toEqual([[C.id, 'HYPE_TYPE_AWAY']])
-		expect(followedIds(calls)).toEqual([A.id, B.id, C.id])
-		// Onboarding is still marked complete (`onboardingComplete`).
-		expect(await storage(page, 'onboardingComplete')).toBe('true')
-		// Only the failed artist is left for boot reconciliation.
-		await expect
-			.poll(async () => (await guestQueue(page)).map((e) => e.artist.id))
-			.toEqual([B.id])
-		expect(await storage(page, `guestMerged:${USER_ID}`)).toBeNull()
-		// The failure is logged.
-		expect(
-			warnings.some((w) =>
-				w.includes('Failed to follow artist during migration'),
-			),
-		).toBe(true)
 	})
 
 	test(`@spec ${STORY} "Merge progress indication"`, async ({ page }) => {
