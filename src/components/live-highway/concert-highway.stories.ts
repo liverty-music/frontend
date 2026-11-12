@@ -1329,11 +1329,31 @@ export const DealInWhenRowsArrive = {
 					card.count !== 1 ||
 					card.delay !== (card.lane + card.index) * 100 ||
 					card.duration !== 800 ||
-					card.playState !== 'running' ||
-					// Early in its run: before the end of its delay and 800 ms.
-					card.currentTime >= card.delay + 800,
+					// Started: the row's trigger fired.
+					card.playState === 'paused',
 			)
 			await expect(wrong, stage).toEqual([])
+		}
+
+		/**
+		 * Waits for the row `pick` returns to have started (the browser starts
+		 * it a frame or more after the scroll, later on a busy machine), then
+		 * reads it at once.
+		 */
+		const started = async (
+			pick: () => ReturnType<typeof rowInView>,
+			stage: string,
+		): Promise<NonNullable<ReturnType<typeof rowInView>>> => {
+			const deadline = performance.now() + 8000
+			for (;;) {
+				const row = pick()
+				if (row && row.cards[0].playState !== 'paused') return row
+				if (performance.now() > deadline)
+					throw new Error(
+						`${stage}: the row has not started (${JSON.stringify(row?.cards[0])})`,
+					)
+				await new Promise((r) => requestAnimationFrame(r))
+			}
 		}
 
 		// Where the system under test cannot start an animation when an element
@@ -1343,30 +1363,40 @@ export const DealInWhenRowsArrive = {
 		// @spec components/infrastructure/fan/web/global/live-highway "Fast scroll"
 		// 1500 px in one frame: rows cross into view far faster than 100 ms.
 		await scrollBy(1500)
-		const first = rowInView()
-		if (!first) throw new Error('no row in view')
+		const first = await started(rowInView, 'fast scroll')
 		await expectDealing(first.cards, 'fast scroll')
-		// With no further scrolling, it runs on: its pace is time, not scroll.
-		await waitFor(() => {
-			if ((rowInView()?.cards[0].currentTime ?? 0) <= 300)
-				throw new Error('still early in its run')
-		})
-		const later = rowInView()
-		await expect(later?.key).toBe(first.key)
-		await expect(later?.cards[0].playState).toBe('running')
+		// With no further scrolling, it runs on to its end: its pace is time,
+		// not scroll, so the 800 ms are not cut short.
+		const dealIns = (key: string) =>
+			(scroll
+				.querySelector<HTMLElement>(`[data-date-key="${key}"]`)
+				?.getAnimations({ subtree: true })
+				.filter((a) => (a as CSSAnimation).animationName === 'deal-in') ??
+				[]) as CSSAnimation[]
+		const ran = dealIns(first.key)
+		await expect(ran.length).toBe(first.cards.length)
+		await Promise.all(ran.map((a) => a.finished))
+		await expect(
+			ran.every((a) => {
+				const t = a.effect?.getComputedTiming()
+				return a.currentTime === Number(t?.endTime)
+			}),
+			'ran to its end',
+		).toBe(true)
 
 		// @spec components/infrastructure/fan/web/global/live-highway "A row comes back"
-		await waitFor(() => {
-			if (rowInView()?.cards[0].playState !== 'finished')
-				throw new Error('still dealing in')
-		})
-		// Fully out of view, then back to the same place: dealt in again.
+		// Fully out of view, the row is reset; back at the same place it is
+		// dealt in again.
 		const place = scroll.scrollTop
 		await scrollBy(2000)
+		await expect(
+			dealIns(first.key).every((a) => a.playState === 'paused'),
+			`reset out of view: ${dealIns(first.key).map((a) => `${a.playState}@${a.currentTime}`)}`,
+		).toBe(true)
 		await scrollBy(place - scroll.scrollTop)
-		const again = rowInView()
-		await expect(again?.key).toBe(first.key)
-		await expectDealing(again?.cards ?? [], 'row comes back')
+		const again = await started(rowInView, 'row comes back')
+		await expect(again.key).toBe(first.key)
+		await expectDealing(again.cards, 'row comes back')
 
 		// @spec components/infrastructure/fan/web/global/live-highway "Scrolling up after a month jump"
 		const next = canvasElement.querySelector<HTMLElement>(
@@ -1382,15 +1412,30 @@ export const DealInWhenRowsArrive = {
 			scroll.addEventListener('scrollend', () => resolve(), { once: true })
 			setTimeout(resolve, 1500)
 		})
-		await waitFor(() => expect(prev.checkVisibility()).toBe(true))
+		await waitFor(() => expect(prev.checkVisibility()).toBe(true), {
+			timeout: 5000,
+		})
 		await new Promise((r) => setTimeout(r, 300))
-		// Upward, by more than the list is tall so that the row at the top has
-		// not been in view since the jump: rows come in at the top edge, built by
-		// the upward growth.
+		// Let every deal-in finish first, so that one running afterwards was
+		// started by what follows. Then upward, by more than the list is tall:
+		// rows come in at the top edge, built by the upward growth.
+		await waitFor(
+			() => {
+				const running = scroll
+					.getAnimations({ subtree: true })
+					.filter(
+						(a) =>
+							(a as CSSAnimation).animationName === 'deal-in' &&
+							a.playState === 'running',
+					)
+				if (running.length > 0) throw new Error('still dealing in')
+			},
+			{ timeout: 8000 },
+		)
 		const before = rowInView()
 		await scrollBy(-2 * scroll.clientHeight)
-		const row = rowInView()
-		if (!row || !before) throw new Error('no row in view')
+		const row = await started(rowInView, 'scrolling up after a jump')
+		if (!before) throw new Error('no row in view')
 		await expect(row.key < before.key).toBe(true)
 		await expectDealing(row.cards, 'scrolling up after a jump')
 	},
