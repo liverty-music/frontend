@@ -1,4 +1,4 @@
-.PHONY: lint lint-brand-vocabulary lint-boundaries lint-route-loading lint-no-style lint-no-class-ternary lint-no-data-interpolation lint-no-bind-ternary lint-no-div-popover lint-no-div-role-status lint-templates fix test check verify-bundle-isolation verify-reception-bundle
+.PHONY: lint pre-commit lint-brand-vocabulary lint-boundaries lint-route-loading lint-no-style lint-no-class-ternary lint-no-data-interpolation lint-no-bind-ternary lint-no-div-popover lint-no-div-role-status lint-templates fix test check verify-bundle-isolation verify-reception-bundle
 
 ## lint: biome lint + format check + stylelint + typecheck + brand-vocabulary + import-boundaries + route-loading + e2e-coverage (matches CI)
 lint: lint-brand-vocabulary lint-boundaries lint-route-loading lint-e2e-coverage
@@ -16,6 +16,12 @@ lint: lint-brand-vocabulary lint-boundaries lint-route-loading lint-e2e-coverage
 	# (ES2020) and so need a later target than the apps' ES2017.
 	node ./node_modules/typescript/bin/tsc --noEmit
 	node ./node_modules/typescript/bin/tsc --noEmit -p e2e
+
+## pre-commit: what the commit hook (~/.claude/hooks/pre-commit-check.js) runs:
+## the lint of `make lint` and the unit specs named after the changed files
+## (scripts/pre-commit.sh). CI runs `make lint` and `make test` on everything.
+pre-commit:
+	scripts/pre-commit.sh
 
 ## lint-boundaries: enforce src/ <-> admin/ <-> organizer/ <-> reception/ isolation (only shared/ crosses)
 lint-boundaries:
