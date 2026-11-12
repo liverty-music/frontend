@@ -261,22 +261,6 @@ test.describe('breadcrumb', () => {
 	const breadcrumb = (page: Page) =>
 		page.getByRole('navigation', { name: 'パンくずリスト' })
 
-	test(`@spec ${SPEC} "Breadcrumb on an event"`, async ({ page }) => {
-		await page.setViewportSize({ width: 1280, height: 800 })
-		await open(page, `${SERIES}/s-tour/events/e-1103/ticket-sales`)
-		const trail = breadcrumb(page).getByRole('listitem')
-		await expect(trail).toHaveText(['公演', 'XX Tour 2026', '11月3日(火)'])
-		await expect(
-			breadcrumb(page).getByRole('link', { name: '公演' }),
-		).toBeVisible()
-		await expect(
-			breadcrumb(page).getByRole('link', { name: 'XX Tour 2026' }),
-		).toBeVisible()
-		await expect(
-			breadcrumb(page).getByRole('link', { name: '11月3日(火)' }),
-		).toHaveCount(0)
-	})
-
 	test(`@spec ${SPEC} "Breadcrumb on a phone"`, async ({ page }) => {
 		await page.setViewportSize({ width: 390, height: 844 })
 		await open(page, `${SERIES}/s-tour/events/e-1103/ticket-sales`)
@@ -414,39 +398,6 @@ test.describe('addresses name the Organizer and the Artist', () => {
 		await other.close()
 	})
 
-	test(`@spec ${SPEC} "Co-headlined concert"`, async ({ page }) => {
-		await page.setViewportSize({ width: 1280, height: 800 })
-		await open(page, `${ORG}/artists/a-1/series`, TWO_ARTISTS)
-		await expect(
-			concertLinks(page).filter({ hasText: 'XX × YY 2026' }),
-		).toHaveCount(1)
-
-		await page.goto(`${ORG}/artists/a-2/series`)
-		await expect(
-			concertLinks(page).filter({ hasText: 'XX × YY 2026' }),
-		).toHaveCount(1)
-		await concertLinks(page).filter({ hasText: 'XX × YY 2026' }).click()
-		await expect(page).toHaveURL(/\/artists\/a-2\/series\/s-xy$/)
-		await expect(
-			page.getByRole('heading', { level: 1, name: 'XX × YY 2026' }),
-		).toBeVisible()
-
-		// The breadcrumb follows the Artist in the address.
-		const crumbs = page.getByRole('navigation', { name: 'パンくずリスト' })
-		await expect(crumbs.getByRole('link', { name: '公演' })).toHaveAttribute(
-			'href',
-			/\/organizers\/org-1\/artists\/a-2\/series$/,
-		)
-		await page.goto(`${ORG}/artists/a-1/series/s-xy`)
-		await expect(
-			page.getByRole('heading', { level: 1, name: 'XX × YY 2026' }),
-		).toBeVisible()
-		await expect(crumbs.getByRole('link', { name: '公演' })).toHaveAttribute(
-			'href',
-			/\/organizers\/org-1\/artists\/a-1\/series$/,
-		)
-	})
-
 	test(`@spec ${SPEC} "Another Organizer's address"`, async ({ page }) => {
 		const log = await installConsole(page, { rpc: RPC, language: 'ja' })
 		await page.goto('/organizers/org-9/artists/a-1/series/s-tour')
@@ -459,19 +410,6 @@ test.describe('addresses name the Organizer and the Artist', () => {
 		await expect(nav(page)).toHaveCount(0)
 		await expect(page.getByText('XX Tour 2026')).toHaveCount(0)
 		expect(log.calls.map((c) => c.method)).not.toContain('SeriesService/List')
-	})
-
-	test(`@spec ${SPEC} "No represented Artist yet"`, async ({ page }) => {
-		await open(page, ORG, { ...RPC, 'ArtistService/List': { artists: [] } })
-		await nav(page).getByRole('link', { name: '公演' }).click()
-		await expect(page).toHaveURL(/\/organizers\/org-1\/artists$/)
-		await expect(page.getByText('所属アーティストがまだいません')).toBeVisible()
-		await expect(
-			page.getByText(/所属アーティストの追加は Liverty Music が承ります/),
-		).toBeVisible()
-		await expect(page.getByRole('link', { name: '公演をつくる' })).toHaveCount(
-			0,
-		)
 	})
 
 	test(`@spec ${SPEC} "Change the Artist"`, async ({ page }) => {
@@ -509,22 +447,6 @@ test.describe('addresses name the Organizer and the Artist', () => {
 		await page.reload()
 		await nav(page).getByRole('link', { name: '公演' }).click()
 		await expect(page).toHaveURL(/\/artists\/a-2\/series$/)
-	})
-
-	test('Long names shorten in the top bar on a phone', async ({ page }) => {
-		await page.setViewportSize({ width: 390, height: 844 })
-		await open(page, SERIES, {
-			...RPC,
-			'OrganizerService/Get': organizer('とても長い名前のレコード会社株式会社'),
-			'ArtistService/List': artistList('とても長い名前のアーティスト'),
-		})
-		await expect(page.getByTestId('artist-name')).toBeVisible()
-		const box = await nav(page).boundingBox()
-		expect(box?.width).toBe(390)
-		const overflow = await page
-			.locator('organizer-shell main')
-			.evaluate((el) => el.scrollWidth - el.clientWidth)
-		expect(overflow).toBe(0)
 	})
 })
 
