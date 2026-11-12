@@ -20,7 +20,7 @@ fi
 # Playwright spec (about 24 s), so it runs only when a spec or the Playwright
 # configuration changes.
 make --no-print-directory lint-brand-vocabulary lint-boundaries lint-route-loading
-if grep -qE '^(e2e/|playwright[^/]*\.ts$|scripts/verify-e2e-coverage)' <<<"$changed"; then
+if grep -qE '^(e2e/|playwright[^/]*\.config\.mjs$|scripts/verify-e2e-coverage)' <<<"$changed"; then
 	make --no-print-directory lint-e2e-coverage
 fi
 npx biome lint src admin organizer reception shared test e2e
@@ -39,9 +39,10 @@ fi
 # Otherwise the specs whose path contains the name of a changed source file:
 # Vitest filters match a substring of the spec path, so `artist-mapper` selects
 # both src/**/artist-mapper.spec.ts and test/**/artist-mapper.spec.ts. A
-# component's .ts, .html and .css share one name.
+# component's .ts, .html and .css share one name, and scripts/<name>.lib.ts is
+# tested by scripts/<name>.spec.ts.
 names=$(grep -E '^(src|admin|organizer|reception|shared|scripts|test|stylelint-plugin-cube-css)/.*\.(ts|js|html|css)$' <<<"$changed" |
-	sed -E 's#.*/##; s/\.(spec|test|node\.spec)\.(ts|js)$//; s/\.(ts|js|html|css)$//' | sort -u || true)
+	sed -E 's#.*/##; s/\.(spec|test|node\.spec)\.(ts|js)$//; s/\.(ts|js|html|css)$//; s/\.lib$//' | sort -u || true)
 if [ -z "$names" ]; then
 	exit 0
 fi
