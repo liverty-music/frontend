@@ -5,15 +5,12 @@ import { expect, type Page, test } from '../support/test'
 test.describe.configure({ timeout: 60_000 })
 
 /**
- * The persistent bottom banners on real screens: the install banner's cue
- * starting again on each route, and the snack's action keeping the
- * on-container variant (the banners take the filled one). The banners' one-row
- * fit at every phone width and their copy are stories
- * (`FitsOneLineAtEveryPhoneWidth`).
+ * The install banner's attention cue starting again on each route, on a real
+ * screen. The banners' one-row fit at every phone width, their copy and the
+ * snack action's variant are checked in stories.
  */
 
 const INSTALL = 'components/infrastructure/fan/web/global/pwa-install-banner'
-const UI = 'components/infrastructure/fan/web/global/ui-primitives'
 
 type Language = 'ja' | 'en'
 
@@ -69,40 +66,5 @@ test.describe('the install banner cue on each route', () => {
 		for (const time of await cueTimes(page)) {
 			expect(time).toBeLessThan(5_000)
 		}
-	})
-})
-
-test.describe('the snack bar action', () => {
-	test.use({ viewport: { width: 375, height: 780 } })
-
-	test(`@spec ${UI} "Button on a coloured surface"`, async ({ page }) => {
-		await openInstallBanner(page, 'ja')
-		await page.waitForFunction(
-			() =>
-				typeof (window as unknown as Record<string, unknown>)
-					.__lm_publishSnack === 'function',
-		)
-		await page.evaluate(() => {
-			const publish = (window as unknown as Record<string, unknown>)
-				.__lm_publishSnack as (
-				m: string,
-				s: string,
-				d: number,
-				o: object,
-			) => void
-			publish('新しいバージョンがあります', 'info', 60_000, {
-				actionLabel: '更新',
-			})
-		})
-		const action = page.locator('.snack-item:popover-open .snack-action-btn')
-		await expect(action).toHaveAttribute('data-variant', 'on-container')
-		const border = await action.evaluate((el) =>
-			Number.parseFloat(getComputedStyle(el).borderTopWidth),
-		)
-		expect(border).toBeGreaterThanOrEqual(1.5)
-		// The banner's own action stays the filled button.
-		await expect(page.locator(INSTALL_BANNER.action)).not.toHaveAttribute(
-			'data-variant',
-		)
 	})
 })

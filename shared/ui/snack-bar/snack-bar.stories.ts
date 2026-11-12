@@ -18,6 +18,7 @@ import {
 	swipeSideways,
 } from '../../../.storybook/gestures'
 import { expectScreenshot } from '../../../.storybook/screenshot'
+import { atWidth } from '../../../.storybook/viewport'
 import { Snack, type SnackSeverity } from './snack'
 import { SnackBar } from './snack-bar'
 
@@ -236,6 +237,7 @@ export const UpdateAction = {
 		const style = getComputedStyle(action)
 
 		// @spec components/infrastructure/fan/web/global/snack-bar "Action button appears in the on-container style"
+		// @spec components/infrastructure/fan/web/global/ui-primitives "Button on a coloured surface"
 		await expect(
 			Number.parseFloat(style.borderTopWidth),
 		).toBeGreaterThanOrEqual(1.5)
@@ -282,7 +284,17 @@ export const UpdateAction = {
 		// @spec components/infrastructure/fan/web/global/ui-primitives "Compact button on a snack bar"
 		// The compact size (the Material 3 extra-small button): 32px tall with
 		// the default button's label and a 48px tap target, so the message
-		// keeps the row (the e2e checks one line at 360px).
+		// keeps the row, on one line at 360px.
+		await atWidth(360, async () => {
+			const message = canvasElement.querySelector('.snack-message')
+			if (!message) throw new Error('no message')
+			const range = document.createRange()
+			range.selectNodeContents(message)
+			const lines = new Set(
+				[...range.getClientRects()].map((r) => Math.round(r.top)),
+			).size
+			await expect(lines).toBe(1)
+		})
 		await expect(action.dataset.size).toBe('compact')
 		await expect(action.getBoundingClientRect().height).toBe(32)
 		await expect(
@@ -531,5 +543,108 @@ export const SwipeUpdateSnack = {
 		})
 		await expect(record.dismissals).toBe(1)
 		await expect(record.actions).toBe(0)
+	},
+} satisfies Story
+
+/**
+ * The vertical offset and opacity at both ends of a snack's transform and
+ * opacity transitions, read the moment the phase starts.
+ */
+function transitionEnds(item: HTMLElement) {
+	const ends = (property: string) => {
+		const t = item
+			.getAnimations()
+			.find((a) => (a as CSSTransition).transitionProperty === property)
+		const frames = (t?.effect as KeyframeEffect | null)?.getKeyframes() ?? []
+		if (frames.length < 2) throw new Error(`no ${property} transition`)
+		return [frames[0][property], frames[frames.length - 1][property]]
+	}
+	const transform = ends('transform')
+	const opacity = ends('opacity')
+	return {
+		fromY: new DOMMatrix(String(transform[0])).m42,
+		toY: new DOMMatrix(String(transform[1])).m42,
+		fromOpacity: Number(opacity[0]),
+		toOpacity: Number(opacity[1]),
+	}
+}
+
+/**
+ * A snack rises from 1rem below its place into place, fading in, and sinks
+ * back to 1rem below, fading out. Not tagged `reduced-motion`: with motion
+ * reduced there is no travel to read.
+ */
+export const RisesAndSinks = {
+	render: demo(),
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement)
+		// @spec components/infrastructure/fan/web/global/snack-bar "CSS entry animation"
+		const opened = new Promise<HTMLElement>((resolve) => {
+			const poll = () => {
+				const el = canvasElement.querySelector<HTMLElement>(
+					'.snack-item:popover-open',
+				)
+				if (el && el.getAnimations().length > 0) resolve(el)
+				else requestAnimationFrame(poll)
+			}
+			poll()
+		})
+		await userEvent.click(canvas.getByRole('button', { name: 'Show snack' }))
+		const item = await opened
+		const enter = transitionEnds(item)
+		// Rises from 1rem below its place into place, fading in.
+		await expect(enter.fromY).toBeCloseTo(16, 0)
+		await expect(enter.toY).toBeCloseTo(0, 0)
+		await expect(enter.fromOpacity).toBe(0)
+		await expect(enter.toOpacity).toBe(1)
+
+		// @spec components/infrastructure/fan/web/global/snack-bar "CSS exit animation"
+		// Let the entry finish, then close the popover (what a dismiss calls)
+		// and read the exit in the same task.
+		await settled(item)
+		item.hidePopover()
+		const exit = transitionEnds(item)
+		// Sinks from its place to 1rem below, fading out.
+		await expect(exit.fromY).toBeCloseTo(0, 0)
+		await expect(exit.toY).toBeCloseTo(16, 0)
+		await expect(exit.fromOpacity).toBe(1)
+		await expect(exit.toOpacity).toBe(0)
+	},
+} satisfies Story
+
+/**
+ * A snack shown while a modal `<dialog>` is open appears above it: both are in
+ * the top layer, and the later entry is on top, with no manual re-insertion.
+ */
+export const AboveOpenDialog = {
+	render: demo(),
+	play: async ({ canvasElement }) => {
+		// @spec components/infrastructure/fan/web/global/snack-bar "Top Layer stacking with dialogs"
+		const canvas = within(canvasElement)
+		const show = canvas.getByRole('button', { name: 'Show snack' })
+		const dialog = document.createElement('dialog')
+		dialog.style.cssText =
+			'width:80%;height:50%;background:rgba(0,0,0,0.8);color:white;'
+		dialog.textContent = 'Test Dialog'
+		document.body.append(dialog)
+		try {
+			dialog.showModal()
+			await expect(dialog.matches(':modal')).toBe(true)
+			// The modal makes the page inert; publish from the button directly.
+			show.click()
+			const { item } = await openSnack(canvasElement)
+			await settled(item)
+			const box = item.getBoundingClientRect()
+			await expect(box.width).toBeGreaterThan(0)
+			await expect(box.height).toBeGreaterThan(0)
+			// Open in the top layer next to the modal dialog (`elementFromPoint`
+			// is unreliable across top-layer entries in headless Chromium).
+			await expect(item.matches(':popover-open')).toBe(true)
+			// The snack did not close the dialog.
+			await expect(dialog.open).toBe(true)
+		} finally {
+			dialog.close()
+			dialog.remove()
+		}
 	},
 } satisfies Story
