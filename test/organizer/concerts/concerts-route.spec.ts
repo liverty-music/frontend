@@ -1,80 +1,78 @@
-import { IRouter } from '@aurelia/router'
 import { tasksSettled } from '@aurelia/runtime'
 import { createFixture } from '@aurelia/testing'
-import { ArtistSchema } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/artist_pb.js'
 import { OrganizerSchema } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/organizer_pb.js'
-import { PublishState } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
 import { create } from '@bufbuild/protobuf'
-import { timestampFromDate } from '@bufbuild/protobuf/wkt'
+import { Code, ConnectError } from '@connectrpc/connect'
 import { CustomElement, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ConcertRoute } from '../../../organizer/concert/concert-route'
 import { ConcertsRoute } from '../../../organizer/concerts/concerts-route'
 import { ConsoleI18nConfiguration } from '../../../organizer/i18n/console-language'
+import { ConsoleFormatters } from '../../../organizer/i18n/converters'
 import { IArtistClient } from '../../../organizer/services/artist-client'
+import { IClock } from '../../../organizer/services/clock'
 import { IOrganizerClient } from '../../../organizer/services/organizer-client'
-import { ISeatTypeClient } from '../../../organizer/services/seat-type-client'
 import { ISeriesClient } from '../../../organizer/services/series-client'
 import { ITicketSaleClient } from '../../../organizer/services/ticket-sale-client'
-import { ITicketStockClient } from '../../../organizer/services/ticket-stock-client'
-import { IBreadcrumbs } from '../../../organizer/shell/breadcrumbs'
 import { IConsoleContext } from '../../../organizer/shell/console-context'
-import { authoredSeries } from '../authored-series'
+import { ConsoleUi } from '../../../organizer/ui'
+import {
+	artistsNamed,
+	authored,
+	type ConcertSpec,
+	NO_SALES,
+	openLottery,
+	XX_SOLO,
+	XX_TOUR,
+} from '../concert-fixtures'
+import { controlNamed, deepAll, deepText } from '../console-dom'
 
-const SPEC = 'components/infrastructure/organizer/web/global/organizer-shell'
+/**
+ * The concerts of a represented Artist as the member reads them: the real
+ * route and list components, with the series, sales, organizer and artist
+ * clients faked. The window's width (list or table) is a CSS container query
+ * that jsdom does not compute, so both forms are in the DOM here and the
+ * switch is checked in `e2e/functional/organizer-concerts.spec.ts`.
+ */
 
-const BAND_A = { id: { value: 'a-1' }, name: { value: 'Band A' } }
-const BAND_B = { id: { value: 'a-2' }, name: { value: 'Band B' } }
+const SPEC = 'components/infrastructure/organizer/web/route/concerts'
 
-const at = (day: string, time: string) =>
-	timestampFromDate(new Date(`${day}T${time}:00+09:00`))
+/** 2026-10-28 10:00 JST. */
+const NOW = new Date('2026-10-28T10:00:00+09:00').getTime()
 
-/** XX × YY 2026: Band A and Band B, both represented, perform. */
-const XX_YY = authoredSeries({
-	series: { id: { value: 's-xy' }, title: { value: 'XX × YY 2026' } },
-	performers: [BAND_A, BAND_B],
-	events: [
-		{
-			id: { value: 'e-xy' },
-			localDate: { value: { year: 2026, month: 11, day: 21 } },
-			startTime: { value: at('2026-11-21', '17:00') },
-			publishState: PublishState.PUBLISHED,
-		},
-	],
-})
-/** Band A's own tour. */
-const XX_TOUR = authoredSeries({
-	series: { id: { value: 's-tour' }, title: { value: 'XX Tour 2026' } },
-	performers: [BAND_A],
-	events: [
-		{
-			id: { value: 'e-1103' },
-			localDate: { value: { year: 2026, month: 11, day: 3 } },
-			startTime: { value: at('2026-11-03', '18:00') },
-			publishState: PublishState.PUBLISHED,
-		},
-	],
-})
 /** Only Band B performs in YY Live. */
-const YY_LIVE = authoredSeries({
-	series: { id: { value: 's-yy' }, title: { value: 'YY Live' } },
-	performers: [BAND_B],
-	events: [
-		{
-			id: { value: 'e-yy' },
-			localDate: { value: { year: 2026, month: 12, day: 1 } },
-			startTime: { value: at('2026-12-01', '19:00') },
-			publishState: PublishState.DRAFT,
-		},
-	],
-})
+const YY_LIVE: ConcertSpec = {
+	id: 's-yy',
+	title: 'YY Live',
+	performers: [{ id: 'a-2', name: 'Band B' }],
+	events: [{ id: 'e-yy', date: '2026-12-01', start: '19:00', venue: 'O-EAST' }],
+}
 
-/** The clients every screen below reads, answering for XX Records. */
-function clients(
-	artists: Array<typeof BAND_A>,
-	concerts = [XX_TOUR, XX_YY, YY_LIVE],
+async function mount(
+	opts: {
+		concerts?: ConcertSpec[]
+		list?: ReturnType<typeof vi.fn>
+		artist?: string
+		artists?: string[]
+	} = {},
 ) {
-	return [
+	const list =
+		opts.list ??
+		vi
+			.fn()
+			.mockResolvedValue((opts.concerts ?? [XX_TOUR, XX_SOLO]).map(authored))
+	const fixture = createFixture('<concerts-route></concerts-route>', class {}, [
+		ConsoleI18nConfiguration,
+		...ConsoleFormatters,
+		...ConsoleUi,
+		ConcertsRoute,
+		Registration.instance(ISeriesClient, { list }),
+		Registration.instance(ITicketSaleClient, {
+			// XX Tour's first date has a lottery open now; the others have no sale.
+			listByEvent: vi.fn(async (eventId: string) =>
+				eventId === 'e-1103' ? openLottery(eventId) : NO_SALES,
+			),
+		}),
+		Registration.instance(IClock, { now: () => NOW }),
 		Registration.instance(IOrganizerClient, {
 			get: vi.fn().mockResolvedValue(
 				create(OrganizerSchema, {
@@ -86,25 +84,31 @@ function clients(
 		Registration.instance(IArtistClient, {
 			list: vi
 				.fn()
-				.mockResolvedValue(artists.map((a) => create(ArtistSchema, a))),
+				.mockResolvedValue(artistsNamed(...(opts.artists ?? ['Band A']))),
 		}),
-		Registration.instance(ISeriesClient, {
-			list: vi.fn().mockResolvedValue(concerts),
-		}),
-		Registration.instance(ITicketSaleClient, {
-			listByEvent: vi.fn().mockResolvedValue([]),
-		}),
-		Registration.instance(ITicketStockClient, {
-			listByEvent: vi.fn().mockResolvedValue({ ticketStocks: [] }),
-		}),
-		Registration.instance(ISeatTypeClient, {
-			listBySeries: vi.fn().mockResolvedValue([]),
-		}),
-		Registration.instance(IRouter, { load: vi.fn() }),
-	]
+	])
+	await fixture.startPromise
+	const host = fixture.appHost.querySelector('concerts-route') as HTMLElement
+	const vm = CustomElement.for<ConcertsRoute>(host).viewModel
+	const context = fixture.container.get(IConsoleContext)
+	await context.load()
+	context.follow({
+		organizerId: 'org-1',
+		artistId: opts.artist ?? 'a-1',
+	})
+	vm.loading({ artistId: opts.artist ?? 'a-1' })
+	await vm.load()
+	// The sale states are read after the list shows.
+	if (vm.rows.length) {
+		await vi.waitFor(() => expect(vm.rows[0].cells.sale).toBeDefined())
+	}
+	await tasksSettled()
+	const items = () => deepAll(host, 'list-item')
+	const table = () => host.querySelector('data-list') as HTMLElement
+	return { fixture, host, vm, list, items, table }
 }
 
-describe('concerts under an Artist', () => {
+describe('concerts of an Artist', () => {
 	beforeEach(() => {
 		localStorage.clear()
 		vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['ja-JP', 'ja'])
@@ -114,106 +118,124 @@ describe('concerts under an Artist', () => {
 		vi.restoreAllMocks()
 	})
 
-	/** The concerts of the Artist in the address, as the page lists them. */
-	async function concertsOf(artistId: string) {
-		const fixture = createFixture(
-			'<concerts-route></concerts-route>',
-			class {},
-			[ConsoleI18nConfiguration, ConcertsRoute, ...clients([BAND_A, BAND_B])],
+	it(`@spec ${SPEC} "Phone"`, async () => {
+		const { fixture, items } = await mount()
+
+		expect(items()).toHaveLength(2)
+		const [tour, solo] = items()
+		// Each concert is one link: the whole item, with nothing else inside.
+		expect(deepAll(tour, 'a')).toHaveLength(1)
+		expect(deepAll(tour, 'button')).toHaveLength(0)
+		expect(deepAll(tour, 'a')[0].getAttribute('href')).toMatch(
+			/\/series\/s-tour$/,
 		)
-		const context = fixture.container.get(IConsoleContext)
-		await context.load()
-		context.follow({ organizerId: 'org-1', artistId })
-		await fixture.startPromise
-		const host = fixture.appHost.querySelector('concerts-route') as Element
-		const vm = CustomElement.for<ConcertsRoute>(host).viewModel
-		vm.loading({ organizerId: 'org-1', artistId })
-		await vm.load()
-		await tasksSettled()
-		const rows = vm.rows.map((row) => ({
-			title: row.cells.title,
-			href: row.href,
-		}))
-		vm.detaching()
-		await fixture.tearDown()
-		return rows
-	}
-
-	/** The breadcrumb the concert page sets, opened under the Artist in the address. */
-	async function crumbsOf(artistId: string) {
-		const set = vi.fn()
-		const fixture = createFixture('<div></div>', class {}, [
-			ConsoleI18nConfiguration,
-			...clients([BAND_A, BAND_B]),
-			Registration.instance(IBreadcrumbs, { set }),
-		])
-		const context = fixture.container.get(IConsoleContext)
-		await context.load()
-		context.follow({ organizerId: 'org-1', artistId })
-		await fixture.startPromise
-		const vm: ConcertRoute = fixture.container.invoke(ConcertRoute)
-		vm.loading({ organizerId: 'org-1', artistId, seriesId: 's-xy' })
-		await vm.load()
-		await tasksSettled()
-		const trail = set.mock.calls.at(-1)?.[0]
-		vm.detaching()
-		await fixture.tearDown()
-		return trail
-	}
-
-	it(`@spec ${SPEC} "Co-headlined concert"`, async () => {
-		// The concert is listed in the concerts of each Artist...
-		const first = await concertsOf('a-1')
-		expect(first.filter((r) => r.title === 'XX × YY 2026')).toHaveLength(1)
-		expect(first.some((r) => r.title === 'YY Live')).toBe(false)
-		const second = await concertsOf('a-2')
-		const shared = second.filter((r) => r.title === 'XX × YY 2026')
-		expect(shared).toHaveLength(1)
-		expect(second.some((r) => r.title === 'XX Tour 2026')).toBe(false)
-		expect(second.some((r) => r.title === 'YY Live')).toBe(true)
-
-		// ...opens under either Artist's address...
-		expect(first.find((r) => r.title === 'XX × YY 2026')?.href).toBe(
-			'/organizers/org-1/artists/a-1/series/s-xy',
+		// Title; first date · venue; sale state; the status at the trailing edge.
+		expect(deepText(tour)).toMatch(
+			/XX Tour 2026.*11月3日\(火\) 他 3公演 · Zepp Haneda 他.*受付中.*公開中/,
 		)
-		expect(shared[0].href).toBe('/organizers/org-1/artists/a-2/series/s-xy')
-
-		// ...and its breadcrumb follows the Artist in the address.
-		expect((await crumbsOf('a-2'))?.[0]).toMatchObject({
-			labelKey: 'shell.nav.concerts',
-			href: '/organizers/org-1/artists/a-2/series',
-		})
-		expect((await crumbsOf('a-1'))?.[0]).toMatchObject({
-			labelKey: 'shell.nav.concerts',
-			href: '/organizers/org-1/artists/a-1/series',
-		})
+		// No duplicate 開く: the item itself opens the concert.
+		expect(controlNamed(tour, '開く')).toBeNull()
+		expect(deepText(solo)).toContain('XX 単独公演')
+		expect(deepText(solo)).toContain('12月20日(日)')
+		expect(deepText(solo)).toContain('Zepp Haneda')
+		expect(deepText(solo)).toContain('販売なし')
+		expect(deepText(solo)).toContain('下書き')
+		await fixture.tearDown()
 	})
 
-	it(`@spec ${SPEC} "No represented Artist yet"`, async () => {
-		const fixture = createFixture(
-			'<concerts-route></concerts-route>',
-			class {},
-			[ConsoleI18nConfiguration, ConcertsRoute, ...clients([])],
+	it(`@spec ${SPEC} "PC"`, async () => {
+		const { fixture, table } = await mount()
+
+		expect(deepAll(table(), 'thead th').map((th) => deepText(th))).toEqual([
+			'公演名',
+			'日程・会場',
+			'販売状態',
+			'状態',
+		])
+		const rows = deepAll(table(), 'tbody tr')
+		expect(rows).toHaveLength(2)
+		expect(deepText(rows[0])).toContain('XX Tour 2026')
+		expect(deepText(rows[0])).toContain('受付中')
+		expect(deepText(rows[1])).toContain('XX 単独公演')
+		expect(deepText(rows[1])).toContain('下書き')
+		// One link per row, to the concert page.
+		expect(deepAll(rows[0], 'a')).toHaveLength(1)
+		expect(deepAll(rows[0], 'a')[0].getAttribute('href')).toMatch(
+			/\/series\/s-tour$/,
 		)
-		await fixture.startPromise
-		const host = fixture.appHost.querySelector('concerts-route') as Element
-		const vm = CustomElement.for<ConcertsRoute>(host).viewModel
-		// 公演 opens this page itself: there is no Artist to forward to.
-		await fixture.container.get(IConsoleContext).load()
-		expect(fixture.container.get(IConsoleContext).concertsHref).toBe(
-			'/organizers/org-1/artists',
+		await fixture.tearDown()
+	})
+
+	it(`@spec ${SPEC} "Tour summary"`, async () => {
+		const { fixture, items } = await mount()
+		expect(deepText(items()[0])).toContain(
+			'11月3日(火) 他 3公演 · Zepp Haneda 他',
 		)
-		expect(await vm.canLoad({ organizerId: 'org-1' })).toBe(true)
-		vm.loading({ organizerId: 'org-1' })
-		await vm.load()
+		await fixture.tearDown()
+	})
+
+	it(`@spec ${SPEC} "Another Artist's concert"`, async () => {
+		const concerts = [XX_TOUR, XX_SOLO, YY_LIVE]
+		const bandA = await mount({ concerts, artists: ['Band A', 'Band B'] })
+		expect(bandA.items()).toHaveLength(2)
+		expect(deepText(bandA.host)).not.toContain('YY Live')
+		await bandA.fixture.tearDown()
+
+		const bandB = await mount({
+			concerts,
+			artists: ['Band A', 'Band B'],
+			artist: 'a-2',
+		})
+		expect(bandB.items()).toHaveLength(1)
+		expect(deepText(bandB.items()[0])).toContain('YY Live')
+		await bandB.fixture.tearDown()
+	})
+
+	it(`@spec ${SPEC} "Create from an Artist"`, async () => {
+		// Band B, the second Artist by name: the address names it, so the link
+		// is not the default Artist's.
+		const { fixture, host } = await mount({
+			artists: ['Band A', 'Band B'],
+			artist: 'a-2',
+		})
+
+		const create = deepAll(host, 'a').filter(
+			(a) => deepText(a) === '公演をつくる',
+		)
+		expect(create.map((a) => a.getAttribute('href'))).toEqual([
+			'/organizers/org-1/artists/a-2/series/new',
+		])
+		await fixture.tearDown()
+	})
+
+	it(`@spec ${SPEC} "First visit"`, async () => {
+		const { fixture, host } = await mount({ concerts: [] })
 		await tasksSettled()
 
-		const text = host.textContent ?? ''
-		expect(text).toContain('所属アーティストがまだいません')
-		expect(text).toContain('所属アーティストの追加は Liverty Music が承ります')
-		expect(text).not.toContain('公演をつくる')
-		expect(host.querySelector('extended-fab')).toBeNull()
-		vm.detaching()
+		expect(deepText(host)).toContain('まだ公演がありません。')
+		// The screen's one floating action opens the editor.
+		const create = deepAll(host, 'a').filter(
+			(a) => deepText(a) === '公演をつくる',
+		)
+		expect(create).toHaveLength(1)
+		expect(create[0].getAttribute('href')).toMatch(/\/series\/new$/)
+		expect(host.querySelector('extended-fab')).not.toBeNull()
+		await fixture.tearDown()
+	})
+
+	it(`@spec ${SPEC} "Load fails"`, async () => {
+		const list = vi
+			.fn()
+			.mockRejectedValue(new ConnectError('backend down', Code.Unavailable))
+		const { fixture, host } = await mount({ list })
+
+		const alert = host.querySelector('[role="alert"]') as HTMLElement
+		expect(deepText(alert)).toContain('公演を読み込めませんでした。')
+		const reads = list.mock.calls.length
+		controlNamed(alert, '再試行')?.click()
+		await vi.waitFor(() =>
+			expect(list.mock.calls.length).toBeGreaterThan(reads),
+		)
 		await fixture.tearDown()
 	})
 })

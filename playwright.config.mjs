@@ -7,6 +7,9 @@ import { APP_ORIGIN, E2E_PORT } from './e2e/support/app-origin.ts'
  */
 // require('dotenv').config();
 
+/** `E2E_SERVER=preview` runs the suite against a build instead of the dev server. */
+const preview = process.env.E2E_SERVER === 'preview'
+
 /**
  * See https://playwright.dev/docs/test-configuration.
  */
@@ -228,11 +231,25 @@ export default defineConfig({
      smoke spec runs from a dedicated config (playwright.smoke.config.mjs)
      so it never starts a webServer — this file is for local-dev / CI
      tests only. */
-	webServer: {
-		/* `--strictPort`: if E2E_PORT is taken, vite exits instead of moving to
+	webServer: preview
+		? {
+				/* The app built into `dist/` by
+       `NODE_ENV=development npx vite build` (run it first; CI builds once per
+       job). `NODE_ENV=development` keeps `import.meta.env.DEV` true in the
+       bundle (`--mode development` alone leaves NODE_ENV=production), so
+       dev-only hooks such as `?devPreview=1` stay and the service worker stays
+       unregistered. */
+				command: `npx vite preview --port ${E2E_PORT} --strictPort`,
+				port: E2E_PORT,
+				/* Never reuse: the default port is the one `npm start` listens on, and a
+       dev server found there would be tested in place of the build. */
+				reuseExistingServer: false,
+			}
+		: {
+				/* `--strictPort`: if E2E_PORT is taken, vite exits instead of moving to
        another port that Playwright would never find. */
-		command: `npm start -- --port ${E2E_PORT} --strictPort`,
-		port: E2E_PORT,
-		reuseExistingServer: !process.env.CI,
-	},
+				command: `npm start -- --port ${E2E_PORT} --strictPort`,
+				port: E2E_PORT,
+				reuseExistingServer: !process.env.CI,
+			},
 })

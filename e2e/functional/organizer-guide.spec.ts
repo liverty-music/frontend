@@ -13,9 +13,10 @@ import { expect, type Page, test } from '../support/test'
 /**
  * The members' guide and the console's way to it: the guide page on a phone,
  * and 使い方 in the top bar, which opens the guide at the screen's chapter in a
- * new tab. The guide is served at /guide.html by the organizer image; on the
- * dev server its source is at /organizer/guide/guide.html, so the new tab is
- * answered from that file.
+ * new tab. The guide is served at /guide.html by the organizer image; neither
+ * the dev server nor `vite preview` serves it (it is a static page outside the
+ * Vite build), so every request for /guide.html is answered from its source
+ * file.
  */
 
 const GUIDE_SPEC = 'components/infrastructure/organizer/web/route/guide'
@@ -35,8 +36,7 @@ const RPC: RpcMocks = {
 	'ScannerService/ListByEvent': { scanners: [] },
 }
 
-async function open(page: Page, path: string) {
-	await installConsole(page, { rpc: RPC, language: 'ja' })
+async function serveGuide(page: Page) {
 	await page.context().route('**/guide.html', (route) =>
 		route.fulfill({
 			status: 200,
@@ -44,12 +44,18 @@ async function open(page: Page, path: string) {
 			body: GUIDE,
 		}),
 	)
+}
+
+async function open(page: Page, path: string) {
+	await installConsole(page, { rpc: RPC, language: 'ja' })
+	await serveGuide(page)
 	await page.goto(path)
 }
 
 test(`@spec ${GUIDE_SPEC} "Opened on a phone"`, async ({ page }) => {
 	await page.setViewportSize({ width: 390, height: 844 })
-	await page.goto('/organizer/guide/guide.html')
+	await serveGuide(page)
+	await page.goto('/guide.html')
 	await expect(
 		page.getByRole('heading', { level: 1, name: '主催者コンソールの使い方' }),
 	).toBeVisible()
