@@ -103,7 +103,7 @@
 		"compare-layout": "npx tsx scripts/compare-layout.ts",
 		"licenses:generate": "npx tsx scripts/generate-licenses.ts",
 		"prebuild": "npm run licenses:generate",
-		"test": "vitest run --project=unit --project=scripts",
+		"test": "vitest run --project=unit --project=unit-node --project=scripts",
 		"test:scripts": "vitest run --project=scripts",
 		"test-storybook": "vitest run --project=storybook --project=storybook-reduced-motion --project=storybook-more-contrast",
 		"storybook": "storybook dev -p 6006",

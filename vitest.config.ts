@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { availableParallelism } from 'node:os'
 import { fileURLToPath } from 'node:url'
 import aurelia from '@aurelia/vite-plugin'
@@ -18,37 +19,85 @@ import {
 } from './.storybook/pointer-commands'
 import viteConfig from './vite.config'
 
-// The `unit` project carries the previous single-config jsdom setup verbatim.
-// It merges the app `vite.config.ts` so component `.ts`/`.html` pairs compile
+// The unit specs run as two projects with one setup. `unit` carries the
+// previous single-config jsdom setup verbatim; `unit-node` runs the specs that
+// need no DOM (listed in `test/node-environment-specs.json`, which
+// `scripts/classify-node-specs.mjs` regenerates) in a Node environment, where
+// no jsdom window has to be built per file. A spec that is not listed runs in
+// jsdom, so a new spec needs nothing from its author.
+//
+// Both merge the app `vite.config.ts` so component `.ts`/`.html` pairs compile
 // via the Aurelia plugin and the `plain-date-engine` alias resolves. The app's
 // build-only concerns (VitePWA injectManifest, multi-entry `input`) are inert
 // under jsdom (no browser build runs), so they stay harmless here. The
 // `storybook` browser project (added later) deliberately does NOT merge this
 // config — it composes Storybook's own Vite config via `storybookTest` (D6).
-const unitProject = mergeConfig(
-	viteConfig,
-	defineProject({
-		test: {
-			name: 'unit',
-			environment: 'jsdom',
-			// scripts/ tests run via a dedicated `vitest.scripts.config.ts`
-			// because they import `node:fs` / `node:os` directly and need to
-			// bypass the SPA build's `nodePolyfills` plugin.
-			exclude: [
-				...configDefaults.exclude,
-				'e2e/**',
-				'scripts/**',
-				'test/**/*.node.spec.ts',
-				'stylelint-plugin-cube-css/test/**/*.node.spec.js',
-			],
-			root: fileURLToPath(new URL('./', import.meta.url)),
-			setupFiles: ['./test/setup.ts'],
-			// Stylesheets stay stubbed, except when a test imports one with `?raw`
-			// to read its source (test/shared/m3-sys-tokens.spec.ts).
-			css: { include: [/\.css\?raw$/] },
-		},
-	}),
-)
+//
+// The classifier sets `CLASSIFY_NODE_SPECS=1` to run every unit spec in Node
+// and see which ones pass.
+const classifyingNodeSpecs = process.env.CLASSIFY_NODE_SPECS === '1'
+const nodeSpecs: string[] = classifyingNodeSpecs
+	? []
+	: JSON.parse(
+			readFileSync(
+				fileURLToPath(
+					new URL('./test/node-environment-specs.json', import.meta.url),
+				),
+				'utf8',
+			),
+		)
+
+const unitProjectFor = ({
+	name,
+	environment,
+	include,
+	exclude,
+}: {
+	name: string
+	environment: 'jsdom' | 'node'
+	include?: string[]
+	exclude: string[]
+}) =>
+	mergeConfig(
+		viteConfig,
+		defineProject({
+			test: {
+				name,
+				environment,
+				...(include ? { include } : {}),
+				// scripts/ tests run in the `scripts` project because they import
+				// `node:fs` / `node:os` directly and need to bypass the SPA build's
+				// `nodePolyfills` plugin.
+				exclude: [
+					...configDefaults.exclude,
+					'e2e/**',
+					'scripts/**',
+					'test/**/*.node.spec.ts',
+					'stylelint-plugin-cube-css/test/**/*.node.spec.js',
+					...exclude,
+				],
+				root: fileURLToPath(new URL('./', import.meta.url)),
+				setupFiles: ['./test/setup.ts'],
+				// Stylesheets stay stubbed, except when a test imports one with `?raw`
+				// to read its source (test/shared/m3-sys-tokens.spec.ts).
+				css: { include: [/\.css\?raw$/] },
+			},
+		}),
+	)
+
+const unitProject = unitProjectFor({
+	name: 'unit',
+	environment: classifyingNodeSpecs ? 'node' : 'jsdom',
+	exclude: nodeSpecs,
+})
+
+const unitNodeProject = unitProjectFor({
+	name: 'unit-node',
+	environment: 'node',
+	// An empty `include` would fall back to Vitest's default and run everything.
+	include: nodeSpecs.length > 0 ? nodeSpecs : ['test/.none'],
+	exclude: [],
+})
 
 // The `scripts` project runs the Node-API script tests. It deliberately does
 // NOT merge the app `vite.config.ts`: those tests import `node:fs` / `node:os`
@@ -217,6 +266,7 @@ export default defineConfig({
 			: { maxWorkers: Math.max(1, Math.floor(availableParallelism() / 2)) }),
 		projects: [
 			unitProject,
+			unitNodeProject,
 			scriptsProject,
 			storybookProject,
 			storybookReducedMotionProject,
