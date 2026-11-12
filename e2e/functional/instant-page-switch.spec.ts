@@ -33,16 +33,22 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 /**
  * Give the My Artists route a `canLoad` guard that refuses while
  * `window.__blockMyArtists` is true. No product route refuses a guest, so the
- * guard is appended to the route module the dev server serves; the rest of the
- * app is untouched.
+ * guard is appended to the route module the server serves (the source file on
+ * the dev server, the content-hashed chunk in a build); the rest of the app is
+ * untouched. A build exports the class under a minified local name, read from
+ * its `export{X as MyArtistsRoute}`.
  */
 async function guardMyArtists(page: Page): Promise<void> {
 	await page.route(
-		'**/src/routes/my-artists/my-artists-route.ts*',
+		/\/(src\/routes\/my-artists\/my-artists-route\.ts|assets\/my-artists-route-[^/]+\.js)(\?.*)?$/,
 		async (route) => {
 			const response = await route.fetch()
-			const body = `${await response.text()}
-MyArtistsRoute.prototype.canLoad = function () {
+			const text = await response.text()
+			const local =
+				/export\s*\{[^}]*?([\w$]+) as MyArtistsRoute/.exec(text)?.[1] ??
+				'MyArtistsRoute'
+			const body = `${text}
+;${local}.prototype.canLoad = function () {
 	return window.__blockMyArtists !== true
 }
 `
