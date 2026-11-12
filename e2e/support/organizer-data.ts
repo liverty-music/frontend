@@ -130,14 +130,6 @@ export function payoutAccount(
 	return { payoutAccount: { status: `PAYOUT_ONBOARDING_STATUS_${status}` } }
 }
 
-/** The provider's onboarding page that StartOnboarding answers with. */
-export const ONBOARDING_URL = 'https://connect.example.com/setup/s_1'
-
-/** A StartOnboarding answer. */
-export function onboardingLink(): Json {
-	return { onboardingUrl: { value: ONBOARDING_URL } }
-}
-
 export interface ScannerSpec {
 	id: string
 	number: number
