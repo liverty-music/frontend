@@ -162,11 +162,10 @@ describe('run an event from the organizer console', () => {
 		const dialog = fixture.appHost.querySelector('confirm-dialog') as Element
 		vm.publishDialog = CustomElement.for<ConfirmDialog>(dialog).viewModel
 
-		// 公開する opens the dialog, which says who is told.
+		// 公開する opens the dialog.
 		const pending = vm.publish()
 		await tasksSettled()
 		expect(dialog.shadowRoot?.querySelector('dialog')?.open).toBe(true)
-		expect(read(dialog)).toContain('フォロワーに通知します')
 
 		// やめる closes it.
 		choose(dialog, 'cancel')

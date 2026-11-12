@@ -168,6 +168,45 @@ test.describe('navigation', () => {
 		await expect(page.locator('body')).toHaveText('sign-in')
 	})
 
+	test(`@spec ${SPEC} "Current destination on a deep page"`, async ({
+		page,
+	}) => {
+		await open(page, `${SERIES}/s-tour/events/e-1103/ticket-sales`)
+		await expect(nav(page).getByRole('link', { name: '公演' })).toHaveAttribute(
+			'aria-current',
+			'page',
+		)
+		await expect(
+			nav(page).getByRole('link', { name: 'ホーム' }),
+		).not.toHaveAttribute('aria-current', 'page')
+	})
+
+	test(`@spec ${SPEC} "Product name in Japanese"`, async ({ page }) => {
+		for (const width of [1280, 390]) {
+			await page.setViewportSize({ width, height: 800 })
+			await open(page, ORG)
+			await expect(
+				page.getByRole('heading', { level: 1, name: 'ホーム' }),
+			).toBeVisible()
+			const brand = page
+				.getByRole('banner')
+				.getByRole('link', { name: 'Liverty Music Organizer Console' })
+			await expect(brand).toBeVisible()
+			await expect(brand).toContainText('Liverty Music')
+			await expect(brand).toContainText('Organizer Console')
+			await expect(page).toHaveTitle('ホーム — Organizer Console')
+			// No other or shortened product name anywhere on the page.
+			const text = await page.locator('body').innerText()
+			for (const other of ['Liverty Organizer', '主催者コンソール']) {
+				expect(text, `at ${width} px`).not.toContain(other)
+			}
+			expect(text.replaceAll('Liverty Music', '')).not.toContain('Liverty')
+		}
+		// A deep page names itself first.
+		await page.goto(`${SERIES}/s-tour/events/e-1103/ticket-sales`)
+		await expect(page).toHaveTitle('11月3日(火) — Organizer Console')
+	})
+
 	test(`@spec ${SPEC} "Phone"`, async ({ page }) => {
 		await page.setViewportSize({ width: 390, height: 844 })
 		await open(page, ORG)
