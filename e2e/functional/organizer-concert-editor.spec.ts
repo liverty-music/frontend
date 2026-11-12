@@ -1,12 +1,16 @@
 import {
 	brandColoredControls,
+	chooseTime,
 	installConsole,
 	type RpcLog,
 	type RpcMocks,
 	SERIES,
+	shownTime,
+	timeField,
 } from '../support/organizer'
 import {
 	type ConcertSpec,
+	jst,
 	organizer,
 	seriesList,
 	XX_SOLO,
@@ -104,10 +108,24 @@ async function openEditor(
 
 const titleField = (page: Page) => page.getByLabel('公演名')
 const snackbar = (page: Page) => page.locator('.snack-item')
+const row = (page: Page, index: number) => page.locator(`[data-row="${index}"]`)
 const nav = (page: Page) =>
 	page.getByRole('navigation', { name: 'メインナビゲーション' })
 const calls = (log: RpcLog, method: string) =>
 	log.calls.filter((c) => c.method === method)
+
+interface DraftBody {
+	draft: {
+		title: { value: string }
+		events: Array<{
+			eventId?: { value: string }
+			venueName: { value: string }
+			placeId?: { value: string }
+			startTime?: { value: string }
+			perAccountLimit?: number
+		}>
+	}
+}
 
 test.describe('saving', () => {
 	test(`@spec ${SPEC} "Saved"`, async ({ page }) => {
@@ -282,6 +300,47 @@ test.describe('cover image', () => {
 			)
 			.toBe(NEW_COVER)
 		await expect(page.getByText(PROCESSING)).toHaveCount(0)
+	})
+})
+
+test.describe('times in another time zone', () => {
+	test.use({ timezoneId: 'Europe/London' })
+
+	test(`@spec ${SPEC} "Device in another time zone"`, async ({ page }) => {
+		const untimed: ConcertSpec = {
+			...XX_SOLO,
+			events: [{ ...XX_SOLO.events[0], start: undefined }],
+		}
+		const timed: ConcertSpec = XX_SOLO
+		let saved = false
+		const log = await openEditor(page, `${SERIES}/s-solo/edit`, {
+			'SeriesService/List': () => ({
+				body: seriesList([saved ? timed : untimed]),
+			}),
+			'SeriesService/Update': () => {
+				saved = true
+				return { body: oneSeries(timed) }
+			},
+		})
+		const start = timeField(row(page, 0), '開演')
+		expect(await shownTime(row(page, 0), '開演')).toBe('')
+		await expect(start).toContainText('JST')
+		await chooseTime(row(page, 0), '開演', '18:00')
+		await page.getByRole('button', { name: '保存する' }).click()
+		await expect(snackbar(page)).toContainText('変更を保存しました')
+
+		const body = calls(log, 'SeriesService/Update')[0]
+			.body as unknown as DraftBody
+		const sent = body.draft.events[0].startTime?.value ?? ''
+		// 18:00 JST on 20 December is 09:00 UTC, whatever the device's zone.
+		expect(new Date(sent).toISOString()).toBe(jst('2026-12-20', '18:00'))
+		expect(sent).toMatch(/^2026-12-20T09:00:00(\.0+)?Z$/)
+
+		// Saving returns to the concert page; reopen the editor.
+		await expect(page).toHaveURL(/\/series\/s-solo$/)
+		await page.goto(`${SERIES}/s-solo/edit`)
+		await expect.poll(() => shownTime(row(page, 0), '開演')).toBe('18:00')
+		await expect(row(page, 0).getByLabel('日付')).toHaveValue('2026-12-20')
 	})
 })
 
