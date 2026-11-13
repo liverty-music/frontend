@@ -35,7 +35,7 @@
 		"matter-js": "^0.20.0",
 		"oidc-client-ts": "^3.4.1",
 		"pixi-filters": "6.1.5",
-		"pixi.js": "8.22.0-dev.f7d8c62",
+		"pixi.js": "8.22.0",
 		"posthog-js": "^1.390.2",
 		"web-vitals": "^6.0.1",
 		"workbox-background-sync": "^7.4.0",
