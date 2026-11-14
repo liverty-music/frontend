@@ -66,7 +66,7 @@ import {
  * Run it in the pinned Playwright container with the host network:
  *   docker run --rm --network host -e E2E_RESALE_EVENT_ID=… \
  *     -v "$PWD":/work -w /work \
- *     mcr.microsoft.com/playwright:v1.64.1-noble \
+ *     mcr.microsoft.com/playwright:v1.65.0-noble \
  *     npx playwright test -c playwright.prod.config.mjs resell-a-ticket
  */
 const EVENT_ID = process.env.E2E_RESALE_EVENT_ID ?? ''

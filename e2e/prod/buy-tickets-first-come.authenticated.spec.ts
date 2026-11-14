@@ -62,7 +62,7 @@ import {
  * keeps js.stripe.com reachable from inside it:
  *   docker run --rm --network host -e E2E_SALE_EVENT_ID=… \
  *     -v "$PWD":/work -w /work \
- *     mcr.microsoft.com/playwright:v1.64.1-noble \
+ *     mcr.microsoft.com/playwright:v1.65.0-noble \
  *     npx playwright test -c playwright.prod.config.mjs buy-tickets-first-come
  *
  * What a browser cannot see is checked separately against production:
