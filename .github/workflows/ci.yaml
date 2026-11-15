@@ -179,7 +179,7 @@ jobs:
   smoke:
     needs: changes
     if: needs.changes.outputs.src == 'true'
-    name: Smoke
+    name: Smoke and phone E2E
     runs-on: ubuntu-latest
     timeout-minutes: 15
     # Runs in the pinned official Playwright image, as the Storybook job does:
@@ -221,6 +221,27 @@ jobs:
         run: npx playwright test --project=onboarding
         env:
           E2E_SERVER: preview
+
+      # The WebKit and typeface projects (iPhone 14 and Pixel 7 profiles). They
+      # take longer per test than `functional`, and in the E2E job they all
+      # fell into its last shard, which made it the slowest job of the
+      # workflow. This job was the shortest and already builds the app, so
+      # they add no setup here. webkit-repro / chromium-control are the owners of
+      # page-help-sheet-webkit.spec.ts, which the `functional` project excludes
+      # on the grounds that they cover it. They must therefore run here, or
+      # that spec has no CI coverage at all.
+      - name: Run WebKit and typeface tests
+        run: npx playwright test --project=webkit-repro --project=chromium-control --project=webkit-shell --project=webkit-virtual-ticket --project=webkit-organizer-guide --project=typefaces-pixel7 --project=typefaces-iphone
+        env:
+          E2E_SERVER: preview
+
+      - name: Upload test results
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        if: failure()
+        with:
+          name: smoke-results
+          path: test-results/
+          retention-days: 7
 
   e2e:
     needs: changes
@@ -266,14 +287,13 @@ jobs:
       - name: Build the app
         run: NODE_ENV=development npx vite build
 
-      # webkit-repro / chromium-control are the owners of
-      # page-help-sheet-webkit.spec.ts, which the `functional` project excludes
-      # on the grounds that they cover it. They must therefore run here, or
-      # that spec has no CI coverage at all.
+      # Only `functional`: the WebKit and typeface projects run in the `smoke`
+      # job. A shard is a contiguous slice of the test list, so with them here
+      # they all landed in the last shard.
       - name: Run E2E tests
         env:
           E2E_SERVER: preview
-        run: npx playwright test --shard=${{ matrix.shard }}/2 --project=functional --project=webkit-repro --project=chromium-control --project=webkit-shell --project=webkit-virtual-ticket --project=webkit-organizer-guide --project=typefaces-pixel7 --project=typefaces-iphone
+        run: npx playwright test --shard=${{ matrix.shard }}/2 --project=functional
 
       - name: Upload test results
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
