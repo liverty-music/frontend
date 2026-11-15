@@ -49,6 +49,9 @@ describe('Layer B brand expressions', () => {
 		expect(manifest.short_name).toBe('LivertyMusic')
 
 		// Navigation tabs and the lanes: the same text in both locales.
+		// The Settings header is `nav.settings` (test/app-shell.spec.ts), so in
+		// Japanese it reads "Settings", not 設定.
+		// @spec components/infrastructure/fan/web/route/settings "Header reads \"Settings\" regardless of active locale"
 		for (const [key, label] of TABS) {
 			expect(lookup(ja as Tree, key), `ja ${key}`).toBe(label)
 			expect(lookup(en as Tree, key), `en ${key}`).toBe(label)

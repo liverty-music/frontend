@@ -446,6 +446,10 @@ describe('DashboardRoute', () => {
 
 		// @spec components/infrastructure/fan/web/global/fab-menu "Dashboard contributes its actions"
 		// @spec components/infrastructure/fan/web/global/fab-menu "Toggle button placement and icon"
+		// The shell appends Settings after these (test/app-shell.spec.ts, the
+		// trailing item in fab-menu-service.spec.ts), and the arc lays them out
+		// from the FAB outward in this order (fab-menu.stories.ts OpenArc).
+		// @spec components/infrastructure/fan/web/global/fab-menu "Settings is the last item on the dashboard"
 		it('contributes the beam toggle, the filter and help to a fan who is not onboarding', () => {
 			sut.attached()
 			expect(registered().at(-1)).toEqual(['beam', 'filter', 'help'])
