@@ -855,10 +855,12 @@ export const DoneBarStaysTappable = {
 			)
 			await settled(snack)
 			// @spec components/infrastructure/fan/web/global/snack-bar "The Done bar of edit mode stays tappable"
-			// One space-3xs step (4 px) above the bar.
+			// One space-3xs step above the bar.
 			const gap =
 				box(one(canvasElement, '.edit-action-bar')).top - box(snack).bottom
-			await expect(Math.abs(gap - 4)).toBeLessThan(1)
+			await expect(
+				Math.abs(gap - px(canvasElement, 'var(--space-3xs)')),
+			).toBeLessThan(1)
 			await expect(tapAt(done)).toBe('target')
 			await userEvent.click(done)
 			await waitFor(() =>
