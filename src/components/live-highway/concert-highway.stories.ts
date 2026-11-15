@@ -1,14 +1,17 @@
+import { IRouterEvents } from '@aurelia/router'
 import {
 	defineAureliaStory,
 	type Meta,
 	type StoryObj,
 } from '@aurelia/storybook'
-import { CustomElement } from 'aurelia'
-import { expect, waitFor } from 'storybook/test'
+import { CustomElement, Registration } from 'aurelia'
+import { expect, userEvent, waitFor } from 'storybook/test'
 import { composite, contrast, resolveColor } from '../../../.storybook/contrast'
 import { artistHue } from '../../adapter/view/artist-color'
 import { BeamVarsCustomAttribute } from '../../custom-attributes/beam-vars'
 import type { Concert, DateGroup, LaneType } from '../../entities/concert'
+import { IFabMenuService } from '../../services/fab-menu-service'
+import { FabMenu } from '../fab-menu/fab-menu'
 import { ConcertHighway } from './concert-highway'
 import { EventCard } from './event-card'
 
@@ -149,15 +152,15 @@ async function expectBeamWiring(
 	}
 }
 
-function highwayStory(dateGroups: DateGroup[], hideAway = false) {
+function highwayStory(dateGroups: DateGroup[], hideAway = false, beams = true) {
 	return defineAureliaStory({
 		// A sized grid host so the highway (block-size: 100%) lays out its lanes.
 		template: `
 			<div style="block-size: 560px; display: grid;">
-				<concert-highway date-groups.bind="dateGroups" show-beams.bind="true" readonly.bind="true" hide-away.bind="hideAway"></concert-highway>
+				<concert-highway date-groups.bind="dateGroups" show-beams.bind="beams" readonly.bind="true" hide-away.bind="hideAway"></concert-highway>
 			</div>
 		`,
-		props: { dateGroups, hideAway },
+		props: { dateGroups, hideAway, beams },
 		register: [ConcertHighway, EventCard, BeamVarsCustomAttribute],
 	})
 }
@@ -746,6 +749,7 @@ export const BeamsInEveryLane = {
 export const BeamsDarkOffScreen = {
 	render: () => highwayStory(MANY_GROUPS),
 	play: async ({ canvasElement }) => {
+		// @spec components/infrastructure/fan/web/global/live-highway "Only concerts on screen are lit"
 		const scroll = canvasElement.querySelector<HTMLElement>('.concert-scroll')
 		if (!scroll) throw new Error('concert-scroll not rendered')
 
@@ -793,6 +797,116 @@ export const BeamsDarkOffScreen = {
 		await expect(offScreen).toBeGreaterThan(5)
 		await expect(offScreenLit).toBe(0)
 		await expect(onScreenLit).toBeGreaterThan(0)
+	},
+} satisfies Story
+
+/**
+ * A lit beam follows its concert as the list scrolls, with no script measuring
+ * a card to do it: it is shorter by what was scrolled, and no concert card's
+ * box was read in between.
+ */
+export const BeamsTrackScroll = {
+	render: () => highwayStory(MANY_GROUPS),
+	play: async ({ canvasElement }) => {
+		// @spec components/infrastructure/fan/web/global/live-highway "Beams track scroll position without scripting"
+		const scroll = canvasElement.querySelector<HTMLElement>('.concert-scroll')
+		if (!scroll) throw new Error('concert-scroll not rendered')
+		await new Promise((r) =>
+			requestAnimationFrame(() => requestAnimationFrame(r)),
+		)
+		await dealtIn(canvasElement)
+		const litBeam = () =>
+			[...canvasElement.querySelectorAll<HTMLElement>('.laser-beam')].find(
+				(b) => b.getBoundingClientRect().height > 1,
+			)
+		const first = litBeam()
+		if (!first) throw new Error('no lit beam')
+		const name = first.dataset.beamTimeline
+		const heightOf = () =>
+			[...canvasElement.querySelectorAll<HTMLElement>('.laser-beam')]
+				.find((b) => b.dataset.beamTimeline === name)
+				?.getBoundingClientRect().height ?? 0
+		const before = heightOf()
+
+		// Count every box read on a concert card from here on.
+		let reads = 0
+		let counting = false
+		const original = Element.prototype.getBoundingClientRect
+		Element.prototype.getBoundingClientRect = function (this: Element) {
+			if (counting && this.matches('[data-live-card]')) reads++
+			return original.call(this)
+		}
+		try {
+			counting = true
+			scroll.scrollBy({ top: 120, behavior: 'instant' })
+			// The window in which no card may be measured: a delayed scroll
+			// handler would read within it.
+			await new Promise((r) => setTimeout(r, 200))
+			counting = false
+		} finally {
+			Element.prototype.getBoundingClientRect = original
+		}
+		// The beam followed its concert up the screen: shorter by the scroll.
+		await expect(heightOf()).toBeLessThan(before - 50)
+		// And nothing in the page measured a card to make that happen.
+		await expect(reads).toBe(0)
+	},
+} satisfies Story
+
+/**
+ * Beams switched on while the timetable is displayed: the matched concerts
+ * already on screen are lit in place, and no date group or concert card is
+ * rebuilt.
+ */
+export const TurningBeamsOn = {
+	render: () => highwayStory(DATE_GROUPS, false, false),
+	play: async ({ canvasElement }) => {
+		// @spec components/infrastructure/fan/web/global/live-highway "Turning beams on reaches the concerts already on screen"
+		const host = canvasElement.querySelector<HTMLElement>('concert-highway')
+		if (!host) throw new Error('concert-highway not rendered')
+		const vm = CustomElement.for<ConcertHighway>(host).viewModel
+		await frames()
+		await expect(canvasElement.querySelectorAll('.laser-beam')).toHaveLength(0)
+
+		// Tag the built nodes so a rebuild would show up as untagged nodes.
+		const built = () => [
+			...canvasElement.querySelectorAll<HTMLElement>(
+				'.date-group, [data-live-card]',
+			),
+		]
+		const tagged = new WeakSet<Element>(built())
+
+		vm.showBeams = true
+		await waitFor(() =>
+			expect(canvasElement.querySelector('.laser-beam')).not.toBeNull(),
+		)
+		await expect(built().filter((el) => !tagged.has(el))).toHaveLength(0)
+
+		// Lit in place: the beams follow the timelines the existing cards declare.
+		const scroll = canvasElement.querySelector<HTMLElement>('.concert-scroll')
+		if (!scroll) throw new Error('concert-scroll not rendered')
+		const edge = scroll.getBoundingClientRect()
+		await waitFor(() => {
+			const lit = [
+				...canvasElement.querySelectorAll<HTMLElement>('.laser-beam'),
+			].some((beam) => {
+				const card = cardFor(canvasElement, beam.dataset.beamTimeline ?? '')
+				const top = card?.getBoundingClientRect().top ?? Number.NaN
+				return (
+					beam.getBoundingClientRect().height > 1 &&
+					top >= edge.top &&
+					top <= edge.bottom
+				)
+			})
+			if (!lit) throw new Error('no beam lit yet')
+		})
+		for (const card of canvasElement.querySelectorAll<HTMLElement>(
+			'[data-live-card][data-matched]',
+		)) {
+			await expect(getComputedStyle(card).viewTimelineName).toBe(
+				card.dataset.beamName,
+			)
+		}
 	},
 } satisfies Story
 
@@ -946,6 +1060,23 @@ async function frames(n = 3): Promise<void> {
 	}
 }
 
+/**
+ * Waits until the list has come to rest: its scroll position has not changed
+ * for five frames in a row (a smooth scroll ends when it stops moving, however
+ * long a loaded runner takes to get there).
+ */
+async function scrollAtRest(scroll: HTMLElement, timeout = 10_000) {
+	const deadline = performance.now() + timeout
+	let last = Number.NaN
+	let still = 0
+	while (still < 5) {
+		if (performance.now() > deadline) throw new Error('the list kept moving')
+		await new Promise((r) => requestAnimationFrame(r))
+		still = scroll.scrollTop === last ? still + 1 : 0
+		last = scroll.scrollTop
+	}
+}
+
 /** Which month-jump buttons are on screen: `prev`, `next`. */
 function shownJumps(root: HTMLElement): string[] {
 	return [...root.querySelectorAll<HTMLElement>('.month-jump-button')]
@@ -1034,8 +1165,13 @@ export const MonthJumpNextOnly = {
  * and the previous-month button then leads back.
  */
 export const MonthJumpMoves = {
+	tags: ['reduced-motion'],
 	render: () => monthJumpStory('2026-11-07'),
-	play: async ({ canvasElement }) => {
+	play: async ({ canvasElement, globals }) => {
+		const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches
+		if (import.meta.env.MODE === 'test') {
+			await expect(reduce).toBe(globals.reducedMotion)
+		}
 		await frames()
 		const scroll = canvasElement.querySelector<HTMLElement>('.concert-scroll')
 		if (!scroll) throw new Error('concert-scroll not rendered')
@@ -1045,14 +1181,11 @@ export const MonthJumpMoves = {
 				(g) => g.getBoundingClientRect().bottom > edge + 0.5,
 			)?.dataset.dateKey
 		}
-		// The jump's smooth scroll ends with a `scrollend`; the instant
-		// placement before it reports one of its own in the first frame.
-		const settled = async () => {
-			await frames(1)
-			await new Promise((r) => {
-				scroll.addEventListener('scrollend', r, { once: true })
-				setTimeout(r, 1500)
-			})
+		// The jump starts a smooth scroll: wait for the list to come to rest at
+		// the date it was sent to, not for a fixed time.
+		const settled = async (key: string) => {
+			await waitFor(() => expect(topKey()).toBe(key), { timeout: 10_000 })
+			await scrollAtRest(scroll)
 		}
 
 		const next = canvasElement.querySelector<HTMLElement>(
@@ -1060,9 +1193,19 @@ export const MonthJumpMoves = {
 		)
 		if (!next) throw new Error('no next-month button')
 		const nextAt = next.getBoundingClientRect().left
+		const historyLength = history.length
+		const url = location.href
 		next.click()
-		await settled()
-		await frames()
+		if (reduce) {
+			// @spec components/infrastructure/fan/web/route/dashboard "Reduced motion"
+			// One frame later the target is already at the top: no scrolling there.
+			await frames(1)
+			await expect(topKey()).toBe('2026-12-01')
+			// The jump adds no history entry and leaves the address alone.
+			await expect(history.length).toBe(historyLength)
+			await expect(location.href).toBe(url)
+		}
+		await settled('2026-12-01')
 		await expect(topKey()).toBe('2026-12-01')
 		// The previous-month button has appeared beside it, and the next-month
 		// button is still where the fan tapped it.
@@ -1075,8 +1218,7 @@ export const MonthJumpMoves = {
 			'.month-jump-button[data-direction="prev"]',
 		)
 		prev?.click()
-		await settled()
-		await frames()
+		await settled('2026-11-01')
 		await expect(topKey()).toBe('2026-11-01')
 		// Back at the first loaded date the list is at its top again, and the
 		// capsule stays, with the next-month button the fan came back with.
@@ -1407,15 +1549,11 @@ export const DealInWhenRowsArrive = {
 		)
 		if (!next || !prev) throw new Error('month jump buttons not rendered')
 		next.click()
-		// The jump has landed once its target month is at the top.
-		await new Promise<void>((resolve) => {
-			scroll.addEventListener('scrollend', () => resolve(), { once: true })
-			setTimeout(resolve, 1500)
-		})
+		// The jump has landed once the list has come to rest on a later month.
 		await waitFor(() => expect(prev.checkVisibility()).toBe(true), {
-			timeout: 5000,
+			timeout: 10_000,
 		})
-		await new Promise((r) => setTimeout(r, 300))
+		await scrollAtRest(scroll)
 		// Let every deal-in finish first, so that one running afterwards was
 		// started by what follows. Then upward, by more than the list is tall:
 		// rows come in at the top edge, built by the upward growth.
@@ -1438,5 +1576,237 @@ export const DealInWhenRowsArrive = {
 		if (!before) throw new Error('no row in view')
 		await expect(row.key < before.key).toBe(true)
 		await expectDealing(row.cards, 'scrolling up after a jump')
+	},
+} satisfies Story
+
+/**
+ * The month-jump capsule gives way to the FAB: with the launcher's arc open
+ * both buttons are hidden, and they return when it closes. The launcher is the
+ * real one with a fake service; it sits beside the timetable as in the app.
+ */
+export const MonthJumpHiddenWhileFabOpen = {
+	render: () =>
+		defineAureliaStory({
+			template: `
+				<div style="block-size: 560px; display: grid;">
+					<concert-highway date-groups.bind="dateGroups" initial-anchor.bind="anchor" show-beams.bind="false" readonly.bind="true"></concert-highway>
+				</div>
+				<fab-menu></fab-menu>
+			`,
+			props: {
+				dateGroups: THREE_MONTHS,
+				anchor: { dateKey: '2026-11-07', offset: 0 },
+			},
+			register: [ConcertHighway, EventCard, BeamVarsCustomAttribute, FabMenu],
+			items: [
+				Registration.instance(IFabMenuService, {
+					actions: [
+						{
+							id: 'help',
+							labelKey: 'fabMenu.help',
+							icon: 'help-circle',
+							kind: 'command',
+							invoke: () => {},
+						},
+					],
+					handed: 'right',
+				}),
+				Registration.instance(IRouterEvents, {
+					subscribe: () => ({ dispose: () => {} }),
+				}),
+			],
+		}),
+	play: async ({ canvasElement }) => {
+		// @spec components/infrastructure/fan/web/route/dashboard "Hidden while the FAB is open"
+		await frames()
+		await expect(shownJumps(canvasElement)).toEqual(['next'])
+		const fab = await waitFor(() => {
+			const el = canvasElement.querySelector<HTMLButtonElement>(
+				'fab-menu .fab-toggle',
+			)
+			if (!el) throw new Error('launcher not rendered yet')
+			return el
+		})
+		await userEvent.click(fab)
+		await waitFor(() => expect(fab.getAttribute('aria-expanded')).toBe('true'))
+		await waitFor(() => expect(shownJumps(canvasElement)).toEqual([]))
+
+		await userEvent.click(fab)
+		await waitFor(() => expect(fab.getAttribute('aria-expanded')).toBe('false'))
+		await waitFor(() => expect(shownJumps(canvasElement)).toEqual(['next']))
+	},
+} satisfies Story
+
+/** The date keys of the groups built now, in order. */
+function builtKeys(root: ParentNode): string[] {
+	return [...root.querySelectorAll<HTMLElement>('.date-group[data-date-key]')]
+		.map((g) => g.dataset.dateKey ?? '')
+		.filter(Boolean)
+}
+
+/**
+ * Scrolling a long list down: only a window of the dates is built at first
+ * (at most 24), the window grows before the bottom is reached, and it reaches
+ * the last date; every group built on the way keeps its lanes aligned with the
+ * stage header, adds no layout shift, and its date separator is sticky within
+ * its own group.
+ */
+export const WindowGrowsWhileScrolling = {
+	render: () => highwayStory(DEAL_GROUPS.slice(0, 50)),
+	play: async ({ canvasElement }) => {
+		const scroll = canvasElement.querySelector<HTMLElement>('.concert-scroll')
+		if (!scroll) throw new Error('concert-scroll not rendered')
+		await frames()
+
+		// Layout shifts of the timetable, the way CLS counts them.
+		let shift = 0
+		const observer = new PerformanceObserver((list) => {
+			for (const e of list.getEntries() as (PerformanceEntry & {
+				value: number
+				hadRecentInput: boolean
+				sources?: { node?: Node | null }[]
+			})[]) {
+				const inTimetable = (e.sources ?? []).some(
+					(src) =>
+						(src.node instanceof Element
+							? src.node
+							: src.node?.parentElement
+						)?.closest('concert-highway') &&
+						!(
+							src.node instanceof Element ? src.node : src.node?.parentElement
+						)?.closest('.month-jump'),
+				)
+				if (!e.hadRecentInput && inTimetable) shift += e.value
+			}
+		})
+		observer.observe({ type: 'layout-shift', buffered: true })
+
+		// @spec components/infrastructure/fan/web/route/dashboard "Only the window is built"
+		const first = builtKeys(canvasElement)
+		await expect(first.length).toBeGreaterThan(0)
+		await expect(first.length).toBeLessThanOrEqual(24)
+
+		// @spec components/infrastructure/fan/web/route/dashboard "Scrolling down reaches every later date"
+		// Later dates arrive before the end of the built content is reached:
+		// stop half a screen short of it and the window has already grown.
+		const shiftBefore = shift
+		scroll.scrollTo({
+			top: scroll.scrollHeight - scroll.clientHeight * 1.4,
+			behavior: 'instant',
+		})
+		await waitFor(() =>
+			expect(builtKeys(canvasElement).length).toBeGreaterThan(first.length),
+		)
+		const last = DEAL_GROUPS[49].dateKey
+		for (let i = 0; i < 400 && !builtKeys(canvasElement).includes(last); i++) {
+			scroll.scrollTo({ top: scroll.scrollHeight, behavior: 'instant' })
+			await frames(2)
+		}
+		await expect(builtKeys(canvasElement)).toContain(last)
+
+		// @spec components/infrastructure/fan/web/route/dashboard "Viewport-scoping off-screen content does not regress sticky headers or shift layout"
+		await frames(3)
+		await expect(shift - shiftBefore).toBe(0)
+		observer.disconnect()
+		const separators = [
+			...canvasElement.querySelectorAll<HTMLElement>(
+				'concert-highway .date-separator',
+			),
+		].map((el) => ({
+			position: getComputedStyle(el).position,
+			inGroup: el.parentElement?.classList.contains('date-group') ?? false,
+		}))
+		await expect(separators.length).toBeGreaterThan(first.length)
+		for (const sep of separators) {
+			await expect(sep).toEqual({ position: 'sticky', inGroup: true })
+		}
+
+		// @spec components/infrastructure/fan/web/route/dashboard "Lanes stay aligned in every built group"
+		// Three lanes, including the groups added while scrolling.
+		await assertLanesAlignWithStageHeader(canvasElement, 3)
+	},
+} satisfies Story
+
+/**
+ * The two-lane list of Discovery's All Nearby view builds the same window and
+ * keeps every group aligned the same way after scrolling; HOME and NEARBY
+ * concerts are in their lanes and nothing is drawn for AWAY.
+ */
+export const TwoLanesWhileScrolling = {
+	render: () => highwayStory(DEAL_GROUPS, true),
+	play: async ({ canvasElement }) => {
+		// @spec components/infrastructure/fan/web/route/discovery "HOME and NEARBY lanes rendered"
+		const scroll = canvasElement.querySelector<HTMLElement>('.concert-scroll')
+		if (!scroll) throw new Error('concert-scroll not rendered')
+		await frames()
+		await expect(builtKeys(canvasElement).length).toBeLessThanOrEqual(24)
+		for (let i = 0; i < 12; i++) {
+			scroll.scrollBy({ top: scroll.clientHeight, behavior: 'instant' })
+			await frames(2)
+		}
+		await assertLanesAlignWithStageHeader(canvasElement, 2)
+		await expect(canvasElement.querySelector('[data-lane="away"]')).toBeNull()
+		for (const lane of ['home', 'near']) {
+			await expect(
+				canvasElement.querySelector(
+					`.date-group li.lane[data-lane="${lane}"] [data-live-card]`,
+				),
+			).not.toBeNull()
+		}
+	},
+} satisfies Story
+
+/**
+ * The timetable opened deep in the list, as on re-entry, and scrolled up a
+ * little at a time: earlier dates are added above more than once, and on every
+ * step the date at the top edge moves by exactly what was scrolled.
+ */
+export const ScrollingUpFromRestoredDate = {
+	render: () =>
+		defineAureliaStory({
+			template: `
+				<div style="block-size: 560px; display: grid;">
+					<concert-highway date-groups.bind="dateGroups" initial-anchor.bind="anchor" show-beams.bind="false" readonly.bind="true"></concert-highway>
+				</div>
+			`,
+			props: {
+				dateGroups: DEAL_GROUPS,
+				anchor: { dateKey: DEAL_GROUPS[30].dateKey, offset: 0 },
+			},
+			register: [ConcertHighway, EventCard, BeamVarsCustomAttribute],
+		}),
+	play: async ({ canvasElement }) => {
+		// @spec components/infrastructure/fan/web/route/dashboard "Scrolling up from a restored date reaches earlier dates without a jump"
+		const scroll = canvasElement.querySelector<HTMLElement>('.concert-scroll')
+		if (!scroll) throw new Error('concert-scroll not rendered')
+		await frames(5)
+		const groups = () => [
+			...scroll.querySelectorAll<HTMLElement>('.date-group[data-date-key]'),
+		]
+		const out: { grew: boolean; drift: number }[] = []
+		for (let i = 0; i < 400 && scroll.scrollTop > 0; i++) {
+			const edge = scroll.getBoundingClientRect().top
+			const top = groups().find((g) => g.getBoundingClientRect().bottom > edge)
+			if (!top) break
+			const key = top.dataset.dateKey
+			const before = top.getBoundingClientRect().top
+			const firstBefore = groups()[0].dataset.dateKey
+			const scrollBefore = scroll.scrollTop
+			scroll.scrollBy({ top: -240, behavior: 'instant' })
+			const scrolled = scrollBefore - scroll.scrollTop
+			await frames(4)
+			const same = groups().find((g) => g.dataset.dateKey === key)
+			out.push({
+				grew: groups()[0].dataset.dateKey !== firstBefore,
+				drift: Math.round(
+					(same?.getBoundingClientRect().top ?? Number.NaN) - before - scrolled,
+				),
+			})
+		}
+		// Earlier dates were added on the way up, more than once.
+		await expect(out.filter((st) => st.grew).length).toBeGreaterThan(1)
+		await expect(out.filter((st) => !(Math.abs(st.drift) < 2))).toEqual([])
+		// And it got all the way up: the first loaded date is built.
+		await expect(builtKeys(canvasElement)).toContain(DEAL_GROUPS[0].dateKey)
 	},
 } satisfies Story
