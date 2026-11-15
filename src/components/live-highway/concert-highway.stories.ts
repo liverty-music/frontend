@@ -216,6 +216,7 @@ function layoutBox(el: HTMLElement): { left: number; width: number } {
 async function assertLanesAlignWithStageHeader(
 	canvasElement: HTMLElement,
 	expectedLanes: number,
+	everyGroup = false,
 ) {
 	const headers = [
 		...canvasElement.querySelectorAll<HTMLElement>('.stage-header > span'),
@@ -227,7 +228,9 @@ async function assertLanesAlignWithStageHeader(
 			'.concert-scroll > .date-group',
 		),
 	]
-	const probes = [groups[0], groups[groups.length - 1]].filter(Boolean)
+	const probes = everyGroup
+		? groups
+		: [groups[0], groups[groups.length - 1]].filter(Boolean)
 
 	for (const group of probes) {
 		const lanes = [...group.querySelectorAll<HTMLElement>('.lane')]
@@ -1595,7 +1598,7 @@ export const MonthJumpHiddenWhileFabOpen = {
 			`,
 			props: {
 				dateGroups: THREE_MONTHS,
-				anchor: { dateKey: '2026-11-07', offset: 0 },
+				anchor: { dateKey: '2026-12-07', offset: 0 },
 			},
 			register: [ConcertHighway, EventCard, BeamVarsCustomAttribute, FabMenu],
 			items: [
@@ -1619,7 +1622,7 @@ export const MonthJumpHiddenWhileFabOpen = {
 	play: async ({ canvasElement }) => {
 		// @spec components/infrastructure/fan/web/route/dashboard "Hidden while the FAB is open"
 		await frames()
-		await expect(shownJumps(canvasElement)).toEqual(['next'])
+		await expect(shownJumps(canvasElement)).toEqual(['prev', 'next'])
 		const fab = await waitFor(() => {
 			const el = canvasElement.querySelector<HTMLButtonElement>(
 				'fab-menu .fab-toggle',
@@ -1633,7 +1636,9 @@ export const MonthJumpHiddenWhileFabOpen = {
 
 		await userEvent.click(fab)
 		await waitFor(() => expect(fab.getAttribute('aria-expanded')).toBe('false'))
-		await waitFor(() => expect(shownJumps(canvasElement)).toEqual(['next']))
+		await waitFor(() =>
+			expect(shownJumps(canvasElement)).toEqual(['prev', 'next']),
+		)
 	},
 } satisfies Story
 
@@ -1645,6 +1650,29 @@ function builtKeys(root: ParentNode): string[] {
 }
 
 /**
+ * A long list (the reference account's 225 dates) is built as a window of at
+ * most 24 dates, the same number as for a shorter one: the number built does
+ * not depend on how many dates are loaded.
+ */
+export const WindowIsIndependentOfListLength = {
+	render: () => highwayStory(LONG_GROUPS),
+	play: async ({ canvasElement }) => {
+		// @spec components/infrastructure/fan/web/route/dashboard "Only the window is built"
+		await frames()
+		const long = builtKeys(canvasElement).length
+		await expect(long).toBeGreaterThan(0)
+		await expect(long).toBeLessThanOrEqual(24)
+		// The number built is the same for a shorter list of the same dates.
+		const host = canvasElement.querySelector<HTMLElement>('concert-highway')
+		if (!host) throw new Error('concert-highway not rendered')
+		const vm = CustomElement.for<ConcertHighway>(host).viewModel
+		vm.dateGroups = LONG_GROUPS.slice(0, 40)
+		await frames(5)
+		await expect(builtKeys(canvasElement).length).toBe(long)
+	},
+} satisfies Story
+
+/**
  * Scrolling a long list down: only a window of the dates is built at first
  * (at most 24), the window grows before the bottom is reached, and it reaches
  * the last date; every group built on the way keeps its lanes aligned with the
@@ -1652,7 +1680,7 @@ function builtKeys(root: ParentNode): string[] {
  * its own group.
  */
 export const WindowGrowsWhileScrolling = {
-	render: () => highwayStory(DEAL_GROUPS.slice(0, 50)),
+	render: () => highwayStory(LONG_GROUPS.slice(0, 60)),
 	play: async ({ canvasElement }) => {
 		const scroll = canvasElement.querySelector<HTMLElement>('.concert-scroll')
 		if (!scroll) throw new Error('concert-scroll not rendered')
@@ -1681,7 +1709,6 @@ export const WindowGrowsWhileScrolling = {
 		})
 		observer.observe({ type: 'layout-shift', buffered: true })
 
-		// @spec components/infrastructure/fan/web/route/dashboard "Only the window is built"
 		const first = builtKeys(canvasElement)
 		await expect(first.length).toBeGreaterThan(0)
 		await expect(first.length).toBeLessThanOrEqual(24)
@@ -1697,7 +1724,7 @@ export const WindowGrowsWhileScrolling = {
 		await waitFor(() =>
 			expect(builtKeys(canvasElement).length).toBeGreaterThan(first.length),
 		)
-		const last = DEAL_GROUPS[49].dateKey
+		const last = LONG_GROUPS[59].dateKey
 		for (let i = 0; i < 400 && !builtKeys(canvasElement).includes(last); i++) {
 			scroll.scrollTo({ top: scroll.scrollHeight, behavior: 'instant' })
 			await frames(2)
@@ -1723,7 +1750,7 @@ export const WindowGrowsWhileScrolling = {
 
 		// @spec components/infrastructure/fan/web/route/dashboard "Lanes stay aligned in every built group"
 		// Three lanes, including the groups added while scrolling.
-		await assertLanesAlignWithStageHeader(canvasElement, 3)
+		await assertLanesAlignWithStageHeader(canvasElement, 3, true)
 	},
 } satisfies Story
 
@@ -1735,7 +1762,9 @@ export const WindowGrowsWhileScrolling = {
 export const TwoLanesWhileScrolling = {
 	render: () => highwayStory(DEAL_GROUPS, true),
 	play: async ({ canvasElement }) => {
-		// @spec components/infrastructure/fan/web/route/discovery "HOME and NEARBY lanes rendered"
+		// The presentational half of discovery "HOME and NEARBY lanes rendered";
+		// the mapping of ListByLocation groups to lanes is checked in
+		// test/components/nearby-concerts.spec.ts, which carries the scenario.
 		const scroll = canvasElement.querySelector<HTMLElement>('.concert-scroll')
 		if (!scroll) throw new Error('concert-scroll not rendered')
 		await frames()
@@ -1744,7 +1773,7 @@ export const TwoLanesWhileScrolling = {
 			scroll.scrollBy({ top: scroll.clientHeight, behavior: 'instant' })
 			await frames(2)
 		}
-		await assertLanesAlignWithStageHeader(canvasElement, 2)
+		await assertLanesAlignWithStageHeader(canvasElement, 2, true)
 		await expect(canvasElement.querySelector('[data-lane="away"]')).toBeNull()
 		for (const lane of ['home', 'near']) {
 			await expect(
