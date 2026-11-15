@@ -21,9 +21,10 @@ test.use({ viewport: { width: 390, height: 844 } })
 
 /**
  * The FAB in the bottom navigation bar's centre notch and its thumb arc:
- * placement, glyph, arc layout, motion, handedness, the sink while a snack bar
- * is open, and the collapsed state after navigation. Runs on Chromium
- * (`functional`) and WebKit (`webkit-shell`).
+ * placement, glyph, arc layout, motion, handedness, and the sink while a snack
+ * bar is open. Runs on Chromium (`functional`) and WebKit (`webkit-shell`). The
+ * collapsed state after navigation is checked in
+ * src/components/fab-menu/fab-menu.spec.ts.
  */
 
 const CAPABILITY = 'components/infrastructure/fan/web/global/fab-menu'
@@ -368,56 +369,6 @@ test.describe('sinking while a snack bar is open', () => {
 		expect(f.width).toBeCloseTo(56, 0)
 		// Protruding from the notch again.
 		expect(centre(f).y).toBeCloseTo((await box(nav(page))).y, 0)
-	})
-})
-
-test.describe('collapsed after navigation', () => {
-	/**
-	 * Navigate while the arc is open. A real tap on a tab only closes the
-	 * arc (it lands on the scrim), so the tab is clicked programmatically, the
-	 * way a route change from code reaches the router.
-	 */
-	async function clickTabBehindScrim(page: Page, icon: string) {
-		await page
-			.locator(`.nav-tab[data-nav="${icon}"]`)
-			.evaluate((el) => (el as HTMLElement).click())
-	}
-
-	async function expectCollapsed(page: Page) {
-		await expect(fab(page)).toHaveAttribute('aria-expanded', 'false')
-		await expect(glyph(page)).toHaveAttribute('data-open', 'false')
-		await settle(page, 'fab-menu')
-		expect(await opacity(page, 'fab-menu .fab-equalizer')).toBe(1)
-	}
-
-	test(`@spec ${CAPABILITY} "Leaving with the arc open and coming back"`, async ({
-		page,
-	}) => {
-		await openShell(page, '/dashboard')
-		await openArc(page)
-
-		await clickTabBehindScrim(page, 'ticket')
-		await page.waitForURL('**/tickets')
-		// Tickets shows the FAB too (its Settings item), collapsed.
-		await expectCollapsed(page)
-		await tapTab(page, 'home')
-		await page.waitForURL('**/dashboard')
-
-		await expect(fab(page)).toBeVisible()
-		await expectCollapsed(page)
-	})
-
-	test(`@spec ${CAPABILITY} "Moving between two routes that both contribute actions"`, async ({
-		page,
-	}) => {
-		await openShell(page, '/dashboard')
-		await openArc(page)
-
-		await clickTabBehindScrim(page, 'my-artists')
-		await page.waitForURL('**/my-artists')
-
-		await expect(fab(page)).toBeVisible()
-		await expectCollapsed(page)
 	})
 })
 
