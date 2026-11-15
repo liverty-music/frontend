@@ -136,9 +136,10 @@ export const HomeIndicator = {
  * At 320 px the four tabs share the width with the FAB's slot: the labels
  * switch to label-small, every label shows in full on one line, two
  * neighbouring labels keep a gap, and each tab takes a 48 px tap without
- * reaching a neighbour. The FAB is not in this story; the e2e test
- * "Bar on a 320 px screen" checks the labels and taps against it with the
- * app's real typeface.
+ * reaching a neighbour. The FAB is not in this story, and stories do not load
+ * the app's web font; the e2e test "Bar on a 320 px screen" checks the labels
+ * and taps against the FAB with that typeface. The bar in the shell, beside
+ * the FAB, is in src/app-shell.stories.ts.
  */
 export const NarrowWindow = {
 	render: render(),

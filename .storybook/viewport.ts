@@ -23,3 +23,26 @@ export async function atWidth(
 		await page.viewport(innerWidth, innerHeight)
 	}
 }
+
+/**
+ * Runs `check` with the browser window at `width` × `height` px, then puts
+ * the window back, as `atWidth` does for the width alone.
+ */
+export async function atSize(
+	width: number,
+	height: number,
+	check: () => Promise<void>,
+): Promise<void> {
+	if (import.meta.env.MODE !== 'test') {
+		await check()
+		return
+	}
+	const { page } = await import('vitest/browser')
+	const { innerWidth, innerHeight } = window
+	try {
+		await page.viewport(width, height)
+		await check()
+	} finally {
+		await page.viewport(innerWidth, innerHeight)
+	}
+}

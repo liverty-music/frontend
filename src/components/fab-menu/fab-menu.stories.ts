@@ -17,8 +17,9 @@ import { FabMenu } from './fab-menu'
 // The launcher with the dashboard's actions (beam toggle, filter, help,
 // settings), mounted on its own: its service is a fake, and the page behind
 // it is a pair of plain buttons that stand for a navigation tab and the
-// page's own link. The bar, the notch and the shell are checked in the
-// end-to-end suite.
+// page's own link. The launcher in the shell, with the bar, its notch, the
+// snack bar and the install banner, is checked in src/app-shell.stories.ts;
+// the same on WebKit in the end-to-end suite.
 
 const noop = () => {}
 const ACTIONS: FabAction[] = [
