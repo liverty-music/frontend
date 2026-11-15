@@ -2,14 +2,18 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const fakeFabMenu = { actions: [] as unknown[], handed: 'right' }
 const fakeSignaler = { dispatchSignal: vi.fn() }
-/** Router events stand-in: `navigate()` publishes a navigation start. */
+/**
+ * Router events stand-in: `navigate()` publishes a navigation start, so only a
+ * listener subscribed to that event hears it.
+ */
 const routerListeners: Array<() => void> = []
 const fakeRouterEvents = {
-	subscribe: vi.fn((_event: string, listener: () => void) => {
-		routerListeners.push(listener)
+	subscribe: vi.fn((event: string, listener: () => void) => {
+		if (event === 'au:router:navigation-start') routerListeners.push(listener)
 		return {
 			dispose: () => {
-				routerListeners.splice(routerListeners.indexOf(listener), 1)
+				const i = routerListeners.indexOf(listener)
+				if (i >= 0) routerListeners.splice(i, 1)
 			},
 		}
 	}),

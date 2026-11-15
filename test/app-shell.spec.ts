@@ -10,6 +10,7 @@ import { NotificationBell } from '../src/components/notification-bell/notificati
 import { PageHeader } from '../src/components/page-header/page-header'
 import { SvgIcon } from '../src/components/svg-icon/svg-icon'
 import { IAnalyticsService } from '../src/lib/analytics/analytics-service'
+import ja from '../src/locales/ja/translation.json'
 import { IAuthService } from '../src/services/auth-service'
 import { IBottomSheetTracker } from '../src/services/bottom-sheet-tracker'
 import { IErrorBoundaryService } from '../src/services/error-boundary-service'
@@ -100,6 +101,8 @@ describe('app-shell', () => {
 		isAuthenticated?: boolean
 		onboarding?: { isOnboarding: boolean; isCompleted: boolean }
 		unreadCount?: number
+		/** Render with the app's Japanese catalog instead of bare keys. */
+		japanese?: boolean
 	}
 
 	let notificationStore: {
@@ -124,12 +127,19 @@ describe('app-shell', () => {
 				// resolve I18N at construction, so the real plugin is registered;
 				// with no resources `t` renders the key itself.
 				I18nConfiguration.customize((options) => {
-					options.initOptions = {
-						lng: 'en',
-						resources: { en: { translation: {} } },
-						fallbackLng: 'en',
-						interpolation: { escapeValue: false },
-					}
+					options.initOptions = state.japanese
+						? {
+								lng: 'ja',
+								resources: { ja: { translation: ja } },
+								fallbackLng: 'ja',
+								interpolation: { escapeValue: false },
+							}
+						: {
+								lng: 'en',
+								resources: { en: { translation: {} } },
+								fallbackLng: 'en',
+								interpolation: { escapeValue: false },
+							}
 				}),
 				BottomNavBar,
 				PageHeader,
@@ -286,6 +296,16 @@ describe('app-shell', () => {
 			await go('dashboard')
 			expect(headerTitle()).toBe('nav.home')
 			expect(activeTabs()).toEqual(['home'])
+		})
+
+		// @spec components/infrastructure/fan/web/route/settings "Header reads \"Settings\" regardless of active locale"
+		it('titles Settings "Settings" in Japanese, not 設定', async () => {
+			await fixture.stop(true)
+			fixture = await renderShell({ japanese: true })
+			router = fixture.container.get(IRouter)
+			await go('settings')
+			expect(displayedRoute()).toBe('settings-route')
+			expect(headerTitle()).toBe('Settings')
 		})
 
 		// @spec components/infrastructure/fan/web/global/page-header "A failed navigation leaves identity unchanged"

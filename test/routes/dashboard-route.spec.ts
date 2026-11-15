@@ -2,6 +2,10 @@ import { IRouter } from '@aurelia/router'
 import { DI, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { StorageKeys } from '../../src/constants/storage-keys'
+import {
+	type IFabMenuService,
+	settingsAction,
+} from '../../src/services/fab-menu-service'
 import { createTestContainer } from '../helpers/create-container'
 import { createMockHistory } from '../helpers/mock-history'
 import { createMockLocalStorage } from '../helpers/mock-local-storage'
@@ -462,6 +466,24 @@ describe('DashboardRoute', () => {
 				}),
 			)
 			sut.detaching()
+		})
+
+		// The shell sets the Settings item as the launcher's trailing item on
+		// every tab page (test/app-shell.spec.ts); the arc lays the items out
+		// from the FAB outward in this order (fab-menu.stories.ts OpenArc).
+		// @spec components/infrastructure/fan/web/global/fab-menu "Settings is the last item on the dashboard"
+		it('ends the launcher with Settings after the dashboard actions', () => {
+			const fabMenu = (sut as unknown as { fabMenu: IFabMenuService }).fabMenu
+			fabMenu.setTrailing(settingsAction(() => {}))
+			sut.attached()
+			expect(fabMenu.actions.map((a) => a.id)).toEqual([
+				'beam',
+				'filter',
+				'help',
+				'settings',
+			])
+			sut.detaching()
+			fabMenu.setTrailing(null)
 		})
 
 		// @spec components/infrastructure/fan/web/global/fab-menu "No active filter — header unchanged"
