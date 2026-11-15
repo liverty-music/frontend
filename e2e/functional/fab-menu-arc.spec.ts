@@ -20,11 +20,13 @@ test.describe.configure({ timeout: 60_000 })
 test.use({ viewport: { width: 390, height: 844 } })
 
 /**
- * The FAB in the bottom navigation bar's centre notch and its thumb arc:
- * placement, glyph, arc layout, motion, handedness, and the sink while a snack
- * bar is open. Runs on Chromium (`functional`) and WebKit (`webkit-shell`). The
- * collapsed state after navigation is checked in
- * src/components/fab-menu/fab-menu.spec.ts.
+ * The FAB in the bottom navigation bar's centre notch and its thumb arc on
+ * both engines: placement, glyph, arc layout, motion, handedness, and the sink
+ * under a snack bar or a bottom banner. Runs on Chromium (`functional`) and
+ * WebKit (`webkit-shell`). The rest of the sink (the sunk FAB still opens the
+ * arc, the FAB rises again, a snack above a banner) is checked in the app
+ * shell's stories (src/app-shell.stories.ts); the collapsed state after
+ * navigation in src/components/fab-menu/fab-menu.spec.ts.
  */
 
 const CAPABILITY = 'components/infrastructure/fan/web/global/fab-menu'
@@ -94,29 +96,6 @@ test.describe('placement in the notch', () => {
 		)
 		const c = centre(await box(fab(page)))
 		expect(c.y).toBeCloseTo(bar.y, 0)
-	})
-
-	test(`@spec ${CAPABILITY} "FAB floats in the thumb zone above content"`, async ({
-		page,
-	}) => {
-		await openShell(page, '/dashboard')
-		await settle(page, 'fab-menu')
-		const f = await box(fab(page))
-		const viewport = page.viewportSize()
-		if (!viewport) throw new Error('no viewport')
-
-		expect(centre(f).x).toBeCloseTo(viewport.width / 2, 0)
-		expect(centre(f).y).toBeCloseTo((await box(nav(page))).y, 0)
-		expect(f.width).toBeCloseTo(56, 0)
-		// The notch leaves at least 6px around the FAB.
-		const notchRadius = await px(page, 'var(--fab-notch-radius)')
-		expect(notchRadius - f.width / 2).toBeGreaterThanOrEqual(6)
-		await expect(nav(page)).toHaveAttribute('data-notch', 'true')
-		// No tab's icon or label is covered.
-		for (const tab of await tabs(page).all()) {
-			expect(intersects(await box(tab.locator('.nav-icon')), f)).toBe(false)
-			expect(intersects(await box(tab.locator('.nav-label')), f)).toBe(false)
-		}
 	})
 })
 
@@ -341,44 +320,12 @@ test.describe('sinking while a snack bar is open', () => {
 		expect(f.y + f.height).toBeLessThanOrEqual(bar.y + bar.height + 0.5)
 		expect(intersects(f, await box(page.locator('.snack-item')))).toBe(false)
 	})
-
-	test(`@spec ${CAPABILITY} "The sunk FAB still opens the actions"`, async ({
-		page,
-	}) => {
-		await openShell(page, '/dashboard')
-		await publishSnack(page, 'Saved', 10_000)
-		await settle(page, 'fab-menu')
-
-		await openArc(page)
-
-		await expect(fabItems(page)).toHaveCount(DASHBOARD_ACTIONS.length)
-		const f = centre(await box(fab(page)))
-		for (const item of await itemBoxes(page)) {
-			expect(centre(item.icon).y).toBeLessThan(f.y)
-		}
-	})
-
-	test(`@spec ${CAPABILITY} "The last snack bar closes"`, async ({ page }) => {
-		await openShell(page, '/dashboard')
-		await publishSnack(page, 'Saved', 1500)
-		await expect(page.locator('.snack-item:popover-open')).toHaveCount(1)
-		await expect(page.locator('.snack-item')).toHaveCount(0, { timeout: 5000 })
-		await settle(page, 'fab-menu')
-
-		const f = await box(fab(page))
-		expect(f.width).toBeCloseTo(56, 0)
-		// Protruding from the notch again.
-		expect(centre(f).y).toBeCloseTo((await box(nav(page))).y, 0)
-	})
 })
 
 test.describe('sinking while a bottom banner is visible', () => {
 	test.beforeEach(async ({ page }) => {
 		await seedSignedInFan(page, { installBanner: true })
 	})
-
-	/** The `space-s` step at this viewport, in px. */
-	const spaceS = (page: Page) => px(page, 'var(--space-s)')
 
 	/** Sunk: 40px across, centred, entirely within the bar's height. */
 	async function expectSunk(page: Page): Promise<Box> {
@@ -423,62 +370,5 @@ test.describe('sinking while a bottom banner is visible', () => {
 		)
 		const radius = await px(page, 'var(--fab-notch-radius)')
 		expect(notch).toContain(`${radius}px at`)
-	})
-
-	test(`@spec ${CAPABILITY} "The sunk FAB still opens the actions" (bottom banner)`, async ({
-		page,
-	}) => {
-		await openWithBanner(page)
-		await expectSunk(page)
-
-		await openArc(page)
-
-		await expect(fabItems(page)).toHaveCount(DASHBOARD_ACTIONS.length)
-		const f = centre(await box(fab(page)))
-		for (const item of await itemBoxes(page)) {
-			expect(centre(item.icon).y).toBeLessThan(f.y)
-		}
-	})
-
-	test(`@spec ${CAPABILITY} "A snack bar opens above a bottom banner"`, async ({
-		page,
-	}) => {
-		await openWithBanner(page)
-		await publishSnack(page, 'Saved', 10_000)
-		await expect(page.locator('.snack-item:popover-open')).toHaveCount(1)
-		await settle(page, 'snack-bar')
-		await settle(page, 'fab-menu')
-
-		// @spec components/infrastructure/fan/web/global/snack-bar "The FAB stays sunk under a banner and a snack bar"
-		const f = await expectSunk(page)
-		const snack = await box(page.locator('.snack-item'))
-		const banner = await box(page.locator('pwa-install-banner .bottom-banner'))
-		// The snack sits a space-s step above the banner, covering neither.
-		expect(banner.y - (snack.y + snack.height)).toBeCloseTo(
-			await spaceS(page),
-			0,
-		)
-		expect(intersects(f, snack)).toBe(false)
-		expect(intersects(snack, banner)).toBe(false)
-	})
-
-	test(`@spec ${CAPABILITY} "The bottom banner goes away"`, async ({
-		page,
-	}) => {
-		await openWithBanner(page)
-		await expectSunk(page)
-
-		// Confirming the install in the guide sheet removes the banner.
-		await page.getByTestId('pwa-install-banner-cta').click()
-		await page.getByTestId('pwa-install-banner-confirm').click()
-		await expect(page.locator('pwa-install-banner .bottom-banner')).toHaveCount(
-			0,
-		)
-		await settle(page, 'fab-menu')
-
-		const f = await box(fab(page))
-		expect(f.width).toBeCloseTo(56, 0)
-		// Protruding from the notch again.
-		expect(centre(f).y).toBeCloseTo((await box(nav(page))).y, 0)
 	})
 })

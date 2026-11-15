@@ -148,6 +148,7 @@ registered as a fake through `defineAureliaStory({ items })`, so nothing reaches
 is a connected component, and rendering one needs its data and modules mocked (Storybook, "Build pages
 with Storybook"). Use one when the defect lives in the route's own layout (its scroll container, what
 sits above what), which a component story does not render; cf. `src/routes/my-artists/my-artists-route.stories.ts`.
+`src/app-shell.stories.ts` renders the real `AppShell` this way, with a stand-in `<au-viewport>` that shows the page: use it for what the shell composes (the grid, the FAB in the notch, snack and banner placement).
 
 **Do NOT story**: `dna-orb` (canvas/Matter.js), or anything that needs live RPC, auth or canvas context.
 
