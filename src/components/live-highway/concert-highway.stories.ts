@@ -1534,10 +1534,18 @@ export const DealInWhenRowsArrive = {
 		// dealt in again.
 		const place = scroll.scrollTop
 		await scrollBy(2000)
-		await expect(
-			dealIns(first.key).every((a) => a.playState === 'paused'),
-			`reset out of view: ${dealIns(first.key).map((a) => `${a.playState}@${a.currentTime}`)}`,
-		).toBe(true)
+		// The browser resets the row a frame or more after it leaves the view
+		// (later on a busy machine), so wait for it rather than count frames.
+		await waitFor(
+			() => {
+				const live = dealIns(first.key).filter((a) => a.playState !== 'paused')
+				if (live.length > 0)
+					throw new Error(
+						`reset out of view: ${live.map((a) => `${a.playState}@${a.currentTime}`)}`,
+					)
+			},
+			{ timeout: 8000 },
+		)
 		await scrollBy(place - scroll.scrollTop)
 		const again = await started(rowInView, 'row comes back')
 		await expect(again.key).toBe(first.key)

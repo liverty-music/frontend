@@ -23,6 +23,17 @@ import ja from '../src/locales/ja/translation.json'
 export default definePreview({
 	addons: [addonA11y()],
 	tags: ['autodocs'],
+	// A story may leave a modal dialog or an open popover behind. The next story
+	// then starts under an inert page, and a viewport change on top of it once
+	// closed the browser connection mid-run, so every story ends with them shut.
+	afterEach: () => {
+		for (const dialog of document.querySelectorAll('dialog[open]')) {
+			;(dialog as HTMLDialogElement).close()
+		}
+		for (const popover of document.querySelectorAll(':popover-open')) {
+			;(popover as HTMLElement).hidePopover()
+		}
+	},
 	parameters: {
 		// Fail the run on any axe violation (design D3 / spec: "Accessibility checks
 		// run on component stories").
