@@ -474,10 +474,14 @@ export const ShortSwipe = {
 		if (!(await swipeSideways('.snack-surface', -0.3 * before.width))) return
 
 		// @spec components/infrastructure/fan/web/global/snack-bar "Short swipe"
-		await waitFor(() =>
-			expect(
-				Math.abs(surface.getBoundingClientRect().left - before.left),
-			).toBeLessThan(1),
+		// The snack scrolls back to its place; a busy runner takes longer than
+		// waitFor's default second.
+		await waitFor(
+			() =>
+				expect(
+					Math.abs(surface.getBoundingClientRect().left - before.left),
+				).toBeLessThan(1),
+			{ timeout: 8000 },
 		)
 		await sleep(300)
 		await expect(item.matches(':popover-open')).toBe(true)
