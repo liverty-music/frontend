@@ -201,6 +201,11 @@ const storybookProjectFor = ({
 	},
 	test: {
 		name,
+		// A story's time grows with how busy the machine is: the timetable stories
+		// build and scroll dozens of dated groups and took 5 s on a quiet laptop
+		// and 18 s on a loaded one. Each wait inside a story has its own bound, so
+		// this limit only catches a story that hangs.
+		testTimeout: 30_000,
 		setupFiles: ['./.storybook/vitest.setup.ts'],
 		browser: {
 			enabled: true,
