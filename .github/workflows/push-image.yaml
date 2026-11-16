@@ -211,6 +211,12 @@ jobs:
       # `capture-client-errors`, design D7). The key is a BuildKit secret so it
       # never reaches the image history; GIT_SHA names the release. A failed
       # upload fails the build.
+      # No BuildKit cache is read or written (`cache-from` / `cache-to`).
+      # Exporting it took 57.7 s of a 109 s build step (web, run 43747143317),
+      # longer than the build itself (`npm ci` 17 s, Vite 25.5 s), and the four
+      # images wrote 5.25 GB of the repository's 10 GB cache quota (10.72 GB
+      # used on 2026-11-16). The lock file changed in about half of the
+      # recent pushes, so the `npm ci` layer was reused in the other half only.
       - name: Build and Push Docker Image
         if: github.event_name == 'push' && steps.decide.outputs.mode == 'build'
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
@@ -220,8 +226,6 @@ jobs:
           tags: ${{ env.IMAGE_TAGS }}
           build-args: GIT_SHA=${{ github.sha }}
           secrets: posthog_sourcemap_key=${{ secrets.POSTHOG_SOURCEMAP_API_KEY }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
 
       # ====================================================================
       # Release path: retag the dev AR digest into prod AR — no rebuild
@@ -523,8 +527,6 @@ jobs:
           file: Dockerfile.admin
           push: true
           tags: ${{ env.IMAGE_TAGS }}
-          cache-from: type=gha,scope=admin
-          cache-to: type=gha,mode=max,scope=admin
 
       - name: Install crane
         if: github.event_name == 'release' || (github.event_name == 'push' && steps.decide.outputs.mode == 'inherit')
@@ -728,8 +730,6 @@ jobs:
           file: Dockerfile.organizer
           push: true
           tags: ${{ env.IMAGE_TAGS }}
-          cache-from: type=gha,scope=organizer
-          cache-to: type=gha,mode=max,scope=organizer
 
       - name: Install crane
         if: github.event_name == 'release' || (github.event_name == 'push' && steps.decide.outputs.mode == 'inherit')
@@ -950,8 +950,6 @@ jobs:
           file: Dockerfile.reception
           push: true
           tags: ${{ env.IMAGE_TAGS }}
-          cache-from: type=gha,scope=reception
-          cache-to: type=gha,mode=max,scope=reception
 
       - name: Install crane
         if: github.event_name == 'release' || (github.event_name == 'push' && steps.decide.outputs.mode == 'inherit')
