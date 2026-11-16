@@ -217,16 +217,20 @@ export class BottomSheet {
 			this.finalizeClose()
 			return
 		}
-		// Smooth scroll: finalize when it settles. Prefer `scrollend`; fall back
-		// to a timeout for engines that do not fire it (and for the no-op case
-		// where the sheet is already at the top, which emits no scroll event).
+		// Smooth scroll: finalize when it settles. Where the engine fires
+		// `scrollend` it alone ends the wait, however long a busy page takes to
+		// scroll (a timer would close the sheet while it is still on screen).
+		// A timeout stands in for engines without `scrollend`, and for the no-op
+		// case where the sheet is already at the top, which scrolls nothing.
 		const finish = (): void => {
 			this.clearScrollWatch()
 			if (this.dismissing) this.finalizeClose()
 		}
 		this.scrollEndHandler = finish
 		this.scrollArea.addEventListener('scrollend', finish, { once: true })
-		this.scrollFallbackTimer = setTimeout(finish, 400)
+		if (!('onscrollend' in window) || this.scrollArea.scrollTop === 0) {
+			this.scrollFallbackTimer = setTimeout(finish, 400)
+		}
 		try {
 			this.scrollArea.scrollTo({ top: 0, behavior: 'smooth' })
 		} catch {

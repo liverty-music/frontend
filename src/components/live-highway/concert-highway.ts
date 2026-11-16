@@ -218,7 +218,16 @@ export class ConcertHighway {
 			const below = groups[Math.min(at + WINDOW_CONTEXT, groups.length - 1)]
 			below.scrollIntoView({ block: 'start', behavior: 'instant' })
 		}
+		const distance =
+			groups[at].getBoundingClientRect().top - el.getBoundingClientRect().top
 		groups[at].scrollIntoView({ block: 'start', inline: 'nearest' })
+		if (
+			Math.abs(distance) < 1 ||
+			matchMedia('(prefers-reduced-motion: reduce)').matches
+		) {
+			// Nothing will animate, so no `scrollend` will come to end the pause.
+			requestAnimationFrame(() => this.endJump?.())
+		}
 	}
 
 	/** A scroll of the timetable ended (`scrollend` on the scroll container). */
@@ -232,8 +241,10 @@ export class ConcertHighway {
 	 * Hold the window still until the jump's scroll ends. The `scrollend`
 	 * that ends it is taken only from the next frame on: the instant
 	 * placement before the smooth scroll may report one of its own first.
-	 * A browser that fires none, or a jump that does not scroll at all
-	 * (reduced motion), is released by the timeout.
+	 * A browser that fires no `scrollend` is released by the timeout, which a
+	 * browser that does must not use: a fixed time ends the pause while the
+	 * scroll is still moving. A jump that does not scroll at all (reduced
+	 * motion, or already in place) is released by `jumpToMonth`.
 	 */
 	private pauseGrowth(): void {
 		this.endJump?.()
@@ -241,7 +252,9 @@ export class ConcertHighway {
 		const frame = requestAnimationFrame(() => {
 			this.jumpArmed = true
 		})
-		this.jumpTimer = setTimeout(() => this.endJump?.(), JUMP_SETTLE_MS)
+		if (!('onscrollend' in window)) {
+			this.jumpTimer = setTimeout(() => this.endJump?.(), JUMP_SETTLE_MS)
+		}
 		this.endJump = () => {
 			cancelAnimationFrame(frame)
 			clearTimeout(this.jumpTimer)

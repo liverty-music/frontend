@@ -38,6 +38,36 @@ function makeConcert(overrides: Partial<Concert>): Concert {
 	}
 }
 
+/**
+ * Makes `'onscrollend' in window` true or false for one test, whatever jsdom
+ * defines, and returns the function that puts it back.
+ */
+function scrollEndSupport(supported: boolean): () => void {
+	const saved: Array<[object, PropertyDescriptor]> = []
+	for (
+		let o: object | null = window;
+		o;
+		o = Object.getPrototypeOf(o) as object | null
+	) {
+		const d = Object.getOwnPropertyDescriptor(o, 'onscrollend')
+		if (d) {
+			saved.push([o, d])
+			Reflect.deleteProperty(o, 'onscrollend')
+		}
+	}
+	if (supported) {
+		Object.defineProperty(window, 'onscrollend', {
+			value: null,
+			configurable: true,
+			writable: true,
+		})
+	}
+	return () => {
+		Reflect.deleteProperty(window, 'onscrollend')
+		for (const [o, d] of saved) Object.defineProperty(o, 'onscrollend', d)
+	}
+}
+
 describe('ConcertHighway', () => {
 	let sut: ConcertHighway
 
@@ -362,6 +392,7 @@ describe('ConcertHighway', () => {
 		})
 
 		it('adds no dates while the jump scrolls, and resumes when it ends', () => {
+			const restore = scrollEndSupport(false)
 			vi.useFakeTimers()
 			try {
 				sut.topEdge = {} as HTMLElement
@@ -387,23 +418,57 @@ describe('ConcertHighway', () => {
 				expect(built(sut)[0] < after[0]).toBe(true)
 			} finally {
 				vi.useRealTimers()
+				restore()
 			}
 		})
 
-		it('leaves no frame or timer pending once detached', () => {
+		it('is released by the scroll end alone where the browser fires one', () => {
+			const restore = scrollEndSupport(true)
 			vi.useFakeTimers()
 			try {
-				openAt(sut, months(['2026-11', 30], ['2026-12', 31]), '2026-11-14')
+				sut.topEdge = {} as HTMLElement
+				const { top } = openAt(
+					sut,
+					months(['2026-11', 30], ['2026-12', 31]),
+					'2026-11-14',
+				)
 				sut.jumpToMonth(1)
-				expect(vi.getTimerCount()).toBe(2)
+				top.key = '2026-12-01'
+				const after = built(sut)
 
-				sut.detaching()
-
-				expect(vi.getTimerCount()).toBe(0)
+				// A fixed time must not end the pause while the scroll still moves.
+				vi.advanceTimersByTime(10 * JUMP_SETTLE_MS)
+				// @ts-expect-error -- the edge observer's callback
+				sut.onEdgesSeen([{ isIntersecting: true, target: sut.topEdge }])
+				expect(built(sut)).toEqual(after)
 			} finally {
 				vi.useRealTimers()
+				restore()
 			}
 		})
+
+		it.each([
+			['fires no scrollend', false],
+			['fires scrollend', true],
+		])(
+			'leaves no frame or timer pending once detached (browser %s)',
+			(_name, supported) => {
+				const restore = scrollEndSupport(supported)
+				vi.useFakeTimers()
+				try {
+					openAt(sut, months(['2026-11', 30], ['2026-12', 31]), '2026-11-14')
+					sut.jumpToMonth(1)
+					expect(vi.getTimerCount()).toBeGreaterThan(0)
+
+					sut.detaching()
+
+					expect(vi.getTimerCount()).toBe(0)
+				} finally {
+					vi.useRealTimers()
+					restore()
+				}
+			},
+		)
 
 		it('resumes growth on the scroll end of the jump, not of its placement', () => {
 			vi.useFakeTimers()
