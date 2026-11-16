@@ -11,7 +11,11 @@ vi.mock('aurelia', async (importOriginal) => {
 })
 
 import type { Concert, DateGroup } from '../../entities/concert'
-import { ConcertHighway, JUMP_SETTLE_MS } from './concert-highway'
+import {
+	ConcertHighway,
+	JUMP_SETTLE_MS,
+	JUMP_SETTLE_WITH_SCROLLEND_MS,
+} from './concert-highway'
 
 const fakeElement = {
 	querySelector: vi.fn((): unknown => null),
@@ -38,35 +42,9 @@ function makeConcert(overrides: Partial<Concert>): Concert {
 	}
 }
 
-/**
- * Makes `'onscrollend' in window` true or false for one test, whatever jsdom
- * defines, and returns the function that puts it back.
- */
-function scrollEndSupport(supported: boolean): () => void {
-	const saved: Array<[object, PropertyDescriptor]> = []
-	for (
-		let o: object | null = window;
-		o;
-		o = Object.getPrototypeOf(o) as object | null
-	) {
-		const d = Object.getOwnPropertyDescriptor(o, 'onscrollend')
-		if (d) {
-			saved.push([o, d])
-			Reflect.deleteProperty(o, 'onscrollend')
-		}
-	}
-	if (supported) {
-		Object.defineProperty(window, 'onscrollend', {
-			value: null,
-			configurable: true,
-			writable: true,
-		})
-	}
-	return () => {
-		Reflect.deleteProperty(window, 'onscrollend')
-		for (const [o, d] of saved) Object.defineProperty(o, 'onscrollend', d)
-	}
-}
+/** The quiet period the code under test uses in this environment. */
+const QUIET_MS =
+	'onscrollend' in window ? JUMP_SETTLE_WITH_SCROLLEND_MS : JUMP_SETTLE_MS
 
 describe('ConcertHighway', () => {
 	let sut: ConcertHighway
@@ -238,8 +216,15 @@ describe('ConcertHighway', () => {
 		 * order: `scrollTo 0 instant`, `into <date> instant`, or
 		 * `into <date> css` for a scroll whose motion the stylesheet decides.
 		 */
+		/** The `scroll` listeners on the fake scroll container. */
+		let scrollListeners: Array<() => void> = []
+		const scrollEvent = () => {
+			for (const listener of [...scrollListeners]) listener()
+		}
+
 		function mount(sut: ConcertHighway, top: { key: string }) {
 			const scrolls: string[] = []
+			scrollListeners = []
 			const node = (dateKey: string, i: number, at: number) => ({
 				dataset: { dateKey },
 				getBoundingClientRect: () => ({
@@ -262,6 +247,13 @@ describe('ConcertHighway', () => {
 					scrolls.push(`scrollTo ${o.top} ${o.behavior}`)
 				},
 				scrollBy: () => {},
+				addEventListener: (type: string, listener: () => void) => {
+					if (type === 'scroll') scrollListeners.push(listener)
+				},
+				removeEventListener: (type: string, listener: () => void) => {
+					if (type === 'scroll')
+						scrollListeners = scrollListeners.filter((l) => l !== listener)
+				},
 			}
 			fakeElement.querySelector.mockImplementation(((sel: string) =>
 				sel === '.concert-scroll' ? el : null) as never)
@@ -392,7 +384,6 @@ describe('ConcertHighway', () => {
 		})
 
 		it('adds no dates while the jump scrolls, and resumes when it ends', () => {
-			const restore = scrollEndSupport(false)
 			vi.useFakeTimers()
 			try {
 				sut.topEdge = {} as HTMLElement
@@ -411,19 +402,17 @@ describe('ConcertHighway', () => {
 				expect(built(sut)).toEqual(after)
 
 				// A browser that fires no `scrollend` is released by the timeout.
-				vi.advanceTimersByTime(JUMP_SETTLE_MS)
+				vi.advanceTimersByTime(QUIET_MS)
 				// @ts-expect-error -- the edge observer's callback
 				sut.onEdgesSeen([{ isIntersecting: true, target: sut.topEdge }])
 				expect(built(sut).length).toBeGreaterThan(after.length)
 				expect(built(sut)[0] < after[0]).toBe(true)
 			} finally {
 				vi.useRealTimers()
-				restore()
 			}
 		})
 
-		it('is released by the scroll end alone where the browser fires one', () => {
-			const restore = scrollEndSupport(true)
+		it('stays paused while the jump keeps scrolling, and resumes after a quiet period', () => {
 			vi.useFakeTimers()
 			try {
 				sut.topEdge = {} as HTMLElement
@@ -436,39 +425,62 @@ describe('ConcertHighway', () => {
 				top.key = '2026-12-01'
 				const after = built(sut)
 
-				// A fixed time must not end the pause while the scroll still moves.
-				vi.advanceTimersByTime(10 * JUMP_SETTLE_MS)
+				// A smooth scroll that outlasts the quiet period: a scroll event
+				// arrives just inside the quiet period, ten times over.
+				for (let i = 0; i < 10; i++) {
+					vi.advanceTimersByTime(QUIET_MS - 200)
+					scrollEvent()
+				}
 				// @ts-expect-error -- the edge observer's callback
 				sut.onEdgesSeen([{ isIntersecting: true, target: sut.topEdge }])
 				expect(built(sut)).toEqual(after)
+
+				vi.advanceTimersByTime(QUIET_MS)
+				// @ts-expect-error -- the edge observer's callback
+				sut.onEdgesSeen([{ isIntersecting: true, target: sut.topEdge }])
+				expect(built(sut).length).toBeGreaterThan(after.length)
 			} finally {
 				vi.useRealTimers()
-				restore()
 			}
 		})
 
-		it.each([
-			['fires no scrollend', false],
-			['fires scrollend', true],
-		])(
-			'leaves no frame or timer pending once detached (browser %s)',
-			(_name, supported) => {
-				const restore = scrollEndSupport(supported)
-				vi.useFakeTimers()
-				try {
-					openAt(sut, months(['2026-11', 30], ['2026-12', 31]), '2026-11-14')
-					sut.jumpToMonth(1)
-					expect(vi.getTimerCount()).toBeGreaterThan(0)
+		it('is released after a quiet period when the list cannot scroll at all', () => {
+			vi.useFakeTimers()
+			try {
+				sut.topEdge = {} as HTMLElement
+				const { top } = openAt(
+					sut,
+					months(['2026-11', 30], ['2026-12', 31]),
+					'2026-11-14',
+				)
+				sut.jumpToMonth(1)
+				top.key = '2026-12-01'
+				const after = built(sut)
 
-					sut.detaching()
+				// No `scroll` and no `scrollend` ever comes.
+				vi.advanceTimersByTime(QUIET_MS)
+				// @ts-expect-error -- the edge observer's callback
+				sut.onEdgesSeen([{ isIntersecting: true, target: sut.topEdge }])
+				expect(built(sut).length).toBeGreaterThan(after.length)
+			} finally {
+				vi.useRealTimers()
+			}
+		})
 
-					expect(vi.getTimerCount()).toBe(0)
-				} finally {
-					vi.useRealTimers()
-					restore()
-				}
-			},
-		)
+		it('leaves no frame or timer pending once detached', () => {
+			vi.useFakeTimers()
+			try {
+				openAt(sut, months(['2026-11', 30], ['2026-12', 31]), '2026-11-14')
+				sut.jumpToMonth(1)
+				expect(vi.getTimerCount()).toBe(2)
+
+				sut.detaching()
+
+				expect(vi.getTimerCount()).toBe(0)
+			} finally {
+				vi.useRealTimers()
+			}
+		})
 
 		it('resumes growth on the scroll end of the jump, not of its placement', () => {
 			vi.useFakeTimers()

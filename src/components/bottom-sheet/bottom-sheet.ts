@@ -2,6 +2,15 @@ import { bindable, INode, resolve } from 'aurelia'
 import { IBottomSheetTracker } from '../../services/bottom-sheet-tracker'
 
 /**
+ * How long a dismiss scroll may stay silent (no `scroll` event) before the
+ * close is finished without a `scrollend`. An engine that fires `scrollend`
+ * gets the long period: there the timer is only a safety net, and a busy page
+ * can go quiet for longer than the short one while the sheet is still moving.
+ */
+const SCROLL_QUIET_MS = 400
+const SCROLL_QUIET_WITH_SCROLLEND_MS = 1500
+
+/**
  * Bottom-sheet primitive built on the web.dev `navigation-drawer` pattern
  * (non-modal `popover` + scroll-snap dismiss), adapted to a vertical sheet.
  *
@@ -79,6 +88,7 @@ export class BottomSheet {
 	// Smooth scroll-to-closed watchers (settle detection).
 	private scrollFallbackTimer: ReturnType<typeof setTimeout> | undefined
 	private scrollEndHandler: (() => void) | undefined
+	private scrollMovedHandler: (() => void) | undefined
 
 	public openChanged(isOpen: boolean): void {
 		if (isOpen) {
@@ -217,20 +227,30 @@ export class BottomSheet {
 			this.finalizeClose()
 			return
 		}
-		// Smooth scroll: finalize when it settles. Where the engine fires
-		// `scrollend` it alone ends the wait, however long a busy page takes to
-		// scroll (a timer would close the sheet while it is still on screen).
-		// A timeout stands in for engines without `scrollend`, and for the no-op
-		// case where the sheet is already at the top, which scrolls nothing.
+		// Smooth scroll: finalize when it settles. `scrollend` ends the wait. A
+		// quiet-period timer stands in where it never comes (an engine without
+		// it, a scroll that moves nothing because the sheet is already at the
+		// top, or a sheet removed mid-scroll). Every `scroll` event restarts the
+		// timer, so a scroll that outlasts it on a busy page is not cut short:
+		// a fixed timer from the start closed the sheet while it was on screen.
 		const finish = (): void => {
 			this.clearScrollWatch()
 			if (this.dismissing) this.finalizeClose()
 		}
-		this.scrollEndHandler = finish
-		this.scrollArea.addEventListener('scrollend', finish, { once: true })
-		if (!('onscrollend' in window) || this.scrollArea.scrollTop === 0) {
-			this.scrollFallbackTimer = setTimeout(finish, 400)
+		const quiet = (): void => {
+			clearTimeout(this.scrollFallbackTimer)
+			this.scrollFallbackTimer = setTimeout(
+				finish,
+				'onscrollend' in window
+					? SCROLL_QUIET_WITH_SCROLLEND_MS
+					: SCROLL_QUIET_MS,
+			)
 		}
+		this.scrollEndHandler = finish
+		this.scrollMovedHandler = quiet
+		this.scrollArea.addEventListener('scrollend', finish, { once: true })
+		this.scrollArea.addEventListener('scroll', quiet)
+		quiet()
 		try {
 			this.scrollArea.scrollTo({ top: 0, behavior: 'smooth' })
 		} catch {
@@ -430,7 +450,11 @@ export class BottomSheet {
 		if (this.scrollEndHandler && this.scrollArea) {
 			this.scrollArea.removeEventListener('scrollend', this.scrollEndHandler)
 		}
+		if (this.scrollMovedHandler && this.scrollArea) {
+			this.scrollArea.removeEventListener('scroll', this.scrollMovedHandler)
+		}
 		this.scrollEndHandler = undefined
+		this.scrollMovedHandler = undefined
 	}
 
 	private prefersReducedMotion(): boolean {
