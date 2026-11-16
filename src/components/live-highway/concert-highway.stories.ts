@@ -1080,6 +1080,28 @@ async function scrollAtRest(scroll: HTMLElement, timeout = 10_000) {
 	}
 }
 
+/**
+ * Waits until the timetable has taken in the last scroll: its scroll position,
+ * its height and the dates built have not changed for two frames in a row (the
+ * window grows a frame or more after the edge comes into view, later on a busy
+ * machine). A fixed number of frames either waits too little there or too long
+ * on a quick one.
+ */
+async function settled(scroll: HTMLElement, timeout = 8000) {
+	const deadline = performance.now() + timeout
+	const state = () =>
+		`${scroll.scrollTop}|${scroll.scrollHeight}|${scroll.querySelectorAll('.date-group[data-date-key]').length}`
+	let last = ''
+	let still = 0
+	while (still < 2) {
+		if (performance.now() > deadline) throw new Error('the list kept changing')
+		await new Promise((r) => requestAnimationFrame(r))
+		const now = state()
+		still = now === last ? still + 1 : 0
+		last = now
+	}
+}
+
 /** Which month-jump buttons are on screen: `prev`, `next`. */
 function shownJumps(root: HTMLElement): string[] {
 	return [...root.querySelectorAll<HTMLElement>('.month-jump-button')]
@@ -1735,12 +1757,12 @@ export const WindowGrowsWhileScrolling = {
 		const last = LONG_GROUPS[59].dateKey
 		for (let i = 0; i < 400 && !builtKeys(canvasElement).includes(last); i++) {
 			scroll.scrollTo({ top: scroll.scrollHeight, behavior: 'instant' })
-			await frames(2)
+			await settled(scroll)
 		}
 		await expect(builtKeys(canvasElement)).toContain(last)
 
 		// @spec components/infrastructure/fan/web/route/dashboard "Viewport-scoping off-screen content does not regress sticky headers or shift layout"
-		await frames(3)
+		await settled(scroll)
 		await expect(shift - shiftBefore).toBe(0)
 		observer.disconnect()
 		const separators = [
@@ -1779,7 +1801,7 @@ export const TwoLanesWhileScrolling = {
 		await expect(builtKeys(canvasElement).length).toBeLessThanOrEqual(24)
 		for (let i = 0; i < 12; i++) {
 			scroll.scrollBy({ top: scroll.clientHeight, behavior: 'instant' })
-			await frames(2)
+			await settled(scroll)
 		}
 		await assertLanesAlignWithStageHeader(canvasElement, 2, true)
 		await expect(canvasElement.querySelector('[data-lane="away"]')).toBeNull()
@@ -1816,7 +1838,7 @@ export const ScrollingUpFromRestoredDate = {
 		// @spec components/infrastructure/fan/web/route/dashboard "Scrolling up from a restored date reaches earlier dates without a jump"
 		const scroll = canvasElement.querySelector<HTMLElement>('.concert-scroll')
 		if (!scroll) throw new Error('concert-scroll not rendered')
-		await frames(5)
+		await settled(scroll)
 		const groups = () => [
 			...scroll.querySelectorAll<HTMLElement>('.date-group[data-date-key]'),
 		]
@@ -1831,7 +1853,7 @@ export const ScrollingUpFromRestoredDate = {
 			const scrollBefore = scroll.scrollTop
 			scroll.scrollBy({ top: -240, behavior: 'instant' })
 			const scrolled = scrollBefore - scroll.scrollTop
-			await frames(4)
+			await settled(scroll)
 			const same = groups().find((g) => g.dataset.dateKey === key)
 			out.push({
 				grew: groups()[0].dataset.dateKey !== firstBefore,
