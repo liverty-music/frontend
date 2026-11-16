@@ -10,10 +10,13 @@ export const WINDOW_SIZE = 12
 /** Dates kept above the anchored one, so the fan lands with context above. */
 export const WINDOW_CONTEXT = 2
 /**
- * How long a month jump waits for the scroll container's `scrollend` before
- * it lets the window grow again, for a browser that does not fire it.
+ * How long a month jump may stay silent (no `scroll` event, no `scrollend`)
+ * before it lets the window grow again. A browser that fires `scrollend` gets
+ * the long period: there the timer is only a safety net, and a busy page can
+ * go quiet for longer than the short one while the list is still moving.
  */
 export const JUMP_SETTLE_MS = 600
+export const JUMP_SETTLE_WITH_SCROLLEND_MS = 1500
 
 /** The month of a date key: "2026-11-14" → "2026-11" (sorts as a string). */
 function monthOf(dateKey: string): string {
@@ -232,8 +235,8 @@ export class ConcertHighway {
 	 * Hold the window still until the jump's scroll ends. The `scrollend`
 	 * that ends it is taken only from the next frame on: the instant
 	 * placement before the smooth scroll may report one of its own first.
-	 * A browser that fires none, or a jump that does not scroll at all
-	 * (reduced motion), is released by the timeout.
+	 * Where no `scrollend` comes, the pause is released after a quiet period
+	 * that every `scroll` event restarts.
 	 */
 	private pauseGrowth(): void {
 		this.endJump?.()
@@ -241,10 +244,27 @@ export class ConcertHighway {
 		const frame = requestAnimationFrame(() => {
 			this.jumpArmed = true
 		})
-		this.jumpTimer = setTimeout(() => this.endJump?.(), JUMP_SETTLE_MS)
+		// A quiet-period timer stands in where `scrollend` never comes (a browser
+		// without it, a jump that moves nothing such as reduced motion, a list
+		// already in place or too short to scroll). Every `scroll` event restarts
+		// it, so a jump that outlasts it on a busy page is not cut short: a fixed
+		// timer from the start lifted the pause while the list was still moving.
+		const quiet = () => {
+			clearTimeout(this.jumpTimer)
+			this.jumpTimer = setTimeout(
+				() => this.endJump?.(),
+				'onscrollend' in window
+					? JUMP_SETTLE_WITH_SCROLLEND_MS
+					: JUMP_SETTLE_MS,
+			)
+		}
+		const scroller = this.scrollEl
+		scroller?.addEventListener('scroll', quiet)
+		quiet()
 		this.endJump = () => {
 			cancelAnimationFrame(frame)
 			clearTimeout(this.jumpTimer)
+			scroller?.removeEventListener('scroll', quiet)
 			this.endJump = null
 			this.jumpArmed = false
 			this.jumping = false
