@@ -960,7 +960,7 @@ describe('EventRoute', () => {
 			expect(kept()).toEqual({
 				code: 'member-a',
 				seriesId: SERIES_ID,
-				expiresAt: jst(8, 12).getTime(),
+				expireTime: jst(8, 12).getTime(),
 			})
 			// Nothing the page links to carries the code.
 			expect(sut.shareUrl).toBe(`${window.location.origin}/events/${EVENT_ID}`)
@@ -983,7 +983,7 @@ describe('EventRoute', () => {
 				JSON.stringify({
 					code: 'member-a',
 					seriesId: OTHER_SERIES_ID,
-					expiresAt: jst(5, 12).getTime(),
+					expireTime: jst(5, 12).getTime(),
 				}),
 			)
 			openedWith('?ref=member-b')
@@ -993,7 +993,7 @@ describe('EventRoute', () => {
 			expect(kept()).toEqual({
 				code: 'member-b',
 				seriesId: SERIES_ID,
-				expiresAt: jst(8, 12).getTime(),
+				expireTime: jst(8, 12).getTime(),
 			})
 		})
 
@@ -1002,7 +1002,7 @@ describe('EventRoute', () => {
 			const before = {
 				code: 'member-a',
 				seriesId: SERIES_ID,
-				expiresAt: jst(5, 12).getTime(),
+				expireTime: jst(5, 12).getTime(),
 			}
 			localStorage.setItem('referral', JSON.stringify(before))
 			openedWith('?ref=member_b')

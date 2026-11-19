@@ -617,7 +617,7 @@ describe('UserStore', () => {
 			const kept = JSON.stringify({
 				code: 'member-a',
 				seriesId: 's1',
-				expiresAt: Date.now() + 1000,
+				expireTime: Date.now() + 1000,
 			})
 			localStorage.setItem('referral', kept)
 			const { emitSignedOut } = build({ auth: makeAuthWithProfile() })

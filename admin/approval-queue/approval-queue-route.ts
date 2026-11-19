@@ -37,7 +37,7 @@ export interface QueueRow {
 	readonly resolvedAdminArea: string
 	readonly hasResolvedVenue: boolean
 	readonly sourceUrl: string
-	readonly discoveredTime: string
+	readonly findTime: string
 	busy: boolean
 	rejecting: boolean
 	rejectReason: string
@@ -138,7 +138,7 @@ function toRow(concert: ConcertCandidate): QueueRow {
 		resolvedAdminArea: resolved?.adminArea?.value ?? EMPTY,
 		hasResolvedVenue: resolved !== undefined,
 		sourceUrl: concert.sourceUrl?.value ?? '',
-		discoveredTime: formatTimestamp(concert.discoveredTime),
+		findTime: formatTimestamp(concert.findTime),
 		busy: false,
 		rejecting: false,
 		rejectReason: '',

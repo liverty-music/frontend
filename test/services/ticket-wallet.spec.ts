@@ -309,9 +309,9 @@ describe('TicketWallet', () => {
 		const storage = new IndexedDbWalletStorage(new IDBFactory())
 		const { wallet, ea } = build(storage)
 		await wallet.checkDevice(true)
-		await wallet.saveSnapshot({ savedAt: new Date(0), groups: [] })
+		await wallet.saveSnapshot({ saveTime: new Date(0), groups: [] })
 		expect(await wallet.loadSnapshot()).toEqual({
-			savedAt: new Date(0),
+			saveTime: new Date(0),
 			groups: [],
 		})
 

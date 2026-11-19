@@ -93,7 +93,7 @@ function makeConcert(opts: {
 		sourceUrl: opts.sourceUrl ? { value: opts.sourceUrl } : undefined,
 		openTime: opts.openTime ? { value: opts.openTime } : undefined,
 		startTime: opts.startTime ? { value: opts.startTime } : undefined,
-		discoveredTime: timestampFromDate(new Date('2026-06-01T12:00:00Z')),
+		findTime: timestampFromDate(new Date('2026-06-01T12:00:00Z')),
 	})
 }
 

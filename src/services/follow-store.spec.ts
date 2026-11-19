@@ -786,7 +786,7 @@ describe('FollowStore', () => {
 			const kept = JSON.stringify({
 				code: 'member-a',
 				seriesId: 's1',
-				expiresAt: Date.now() + 1000,
+				expireTime: Date.now() + 1000,
 			})
 			lsMap.set('referral', kept)
 
