@@ -1,12 +1,21 @@
 name: CI
 
-# Pull requests are the gate. `main` is not re-checked on every push: from
-# 2026-08-21 to 2026-10-21 those runs found no merge that broke `main`, and
-# nobody was told when one failed (cloud-provisioning#666). A daily run checks
-# `main` with every job and opens or updates an Issue labelled `ci` when it
-# fails. Path-filtered jobs are skipped rather than replaced by `*-skip`
-# placeholders: only `CI Success` is required, and `alls-green` treats the
-# jobs in `allowed-skips` as passing when skipped.
+# Pull requests are the gate: every job below runs on every pull request,
+# and branch protection requires the one aggregate check `CI Success`.
+#
+# There is no path filter. A filter is an allow-list of the files that can
+# change a result, and such a list is never complete: `.nvmrc` (the Node
+# version every job installs) was missing, and before that a Playwright
+# config was, so a pull request touching only those files skipped the jobs
+# and still reported `CI Success` green. In the last 100 merged pull requests
+# the filter skipped the jobs of one, which changed only documentation, so it
+# saved almost nothing; one run of every job takes about 13 runner-minutes,
+# in parallel.
+#
+# `main` is not re-checked on every push: from 2026-08-21 to 2026-10-21 those
+# runs found no merge that broke `main`, and nobody was told when one failed
+# (cloud-provisioning#666). A daily run checks `main` with every job and opens
+# or updates an Issue labelled `ci` when it fails.
 on:
   pull_request:
   schedule:
@@ -22,74 +31,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  changes:
-    runs-on: ubuntu-latest
-    # Path filters apply to pull requests only. A scheduled or manual run checks
-    # the whole of `main`, so every output is true for it.
-    outputs:
-      src: ${{ github.event_name != 'pull_request' || steps.filter.outputs.src == 'true' }}
-      storybook: ${{ github.event_name != 'pull_request' || steps.filter.outputs.storybook == 'true' }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        if: github.event_name == 'pull_request'
-      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4
-        if: github.event_name == 'pull_request'
-        id: filter
-        with:
-          filters: |
-            src:
-              - 'src/**'
-              # The organizer and admin entries: the production-build checks
-              # render them, and Lint/Test cover their code.
-              - 'organizer/**'
-              - 'admin/**'
-              - 'organizer.html'
-              - 'admin.html'
-              # The reception app (its own build) and the shared/ modules it
-              # imports from source: the Lint job builds and checks it.
-              - 'reception/**'
-              - 'shared/**'
-              - 'reception.html'
-              - 'vite.reception.config.ts'
-              - 'test/**'
-              - 'e2e/**'
-              - 'scripts/**'
-              - 'index.html'
-              - 'public/**'
-              - 'package.json'
-              - 'package-lock.json'
-              - 'tsconfig*.json'
-              - 'vite.config.ts'
-              - 'vitest.config.ts'
-              - 'biome.json'
-              - 'stylelint.config.js'
-              - 'stylelint-plugin-cube-css/**'
-              - 'Makefile'
-              - 'playwright.config.mjs'
-              - 'playwright.smoke.config.mjs'
-              # playwright.pwa.config.mjs is the config the PWA step runs from.
-              # Without it here, a PR touching only that file skips the whole e2e
-              # job and still reports CI Success green.
-              - 'playwright.pwa.config.mjs'
-              - 'playwright.prod-build.config.mjs'
-              - '.github/workflows/**'
-            # Anything that can change a component's rendered output must
-            # (re)run the browser component tests — including a component
-            # .ts/.html/.css edit with no story change (spec: "Component tests
-            # are skipped when no relevant files change").
-            storybook:
-              - 'src/components/**'
-              - '**/*.stories.*'
-              - '.storybook/**'
-              - 'vitest.config.ts'
-              - 'vite.config.ts'
-              - 'package.json'
-              - 'package-lock.json'
-              - '.github/workflows/**'
-
   lint:
-    needs: changes
-    if: needs.changes.outputs.src == 'true'
     name: Lint
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -116,8 +58,6 @@ jobs:
         run: make verify-reception-bundle
 
   test:
-    needs: changes
-    if: needs.changes.outputs.src == 'true'
     name: Test
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -155,8 +95,6 @@ jobs:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   security:
-    needs: changes
-    if: needs.changes.outputs.src == 'true'
     name: Security Audit
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -177,8 +115,6 @@ jobs:
         run: npm audit --omit=dev --audit-level=moderate
 
   smoke:
-    needs: changes
-    if: needs.changes.outputs.src == 'true'
     name: Smoke and phone E2E
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -244,8 +180,6 @@ jobs:
           retention-days: 7
 
   e2e:
-    needs: changes
-    if: needs.changes.outputs.src == 'true'
     name: E2E (${{ matrix.shard }}/2)
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -304,8 +238,6 @@ jobs:
           retention-days: 7
 
   prod-build:
-    needs: changes
-    if: needs.changes.outputs.src == 'true'
     name: Production Build Checks
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -362,8 +294,6 @@ jobs:
           retention-days: 7
 
   storybook-test:
-    needs: changes
-    if: needs.changes.outputs.storybook == 'true'
     name: Storybook Component Tests
     runs-on: ubuntu-latest
     # Run inside the pinned official Playwright image so component rendering is
@@ -406,12 +336,11 @@ jobs:
   ci-success:
     name: CI Success
     runs-on: ubuntu-latest
-    needs: [changes, lint, test, security, smoke, e2e, prod-build, storybook-test]
+    needs: [lint, test, security, smoke, e2e, prod-build, storybook-test]
     if: always()
     steps:
       - uses: re-actors/alls-green@b5b5b37504aa4183270bd3d855c52a67f212be35 # release/v1
         with:
-          allowed-skips: lint, test, security, smoke, e2e, prod-build, storybook-test
           jobs: ${{ toJSON(needs) }}
 
   report-main-failure:
