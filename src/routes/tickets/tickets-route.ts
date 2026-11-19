@@ -109,7 +109,7 @@ export class TicketsRoute {
 	/** True while the list shown is the saved one (no connection). */
 	public offline = false
 	/** When the saved list was loaded, when `offline`. */
-	public savedAt: Date | null = null
+	public saveTime: Date | null = null
 	/** The personal details saved with the list last shown from the device. */
 	private savedPersonalDetails: WalletPersonalDetails | null = null
 
@@ -214,7 +214,7 @@ export class TicketsRoute {
 		if (signal.aborted) return
 		this.groups = withStocks
 		this.offline = false
-		this.savedAt = null
+		this.saveTime = null
 		this.savedPersonalDetails = saved?.personalDetails ?? null
 		this.step = live.length === 0 ? 'empty' : 'loaded'
 		this.saveSnapshot()
@@ -344,7 +344,7 @@ export class TicketsRoute {
 		this.groups = [...saved.groups]
 		this.listings = [...(saved.listings ?? [])]
 		this.offline = true
-		this.savedAt = saved.savedAt
+		this.saveTime = saved.saveTime
 		this.savedPersonalDetails = saved?.personalDetails ?? null
 		this.step = saved.groups.length === 0 ? 'empty' : 'loaded'
 	}
@@ -366,7 +366,7 @@ export class TicketsRoute {
 	private saveSnapshot(): void {
 		const personalDetails = this.personalDetails
 		void this.wallet.saveSnapshot<WalletSnapshot>({
-			savedAt: new Date(),
+			saveTime: new Date(),
 			groups: this.groups,
 			listings: this.listings,
 			...(personalDetails ? { personalDetails } : {}),
@@ -551,7 +551,7 @@ export class TicketsRoute {
 			}),
 		}))
 		this.offline = false
-		this.savedAt = null
+		this.saveTime = null
 		this.saveSnapshot()
 
 		if (this.codeGroup) {
@@ -913,14 +913,14 @@ export class TicketsRoute {
 		}).format(ticket.admitTime)
 	}
 
-	public savedAtLabel(): string {
-		if (!this.savedAt) return ''
+	public saveTimeLabel(): string {
+		if (!this.saveTime) return ''
 		return new Intl.DateTimeFormat(this.userStore.currentLanguage, {
 			month: 'numeric',
 			day: 'numeric',
 			hour: '2-digit',
 			minute: '2-digit',
 			hourCycle: 'h23',
-		}).format(this.savedAt)
+		}).format(this.saveTime)
 	}
 }

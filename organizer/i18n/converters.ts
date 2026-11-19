@@ -26,7 +26,7 @@ abstract class LocaleConverter {
 	}
 }
 
-/** `${event.startsAt | jstDateTime}` → `11月3日(火) 18:00 JST`. */
+/** `${event.startTime | jstDateTime}` → `11月3日(火) 18:00 JST`. */
 @valueConverter('jstDateTime')
 export class JstDateTimeValueConverter extends LocaleConverter {
 	public toView(value: Date | undefined | null): string {
@@ -62,7 +62,7 @@ export class JstRangeValueConverter extends LocaleConverter {
 	}
 }
 
-/** `${event.startsAt | jstTime}` → `18:00 JST`. */
+/** `${event.startTime | jstTime}` → `18:00 JST`. */
 @valueConverter('jstTime')
 export class JstTimeValueConverter extends LocaleConverter {
 	public toView(value: Date | undefined | null): string {

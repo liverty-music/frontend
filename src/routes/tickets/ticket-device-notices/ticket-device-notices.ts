@@ -13,7 +13,7 @@ export class TicketDeviceNotices {
 	@bindable public loaded = false
 	@bindable public offline = false
 	/** When the saved list was saved, as the fan reads it. */
-	@bindable public savedAt = ''
+	@bindable public saveTime = ''
 	@bindable public device: DeviceState = 'checking'
 	/** True when the last check or move took the codes over from another device. */
 	@bindable public movedHere = false

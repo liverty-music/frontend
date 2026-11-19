@@ -1,6 +1,6 @@
 /**
  * Where a fan's official resale (公式リセール) listing stands when read. A
- * listing still listed at its deadline is read as `expired`.
+ * listing still listed at its close time is read as `expired`.
  *
  * @source proto/liverty_music/entity/v1/resale_listing.proto — ResaleListingStatus
  */
@@ -32,10 +32,13 @@ export interface ResaleListing {
 	readonly refundAmount: number
 	readonly status: ResaleListingStatus
 	readonly createTime: Date
-	/** When it can no longer be allocated or withdrawn: the resale deadline. */
-	readonly deadlineTime: Date
+	/**
+	 * When the listing closes: it can no longer be allocated or withdrawn
+	 * after this instant (the event's resale deadline).
+	 */
+	readonly closeTime: Date
 	/** Set when another fan bought it. */
-	readonly soldTime?: Date
+	readonly sellTime?: Date
 	/** Set once the fan was refunded. */
 	readonly refundTime?: Date
 }

@@ -28,7 +28,7 @@ const columns: DataColumn[] = [
 		kind: 'status',
 		trailing: true,
 	},
-	{ key: 'startsAt', labelKey: 'concertEditor.startTime', kind: 'datetime' },
+	{ key: 'startTime', labelKey: 'concertEditor.startTime', kind: 'datetime' },
 	{ key: 'schedule', labelKey: 'concerts.column.schedule' },
 	{ key: 'entries', labelKey: 'sale.stats.entries', kind: 'count' },
 	{ key: 'price', labelKey: 'lotteryEditor.price', kind: 'yen' },
@@ -42,7 +42,7 @@ const rows: DataRow[] = [
 		cells: {
 			title: 'XX Tour 2026 東京',
 			state: { tone: 'success', labelKey: 'publishState.published' },
-			startsAt: new Date('2026-11-03T09:00:00Z'),
+			startTime: new Date('2026-11-03T09:00:00Z'),
 			schedule: [
 				{
 					key: 'concerts.moreDates',
@@ -60,7 +60,7 @@ const rows: DataRow[] = [
 		cells: {
 			title: 'XX Tour 2026 大阪',
 			state: { tone: 'neutral', labelKey: 'publishState.draft' },
-			startsAt: new Date('2026-11-10T09:00:00Z'),
+			startTime: new Date('2026-11-10T09:00:00Z'),
 			schedule: 'Zepp Osaka Bayside',
 			entries: 1380,
 			price: 7000,

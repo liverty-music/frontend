@@ -34,7 +34,7 @@ const meta = {
 	args: {
 		loaded: true,
 		offline: false,
-		savedAt: '11/10 21:05',
+		saveTime: '11/10 21:05',
 		device: 'ready',
 		movedHere: false,
 		canOfferMove: false,
@@ -54,7 +54,7 @@ const render: Story['render'] = (args) =>
 				class="[ flow ]"
 				loaded.bind="loaded"
 				offline.bind="offline"
-				saved-at.bind="savedAt"
+				save-time.bind="saveTime"
 				device.bind="device"
 				moved-here.bind="movedHere"
 				can-offer-move.bind="canOfferMove"

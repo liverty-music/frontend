@@ -26,12 +26,12 @@ describe('referral-storage', () => {
 			expect(loadReferral(NOW)).toEqual({
 				code: 'member-a',
 				seriesId: 'series-xx',
-				expiresAt: NOW + REFERRAL_TTL_MS,
+				expireTime: NOW + REFERRAL_TTL_MS,
 			})
 			expect(JSON.parse(localStorage.getItem('referral') ?? 'null')).toEqual({
 				code: 'member-a',
 				seriesId: 'series-xx',
-				expiresAt: NOW + REFERRAL_TTL_MS,
+				expireTime: NOW + REFERRAL_TTL_MS,
 			})
 		})
 
@@ -70,15 +70,27 @@ describe('referral-storage', () => {
 			['null', 'null'],
 			[
 				'missing seriesId',
-				JSON.stringify({ code: 'member-a', expiresAt: NOW + 1 }),
+				JSON.stringify({ code: 'member-a', expireTime: NOW + 1 }),
 			],
 			[
 				'invalid code',
-				JSON.stringify({ code: 'Member_A', seriesId: 's', expiresAt: NOW + 1 }),
+				JSON.stringify({
+					code: 'Member_A',
+					seriesId: 's',
+					expireTime: NOW + 1,
+				}),
 			],
 			[
 				'non-numeric expiry',
-				JSON.stringify({ code: 'member-a', seriesId: 's', expiresAt: 'x' }),
+				JSON.stringify({ code: 'member-a', seriesId: 's', expireTime: 'x' }),
+			],
+			[
+				'saved under the old expiresAt key',
+				JSON.stringify({
+					code: 'member-a',
+					seriesId: 's',
+					expiresAt: NOW + REFERRAL_TTL_MS,
+				}),
 			],
 		])('drops an entry that is %s', (_label, raw) => {
 			localStorage.setItem('referral', raw)

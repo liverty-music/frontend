@@ -100,8 +100,8 @@ describe('Japan time', () => {
 		browserLanguages(['ja-JP'])
 		localStorage.clear()
 		const { assertText, tearDown } = await mount(
-			`<p>\${startsAt | jstDateTime}</p>`,
-			{ startsAt: new Date('2026-11-03T09:00:00Z') },
+			`<p>\${startTime | jstDateTime}</p>`,
+			{ startTime: new Date('2026-11-03T09:00:00Z') },
 		)
 		assertText('11月3日(火) 18:00 JST')
 		await tearDown()

@@ -99,7 +99,7 @@ export function shownState(
 
 /** The tickets list as last loaded, kept on the device for offline use. */
 export interface WalletSnapshot {
-	readonly savedAt: Date
+	readonly saveTime: Date
 	readonly groups: readonly WalletEventGroup[]
 	/** The fan's resale listings when the list was saved; absent in older saves. */
 	readonly listings?: readonly ResaleListing[]

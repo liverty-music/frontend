@@ -438,7 +438,7 @@ describe('TicketsRoute', () => {
 
 			expect(sut.step).toBe('loaded')
 			expect(sut.offline).toBe(true)
-			expect(sut.savedAt).toBeInstanceOf(Date)
+			expect(sut.saveTime).toBeInstanceOf(Date)
 			expect(sut.groups[0].event?.title).toBe('LIVE 20')
 			expect(sut.groups[0].tickets.map((t) => t.id)).toEqual([
 				ticketId(1),
@@ -1263,7 +1263,7 @@ describe('TicketsRoute', () => {
 				refundAmount: 4500,
 				status: 'listed',
 				createTime: jst(9, 12),
-				deadlineTime: jst(20, 15, 30),
+				closeTime: jst(20, 15, 30),
 				...o,
 			}
 		}
@@ -1387,7 +1387,7 @@ describe('TicketsRoute', () => {
 			resaleClient.list.mockResolvedValue([
 				listing(1, {
 					status: 'sold',
-					soldTime: jst(12, 20),
+					sellTime: jst(12, 20),
 					refundTime: jst(12, 20, 1),
 				}),
 			])

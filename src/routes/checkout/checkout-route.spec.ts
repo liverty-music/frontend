@@ -968,7 +968,7 @@ describe('CheckoutRoute', () => {
 				JSON.stringify({
 					code,
 					seriesId,
-					expiresAt: Date.now() - daysAgo * DAY + 7 * DAY,
+					expireTime: Date.now() - daysAgo * DAY + 7 * DAY,
 				}),
 			)
 		}

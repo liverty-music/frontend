@@ -22,7 +22,7 @@ export interface KeptReferral {
 	readonly code: string
 	readonly seriesId: string
 	/** Epoch milliseconds after which the code no longer counts. */
-	readonly expiresAt: number
+	readonly expireTime: number
 }
 
 /**
@@ -50,7 +50,7 @@ export function saveReferral(
 	const value: KeptReferral = {
 		code,
 		seriesId,
-		expiresAt: now + REFERRAL_TTL_MS,
+		expireTime: now + REFERRAL_TTL_MS,
 	}
 	try {
 		localStorage.setItem(KEY, JSON.stringify(value))
@@ -74,7 +74,7 @@ export function loadReferral(now: number = Date.now()): KeptReferral | null {
 	if (raw === null) return null
 
 	const kept = parse(raw)
-	if (kept === null || now >= kept.expiresAt) {
+	if (kept === null || now >= kept.expireTime) {
 		removeReferral()
 		return null
 	}
@@ -102,18 +102,18 @@ function parse(raw: string): KeptReferral | null {
 		return null
 	}
 	if (typeof value !== 'object' || value === null) return null
-	const { code, seriesId, expiresAt } = value as Record<string, unknown>
+	const { code, seriesId, expireTime } = value as Record<string, unknown>
 	if (
 		typeof code !== 'string' ||
 		!REFERRAL_CODE_PATTERN.test(code) ||
 		typeof seriesId !== 'string' ||
 		seriesId === '' ||
-		typeof expiresAt !== 'number' ||
-		!Number.isFinite(expiresAt)
+		typeof expireTime !== 'number' ||
+		!Number.isFinite(expireTime)
 	) {
 		return null
 	}
-	return { code, seriesId, expiresAt }
+	return { code, seriesId, expireTime }
 }
 
 function removeReferral(): void {

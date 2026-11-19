@@ -28,10 +28,8 @@ export function resaleListingFrom(proto: ProtoResaleListing): ResaleListing {
 		createTime: proto.createTime
 			? timestampDate(proto.createTime)
 			: new Date(0),
-		deadlineTime: proto.deadlineTime
-			? timestampDate(proto.deadlineTime)
-			: new Date(0),
-		soldTime: proto.soldTime ? timestampDate(proto.soldTime) : undefined,
+		closeTime: proto.closeTime ? timestampDate(proto.closeTime) : new Date(0),
+		sellTime: proto.sellTime ? timestampDate(proto.sellTime) : undefined,
 		refundTime: proto.refundTime ? timestampDate(proto.refundTime) : undefined,
 	}
 }
