@@ -6,7 +6,7 @@ import {
 	centre,
 	fab,
 	intersects,
-	openNearbyFilters,
+	openConcertsFilters,
 	publishSnack,
 	seedSignedInFan,
 	settle,
@@ -15,7 +15,7 @@ import { expect, type Page, test } from '../support/test'
 
 /**
  * Discovery's swap tile beside the orb: where it sits against the bubble field
- * and the largest orb on a 375px phone, the switch to the All Nearby view and
+ * and the largest orb on a 375px phone, the switch to the Concerts view and
  * back, and how it behaves under an open snack bar and an open FAB arc.
  */
 
@@ -227,7 +227,7 @@ test.describe('Discovery swap tile', () => {
 		expect(withTile).toBe(without)
 	})
 
-	test(`@spec ${CAPABILITY} "Switching to the All Nearby view"`, async ({
+	test(`@spec ${CAPABILITY} "Switching to the Concerts view"`, async ({
 		page,
 	}) => {
 		await openDiscovery(page)
@@ -235,7 +235,7 @@ test.describe('Discovery swap tile', () => {
 
 		const view = page.locator('discovery-concerts')
 		await expect(view).toBeVisible()
-		await expect(page).toHaveURL(/\/discovery\?view=nearby$/)
+		await expect(page).toHaveURL(/\/discovery\?view=concerts$/)
 		await expect(view.locator('[data-live-card]').first()).toBeVisible({
 			timeout: 15_000,
 		})
@@ -247,7 +247,7 @@ test.describe('Discovery swap tile', () => {
 		expect(stage.y).toBeCloseTo(header.y + header.height, 0)
 
 		// @spec components/infrastructure/fan/web/route/discovery "Filter item opens the filter sheet"
-		const rows = await openNearbyFilters(page)
+		const rows = await openConcertsFilters(page)
 		await expect(rows.area).toContainText('福岡県')
 		await expect(rows.period).toContainText('7日以内')
 		await page.keyboard.press('Escape')
@@ -331,7 +331,7 @@ test.describe('Discovery swap tile', () => {
 		expect(intersects(await box(banner), s)).toBe(false)
 	})
 
-	test(`@spec ${CAPABILITY} "The FAB menu is open"`, async ({ page }) => {
+	test(`@spec ${CAPABILITY} "The action menu is open"`, async ({ page }) => {
 		await openDiscovery(page)
 		await fab(page).click()
 		await expect(fab(page)).toHaveAttribute('aria-expanded', 'true')
@@ -348,7 +348,7 @@ test.describe('Discovery swap tile', () => {
 	test(`@spec ${CAPABILITY} "Closing the detail sheet returns to the list"`, async ({
 		page,
 	}) => {
-		await openDiscovery(page, '/discovery?view=nearby')
+		await openDiscovery(page, '/discovery?view=concerts')
 		const view = page.locator('discovery-concerts')
 		const cards = view.locator('[data-live-card]')
 		await expect(cards.first()).toBeVisible({ timeout: 15_000 })
@@ -379,18 +379,16 @@ test.describe('Discovery swap tile', () => {
 
 		await page.keyboard.press('Escape')
 		await expect(sheet).toHaveCount(0)
-		await expect(page).toHaveURL(/\/discovery\?view=nearby$/)
+		await expect(page).toHaveURL(/\/discovery\?view=concerts$/)
 		await expect(view).toBeVisible()
 		expect(await scroll.evaluate((s) => s.scrollTop)).toBe(scrolled)
-		const rows = await openNearbyFilters(page)
+		const rows = await openConcertsFilters(page)
 		await expect(rows.area).toContainText('福岡県')
 		await expect(rows.period).toContainText('7日以内')
 	})
 
-	test(`@spec ${CAPABILITY} "Link to the All Nearby view"`, async ({
-		page,
-	}) => {
-		await openDiscovery(page, '/discovery?view=nearby')
+	test(`@spec ${CAPABILITY} "Link to the Concerts view"`, async ({ page }) => {
+		await openDiscovery(page, '/discovery?view=concerts')
 		await expect(page.locator('discovery-concerts')).toBeVisible()
 		await expect(tile(page)).toHaveAccessibleName('アーティスト')
 	})

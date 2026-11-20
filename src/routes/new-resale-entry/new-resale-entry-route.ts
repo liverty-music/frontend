@@ -1,4 +1,4 @@
-import type { IRouteViewModel, Params } from '@aurelia/router'
+import type { IRouteViewModel, Params, RouteNode } from '@aurelia/router'
 import { Code, ConnectError } from '@connectrpc/connect'
 import type {
 	Stripe,
@@ -80,7 +80,7 @@ export interface ResaleEntryMessage {
 
 /**
  * The fan's application for official resale (公式リセール) tickets of one
- * sold-out TicketStock (seat type) of an event (`/events/:id/resale/:stockId`):
+ * sold-out TicketStock (seat type) of an event (`/concerts/:id/resale-entries/new?stock=:stockId`):
  * choose the count, give the personal details, read the 特商法 final
  * confirmation and authorize the card.
  *
@@ -143,9 +143,9 @@ export class NewResaleEntryRoute implements IRouteViewModel {
 		null
 	private paymentElement: StripePaymentElement | null = null
 
-	public loading(params: Params): void {
+	public loading(params: Params, next: RouteNode): void {
 		this.eventId = params.id ?? ''
-		this.stockId = params.stockId ?? ''
+		this.stockId = next.queryParams.get('stock') ?? ''
 		// Never hold the view swap on data: start the reads and return.
 		void this.load()
 	}

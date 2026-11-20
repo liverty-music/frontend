@@ -71,6 +71,7 @@ import { IConsentService } from './lib/consent/consent-service'
 import { FanI18nConfiguration } from './lib/i18n/fan-i18n-configuration'
 import { PUSH_SUBSCRIPTION_CHANGED_MESSAGE } from './lib/push/push-renewal'
 import { checkForServiceWorkerUpdates } from './lib/pwa/sw-update-check'
+import { documentTitle } from './route-title'
 import { IActionMenuService } from './services/action-menu-service'
 import { Events } from './services/analytics-events'
 import { IArtistBubbleStore } from './services/artist-bubble-store'
@@ -173,6 +174,9 @@ async function bootstrap(): Promise<void> {
 	au.register(
 		RouterConfiguration.customize({
 			restorePreviousRouteTreeOnError: !import.meta.env.DEV,
+			// The tab title is the screen's `nav.*` title, as in its page header.
+			buildTitle: (transition) =>
+				documentTitle(transition, (key) => au.container.get(I18N).tr(key)),
 		}),
 	)
 	au.register(
@@ -204,12 +208,14 @@ async function bootstrap(): Promise<void> {
 	// IndexedDB and removes both on SignedOut; construct it at boot so that
 	// subscription is live even when the tickets screen was never opened.
 	au.register(AppTask.creating(ITicketWallet, () => undefined))
-	// The hype-change push offer no longer counts unanswered offers; remove the
-	// count it left on this device.
+	// Remove what retired keys left on this device: the count of unanswered
+	// hype-change push offers, and the Concerts view's filter under its former
+	// name (`discovery.nearbyFilter`, now `discovery.concertsFilter`).
 	au.register(
-		AppTask.creating(ILocalStorage, (storage) =>
-			storage.removeItem(StorageKeys.pushOfferDeclines),
-		),
+		AppTask.creating(ILocalStorage, (storage) => {
+			storage.removeItem(StorageKeys.pushOfferDeclines)
+			storage.removeItem(StorageKeys.nearbyFilter)
+		}),
 	)
 	au.register(UserHydrationTask)
 	au.register(IArtistStore)

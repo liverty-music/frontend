@@ -27,7 +27,7 @@
 			);
 		}
 
-		:scope[data-view="nearby"] {
+		:scope[data-view="concerts"] {
 			transform: translate(82.8125%, 82.8125%) scale(0.42);
 			opacity: 0.95;
 		}

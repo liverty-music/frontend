@@ -25,6 +25,7 @@ import { IStripeService } from '../../src/services/stripe-service'
 import { IUserStore } from '../../src/services/user-store'
 import { createMockAnalytics } from '../helpers/mock-analytics'
 import { createMockErrorBoundary } from '../helpers/mock-error-boundary'
+import { routeNodeWithQuery } from '../helpers/route-node'
 
 const EVENT_ID = 'event-1'
 const SALE_ID = 'sale-1'
@@ -116,7 +117,10 @@ async function render(lng: 'ja' | 'en', user?: Record<string, string>) {
 		'new-lottery-entry-route',
 	) as Element
 	const vm = CustomElement.for<NewLotteryEntryRoute>(host).viewModel
-	vm.loading({ id: EVENT_ID, saleId: SALE_ID, stockId: STOCK_ID })
+	vm.loading(
+		{ id: EVENT_ID },
+		routeNodeWithQuery({ sale: SALE_ID, stock: STOCK_ID }),
+	)
 	await vi.waitFor(() => expect(vm.step).toBe('count'))
 	await tasksSettled()
 	return { fixture, vm }
@@ -131,7 +135,7 @@ const phoneInput = (host: HTMLElement) =>
 
 describe('NewLotteryEntryRoute seat type (fixture)', () => {
 	it('shows the sale name, the event, the seat type, the price and offers 1 to 4 tickets', async () => {
-		// @spec components/infrastructure/fan/web/route/lottery-entry "Presale entry"
+		// @spec components/infrastructure/fan/web/route/new-lottery-entry "Presale entry"
 		const { fixture } = await render('ja')
 		const host = fixture.appHost
 
@@ -157,7 +161,7 @@ describe('NewLotteryEntryRoute seat type (fixture)', () => {
 
 describe('NewLotteryEntryRoute saved details (fixture)', () => {
 	it("shows the fan's saved name and phone number in the fields", async () => {
-		// @spec components/infrastructure/fan/web/route/lottery-entry "Returning fan"
+		// @spec components/infrastructure/fan/web/route/new-lottery-entry "Returning fan"
 		const { fixture, vm } = await render('ja', {
 			id: 'u1',
 			fullName: '山田 花子',
@@ -175,7 +179,7 @@ describe('NewLotteryEntryRoute saved details (fixture)', () => {
 	})
 
 	it('leaves both fields empty for a first entry', async () => {
-		// @spec components/infrastructure/fan/web/route/lottery-entry "First entry"
+		// @spec components/infrastructure/fan/web/route/new-lottery-entry "First entry"
 		const { fixture, vm } = await render('ja', { id: 'u1' })
 		vm.step = 'personal-details'
 		await tasksSettled()
@@ -189,7 +193,7 @@ describe('NewLotteryEntryRoute saved details (fixture)', () => {
 })
 
 describe('NewLotteryEntryRoute phone field (fixture)', () => {
-	// @spec components/infrastructure/fan/web/route/lottery-entry "Number fits neither form"
+	// @spec components/infrastructure/fan/web/route/new-lottery-entry "Number fits neither form"
 	it.each([
 		['ja', ja.newLotteryEntry.phoneInvalid],
 		['en', en.newLotteryEntry.phoneInvalid],

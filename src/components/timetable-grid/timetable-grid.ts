@@ -40,13 +40,13 @@ export class TimetableGrid {
 	@bindable public showBeams: boolean = true
 	/**
 	 * When true, every card renders its venue/location label including HOME-lane
-	 * cards. Set by the All Nearby timetable view; default false preserves the My
+	 * cards. Set by the Concerts view; default false preserves the My
 	 * Timetable behavior where HOME cards suppress the label.
 	 */
 	@bindable public showVenueAlways: boolean = false
 	/**
 	 * When true, the AWAY stage/lane is omitted entirely and the grid collapses to
-	 * two columns (HOME + NEAR). Set by the All Nearby view, which by definition
+	 * two columns (HOME + NEAR). Set by the Concerts view, which by definition
 	 * returns only HOME/NEARBY concerts; default false keeps the three-lane My
 	 * Timetable layout.
 	 */

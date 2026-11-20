@@ -904,7 +904,7 @@ describe('ArtistBubbles', () => {
 			expect(frameEvents()[0][1].frames).toBe(99)
 		})
 
-		it('ends the measurement when the route switches to the All Nearby view', () => {
+		it('ends the measurement when the route switches to the Concerts view', () => {
 			frames(100, 16)
 
 			sut.endFrameMeasurement()

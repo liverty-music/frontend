@@ -248,7 +248,7 @@ describe('ConcertStore', () => {
 		})
 	})
 
-	describe('toDateGroupsForLocation (All Nearby matching and journeys)', () => {
+	describe('toDateGroupsForLocation (the Concerts view matching and journeys)', () => {
 		const SPEC = 'components/infrastructure/fan/web/route/discovery'
 		const dateLD = { year: 2026, month: 3, day: 15 }
 

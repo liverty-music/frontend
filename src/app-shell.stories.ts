@@ -430,7 +430,7 @@ export const TabPage = {
 				box(tabs[2]).left - box(tabs[1]).right,
 			).toBeGreaterThanOrEqual(56)
 
-			// @spec components/infrastructure/fan/web/global/action-menu "FAB floats in the thumb zone above content"
+			// @spec components/infrastructure/fan/web/global/action-menu "action menu floats in the thumb zone above content"
 			const f = box(fab(canvasElement))
 			await expect(Math.abs(centre(f).x - innerWidth / 2)).toBeLessThan(1)
 			await expectRaised(canvasElement)
@@ -463,7 +463,7 @@ export const TabPageWithoutActions = {
 	play: async ({ canvasElement }) => {
 		await atSize(390, 844, async () => {
 			await shown(canvasElement)
-			// @spec components/infrastructure/fan/web/global/bottom-nav-bar "Tickets shows the FAB"
+			// @spec components/infrastructure/fan/web/global/bottom-nav-bar "Tickets shows the action menu"
 			await expect(fab(canvasElement).checkVisibility()).toBe(true)
 			await expect(
 				shellParts(canvasElement).vm.actionMenu.actions.map((a) => a.id),
@@ -501,7 +501,7 @@ export const SnackSinksTheFab = {
 			await expect(gap).toBeGreaterThanOrEqual(16)
 			await expect(gap).toBeLessThanOrEqual(20)
 
-			// @spec components/infrastructure/fan/web/global/action-menu "The sunk FAB still opens the actions"
+			// @spec components/infrastructure/fan/web/global/action-menu "The sunk action menu still opens the actions"
 			await openArc(canvasElement)
 			await expectArcAboveFab(canvasElement, 4)
 			await closeArc(canvasElement)
@@ -547,7 +547,7 @@ export const BannerSinksTheFab = {
 			const f = await expectSunk(canvasElement)
 			await expect(intersects(f, b)).toBe(false)
 			await expect(f.top).toBeGreaterThanOrEqual(b.bottom - 0.5)
-			// @spec components/infrastructure/fan/web/global/bottom-nav-bar "FAB sunk under a banner"
+			// @spec components/infrastructure/fan/web/global/bottom-nav-bar "action menu sunk under a banner"
 			await expect(nav(canvasElement).dataset.notch).toBe('true')
 			const radius = px(canvasElement, 'var(--fab-notch-radius)')
 			await expect(getComputedStyle(nav(canvasElement)).maskImage).toContain(
@@ -557,14 +557,14 @@ export const BannerSinksTheFab = {
 				Math.abs(routeAreaBottom(canvasElement) - b.top),
 			).toBeLessThan(1)
 
-			// @spec components/infrastructure/fan/web/global/action-menu "The sunk FAB still opens the actions"
+			// @spec components/infrastructure/fan/web/global/action-menu "The sunk action menu still opens the actions"
 			await openArc(canvasElement)
 			await expectArcAboveFab(canvasElement, 4)
 			await closeArc(canvasElement)
 
 			// @spec components/infrastructure/fan/web/global/action-menu "A snack bar opens above a bottom banner"
 			// @spec components/infrastructure/fan/web/global/snack-bar "A banner is visible"
-			// @spec components/infrastructure/fan/web/global/snack-bar "The FAB stays sunk under a banner and a snack bar"
+			// @spec components/infrastructure/fan/web/global/snack-bar "The action menu stays sunk under a banner and a snack bar"
 			await expect(
 				canvasElement.querySelector('signup-prompt-banner'),
 			).not.toBeNull()
@@ -798,7 +798,7 @@ export const EmptyStateAboveTheBanner = {
 			)
 			await settled(one(canvasElement, 'signup-prompt-banner'))
 			await shown(canvasElement)
-			// @spec components/infrastructure/fan/web/global/app-shell "Empty state clears the banner and the FAB"
+			// @spec components/infrastructure/fan/web/global/app-shell "Empty state clears the banner and the action menu"
 			await expect(box(button).bottom).toBeLessThanOrEqual(
 				box(prompt).top + 0.5,
 			)

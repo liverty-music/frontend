@@ -10,7 +10,7 @@ export const RESEND_WAIT_SEC = 60
 export type SignInHelpError = 'tooMany' | 'failed'
 
 /**
- * The "can't sign in" screen (`/passkey-recovery`): a fan who can use none of
+ * The "can't sign in" screen (`/sign-in-help`): a fan who can use none of
  * their passkeys asks for an email link that registers a new passkey on the
  * device in hand (`UserService.RequestPasskeyRecovery`).
  *

@@ -68,7 +68,7 @@ export class ConcertCard {
 	/**
 	 * When true, the venue/location label renders for ALL lanes including HOME.
 	 * In the default My Timetable view HOME-lane cards suppress the label (the
-	 * lane already implies the user's home area); the All Nearby view sets this
+	 * lane already implies the user's home area); the Concerts view sets this
 	 * so every card shows where the concert is.
 	 */
 	@bindable public showVenueAlways = false
@@ -79,7 +79,7 @@ export class ConcertCard {
 	}
 
 	/**
-	 * What the location line shows. In the All Nearby view (showVenueAlways) the
+	 * What the location line shows. In the Concerts view (showVenueAlways) the
 	 * venue name is the useful signal — the user already chose the area, so the
 	 * prefecture is redundant; fall back to the prefecture label only when the
 	 * venue name is absent. My Timetable keeps the prefecture label (locationLabel).

@@ -2,8 +2,8 @@ import { I18N, Signals } from '@aurelia/i18n'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { DI, IEventAggregator, ILogger, observable, resolve } from 'aurelia'
 import { IUserRpcClient } from '../adapter/rpc/client/user-client'
+import { clearConcertsFilter } from '../adapter/storage/concerts-filter-storage'
 import { loadHome, saveHome } from '../adapter/storage/guest-storage'
-import { clearNearbyFilter } from '../adapter/storage/nearby-filter-storage'
 import { clearOnboardingSeenFlags } from '../adapter/storage/onboarding-storage'
 import { clearTicketPresets } from '../adapter/storage/ticket-preset-storage'
 import { codeToHome, type User } from '../entities/user'
@@ -113,12 +113,12 @@ export class UserStore {
 	constructor() {
 		// Sign-out and account switch: forget the previous account's User so no
 		// later read or write can act on it (design D15 of unify-ticket-sales).
-		// The All Nearby filter kept on the device goes too, so the next person
+		// The the Concerts view filter kept on the device goes too, so the next person
 		// on this device does not inherit the area and period; so do the
 		// designs chosen for the account's tickets.
 		this.ea.subscribe(SignedOut, () => {
 			this.clear()
-			clearNearbyFilter()
+			clearConcertsFilter()
 			clearTicketPresets()
 		})
 		// The i18n subsystem publishes `{ oldLocale, newLocale }` on this EA
@@ -338,7 +338,7 @@ export class UserStore {
 
 	/**
 	 * Reset the guest home slice, the per-page help-seen flags, the per-level
-	 * hype snack flags and the kept All Nearby filter. Used by the
+	 * hype snack flags and the kept the Concerts view filter. Used by the
 	 * welcome route's guest reset before sign-in and by the auth callback's
 	 * onboarding hand-off once sign-up (or sign-in) completes. Tapping
 	 * [Get Started] does not call it.
@@ -350,7 +350,7 @@ export class UserStore {
 	public clearGuest(): void {
 		this.guestHome = null
 		clearOnboardingSeenFlags()
-		clearNearbyFilter()
+		clearConcertsFilter()
 		this.logger.info('Local home preferences cleared')
 	}
 

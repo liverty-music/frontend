@@ -9,8 +9,8 @@ describe('stripOwnUrlQuery', () => {
 		const event = {
 			event: 'concert_detail_viewed',
 			properties: {
-				$current_url: `${ORIGIN}/events/e-1?ref=member-a#tickets`,
-				$pathname: '/events/e-1',
+				$current_url: `${ORIGIN}/concerts/e-1?ref=member-a#tickets`,
+				$pathname: '/concerts/e-1',
 				event_id: 'e-1',
 			},
 		}
@@ -18,8 +18,8 @@ describe('stripOwnUrlQuery', () => {
 		const sent = stripOwnUrlQuery(event, ORIGIN)
 
 		expect(sent?.properties).toEqual({
-			$current_url: `${ORIGIN}/events/e-1`,
-			$pathname: '/events/e-1',
+			$current_url: `${ORIGIN}/concerts/e-1`,
+			$pathname: '/concerts/e-1',
 			event_id: 'e-1',
 		})
 		// The event the SDK holds is not changed.
@@ -32,23 +32,23 @@ describe('stripOwnUrlQuery', () => {
 			event: 'artist_search',
 			properties: {
 				$current_url: `${ORIGIN}/discovery`,
-				$session_entry_url: `${ORIGIN}/events/e-1?ref=member-a`,
-				$referrer: `${ORIGIN}/events/e-1?ref=member-a`,
+				$session_entry_url: `${ORIGIN}/concerts/e-1?ref=member-a`,
+				$referrer: `${ORIGIN}/concerts/e-1?ref=member-a`,
 				$set_once: {
-					$initial_current_url: `${ORIGIN}/events/e-1?ref=member-a`,
+					$initial_current_url: `${ORIGIN}/concerts/e-1?ref=member-a`,
 				},
 			},
-			$set: { $current_url: `${ORIGIN}/events/e-1?ref=member-a` },
+			$set: { $current_url: `${ORIGIN}/concerts/e-1?ref=member-a` },
 			$set_once: {
-				$initial_current_url: `${ORIGIN}/events/e-1?ref=member-a`,
+				$initial_current_url: `${ORIGIN}/concerts/e-1?ref=member-a`,
 			},
 		}
 
 		const sent = stripOwnUrlQuery(event, ORIGIN)
 
 		expect(JSON.stringify(sent)).not.toContain('ref=member-a')
-		expect(sent?.properties.$session_entry_url).toBe(`${ORIGIN}/events/e-1`)
-		expect(sent?.$set_once?.$initial_current_url).toBe(`${ORIGIN}/events/e-1`)
+		expect(sent?.properties.$session_entry_url).toBe(`${ORIGIN}/concerts/e-1`)
+		expect(sent?.$set_once?.$initial_current_url).toBe(`${ORIGIN}/concerts/e-1`)
 	})
 
 	it("sends another site's address as it is", () => {
@@ -70,7 +70,7 @@ describe('stripOwnUrlQuery', () => {
 	})
 
 	it('keeps an address on a look-alike host', () => {
-		const value = `${ORIGIN}.evil.example/events/e-1?ref=member-a`
+		const value = `${ORIGIN}.evil.example/concerts/e-1?ref=member-a`
 		const sent = stripOwnUrlQuery({ properties: { $referrer: value } }, ORIGIN)
 		expect(sent?.properties?.$referrer).toBe(value)
 	})

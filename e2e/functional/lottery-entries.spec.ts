@@ -87,7 +87,7 @@ for (const { state, label, note } of cases) {
 			},
 		})
 
-		await page.goto(`/events/${EVENT_ID}/lottery/${SALE_ID}/${STOCK_ID}/entry`)
+		await page.goto(`/concerts/${EVENT_ID}/lottery-entries?sale=${SALE_ID}`)
 		const entry = page.getByTestId('lottery-entry-status-entry')
 		await expect(entry).toBeVisible({ timeout: 30_000 })
 

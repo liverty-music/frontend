@@ -1,4 +1,9 @@
-import { IRouter, type IRouteViewModel, type Params } from '@aurelia/router'
+import {
+	IRouter,
+	type IRouteViewModel,
+	type Params,
+	type RouteNode,
+} from '@aurelia/router'
 import { Code, ConnectError } from '@connectrpc/connect'
 import type {
 	Stripe,
@@ -100,7 +105,7 @@ export interface CheckoutMessage {
 
 /**
  * The fan's checkout of one TicketStock of an event, in its first-come sale
- * (`/events/:id/checkout/:stockId`):
+ * (`/concerts/:id/checkout?stock=:stockId`):
  * choose the count and hold the tickets for 15 minutes, confirm the personal
  * details, authorize the card, review the 特商法 final confirmation, and place
  * the order. Reopening the page during the hold resumes the same checkout.
@@ -162,9 +167,9 @@ export class CheckoutRoute implements IRouteViewModel {
 		null
 	private paymentElement: StripePaymentElement | null = null
 
-	public loading(params: Params): void {
+	public loading(params: Params, next: RouteNode): void {
 		this.eventId = params.id ?? ''
-		this.stockId = params.stockId ?? ''
+		this.stockId = next.queryParams.get('stock') ?? ''
 		// Never hold the view swap on data: start the reads and return.
 		void this.load()
 	}

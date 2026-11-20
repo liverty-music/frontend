@@ -166,14 +166,14 @@ describe('ErrorBoundaryService', () => {
 		it(`@spec ${BANNER_SPEC} "Error is reported with its Error ID and steps"`, () => {
 			window.history.replaceState(null, '', '/timetable')
 			sut.addBreadcrumb('navigation', 'timetable')
-			window.history.replaceState(null, '', '/events/e-1')
+			window.history.replaceState(null, '', '/concerts/e-1')
 			sut.addBreadcrumb('navigation', 'events/:id')
 			const err = new Error('boom')
 
 			sut.captureError(err, 'unhandled_error')
 
 			expect(analytics.addExceptionStep.mock.calls).toEqual([
-				// No route: a path such as /events/e-1 holds an id.
+				// No route: a path such as /concerts/e-1 holds an id.
 				['timetable', { type: 'navigation' }],
 				['events/:id', { type: 'navigation' }],
 			])
@@ -189,7 +189,7 @@ describe('ErrorBoundaryService', () => {
 		})
 
 		it('states that a ref key was present without its value', () => {
-			window.history.replaceState(null, '', '/events/e-1?ref=member-a')
+			window.history.replaceState(null, '', '/concerts/e-1?ref=member-a')
 
 			sut.captureError(new Error('boom'))
 
@@ -430,7 +430,7 @@ describe('ErrorBoundaryService', () => {
 		})
 
 		it('lays out the hint, the inquiry number, the time and the screen', () => {
-			window.history.replaceState(null, '', '/events/e-1?ref=member-a')
+			window.history.replaceState(null, '', '/concerts/e-1?ref=member-a')
 			sut.captureError(new Error('boom'))
 			const appError = sut.currentError as AppError
 
@@ -451,7 +451,7 @@ describe('ErrorBoundaryService', () => {
 			])
 			expect(lines[7]).toBe(`お問い合わせ番号：${appError.id}`)
 			expect(lines[8]).toMatch(/^日時：\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}:\d{2} /)
-			expect(lines[9]).toBe('画面：/events/e-1')
+			expect(lines[9]).toBe('画面：/concerts/e-1')
 		})
 	})
 })

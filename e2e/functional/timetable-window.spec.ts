@@ -225,7 +225,7 @@ test.describe('timetable date window', () => {
 			}
 			requestAnimationFrame(tick)
 		})
-		await page.locator('.nav-tab[data-nav="home"]').click()
+		await page.locator('.nav-tab[data-nav="timetable"]').click()
 		await page.locator('timetable-route [data-live-card]').first().waitFor()
 		await settle(page)
 

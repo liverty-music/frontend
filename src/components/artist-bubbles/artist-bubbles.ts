@@ -370,7 +370,7 @@ export class ArtistBubbles {
 	/**
 	 * End this visit's frame measurement and send its frame timings, once per
 	 * visit and only when enough frames were measured. Called when the fan
-	 * leaves Discovery, hides the page, or switches to the All Nearby view.
+	 * leaves Discovery, hides the page, or switches to the Concerts view.
 	 */
 	public endFrameMeasurement(): void {
 		const summary = this.frameTimings.finish()

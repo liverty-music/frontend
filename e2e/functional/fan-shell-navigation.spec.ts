@@ -55,9 +55,9 @@ test.beforeEach(async ({ page }) => {
 })
 
 test.describe('bottom navigation', () => {
-	test(`@spec ${NAV} "Route with FAB actions"`, { tag: '@webkit' }, async ({
-		page,
-	}) => {
+	test(`@spec ${NAV} "Route with action menu actions"`, {
+		tag: '@webkit',
+	}, async ({ page }) => {
 		await openShell(page, '/timetable')
 		await expect(fab(page)).toBeVisible()
 
@@ -65,9 +65,9 @@ test.describe('bottom navigation', () => {
 		expect(await maskOf(page)).toContain('radial-gradient')
 	})
 
-	test(`@spec ${NAV} "Route without FAB actions"`, { tag: '@webkit' }, async ({
-		page,
-	}) => {
+	test(`@spec ${NAV} "Route without action menu actions"`, {
+		tag: '@webkit',
+	}, async ({ page }) => {
 		await openShell(page, '/settings')
 
 		await expect(page.locator('action-menu')).toHaveCount(0)

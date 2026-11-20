@@ -17,7 +17,7 @@ test.use({ locale: 'en-US', viewport: { width: 390, height: 844 } })
  * authorized anew.
  */
 
-const SPEC = 'components/infrastructure/fan/web/route/lottery-entry'
+const SPEC = 'components/infrastructure/fan/web/route/new-lottery-entry'
 const EVENT_ID = fakeId('lottery-entry-event')
 const SALE_ID = fakeId('lottery-entry-sale')
 // UUIDs: the client validates the ids it sends.
@@ -115,7 +115,9 @@ async function openEntry(
 		},
 		'LotteryEntryService/Confirm': confirm,
 	})
-	await page.goto(`/events/${EVENT_ID}/lottery/${SALE_ID}/${STOCK_ID}`)
+	await page.goto(
+		`/concerts/${EVENT_ID}/lottery-entries/new?sale=${SALE_ID}&stock=${STOCK_ID}`,
+	)
 	await expect(page.getByTestId('lottery-entry-count')).toBeVisible({
 		timeout: 30_000,
 	})

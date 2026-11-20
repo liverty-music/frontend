@@ -292,10 +292,10 @@ describe('AnalyticsService', () => {
 			)({
 				event: 'concert_detail_viewed',
 				properties: {
-					$current_url: `${origin}/events/e-1?ref=member-a`,
+					$current_url: `${origin}/concerts/e-1?ref=member-a`,
 				},
 			})
-			expect(sent?.properties.$current_url).toBe(`${origin}/events/e-1`)
+			expect(sent?.properties.$current_url).toBe(`${origin}/concerts/e-1`)
 		})
 
 		it('initialises opted-out (memory-only, no capture) when analytics is opted out at boot', async () => {
@@ -894,9 +894,10 @@ describe('AnalyticsService', () => {
 			expect(initConfig()).toMatchObject({ disable_session_recording: false })
 
 			for (const path of [
-				'/events/e-1/checkout',
-				'/events/e-1/lottery/t-1',
-				'/events/e-1/lottery/t-1/entry',
+				'/concerts/e-1/checkout',
+				'/concerts/e-1/lottery-entries/new',
+				'/concerts/e-1/lottery-entries',
+				'/concerts/e-1/resale-entries/new',
 				'/verify/callback',
 				'/settings',
 				'/settings/passkeys',
@@ -905,13 +906,13 @@ describe('AnalyticsService', () => {
 				navigate(path)
 				expect(lastRecordingSetting()).toBe(true)
 			}
-			navigate('/events/e-1')
+			navigate('/concerts/e-1')
 			expect(lastRecordingSetting()).toBe(false)
 			sut.dispose()
 		})
 
 		it('does not start recording when the app opens on a screen never recorded', async () => {
-			navigate('/events/e-1/checkout')
+			navigate('/concerts/e-1/checkout')
 			const sut = new AnalyticsService()
 			await sut._waitForInitForTests()
 
@@ -1120,15 +1121,15 @@ describe('AnalyticsService', () => {
 			const sent = send({
 				event: '$exception',
 				properties: {
-					$current_url: `${origin}/events/e-1?ref=member-a`,
-					$initial_current_url: `${origin}/events/e-1?ref=member-a`,
+					$current_url: `${origin}/concerts/e-1?ref=member-a`,
+					$initial_current_url: `${origin}/concerts/e-1?ref=member-a`,
 					$exception_list: [{ type: 'Error', value: 'at ?ref=member-a' }],
 					has_ref: true,
 				},
 			})
 
-			expect(sent?.properties.$current_url).toBe(`${origin}/events/e-1`)
-			expect(JSON.stringify(sent)).not.toContain(`${origin}/events/e-1?ref`)
+			expect(sent?.properties.$current_url).toBe(`${origin}/concerts/e-1`)
+			expect(JSON.stringify(sent)).not.toContain(`${origin}/concerts/e-1?ref`)
 			expect(sent?.properties.has_ref).toBe(true)
 		})
 

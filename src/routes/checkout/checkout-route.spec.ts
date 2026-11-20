@@ -177,6 +177,7 @@ vi.mock('aurelia', async (importOriginal) => {
 	}
 })
 
+import { routeNodeWithQuery } from '../../../test/helpers/route-node'
 import { Events } from '../../lib/analytics/analytics-service'
 import { CheckoutRoute } from './checkout-route'
 
@@ -184,7 +185,7 @@ const flush = () => new Promise((r) => setTimeout(r, 0))
 
 async function open(): Promise<CheckoutRoute> {
 	const sut = new CheckoutRoute()
-	sut.loading({ id: EVENT_ID, stockId: 'stock-s' })
+	sut.loading({ id: EVENT_ID }, routeNodeWithQuery({ stock: 'stock-s' }))
 	await vi.waitFor(() => expect(sut.step).not.toBe('loading'))
 	return sut
 }

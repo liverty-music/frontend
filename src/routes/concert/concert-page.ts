@@ -176,7 +176,7 @@ export function dateNavMode(
 
 /** The canonical, shareable URL of an Event page, without any query. */
 export function canonicalEventUrl(origin: string, eventId: string): string {
-	return `${origin}/events/${eventId}`
+	return `${origin}/concerts/${eventId}`
 }
 
 /** Default length of a calendar entry when the event has no end time. */

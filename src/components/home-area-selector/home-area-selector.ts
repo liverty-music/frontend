@@ -10,7 +10,7 @@ import {
  * {@link onHomeSelected} and owns no persistence: it does NOT call
  * `UserService.updateHome()`, write to localStorage, or resolve `IUserStore` /
  * `IAuthService`. Every save/no-save decision belongs to the caller (Settings,
- * onboarding, or the Timetable All Nearby area selector).
+ * onboarding, or the Timetable the Concerts view area selector).
  */
 export class HomeAreaSelector {
 	@bindable public onHomeSelected?: (code: string) => void | Promise<void>

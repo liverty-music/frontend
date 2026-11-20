@@ -34,6 +34,7 @@ import {
 import { IUserStore } from '../../src/services/user-store'
 import { createMockAnalytics } from '../helpers/mock-analytics'
 import { createMockErrorBoundary } from '../helpers/mock-error-boundary'
+import { routeNodeWithQuery } from '../helpers/route-node'
 
 const EVENT_ID = 'event-1'
 
@@ -170,7 +171,7 @@ async function render(
 	).started
 	const host = fixture.appHost.querySelector('checkout-route') as Element
 	const vm = CustomElement.for<CheckoutRoute>(host).viewModel
-	vm.loading({ id: EVENT_ID, stockId: 'stock-s' })
+	vm.loading({ id: EVENT_ID }, routeNodeWithQuery({ stock: 'stock-s' }))
 	await vi.waitFor(() => expect(vm.step).not.toBe('loading'))
 	await tasksSettled()
 	return { fixture, vm, checkoutClient, router }

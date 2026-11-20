@@ -18,7 +18,7 @@ function flatten(tree: Tree, prefix: string): Map<string, string> {
 // Hiragana, katakana or kanji.
 const JAPANESE = /[぀-ヿ㐀-鿿]/
 
-describe('All Nearby copy', () => {
+describe('the Concerts view copy', () => {
 	// The view's own strings and the swap tile's labels on Discovery.
 	const jaKeys = new Map([
 		...flatten(ja.discoveryConcerts as Tree, 'discoveryConcerts'),
@@ -29,7 +29,7 @@ describe('All Nearby copy', () => {
 		...flatten(en.discovery.swap as Tree, 'discovery.swap'),
 	])
 
-	// @spec components/infrastructure/fan/web/route/discovery "All Nearby strings are natural Japanese"
+	// @spec components/infrastructure/fan/web/route/discovery "Concerts view strings are natural Japanese"
 	it('keeps the Japanese and English bundles at parity and fully translated', () => {
 		expect([...jaKeys.keys()].sort()).toEqual([...enKeys.keys()].sort())
 
@@ -44,7 +44,7 @@ describe('All Nearby copy', () => {
 			.filter(([key, text]) => text === enKeys.get(key))
 			.map(([key]) => key)
 		expect(copiedFromEnglish).toEqual([])
-		expect(jaKeys.get('discovery.swap.toNearby')).toBe('近くのライブ')
+		expect(jaKeys.get('discovery.swap.toConcerts')).toBe('ライブ')
 		expect(jaKeys.get('discovery.swap.toArtists')).toBe('アーティスト')
 	})
 })

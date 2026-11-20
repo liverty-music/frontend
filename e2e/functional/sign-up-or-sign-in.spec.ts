@@ -168,9 +168,9 @@ test.describe('a new account without a home', () => {
 	}
 
 	// @spec components/infrastructure/fan/web/global/home-area-selector "New account without a home opens the Timetable"
-	// @spec components/infrastructure/fan/web/global/home-area-selector "Event page does not ask"
+	// @spec components/infrastructure/fan/web/global/home-area-selector "Concert page does not ask"
 	// @spec components/infrastructure/fan/web/global/home-area-selector "Sheet left without a choice"
-	test(`@spec ${STORY} "Sign-up from the event page without a home"`, async ({
+	test(`@spec ${STORY} "Sign-up from the concert page without a home"`, async ({
 		page,
 	}) => {
 		let home: Record<string, unknown> | undefined
@@ -191,7 +191,7 @@ test.describe('a new account without a home', () => {
 		})
 		await mockIdentityProvider(page)
 
-		await page.goto(`/events/${EVENT_ID}`)
+		await page.goto(`/concerts/${EVENT_ID}`)
 		await expect(page.getByText('Home Tour 2026').first()).toBeVisible({
 			timeout: 20_000,
 		})
@@ -199,7 +199,7 @@ test.describe('a new account without a home', () => {
 
 		// The account is created without a home and the event page opens again,
 		// signed in, with no home sheet.
-		await expect(page).toHaveURL(new RegExp(`/events/${EVENT_ID}$`), {
+		await expect(page).toHaveURL(new RegExp(`/concerts/${EVENT_ID}$`), {
 			timeout: 20_000,
 		})
 		await expect(page.getByTestId('event-signup')).toHaveCount(0)
@@ -362,19 +362,19 @@ test.describe('sign-up and sign-in start only where the person chooses', () => {
 		).toHaveCount(0)
 	})
 
-	test(`@spec ${STORY} "Sign-up from an event page returns to it"`, async ({
+	test(`@spec ${STORY} "Sign-up from a concert page returns to it"`, async ({
 		page,
 	}) => {
 		await seedFollowingGuest(page)
 		const calls = await mockAccount(page, () => ({ body: { user } }))
-		await page.goto(`/events/${EVENT_ID}`)
+		await page.goto(`/concerts/${EVENT_ID}`)
 		await expect(page.getByText('Choose Tour 2026').first()).toBeVisible({
 			timeout: 20_000,
 		})
 
 		await page.getByTestId('event-signup').click()
 
-		await expect(page).toHaveURL(new RegExp(`/events/${EVENT_ID}$`), {
+		await expect(page).toHaveURL(new RegExp(`/concerts/${EVENT_ID}$`), {
 			timeout: 30_000,
 		})
 		await expect(page.getByTestId('event-signup')).toHaveCount(0)

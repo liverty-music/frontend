@@ -17,13 +17,13 @@ function linkFrom(html: string, testId: string): Element {
 }
 
 const RecoveryStub = CustomElement.define(
-	{ name: 'recovery-stub', template: '<p data-route="passkey-recovery"></p>' },
+	{ name: 'recovery-stub', template: '<p data-route="sign-in-help"></p>' },
 	class {},
 )
 
 /**
  * Clicks the link's real markup under the real router. That the shell's
- * `/passkey-recovery` route is public is covered in test/app-shell.spec.ts.
+ * `/sign-in-help` route is public is covered in test/app-shell.spec.ts.
  */
 async function clickUnderRouter(link: Element) {
 	@route({
@@ -38,7 +38,7 @@ async function clickUnderRouter(link: Element) {
 					class {},
 				),
 			},
-			{ path: 'passkey-recovery', component: RecoveryStub },
+			{ path: 'sign-in-help', component: RecoveryStub },
 		],
 	})
 	class Root {}
@@ -63,19 +63,19 @@ describe('"Can\'t sign in" links open the recovery screen', () => {
 		window.history.replaceState(null, '', '/')
 	})
 
-	it('navigates from the welcome link to /passkey-recovery', async () => {
-		// @spec components/infrastructure/fan/web/route/welcome "Link opens the recovery screen"
+	it('navigates from the welcome link to /sign-in-help', async () => {
+		// @spec components/infrastructure/fan/web/route/welcome "Link opens the sign-in help screen"
 		const fixture = await clickUnderRouter(
 			linkFrom(welcomeHtml, 'welcome-cant-sign-in'),
 		)
 		stop = () => fixture.stop(true)
 		expect(
-			fixture.appHost.querySelector('[data-route="passkey-recovery"]'),
+			fixture.appHost.querySelector('[data-route="sign-in-help"]'),
 		).not.toBeNull()
-		expect(window.location.pathname).toBe('/passkey-recovery')
+		expect(window.location.pathname).toBe('/sign-in-help')
 	})
 
-	it('navigates a guest from the Settings hero link to /passkey-recovery', async () => {
+	it('navigates a guest from the Settings hero link to /sign-in-help', async () => {
 		// @spec components/infrastructure/fan/web/route/settings "Guest opens sign-in help from Settings"
 		const link = linkFrom(settingsHtml, 'settings-cant-sign-in')
 		// The link belongs to the guest-only hero.
@@ -85,8 +85,8 @@ describe('"Can\'t sign in" links open the recovery screen', () => {
 		const fixture = await clickUnderRouter(link)
 		stop = () => fixture.stop(true)
 		expect(
-			fixture.appHost.querySelector('[data-route="passkey-recovery"]'),
+			fixture.appHost.querySelector('[data-route="sign-in-help"]'),
 		).not.toBeNull()
-		expect(window.location.pathname).toBe('/passkey-recovery')
+		expect(window.location.pathname).toBe('/sign-in-help')
 	})
 })

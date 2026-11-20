@@ -272,8 +272,8 @@ test.describe('Normal detail sheet dismiss', () => {
 	test('browser back button closes sheet', async ({ page }) => {
 		await openDetailSheet(page)
 
-		// URL should have changed to /concerts/...
-		await expect(page).toHaveURL(/concerts/)
+		// URL should have gained concert=...
+		await expect(page).toHaveURL(/[?&]concert=/)
 
 		// Go back
 		await page.goBack()

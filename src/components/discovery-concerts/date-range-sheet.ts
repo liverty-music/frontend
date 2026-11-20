@@ -15,7 +15,7 @@ import {
 
 /**
  * The `range-changed` event payload. Carries the resolved {@link CalendarDate}
- * pair the All Nearby view feeds to `listByLocation`, plus the display `label`
+ * pair the Concerts view feeds to `listByLocation`, plus the display `label`
  * the filter sheet's period row shows (a preset name when a preset is active, else a
  * localized range). Emitting the label alongside the range keeps the chip's
  * copy in sync with the sheet's selection without the view re-deriving it.
@@ -30,7 +30,7 @@ export interface RangeChangedDetail extends DateRange {
 }
 
 /**
- * The All Nearby date-range picker, presented as a bottom sheet. It offers three
+ * The the Concerts view date-range picker, presented as a bottom sheet. It offers three
  * quick presets (今週末 / 7日以内 / 30日以内) that apply-and-close in a single tap,
  * plus an editable custom range (開始 / 終了 `<input type="date">`) that keeps the
  * sheet open while the user edits and is committed via the primary apply button.
@@ -42,7 +42,7 @@ export interface RangeChangedDetail extends DateRange {
 export class DateRangeSheet {
 	/**
 	 * The range to start from, when the host already has one (the fan comes
-	 * back to the All Nearby view within a visit). Without it the sheet starts
+	 * back to the Concerts view within a visit). Without it the sheet starts
 	 * on the "7日以内" preset.
 	 */
 	@bindable public initialRange: DateRange | null = null

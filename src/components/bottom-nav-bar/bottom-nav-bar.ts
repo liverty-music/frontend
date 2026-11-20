@@ -11,10 +11,11 @@ import { IActionMenuService } from '../../services/action-menu-service'
 /**
  * The bottom navigation bar. Its tabs are the shell routes marked `nav: true`,
  * rendered from the router's navigation model in route-table order; each tab's
- * icon and label come from the route's `data.icon` / `data.labelKey`, and the
- * highlight is the router's own `isActive` for that route (so a second path of a
- * tab route, e.g. `concerts/:id` on Home, highlights it too), or the displayed
- * route's `data.section` naming the tab's route id (the Event page on Home).
+ * icon and label come from the route's `data.icon` / `data.labelKey`, its
+ * `data-nav` is the route id (the screen's name, e.g. `timetable`), and the
+ * highlight is the router's own `isActive` for that route, or the displayed
+ * route's `data.section` naming the tab's route id (the concert page on
+ * Timetable).
  *
  * The bar keeps a centre slot for the FAB between the second and third tabs on
  * every route, so the tabs never move; it cuts a notch around the FAB while the

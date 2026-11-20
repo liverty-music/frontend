@@ -137,9 +137,9 @@ test.describe('resell a ticket (signed in)', () => {
 		expect(stock.state).toBe(SOLD_OUT)
 		expect(stock.resaleOpen).toBe(true)
 
-		// @spec components/infrastructure/fan/web/route/event "Sold out with resale open"
+		// @spec components/infrastructure/fan/web/route/concert "Sold out with resale open"
 		const other = await second.newPage()
-		await other.goto(`/events/${EVENT_ID}`)
+		await other.goto(`/concerts/${EVENT_ID}`)
 		const row = stockRow(other, saleStock)
 		await expect(row.getByTestId('event-sale-sold-out')).toBeVisible()
 		await expect(row.getByTestId('event-resale-listing')).toBeVisible()
@@ -212,7 +212,7 @@ test.describe('resell a ticket (signed in)', () => {
 		)
 
 		const other = await second.newPage()
-		await other.goto(`/events/${EVENT_ID}`)
+		await other.goto(`/concerts/${EVENT_ID}`)
 		const row = stockRow(other, saleStock)
 		await expect(row.getByTestId('event-resale-listing')).toBeVisible()
 		await expect(row.getByTestId('event-buy')).toHaveCount(0)

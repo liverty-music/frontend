@@ -383,7 +383,7 @@ test(`@spec ${GUEST_STORY} "Guest navigates to Tickets after timetable"`, async 
 	})
 	await mockFanRpc(page)
 	await openShell(page, '/timetable')
-	await tapTab(page, 'ticket')
+	await tapTab(page, 'tickets')
 	await page.waitForURL((url) => url.pathname === '/tickets')
 	// The Tickets screen's own empty state, not a redirect.
 	await expect(page.locator('tickets-route')).toBeVisible()

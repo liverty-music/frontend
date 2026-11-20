@@ -62,7 +62,7 @@ class ObservableFollowStore {
 
 describe('ConcertRoute (fixture)', () => {
 	it('shows a performer as followed as soon as the follow is stored', async () => {
-		// @spec components/infrastructure/fan/web/route/event "Guest follows the artist"
+		// @spec components/infrastructure/fan/web/route/concert "Guest follows the artist"
 		const follow = new ObservableFollowStore()
 		const concert = concertResolver(
 			[
@@ -304,7 +304,7 @@ const testid = (el: HTMLElement, id: string) =>
 
 describe('ConcertRoute ticket section (fixture)', () => {
 	it('shows the seat type, its price, few left and the action to buy, with no count', async () => {
-		// @spec components/infrastructure/fan/web/route/event "On sale with few left"
+		// @spec components/infrastructure/fan/web/route/concert "On sale with few left"
 		const fixture = await renderSales(
 			tickets([onSale()], [stock({ lowStock: true })]),
 			false,
@@ -320,8 +320,9 @@ describe('ConcertRoute ticket section (fixture)', () => {
 		await fixture.stop(true)
 	})
 
+	// @spec components/infrastructure/fan/web/route/checkout "Opening checkout from the concert page"
 	it('shows each seat type: the available one with the action to buy, the sold-out one as 売り切れ', async () => {
-		// @spec components/infrastructure/fan/web/route/event "Two seat types"
+		// @spec components/infrastructure/fan/web/route/concert "Two seat types"
 		const fixture = await renderSales(
 			tickets([onSale()], [stock(), { ...A_SEAT, state: 'soldOut' }]),
 			true,
@@ -331,14 +332,14 @@ describe('ConcertRoute ticket section (fixture)', () => {
 
 		expect(
 			(testid(s, 'event-buy') as HTMLAnchorElement).getAttribute('href'),
-		).toBe(`/events/${EVENT_ID}/checkout/stock-s`)
+		).toBe(`/concerts/${EVENT_ID}/checkout?stock=stock-s`)
 		expect(testid(a, 'event-sale-sold-out')?.textContent).toBe('売り切れ')
 		expect(testid(a, 'event-buy')).toBeNull()
 		await fixture.stop(true)
 	})
 
 	it('shows the opening time and each seat type with its price, and no action to buy', async () => {
-		// @spec components/infrastructure/fan/web/route/event "Not yet on sale"
+		// @spec components/infrastructure/fan/web/route/concert "Not yet on sale"
 		const fixture = await renderSales(
 			tickets([
 				onSale({
@@ -361,7 +362,7 @@ describe('ConcertRoute ticket section (fixture)', () => {
 	})
 
 	it('shows an all-held seat type as 売り切れ with the note', async () => {
-		// @spec components/infrastructure/fan/web/route/event "Temporarily all held"
+		// @spec components/infrastructure/fan/web/route/concert "Temporarily all held"
 		const fixture = await renderSales(
 			tickets([onSale()], [stock({ state: 'allHeld' })]),
 			false,
@@ -375,7 +376,7 @@ describe('ConcertRoute ticket section (fixture)', () => {
 	})
 
 	it('shows 公式リセール under a sold-out seat type with the listing note and no action', async () => {
-		// @spec components/infrastructure/fan/web/route/event "Sold out with resale open"
+		// @spec components/infrastructure/fan/web/route/concert "Sold out with resale open"
 		const fixture = await renderSales(
 			tickets(
 				[onSale()],
@@ -396,7 +397,7 @@ describe('ConcertRoute ticket section (fixture)', () => {
 	})
 
 	it('offers a guest the action to apply for official resale, with no count', async () => {
-		// @spec components/infrastructure/fan/web/route/event "Sold out, resale open"
+		// @spec components/infrastructure/fan/web/route/concert "Sold out, resale open"
 		const fixture = await renderSales(
 			tickets([onSale()], [stock({ state: 'soldOut', resaleOpen: true })]),
 			false,
@@ -415,8 +416,9 @@ describe('ConcertRoute ticket section (fixture)', () => {
 		await fixture.stop(true)
 	})
 
+	// @spec components/infrastructure/fan/web/route/new-resale-entry "Opening the application"
 	it('opens the resale entry screen from the resale action for a signed-in fan', async () => {
-		// @spec components/infrastructure/fan/web/route/event "Sold out, resale open"
+		// @spec components/infrastructure/fan/web/route/concert "Sold out, resale open"
 		const fixture = await renderSales(
 			tickets([onSale()], [stock({ state: 'soldOut', resaleOpen: true })]),
 			true,
@@ -426,13 +428,13 @@ describe('ConcertRoute ticket section (fixture)', () => {
 			'event-resale-apply',
 		) as HTMLAnchorElement
 		expect(apply.getAttribute('href')).toBe(
-			`/events/${EVENT_ID}/resale/stock-s`,
+			`/concerts/${EVENT_ID}/resale-entries/new?stock=stock-s`,
 		)
 		await fixture.stop(true)
 	})
 
 	it('shows 申し込み済み when the fan has a resale entry waiting for a draw', async () => {
-		// @spec components/infrastructure/fan/web/route/event "Already applied"
+		// @spec components/infrastructure/fan/web/route/concert "Already applied"
 		const fixture = await renderSales(
 			tickets([onSale()], [stock({ state: 'soldOut', resaleOpen: true })]),
 			true,
@@ -453,14 +455,14 @@ describe('ConcertRoute ticket section (fixture)', () => {
 		const applied = testid(s, 'event-resale-applied') as HTMLAnchorElement
 		expect(applied.textContent).toBe('申し込み済み')
 		expect(applied.getAttribute('href')).toBe(
-			`/events/${EVENT_ID}/resale/stock-s`,
+			`/concerts/${EVENT_ID}/resale-entries/new?stock=stock-s`,
 		)
 		expect(testid(s, 'event-resale-apply')).toBeNull()
 		await fixture.stop(true)
 	})
 
 	it('offers only the held seat type and names it', async () => {
-		// @spec components/infrastructure/fan/web/route/event "Fan already holds another seat type"
+		// @spec components/infrastructure/fan/web/route/concert "Fan already holds another seat type"
 		const fixture = await renderSales(
 			tickets([onSale()], [stock(), A_SEAT]),
 			true,
@@ -476,8 +478,9 @@ describe('ConcertRoute ticket section (fixture)', () => {
 		await fixture.stop(true)
 	})
 
+	// @spec components/infrastructure/fan/web/route/new-lottery-entry "Opening the entry form"
 	it('shows an open lottery by name with its window, seat type, price and the action to enter', async () => {
-		// @spec components/infrastructure/fan/web/route/event "Lottery open"
+		// @spec components/infrastructure/fan/web/route/concert "Lottery open"
 		const lottery = onSale({
 			id: 'presale',
 			name: 'ファンクラブ先行',
@@ -499,14 +502,14 @@ describe('ConcertRoute ticket section (fixture)', () => {
 		expect(testid(s, 'event-sale-price')?.textContent).toBe('8,000円（税込）')
 		const enter = testid(s, 'event-enter') as HTMLAnchorElement
 		expect(enter.getAttribute('href')).toBe(
-			`/events/${EVENT_ID}/lottery/presale/stock-s`,
+			`/concerts/${EVENT_ID}/lottery-entries/new?sale=presale&stock=stock-s`,
 		)
 		expect(testid(section, 'event-buy')).toBeNull()
 		await fixture.stop(true)
 	})
 
 	it('shows no sale when no sale names the event', async () => {
-		// @spec components/infrastructure/fan/web/route/event "No sale"
+		// @spec components/infrastructure/fan/web/route/concert "No sale"
 		const fixture = await renderSales(NO_TICKET_SALES, true)
 		expect(testid(fixture.appHost, 'event-sale')).toBeNull()
 		await fixture.stop(true)

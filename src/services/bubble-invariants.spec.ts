@@ -13,7 +13,7 @@ function artist(id: string, name = id, mbid = ''): Artist {
 }
 
 describe('displayCapacityFor', () => {
-	// @spec components/infrastructure/fan/web/route/discovery "Initial bubble display with DNA Orb"
+	// @spec components/infrastructure/fan/web/route/discovery "Initial bubble display with Discovery Orb"
 	it('shows up to 50 bubbles, or 30 on a canvas narrower than 390 px', () => {
 		expect(displayCapacityFor(390)).toBe(50)
 		expect(displayCapacityFor(430)).toBe(50)

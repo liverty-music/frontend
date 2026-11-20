@@ -2,7 +2,7 @@ import { bindable } from 'aurelia'
 
 /** One date of a Series, as a tab of the Event page. */
 export interface ConcertDateTab {
-	/** Event id; the tab links to `/events/<id>`. */
+	/** Event id; the tab links to `/concerts/<id>`. */
 	readonly id: string
 	/** Date with weekday in the display language, e.g. "11/20(金)". */
 	readonly label: string

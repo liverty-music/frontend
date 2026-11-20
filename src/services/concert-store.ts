@@ -212,7 +212,7 @@ export class ConcertStore {
 	}
 
 	/**
-	 * The "All Nearby" concert list: every catalog concert HOME/NEARBY to a
+	 * The "the Concerts view" concert list: every catalog concert HOME/NEARBY to a
 	 * geographic reference point within a date range. Unlike the follower/artist
 	 * paths this is not cached here — the Timetable route owns a route-local cache
 	 * keyed by (area, date range) so it stays separate from the My Timetable cache.
@@ -227,7 +227,7 @@ export class ConcertStore {
 	}
 
 	/**
-	 * Convert All Nearby ProximityGroup[] into DateGroup[], resolving each card's
+	 * Convert the Concerts view ProximityGroup[] into DateGroup[], resolving each card's
 	 * artist identity from the concert's OWN artists.
 	 *
 	 * Matching follows the timetable: a card resolves to the first performer
@@ -399,7 +399,7 @@ export class ConcertStore {
 					}
 				}
 				if (!entry && fallbackMap) {
-					// Nobody on the bill is in the map (All Nearby: nobody
+					// Nobody on the bill is in the map (the Concerts view: nobody
 					// followed): the first listed performer names the card.
 					const first = c.artists.find((p) => p.id?.value)?.id?.value
 					entry = first ? fallbackMap.get(first) : undefined

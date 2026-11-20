@@ -39,7 +39,7 @@ async function render(
 	}
 
 	async function type(value: string): Promise<void> {
-		const input = q<HTMLInputElement>('passkey-recovery-email')
+		const input = q<HTMLInputElement>('sign-in-help-email')
 		if (!input) throw new Error('no email field')
 		input.value = value
 		input.dispatchEvent(new Event('input'))
@@ -48,7 +48,7 @@ async function render(
 	}
 
 	async function send(): Promise<void> {
-		q<HTMLButtonElement>('passkey-recovery-send')?.click()
+		q<HTMLButtonElement>('sign-in-help-send')?.click()
 		await settle()
 	}
 
@@ -61,18 +61,18 @@ describe('Passkey recovery screen (fixture)', () => {
 	})
 
 	it('sends the address and shows the uniform message instead of the form', async () => {
-		// @spec components/infrastructure/fan/web/route/passkey-recovery "Fan sends their address"
+		// @spec components/infrastructure/fan/web/route/sign-in-help "Fan sends their address"
 		const { rpc, q, type, send } = await render()
 		await type('fan@example.com')
 		await send()
 
 		expect(rpc.requestPasskeyRecovery).toHaveBeenCalledWith('fan@example.com')
-		expect(q('passkey-recovery-form')).toBeNull()
-		expect(q('passkey-recovery-sent')?.textContent).toContain(SENT)
+		expect(q('sign-in-help-form')).toBeNull()
+		expect(q('sign-in-help-sent')?.textContent).toContain(SENT)
 	})
 
 	it('shows exactly the same message for an address no account uses', async () => {
-		// @spec components/infrastructure/fan/web/route/passkey-recovery "Address with no account"
+		// @spec components/infrastructure/fan/web/route/sign-in-help "Address with no account"
 		// The server answers both the same; the screen must not tell them apart.
 		const account = await render()
 		await account.type('fan@example.com')
@@ -82,36 +82,34 @@ describe('Passkey recovery screen (fixture)', () => {
 		await noAccount.send()
 
 		const text = (r: typeof account) =>
-			r.q('passkey-recovery-sent')?.textContent?.replace(/\s+/g, ' ').trim()
+			r.q('sign-in-help-sent')?.textContent?.replace(/\s+/g, ' ').trim()
 		expect(text(noAccount)).toBe(text(account))
 		expect(text(noAccount)).toContain(SENT)
 	})
 
 	it('marks a malformed address invalid and sends nothing', async () => {
-		// @spec components/infrastructure/fan/web/route/passkey-recovery "Malformed address"
+		// @spec components/infrastructure/fan/web/route/sign-in-help "Malformed address"
 		const { rpc, q, type, send } = await render()
 		await type('not-an-email')
 		await send()
 
 		expect(rpc.requestPasskeyRecovery).not.toHaveBeenCalled()
 		expect(
-			q<HTMLInputElement>('passkey-recovery-email')?.getAttribute(
-				'aria-invalid',
-			),
+			q<HTMLInputElement>('sign-in-help-email')?.getAttribute('aria-invalid'),
 		).toBe('true')
-		expect(q('passkey-recovery-form')?.textContent).toContain(
+		expect(q('sign-in-help-form')?.textContent).toContain(
 			ja.signInHelp.emailInvalid,
 		)
 	})
 
 	it('offers to send the link again to the same address after 60 seconds', async () => {
-		// @spec components/infrastructure/fan/web/route/passkey-recovery "Resend after 60 seconds"
+		// @spec components/infrastructure/fan/web/route/sign-in-help "Resend after 60 seconds"
 		vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] })
 		const { rpc, q, type, send, settle } = await render()
 		await type('fan@example.com')
 		await send()
 
-		const resend = () => q<HTMLButtonElement>('passkey-recovery-resend')
+		const resend = () => q<HTMLButtonElement>('sign-in-help-resend')
 		expect(resend()?.disabled).toBe(true)
 		expect(resend()?.textContent).toContain('60秒後')
 
@@ -134,24 +132,22 @@ describe('Passkey recovery screen (fixture)', () => {
 	})
 
 	it('says to try again later on ResourceExhausted and keeps the address', async () => {
-		// @spec components/infrastructure/fan/web/route/passkey-recovery "Too many requests"
+		// @spec components/infrastructure/fan/web/route/sign-in-help "Too many requests"
 		const { q, type, send } = await render(async () => {
 			throw new ConnectError('limit', Code.ResourceExhausted)
 		})
 		await type('fan@example.com')
 		await send()
 
-		expect(q('passkey-recovery-too-many')?.textContent).toBe(
-			ja.signInHelp.tooMany,
-		)
-		expect(q<HTMLInputElement>('passkey-recovery-email')?.value).toBe(
+		expect(q('sign-in-help-too-many')?.textContent).toBe(ja.signInHelp.tooMany)
+		expect(q<HTMLInputElement>('sign-in-help-email')?.value).toBe(
 			'fan@example.com',
 		)
-		expect(q('passkey-recovery-sent')).toBeNull()
+		expect(q('sign-in-help-sent')).toBeNull()
 	})
 
 	it('says the request could not be sent on Unavailable and offers to try again', async () => {
-		// @spec components/infrastructure/fan/web/route/passkey-recovery "Network failure"
+		// @spec components/infrastructure/fan/web/route/sign-in-help "Network failure"
 		let fail = true
 		const { rpc, q, type, send } = await render(async () => {
 			if (fail) throw new ConnectError('down', Code.Unavailable)
@@ -159,14 +155,14 @@ describe('Passkey recovery screen (fixture)', () => {
 		await type('fan@example.com')
 		await send()
 
-		expect(q('passkey-recovery-failed')?.textContent).toBe(ja.signInHelp.failed)
-		expect(q('passkey-recovery-send')?.textContent?.trim()).toBe(
+		expect(q('sign-in-help-failed')?.textContent).toBe(ja.signInHelp.failed)
+		expect(q('sign-in-help-send')?.textContent?.trim()).toBe(
 			ja.signInHelp.retry,
 		)
 
 		fail = false
 		await send()
 		expect(rpc.requestPasskeyRecovery).toHaveBeenCalledTimes(2)
-		expect(q('passkey-recovery-sent')?.textContent).toContain(SENT)
+		expect(q('sign-in-help-sent')?.textContent).toContain(SENT)
 	})
 })

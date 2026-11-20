@@ -251,9 +251,12 @@ test.describe('a guest request for ticket sale notifications survives sign-up', 
 		await notifyButton(page).click()
 
 		// Back from sign-up on the same concert's sheet, tracking it.
-		await expect(page).toHaveURL(new RegExp(`/concerts/${EVENT_ID}$`), {
-			timeout: 30_000,
-		})
+		await expect(page).toHaveURL(
+			new RegExp(`/timetable\\?.*concert=${EVENT_ID}$`),
+			{
+				timeout: 30_000,
+			},
+		)
 		await expect(notifyButton(page)).toHaveText(
 			'🔔 チケット販売の通知を受け取り中 ✓',
 			{ timeout: 30_000 },

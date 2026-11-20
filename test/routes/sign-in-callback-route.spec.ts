@@ -263,7 +263,7 @@ describe('SignInCallbackRoute', () => {
 					profile: { email: 'new@example.com' },
 					state: {
 						flow: 'signup',
-						returnTo: `/concerts/${eventId}`,
+						returnTo: `/timetable?concert=${eventId}`,
 						trackEventId: eventId,
 					},
 				}
@@ -283,7 +283,7 @@ describe('SignInCallbackRoute', () => {
 				// After the account is resolved and the guest merge was requested.
 				expect(mockUserService.ensureLoaded).toHaveBeenCalled()
 				expect(order).toEqual(['merge', 'setStatus'])
-				expect(result).toBe('/concerts/ev-9')
+				expect(result).toBe('/timetable?concert=ev-9')
 			})
 
 			it('keeps a journey an existing account already holds for the event', async () => {
@@ -294,7 +294,7 @@ describe('SignInCallbackRoute', () => {
 
 				expect(journeyStore.load).toHaveBeenCalled()
 				expect(journeyStore.setStatus).not.toHaveBeenCalled()
-				expect(result).toBe('/concerts/ev-9')
+				expect(result).toBe('/timetable?concert=ev-9')
 			})
 
 			it('still returns to the sheet when the save fails', async () => {
@@ -303,7 +303,7 @@ describe('SignInCallbackRoute', () => {
 
 				const result = await sut.canLoad({}, {} as RouteNode)
 
-				expect(result).toBe('/concerts/ev-9')
+				expect(result).toBe('/timetable?concert=ev-9')
 				expect(sut.failed).toBe(false)
 			})
 
@@ -328,12 +328,12 @@ describe('SignInCallbackRoute', () => {
 			}
 
 			it('returns to the event page with onboarding complete and follows migrated, without arming the post-signup surfaces', async () => {
-				// @spec components/infrastructure/fan/web/route/event "Guest signs up to buy"
-				// @spec stories/sign-up-or-sign-in "Sign-up from the event page without a home"
+				// @spec components/infrastructure/fan/web/route/concert "Guest signs up to buy"
+				// @spec stories/sign-up-or-sign-in "Sign-up from the concert page without a home"
 				// @spec components/infrastructure/fan/web/global/post-signup-dialog "Guest signs up while buying"
 				mockAuth.handleCallback = vi
 					.fn()
-					.mockResolvedValue(concertPageUser('/events/ev-1'))
+					.mockResolvedValue(concertPageUser('/concerts/ev-1'))
 				setup(null)
 				mockUserService.ensureLoaded = vi
 					.fn()
@@ -347,7 +347,7 @@ describe('SignInCallbackRoute', () => {
 				// event page; the Timetable and My Artists ask for the home later.
 				expect(mockUserService.ensureLoaded).toHaveBeenCalledWith('ja')
 				expect(mockUserService.create).not.toHaveBeenCalled()
-				expect(result).toBe('/events/ev-1')
+				expect(result).toBe('/concerts/ev-1')
 				expect(mockOnboarding.finish).toHaveBeenCalled()
 				expect(mockEa.publish).toHaveBeenCalledWith(
 					new GuestMigrationRequested('u1'),
@@ -370,7 +370,7 @@ describe('SignInCallbackRoute', () => {
 			it('prefers a forced re-auth return-to over the sign-up return path', async () => {
 				mockAuth.handleCallback = vi
 					.fn()
-					.mockResolvedValue(concertPageUser('/events/ev-1'))
+					.mockResolvedValue(concertPageUser('/concerts/ev-1'))
 				mockAuth.takeReturnTo = vi.fn().mockReturnValue('/tickets')
 
 				const result = await sut.canLoad({}, {} as RouteNode)

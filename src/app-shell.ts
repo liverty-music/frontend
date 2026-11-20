@@ -1,12 +1,7 @@
-import {
-	ICurrentRoute,
-	IRouter,
-	IRouterEvents,
-	type RouteNode,
-	route,
-} from '@aurelia/router'
+import { ICurrentRoute, IRouter, IRouterEvents, route } from '@aurelia/router'
 import { type IDisposable, ILogger, resolve, watch } from 'aurelia'
 import { createRouteModules } from './route-modules'
+import { pathOf, type RouteName, titleKeyOf } from './route-specs'
 import {
 	IActionMenuService,
 	settingsAction,
@@ -24,17 +19,21 @@ import {
 } from './util/notification-link'
 
 /**
- * Shell-owned route data. Page identity lives here and nowhere else: the shell
- * header renders `titleKey` (routes without one render no header), and a route
- * with `nav: true` is a bottom-nav tab rendered from the router's navigation
- * model with `icon` / `labelKey`. `chrome: false` hides the header, nav bar and
- * other shell chrome (welcome, auth callback). `section` names the tab route
- * (by `id`) a non-tab route belongs to, so the bottom nav highlights that tab
- * while it is displayed (the Event page belongs to Home).
+ * Shell-owned route data. Page identity lives here and nowhere else: every
+ * route names its title with `titleKey` (a `nav.*` key, the screen's one
+ * English title), which the shell header shows and the browser tab title is
+ * built from. `header: false` keeps the header hidden on a screen that shows
+ * none. A route with `nav: true` is a bottom-nav tab rendered from the
+ * router's navigation model with `icon` / `labelKey`. `chrome: false` hides
+ * the header, nav bar and other shell chrome (welcome, sign-in callback).
+ * `section` names the tab route (by `id`) a non-tab route belongs to, so the
+ * bottom nav highlights that tab while it is displayed (the concert page
+ * belongs to Timetable).
  */
 export interface ShellRouteData {
 	auth?: boolean
 	chrome?: boolean
+	header?: boolean
 	titleKey?: string
 	icon?: string
 	labelKey?: string
@@ -46,246 +45,251 @@ export interface ShellRouteData {
 // is on screen.
 const { lazyRoute, prefetch: prefetchRouteModules } = createRouteModules()
 
+/**
+ * The id, address and title key of a screen, from `ROUTE_SPECS`. The route
+ * id is the screen's name, so the bottom nav's `data-nav` and a `section`
+ * name the screen as its spec does.
+ */
+function screen(name: RouteName): {
+	id: string
+	path: string
+} {
+	return { id: name, path: pathOf(name) }
+}
+
 // Route table. The router's `nav` defaults to true, so `withNavDefault` below
 // flips it: only the four tab routes opt in with `nav: true`, and the bottom
-// nav shows them in their order here (Home, Discovery, My Artists, Tickets),
-// two on each side of the FAB's centre slot.
+// nav shows them in their order here (Timetable, Discovery, My Artists,
+// Tickets), two on each side of the action menu's centre slot.
 const routeTable = [
 	{
 		path: '',
 		redirectTo: 'welcome',
 	},
 	{
-		path: 'welcome',
+		...screen('welcome'),
 		component: lazyRoute(() => import('./routes/welcome/welcome-route')),
-		title: 'Welcome',
-		data: { auth: false, chrome: false },
+		data: { auth: false, chrome: false, titleKey: titleKeyOf('welcome') },
 	},
 	{
-		path: 'about',
+		...screen('about'),
 		component: lazyRoute(() => import('./routes/about/about-route')),
-		title: 'About',
-		data: { auth: false },
+		data: { auth: false, header: false, titleKey: titleKeyOf('about') },
 	},
 	{
-		path: 'auth/callback',
+		...screen('sign-in-callback'),
 		component: lazyRoute(
 			() => import('./routes/sign-in-callback/sign-in-callback-route'),
 		),
-		title: 'Signing In',
-		data: { auth: false, chrome: false },
+		data: {
+			auth: false,
+			chrome: false,
+			titleKey: titleKeyOf('sign-in-callback'),
+		},
 	},
 	{
 		// Return leg of the fresh sign-in of passkey management and the
 		// withdrawal screen (a second OIDC client with a short-lived, in-memory
 		// token; OpenSpec changes `fan-passkey-recovery-and-management` D3 and
 		// `delete-fan-accounts` D4).
-		path: 'auth/passkeys-callback',
+		...screen('passkeys-callback'),
 		component: lazyRoute(
 			() => import('./routes/passkeys-callback/passkeys-callback-route'),
 		),
-		title: 'Passkeys',
-		data: { auth: false, chrome: false },
+		data: {
+			auth: false,
+			chrome: false,
+			titleKey: titleKeyOf('passkeys-callback'),
+		},
 	},
 	{
 		// The "can't sign in" screen: guests and signed-in fans ask for an email
 		// link that registers a new passkey.
-		path: 'passkey-recovery',
+		...screen('sign-in-help'),
 		component: lazyRoute(
 			() => import('./routes/sign-in-help/sign-in-help-route'),
 		),
-		title: "Can't Sign In",
-		data: { auth: false, titleKey: 'signInHelp.title' },
+		data: { auth: false, titleKey: titleKeyOf('sign-in-help') },
 	},
 	{
 		// The link of a verification email opens here, on any device and
 		// without sign-in; the fan confirms the address with one tap
 		// (OpenSpec change `fan-email-verification-in-app`, design D4).
-		path: 'verify-email',
+		...screen('verify-email'),
 		component: lazyRoute(
 			() => import('./routes/verify-email/verify-email-route'),
 		),
-		title: 'Verify Email',
-		data: { auth: false, titleKey: 'verifyEmail.title' },
+		data: { auth: false, titleKey: titleKeyOf('verify-email') },
 	},
 	{
-		// `concerts/:id` is a deep-link into the same timetable (it opens the
-		// concert's detail sheet), so it is a second path of this route: the
-		// navigation model then highlights Home for it with no special case.
-		id: 'timetable',
-		path: ['timetable', 'concerts/:id'],
+		// The open concert sheet is the `concert` query parameter of this
+		// address, like the filters, so the route has one path.
+		...screen('timetable'),
 		component: import('./routes/timetable/timetable-route'),
-		// The document title still tells the two paths apart: a deep-link (e.g.
-		// from a push notification) opens a concert, not the bare timetable.
-		title: (node: RouteNode) =>
-			node.path.startsWith('concerts/') ? 'Concert' : 'Timetable',
 		nav: true,
 		data: {
-			titleKey: 'nav.timetable',
+			titleKey: titleKeyOf('timetable'),
 			icon: 'home',
-			labelKey: 'nav.timetable',
+			labelKey: titleKeyOf('timetable'),
 		},
 	},
 	{
-		// The public, shareable page of one first-party Event. Guests open it
+		// The public, shareable page of one first-party Concert. Guests open it
 		// from shared links, so it does not wait for auth readiness. It belongs
-		// to Home: the timetable's first-party cards open it.
-		path: 'events/:id',
+		// to Timetable: the timetable's first-party cards open it.
+		...screen('concert'),
 		component: lazyRoute(() => import('./routes/concert/concert-route')),
-		title: 'Event',
-		data: { auth: false, section: 'timetable' },
+		data: {
+			auth: false,
+			header: false,
+			titleKey: titleKeyOf('concert'),
+			section: 'timetable',
+		},
 	},
 	{
-		// The checkout of one TicketStock (seat type) of an Event, in its
-		// first-come sale. Signed-in fans only; a guest is sent through sign-up
-		// from the Event page.
-		path: 'events/:id/checkout/:stockId',
+		// The checkout of one TicketStock (seat type, `?stock=`) of a Concert,
+		// in its first-come sale. Signed-in fans only; a guest is sent through
+		// sign-up from the concert page.
+		...screen('checkout'),
 		component: lazyRoute(() => import('./routes/checkout/checkout-route')),
-		title: 'Checkout',
-		data: { titleKey: 'checkout.title', section: 'timetable' },
+		data: { titleKey: titleKeyOf('checkout'), section: 'timetable' },
 	},
 	{
-		path: 'discovery',
+		...screen('discovery'),
 		component: import('./routes/discovery/discovery-route'),
-		title: 'Discovery',
 		nav: true,
 		data: {
 			auth: false,
-			titleKey: 'nav.discovery',
+			titleKey: titleKeyOf('discovery'),
 			icon: 'discovery',
-			labelKey: 'nav.discovery',
+			labelKey: titleKeyOf('discovery'),
 		},
 	},
 	{
-		path: 'my-artists',
+		...screen('my-artists'),
 		component: import('./routes/my-artists/my-artists-route'),
-		title: 'My Artists',
 		nav: true,
 		data: {
-			titleKey: 'nav.myArtists',
+			titleKey: titleKeyOf('my-artists'),
 			icon: 'my-artists',
-			labelKey: 'nav.myArtists',
+			labelKey: titleKeyOf('my-artists'),
 		},
 	},
 	{
-		path: 'consent',
+		// Public, directly-linkable privacy/analytics screen. Consent
+		// application logic lives in ConsentService.
+		...screen('consent'),
 		component: lazyRoute(() => import('./routes/consent/consent-route')),
-		title: 'Privacy & Analytics',
-		// Public, directly-linkable privacy/analytics screen. No longer part
-		// of the onboarding step machine (removed); consent application logic
-		// is unchanged and lives in ConsentService.
-		data: { auth: false },
+		data: { auth: false, header: false, titleKey: titleKeyOf('consent') },
 	},
 	// PocketSign Stamp callback (identity-ekyc-jpki, Stamp redirect flow).
 	// The PocketSign app returns here after the fan reads their card. Auth is
 	// required: the fan must be authenticated when they return from the app.
-	// No `data: { auth: false }` — the AuthHook guards this route.
+	// No `auth: false` — the AuthHook guards this route.
 	{
-		path: 'verify/callback',
+		...screen('identity-verification-callback'),
 		component: lazyRoute(
 			() =>
 				import(
 					'./routes/identity-verification-callback/identity-verification-callback-route'
 				),
 		),
-		title: 'Identity Verification',
+		data: {
+			header: false,
+			titleKey: titleKeyOf('identity-verification-callback'),
+		},
 	},
-	// The lottery entry of one TicketStock (seat type) of an Event in a
-	// lottery sale, opened from the Event page's ticket section. Signed-in fans
-	// only; a guest is sent through sign-up from the Event page.
+	// The lottery entry of one TicketStock (seat type, `?stock=`) of a Concert
+	// in a lottery sale (`?sale=`), opened from the concert page's ticket
+	// section. Signed-in fans only; a guest is sent through sign-up from the
+	// concert page.
 	{
-		path: 'events/:id/lottery/:saleId/:stockId',
+		...screen('new-lottery-entry'),
 		component: lazyRoute(
 			() => import('./routes/new-lottery-entry/new-lottery-entry-route'),
 		),
-		title: 'Lottery Entry',
-		data: { titleKey: 'newLotteryEntry.title', section: 'timetable' },
+		data: { titleKey: titleKeyOf('new-lottery-entry'), section: 'timetable' },
 	},
-	// The fan's entry in that sale for that event and its state.
-	// Reached from the entry screen once the entry is made.
+	// The fan's entries in that sale (`?sale=`) and their states. Reached
+	// from the entry screen once the entry is made.
 	{
-		path: 'events/:id/lottery/:saleId/:stockId/entry',
+		...screen('lottery-entries'),
 		component: lazyRoute(
 			() => import('./routes/lottery-entries/lottery-entries-route'),
 		),
-		title: 'My Lottery Entry',
-		data: { titleKey: 'lotteryEntries.title', section: 'timetable' },
+		data: { titleKey: titleKeyOf('lottery-entries'), section: 'timetable' },
 	},
 	// The application for official resale tickets of one sold-out TicketStock
-	// (seat type) of an Event, opened from the Event page's ticket section.
-	// Signed-in fans only; a guest is sent through sign-up from the Event page.
+	// (seat type, `?stock=`) of a Concert, opened from the concert page's
+	// ticket section. Signed-in fans only; a guest is sent through sign-up from
+	// the concert page.
 	{
-		path: 'events/:id/resale/:stockId',
+		...screen('new-resale-entry'),
 		component: lazyRoute(
 			() => import('./routes/new-resale-entry/new-resale-entry-route'),
 		),
-		title: 'Official Resale Entry',
-		data: { titleKey: 'newResaleEntry.title', section: 'timetable' },
+		data: { titleKey: titleKeyOf('new-resale-entry'), section: 'timetable' },
 	},
 	// The fan's resale entries and their states; the resale emails link here.
 	{
-		path: 'resale-entries',
+		...screen('resale-entries'),
 		component: lazyRoute(
 			() => import('./routes/resale-entries/resale-entries-route'),
 		),
-		title: 'My Resale Entries',
-		data: { titleKey: 'resaleEntries.title', section: 'timetable' },
+		data: { titleKey: titleKeyOf('resale-entries'), section: 'timetable' },
 	},
-	// My Tickets (roadmap ⑤, task 5.1). Authenticated by default — tickets are
-	// account-bound covered tickets issued from captured lottery wins (④).
-	// Wired into the bottom nav bar as the Tickets tab.
+	// Tickets: account-bound tickets issued from captured lottery wins and
+	// purchases. A bottom-nav tab.
 	{
-		path: 'tickets',
+		...screen('tickets'),
 		component: import('./routes/tickets/tickets-route'),
-		title: 'My Tickets',
 		nav: true,
 		// Uses the existing 'ticket' icon (svg-icon.html case="ticket").
-		data: { titleKey: 'nav.tickets', icon: 'ticket', labelKey: 'nav.tickets' },
+		data: {
+			titleKey: titleKeyOf('tickets'),
+			icon: 'ticket',
+			labelKey: titleKeyOf('tickets'),
+		},
 	},
 	// The notification center opens from the bell in the header; not a tab.
 	{
-		path: 'notifications',
+		...screen('notifications'),
 		component: lazyRoute(
 			() => import('./routes/notifications/notifications-route'),
 		),
-		title: 'Notifications',
-		data: { titleKey: 'notifications.title' },
+		data: { titleKey: titleKeyOf('notifications') },
 	},
-	// Settings is not a tab: it opens from the last item of the FAB launcher on
+	// Settings is not a tab: it opens from the last item of the action menu on
 	// the four tab pages (`isTabRoute`), and highlights no tab.
 	{
-		path: 'settings',
+		...screen('settings'),
 		component: lazyRoute(() => import('./routes/settings/settings-route')),
-		title: 'Settings',
-		data: { titleKey: 'nav.settings' },
+		data: { titleKey: titleKeyOf('settings') },
 	},
 	// Passkey management, opened from the Settings Passkeys row. Signed-in
 	// fans only; its canLoad requires the passkey-management token.
 	{
-		path: 'settings/passkeys',
+		...screen('passkeys'),
 		component: lazyRoute(() => import('./routes/passkeys/passkeys-route')),
-		title: 'Passkeys',
-		data: { titleKey: 'passkeys.title' },
+		data: { titleKey: titleKeyOf('passkeys') },
 	},
 	// The withdrawal screen, opened from the Settings Delete account control.
 	// Signed-in fans only; it asks for the same fresh sign-in as passkey
 	// management before it deletes (OpenSpec change `delete-fan-accounts`).
 	{
-		path: 'settings/delete-account',
+		...screen('delete-account'),
 		component: lazyRoute(
 			() => import('./routes/delete-account/delete-account-route'),
 		),
-		title: 'Delete Account',
-		data: { titleKey: 'deleteAccount.title' },
+		data: { titleKey: titleKeyOf('delete-account') },
 	},
-	// Order detail (roadmap ⑤, §5.1/§5.2). Authenticated by default — the order
-	// must belong to the caller (non-revealing NotFound otherwise). Reached by
-	// link from My Tickets; NOT wired into the bottom nav.
+	// Order detail. Authenticated by default — the order must belong to the
+	// caller (non-revealing NotFound otherwise). Reached by link from Tickets;
+	// NOT wired into the bottom nav.
 	{
-		path: 'orders/:orderId',
+		...screen('order'),
 		component: lazyRoute(() => import('./routes/order/order-route')),
-		title: 'Order Detail',
-		data: { titleKey: 'nav.order' },
+		data: { titleKey: titleKeyOf('order') },
 	},
 	// Legal documents. Public (`auth: false`) so guests can open them
 	// without an account, and so each has a stable, directly-linkable URL
@@ -294,22 +298,27 @@ const routeTable = [
 	// not a `load`/`href` attribute: the attribute would resolve relative to
 	// the Settings routing context (`/settings/legal/terms` → AUR3174).
 	{
-		path: 'legal/terms',
+		...screen('legal/terms'),
 		component: lazyRoute(() => import('./routes/legal/terms-route')),
-		title: 'Terms of Service',
-		data: { auth: false },
+		data: { auth: false, header: false, titleKey: titleKeyOf('legal/terms') },
 	},
 	{
-		path: 'legal/privacy',
+		...screen('legal/privacy'),
 		component: lazyRoute(() => import('./routes/legal/privacy-route')),
-		title: 'Privacy Policy',
-		data: { auth: false },
+		data: {
+			auth: false,
+			header: false,
+			titleKey: titleKeyOf('legal/privacy'),
+		},
 	},
 	{
-		path: 'legal/licenses',
+		...screen('legal/licenses'),
 		component: lazyRoute(() => import('./routes/legal/licenses-route')),
-		title: 'OSS Licenses',
-		data: { auth: false },
+		data: {
+			auth: false,
+			header: false,
+			titleKey: titleKeyOf('legal/licenses'),
+		},
 	},
 ]
 
@@ -373,14 +382,16 @@ export class AppShell {
 
 	/**
 	 * i18n key of the displayed route's header title (`data.titleKey`), or empty
-	 * for a route without one (legal, about, the not-found fallback), which then
-	 * renders no header. Read from the router's current route, so it changes
-	 * only when a navigation completes.
+	 * for a route that shows no page header (`data.header: false`: about, the
+	 * concert page, legal, the not-found fallback), which then renders no
+	 * header. Read from the router's current route, so it changes only when a
+	 * navigation completes.
 	 */
 	public get titleKey(): string {
 		const data = this.currentRoute.parameterInformation[0]?.config?.data as
 			| ShellRouteData
 			| undefined
+		if (data?.header === false) return ''
 		return data?.titleKey ?? ''
 	}
 

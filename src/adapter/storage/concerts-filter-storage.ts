@@ -2,11 +2,11 @@ import type { DatePresetId } from '../../components/discovery-concerts/date-pres
 import { StorageKeys } from '../../constants/storage-keys'
 
 /**
- * The All Nearby filter the fan chose, kept on this device for the next visit.
+ * The the Concerts view filter the fan chose, kept on this device for the next visit.
  * Only the fan's own input: an area code and a preset id, never a display
  * value.
  */
-export interface StoredNearbyFilter {
+export interface StoredConcertsFilter {
 	/** ISO 3166-2 code, or null to follow the fan's home area. */
 	areaCode: string | null
 	/** The last applied quick preset; null after a custom range. */
@@ -16,15 +16,15 @@ export interface StoredNearbyFilter {
 const PRESETS: readonly DatePresetId[] = ['weekend', 'week', 'month']
 const ISO_3166_2 = /^[A-Z]{2}-[A-Z0-9]{1,3}$/
 
-const EMPTY: StoredNearbyFilter = { areaCode: null, datePreset: null }
+const EMPTY: StoredConcertsFilter = { areaCode: null, datePreset: null }
 
 /**
  * The kept filter. A missing, malformed or unreadable value (a private window,
  * blocked site data) yields the defaults: the home area and no preset.
  */
-export function loadNearbyFilter(): StoredNearbyFilter {
+export function loadConcertsFilter(): StoredConcertsFilter {
 	try {
-		const raw = localStorage.getItem(StorageKeys.nearbyFilter)
+		const raw = localStorage.getItem(StorageKeys.concertsFilter)
 		if (!raw) return { ...EMPTY }
 		const value = JSON.parse(raw) as Partial<Record<string, unknown>>
 		const areaCode =
@@ -41,11 +41,13 @@ export function loadNearbyFilter(): StoredNearbyFilter {
 }
 
 /** Keep `change` on top of what is kept. A storage that cannot be written keeps nothing. */
-export function saveNearbyFilter(change: Partial<StoredNearbyFilter>): void {
+export function saveConcertsFilter(
+	change: Partial<StoredConcertsFilter>,
+): void {
 	try {
 		localStorage.setItem(
-			StorageKeys.nearbyFilter,
-			JSON.stringify({ ...loadNearbyFilter(), ...change }),
+			StorageKeys.concertsFilter,
+			JSON.stringify({ ...loadConcertsFilter(), ...change }),
 		)
 	} catch {
 		// Nothing to keep on this device.
@@ -53,9 +55,9 @@ export function saveNearbyFilter(change: Partial<StoredNearbyFilter>): void {
 }
 
 /** Forget the kept filter (sign-in, sign-up, sign-out). */
-export function clearNearbyFilter(): void {
+export function clearConcertsFilter(): void {
 	try {
-		localStorage.removeItem(StorageKeys.nearbyFilter)
+		localStorage.removeItem(StorageKeys.concertsFilter)
 	} catch {
 		// Nothing was kept.
 	}

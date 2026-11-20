@@ -1,4 +1,4 @@
-import type { IRouteViewModel, Params } from '@aurelia/router'
+import type { IRouteViewModel, Params, RouteNode } from '@aurelia/router'
 import { ILogger, resolve } from 'aurelia'
 import { ILotteryEntryRpcClient } from '../../adapter/rpc/client/lottery-entry-client'
 import { ITicketSaleRpcClient } from '../../adapter/rpc/client/ticket-sale-client'
@@ -25,7 +25,7 @@ export type ResultKind = 'entered' | 'won' | 'lost'
 
 /**
  * The fan's lottery entry status in one sale for one event
- * (`/events/:id/lottery/:saleId/:stockId/entry`). Reads the fan's entries in
+ * (`/concerts/:id/lottery-entries?sale=:saleId`). Reads the fan's entries in
  * the sale with LotteryEntryService.ListByTicketSale and the event's stocks
  * with TicketSaleService.ListByEvent, and shows the entry for one of this
  * event's stocks (at most one per sale and event, made at Confirm): its seat
@@ -48,9 +48,9 @@ export class LotteryEntriesRoute implements IRouteViewModel {
 	private readonly saleClient = resolve(ITicketSaleRpcClient)
 	private abortController: AbortController | null = null
 
-	public loading(params: Params): void {
+	public loading(params: Params, next: RouteNode): void {
 		this.eventId = params.id ?? ''
-		this.saleId = params.saleId ?? ''
+		this.saleId = next.queryParams.get('sale') ?? ''
 		// Never hold the view swap on data: start the read and return.
 		void this.load()
 	}

@@ -7,7 +7,7 @@ import { expect, type Page, test } from '../support/test'
  * once didn't: the concerts were inserted as the window was built while the
  * placeholder went a task later, so one frame painted both and the concerts
  * then jumped up by the placeholder's height — CLS ≈ 0.5 on a cold load and on
- * a `/concerts/:id` deep-link. A slowed CPU and a delayed response make that
+ * a `/timetable?concert=:id` deep-link. A slowed CPU and a delayed response make that
  * frame reliably reachable.
  */
 
@@ -119,7 +119,7 @@ async function prepare(page: Page): Promise<void> {
 	)
 }
 
-for (const path of ['/timetable', `/concerts/${fakeId('h-150-0')}`]) {
+for (const path of ['/timetable', `/timetable?concert=${fakeId('h-150-0')}`]) {
 	// @spec components/infrastructure/fan/web/route/timetable "Viewport-scoping off-screen content does not regress sticky headers or shift layout"
 	test(`the placeholder and the concerts swap in one frame (${path})`, async ({
 		page,

@@ -92,9 +92,11 @@ test('@spec components/infrastructure/fan/web/route/timetable "Closing a deep-li
 	page,
 }) => {
 	await prepare(page)
-	await page.goto(`/concerts/${fakeId('c-4')}`)
+	await page.goto(`/timetable?concert=${fakeId('c-4')}`)
 	await expect.poll(() => sheetOpen(page), { timeout: 15_000 }).toBe(true)
-	await expect(page).toHaveURL(new RegExp(`/concerts/${fakeId('c-4')}$`))
+	await expect(page).toHaveURL(
+		new RegExp(`/timetable\\?.*concert=${fakeId('c-4')}$`),
+	)
 
 	await page.keyboard.press('Escape')
 	await expect.poll(() => sheetOpen(page)).toBe(false)

@@ -1,5 +1,5 @@
 @layer block {
-	/* Follow CTA of the event detail sheet (All Nearby context). */
+	/* Follow CTA of the event detail sheet (the Concerts view context). */
 	@scope (.sheet-follow) {
 		:scope {
 			--flow-space: var(--space-m);

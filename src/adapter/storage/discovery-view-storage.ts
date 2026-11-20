@@ -1,17 +1,17 @@
 import { StorageKeys } from '../../constants/storage-keys'
 
-/** The two views of Discovery: the artist bubbles and the All Nearby view. */
-export type DiscoveryView = 'artists' | 'nearby'
+/** The two views of Discovery: the artist bubbles and the Concerts view. */
+export type DiscoveryView = 'artists' | 'concerts'
 
 /**
  * The Discovery view the fan used last on this device. Anything but an explicit
- * `'nearby'` — an absent key, an unknown value, or a storage that cannot be
+ * `'concerts'` — an absent key, an unknown value, or a storage that cannot be
  * read (a private window, blocked site data) — yields the artist bubbles.
  */
 export function loadDiscoveryView(): DiscoveryView {
 	try {
-		return localStorage.getItem(StorageKeys.discoveryView) === 'nearby'
-			? 'nearby'
+		return localStorage.getItem(StorageKeys.discoveryView) === 'concerts'
+			? 'concerts'
 			: 'artists'
 	} catch {
 		return 'artists'

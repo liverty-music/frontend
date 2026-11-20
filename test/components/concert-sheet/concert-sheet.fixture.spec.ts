@@ -476,7 +476,7 @@ describe('ConcertSheet ticket section (fixture)', () => {
 		expect(harness.signUp).toHaveBeenCalledWith(
 			expect.objectContaining({
 				source: 'ticket_notify',
-				returnTo: '/concerts/ev-1',
+				returnTo: '/timetable?concert=ev-1',
 				trackEventId: 'ev-1',
 			}),
 		)
@@ -504,7 +504,7 @@ describe('ConcertSheet push line (fixture)', () => {
 
 	// @spec components/infrastructure/fan/web/global/concert-sheet "Tracking with push off"
 	// @spec components/infrastructure/fan/web/global/notification-prompt "Offer in the ticket section"
-	// @spec components/infrastructure/fan/web/global/notification-prompt "Fan allows from the event detail sheet"
+	// @spec components/infrastructure/fan/web/global/notification-prompt "Fan allows from the concert sheet"
 	it('offers push beside the line when push is off', async () => {
 		const fixture = await render(event(), {
 			signedIn: true,
@@ -682,7 +682,7 @@ describe('ConcertSheet out-of-range notice (fixture)', () => {
 		await fixture.stop(true)
 	})
 
-	it('shows no notice in the All Nearby view, whose lane is the browsed area', async () => {
+	it('shows no notice in the Concerts view, whose lane is the browsed area', async () => {
 		const fixture = await render(event({ lane: 'away', matched: false }), {
 			signedIn: true,
 			hype: 'nearby',

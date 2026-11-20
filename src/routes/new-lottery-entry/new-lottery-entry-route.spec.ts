@@ -165,6 +165,7 @@ vi.mock('aurelia', async (importOriginal) => {
 	}
 })
 
+import { routeNodeWithQuery } from '../../../test/helpers/route-node'
 import { Events } from '../../lib/analytics/analytics-service'
 import { NewLotteryEntryRoute } from './new-lottery-entry-route'
 
@@ -173,7 +174,10 @@ const flush = () => new Promise((r) => setTimeout(r, 0))
 
 async function open(): Promise<NewLotteryEntryRoute> {
 	const sut = new NewLotteryEntryRoute()
-	sut.loading({ id: EVENT_ID, saleId: SALE_ID, stockId: STOCK_ID })
+	sut.loading(
+		{ id: EVENT_ID },
+		routeNodeWithQuery({ sale: SALE_ID, stock: STOCK_ID }),
+	)
 	await vi.waitFor(() => expect(sut.step).not.toBe('loading'))
 	return sut
 }
@@ -222,7 +226,7 @@ describe('NewLotteryEntryRoute', () => {
 
 	describe('the seat type entered', () => {
 		it('shows the sale name, the event, the seat type, the price and offers 1 to the limit', async () => {
-			// @spec components/infrastructure/fan/web/route/lottery-entry "Presale entry"
+			// @spec components/infrastructure/fan/web/route/new-lottery-entry "Presale entry"
 			const sut = await open()
 
 			expect(sut.step).toBe('count')
@@ -260,7 +264,7 @@ describe('NewLotteryEntryRoute', () => {
 
 	describe('saved details are prefilled', () => {
 		it("fills in the fan's saved name and phone number", async () => {
-			// @spec components/infrastructure/fan/web/route/lottery-entry "Returning fan"
+			// @spec components/infrastructure/fan/web/route/new-lottery-entry "Returning fan"
 			mockUserStore.current = {
 				id: 'u1',
 				fullName: '山田 花子',
@@ -273,7 +277,7 @@ describe('NewLotteryEntryRoute', () => {
 		})
 
 		it('leaves both fields empty for a fan who never gave them', async () => {
-			// @spec components/infrastructure/fan/web/route/lottery-entry "First entry"
+			// @spec components/infrastructure/fan/web/route/new-lottery-entry "First entry"
 			mockUserStore.current = { id: 'u1' }
 			const sut = await open()
 
@@ -284,7 +288,7 @@ describe('NewLotteryEntryRoute', () => {
 
 	describe('AuthorizeCard → Confirm', () => {
 		it('reports the entry started and submitted with the count', async () => {
-			// @spec components/infrastructure/fan/web/route/lottery-entry "Entry submitted"
+			// @spec components/infrastructure/fan/web/route/new-lottery-entry "Entry submitted"
 			const sut = await toPayment()
 
 			await sut.confirmEntry()
@@ -299,6 +303,18 @@ describe('NewLotteryEntryRoute', () => {
 				[Events.TicketLotteryEntrySubmitted, choice],
 			])
 			expect(sut.step).toBe('done')
+		})
+
+		// @spec components/infrastructure/fan/web/route/new-lottery-entry "After confirming"
+		it("leads to the sale's entries under the concert once confirmed", async () => {
+			const sut = await toPayment()
+
+			await sut.confirmEntry()
+
+			expect(sut.step).toBe('done')
+			expect(sut.entryStatusUrl).toBe(
+				`/concerts/${EVENT_ID}/lottery-entries?sale=${SALE_ID}`,
+			)
 		})
 
 		it('reports the entry started on the first AuthorizeCard only', async () => {
@@ -387,11 +403,11 @@ describe('NewLotteryEntryRoute', () => {
 		})
 
 		it.each([
-			// @spec components/infrastructure/fan/web/route/lottery-entry "Domestic number with hyphens"
+			// @spec components/infrastructure/fan/web/route/new-lottery-entry "Domestic number with hyphens"
 			['090-1234-5678', '+819012345678'],
-			// @spec components/infrastructure/fan/web/route/lottery-entry "Landline number"
+			// @spec components/infrastructure/fan/web/route/new-lottery-entry "Landline number"
 			['03 1234 5678', '+81312345678'],
-			// @spec components/infrastructure/fan/web/route/lottery-entry "E.164 number with spaces"
+			// @spec components/infrastructure/fan/web/route/new-lottery-entry "E.164 number with spaces"
 			['+81 90 1234 5678', '+819012345678'],
 		])('enters %j with the phone number %j', async (typed, sent) => {
 			const sut = await toPayment(typed)
@@ -413,7 +429,7 @@ describe('NewLotteryEntryRoute', () => {
 		})
 
 		it('authorizes the card again when the count changes after authorizing', async () => {
-			// @spec components/infrastructure/fan/web/route/lottery-entry "Count changed after authorizing"
+			// @spec components/infrastructure/fan/web/route/new-lottery-entry "Count changed after authorizing"
 			const sut = await toPayment()
 			sut.backToPersonalDetails()
 			sut.backToCount()
@@ -457,7 +473,7 @@ describe('NewLotteryEntryRoute', () => {
 	})
 
 	describe('phone number entry', () => {
-		// @spec components/infrastructure/fan/web/route/lottery-entry "Number fits neither form"
+		// @spec components/infrastructure/fan/web/route/new-lottery-entry "Number fits neither form"
 		it.each(['12345', '9012345678'])(
 			'keeps continue disabled and flags %j as invalid',
 			async (phone) => {
@@ -563,7 +579,7 @@ describe('NewLotteryEntryRoute', () => {
 
 	describe('a refused entry is explained', () => {
 		it('says the window has closed and nothing will be charged', async () => {
-			// @spec components/infrastructure/fan/web/route/lottery-entry "Window closed while confirming"
+			// @spec components/infrastructure/fan/web/route/new-lottery-entry "Window closed while confirming"
 			const sut = await toPayment()
 			mockEntry.confirm.mockRejectedValue(
 				new ConnectError('closed', Code.FailedPrecondition),
@@ -584,7 +600,7 @@ describe('NewLotteryEntryRoute', () => {
 		})
 
 		it('says the fan already has an entry in this sale for this event', async () => {
-			// @spec components/infrastructure/fan/web/route/lottery-entry "Already entered the sale"
+			// @spec components/infrastructure/fan/web/route/new-lottery-entry "Already entered the sale"
 			const sut = await toPayment()
 			mockEntry.confirm.mockRejectedValue(
 				new ConnectError('second entry', Code.FailedPrecondition),
@@ -773,7 +789,7 @@ describe('NewLotteryEntryRoute', () => {
 		}
 
 		it('sends the code kept for the same Series yesterday', async () => {
-			// @spec components/infrastructure/fan/web/route/lottery-entry "Entry from a referral link"
+			// @spec components/infrastructure/fan/web/route/new-lottery-entry "Entry from a referral link"
 			keptCode('member-a', 's1', 1)
 			const sut = await toPayment()
 
@@ -785,7 +801,7 @@ describe('NewLotteryEntryRoute', () => {
 		})
 
 		it('sends no code kept for another Series', async () => {
-			// @spec components/infrastructure/fan/web/route/lottery-entry "Another Series"
+			// @spec components/infrastructure/fan/web/route/new-lottery-entry "Another Series"
 			keptCode('member-a', 's-other', 1)
 			await toPayment()
 
@@ -794,7 +810,7 @@ describe('NewLotteryEntryRoute', () => {
 		})
 
 		it('sends no code once it has expired', async () => {
-			// @spec components/infrastructure/fan/web/route/lottery-entry "Code expired"
+			// @spec components/infrastructure/fan/web/route/new-lottery-entry "Code expired"
 			keptCode('member-a', 's1', 8)
 			await toPayment()
 

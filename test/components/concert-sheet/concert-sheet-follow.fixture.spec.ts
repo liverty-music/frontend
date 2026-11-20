@@ -121,11 +121,11 @@ async function render(ev: Concert, isAllNearby: boolean, o: Options = {}) {
 			Registration.instance(IRouter, { load: vi.fn() }),
 		],
 	).started
-	// The All Nearby view on Discovery opens the sheet with the follow action;
+	// The Concerts view on Discovery opens the sheet with the follow action;
 	// the timetable opens it without.
 	fixture.component.sheet.open(
 		ev,
-		isAllNearby ? 'all_nearby' : 'timetable',
+		isAllNearby ? 'discovery_concerts' : 'timetable',
 		isAllNearby,
 	)
 	await tasksSettled()
@@ -139,8 +139,8 @@ async function render(ev: Concert, isAllNearby: boolean, o: Options = {}) {
 }
 
 describe('ConcertSheet follow CTA (fixture)', () => {
-	// @spec components/infrastructure/fan/web/global/bottom-sheet "Follow button visible for unfollowed artist in All Nearby context"
-	it('shows the follow button for an unfollowed artist in All Nearby', async () => {
+	// @spec components/infrastructure/fan/web/global/bottom-sheet "Follow button visible for unfollowed artist in Concerts view context"
+	it('shows the follow button for an unfollowed artist in the Concerts view', async () => {
 		const { fixture, button } = await render(event(), true)
 
 		expect(button()?.textContent).toBe('discoveryConcerts.follow.action')

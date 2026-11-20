@@ -26,9 +26,9 @@ export class DiscoverySwapTile {
 
 	/** The accessible name names the destination, not the view on screen. */
 	public get labelKey(): string {
-		return this.view === 'nearby'
+		return this.view === 'concerts'
 			? 'discovery.swap.toArtists'
-			: 'discovery.swap.toNearby'
+			: 'discovery.swap.toConcerts'
 	}
 
 	public viewChanged(next: DiscoveryView, previous: DiscoveryView): void {

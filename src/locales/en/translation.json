@@ -202,7 +202,7 @@
 			"subtitle": "Follow a few artists and their upcoming shows appear here.",
 			"cta": "Find Artists"
 		},
-		"nearbyCta": "See shows near you",
+		"concertsCta": "Find concerts",
 		"error": {
 			"load": "Failed to load live events"
 		}
@@ -285,7 +285,7 @@
 		"genreLoadFailed": "Couldn't load {{tag}} artists",
 		"searchFailed": "Search couldn't complete — your connection may be unstable. Wait a moment and try again.",
 		"swap": {
-			"toNearby": "Near you",
+			"toConcerts": "Concerts",
 			"toArtists": "Artists"
 		}
 	},
@@ -422,7 +422,6 @@
 	},
 	"notifications": {
 		"signInRequired": "Sign in to see your notifications.",
-		"title": "Notifications",
 		"loading": "Loading…",
 		"error": "Could not load your notifications.",
 		"retry": "Try again",
@@ -440,11 +439,31 @@
 		"discovery": "Discovery",
 		"myArtists": "My Artists",
 		"tickets": "Tickets",
+		"settings": "Settings",
+		"concert": "Concert",
+		"notifications": "Notifications",
+		"passkeys": "Passkeys",
+		"deleteAccount": "Delete Account",
 		"order": "Order Detail",
-		"settings": "Settings"
+		"checkout": "Checkout",
+		"newLotteryEntry": "Lottery Entry",
+		"lotteryEntries": "Lottery Entries",
+		"newResaleEntry": "Resale Entry",
+		"resaleEntries": "Resale Entries",
+		"signInHelp": "Can't Sign In",
+		"verifyEmail": "Verify Email",
+		"welcome": "Welcome",
+		"about": "About",
+		"consent": "Privacy & Analytics",
+		"legalTerms": "Terms of Service",
+		"legalPrivacy": "Privacy Policy",
+		"legalLicenses": "OSS Licenses",
+		"signInCallback": "Signing In",
+		"identityVerificationCallback": "Identity Verification",
+		"passkeysCallback": "Passkeys",
+		"notFound": "Page Not Found"
 	},
 	"tickets": {
-		"title": "My Tickets",
 		"loading": "Loading…",
 		"empty": {
 			"title": "No tickets yet",
@@ -554,7 +573,6 @@
 		}
 	},
 	"order": {
-		"title": "Order Detail",
 		"loading": "Loading…",
 		"notFound": {
 			"title": "Order not found",
@@ -622,8 +640,8 @@
 			"description": "Tap a bubble to follow an artist.",
 			"genreTip": "Filter by genre using the tabs",
 			"searchTip": "Search by name using the search bar",
-			"nearbySectionTitle": "Near you",
-			"nearbyDesc": "Tap the tile beside the orb to see the concerts in an area and period you choose, including artists you don’t follow yet. Open a concert to follow its artist.",
+			"concertsSectionTitle": "Concerts",
+			"concertsDesc": "Tap the tile beside the orb to see the concerts in an area and period you choose, including artists you don’t follow yet. Open a concert to follow its artist.",
 			"unfollowSectionTitle": "Unfollowing",
 			"unfollowDesc": "You can unfollow from the My Artists page."
 		},
@@ -901,7 +919,6 @@
 		"settings": "Settings"
 	},
 	"newLotteryEntry": {
-		"title": "Enter the ticket lottery",
 		"loading": "Loading…",
 		"unavailable": "Payments are not available in this environment right now. Please try again later.",
 		"notFound": "This lottery could not be found.",
@@ -963,7 +980,6 @@
 		"phoneInvalid": "Enter a valid phone number (e.g. 090-1234-5678 or +81 90 1234 5678)."
 	},
 	"newResaleEntry": {
-		"title": "Apply for official resale",
 		"loading": "Loading…",
 		"unavailable": "Payments are not available in this environment right now. Please try again later.",
 		"notFound": "This seat type has no official resale.",
@@ -1046,7 +1062,6 @@
 		}
 	},
 	"resaleEntries": {
-		"title": "Official resale applications",
 		"loading": "Loading…",
 		"error": "Could not load your applications.",
 		"retry": "Reload",
@@ -1076,7 +1091,6 @@
 		}
 	},
 	"lotteryEntries": {
-		"title": "Your lottery entry",
 		"loading": "Loading…",
 		"empty": "No entry to this lottery was found.",
 		"error": "Your entry could not be loaded. Please try again later.",
@@ -1168,7 +1182,6 @@
 		}
 	},
 	"checkout": {
-		"title": "Buy tickets",
 		"loading": "Loading…",
 		"unavailable": "Payments are not available in this environment right now. Please try again later.",
 		"notFound": "Tickets for this event are not on sale.",
@@ -1284,7 +1297,6 @@
 		}
 	},
 	"signInHelp": {
-		"title": "Can't sign in",
 		"lead": "We'll email your account's address a link that creates a new passkey.",
 		"noteValidity": "The link works for 1 hour.",
 		"noteDevice": "Open it on the device that will hold the new passkey.",
@@ -1299,7 +1311,6 @@
 		"failed": "We couldn't send the request. Try again."
 	},
 	"verifyEmail": {
-		"title": "Verify email address",
 		"lead": "Tap the button below to finish verifying the email address you registered with Liverty Music.",
 		"confirm": "Verify email address",
 		"retry": "Try again",
@@ -1311,7 +1322,6 @@
 		"tooMany": "Too many attempts. Please try again later."
 	},
 	"passkeys": {
-		"title": "Passkeys",
 		"lead": "These passkeys sign in to your account. Remove any you no longer use or don't recognize.",
 		"loading": "Loading…",
 		"listFailed": "We couldn't load your passkeys.",
@@ -1342,7 +1352,6 @@
 		}
 	},
 	"deleteAccount": {
-		"title": "Delete Account",
 		"lead": "Delete your Liverty Music account and leave the service.",
 		"loading": "Loading…",
 		"loadFailed": "We couldn't check whether your account can be deleted.",

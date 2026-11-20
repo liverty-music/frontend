@@ -1,7 +1,7 @@
 import { bindable, INode, resolve } from 'aurelia'
 
 /**
- * The event detail sheet's Follow button in All Nearby: it turns a
+ * The event detail sheet's Follow button in the Concerts view: it turns a
  * discovered concert into a followed artist, then shows a static
  * "Following". Placed on the sheet's section with `as-element`; the press is
  * reported to the sheet as a `follow` event.

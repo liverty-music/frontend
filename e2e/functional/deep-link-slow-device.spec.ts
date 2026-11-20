@@ -3,7 +3,7 @@ import { fakeId } from '../support/fake-id'
 import { expect, test } from '../support/test'
 
 /**
- * A `/concerts/:id` deep-link on a slow device. Resolving it used to flush
+ * A `/timetable?concert=:id` deep-link on a slow device. Resolving it used to flush
  * Aurelia's task queue synchronously; on a slow CPU that flush — which also ran
  * the filtered timetable's render — exceeded the 100 ms synchronous budget,
  * threw "Potential deadlock", and dropped every queued task, so the sheet never
@@ -90,7 +90,7 @@ test('a concert deep-link opens its sheet on a slow device, and the timetable re
 	const cdp = await context.newCDPSession(page)
 	await cdp.send('Emulation.setCPUThrottlingRate', { rate: 10 })
 
-	await page.goto(`/concerts/${fakeId('h-150-0')}`)
+	await page.goto(`/timetable?concert=${fakeId('h-150-0')}`)
 
 	// The sheet opens for the linked concert, and its URL is the final entry.
 	await expect
@@ -105,7 +105,9 @@ test('a concert deep-link opens its sheet on a slow device, and the timetable re
 			{ timeout: 60_000 },
 		)
 		.toBe(true)
-	await expect(page).toHaveURL(new RegExp(`/concerts/${fakeId('h-150-0')}$`))
+	await expect(page).toHaveURL(
+		new RegExp(`/timetable\\?.*concert=${fakeId('h-150-0')}$`),
+	)
 	// The filtered timetable rendered behind it.
 	await expect
 		.poll(() => page.locator('timetable-grid .date-group').count())

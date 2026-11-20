@@ -163,7 +163,7 @@ describe('notification interaction properties', () => {
 		const metadata = resolvePushMetadata({
 			title: 'Sales open',
 			data: {
-				url: '/events/e-1?from=push',
+				url: '/concerts/e-1?from=push',
 				notification_id: 'notif-9',
 				type: 'sales_reminder',
 				milestone: 'apply_open',
@@ -180,7 +180,7 @@ describe('notification interaction properties', () => {
 			notification_id: 'notif-9',
 			type: 'sales_reminder',
 			milestone: 'apply_open',
-			path: '/events/e-1',
+			path: '/concerts/e-1',
 			$insert_id: interaction.uuid,
 		})
 	})

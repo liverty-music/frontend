@@ -21,11 +21,15 @@ export const StorageKeys = {
 	// defaults to 'right' (bottom-right corner). Mirrors the beam preference.
 	fabHanded: 'fab.handed',
 	// The Discovery view used last on this device: 'artists' (the bubbles) or
-	// 'nearby' (the All Nearby view). Absent means the bubbles.
+	// 'concerts' (the Concerts view). Absent, or the retired 'nearby', means
+	// the bubbles.
 	discoveryView: 'discovery.view',
-	// The All Nearby view's filter kept for the next visit: JSON
-	// { areaCode, datePreset } (see nearby-filter-storage.ts). Cleared on
+	// The Concerts view's filter kept for the next visit: JSON
+	// { areaCode, datePreset } (see concerts-filter-storage.ts). Cleared on
 	// sign-in, sign-up and sign-out.
+	concertsFilter: 'discovery.concertsFilter',
+	// Retired: the same filter under the view's former name; main.ts removes
+	// the key on startup.
 	nearbyFilter: 'discovery.nearbyFilter',
 	// The language last applied on this device, in every auth state; the
 	// i18next detector reads it on boot (see FanI18nConfiguration).

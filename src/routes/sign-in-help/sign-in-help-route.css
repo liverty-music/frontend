@@ -2,14 +2,14 @@
    replaced by the uniform "sent" message after a successful send. */
 @layer block {
 	@scope (sign-in-help-route) {
-		.passkey-recovery {
+		.sign-in-help {
 			--stack-gap: var(--space-s);
 			--wrapper-max: var(--page-max-inline-size);
 
 			padding: var(--space-m) var(--space-s);
 		}
 
-		.passkey-recovery-notes {
+		.sign-in-help-notes {
 			--stack-gap: var(--space-3xs);
 
 			padding-inline-start: var(--space-s);
@@ -18,25 +18,25 @@
 		}
 
 		/* Both are drawn by the `card` block. */
-		.passkey-recovery-form,
-		.passkey-recovery-sent {
+		.sign-in-help-form,
+		.sign-in-help-sent {
 			--stack-gap: var(--space-xs);
 		}
 
-		.passkey-recovery-field {
+		.sign-in-help-field {
 			--stack-gap: var(--space-3xs);
 		}
 
-		.passkey-recovery-error {
+		.sign-in-help-error {
 			color: var(--color-error);
 		}
 
-		.passkey-recovery-sent {
+		.sign-in-help-sent {
 			align-items: center;
 			text-align: center;
 		}
 
-		.passkey-recovery-icon {
+		.sign-in-help-icon {
 			color: var(--color-success);
 		}
 	}

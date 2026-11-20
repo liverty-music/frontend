@@ -86,7 +86,7 @@ test(`@spec ${CAPABILITY} "Secondary and dismissive actions are outlined"`, asyn
 		'ConcertService/ListBySeries': concertWire({ concerts: [concert()] }),
 	})
 
-	await page.goto(`/events/${EVENT_ID}`)
+	await page.goto(`/concerts/${EVENT_ID}`)
 	const share = page.getByTestId('event-share')
 	await expect(share).toBeVisible({ timeout: 30_000 })
 	await expect(share).toHaveClass(/\bbutton\b/)

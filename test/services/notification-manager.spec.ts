@@ -59,7 +59,7 @@ describe('NotificationManager.requestPermission', () => {
 	})
 
 	it('reports a granted answer from the event detail sheet', async () => {
-		// @spec components/infrastructure/fan/web/global/notification-prompt "Fan allows from the event detail sheet"
+		// @spec components/infrastructure/fan/web/global/notification-prompt "Fan allows from the concert sheet"
 		stubNotification('default', 'granted')
 		const sut = create()
 

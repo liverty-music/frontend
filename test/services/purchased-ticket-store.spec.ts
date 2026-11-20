@@ -12,7 +12,7 @@ function ticket(eventId: string, status: TicketStatus) {
 
 describe('countIssuedByEvent', () => {
 	it('counts Issued tickets per event', () => {
-		// @spec components/infrastructure/fan/web/route/event "Fan holding two tickets"
+		// @spec components/infrastructure/fan/web/route/concert "Fan holding two tickets"
 		const counts = countIssuedByEvent([
 			ticket('ev-1', TicketStatus.ISSUED),
 			ticket('ev-1', TicketStatus.ISSUED),
@@ -23,7 +23,7 @@ describe('countIssuedByEvent', () => {
 	})
 
 	it('does not count Voided tickets', () => {
-		// @spec components/infrastructure/fan/web/route/event "Voided tickets are not counted"
+		// @spec components/infrastructure/fan/web/route/concert "Voided tickets are not counted"
 		const counts = countIssuedByEvent([ticket('ev-1', TicketStatus.VOIDED)])
 		expect(counts.has('ev-1')).toBe(false)
 	})

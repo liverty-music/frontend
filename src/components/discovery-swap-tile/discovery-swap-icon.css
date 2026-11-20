@@ -44,14 +44,14 @@
 		}
 
 		.swap-icon[data-view="artists"] .swap-glyph-artists,
-		.swap-icon[data-view="nearby"] .swap-glyph-nearby {
+		.swap-icon[data-view="concerts"] .swap-glyph-concerts {
 			transform: translate(31px, 31px) scale(1.5);
 			opacity: 1;
 			filter: drop-shadow(0 1.5px 2px oklch(0% 0 0deg / 55%));
 		}
 
-		.swap-icon[data-view="artists"] .swap-glyph-nearby,
-		.swap-icon[data-view="nearby"] .swap-glyph-artists {
+		.swap-icon[data-view="artists"] .swap-glyph-concerts,
+		.swap-icon[data-view="concerts"] .swap-glyph-artists {
 			transform: translate(53px, 53px) scale(0.42);
 			opacity: 0.95;
 		}
@@ -68,7 +68,7 @@
 			stroke-width: 0.6;
 		}
 
-		/* ── All Nearby glyph details (the LIVE text is sized in SVG units by
+		/* ── the Concerts view glyph details (the LIVE text is sized in SVG units by
 		   its attributes and fitted to the ticket with textLength) ── */
 		.swap-ticket-perforation {
 			stroke: oklch(30% 0.06 45deg / 55%);

@@ -26,6 +26,7 @@ import {
 import { IStripeService } from '../../src/services/stripe-service'
 import { IUserStore } from '../../src/services/user-store'
 import { createMockErrorBoundary } from '../helpers/mock-error-boundary'
+import { routeNodeWithQuery } from '../helpers/route-node'
 
 const EVENT_ID = 'event-1'
 const STOCK_ID = 'stock-s'
@@ -161,7 +162,7 @@ async function render(setup: Setup = {}) {
 		'new-resale-entry-route',
 	) as Element
 	const vm = CustomElement.for<NewResaleEntryRoute>(host).viewModel
-	vm.loading({ id: EVENT_ID, stockId: STOCK_ID })
+	vm.loading({ id: EVENT_ID }, routeNodeWithQuery({ stock: STOCK_ID }))
 	await vi.waitFor(() => expect(vm.step).not.toBe('loading'))
 	await tasksSettled()
 	return { fixture, vm, client, stripe }
@@ -183,7 +184,7 @@ const byTestId = (host: HTMLElement, id: string) =>
 
 describe('NewResaleEntryRoute applying (fixture)', () => {
 	it('shows the seat type, its price and how the draws work, then 申し込みました with the next draw', async () => {
-		// @spec components/infrastructure/fan/web/route/resale-entry "Applying for two tickets"
+		// @spec components/infrastructure/fan/web/route/new-resale-entry "Applying for two tickets"
 		const { fixture, vm, client } = await render()
 		const host = fixture.appHost
 
@@ -225,7 +226,7 @@ describe('NewResaleEntryRoute applying (fixture)', () => {
 	})
 
 	it('says one account holds one seat type and offers no application', async () => {
-		// @spec components/infrastructure/fan/web/route/resale-entry "Another seat type held"
+		// @spec components/infrastructure/fan/web/route/new-resale-entry "Another seat type held"
 		const { fixture, vm } = await render({ held: { stock: A_SEAT, count: 2 } })
 		const host = fixture.appHost
 
@@ -241,7 +242,7 @@ describe('NewResaleEntryRoute applying (fixture)', () => {
 	})
 
 	it('shows the waiting entry and its next draw and offers no second application', async () => {
-		// @spec components/infrastructure/fan/web/route/resale-entry "Already applied"
+		// @spec components/infrastructure/fan/web/route/new-resale-entry "Already applied"
 		const { fixture, vm } = await render({ entries: [entry()] })
 		const host = fixture.appHost
 
@@ -259,7 +260,7 @@ describe('NewResaleEntryRoute applying (fixture)', () => {
 
 describe('NewResaleEntryRoute 特商法 final confirmation (fixture)', () => {
 	it('shows every item on the card step and the action with the amount charged on a win', async () => {
-		// @spec components/infrastructure/fan/web/route/resale-entry "Final confirmation shown"
+		// @spec components/infrastructure/fan/web/route/new-resale-entry "Final confirmation shown"
 		const { fixture, vm } = await render()
 		await toConfirmation(vm)
 		const host = fixture.appHost
@@ -316,7 +317,7 @@ describe('NewResaleEntryRoute 特商法 final confirmation (fixture)', () => {
 	})
 
 	it('authorizes the card for the details the fan changed from the final confirmation', async () => {
-		// @spec components/infrastructure/fan/web/route/resale-entry "Final confirmation shown"
+		// @spec components/infrastructure/fan/web/route/new-resale-entry "Final confirmation shown"
 		const { fixture, vm, client } = await render()
 		await toConfirmation(vm)
 
@@ -333,7 +334,7 @@ describe('NewResaleEntryRoute 特商法 final confirmation (fixture)', () => {
 	})
 
 	it('authorizes no card and makes no entry until the fan taps the action', async () => {
-		// @spec components/infrastructure/fan/web/route/resale-entry "Nothing is applied before the action"
+		// @spec components/infrastructure/fan/web/route/new-resale-entry "Nothing is applied before the action"
 		const { fixture, vm, client, stripe } = await render()
 		await toConfirmation(vm)
 		vm.detaching()
@@ -344,7 +345,7 @@ describe('NewResaleEntryRoute 特商法 final confirmation (fixture)', () => {
 	})
 
 	it('makes one entry when the action is tapped twice, and disables it while authorizing', async () => {
-		// @spec components/infrastructure/fan/web/route/resale-entry "Double tap on the action"
+		// @spec components/infrastructure/fan/web/route/new-resale-entry "Double tap on the action"
 		const { fixture, vm, client, stripe } = await render()
 		await toConfirmation(vm)
 		let release: (v: unknown) => void = () => {}

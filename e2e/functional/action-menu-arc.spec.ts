@@ -100,7 +100,7 @@ test.describe('placement in the notch', () => {
 })
 
 test.describe('the action arc', () => {
-	test(`@spec ${CAPABILITY} "Tapping the FAB expands the action list"`, {
+	test(`@spec ${CAPABILITY} "Tapping the action menu expands the action list"`, {
 		tag: '@webkit',
 	}, async ({ page }) => {
 		await openShell(page, '/timetable')
@@ -291,7 +291,7 @@ test.describe('handedness', () => {
 
 		await page.reload()
 		await tabs(page).nth(3).waitFor()
-		await tapTab(page, 'home')
+		await tapTab(page, 'timetable')
 		await page.waitForURL('**/timetable')
 		await openArc(page)
 
@@ -362,7 +362,7 @@ test.describe('sinking while a bottom banner is visible', () => {
 		// Within the bar, the FAB covers nothing above the banner.
 		expect(f.y).toBeGreaterThanOrEqual(b.y + b.height - 0.5)
 
-		// @spec components/infrastructure/fan/web/global/bottom-nav-bar "FAB sunk under a banner"
+		// @spec components/infrastructure/fan/web/global/bottom-nav-bar "action menu sunk under a banner"
 		// The bar keeps its notch around the sunk FAB.
 		await expect(nav(page)).toHaveAttribute('data-notch', 'true')
 		const notch = await nav(page).evaluate(

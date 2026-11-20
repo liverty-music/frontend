@@ -34,6 +34,7 @@ vi.mock('aurelia', async (importOriginal) => {
 	}
 })
 
+import { routeNodeWithQuery } from '../../../test/helpers/route-node'
 import { LotteryEntriesRoute } from './lottery-entries-route'
 
 function entry(o: Partial<LotteryEntry> = {}): LotteryEntry {
@@ -50,7 +51,7 @@ function entry(o: Partial<LotteryEntry> = {}): LotteryEntry {
 
 async function open(): Promise<LotteryEntriesRoute> {
 	const sut = new LotteryEntriesRoute()
-	sut.loading({ id: 'event-1', saleId: 'sale-1', stockId: 'stock-s' })
+	sut.loading({ id: 'event-1' }, routeNodeWithQuery({ sale: 'sale-1' }))
 	await vi.waitFor(() => expect(sut.step).not.toBe('loading'))
 	return sut
 }

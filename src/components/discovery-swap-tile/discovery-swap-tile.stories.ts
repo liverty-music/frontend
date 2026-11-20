@@ -12,7 +12,7 @@ const meta = {
 	argTypes: {
 		view: {
 			control: { type: 'inline-radio' },
-			options: ['artists', 'nearby'],
+			options: ['artists', 'concerts'],
 			description:
 				'The Discovery view on screen; its glyph is drawn large, the other one as the corner badge.',
 		},
@@ -31,7 +31,7 @@ const render: Story['render'] = (args) =>
 		props: {
 			view: args.view,
 			toggle(this: { view: DiscoveryView }) {
-				this.view = this.view === 'artists' ? 'nearby' : 'artists'
+				this.view = this.view === 'artists' ? 'concerts' : 'artists'
 			},
 		},
 		register: [DiscoverySwapTile],
@@ -43,7 +43,7 @@ function parts(canvasElement: HTMLElement) {
 		'[data-testid="swap-glyph-artists"]',
 	)
 	const nearby = canvasElement.querySelector<SVGGElement>(
-		'[data-testid="swap-glyph-nearby"]',
+		'[data-testid="swap-glyph-concerts"]',
 	)
 	const badge = canvasElement.querySelector<SVGCircleElement>('.swap-badge')
 	if (!icon || !artists || !nearby || !badge) throw new Error('icon parts')
@@ -65,8 +65,8 @@ function slots(canvasElement: HTMLElement) {
 	const b = badge.getBoundingClientRect()
 	const [large, small, smallRect] =
 		a.width > n.width
-			? (['artists', 'nearby', n] as const)
-			: (['nearby', 'artists', a] as const)
+			? (['artists', 'concerts', n] as const)
+			: (['concerts', 'artists', a] as const)
 	const s = centre(smallRect)
 	const onBadge =
 		s.x >= b.left && s.x <= b.right && s.y >= b.top && s.y <= b.bottom
@@ -89,7 +89,7 @@ export const Artists = {
 		await settled(canvasElement, 'artists')
 		await expect(slots(canvasElement)).toEqual({
 			large: 'artists',
-			small: 'nearby',
+			small: 'concerts',
 			onBadge: true,
 		})
 		await expect(
@@ -98,14 +98,14 @@ export const Artists = {
 	},
 } satisfies Story
 
-/** On the All Nearby view: the ticket large, the bubbles on the badge. */
-export const Nearby = {
+/** On the Concerts view: the ticket large, the bubbles on the badge. */
+export const Concerts = {
 	render,
-	args: { view: 'nearby' },
+	args: { view: 'concerts' },
 	play: async ({ canvasElement }) => {
-		await settled(canvasElement, 'nearby')
+		await settled(canvasElement, 'concerts')
 		await expect(slots(canvasElement)).toEqual({
-			large: 'nearby',
+			large: 'concerts',
 			small: 'artists',
 			onBadge: true,
 		})
@@ -128,11 +128,11 @@ export const Swapping = {
 		const canvas = within(canvasElement)
 		const { icon } = parts(canvasElement)
 
-		// @spec components/infrastructure/fan/web/route/discovery "Switching to the All Nearby view"
+		// @spec components/infrastructure/fan/web/route/discovery "Switching to the Concerts view"
 		await userEvent.click(canvas.getByRole('button', { name: '近くのライブ' }))
-		await settled(canvasElement, 'nearby')
+		await settled(canvasElement, 'concerts')
 		await expect(slots(canvasElement)).toEqual({
-			large: 'nearby',
+			large: 'concerts',
 			small: 'artists',
 			onBadge: true,
 		})
@@ -146,7 +146,7 @@ export const Swapping = {
 		await settled(canvasElement, 'artists')
 		await expect(slots(canvasElement)).toEqual({
 			large: 'artists',
-			small: 'nearby',
+			small: 'concerts',
 			onBadge: true,
 		})
 		await expect(

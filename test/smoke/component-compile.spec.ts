@@ -93,6 +93,8 @@ describe('Component template compilation smoke tests', () => {
 			.build().started
 
 		fixture.getBy('.nav-bar')
-		await vi.waitFor(() => fixture.assertAttr('.nav-tab', 'data-nav', 'home'))
+		await vi.waitFor(() =>
+			fixture.assertAttr('.nav-tab', 'data-nav', 'timetable'),
+		)
 	})
 })

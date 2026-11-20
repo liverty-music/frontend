@@ -115,7 +115,7 @@ describe('ActionMenuService', () => {
 
 	describe('hide', () => {
 		it('empties actions, and its disposer restores them', () => {
-			// @spec components/infrastructure/fan/web/global/action-menu "FAB hidden while the route hides the launcher"
+			// @spec components/infrastructure/fan/web/global/action-menu "action menu hidden while the route hides the launcher"
 			const owner = {}
 			sut.register(owner, [action('a')])
 			sut.setTrailing(settingsAction(() => {}))

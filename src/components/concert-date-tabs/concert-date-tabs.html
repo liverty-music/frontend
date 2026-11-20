@@ -4,7 +4,7 @@
   <nav class="[ date-tabs ]" aria-label.bind="label">
     <a
       repeat.for="tab of tabs; key.bind: tab.id"
-      href="/events/${tab.id}"
+      href="/concerts/${tab.id}"
       class="[ date-tab ] [ md-typescale-title-small ]"
       data-selected.bind="tab.selected"
       aria-current.bind="tab.selected ? 'page' : null"

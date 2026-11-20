@@ -246,7 +246,7 @@ export const paths = {
 }
 
 /**
- * The address of an event's fan page, `https://<fan origin>/events/<id>`
+ * The address of an event's fan page, `https://<fan origin>/concerts/<id>`
  * (design D21), or '' when the environment has no fan origin.
  */
 export function fanPageUrlOf(
@@ -254,5 +254,5 @@ export function fanPageUrlOf(
 	eventId: string,
 ): string {
 	const origin = fanOriginOf(environment)
-	return origin ? `${origin}/events/${eventId}` : ''
+	return origin ? `${origin}/concerts/${eventId}` : ''
 }

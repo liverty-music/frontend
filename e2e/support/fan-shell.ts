@@ -74,9 +74,9 @@ export async function openShell(page: Page, path: string): Promise<void> {
 	await tabs(page).nth(3).waitFor({ timeout: 30_000 })
 }
 
-/** Navigate inside the app by tapping the tab with this icon. */
-export async function tapTab(page: Page, icon: string): Promise<void> {
-	await page.locator(`.nav-tab[data-nav="${icon}"]`).click()
+/** Navigate inside the app by tapping the tab of this route (its `data-nav`). */
+export async function tapTab(page: Page, route: string): Promise<void> {
+	await page.locator(`.nav-tab[data-nav="${route}"]`).click()
 }
 
 export interface Box {
@@ -148,10 +148,10 @@ export async function publishSnack(
 }
 
 /**
- * Open the All Nearby filter sheet from the launcher's filter item, and return
+ * Open the Concerts view filter sheet from the launcher's filter item, and return
  * its area and period rows.
  */
-export async function openNearbyFilters(
+export async function openConcertsFilters(
 	page: Page,
 ): Promise<{ area: Locator; period: Locator }> {
 	await fab(page).click()

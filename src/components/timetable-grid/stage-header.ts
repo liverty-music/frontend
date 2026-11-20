@@ -6,6 +6,6 @@ import { bindable } from 'aurelia'
  * highway's columns with no box of its own.
  */
 export class StageHeader {
-	/** Omit the AWAY head (the All Nearby view shows two lanes). */
+	/** Omit the AWAY head (the Concerts view shows two lanes). */
 	@bindable public hideAway = false
 }

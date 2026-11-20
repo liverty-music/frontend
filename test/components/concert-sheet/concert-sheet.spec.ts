@@ -169,7 +169,7 @@ describe('ConcertSheet', () => {
 	})
 
 	describe('open / close', () => {
-		it('should open with event and call history.pushState with concerts/:id', () => {
+		it('should open with event and push the address with concert=:id', () => {
 			const event = makeEvent()
 
 			sut.open(event)
@@ -179,7 +179,7 @@ describe('ConcertSheet', () => {
 			expect(mockHistory.pushState).toHaveBeenCalledWith(
 				{ concertId: 'c1' },
 				'',
-				'/concerts/c1',
+				expect.stringMatching(/[?&]concert=c1$/),
 			)
 		})
 

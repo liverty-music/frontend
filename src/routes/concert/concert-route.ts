@@ -75,7 +75,7 @@ export interface StockRow {
 }
 
 /**
- * The public Event page (`/events/:id`): one Event of a first-party Series.
+ * The public concert page (`/concerts/:id`): one Event of a first-party Series.
  * Guests and signed-in fans alike open it; it starts loading without waiting
  * for the sign-in state (`data.auth === false`).
  */
@@ -416,9 +416,9 @@ export class ConcertRoute implements IRouteViewModel {
 			offered: held === null || held.id === stock.id,
 			actionUrl:
 				sale.method === 'lottery'
-					? `/events/${event.id}/lottery/${sale.id}/${stock.id}`
-					: `/events/${event.id}/checkout/${stock.id}`,
-			resaleUrl: `/events/${event.id}/resale/${stock.id}`,
+					? `/concerts/${event.id}/lottery-entries/new?sale=${sale.id}&stock=${stock.id}`
+					: `/concerts/${event.id}/checkout?stock=${stock.id}`,
+			resaleUrl: `/concerts/${event.id}/resale-entries/new?stock=${stock.id}`,
 		}))
 	}
 
@@ -557,7 +557,7 @@ export class ConcertRoute implements IRouteViewModel {
 		if (!this.event) return
 		this.analytics.capture(Events.ConcertCalendarAdded, {
 			event_id: this.event.id,
-			surface: 'event_page',
+			surface: 'concert_page',
 		})
 		const blob = new Blob([buildIcs(this.event, this.shareUrl)], {
 			type: 'text/calendar;charset=utf-8',
@@ -579,9 +579,9 @@ export class ConcertRoute implements IRouteViewModel {
 		this.errorBoundary.addBreadcrumb('action', 'start_sign_up')
 		await this.authService.signUp({
 			origin: 'concert-page',
-			returnTo: `/events/${this.event.id}`,
+			returnTo: `/concerts/${this.event.id}`,
 			uiLocales: currentLanguage(this.i18n),
-			source: 'event_page',
+			source: 'concert_page',
 		})
 	}
 }

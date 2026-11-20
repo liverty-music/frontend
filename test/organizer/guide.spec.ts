@@ -197,7 +197,7 @@ describe('members guide', () => {
 	it(`@spec ${SPEC} "Referral link"`, () => {
 		const referral = chapter('sales-and-referral')
 		expect(referral).toMatch(
-			/https:\/\/liverty-music\.app\/events\/\S+\?ref=member-a/,
+			/https:\/\/liverty-music\.app\/concerts\/\S+\?ref=member-a/,
 		)
 		expect(referral).toContain('7日以内')
 		expect(referral).toContain('最後に開いたコード')

@@ -55,7 +55,7 @@ export default defineConfig({
 				// Covered by onboarding project (Pixel 7 viewport)
 				'e2e/functional/onboarding-flow.spec.ts',
 				'e2e/functional/detail-sheet-dismiss.spec.ts',
-				'e2e/functional/dashboard-lane-classification.spec.ts',
+				'e2e/functional/timetable-lane-classification.spec.ts',
 				'e2e/functional/artist-image-ui.spec.ts',
 				// Covered by webkit-repro / chromium-control projects (engine-specific)
 				'e2e/functional/page-help-sheet-webkit.spec.ts',
@@ -170,7 +170,7 @@ export default defineConfig({
 			testMatch: [
 				'e2e/functional/onboarding-flow.spec.ts',
 				'e2e/functional/detail-sheet-dismiss.spec.ts',
-				'e2e/functional/dashboard-lane-classification.spec.ts',
+				'e2e/functional/timetable-lane-classification.spec.ts',
 				'e2e/functional/artist-image-ui.spec.ts',
 			],
 			use: {

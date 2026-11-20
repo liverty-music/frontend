@@ -165,7 +165,7 @@
       <h2 id="event-other-dates-title" class="[ event-section-title ] [ md-typescale-title-medium ]" t="concert.dates.others"></h2>
       <ul role="list">
         <li repeat.for="d of otherDates; key.bind: d.id">
-          <a href="/events/${d.id}" class="text-link" data-variant="standalone">${d.label}</a>
+          <a href="/concerts/${d.id}" class="text-link" data-variant="standalone">${d.label}</a>
           <span if.bind="d.cancelled" class="[ event-date-status ] [ md-typescale-label-large ]" t="concert.dates.cancelled"></span>
         </li>
       </ul>

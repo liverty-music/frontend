@@ -28,7 +28,7 @@ export interface Concert {
 	/**
 	 * True when the concert's Series belongs to an Organizer (it carries an
 	 * organizer id). A first-party concert has a public Event page
-	 * (`/events/:id`) and shows the purchased badge instead of a journey badge.
+	 * (`/concerts/:id`) and shows the purchased badge instead of a journey badge.
 	 */
 	isFirstParty: boolean
 
@@ -37,7 +37,7 @@ export interface Concert {
 	matched: boolean
 	/**
 	 * The proximity lane the concert was listed in: on the Timetable the
-	 * distance from the fan's home, in the All Nearby view the distance from
+	 * distance from the fan's home, in the Concerts view the distance from
 	 * the browsed area.
 	 */
 	lane?: LaneType

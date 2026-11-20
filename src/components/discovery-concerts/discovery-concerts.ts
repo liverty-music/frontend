@@ -2,10 +2,10 @@ import { I18N } from '@aurelia/i18n'
 import { IRouter } from '@aurelia/router'
 import { bindable, ILogger, resolve, watch } from 'aurelia'
 import {
-	loadNearbyFilter,
-	type StoredNearbyFilter,
-	saveNearbyFilter,
-} from '../../adapter/storage/nearby-filter-storage'
+	loadConcertsFilter,
+	type StoredConcertsFilter,
+	saveConcertsFilter,
+} from '../../adapter/storage/concerts-filter-storage'
 import type { Concert, DateGroup } from '../../entities/concert'
 import {
 	displayName,
@@ -38,10 +38,10 @@ import type { DateRangeSheet, RangeChangedDetail } from './date-range-sheet'
 const DEFAULT_PRESET: DatePresetId = 'week'
 
 /**
- * What the All Nearby view keeps for one visit to Discovery, owned by the
+ * What the Concerts view keeps for one visit to Discovery, owned by the
  * route so switching to the artist bubbles and back (which re-creates the
  * view) finds the same area, period and fetched results. A visit starts from
- * the filter kept on the device (`nearby-filter-storage`): the area override
+ * the filter kept on the device (`concerts-filter-storage`): the area override
  * and the last applied preset, else the home area and 7日以内.
  */
 export class DiscoveryConcertsVisit {
@@ -61,7 +61,7 @@ export class DiscoveryConcertsVisit {
 	/** The applied date range. */
 	public range: DateRange | null
 
-	constructor(kept: StoredNearbyFilter = loadNearbyFilter()) {
+	constructor(kept: StoredConcertsFilter = loadConcertsFilter()) {
 		this.areaCode = kept.areaCode
 		this.datePreset = kept.datePreset ?? DEFAULT_PRESET
 		this.range = resolvePreset(this.datePreset) ?? null
@@ -78,7 +78,7 @@ export class DiscoveryConcertsVisit {
 }
 
 /**
- * The All Nearby view: every concert near an area within a period, including
+ * The Concerts view: every concert near an area within a period, including
  * artists the fan does not follow, listed in the two-lane (HOME / NEAR)
  * timetable. Its filters, the area and the period, open from the action
  * launcher's filter item (the host route calls `openFilters`), so nothing sits
@@ -145,11 +145,11 @@ export class DiscoveryConcerts {
 	}
 
 	public attached(): void {
-		// Journeys show as badges; a visit straight to the All Nearby view may
+		// Journeys show as badges; a visit straight to the Concerts view may
 		// come before any other screen loaded them (a guest gets an empty map
 		// without a request).
 		this.journeyStore.load().catch((err: unknown) => {
-			this.logger.error('Failed to load journeys for All Nearby', {
+			this.logger.error('Failed to load journeys for the Concerts view', {
 				error: err,
 			})
 		})
@@ -163,7 +163,7 @@ export class DiscoveryConcerts {
 		if (applied !== undefined) {
 			// A preset is kept for the next visit; a custom range is not.
 			this.visit.datePreset = applied
-			saveNearbyFilter({ datePreset: applied })
+			saveConcertsFilter({ datePreset: applied })
 		}
 		void this.load()
 	}
@@ -194,10 +194,10 @@ export class DiscoveryConcerts {
 	 * area again when it changes.
 	 */
 	public onAreaSelected(code: string): void {
-		this.logger.info('All Nearby area selected', { code })
+		this.logger.info('the Concerts view area selected', { code })
 		const override = code === this.userStore.currentHome ? null : code
 		this.visit.areaCode = override
-		saveNearbyFilter({ areaCode: override })
+		saveConcertsFilter({ areaCode: override })
 		void this.load()
 	}
 
@@ -246,7 +246,7 @@ export class DiscoveryConcerts {
 				await this.userStore.ensureLoaded(currentLanguage(this.i18n))
 			} catch (err) {
 				if (signal.aborted) return
-				this.logger.error('Failed to load the account for All Nearby', {
+				this.logger.error('Failed to load the account for the Concerts view', {
 					error: err,
 				})
 				this.isLoading = false
@@ -290,13 +290,13 @@ export class DiscoveryConcerts {
 			this.visit.cache.set(key, groups)
 			this.shownGroups = groups
 			this.derive()
-			this.logger.info('All Nearby loaded', {
+			this.logger.info('the Concerts view loaded', {
 				adminArea: geo.adminArea,
 				groups: groups.length,
 			})
 		} catch (err) {
 			if ((err as Error).name === 'AbortError') return
-			this.logger.error('Failed to load All Nearby', { error: err })
+			this.logger.error('Failed to load the Concerts view', { error: err })
 			this.loadError = err
 			this.shownGroups = []
 			this.dateGroups = []
@@ -338,10 +338,10 @@ export class DiscoveryConcerts {
 	public onEventSelected(event: CustomEvent<{ event: Concert }>): void {
 		const concert = event.detail.event
 		if (concert.isFirstParty) {
-			void this.router.load(`/events/${concert.id}`)
+			void this.router.load(`/concerts/${concert.id}`)
 			return
 		}
-		this.detailSheet?.open(concert, 'all_nearby', true)
+		this.detailSheet?.open(concert, 'discovery_concerts', true)
 	}
 
 	/**

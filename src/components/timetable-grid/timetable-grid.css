@@ -19,7 +19,7 @@
 			min-block-size: 0;
 		}
 
-		/* All Nearby (hideAway): collapse the AWAY column to zero width so the grid
+		/* the Concerts view (hideAway): collapse the AWAY column to zero width so the grid
 		   reads as two lanes (HOME + NEAR). The away header span and away lane are
 		   removed from the DOM (if.bind="!hideAway"); overriding only the columns
 		   keeps every named area/line intact so the subgrid spans stay valid. */

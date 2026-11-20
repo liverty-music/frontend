@@ -580,7 +580,7 @@ describe('TimetableRoute', () => {
 		})
 	})
 
-	describe('empty timetable offers the All Nearby view', () => {
+	describe('empty timetable offers the Concerts view', () => {
 		async function emptyStates() {
 			const { default: html } = await import(
 				'../../src/routes/timetable/timetable-route.html?raw'
@@ -609,7 +609,7 @@ describe('TimetableRoute', () => {
 			)
 			expect(guest?.links).toEqual([
 				['/discovery', 'timetable.guestEmpty.cta'],
-				['/discovery?view=nearby', 'timetable.nearbyCta'],
+				['/discovery?view=concerts', 'timetable.concertsCta'],
 			])
 		})
 
@@ -629,12 +629,12 @@ describe('TimetableRoute', () => {
 			)
 			expect(empty?.links).toEqual([
 				['/discovery', 'timetable.empty.discoverLink'],
-				['/discovery?view=nearby', 'timetable.nearbyCta'],
+				['/discovery?view=concerts', 'timetable.concertsCta'],
 			])
 		})
 
 		// @spec components/infrastructure/fan/web/route/timetable "Timetable with concerts"
-		it('shows no link to the All Nearby view while the timetable has a concert', async () => {
+		it('shows no link to the Concerts view while the timetable has a concert', async () => {
 			mockAuth.isAuthenticated = true
 			mockFollow.followedCount = 1
 			sut.dateGroups = [
@@ -658,7 +658,7 @@ describe('TimetableRoute', () => {
 				'text/html',
 			)
 			const nearby = [
-				...doc.querySelectorAll('a[href="/discovery?view=nearby"]'),
+				...doc.querySelectorAll('a[href="/discovery?view=concerts"]'),
 			]
 			expect(nearby).toHaveLength(2)
 			for (const link of nearby) {
@@ -719,20 +719,20 @@ describe('TimetableRoute', () => {
 		})
 
 		it('navigates to the event page for a first-party concert', () => {
-			// @spec components/infrastructure/fan/web/route/timetable "First-party concert opens its event page"
+			// @spec components/infrastructure/fan/web/route/timetable "First-party concert opens its concert page"
 			const open = vi.fn()
 			sut.detailSheet = { open } as unknown as typeof sut.detailSheet
 
 			sut.onEventSelected(selected(true))
 
-			expect(mockRouter.load).toHaveBeenCalledWith('/events/ev-1', {
+			expect(mockRouter.load).toHaveBeenCalledWith('/concerts/ev-1', {
 				historyStrategy: 'push',
 			})
 			expect(open).not.toHaveBeenCalled()
 		})
 
 		it('restores the timetable at the date the fan left on return', () => {
-			// @spec components/infrastructure/fan/web/route/timetable "Back from the event page"
+			// @spec components/infrastructure/fan/web/route/timetable "Back from the concert page"
 			const anchor = { dateKey: '2026-11-20', offset: 120 }
 			sut.highway = { scrollAnchor: anchor } as unknown as typeof sut.highway
 			// The timetable the fan scrolled is the one in the session cache.

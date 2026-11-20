@@ -44,8 +44,8 @@ export type EventSource =
 	| 'search_result'
 	| 'timetable'
 	| 'notification'
-	| 'discovery_orb'
-	| 'all_nearby'
+	| 'discovery_artists'
+	| 'discovery_concerts'
 
 // -- Per-event property type declarations -------------------------------------
 
@@ -129,8 +129,8 @@ export type OnboardingStartedProps = Record<string, never>
 export type AuthStartSource =
 	| 'welcome'
 	| 'timetable_prompt'
-	| 'all_nearby_prompt'
-	| 'event_page'
+	| 'discovery_concerts_prompt'
+	| 'concert_page'
 	| 'my_artists_prompt'
 	| 'ticket_notify'
 	| 'settings'
@@ -204,7 +204,7 @@ export type ConcertSourceClickedProps = {
 export type ConcertCalendarAddedProps = {
 	event_id: string
 	artist_id?: string
-	surface: 'detail_sheet' | 'event_page'
+	surface: 'detail_sheet' | 'concert_page'
 }
 
 /** The fan used the Event page's share control. */
@@ -325,7 +325,7 @@ export type DiscoveryRevealProps = {
 
 /**
  * The frames of Discovery's artist bubbles over one visit: one event when the
- * visit ends (the fan leaves Discovery, switches to the All Nearby view, or
+ * visit ends (the fan leaves Discovery, switches to the Concerts view, or
  * hides the page), over the frames in which the field was shown and running.
  * Not sent for a visit with fewer than 30 measured frames.
  */

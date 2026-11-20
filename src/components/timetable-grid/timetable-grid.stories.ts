@@ -659,7 +659,7 @@ export const OffScreenDatesNotBuilt = {
 } satisfies Story
 
 /**
- * All Nearby collapses the AWAY column to zero width, so the highway reads as
+ * the Concerts view collapses the AWAY column to zero width, so the highway reads as
  * two lanes. The away header span and away lane leave the DOM while the named
  * grid areas stay intact. Storied separately because the flattened date group
  * repeats the root's column definition — if the two ever diverge, the two-lane
@@ -1657,7 +1657,7 @@ export const MonthJumpHiddenWhileFabOpen = {
 			],
 		}),
 	play: async ({ canvasElement }) => {
-		// @spec components/infrastructure/fan/web/route/timetable "Hidden while the FAB is open"
+		// @spec components/infrastructure/fan/web/route/timetable "Hidden while the action menu is open"
 		await frames()
 		await expect(shownJumps(canvasElement)).toEqual(['prev', 'next'])
 		const fab = await waitFor(() => {
@@ -1792,7 +1792,7 @@ export const WindowGrowsWhileScrolling = {
 } satisfies Story
 
 /**
- * The two-lane list of Discovery's All Nearby view builds the same window and
+ * The two-lane list of Discovery's Concerts view builds the same window and
  * keeps every group aligned the same way after scrolling; HOME and NEARBY
  * concerts are in their lanes and nothing is drawn for AWAY.
  */

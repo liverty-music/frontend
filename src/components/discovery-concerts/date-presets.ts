@@ -23,7 +23,7 @@ export {
 }
 
 /**
- * The three quick presets for the All Nearby discovery filter. A custom range is
+ * The three quick presets for the Concerts view's filter. A custom range is
  * no longer a preset — it is entered through the date-range sheet's date inputs,
  * so `custom` is not part of this union.
  */

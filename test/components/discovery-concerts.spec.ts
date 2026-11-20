@@ -39,8 +39,8 @@ const { IUserHydration } = await import(
 const { resolvePreset } = await import(
 	'../../src/components/discovery-concerts/date-presets'
 )
-const { loadNearbyFilter } = await import(
-	'../../src/adapter/storage/nearby-filter-storage'
+const { loadConcertsFilter } = await import(
+	'../../src/adapter/storage/concerts-filter-storage'
 )
 const { default: template } = await import(
 	'../../src/components/discovery-concerts/discovery-concerts.html?raw'
@@ -157,7 +157,7 @@ describe('DiscoveryConcerts', () => {
 	})
 
 	describe('ListByLocation and the visit cache', () => {
-		// @spec components/infrastructure/fan/web/route/discovery "All Nearby result cached independently"
+		// @spec components/infrastructure/fan/web/route/discovery "Concerts view result cached independently"
 		it('keeps the result for the visit and reuses it when the fan comes back to the view', async () => {
 			const visit = new DiscoveryConcertsVisit()
 			const first = build(visit)
@@ -264,7 +264,7 @@ describe('DiscoveryConcerts', () => {
 		})
 
 		// @spec components/infrastructure/fan/web/route/discovery "Area override via HomeAreaSelector"
-		// @spec components/infrastructure/fan/web/global/home-area-selector "Caller owns persistence — All Nearby area override"
+		// @spec components/infrastructure/fan/web/global/home-area-selector "Caller owns persistence — Concerts view's area override"
 		it('opens the area selector from the area row and keeps the choice as the override', async () => {
 			const sut = build()
 			sut.onFilterRowChosen(
@@ -311,7 +311,7 @@ describe('DiscoveryConcerts', () => {
 			sut.onAreaSelected('JP-13')
 
 			expect(sut.visit.areaCode).toBeNull()
-			expect(loadNearbyFilter().areaCode).toBeNull()
+			expect(loadConcertsFilter().areaCode).toBeNull()
 			// The fan later moves to 神奈川県.
 			mockUserStore.currentHome = 'JP-14'
 			expect(build(new DiscoveryConcertsVisit()).effectiveAreaCode).toBe(
@@ -345,7 +345,7 @@ describe('DiscoveryConcerts', () => {
 			expect(mockUserStore.setGuestHome).not.toHaveBeenCalled()
 			expect(localStorage.getItem('guest.home')).toBeNull()
 			// Kept on the device as the override, not as the guest home.
-			expect(loadNearbyFilter().areaCode).toBe('JP-40')
+			expect(loadConcertsFilter().areaCode).toBe('JP-40')
 		})
 	})
 
@@ -508,7 +508,7 @@ describe('DiscoveryConcerts', () => {
 
 		it('keeps nothing new for the range the sheet emits on bind', () => {
 			build().onRangeChanged(rangeEvent(WEEK, '7日以内'))
-			expect(localStorage.getItem('discovery.nearbyFilter')).toBeNull()
+			expect(localStorage.getItem('discovery.concertsFilter')).toBeNull()
 		})
 	})
 
@@ -608,11 +608,11 @@ describe('DiscoveryConcerts', () => {
 			expect(empty?.querySelector('a')).toBeNull()
 		})
 
-		// @spec components/infrastructure/fan/web/route/discovery "First-party concert opens its event page"
+		// @spec components/infrastructure/fan/web/route/discovery "First-party concert opens its concert page"
 		it('opens the Event page of a first-party concert instead of the sheet', () => {
 			const sut = build()
 			sut.onEventSelected(selected(true))
-			expect(mockRouter.load).toHaveBeenCalledWith('/events/ev-1')
+			expect(mockRouter.load).toHaveBeenCalledWith('/concerts/ev-1')
 			expect(sut.detailSheet?.open).not.toHaveBeenCalled()
 		})
 
@@ -621,7 +621,7 @@ describe('DiscoveryConcerts', () => {
 			sut.onEventSelected(selected(false))
 			expect(sut.detailSheet?.open).toHaveBeenCalledWith(
 				expect.objectContaining({ id: 'ev-1' }),
-				'all_nearby',
+				'discovery_concerts',
 				true,
 			)
 			expect(mockRouter.load).not.toHaveBeenCalled()
@@ -651,7 +651,7 @@ describe('DiscoveryConcerts', () => {
 		it(`@spec ${SPEC} "Journey badge shown"`, async () => {
 			mockJourney.journeyMap = new Map([['ev-1', 'tracking']])
 			const sut = build()
-			// A visit straight to /discovery?view=nearby loads the journeys.
+			// A visit straight to /discovery?view=concerts loads the journeys.
 			sut.attached()
 			expect(mockJourney.load).toHaveBeenCalledOnce()
 			sut.onRangeChanged(rangeEvent(WEEK, '7日以内'))

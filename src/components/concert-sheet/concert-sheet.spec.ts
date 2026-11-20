@@ -133,7 +133,7 @@ describe('ConcertSheet — history management', () => {
 		expect(mockHistory.pushState).toHaveBeenCalledWith(
 			{ concertId: 'e1' },
 			'',
-			'/concerts/e1',
+			'/timetable?concert=e1',
 		)
 		sut.close()
 		expect(mockHistory.replaceState).toHaveBeenCalledWith(
@@ -144,24 +144,25 @@ describe('ConcertSheet — history management', () => {
 	})
 
 	// @spec components/infrastructure/fan/web/route/discovery "Closing the detail sheet returns to the list"
-	it('closes back to the All Nearby view on Discovery it opened from', () => {
-		window.history.replaceState(null, '', '/discovery?view=nearby')
-		sut.open(makeEvent('e1'), 'all_nearby', true)
+	it('closes back to the Concerts view on Discovery it opened from', () => {
+		window.history.replaceState(null, '', '/discovery?view=concerts')
+		sut.open(makeEvent('e1'), 'discovery_concerts', true)
 		expect(mockHistory.pushState).toHaveBeenLastCalledWith(
 			{ concertId: 'e1' },
 			'',
-			'/concerts/e1',
+			'/discovery?view=concerts&concert=e1',
 		)
 		sut.onSheetClosed()
 		expect(mockHistory.replaceState).toHaveBeenLastCalledWith(
 			null,
 			'',
-			'/discovery?view=nearby',
+			'/discovery?view=concerts',
 		)
 	})
 
+	// @spec components/infrastructure/fan/web/route/timetable "Closing the deep-linked sheet does not reload the timetable"
 	it('closes a deep-linked sheet to the timetable', () => {
-		window.history.replaceState(null, '', '/concerts/e1')
+		window.history.replaceState(null, '', '/timetable?concert=e1')
 		sut.open(makeEvent('e1'))
 		sut.close()
 		expect(mockHistory.replaceState).toHaveBeenLastCalledWith(
@@ -206,7 +207,7 @@ describe('ConcertSheet — history management', () => {
 		window.history.replaceState(null, '', '/timetable?artists=a1')
 		sut.open(makeEvent('e1'))
 		// The sheet pushed its own URL; opening another concert must not record it.
-		window.history.replaceState(null, '', '/concerts/e1')
+		window.history.replaceState(null, '', '/timetable?artists=a1&concert=e1')
 		sut.open(makeEvent('e2'))
 		sut.close()
 		expect(mockHistory.replaceState).toHaveBeenLastCalledWith(
@@ -216,14 +217,19 @@ describe('ConcertSheet — history management', () => {
 		)
 	})
 
-	it('falls back to /timetable when it opened from a non-timetable URL', () => {
-		window.history.replaceState(null, '', '/concerts/e1')
+	it('leaves the concert parameter out of the address it closes to', () => {
+		window.history.replaceState(null, '', '/timetable?concert=e1&artists=a1')
 		sut.open(makeEvent('e1'))
+		expect(mockHistory.pushState).toHaveBeenLastCalledWith(
+			{ concertId: 'e1' },
+			'',
+			'/timetable?artists=a1&concert=e1',
+		)
 		sut.close()
 		expect(mockHistory.replaceState).toHaveBeenLastCalledWith(
 			null,
 			'',
-			'/timetable',
+			'/timetable?artists=a1',
 		)
 	})
 

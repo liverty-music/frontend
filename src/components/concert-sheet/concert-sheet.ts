@@ -35,6 +35,10 @@ import { ITicketJourneyStore } from '../../services/ticket-journey-store'
 import { IUserStore } from '../../services/user-store'
 import { currentLanguage } from '../../util/change-locale'
 import {
+	CONCERT_QUERY_PARAM,
+	withoutConcertParam,
+} from '../../util/concert-sheet-link'
+import {
 	eventBackgroundUrl,
 	eventCalendarUrl,
 	eventGoogleMapsUrl,
@@ -94,7 +98,7 @@ export class ConcertSheet {
 	@bindable public event: Concert | null = null
 
 	/**
-	 * True when the sheet was opened from the All Nearby discovery view. Only in
+	 * True when the sheet was opened from the Concerts view. Only in
 	 * that context does the follow CTA surface — the My Timetable context already
 	 * implies a followed artist, so the CTA stays hidden and the sheet is
 	 * unchanged there.
@@ -110,11 +114,12 @@ export class ConcertSheet {
 
 	/**
 	 * Whether the sheet manages browser history on open/close. On the timetable
-	 * (the default) it pushes `/concerts/:id` and restores `/timetable` so the
-	 * back button closes the sheet and the deep-link URL is shareable. On the
-	 * landing page there is no such route, so the host sets this `false` to avoid
-	 * changing the URL (a reload of `/concerts/:id` or `/timetable` would navigate
-	 * the anonymous visitor away from Welcome).
+	 * (the default) it pushes the address it opened on with `concert=<id>`
+	 * added and restores that address without it, so the back button closes
+	 * the sheet and the deep-link URL (`/timetable?concert=:id`) is shareable.
+	 * On the landing page the host sets this `false` to avoid changing the URL
+	 * (a reload of a changed URL would navigate the anonymous visitor away from
+	 * Welcome).
 	 */
 	@bindable public manageHistory = true
 
@@ -191,7 +196,7 @@ export class ConcertSheet {
 	}
 
 	/**
-	 * Show the follow CTA only in the All Nearby context, only for an event whose
+	 * Show the follow CTA only in the Concerts view context, only for an event whose
 	 * artist is resolved (a resolvable performer identity) and not already
 	 * followed. My Timetable events implicitly belong to a followed artist, so the
 	 * CTA never shows there.
@@ -201,7 +206,7 @@ export class ConcertSheet {
 	}
 
 	/**
-	 * Follow the event's artist from the All Nearby CTA. Unauthenticated visitors
+	 * Follow the event's artist from the Concerts view CTA. Unauthenticated visitors
 	 * are routed to the sign-up prompt instead of a guest follow — the discovery
 	 * follow is the conversion moment. A missing/unresolved artist is guarded
 	 * (logged, no-op) so a performer-less card can never crash the sheet.
@@ -232,11 +237,11 @@ export class ConcertSheet {
 		this.followUpdating = true
 		try {
 			await this.followStore.follow(artist)
-			this.logger.info('Artist followed from All Nearby', {
+			this.logger.info('Artist followed from the Concerts view', {
 				artistId: artist.id,
 			})
 		} catch (err) {
-			this.logger.warn('Failed to follow artist from All Nearby', {
+			this.logger.warn('Failed to follow artist from the Concerts view', {
 				error: err,
 			})
 		} finally {
@@ -397,24 +402,22 @@ export class ConcertSheet {
 
 		if (this.manageHistory) {
 			// The address the fan is on, its query included (the timetable's
-			// filters, Discovery's `view=nearby`), so closing returns to exactly
-			// it. A deep-linked `/concerts/:id` has no list address of its own
-			// yet and returns to the timetable. Only when the sheet was closed:
+			// filters, Discovery's `view=concerts`) and any `concert` left out,
+			// so closing returns to exactly it. Only when the sheet was closed:
 			// opening another concert over an open sheet keeps the address from
 			// before the first one.
 			if (!alreadyOpen) {
 				const { pathname, search } = window.location
-				this.returnUrl = pathname.startsWith('/concerts/')
-					? '/timetable'
-					: `${pathname}${search}`
+				this.returnUrl = `${pathname}${withoutConcertParam(search)}`
 			}
 			// Push URL without triggering Aurelia Router navigation — the sheet is an
 			// overlay on the timetable, not a separate route component. A full navigation
 			// would destroy and recreate the timetable component (and this sheet).
+			const joiner = this.returnUrl.includes('?') ? '&' : '?'
 			this.history.pushState(
 				{ concertId: event.id },
 				'',
-				`/concerts/${event.id}`,
+				`${this.returnUrl}${joiner}${CONCERT_QUERY_PARAM}=${encodeURIComponent(event.id)}`,
 			)
 
 			// Listen for browser back navigation (popstate) to close the sheet.
@@ -503,7 +506,7 @@ export class ConcertSheet {
 		void this.authService.signUp({
 			uiLocales: currentLanguage(this.i18n),
 			source: 'ticket_notify',
-			returnTo: `/concerts/${event.id}`,
+			returnTo: `/timetable?${CONCERT_QUERY_PARAM}=${encodeURIComponent(event.id)}`,
 			trackEventId: event.id,
 		})
 	}
@@ -544,7 +547,7 @@ export class ConcertSheet {
 			return {
 				label: this.i18n.tr('hypeReach.signUp'),
 				callback: () => {
-					// A host with its own sign-up prompt (All Nearby) shows it.
+					// A host with its own sign-up prompt (the Concerts view) shows it.
 					if (this.onSignupRequested) {
 						this.onSignupRequested()
 						return
@@ -595,7 +598,7 @@ export class ConcertSheet {
 	public get outOfRange(): OutOfRangeNotice | null {
 		const event = this.event
 		const lane = event?.lane
-		// In All Nearby the lane is the distance from the browsed area, not
+		// In the Concerts view the lane is the distance from the browsed area, not
 		// from the fan's home, so it says nothing about what the level pushes.
 		if (!event || !lane || !event.artistId || this.isAllNearby) return null
 		if (!this.followStore.followedIds.has(event.artistId)) return null

@@ -99,15 +99,21 @@ describe('Layer B brand expressions', () => {
 
 		// Each tab route's page header binds the same `nav.*` key as its bar
 		// label, not a separate title key; the shell passes `titleKey` on.
+		// Both are written `titleKeyOf('<route>')` in the route's data.
 		const shell = readFileSync('src/app-shell.ts', 'utf8')
-		for (const [key] of TABS) {
-			const route = new RegExp(
-				`data: \\{[^}]*titleKey: '${key.replace('.', '\\.')}'[^}]*\\}`,
-			)
-			expect(shell, `route data for ${key}`).toMatch(route)
-		}
-		for (const match of shell.matchAll(/labelKey: '(nav\.\w+)'/g)) {
-			expect(shell).toMatch(new RegExp(`titleKey: '${match[1]}'`))
+		const tabData = [
+			...shell.matchAll(
+				/data: \{[^}]*labelKey: titleKeyOf\('([\w-]+)'\)[^}]*\}/g,
+			),
+		]
+		expect(tabData.map((m) => m[1])).toEqual([
+			'timetable',
+			'discovery',
+			'my-artists',
+			'tickets',
+		])
+		for (const [data, name] of tabData) {
+			expect(data).toContain(`titleKey: titleKeyOf('${name}')`)
 		}
 		expect(readFileSync('src/app-shell.html', 'utf8')).toContain(
 			'title-key.bind="titleKey"',

@@ -263,6 +263,8 @@ describe('TimetableRoute', () => {
 	})
 
 	describe('filteredDateGroups', () => {
+		// @spec components/infrastructure/fan/web/route/timetable "No filter — unfiltered view preserved"
+		// @spec components/infrastructure/fan/web/route/timetable "No journey filter — unconstrained by status"
 		it('returns all groups when no filter is active', () => {
 			sut.dateGroups = [makeGroup('artist-1'), makeGroup('artist-2')]
 			sut.filteredArtistIds = []
@@ -270,6 +272,7 @@ describe('TimetableRoute', () => {
 			expect(sut.filteredDateGroups).toHaveLength(2)
 		})
 
+		// @spec components/infrastructure/fan/web/route/timetable "Single artist filter from URL"
 		it('returns only matching concerts for a single artist filter', () => {
 			sut.dateGroups = [makeGroup('artist-1'), makeGroup('artist-2')]
 			sut.filteredArtistIds = ['artist-1']
@@ -279,6 +282,7 @@ describe('TimetableRoute', () => {
 			expect(result[0].home[0].artistId).toBe('artist-1')
 		})
 
+		// @spec components/infrastructure/fan/web/route/timetable "Multiple artist filter from URL"
 		it('returns matching concerts for multiple artist IDs', () => {
 			sut.dateGroups = [
 				makeGroup('artist-1'),
@@ -291,6 +295,7 @@ describe('TimetableRoute', () => {
 			expect(result).toHaveLength(2)
 		})
 
+		// @spec components/infrastructure/fan/web/route/timetable "Filter yields empty result"
 		it('drops groups that become empty after filtering', () => {
 			sut.dateGroups = [makeGroup('artist-1')]
 			sut.filteredArtistIds = ['unknown-id']
@@ -298,6 +303,7 @@ describe('TimetableRoute', () => {
 			expect(sut.filteredDateGroups).toHaveLength(0)
 		})
 
+		// @spec components/infrastructure/fan/web/route/timetable "Unknown artist ID in filter"
 		it('silently ignores unknown artist IDs and shows remaining matches', () => {
 			sut.dateGroups = [makeGroup('artist-1'), makeGroup('artist-2')]
 			sut.filteredArtistIds = ['artist-1', 'unknown-id']
@@ -309,6 +315,7 @@ describe('TimetableRoute', () => {
 	})
 
 	describe('filteredDateGroups — journey facet', () => {
+		// @spec components/infrastructure/fan/web/route/timetable "Single status filter from URL"
 		it('keeps only concerts whose status is in the journey filter', () => {
 			sut.dateGroups = [makeGroup('a1', 'applied'), makeGroup('a2', 'paid')]
 			sut.filteredStatuses = ['applied']
@@ -318,6 +325,7 @@ describe('TimetableRoute', () => {
 			expect(result[0].home[0].journeyStatus).toBe('applied')
 		})
 
+		// @spec components/infrastructure/fan/web/route/timetable "Multiple status filter from URL"
 		it('combines multiple statuses as OR', () => {
 			sut.dateGroups = [
 				makeGroup('a1', 'applied'),
@@ -329,6 +337,7 @@ describe('TimetableRoute', () => {
 			expect(sut.filteredDateGroups).toHaveLength(2)
 		})
 
+		// @spec components/infrastructure/fan/web/route/timetable "Concerts without a journey status are excluded when filtering"
 		it('excludes concerts with no status set while filtering', () => {
 			sut.dateGroups = [makeGroup('a1', 'applied'), makeGroup('a2')]
 			sut.filteredStatuses = ['applied']
@@ -747,6 +756,7 @@ describe('TimetableRoute', () => {
 			)
 		})
 
+		// @spec components/infrastructure/fan/web/route/timetable "User adds an artist to the filter"
 		it('writes the artists param only', () => {
 			sut.filteredArtistIds = ['id-1', 'id-2']
 			syncFilterUrl(sut)
@@ -933,6 +943,7 @@ describe('TimetableRoute', () => {
 			} as never
 		}
 
+		// @spec components/infrastructure/fan/web/route/timetable "Page reload preserves filter"
 		it('sets filteredArtistIds from ?artists query param', async () => {
 			await sut.loading({}, makeRouteNode('id-1,id-2'))
 
@@ -963,6 +974,7 @@ describe('TimetableRoute', () => {
 			expect(sut.filteredStatuses).toEqual(['applied', 'unpaid'])
 		})
 
+		// @spec components/infrastructure/fan/web/route/timetable "Unknown status value in filter"
 		it('drops unknown journey tokens, keeping valid ones', async () => {
 			mockAuth.isAuthenticated = true
 			sut = new TimetableRoute()
@@ -982,26 +994,31 @@ describe('TimetableRoute', () => {
 		})
 	})
 
-	describe('deep-link auto-open (/concerts/:id)', () => {
-		function makeRouteNode() {
-			return { queryParams: { get: () => null } } as never
+	describe('deep-link auto-open (/timetable?concert=:id)', () => {
+		function makeRouteNode(concert: string) {
+			return {
+				queryParams: new URLSearchParams({ concert }),
+			} as never
 		}
 
-		it('records the :id route param as the pending deep-link target', async () => {
-			await sut.loading({ id: 'h-artist-1' }, makeRouteNode())
+		it('records the concert query parameter as the pending deep-link target', async () => {
+			await sut.loading({}, makeRouteNode('h-artist-1'))
 
 			expect(getPendingConcertId(sut)).toBe('h-artist-1')
 		})
 
-		it('ignores the :id param during onboarding', async () => {
+		// @spec components/infrastructure/fan/web/route/timetable "Deep-link auto-open suppressed during onboarding"
+		it('ignores the concert query parameter during onboarding', async () => {
 			mockOnboarding.isOnboarding = true
 			sut = new TimetableRoute()
 
-			await sut.loading({ id: 'h-artist-1' }, makeRouteNode())
+			await sut.loading({}, makeRouteNode('h-artist-1'))
 
 			expect(getPendingConcertId(sut)).toBeNull()
 		})
 
+		// @spec components/infrastructure/fan/web/route/timetable "Deep-link derives the artist filter from the opened concert"
+		// @spec components/infrastructure/fan/web/route/timetable "Notification tap opens the concert filtered to its artist"
 		it('opens the sheet and derives the artist filter when the concert resolves', async () => {
 			sut.dateGroups = [makeGroup('artist-1'), makeGroup('artist-2')]
 			const sheet = stubDetailSheet(sut)
@@ -1015,6 +1032,7 @@ describe('TimetableRoute', () => {
 			expect(sut.filteredArtistIds).toEqual(['artist-2'])
 		})
 
+		// @spec components/infrastructure/fan/web/route/timetable "Target concert absent degrades to filter-only"
 		it('degrades to no-op (no sheet, no filter, no error) when the concert is absent', () => {
 			sut.dateGroups = [makeGroup('artist-1')]
 			const sheet = stubDetailSheet(sut)
@@ -1060,6 +1078,7 @@ describe('TimetableRoute', () => {
 			expect(order).toEqual(['filter-url', 'sheet'])
 		})
 
+		// @spec components/infrastructure/fan/web/route/timetable "Deep-link opens the concert after the authoritative fetch resolves"
 		it('resolves against the authoritative cold-load fetch', async () => {
 			mockAuth.isAuthenticated = true
 			mockUserStore.current = { home: 'JP-13' }

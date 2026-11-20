@@ -62,7 +62,7 @@ test(`@spec ${NAV} "Timetable icon data attribute for coach mark targeting"`, as
 	await seedGuest(page, { onboarded: true, home: true })
 	await openShell(page, '/discovery')
 
-	await expect(page.locator('.nav-tab[data-nav="home"]')).toHaveAttribute(
+	await expect(page.locator('.nav-tab[data-nav="timetable"]')).toHaveAttribute(
 		'href',
 		/timetable/,
 	)

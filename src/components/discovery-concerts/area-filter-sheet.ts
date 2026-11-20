@@ -4,7 +4,7 @@ import { bindable, INode, resolve } from 'aurelia'
 export type AreaFilterRow = 'area' | 'period'
 
 /**
- * The All Nearby filter sheet, opened from the action launcher's filter item:
+ * The the Concerts view filter sheet, opened from the action launcher's filter item:
  * two rows, the area and the period, each showing its current value. A tap on
  * a row closes this sheet and, once it has finished closing, dispatches
  * `filter-row-chosen` with the row, so the host opens that row's selector and

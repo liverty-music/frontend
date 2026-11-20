@@ -22,7 +22,7 @@
 			--orb-max-r: 90px;
 
 			/* Room above the search bar: an empty first row, inside the area the
-			   All Nearby view covers (it spans every row). */
+			   Concerts view covers (it spans every row). */
 			--_search-gap: var(--space-xs);
 
 			isolation: isolate;

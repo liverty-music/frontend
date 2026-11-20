@@ -55,7 +55,7 @@ export const TwoDays = {
 		const links = canvas.getAllByRole('link')
 		await expect(links).toHaveLength(2)
 		await expect(links[0]).toHaveAttribute('aria-current', 'page')
-		await expect(links[1]).toHaveAttribute('href', '/events/ev-2')
+		await expect(links[1]).toHaveAttribute('href', '/concerts/ev-2')
 	},
 } satisfies Story
 

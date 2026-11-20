@@ -60,13 +60,13 @@
       follow.trigger="$event.detail.waitUntil(onFollowFromSearch($event.detail.artist))"
     ></discovery-search-results>
 
-    <!-- All Nearby view: in place of the search bar, the genre chips and the
+    <!-- Concerts view: in place of the search bar, the genre chips and the
          bubbles, which keep their size underneath (the field is not rebuilt). -->
     <discovery-concerts
-      component.ref="nearbyConcerts"
-      if.bind="view === 'nearby'"
-      class="nearby-view"
-      visit.bind="nearbyVisit"
+      component.ref="discoveryConcerts"
+      if.bind="view === 'concerts'"
+      class="concerts-view"
+      visit.bind="concertsVisit"
       on-signup-requested.bind="() => offerSignUp()"
     ></discovery-concerts>
 
@@ -88,7 +88,7 @@
     ></output>
   </main>
 
-  <!-- Sign-up prompt for a guest who tapped follow in the All Nearby view.
+  <!-- Sign-up prompt for a guest who tapped follow in the Concerts view.
        Outside <main>: the banner is fixed to the viewport, and the layout is
        a size container that would become its containing block. -->
   <signup-prompt-banner

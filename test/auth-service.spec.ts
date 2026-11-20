@@ -288,24 +288,27 @@ describe('AuthService', () => {
 	})
 
 	it('signUp from an Event page carries its origin and return path in the OIDC state', async () => {
-		await sut.signUp({ origin: 'concert-page', returnTo: '/events/ev-1' })
+		await sut.signUp({ origin: 'concert-page', returnTo: '/concerts/ev-1' })
 		expect(userManagerMock.signinRedirect).toHaveBeenCalledWith({
 			prompt: 'create',
 			state: {
 				flow: 'signup',
 				origin: 'concert-page',
-				returnTo: '/events/ev-1',
+				returnTo: '/concerts/ev-1',
 			},
 		})
 	})
 
 	it('signUp from the ticket sale notification button carries the event to track', async () => {
-		await sut.signUp({ returnTo: '/concerts/ev-1', trackEventId: 'ev-1' })
+		await sut.signUp({
+			returnTo: '/timetable?concert=ev-1',
+			trackEventId: 'ev-1',
+		})
 		expect(userManagerMock.signinRedirect).toHaveBeenCalledWith({
 			prompt: 'create',
 			state: {
 				flow: 'signup',
-				returnTo: '/concerts/ev-1',
+				returnTo: '/timetable?concert=ev-1',
 				trackEventId: 'ev-1',
 			},
 		})
@@ -729,8 +732,8 @@ describe('resolveAuthFlow', () => {
 
 describe('resolveAuthReturnTo', () => {
 	it('returns an in-app path carried in the state', () => {
-		const user = { state: { returnTo: '/events/ev-1' } } as unknown as User
-		expect(resolveAuthReturnTo(user)).toBe('/events/ev-1')
+		const user = { state: { returnTo: '/concerts/ev-1' } } as unknown as User
+		expect(resolveAuthReturnTo(user)).toBe('/concerts/ev-1')
 	})
 
 	it.each(['//evil.example.com', 'https://evil.example.com', '/\\evil', ''])(

@@ -19,7 +19,7 @@ test.use({ viewport: { width: 390, height: 844 } })
 
 const CAPABILITY = 'components/infrastructure/fan/web/global/action-menu'
 
-test(`@spec ${CAPABILITY} "FAB stays above the Discovery dna orb"`, {
+test(`@spec ${CAPABILITY} "action menu stays above the Discovery dna orb"`, {
 	tag: '@webkit',
 }, async ({ page }) => {
 	await seedSignedInFan(page)
@@ -39,7 +39,7 @@ test(`@spec ${CAPABILITY} "FAB stays above the Discovery dna orb"`, {
 })
 
 // @spec components/infrastructure/fan/web/global/action-menu "Launcher absent on fullscreen routes"
-test(`@spec ${CAPABILITY} "FAB hidden when navigation is hidden"`, async ({
+test(`@spec ${CAPABILITY} "action menu hidden when navigation is hidden"`, async ({
 	page,
 }) => {
 	// A guest: a signed-in fan is sent on from Welcome.

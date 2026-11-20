@@ -48,14 +48,14 @@
 
 <!-- Guest empty-state CTA: unauthenticated visitor with zero follows. Soft gate
      guidance toward discovery instead of a guard redirect, and toward the
-     concerts nearby on Discovery's All Nearby view. -->
+     concerts nearby on Discovery's Concerts view. -->
 <state-placeholder if.bind="hasSettled && !loadError && showGuestEmptyState && !needsRegion" icon="clock">
   <div class="[ timetable-empty ] [ stack flow ]">
     <p t="timetable.guestEmpty.title" class="[ state-placeholder-title ] [ md-typescale-title-large ]"></p>
     <p t="timetable.guestEmpty.subtitle" class="[ timetable-empty-subtitle ] [ md-typescale-body-medium ]"></p>
     <div class="[ timetable-empty-actions ] [ cluster ]">
       <a href="/discovery" t="timetable.guestEmpty.cta" class="[ button ] [ state-layer ]" data-testid="discover-link"></a>
-      <a href="/discovery?view=nearby" t="timetable.nearbyCta" class="[ button ] [ state-layer ]" data-variant="outlined" data-testid="nearby-link"></a>
+      <a href="/discovery?view=concerts" t="timetable.concertsCta" class="[ button ] [ state-layer ]" data-variant="outlined" data-testid="concerts-link"></a>
     </div>
   </div>
 </state-placeholder>
@@ -69,7 +69,7 @@
     <p t="timetable.empty.subtitle" class="[ timetable-empty-subtitle ] [ md-typescale-body-medium ]"></p>
     <div class="[ timetable-empty-actions ] [ cluster ]">
       <a href="/discovery" t="timetable.empty.discoverLink" class="[ button ] [ state-layer ]" data-testid="discover-link"></a>
-      <a href="/discovery?view=nearby" t="timetable.nearbyCta" class="[ button ] [ state-layer ]" data-variant="outlined" data-testid="nearby-link"></a>
+      <a href="/discovery?view=concerts" t="timetable.concertsCta" class="[ button ] [ state-layer ]" data-variant="outlined" data-testid="concerts-link"></a>
     </div>
   </div>
 </state-placeholder>

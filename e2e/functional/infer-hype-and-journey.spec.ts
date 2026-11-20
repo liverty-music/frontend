@@ -320,7 +320,7 @@ test.describe('calendar add starts tracking', () => {
 		const calls = await mockBackend(page, server)
 
 		// A new-concert push opens the Timetable on the concert's detail sheet.
-		await page.goto(`/concerts/${HOME_CONCERT}`)
+		await page.goto(`/timetable?concert=${HOME_CONCERT}`)
 		await expect(sheet(page).getByText('Home Show Hall').first()).toBeVisible({
 			timeout: 30_000,
 		})

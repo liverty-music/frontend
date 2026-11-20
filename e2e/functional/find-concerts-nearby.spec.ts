@@ -7,7 +7,7 @@ import {
 	mockFanRpc,
 	type RpcCall,
 } from '../support/fan-auth'
-import { openNearbyFilters } from '../support/fan-shell'
+import { openConcertsFilters } from '../support/fan-shell'
 import { expect, type Page, test } from '../support/test'
 
 /**
@@ -178,7 +178,7 @@ const view = (page: Page) => page.locator('discovery-concerts')
 const cardOf = (page: Page, name: string) =>
 	view(page).locator('[data-live-card]', { hasText: name })
 
-/** Open Discovery and switch to the All Nearby view with the swap tile. */
+/** Open Discovery and switch to the Concerts view with the swap tile. */
 async function openNearby(page: Page): Promise<void> {
 	await page.goto('/discovery')
 	await page.getByTestId('discovery-swap').click()
@@ -189,7 +189,7 @@ test(`@spec ${STORY} "A weekend near home"`, async ({ page }) => {
 	const calls = await openApp(page)
 	await openNearby(page)
 
-	await (await openNearbyFilters(page)).period.click()
+	await (await openConcertsFilters(page)).period.click()
 	await page.getByRole('button', { name: '今週末' }).click()
 
 	// Asked for this weekend around the fan's home area.
@@ -225,7 +225,7 @@ test(`@spec ${STORY} "A weekend near home"`, async ({ page }) => {
 
 test(`@spec ${STORY} "No home area yet"`, async ({ page }) => {
 	const calls = await openApp(page, { home: null })
-	await page.goto('/discovery?view=nearby')
+	await page.goto('/discovery?view=concerts')
 	await expect(view(page)).toBeVisible({ timeout: 30_000 })
 
 	// The area selector asks first; nothing is listed before an area is chosen.
@@ -311,11 +311,11 @@ test(`@spec components/infrastructure/fan/web/route/timetable "Guest with no fol
 }) => {
 	await openApp(page)
 	await page.goto('/timetable')
-	const link = page.getByTestId('nearby-link')
+	const link = page.getByTestId('concerts-link')
 	await expect(link).toHaveText('近くのライブを見る', { timeout: 30_000 })
 	await expect(page.getByTestId('discover-link')).toBeVisible()
 
 	await link.click()
-	await expect(page).toHaveURL(/\/discovery\?view=nearby$/)
+	await expect(page).toHaveURL(/\/discovery\?view=concerts$/)
 	await expect(view(page)).toBeVisible()
 })

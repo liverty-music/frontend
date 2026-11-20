@@ -48,6 +48,7 @@ import { IResumeRevalidator } from '../../services/resume-revalidator'
 import { ITicketJourneyStore } from '../../services/ticket-journey-store'
 import { IUserStore } from '../../services/user-store'
 import { currentLanguage } from '../../util/change-locale'
+import { CONCERT_QUERY_PARAM } from '../../util/concert-sheet-link'
 
 export class TimetableRoute {
 	public dateGroups: DateGroup[] = []
@@ -120,7 +121,7 @@ export class TimetableRoute {
 	private fabDisposer: (() => void) | null = null
 
 	/**
-	 * Concert id from a `/concerts/:id` deep-link, pending resolution against the
+	 * Concert id from a `/timetable?concert=:id` deep-link, pending resolution against the
 	 * authoritative concert fetch. Null when navigated to a bare `/timetable` or
 	 * during onboarding. Self-clears once resolved so a PWA resume / background
 	 * refresh never re-opens the sheet. See resolvePendingDeepLink.
@@ -353,14 +354,17 @@ export class TimetableRoute {
 		this.registerMenuActions()
 	}
 
-	public async loading(params?: Params, next?: RouteNode): Promise<void> {
+	public async loading(_params?: Params, next?: RouteNode): Promise<void> {
 		this.showBeams = this.storage.getItem(StorageKeys.beamsEnabled) === 'true'
 
-		// Deep-link target from `/concerts/:id` (e.g. a tapped push notification).
-		// Recorded here but resolved only after the authoritative listFollowed
-		// fetch settles (see resolvePendingDeepLink), never off the cache paint.
-		// Suppressed during onboarding, mirroring the query-param handling below.
-		this.pendingConcertId = !this.isOnboarding && params?.id ? params.id : null
+		// Deep-link target from `/timetable?concert=:id` (e.g. a tapped push
+		// notification). Recorded here but resolved only after the authoritative
+		// listFollowed fetch settles (see resolvePendingDeepLink), never off the
+		// cache paint. Suppressed during onboarding, mirroring the query-param
+		// handling below.
+		this.pendingConcertId = this.isOnboarding
+			? null
+			: (next?.queryParams.get(CONCERT_QUERY_PARAM) ?? null)
 
 		// Restore filters from URL query params (ignored during onboarding)
 		if (!this.isOnboarding && next) {
@@ -466,7 +470,7 @@ export class TimetableRoute {
 		if (succeeded) {
 			this.timetableLoaded = true
 			// Cold-load path resolved the authoritative fetch above — safe to act on
-			// a pending `/concerts/:id` deep-link now. The fast path resolves it in
+			// a pending `/timetable?concert=:id` deep-link now. The fast path resolves it in
 			// refreshInBackground once the background fetch settles.
 			this.resolvePendingDeepLink()
 		}
@@ -501,13 +505,13 @@ export class TimetableRoute {
 	}
 
 	/**
-	 * Resolve a pending `/concerts/:id` deep-link against the authoritative concert
+	 * Resolve a pending `/timetable?concert=:id` deep-link against the authoritative concert
 	 * list once it has settled — from the cold-load await or the background refresh,
 	 * never off the cache first-paint.
 	 *
 	 * On match: derive the artist filter from the concert, then open the detail
 	 * sheet in a task queued behind that filter's URL write, so the sheet's pushed
-	 * `/concerts/:id` URL is the final history entry and wins while the sheet is
+	 * `concert=:id` URL is the final history entry and wins while the sheet is
 	 * open (two URL writers race — the sheet must win; the filter URL applies
 	 * after close). On no match
 	 * (unfollowed after send, zero-date, or unresolved performer): degrade silently
@@ -525,8 +529,8 @@ export class TimetableRoute {
 		const concert = this.findConcertById(id)
 		if (!concert?.artistId) return
 
-		// A first-party concert has its own Event page and never opens the
-		// sheet; an older `/concerts/:id` link to one is forwarded there.
+		// A first-party concert has its own concert page and never opens the
+		// sheet; a `/timetable?concert=:id` link to one is forwarded there.
 		if (concert.isFirstParty) {
 			void this.openConcertPage(concert, 'replace')
 			return
@@ -536,7 +540,7 @@ export class TimetableRoute {
 		// Open the sheet as a queued task rather than after a synchronous flush.
 		// The filter's URL write (`syncFilterUrl`) is queued by its @watch when
 		// the filter is assigned, and the queue runs in order, so the sheet's
-		// pushed `/concerts/:id` still lands after it and wins while the sheet
+		// pushed `concert=:id` URL still lands after it and wins while the sheet
 		// is open. A `runTasks()` here would also flush the filtered
 		// timetable's render, and on a slow device that exceeds Aurelia's
 		// 100 ms synchronous budget: the flush throws "Potential deadlock"
@@ -719,7 +723,7 @@ export class TimetableRoute {
 			this.pendingCachedGroups = null
 			this.hasSettled = true
 			// Fast path: this background fetch is the authoritative list. Resolve any
-			// pending `/concerts/:id` deep-link now that fresh data has settled.
+			// pending `/timetable?concert=:id` deep-link now that fresh data has settled.
 			this.resolvePendingDeepLink()
 		} catch (err) {
 			if ((err as Error).name === 'AbortError') return
@@ -937,7 +941,7 @@ export class TimetableRoute {
 		concert: Concert,
 		historyStrategy: 'push' | 'replace' = 'push',
 	): Promise<void> {
-		await this.router.load(`/events/${concert.id}`, { historyStrategy })
+		await this.router.load(`/concerts/${concert.id}`, { historyStrategy })
 	}
 
 	public onSignupRequested(): void {

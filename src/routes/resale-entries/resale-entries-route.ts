@@ -137,7 +137,7 @@ export class ResaleEntriesRoute implements IRouteViewModel {
 
 	public applyUrl(row: ResaleEntryRow): string {
 		return row.stock
-			? `/events/${row.stock.eventId}/resale/${row.stock.id}`
+			? `/concerts/${row.stock.eventId}/resale-entries/new?stock=${row.stock.id}`
 			: '/resale-entries'
 	}
 

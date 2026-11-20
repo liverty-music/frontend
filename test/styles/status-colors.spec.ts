@@ -86,7 +86,7 @@ describe('status marks use the token of their meaning', () => {
 				settingsStatusRowCss,
 				'.settings-verification-badge[data-verified="true"]',
 			),
-			colorOf(passkeyRecoveryCss, '.passkey-recovery-icon'),
+			colorOf(passkeyRecoveryCss, '.sign-in-help-icon'),
 		]
 		for (const color of done) {
 			expect(color).toBe('var(--color-success)')

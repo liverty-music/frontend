@@ -74,7 +74,7 @@ test.describe('Timetable tab (guest)', () => {
 			timeout: 10_000,
 		})
 
-		await tab(page, 'home').click()
+		await tab(page, 'timetable').click()
 		// The timetable is attached and showing its loading state while the fetch
 		// is still held, and Discovery is no longer on screen.
 		await expect(
@@ -179,7 +179,7 @@ test.describe('Timetable tab (guest)', () => {
 				w.__frames.push({
 					home:
 						document
-							.querySelector('.nav-tab[data-nav="home"]')
+							.querySelector('.nav-tab[data-nav="timetable"]')
 							?.getAttribute('data-active') === 'true',
 					title: document.querySelector('page-header h1')?.textContent?.trim(),
 					cards: !!document.querySelector('timetable-route [data-live-card]'),
@@ -191,7 +191,7 @@ test.describe('Timetable tab (guest)', () => {
 			}
 			requestAnimationFrame(tick)
 		})
-		await page.locator('.nav-tab[data-nav="home"]').click()
+		await page.locator('.nav-tab[data-nav="timetable"]').click()
 		await page.locator('timetable-route [data-live-card]').first().waitFor()
 		await page.waitForFunction(
 			() =>
