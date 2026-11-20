@@ -12,14 +12,14 @@ test.describe.configure({ timeout: 60_000 })
 test.use({ viewport: { width: 390, height: 844 } })
 
 /**
- * The FAB is a top-layer surface: above the Discovery dna orb canvas, and
+ * The FAB is a top-layer surface: above the Discovery artist bubbles canvas, and
  * absent wherever the navigation bar is hidden or no action is contributed.
  * Runs on Chromium (`functional`) and WebKit (`webkit-shell`).
  */
 
 const CAPABILITY = 'components/infrastructure/fan/web/global/action-menu'
 
-test(`@spec ${CAPABILITY} "action menu stays above the Discovery dna orb"`, {
+test(`@spec ${CAPABILITY} "action menu stays above the Discovery orb"`, {
 	tag: '@webkit',
 }, async ({ page }) => {
 	await seedSignedInFan(page)

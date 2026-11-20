@@ -609,7 +609,7 @@ describe('DiscoveryConcerts', () => {
 		})
 
 		// @spec components/infrastructure/fan/web/route/discovery "First-party concert opens its concert page"
-		it('opens the Event page of a first-party concert instead of the sheet', () => {
+		it('opens the concert page of a first-party concert instead of the sheet', () => {
 			const sut = build()
 			sut.onEventSelected(selected(true))
 			expect(mockRouter.load).toHaveBeenCalledWith('/concerts/ev-1')

@@ -66,7 +66,7 @@ test.describe('open a shared event link (guest)', () => {
 	}) => {
 		// @spec stories/open-a-shared-event-link "Follower taps the notification"
 		// NotifyNewConcerts links a first-party concert to /concerts/<earliest id>
-		// (backend unit test "First-party concert links to its event page");
+		// (backend unit test "First-party concert links to its concert page");
 		// the service worker opens that URL unchanged. Assert the URL it builds
 		// opens the earliest Event's page.
 		test.skip(!EVENTS.public, 'E2E_EVENT_PUBLIC_ID is required')

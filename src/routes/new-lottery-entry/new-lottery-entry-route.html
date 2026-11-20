@@ -9,12 +9,12 @@
 
 	<section class="[ lottery-entry-panel card ] [ flow wrapper ]" if.bind="step === 'not-found'" data-testid="lottery-entry-not-found">
 		<p class="[ lottery-entry-lead ] [ md-typescale-body-medium ]" t="newLotteryEntry.notFound"></p>
-		<a href="/concerts/${event.id}" if.bind="event" class="text-link" data-variant="standalone" t="newLotteryEntry.backToEvent"></a>
+		<a href="/concerts/${event.id}" if.bind="event" class="text-link" data-variant="standalone" t="newLotteryEntry.backToConcert"></a>
 	</section>
 
 	<section class="[ lottery-entry-panel card ] [ flow wrapper ]" if.bind="step === 'closed'" data-testid="lottery-entry-closed">
 		<p class="[ lottery-entry-lead ] [ md-typescale-body-medium ]" t="newLotteryEntry.closed"></p>
-		<a href="/concerts/${event.id}" if.bind="event" class="text-link" data-variant="standalone" t="newLotteryEntry.backToEvent"></a>
+		<a href="/concerts/${event.id}" if.bind="event" class="text-link" data-variant="standalone" t="newLotteryEntry.backToConcert"></a>
 	</section>
 
 	<!-- What is entered: the sale's name, the event, the seat type, its price and the limit -->
@@ -128,7 +128,7 @@
 		<p class="[ lottery-entry-lead ] [ md-typescale-body-medium ]" t="newLotteryEntry.refused.notCharged"></p>
 		<a href.bind="entryStatusUrl" if.bind="alreadyEntered" class="[ button lottery-entry-action ] [ state-layer ]" data-testid="lottery-entry-to-status" t="newLotteryEntry.done.toStatus"></a>
 		<button type="button" if.bind="canTryAgain" class="[ button lottery-entry-action ] [ state-layer ]" click.trigger="tryAgain()" data-testid="lottery-entry-try-again" t="newLotteryEntry.refused.tryAgain"></button>
-		<a href="/concerts/${event.id}" if.bind="event" class="text-link" data-variant="standalone" t="newLotteryEntry.backToEvent"></a>
+		<a href="/concerts/${event.id}" if.bind="event" class="text-link" data-variant="standalone" t="newLotteryEntry.backToConcert"></a>
 	</section>
 
 	<!-- The entry was made (Confirm succeeded) -->

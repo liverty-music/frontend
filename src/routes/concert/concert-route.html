@@ -8,7 +8,7 @@
   <!-- Loading -->
   <p if.bind="state === 'loading'" class="event-status" role="status" t="concert.loading"></p>
 
-  <!-- No event page: identical for every reason (unknown, discovered, draft, unlisted). -->
+  <!-- No concert page: identical for every reason (unknown, discovered, draft, unlisted). -->
   <section if.bind="state === 'not-found'" class="[ state-placeholder ]" data-testid="event-not-found">
     <h1 class="[ state-placeholder-title ] [ md-typescale-headline-small ]" t="concert.notFound.title"></h1>
     <p t="concert.notFound.body"></p>

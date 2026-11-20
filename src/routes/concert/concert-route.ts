@@ -504,7 +504,7 @@ export class ConcertRoute implements IRouteViewModel {
 		}
 	}
 
-	/** The canonical URL of this Event page, without any query. */
+	/** The canonical URL of this concert page, without any query. */
 	public get shareUrl(): string {
 		return this.event
 			? canonicalEventUrl(window.location.origin, this.event.id)
@@ -571,7 +571,7 @@ export class ConcertRoute implements IRouteViewModel {
 	}
 
 	/**
-	 * Start sign-up from this page: the fan comes back to this Event page, and
+	 * Start sign-up from this page: the fan comes back to this concert page, and
 	 * the post-signup celebration and dialog are skipped.
 	 */
 	public async signUp(): Promise<void> {

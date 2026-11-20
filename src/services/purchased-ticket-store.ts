@@ -49,7 +49,7 @@ export function issuedOrderIdsByEvent(
 
 /**
  * Single observable owner of the signed-in fan's purchased (Issued) ticket
- * counts per event id. The Timetable's first-party cards and the Event page's
+ * counts per event id. The Timetable's first-party cards and the concert page's
  * ticket section both read it, from one `TicketService.List` call per load.
  *
  * Reads are network-first. Guests have no tickets: an empty map, no RPC.

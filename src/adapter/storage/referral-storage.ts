@@ -2,7 +2,7 @@
  * Persistence adapter for the referral code of the last event link the fan
  * opened (OpenSpec `referral-attribution`, design D7).
  *
- * The Event page keeps the code with the Series it was opened for; the checkout
+ * The concert page keeps the code with the Series it was opened for; the checkout
  * and the lottery entry screen read it back and send it with Start only for the
  * same Series. localStorage, not sessionStorage: the code must survive the OIDC
  * sign-up round trip, other tabs and closing the browser. Sign-out does not

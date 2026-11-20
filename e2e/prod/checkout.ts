@@ -3,10 +3,10 @@ import type { SaleStock } from './sale'
 
 /**
  * Checkout steps shared by the production purchase specs. They drive the
- * checkout screen the Event page's buy action opens for one seat type.
+ * checkout screen the concert page's buy action opens for one seat type.
  */
 
-/** The Event page's row of the stock's seat type in the ticket section. */
+/** The concert page's row of the stock's seat type in the ticket section. */
 export function stockRow(page: Page, stock: SaleStock): Locator {
 	return page.getByTestId('event-stock').filter({
 		has: page
@@ -16,8 +16,8 @@ export function stockRow(page: Page, stock: SaleStock): Locator {
 }
 
 /**
- * Open the checkout of the stock from the Event page's action to buy on its
- * seat type's row. `query` is added to the Event page's address (e.g.
+ * Open the checkout of the stock from the concert page's action to buy on its
+ * seat type's row. `query` is added to the concert page's address (e.g.
  * `?ref=…`).
  */
 export async function openCheckout(

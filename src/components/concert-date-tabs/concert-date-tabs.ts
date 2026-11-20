@@ -1,6 +1,6 @@
 import { bindable } from 'aurelia'
 
-/** One date of a Series, as a tab of the Event page. */
+/** One date of a Series, as a tab of the concert page. */
 export interface ConcertDateTab {
 	/** Event id; the tab links to `/concerts/<id>`. */
 	readonly id: string
@@ -13,7 +13,7 @@ export interface ConcertDateTab {
 }
 
 /**
- * The date tabs of an Event page whose Series has 2–4 Events. Each tab is a
+ * The date tabs of a concert page whose Series has 2–4 Events. Each tab is a
  * link to that Event's own page, so every date is shareable and the back
  * control returns to the previous date. Purely presentational: the route
  * builds the tabs in date order.

@@ -80,7 +80,7 @@ export const Standalone = {
 	render: () =>
 		defineAureliaStory({
 			template: surfaces(
-				`<p class="md-typescale-body-medium">お支払いは現在ご利用いただけません。</p><a href="#event" class="[ text-link ] [ md-typescale-body-medium ]" data-variant="standalone">イベントページに戻る</a>`,
+				`<p class="md-typescale-body-medium">お支払いは現在ご利用いただけません。</p><a href="#concert" class="[ text-link ] [ md-typescale-body-medium ]" data-variant="standalone">ライブのページに戻る</a>`,
 			),
 		}),
 	play: async ({ canvasElement }) => {

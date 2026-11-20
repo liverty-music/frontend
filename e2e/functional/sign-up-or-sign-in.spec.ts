@@ -197,7 +197,7 @@ test.describe('a new account without a home', () => {
 		})
 		await page.getByTestId('event-signup').click()
 
-		// The account is created without a home and the event page opens again,
+		// The account is created without a home and the concert page opens again,
 		// signed in, with no home sheet.
 		await expect(page).toHaveURL(new RegExp(`/concerts/${EVENT_ID}$`), {
 			timeout: 20_000,

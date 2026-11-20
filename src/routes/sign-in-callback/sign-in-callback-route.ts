@@ -152,7 +152,7 @@ export class SignInCallbackRoute {
 			// sign-up" per design D3. The `created` AND-condition suppresses the
 			// "returning user taps Sign up" case.
 			//
-			// A sign-up started on an Event page skips both surfaces: the fan
+			// A sign-up started on a concert page skips both surfaces: the fan
 			// returns to the event to buy, and the purchase flow owns the
 			// notification / install prompts that follow it.
 			const isSignUpFlow = resolveAuthFlow(user) === 'signup'

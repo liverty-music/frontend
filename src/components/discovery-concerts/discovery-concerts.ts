@@ -83,7 +83,7 @@ export class DiscoveryConcertsVisit {
  * timetable. Its filters, the area and the period, open from the action
  * launcher's filter item (the host route calls `openFilters`), so nothing sits
  * above the timetable; a discovered concert opens the event detail sheet with
- * the follow action, a first-party one opens its Event page.
+ * the follow action, a first-party one opens its concert page.
  */
 export class DiscoveryConcerts {
 	/** The visit's state, owned by the host route. */
@@ -332,7 +332,7 @@ export class DiscoveryConcerts {
 	}
 
 	/**
-	 * A first-party concert opens its public Event page; a discovered one
+	 * A first-party concert opens its public concert page; a discovered one
 	 * opens the detail sheet with the follow action.
 	 */
 	public onEventSelected(event: CustomEvent<{ event: Concert }>): void {

@@ -29,7 +29,7 @@ import { FAN_STATE, hasOrganizerSession, organizerToken, test } from './session'
  * for (docs/prod-e2e-fixtures.md). It is not the buy-tickets spec's Event.
  * The run reads the purchases per referral code from the organizer
  * `TicketSaleService.ListByEvent`. Each test buys one ticket after
- * opening the Event page from a link with `?ref=`, and checks that the code's
+ * opening the concert page from a link with `?ref=`, and checks that the code's
  * row on the Sales read grew by that Order.
  *
  * The sign-up leg of "Guest from a member's link buys after signing up" is
@@ -86,7 +86,7 @@ async function statsOf(
 	return { orders: row?.orderCount ?? 0, tickets: row?.ticketCount ?? 0 }
 }
 
-/** Open the Event page from a referral link and buy one ticket. */
+/** Open the concert page from a referral link and buy one ticket. */
 async function buyOneFromLink(page: Page, code: string): Promise<void> {
 	await openCheckout(page, EVENT_ID, saleStock, `?ref=${code}`)
 	await holdTickets(page, 1)

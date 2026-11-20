@@ -410,7 +410,7 @@ describe('ConcertRoute', () => {
 			expect(sut.purchasedCount).toBe(0)
 		})
 
-		it('starts sign-up that returns to this page as an concert-page sign-up', async () => {
+		it('starts sign-up that returns to this page as a concert-page sign-up', async () => {
 			// @spec components/infrastructure/fan/web/route/concert "Guest signs up to buy"
 			const sut = build()
 			await open(sut)
@@ -541,7 +541,7 @@ describe('ConcertRoute', () => {
 			expect(row(sut, 'A席').stock.state).toBe('soldOut')
 		})
 
-		it('starts sign-up from the action to buy and returns to the Event page', async () => {
+		it('starts sign-up from the action to buy and returns to the concert page', async () => {
 			// @spec components/infrastructure/fan/web/route/concert "Guest buys"
 			ticketSaleClient.listByEvent.mockResolvedValue(tickets([sale()]))
 			const sut = build()
@@ -814,7 +814,7 @@ describe('ConcertRoute', () => {
 		it('shows the not-found view for an event without a page', async () => {
 			// @spec components/infrastructure/fan/web/route/concert "Unlisted event"
 			concertClient.get.mockRejectedValue(
-				new ConnectError('event page not found', Code.NotFound),
+				new ConnectError('concert page not found', Code.NotFound),
 			)
 			const sut = build()
 			await open(sut)
@@ -1034,7 +1034,7 @@ describe('ConcertRoute', () => {
 		it('keeps no code for an event that is not found', async () => {
 			// @spec components/infrastructure/fan/web/route/concert "Unknown event"
 			concertClient.get.mockRejectedValue(
-				new ConnectError('event page not found', Code.NotFound),
+				new ConnectError('concert page not found', Code.NotFound),
 			)
 			openedWith('?ref=member-a')
 			const sut = build()

@@ -924,7 +924,7 @@ export class TimetableRoute {
 	}
 
 	public onEventSelected(event: CustomEvent<{ event: Concert }>): void {
-		// A first-party concert opens its public Event page instead of the
+		// A first-party concert opens its public concert page instead of the
 		// sheet. Leaving the route saves the timetable anchor (unloading), so
 		// the back control returns to the date the fan left.
 		if (event.detail.event.isFirstParty) {

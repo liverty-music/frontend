@@ -14,7 +14,7 @@ export interface ConcertPerformer {
 }
 
 /**
- * One Event of a first-party Series, as the Event page shows it. Text the
+ * One Event of a first-party Series, as the concert page shows it. Text the
  * organizer entered (title, description, venue as listed) is kept as entered.
  */
 export interface ConcertPageConcert {
@@ -37,7 +37,7 @@ export interface ConcertPageConcert {
 	readonly cancelled: boolean
 }
 
-/** Build the Event page's view of a resolved Concert, or null without a date. */
+/** Build the concert page's view of a resolved Concert, or null without a date. */
 export function eventFromConcert(
 	concert: ResolvedConcert,
 ): ConcertPageConcert | null {
@@ -174,7 +174,7 @@ export function dateNavMode(
 	return seriesEvents.length <= MAX_DATE_TABS ? 'tabs' : 'list'
 }
 
-/** The canonical, shareable URL of an Event page, without any query. */
+/** The canonical, shareable URL of a concert page, without any query. */
 export function canonicalEventUrl(origin: string, eventId: string): string {
 	return `${origin}/concerts/${eventId}`
 }

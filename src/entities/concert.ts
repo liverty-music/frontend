@@ -27,7 +27,7 @@ export interface Concert {
 	sourceUrl: string
 	/**
 	 * True when the concert's Series belongs to an Organizer (it carries an
-	 * organizer id). A first-party concert has a public Event page
+	 * organizer id). A first-party concert has a public concert page
 	 * (`/concerts/:id`) and shows the purchased badge instead of a journey badge.
 	 */
 	isFirstParty: boolean

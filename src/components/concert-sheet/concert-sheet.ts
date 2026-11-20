@@ -103,7 +103,7 @@ export class ConcertSheet {
 	 * implies a followed artist, so the CTA stays hidden and the sheet is
 	 * unchanged there.
 	 */
-	@bindable public isAllNearby = false
+	@bindable public isConcertsView = false
 
 	/**
 	 * Invoked when an unauthenticated visitor taps the follow CTA. The host route
@@ -202,7 +202,7 @@ export class ConcertSheet {
 	 * CTA never shows there.
 	 */
 	public get showFollowCta(): boolean {
-		return this.isAllNearby && !!this.event?.artist && !this.isFollowed
+		return this.isConcertsView && !!this.event?.artist && !this.isFollowed
 	}
 
 	/**
@@ -392,10 +392,10 @@ export class ConcertSheet {
 	public open(
 		event: Concert,
 		source: EventSource = 'page',
-		isAllNearby = false,
+		isConcertsView = false,
 	): void {
 		this.event = event
-		this.isAllNearby = isAllNearby
+		this.isConcertsView = isConcertsView
 		if (this.widened?.eventId !== event.id) this.widened = null
 		const alreadyOpen = this.isOpen
 		this.isOpen = true
@@ -600,7 +600,7 @@ export class ConcertSheet {
 		const lane = event?.lane
 		// In the Concerts view the lane is the distance from the browsed area, not
 		// from the fan's home, so it says nothing about what the level pushes.
-		if (!event || !lane || !event.artistId || this.isAllNearby) return null
+		if (!event || !lane || !event.artistId || this.isConcertsView) return null
 		if (!this.followStore.followedIds.has(event.artistId)) return null
 		const home = this.userStore.currentHome ?? undefined
 		const words = (hype: HypeLevel) =>
@@ -649,7 +649,7 @@ export class ConcertSheet {
 			!event ||
 			!lane ||
 			!event.artistId ||
-			this.isAllNearby ||
+			this.isConcertsView ||
 			this.hypeUpdating
 		)
 			return

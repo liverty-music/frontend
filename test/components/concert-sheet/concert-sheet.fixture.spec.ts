@@ -687,7 +687,7 @@ describe('ConcertSheet out-of-range notice (fixture)', () => {
 			signedIn: true,
 			hype: 'nearby',
 		})
-		fixture.component.sheet.isAllNearby = true
+		fixture.component.sheet.isConcertsView = true
 		await tasksSettled()
 
 		expect(fixture.appHost.querySelector(notice)).toBeNull()

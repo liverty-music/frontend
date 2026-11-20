@@ -179,7 +179,7 @@ function fixtureConcert() {
 }
 
 /**
- * Render the real Event page in Japanese with the given sales and stocks;
+ * Render the real concert page in Japanese with the given sales and stocks;
  * `held` is what the signed-in fan already holds for the event.
  */
 async function renderSales(
