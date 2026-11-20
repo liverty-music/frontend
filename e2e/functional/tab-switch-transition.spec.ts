@@ -143,11 +143,12 @@ test.describe('tab switches', () => {
 
 test(`@spec ${SHELL} "Route change from inside a page"`, async ({ page }) => {
 	// A route opened from inside a page changes without a page transition:
-	// only a tab tap starts one. Here a concert on the timetable opens its
-	// sheet, which adds `concert=` to the address.
+	// only a tab tap starts one. Here a first-party concert on the timetable
+	// opens its concert page.
 	await recordTransitions(page)
-	await openTimetable(page)
+	await openTimetable(page, { firstParty: true })
 	await page.locator('[data-live-card]').first().click()
-	await expect(page).toHaveURL(/[?&]concert=/)
+	await expect(page).toHaveURL(/\/concerts\/[^/?]+$/)
+	await expect(page.locator('concert-route')).toBeVisible()
 	expect(await transitions(page)).toEqual([])
 })

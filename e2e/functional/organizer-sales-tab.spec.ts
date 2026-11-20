@@ -126,7 +126,7 @@ test.describe('prerequisites', () => {
 		expect(fixColor).toBe(await callout.getByRole('heading').evaluate(colorOf))
 		expect(fixColor).not.toBe(
 			await page
-				.locator('concert-route console-button[data-action="publish"]')
+				.locator('event-route console-button[data-action="publish"]')
 				.evaluate(
 					(el) =>
 						getComputedStyle(el.shadowRoot?.querySelector('button') ?? el)

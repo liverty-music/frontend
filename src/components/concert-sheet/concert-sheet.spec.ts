@@ -160,7 +160,6 @@ describe('ConcertSheet — history management', () => {
 		)
 	})
 
-	// @spec components/infrastructure/fan/web/route/timetable "Closing the deep-linked sheet does not reload the timetable"
 	it('closes a deep-linked sheet to the timetable', () => {
 		window.history.replaceState(null, '', '/timetable?concert=e1')
 		sut.open(makeEvent('e1'))

@@ -320,7 +320,6 @@ describe('ConcertRoute ticket section (fixture)', () => {
 		await fixture.stop(true)
 	})
 
-	// @spec components/infrastructure/fan/web/route/checkout "Opening checkout from the concert page"
 	it('shows each seat type: the available one with the action to buy, the sold-out one as 売り切れ', async () => {
 		// @spec components/infrastructure/fan/web/route/concert "Two seat types"
 		const fixture = await renderSales(
@@ -416,7 +415,6 @@ describe('ConcertRoute ticket section (fixture)', () => {
 		await fixture.stop(true)
 	})
 
-	// @spec components/infrastructure/fan/web/route/new-resale-entry "Opening the application"
 	it('opens the resale entry screen from the resale action for a signed-in fan', async () => {
 		// @spec components/infrastructure/fan/web/route/concert "Sold out, resale open"
 		const fixture = await renderSales(
@@ -478,7 +476,6 @@ describe('ConcertRoute ticket section (fixture)', () => {
 		await fixture.stop(true)
 	})
 
-	// @spec components/infrastructure/fan/web/route/new-lottery-entry "Opening the entry form"
 	it('shows an open lottery by name with its window, seat type, price and the action to enter', async () => {
 		// @spec components/infrastructure/fan/web/route/concert "Lottery open"
 		const lottery = onSale({

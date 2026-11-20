@@ -88,21 +88,36 @@ function shownArtists(page: Page): Promise<string[]> {
 	])
 }
 
+// @spec components/infrastructure/fan/web/route/timetable "Closing the deep-linked sheet does not reload the timetable"
 test('@spec components/infrastructure/fan/web/route/timetable "Closing a deep-linked sheet returns to the filtered timetable URL"', async ({
 	page,
 }) => {
 	await prepare(page)
+	const lists: string[] = []
+	page.on('request', (r) => {
+		if (r.url().includes('ListByArtists')) lists.push(r.url())
+	})
 	await page.goto(`/timetable?concert=${fakeId('c-4')}`)
 	await expect.poll(() => sheetOpen(page), { timeout: 15_000 }).toBe(true)
 	await expect(page).toHaveURL(
 		new RegExp(`/timetable\\?.*concert=${fakeId('c-4')}$`),
 	)
+	// The timetable element behind the sheet, to tell a remount apart.
+	await page.evaluate(() => {
+		;(document.querySelector('timetable-route') as HTMLElement).dataset.mark =
+			'kept'
+	})
+	const listsBeforeClose = lists.length
 
 	await page.keyboard.press('Escape')
 	await expect.poll(() => sheetOpen(page)).toBe(false)
 	// The filter the deep-link derived is in the URL…
 	await expect(page).toHaveURL(`/timetable?artists=${fakeId('artist-1')}`)
 	expect(await shownArtists(page)).toEqual(['ARTIST 1'])
+	// …and closing neither navigated (the same timetable is mounted) nor
+	// fetched the concerts again.
+	await expect(page.locator('timetable-route[data-mark="kept"]')).toHaveCount(1)
+	expect(lists.length).toBe(listsBeforeClose)
 
 	// …so a reload shows the same filtered timetable.
 	await page.reload()

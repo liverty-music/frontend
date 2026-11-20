@@ -205,6 +205,7 @@ test(`@spec ${EVENT_SPEC} "Fan already holds another seat type" — buys 2 A席 
 		.getByTestId('event-stock')
 		.filter({ has: page.getByText('A席', { exact: true }) })
 	await aRow.getByTestId('event-buy').click()
+	// @spec components/infrastructure/fan/web/route/checkout "Opening checkout from the concert page"
 	await expect(page).toHaveURL(`/concerts/${eventId}/checkout?stock=${aStock}`)
 	await expect(page.getByTestId('checkout-seat-type')).toHaveText('A席', {
 		timeout: 30_000,
@@ -331,6 +332,7 @@ test(`@spec ${STORY_SPEC} "Second entry into the same sale" — a two-date lotte
 		await page.goto(`/concerts/${eventId}`)
 		expect(await offeredSeatTypes(page, 'event-enter')).toEqual(['S席'])
 		await page.getByTestId('event-enter').click()
+		// @spec components/infrastructure/fan/web/route/new-lottery-entry "Opening the entry form"
 		await expect(page).toHaveURL(
 			`/concerts/${eventId}/lottery-entries/new?sale=${saleId}&stock=${stocks[eventId]}`,
 		)

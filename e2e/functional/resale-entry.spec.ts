@@ -165,6 +165,10 @@ test(`@spec ${ENTRY_SPEC} "Applying for two tickets" and @spec ${EVENT_SPEC} "Al
 	await expect(resale).toBeVisible({ timeout: 30_000 })
 	await expect(resale).toContainText('公式リセール')
 	await page.getByTestId('event-resale-apply').click()
+	// @spec components/infrastructure/fan/web/route/new-resale-entry "Opening the application"
+	await expect(page).toHaveURL(
+		new RegExp(`/concerts/${EVENT_ID}/resale-entries/new\\?stock=[^&]+$`),
+	)
 
 	// Apply for 2 S席.
 	await expect(page.getByTestId('resale-entry-count')).toBeVisible()

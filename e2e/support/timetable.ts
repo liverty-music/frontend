@@ -26,7 +26,8 @@ export const dateKey = (offset: number) => {
 /** A concert every other day for 100 days: four months of dates. */
 export const OFFSETS = Array.from({ length: 50 }, (_, i) => 1 + i * 2)
 
-function groups() {
+/** The groups; with `firstParty`, every concert's Series has an Organizer. */
+function groups(firstParty = false) {
 	return OFFSETS.map((day) => ({
 		date: localDate(day),
 		home: [
@@ -39,7 +40,13 @@ function groups() {
 						mbid: { value: '' },
 					},
 				],
-				series: { id: { value: fakeId(`s-${day}`) }, title: { value: 'Live' } },
+				series: {
+					id: { value: fakeId(`s-${day}`) },
+					title: { value: 'Live' },
+					...(firstParty
+						? { organizerId: { value: fakeId('organizer') } }
+						: {}),
+				},
 				localDate: localDate(day),
 				venue: { name: { value: 'Zepp' }, adminArea: { value: 'JP-13' } },
 				sourceUrl: { value: 'https://example.com' },
@@ -50,7 +57,10 @@ function groups() {
 	}))
 }
 
-export async function openTimetable(page: Page): Promise<void> {
+export async function openTimetable(
+	page: Page,
+	{ firstParty = false }: { firstParty?: boolean } = {},
+): Promise<void> {
 	await page.addInitScript((artist) => {
 		localStorage.setItem('onboardingComplete', 'true')
 		localStorage.setItem('onboarding.celebrationShown', '1')
@@ -62,7 +72,7 @@ export async function openTimetable(page: Page): Promise<void> {
 			]),
 		)
 	}, ARTIST)
-	const body = JSON.stringify(concertWire({ groups: groups() }))
+	const body = JSON.stringify(concertWire({ groups: groups(firstParty) }))
 	await page.route('**/liverty_music.rpc.**', (route) => {
 		const url = route.request().url()
 		const listed =
