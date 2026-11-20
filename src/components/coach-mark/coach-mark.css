@@ -19,15 +19,21 @@
 		inset: 0;
 	}
 
+	/* Both cover the target, their default anchor: scroll compensation
+	   applies only to it, so the two follow the target as the page scrolls. */
+	.visual-spotlight,
+	.target-interceptor {
+		position: fixed;
+		inset: calc(anchor(top) + var(--coach-spotlight-outset))
+			calc(anchor(right) + var(--coach-spotlight-outset))
+			calc(anchor(bottom) + var(--coach-spotlight-outset))
+			calc(anchor(left) + var(--coach-spotlight-outset));
+		position-anchor: --coach-target;
+	}
+
 	/* Visual layer: box-shadow creates dark overlay with rounded cutout */
 	.visual-spotlight {
 		pointer-events: none;
-
-		position: fixed;
-		inset: calc(anchor(--coach-target top) + var(--coach-spotlight-outset))
-			calc(anchor(--coach-target right) + var(--coach-spotlight-outset))
-			calc(anchor(--coach-target bottom) + var(--coach-spotlight-outset))
-			calc(anchor(--coach-target left) + var(--coach-spotlight-outset));
 
 		border: 2px solid var(--color-brand-accent);
 		/* stylelint-disable-next-line declaration-property-custom-property-allowed-list -- the public hook a screen sets for its step's target shape (coach-mark "Spotlight shape adapts per step"); 12px is the Material 3 medium corner */
@@ -44,16 +50,10 @@
 	   light-dismissed by the document pointerdown listener. */
 	.target-interceptor {
 		pointer-events: auto;
-		position: fixed;
-		inset: calc(anchor(--coach-target top) + var(--coach-spotlight-outset))
-			calc(anchor(--coach-target right) + var(--coach-spotlight-outset))
-			calc(anchor(--coach-target bottom) + var(--coach-spotlight-outset))
-			calc(anchor(--coach-target left) + var(--coach-spotlight-outset));
 		background-color: transparent;
 	}
 
-	/* Tooltip positioned via Anchor Positioning with @position-try fallbacks.
-	   Matches proven pattern from 0d7d6cf: fixed + block-end + flip-block. */
+	/* Tooltip below the target, flipped above when there is no room. */
 	.coach-mark-tooltip {
 		pointer-events: none;
 
