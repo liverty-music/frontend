@@ -12,7 +12,7 @@ test.use({ locale: 'ja-JP', viewport: { width: 390, height: 844 } })
 /**
  * A fan picks one seat type (席種) of an event against a mocked backend and a
  * stand-in for Stripe.js (OpenSpec change `remodel-ticket-sales`, task 9.2):
- * the event page lists each stock of the event from
+ * the concert page lists each stock of the event from
  * TicketSaleService.ListByEvent, and once the fan holds tickets of one seat
  * type it offers only that one. A lottery sale of two dates takes one entry
  * per date.
@@ -327,7 +327,7 @@ test(`@spec ${STORY_SPEC} "Second entry into the same sale" — a two-date lotte
 		}),
 	})
 
-	/** Enter the lottery for 2 tickets of the date's S席 from its event page. */
+	/** Enter the lottery for 2 tickets of the date's S席 from its concert page. */
 	async function enter(eventId: string): Promise<void> {
 		await page.goto(`/concerts/${eventId}`)
 		expect(await offeredSeatTypes(page, 'event-enter')).toEqual(['S席'])

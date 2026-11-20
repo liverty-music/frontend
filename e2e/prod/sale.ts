@@ -59,7 +59,7 @@ export interface FanTickets {
 	perAccountLimit?: number
 }
 
-/** The stock a run buys from, with its seat type's name for the event page. */
+/** The stock a run buys from, with its seat type's name for the concert page. */
 export interface SaleStock {
 	id: string
 	seatTypeName: string

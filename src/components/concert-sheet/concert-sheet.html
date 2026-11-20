@@ -157,7 +157,7 @@
            simply flips to a static "Following" state. -->
       <section
         as-element="concert-follow-cta"
-        if.bind="isAllNearby && event.artist"
+        if.bind="isConcertsView && event.artist"
         class="sheet-follow"
         data-testid="discovery-concerts-follow"
         followed.bind="isFollowed"

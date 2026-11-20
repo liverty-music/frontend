@@ -87,7 +87,7 @@ test('@spec components/infrastructure/fan/web/route/concert "Code survives sign-
 
 	await page.getByTestId('event-signup').click()
 
-	// Back on the Event page, signed in, without the query.
+	// Back on the concert page, signed in, without the query.
 	await expect(page).toHaveURL(new RegExp(`/concerts/${EVENT_ID}$`), {
 		timeout: 20_000,
 	})

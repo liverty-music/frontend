@@ -319,7 +319,7 @@ describe('SignInCallbackRoute', () => {
 			})
 		})
 
-		describe('sign-up started on an Event page', () => {
+		describe('sign-up started on a concert page', () => {
 			function concertPageUser(returnTo: string) {
 				return {
 					profile: { email: 'new@example.com' },
@@ -327,7 +327,7 @@ describe('SignInCallbackRoute', () => {
 				}
 			}
 
-			it('returns to the event page with onboarding complete and follows migrated, without arming the post-signup surfaces', async () => {
+			it('returns to the concert page with onboarding complete and follows migrated, without arming the post-signup surfaces', async () => {
 				// @spec components/infrastructure/fan/web/route/concert "Guest signs up to buy"
 				// @spec stories/sign-up-or-sign-in "Sign-up from the concert page without a home"
 				// @spec components/infrastructure/fan/web/global/post-signup-dialog "Guest signs up while buying"
@@ -344,7 +344,7 @@ describe('SignInCallbackRoute', () => {
 
 				// The guest chose no home: the account is created without one
 				// (ensureLoaded's Create) and the callback goes straight back to the
-				// event page; the Timetable and My Artists ask for the home later.
+				// concert page; the Timetable and My Artists ask for the home later.
 				expect(mockUserService.ensureLoaded).toHaveBeenCalledWith('ja')
 				expect(mockUserService.create).not.toHaveBeenCalled()
 				expect(result).toBe('/concerts/ev-1')

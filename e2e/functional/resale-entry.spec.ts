@@ -12,7 +12,7 @@ test.use({ locale: 'ja-JP', viewport: { width: 390, height: 844 } })
 /**
  * Official resale by lottery against a mocked ResaleEntryService and a
  * stand-in for Stripe.js: a fan applies for a sold-out seat type from the
- * event page, sees the application on the event page, and follows and
+ * concert page, sees the application on the concert page, and follows and
  * withdraws their entries on the entries screen.
  */
 
@@ -193,7 +193,7 @@ test(`@spec ${ENTRY_SPEC} "Applying for two tickets" and @spec ${EVENT_SPEC} "Al
 		),
 	).toEqual([2])
 
-	// Back on the event page, the action reads 申し込み済み.
+	// Back on the concert page, the action reads 申し込み済み.
 	await page.goto(`/concerts/${EVENT_ID}`)
 	await expect(page.getByTestId('event-resale-applied')).toHaveText(
 		'申し込み済み',

@@ -207,7 +207,7 @@ export type ConcertCalendarAddedProps = {
 	surface: 'detail_sheet' | 'concert_page'
 }
 
-/** The fan used the Event page's share control. */
+/** The fan used the concert page's share control. */
 export type ConcertSharedProps = {
 	event_id: string
 	method: 'share_sheet' | 'copy_link'

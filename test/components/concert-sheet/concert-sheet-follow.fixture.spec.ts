@@ -74,7 +74,7 @@ interface Options {
  * Nearby or the My Timetable context. The follow store is the fan's follow
  * set; `follow` adds to it, as FollowService.Follow does through the store.
  */
-async function render(ev: Concert, isAllNearby: boolean, o: Options = {}) {
+async function render(ev: Concert, isConcertsView: boolean, o: Options = {}) {
 	const followedIds = new Set<string>(o.followed ?? [])
 	const followStore = {
 		followedIds,
@@ -125,8 +125,8 @@ async function render(ev: Concert, isAllNearby: boolean, o: Options = {}) {
 	// the timetable opens it without.
 	fixture.component.sheet.open(
 		ev,
-		isAllNearby ? 'discovery_concerts' : 'timetable',
-		isAllNearby,
+		isConcertsView ? 'discovery_concerts' : 'timetable',
+		isConcertsView,
 	)
 	await tasksSettled()
 	const button = () =>

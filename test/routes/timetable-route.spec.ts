@@ -718,7 +718,7 @@ describe('TimetableRoute', () => {
 			expect(mockRouter.load).not.toHaveBeenCalled()
 		})
 
-		it('navigates to the event page for a first-party concert', () => {
+		it('navigates to the concert page for a first-party concert', () => {
 			// @spec components/infrastructure/fan/web/route/timetable "First-party concert opens its concert page"
 			const open = vi.fn()
 			sut.detailSheet = { open } as unknown as typeof sut.detailSheet

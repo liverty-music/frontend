@@ -9,7 +9,7 @@
 
 	<section class="[ resale-entry-panel card ] [ flow wrapper ]" if.bind="step === 'not-found'" data-testid="resale-entry-not-found">
 		<p class="[ resale-entry-lead ] [ md-typescale-body-medium ]" t="newResaleEntry.notFound"></p>
-		<a href="/concerts/${event.id}" if.bind="event" class="text-link" data-variant="standalone" t="newResaleEntry.backToEvent"></a>
+		<a href="/concerts/${event.id}" if.bind="event" class="text-link" data-variant="standalone" t="newResaleEntry.backToConcert"></a>
 	</section>
 
 	<section class="[ resale-entry-panel card ] [ flow wrapper ]" if.bind="step === 'error'" data-testid="resale-entry-error">
@@ -36,7 +36,7 @@
 
 	<section class="[ resale-entry-panel card ] [ flow wrapper ]" if.bind="step === 'closed'" data-testid="resale-entry-closed">
 		<p class="[ resale-entry-lead ] [ md-typescale-body-medium ]" t="newResaleEntry.closed"></p>
-		<a href="/concerts/${event.id}" if.bind="event" class="text-link" data-variant="standalone" t="newResaleEntry.backToEvent"></a>
+		<a href="/concerts/${event.id}" if.bind="event" class="text-link" data-variant="standalone" t="newResaleEntry.backToConcert"></a>
 	</section>
 
 	<!-- The fan's entry already waits for a draw: no second application -->
@@ -50,12 +50,12 @@
 	<!-- One seat type per account and event -->
 	<section class="[ resale-entry-panel card ] [ flow wrapper ]" if.bind="step === 'other-seat-type'" data-testid="resale-entry-other-seat-type">
 		<p class="[ resale-entry-lead ] [ md-typescale-body-medium ]" t="newResaleEntry.otherSeatType" t-params.bind="{ seatType: otherSeatTypeName }"></p>
-		<a href="/concerts/${event.id}" if.bind="event" class="text-link" data-variant="standalone" t="newResaleEntry.backToEvent"></a>
+		<a href="/concerts/${event.id}" if.bind="event" class="text-link" data-variant="standalone" t="newResaleEntry.backToConcert"></a>
 	</section>
 
 	<section class="[ resale-entry-panel card ] [ flow wrapper ]" if.bind="step === 'limit'" data-testid="resale-entry-limit">
 		<p class="[ resale-entry-lead ] [ md-typescale-body-medium ]" t="newResaleEntry.count.limit" t-params.bind="{ limit: perAccountLimit }"></p>
-		<a href="/concerts/${event.id}" if.bind="event" class="text-link" data-variant="standalone" t="newResaleEntry.backToEvent"></a>
+		<a href="/concerts/${event.id}" if.bind="event" class="text-link" data-variant="standalone" t="newResaleEntry.backToConcert"></a>
 	</section>
 
 	<!-- Step 1: ticket count -->
@@ -202,7 +202,7 @@
 		<p class="[ resale-entry-lead ] [ md-typescale-body-medium ]" role="alert" data-testid="resale-entry-message" t.bind="message.key" t-params.bind="message.params"></p>
 		<p class="[ resale-entry-lead ] [ md-typescale-body-medium ]" t="newResaleEntry.refused.notCharged"></p>
 		<button type="button" class="[ button resale-entry-action ] [ state-layer ]" click.trigger="tryAgain()" data-testid="resale-entry-try-again" t="newResaleEntry.refused.tryAgain"></button>
-		<a href="/concerts/${event.id}" if.bind="event" class="text-link" data-variant="standalone" t="newResaleEntry.backToEvent"></a>
+		<a href="/concerts/${event.id}" if.bind="event" class="text-link" data-variant="standalone" t="newResaleEntry.backToConcert"></a>
 	</section>
 
 	<!-- The entry was made (Confirm succeeded) -->

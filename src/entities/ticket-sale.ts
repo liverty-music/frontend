@@ -97,7 +97,7 @@ export function hasEnded(sale: TicketSale, now: Date): boolean {
 }
 
 /**
- * The sale an event page shows: the one whose window is open, otherwise the
+ * The sale a concert page shows: the one whose window is open, otherwise the
  * next to open, otherwise the last that ended. Sales of one event never
  * overlap, so at most one is open. Null when the event has no sale.
  */

@@ -287,7 +287,7 @@ describe('AuthService', () => {
 		})
 	})
 
-	it('signUp from an Event page carries its origin and return path in the OIDC state', async () => {
+	it('signUp from a concert page carries its origin and return path in the OIDC state', async () => {
 		await sut.signUp({ origin: 'concert-page', returnTo: '/concerts/ev-1' })
 		expect(userManagerMock.signinRedirect).toHaveBeenCalledWith({
 			prompt: 'create',

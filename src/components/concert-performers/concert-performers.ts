@@ -7,7 +7,7 @@ export interface Performer {
 }
 
 /**
- * The performers of an Event page, each with the button that follows or
+ * The performers of a concert page, each with the button that follows or
  * unfollows the artist. A press dispatches `follow-toggle` with the performer
  * object it was given; the page does the follow.
  */

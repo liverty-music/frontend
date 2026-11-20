@@ -69,7 +69,7 @@ export class ConcertRpcClient {
 	)
 
 	/**
-	 * The concert of one event for its public event page. Rejects with a
+	 * The concert of one event for its public concert page. Rejects with a
 	 * ConnectError of Code.NotFound when the event has no page (unknown id,
 	 * discovered, draft or unlisted series), the same for every reason.
 	 */
@@ -97,7 +97,7 @@ export class ConcertRpcClient {
 	}
 
 	/**
-	 * The concerts of one series that has an event page, ordered by date and
+	 * The concerts of one series that has a concert page, ordered by date and
 	 * start time. Rejects with Code.NotFound like {@link get}.
 	 */
 	public async listBySeries(

@@ -767,7 +767,7 @@ describe('NewLotteryEntryRoute', () => {
 	describe('referral code', () => {
 		const DAY = 24 * 60 * 60 * 1000
 
-		/** Keep a code the way the Event page does, `daysAgo` days before now. */
+		/** Keep a code the way the concert page does, `daysAgo` days before now. */
 		function keptCode(code: string, seriesId: string, daysAgo: number): void {
 			localStorage.setItem(
 				'referral',

@@ -1,7 +1,7 @@
 import { bindable } from 'aurelia'
 
 /**
- * The cover of an Event page: the event's image at 16:9, or the brand
+ * The cover of a concert page: the event's image at 16:9, or the brand
  * placeholder when it has none. Decorative; the title names the event.
  */
 export class ConcertCover {

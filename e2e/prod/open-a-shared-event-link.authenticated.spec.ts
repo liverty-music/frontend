@@ -19,7 +19,7 @@ test.describe('open a shared event link (signed in)', () => {
 		}
 	})
 
-	test('keeps a follow made on the event page on the account', async ({
+	test('keeps a follow made on the concert page on the account', async ({
 		page,
 	}) => {
 		test.skip(!EVENTS.public, 'E2E_EVENT_PUBLIC_ID is required')
@@ -56,7 +56,7 @@ test.describe('open a shared event link (signed in)', () => {
 		)
 	})
 
-	test('returns a guest who follows and signs up to the same event page', async ({
+	test('returns a guest who follows and signs up to the same concert page', async ({
 		browser,
 		baseURL,
 	}) => {
@@ -107,7 +107,7 @@ test.describe('open a shared event link (signed in)', () => {
 			'aria-pressed',
 			'true',
 		)
-		// No post-signup celebration or dialog on the event page.
+		// No post-signup celebration or dialog on the concert page.
 		await expect(page.locator('post-signup-dialog dialog[open]')).toHaveCount(0)
 		await context.close()
 	})

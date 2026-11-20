@@ -34,12 +34,12 @@ import {
  * Story `resell-a-ticket` on PRODUCTION in Stripe test mode: a ticket of a
  * sold-out seat type is listed. Buying a listed ticket arrives with the change
  * `resell-tickets-by-lottery`; until then no fan can buy one, and this spec
- * checks that the event page offers no purchase.
+ * checks that the concert page offers no purchase.
  *
  * The listing fan is the prod E2E test user (`.auth/storageState.prod.json`);
  * a second fan (`.auth/storageState.prod.fan2.json`, from `E2E_USERNAME=…
  * E2E_STATE_FILE=storageState.prod.fan2.json npm run
- * auth:capture:password:prod`) looks at the event page.
+ * auth:capture:password:prod`) looks at the concert page.
  *
  * Needs a published Event of the test Organizer with a start time more than
  * a day away, by id in `E2E_RESALE_EVENT_ID`, on which neither fan holds
@@ -54,7 +54,7 @@ import {
  * rerun picks that stock up) (docs/prod-e2e-fixtures.md).
  *
  * The tests run in order and share the stock:
- *   1. Sold out with resale open: the event page shows 公式リセール, no action.
+ *   1. Sold out with resale open: the concert page shows 公式リセール, no action.
  *   2. The listing fan lists ticket 1 (5,000円 / 手数料 500円 / 返金 4,500円);
  *      ResaleListingService.List shows it Listed at 5000 yen and both
  *      Tickets stay Issued and not admitted.
