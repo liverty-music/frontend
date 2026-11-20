@@ -4,7 +4,7 @@
  * the returned result to console output + exit code.
  *
  * Run via `npm run verify:build-templates` (wired into the Dockerfile
- * RUN that follows `npm run build`, and the post-deploy CI workflow).
+ * RUN that follows `npm run build`, and the `prod-build` job of PR CI).
  */
 
 import { argv, exit } from 'node:process'

@@ -273,6 +273,13 @@ jobs:
       - name: Run production-build checks
         run: npm run test:prod-build
 
+      # The step above leaves the production bundle in `dist/` (its webServer
+      # runs `npm run build`, as the Dockerfile does). Check that every route
+      # chunk still holds its template marker here, on the PR, and not first in
+      # the image build after the merge.
+      - name: Verify build templates
+        run: npm run verify:build-templates
+
       # PWA / service-worker specs run from their own config against a
       # production build (`vite preview`). vite-plugin-pwa disables the service
       # worker in dev, so running these against the dev server verifies

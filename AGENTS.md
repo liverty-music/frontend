@@ -165,16 +165,15 @@ separate worktree) and on the branch, then `npm run compare-layout -- <before> <
 are blocked while recording so text widths match. Re-run a test whose difference looks like an
 animation frame before treating it as a change (`e2e/support/layout-record.ts`).
 
-## Build-time-only guards (run locally before release)
-
-Some correctness checks run ONLY inside the Docker image build (`push-image.yaml`), not in `make check`
-or PR CI, so they surface at deploy time if missed:
+## Build template guard
 
 - `verify:build-templates` (`scripts/verify-build-templates.ts`) — asserts each route chunk still contains
   a template-derived marker (see `scripts/verify-build-templates.lib.ts` `ROUTE_MARKERS`), guarding against
-  template stripping. **If you change a route's template structure (remove/rename a marker class/element),
-  run `npm run build && npm run verify:build-templates` locally and update `ROUTE_MARKERS` if needed** — do
-  not discover it at deploy. (A dashboard `loading-text` removal once broke the prod image build this way.)
+  template stripping. It runs in PR CI (the `prod-build` job, on the bundle `test:prod-build` built) and
+  again in the Docker image build, not in `make check`. **If you change a route's template structure
+  (remove/rename a marker class/element), update `ROUTE_MARKERS`**; `npm run build && npm run
+  verify:build-templates` checks it locally. (A dashboard `loading-text` removal once broke the prod image
+  build this way, before the check ran on PRs.)
 
 ## Organizer console guide (keep it in step)
 
