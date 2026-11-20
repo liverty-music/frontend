@@ -163,7 +163,7 @@ describe('FollowStore', () => {
 	}
 
 	describe('follow — cache invalidation', () => {
-		// @spec components/infrastructure/fan/web/route/dashboard "Cache invalidated after follow"
+		// @spec components/infrastructure/fan/web/route/timetable "Cache invalidated after follow"
 		it('calls invalidateFollowerCache on successful follow', async () => {
 			mockRpcClient.follow.mockResolvedValueOnce(undefined)
 			const artist = makeArtist('a1', 'Artist One')
@@ -173,7 +173,7 @@ describe('FollowStore', () => {
 			expect(mockConcertStore.invalidateFollowerCache).toHaveBeenCalledOnce()
 		})
 
-		// @spec components/infrastructure/fan/web/route/dashboard "Cache not invalidated on follow RPC failure"
+		// @spec components/infrastructure/fan/web/route/timetable "Cache not invalidated on follow RPC failure"
 		it('does NOT call invalidateFollowerCache when follow RPC fails', async () => {
 			mockRpcClient.follow.mockRejectedValueOnce(new Error('network error'))
 			const artist = makeArtist('a1', 'Artist One')
@@ -268,7 +268,7 @@ describe('FollowStore', () => {
 	})
 
 	describe('getFollowedArtistMap — always issues RPC (hype data not cached)', () => {
-		// @spec components/infrastructure/fan/web/route/dashboard "Follow state not yet loaded"
+		// @spec components/infrastructure/fan/web/route/timetable "Follow state not yet loaded"
 		it('calls FollowService.List RPC when followedArtists is empty', async () => {
 			mockRpcClient.list.mockResolvedValueOnce([
 				makeFollowedArtist('a1', 'Artist One'),
@@ -279,7 +279,7 @@ describe('FollowStore', () => {
 			expect(mockRpcClient.list).toHaveBeenCalledTimes(1)
 		})
 
-		// @spec components/infrastructure/fan/web/route/dashboard "Follow state already in memory"
+		// @spec components/infrastructure/fan/web/route/timetable "Follow state already in memory"
 		it('calls FollowService.List RPC on each call (hype data lives in RPC response)', async () => {
 			mockRpcClient.list.mockResolvedValue([
 				makeFollowedArtist('a1', 'Artist One'),

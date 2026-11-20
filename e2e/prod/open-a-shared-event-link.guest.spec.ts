@@ -18,7 +18,7 @@ test.describe('open a shared event link (guest)', () => {
 		const venue =
 			concert.listedVenueName?.value || concert.venue?.name?.value || ''
 
-		await page.goto(`/events/${EVENTS.public}`)
+		await page.goto(`/concerts/${EVENTS.public}`)
 
 		await expect(page.getByTestId('event-title')).toHaveText(title)
 		for (const name of names) {
@@ -27,11 +27,11 @@ test.describe('open a shared event link (guest)', () => {
 		await expect(page.getByTestId('event-date')).not.toBeEmpty()
 		await expect(page.getByTestId('event-venue')).toHaveText(venue)
 		// No sign-in is requested to see the event.
-		await expect(page).toHaveURL(new RegExp(`/events/${EVENTS.public}$`))
+		await expect(page).toHaveURL(new RegExp(`/concerts/${EVENTS.public}$`))
 
 		// The served HTML carries the event's preview before any script runs.
 		const html = await (
-			await request.get(`/events/${EVENTS.public}?ref=e2e`)
+			await request.get(`/concerts/${EVENTS.public}?ref=e2e`)
 		).text()
 		expect(firstMeta(html, 'og:title')).toContain(title)
 		// The page shows the venue as listed; the preview names the Venue itself
@@ -40,7 +40,7 @@ test.describe('open a shared event link (guest)', () => {
 			concert.venue?.name?.value ?? '',
 		)
 		expect(firstMeta(html, 'og:url')).toBe(
-			new URL(`/events/${EVENTS.public}`, page.url()).toString(),
+			new URL(`/concerts/${EVENTS.public}`, page.url()).toString(),
 		)
 	})
 
@@ -51,10 +51,12 @@ test.describe('open a shared event link (guest)', () => {
 		// @spec stories/open-a-shared-event-link "Unlisted series"
 		test.skip(!EVENTS.unlisted, 'E2E_EVENT_UNLISTED_ID is required')
 
-		await page.goto(`/events/${EVENTS.unlisted}`)
+		await page.goto(`/concerts/${EVENTS.unlisted}`)
 
 		await expect(page.getByTestId('event-not-found')).toBeVisible()
-		const html = await (await request.get(`/events/${EVENTS.unlisted}`)).text()
+		const html = await (
+			await request.get(`/concerts/${EVENTS.unlisted}`)
+		).text()
 		expect(firstMeta(html, 'og:title')).toBe('Liverty Music')
 	})
 
@@ -63,14 +65,14 @@ test.describe('open a shared event link (guest)', () => {
 		request,
 	}) => {
 		// @spec stories/open-a-shared-event-link "Follower taps the notification"
-		// NotifyNewConcerts links a first-party concert to /events/<earliest id>
+		// NotifyNewConcerts links a first-party concert to /concerts/<earliest id>
 		// (backend unit test "First-party concert links to its event page");
 		// the service worker opens that URL unchanged. Assert the URL it builds
 		// opens the earliest Event's page.
 		test.skip(!EVENTS.public, 'E2E_EVENT_PUBLIC_ID is required')
 		const concert = await getConcert(request, EVENTS.public)
 		const [earliest] = await listBySeries(request, concert.series.id.value)
-		const deepLink = `/events/${earliest.id.value}`
+		const deepLink = `/concerts/${earliest.id.value}`
 
 		await page.goto(deepLink)
 
@@ -84,7 +86,7 @@ test.describe('open a shared event link (guest)', () => {
 		// @spec stories/open-a-shared-event-link "Link opened after cancellation"
 		test.skip(!EVENTS.cancelled, 'E2E_EVENT_CANCELLED_ID is required')
 
-		await page.goto(`/events/${EVENTS.cancelled}`)
+		await page.goto(`/concerts/${EVENTS.cancelled}`)
 
 		await expect(page.getByTestId('event-cancelled')).toBeVisible()
 		await expect(page.getByTestId('event-signup')).toHaveCount(0)

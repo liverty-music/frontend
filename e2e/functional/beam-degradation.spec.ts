@@ -92,7 +92,7 @@ function dropTypedAttr(page: Page) {
 	})
 }
 
-// @spec components/infrastructure/fan/web/global/live-highway "Beams are absent where unsupported, with nothing else affected"
+// @spec components/infrastructure/fan/web/global/timetable-grid "Beams are absent where unsupported, with nothing else affected"
 test('beams are absent without typed attr(), and nothing else changes', async ({
 	page,
 }) => {
@@ -116,7 +116,7 @@ test('beams are absent without typed attr(), and nothing else changes', async ({
 		)
 	})
 	await mockRpc(page)
-	await page.goto(`/dashboard`)
+	await page.goto(`/timetable`)
 	await page.locator('[data-live-card]').first().waitFor({ timeout: 10000 })
 
 	// The browser without typed attr(): the rule is gone, and only that rule.
@@ -124,14 +124,14 @@ test('beams are absent without typed attr(), and nothing else changes', async ({
 
 	const snapshot = () =>
 		page.evaluate(() => ({
-			groups: document.querySelectorAll('concert-highway .date-group').length,
+			groups: document.querySelectorAll('timetable-grid .date-group').length,
 			cards: document.querySelectorAll('[data-live-card]').length,
 		}))
 	const off = await snapshot()
 
 	// The toggle is still offered and still persists the preference.
-	await page.click('fab-menu .fab-toggle')
-	const beamItem = page.locator('fab-menu .fab-item[data-action-id="beam"]')
+	await page.click('action-menu .action-menu-toggle')
+	const beamItem = page.locator('action-menu .fab-item[data-action-id="beam"]')
 	await expect(beamItem).toBeVisible()
 	await beamItem.click()
 	await expect
@@ -155,14 +155,12 @@ test('beams are absent without typed attr(), and nothing else changes', async ({
 	// first.
 	expect(await snapshot()).toEqual(off)
 	await page.keyboard.press('Escape')
-	await expect(page.locator('fab-menu .fab-toggle')).toHaveAttribute(
+	await expect(page.locator('action-menu .action-menu-toggle')).toHaveAttribute(
 		'aria-expanded',
 		'false',
 	)
 	await page.locator('[data-live-card]').first().click()
 	await expect(
-		page
-			.locator('event-detail-sheet [role="dialog"], event-detail-sheet dialog')
-			.first(),
+		page.locator('concert-sheet [role="dialog"], concert-sheet dialog').first(),
 	).toBeVisible()
 })

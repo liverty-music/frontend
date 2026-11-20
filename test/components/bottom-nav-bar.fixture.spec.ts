@@ -16,26 +16,26 @@ const { stub } = vi.hoisted(() => ({
 vi.mock('../../src/routes/welcome/welcome-route', stub('WelcomeRoute'))
 vi.mock('../../src/routes/about/about-route', stub('AboutRoute'))
 vi.mock(
-	'../../src/routes/auth-callback/auth-callback-route',
-	stub('AuthCallbackRoute'),
+	'../../src/routes/sign-in-callback/sign-in-callback-route',
+	stub('SignInCallbackRoute'),
 )
-vi.mock('../../src/routes/dashboard/dashboard-route', stub('DashboardRoute'))
-vi.mock('../../src/routes/event/event-route', stub('EventRoute'))
+vi.mock('../../src/routes/timetable/timetable-route', stub('TimetableRoute'))
+vi.mock('../../src/routes/concert/concert-route', stub('ConcertRoute'))
 vi.mock('../../src/routes/discovery/discovery-route', stub('DiscoveryRoute'))
 vi.mock('../../src/routes/my-artists/my-artists-route', stub('MyArtistsRoute'))
 vi.mock('../../src/routes/settings/settings-route', stub('SettingsRoute'))
 vi.mock('../../src/routes/consent/consent-route', stub('ConsentRoute'))
 vi.mock(
-	'../../src/routes/verify-callback/verify-callback-route',
-	stub('VerifyCallbackRoute'),
+	'../../src/routes/identity-verification-callback/identity-verification-callback-route',
+	stub('IdentityVerificationCallbackRoute'),
 )
 vi.mock(
-	'../../src/routes/lottery-entry/lottery-entry-route',
-	stub('LotteryEntryRoute'),
+	'../../src/routes/new-lottery-entry/new-lottery-entry-route',
+	stub('NewLotteryEntryRoute'),
 )
 vi.mock(
-	'../../src/routes/lottery-entry-status/lottery-entry-status-route',
-	stub('LotteryEntryStatusRoute'),
+	'../../src/routes/lottery-entries/lottery-entries-route',
+	stub('LotteryEntriesRoute'),
 )
 vi.mock('../../src/routes/legal/terms-route', stub('TermsRoute'))
 vi.mock('../../src/routes/legal/privacy-route', stub('PrivacyRoute'))
@@ -98,42 +98,50 @@ describe('BottomNavBar (fixture, app route table)', () => {
 	// @spec components/infrastructure/fan/web/global/bottom-nav-bar "Navigation shown on post-onboarding routes"
 	it('renders the four tab routes in route-table order, without Settings', () => {
 		expect(tabs().map((t) => t.getAttribute('data-nav'))).toEqual([
-			'home',
+			'timetable',
 			'discovery',
 			'my-artists',
-			'ticket',
+			'tickets',
 		])
 	})
 
 	// @spec components/infrastructure/fan/web/global/bottom-nav-bar "Tab route displayed"
 	it.each([
-		['dashboard', 'home'],
+		['timetable', 'timetable'],
 		['discovery', 'discovery'],
 		['my-artists', 'my-artists'],
-		['tickets', 'ticket'],
-	])('highlights only the tab of %s', async (path, icon) => {
+		['tickets', 'tickets'],
+	])('highlights only the tab of %s', async (path, nav) => {
 		await go(path)
-		expect(activeTabs()).toEqual([icon])
+		expect(activeTabs()).toEqual([nav])
 	})
 
-	// @spec components/infrastructure/fan/web/global/bottom-nav-bar "Concert deep-link highlights Home"
-	it('highlights Home for a concert deep-link', async () => {
-		await go('concerts/abc-123')
-		expect(activeTabs()).toEqual(['home'])
-	})
-
-	// @spec components/infrastructure/fan/web/global/bottom-nav-bar "Event page highlights Home"
-	it('highlights Home for an event page', async () => {
+	// @spec components/infrastructure/fan/web/global/bottom-nav-bar "Concert deep-link highlights Timetable"
+	it('highlights Timetable for a concert deep-link', async () => {
 		await go('settings')
-		await go('events/019a0000-0000-7000-8000-0000000000e1')
-		expect(activeTabs()).toEqual(['home'])
+		await go('timetable?concert=abc-123')
+		expect(activeTabs()).toEqual(['timetable'])
+	})
+
+	// @spec components/infrastructure/fan/web/global/bottom-nav-bar "Concert page highlights Timetable"
+	it('highlights Timetable for a concert page', async () => {
+		await go('settings')
+		await go('concerts/019a0000-0000-7000-8000-0000000000e1')
+		expect(activeTabs()).toEqual(['timetable'])
+	})
+
+	// @spec components/infrastructure/fan/web/global/bottom-nav-bar "Timetable icon data attribute for coach mark targeting"
+	it('names each tab by its route in data-nav', () => {
+		const navs = tabs().map((t) => t.getAttribute('data-nav'))
+		expect(navs[0]).toBe('timetable')
+		expect(navs).toContain('my-artists')
 	})
 
 	// @spec components/infrastructure/fan/web/global/bottom-nav-bar "Route outside every tab"
 	it.each(['settings', 'orders/ord-1', 'legal/terms', 'about'])(
 		'highlights no tab on %s',
 		async (path) => {
-			await go('dashboard')
+			await go('timetable')
 			await go(path)
 			expect(tabs()).toHaveLength(4)
 			expect(activeTabs()).toEqual([])

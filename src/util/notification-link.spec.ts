@@ -9,9 +9,9 @@ const ORIGIN = 'https://app.example.com'
 
 describe('notificationTargetUrl', () => {
 	it('opens the link naming the notification', () => {
-		const url = notificationTargetUrl('/events/event-1', 'n-1', ORIGIN)
+		const url = notificationTargetUrl('/concerts/event-1', 'n-1', ORIGIN)
 
-		expect(url.pathname).toBe('/events/event-1')
+		expect(url.pathname).toBe('/concerts/event-1')
 		expect(url.searchParams.get(NOTIFICATION_QUERY_PARAM)).toBe('n-1')
 	})
 
@@ -28,15 +28,15 @@ describe('notificationTargetUrl', () => {
 
 describe('isSamePage', () => {
 	it('matches an open page whatever notification the link names', () => {
-		const open = new URL(`${ORIGIN}/events/event-1`)
-		const target = notificationTargetUrl('/events/event-1', 'n-1', ORIGIN)
+		const open = new URL(`${ORIGIN}/concerts/event-1`)
+		const target = notificationTargetUrl('/concerts/event-1', 'n-1', ORIGIN)
 
 		expect(isSamePage(open, target)).toBe(true)
 	})
 
 	it('tells different pages apart', () => {
 		const open = new URL(`${ORIGIN}/tickets`)
-		const target = notificationTargetUrl('/events/event-1', 'n-1', ORIGIN)
+		const target = notificationTargetUrl('/concerts/event-1', 'n-1', ORIGIN)
 
 		expect(isSamePage(open, target)).toBe(false)
 	})

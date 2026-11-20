@@ -23,17 +23,17 @@ export interface RouteMarker {
 export const ROUTE_MARKERS: readonly RouteMarker[] = [
 	{ route: 'welcome', marker: 'welcome-ambient' },
 	{ route: 'about', marker: 'about-title' },
-	{ route: 'auth-callback', marker: 'callback-loading' },
-	{ route: 'dashboard', marker: 'dashboard-empty-subtitle' },
+	{ route: 'sign-in-callback', marker: 'callback-loading' },
+	{ route: 'timetable', marker: 'timetable-empty-subtitle' },
 	{ route: 'discovery', marker: 'bubble-area' },
 	{ route: 'my-artists', marker: 'empty-subtitle' },
 	{ route: 'not-found', marker: 'not-found-code' },
 	{ route: 'settings', marker: 'settings-section-title' },
 	{ route: 'tickets', marker: 'tickets-card' },
 	{ route: 'order', marker: 'order-ticket-card' },
-	{ route: 'event', marker: 'event-sale-name' },
+	{ route: 'concert', marker: 'event-sale-name' },
 	{ route: 'checkout', marker: 'checkout-seat-type' },
-	{ route: 'passkey-recovery', marker: 'passkey-recovery-lead' },
+	{ route: 'sign-in-help', marker: 'sign-in-help-lead' },
 	{ route: 'verify-email', marker: 'verify-email-lead' },
 	{ route: 'passkeys', marker: 'passkeys-lead' },
 	{ route: 'passkeys-callback', marker: 'passkeys-callback-loading' },
@@ -43,7 +43,7 @@ export const ROUTE_MARKERS: readonly RouteMarker[] = [
 
 /**
  * The Caddy `templates` placeholder in `index.html` that pulls an Event
- * page's link-preview tags from fan-api (OpenSpec change `public-event-page`,
+ * page's link-preview tags from fan-api (OpenSpec change `public-concert-page`,
  * design D4). A build that minifies HTML comments away would silently drop
  * every event preview, so the built `index.html` must still carry it verbatim.
  */

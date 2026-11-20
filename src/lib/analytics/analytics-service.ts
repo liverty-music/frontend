@@ -158,7 +158,7 @@ const PRE_INIT_QUEUE_LIMIT = 100
 /**
  * Hard cap on how long the browser may defer the init callback. Without a
  * timeout, `requestIdleCallback` MAY never fire on a permanently busy tab.
- * 2 seconds is roughly the LCP budget for the dashboard.
+ * 2 seconds is roughly the LCP budget for the timetable.
  */
 const INIT_IDLE_TIMEOUT_MS = 2_000
 
@@ -568,7 +568,7 @@ export class AnalyticsService implements IAnalyticsService {
 				// No address on the app's own origin leaves the device with its
 				// query or fragment: a referral code (`?ref=`) or a later link
 				// value stays on the platform (OpenSpec `referral-attribution`,
-				// design D11). An error report keeps the dashboard filter keys
+				// design D11). An error report keeps the timetable filter keys
 				// and has tokens redacted (OpenSpec `global/analytics`).
 				before_send: (event) => filterAnalyticsEvent(event, origin),
 				loaded: () => {

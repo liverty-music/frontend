@@ -99,11 +99,11 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 
 const APP_SHELL = 'components/infrastructure/fan/web/global/app-shell'
 
-/** A guest dashboard with the overflowing timetable from `proximityPayload`. */
-async function openDashboard(page: Page): Promise<void> {
+/** A guest timetable with the overflowing timetable from `proximityPayload`. */
+async function openTimetable(page: Page): Promise<void> {
 	await mockRpcRoutes(page)
 
-	// Seed a guest with a home region so the dashboard renders unblurred and
+	// Seed a guest with a home region so the timetable renders unblurred and
 	// the home selector does not open over the layout under test.
 	await page.addInitScript(() => {
 		localStorage.setItem('onboardingComplete', 'false')
@@ -124,8 +124,8 @@ async function openDashboard(page: Page): Promise<void> {
 		)
 	})
 
-	await page.goto('/dashboard')
-	await expect(page.locator('concert-highway')).toBeVisible({ timeout: 10_000 })
+	await page.goto('/timetable')
+	await expect(page.locator('timetable-grid')).toBeVisible({ timeout: 10_000 })
 	await expect(page.locator('[data-testid="concert-scroll"]')).toBeVisible({
 		timeout: 10_000,
 	})
@@ -138,7 +138,7 @@ test.describe('App shell scroll lock (guest)', () => {
 	test(`@spec ${APP_SHELL} "Bottom nav and header stay pinned after a pull-to-refresh gesture"`, async ({
 		page,
 	}) => {
-		await openDashboard(page)
+		await openTimetable(page)
 
 		// 1) The document root is locked: overflow hidden + overscroll-behavior none
 		//    on both html and body. This is the mechanism that neutralizes the
@@ -208,7 +208,7 @@ test.describe('App shell scroll lock (guest)', () => {
 	test(`@spec ${APP_SHELL} "Bottom nav stays at viewport bottom"`, async ({
 		page,
 	}) => {
-		await openDashboard(page)
+		await openTimetable(page)
 		const viewport = page.viewportSize()
 		expect(viewport).not.toBeNull()
 		if (!viewport) return
@@ -233,7 +233,7 @@ test.describe('App shell scroll lock (guest)', () => {
 			const scroll = document.querySelector(
 				'[data-testid="concert-scroll"]',
 			) as HTMLElement
-			const route = document.querySelector('dashboard-route') as HTMLElement
+			const route = document.querySelector('timetable-route') as HTMLElement
 			const tallerThanViewport: string[] = []
 			for (
 				let el = scroll.parentElement;
@@ -273,8 +273,8 @@ test.describe('App shell scroll lock (guest)', () => {
 	test(`@spec ${APP_SHELL} "Stage header stays fixed above scrollable content"`, async ({
 		page,
 	}) => {
-		await openDashboard(page)
-		const header = page.locator('concert-highway .stage-header')
+		await openTimetable(page)
+		const header = page.locator('timetable-grid .stage-header')
 		await expect(header).toBeVisible()
 		await expect(header).toContainText(/home/i)
 		await expect(header).toContainText(/near/i)
@@ -285,9 +285,7 @@ test.describe('App shell scroll lock (guest)', () => {
 		await page.evaluate(() =>
 			Promise.all(
 				document
-					.querySelector(
-						'concert-highway .date-group:not(.date-group-skeleton)',
-					)
+					.querySelector('timetable-grid .date-group:not(.date-group-skeleton)')
 					?.getAnimations({ subtree: true })
 					.filter((a) => (a as CSSAnimation).animationName === 'deal-in')
 					.map((a) => a.finished) ?? [],
@@ -295,7 +293,7 @@ test.describe('App shell scroll lock (guest)', () => {
 		)
 
 		const layout = await page.evaluate(() => {
-			const highway = document.querySelector('concert-highway') as HTMLElement
+			const highway = document.querySelector('timetable-grid') as HTMLElement
 			const head = highway.querySelector('.stage-header') as HTMLElement
 			const scroll = highway.querySelector(
 				'[data-testid="concert-scroll"]',
@@ -355,7 +353,7 @@ test.describe('App shell scroll lock (guest)', () => {
 	test(`@spec ${APP_SHELL} "Scroll container is properly constrained"`, async ({
 		page,
 	}) => {
-		await openDashboard(page)
+		await openTimetable(page)
 		const result = await page.evaluate(() => {
 			const scroll = document.querySelector(
 				'[data-testid="concert-scroll"]',

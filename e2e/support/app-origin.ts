@@ -4,7 +4,7 @@
  * `E2E_PORT=<port> npx playwright test` runs a worktree in isolation instead
  * of testing whatever server another worktree left on the default port.
  *
- * Specs navigate with relative URLs (`page.goto('/dashboard')`); use
+ * Specs navigate with relative URLs (`page.goto('/timetable')`); use
  * `APP_ORIGIN` only where no `baseURL` applies, such as a context made with
  * `browser.newContext()` or a match on a full URL.
  */

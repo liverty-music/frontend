@@ -7,11 +7,11 @@ import type { ResaleEntry } from '../../entities/resale-entry'
 import type { TicketStock } from '../../entities/ticket-sale'
 import { IUserStore } from '../../services/user-store'
 import {
-	type EventPageEvent,
+	type ConcertPageConcert,
 	eventFromConcert,
 	formatEventDate,
 	formatSaleStart,
-} from '../event/event-page'
+} from '../concert/concert-page'
 
 /**
  * - `loading`: the entries are read.
@@ -24,7 +24,7 @@ export type ResaleEntriesState = 'loading' | 'ready' | 'error'
 export interface ResaleEntryRow {
 	readonly entry: ResaleEntry
 	readonly stock: TicketStock | null
-	readonly event: EventPageEvent | null
+	readonly event: ConcertPageConcert | null
 }
 
 /**
@@ -84,7 +84,7 @@ export class ResaleEntriesRoute implements IRouteViewModel {
 		const eventIds = [
 			...new Set([...stocks.values()].map((s) => s.eventId).filter(Boolean)),
 		]
-		const events = new Map<string, EventPageEvent>()
+		const events = new Map<string, ConcertPageConcert>()
 		await Promise.all(
 			eventIds.map(async (id) => {
 				try {
@@ -137,7 +137,7 @@ export class ResaleEntriesRoute implements IRouteViewModel {
 
 	public applyUrl(row: ResaleEntryRow): string {
 		return row.stock
-			? `/events/${row.stock.eventId}/resale/${row.stock.id}`
+			? `/concerts/${row.stock.eventId}/resale-entries/new?stock=${row.stock.id}`
 			: '/resale-entries'
 	}
 

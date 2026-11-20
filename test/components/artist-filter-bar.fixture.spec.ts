@@ -21,7 +21,7 @@ const BottomSheetStub = CustomElement.define(
 )
 
 describe('ArtistFilterBar (fixture)', () => {
-	// @spec components/infrastructure/fan/web/route/dashboard "Empty upcoming timetable"
+	// @spec components/infrastructure/fan/web/route/timetable "Empty upcoming timetable"
 	it('keeps the "過去のコンサートも表示" affordance when the timetable has no concerts', async () => {
 		// An empty today-onward timetable yields no artist chips at all.
 		const fixture = await createFixture(

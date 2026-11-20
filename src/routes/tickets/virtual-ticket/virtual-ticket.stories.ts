@@ -4,8 +4,8 @@ import {
 	type StoryObj,
 } from '@aurelia/storybook'
 import { expect, waitFor } from 'storybook/test'
-import type { EventPageEvent } from '../../event/event-page'
-import type { WalletPersonalDetails, WalletTicket } from '../wallet-view'
+import type { ConcertPageConcert } from '../../concert/concert-page'
+import type { TicketView, WalletPersonalDetails } from '../ticket-view'
 import { AdmissionStamp, STAMP_ANIMATION } from './admission-stamp'
 import type { TicketPreset } from './ticket-presets'
 import { VirtualTicket } from './virtual-ticket'
@@ -49,7 +49,7 @@ function jst(hour: number, minute: number): Date {
 	return new Date(Date.UTC(2026, 10, 20, hour - 9, minute))
 }
 
-const EVENT: EventPageEvent = {
+const EVENT: ConcertPageConcert = {
 	id: 'event-1',
 	seriesId: 'series-1',
 	title: 'Autumn Tour 2026',
@@ -68,7 +68,7 @@ const EVENT: EventPageEvent = {
 	cancelled: false,
 }
 
-const NOT_ENTERED: WalletTicket = {
+const NOT_ENTERED: TicketView = {
 	id: 'ticket-1',
 	eventId: 'event-1',
 	orderId: 'order-1',
@@ -79,7 +79,7 @@ const NOT_ENTERED: WalletTicket = {
 	seatTypeName: 'S席',
 }
 
-const ENTERED: WalletTicket = {
+const ENTERED: TicketView = {
 	...NOT_ENTERED,
 	state: 'entered',
 	admitTime: jst(18, 2),
@@ -96,8 +96,8 @@ const ROOM =
 
 function ticketStory(
 	o: {
-		event?: EventPageEvent | null
-		ticket?: WalletTicket
+		event?: ConcertPageConcert | null
+		ticket?: TicketView
 		pressStamp?: boolean
 		replay?: boolean
 		preset?: TicketPreset
@@ -117,7 +117,7 @@ function ticketStory(
 			canReplay: o.replay ?? false,
 			preset: o.preset ?? 'default',
 			drawing: o.drawing ?? 'canvas',
-			replay(this: { ticket: WalletTicket; pressStamp: boolean }) {
+			replay(this: { ticket: TicketView; pressStamp: boolean }) {
 				this.pressStamp = false
 				this.ticket = NOT_ENTERED
 				setTimeout(() => {
@@ -296,7 +296,7 @@ export const EventUnknown = {
 
 function presetStory(
 	preset: TicketPreset,
-	event: Partial<EventPageEvent>,
+	event: Partial<ConcertPageConcert>,
 	seatTypeName: string,
 ) {
 	return {

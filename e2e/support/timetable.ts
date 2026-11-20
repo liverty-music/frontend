@@ -3,7 +3,7 @@ import { concertWire } from './concert-wire'
 import { fakeId } from './fake-id'
 
 /**
- * The dashboard's timetable on a mocked backend, for specs about how it moves:
+ * The timetable on a mocked backend, for specs about how it moves:
  * a guest following one artist, with a concert every other day for 100 days
  * (four months of dates), each in the HOME lane.
  */
@@ -26,7 +26,8 @@ export const dateKey = (offset: number) => {
 /** A concert every other day for 100 days: four months of dates. */
 export const OFFSETS = Array.from({ length: 50 }, (_, i) => 1 + i * 2)
 
-function groups() {
+/** The groups; with `firstParty`, every concert's Series has an Organizer. */
+function groups(firstParty = false) {
 	return OFFSETS.map((day) => ({
 		date: localDate(day),
 		home: [
@@ -39,7 +40,13 @@ function groups() {
 						mbid: { value: '' },
 					},
 				],
-				series: { id: { value: fakeId(`s-${day}`) }, title: { value: 'Live' } },
+				series: {
+					id: { value: fakeId(`s-${day}`) },
+					title: { value: 'Live' },
+					...(firstParty
+						? { organizerId: { value: fakeId('organizer') } }
+						: {}),
+				},
 				localDate: localDate(day),
 				venue: { name: { value: 'Zepp' }, adminArea: { value: 'JP-13' } },
 				sourceUrl: { value: 'https://example.com' },
@@ -50,7 +57,10 @@ function groups() {
 	}))
 }
 
-export async function openDashboard(page: Page): Promise<void> {
+export async function openTimetable(
+	page: Page,
+	{ firstParty = false }: { firstParty?: boolean } = {},
+): Promise<void> {
 	await page.addInitScript((artist) => {
 		localStorage.setItem('onboardingComplete', 'true')
 		localStorage.setItem('onboarding.celebrationShown', '1')
@@ -62,7 +72,7 @@ export async function openDashboard(page: Page): Promise<void> {
 			]),
 		)
 	}, ARTIST)
-	const body = JSON.stringify(concertWire({ groups: groups() }))
+	const body = JSON.stringify(concertWire({ groups: groups(firstParty) }))
 	await page.route('**/liverty_music.rpc.**', (route) => {
 		const url = route.request().url()
 		const listed =
@@ -76,7 +86,7 @@ export async function openDashboard(page: Page): Promise<void> {
 	await page.route('**/ws.audioscrobbler.com/**', (route) =>
 		route.fulfill({ status: 200, contentType: 'application/json', body: '{}' }),
 	)
-	await page.goto('/dashboard')
+	await page.goto('/timetable')
 	await page.locator('[data-live-card]').first().waitFor({ timeout: 15_000 })
 	await frames(page)
 }
@@ -97,7 +107,7 @@ export function frames(page: Page, n = 4): Promise<void> {
 export async function scrollBy(page: Page, top: number): Promise<void> {
 	await page.evaluate((y) => {
 		const s = document.querySelector(
-			'concert-highway .concert-scroll',
+			'timetable-grid .concert-scroll',
 		) as HTMLElement
 		s.scrollBy({ top: y, behavior: 'instant' })
 	}, top)
@@ -108,7 +118,7 @@ export async function scrollBy(page: Page, top: number): Promise<void> {
 export function topDate(page: Page): Promise<string | undefined> {
 	return page.evaluate(() => {
 		const scroll = document.querySelector(
-			'concert-highway .concert-scroll',
+			'timetable-grid .concert-scroll',
 		) as HTMLElement
 		const edge = scroll.getBoundingClientRect().top
 		return [...scroll.querySelectorAll<HTMLElement>('[data-date-key]')].find(

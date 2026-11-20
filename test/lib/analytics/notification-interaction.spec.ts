@@ -123,7 +123,7 @@ const SNAPSHOT: AnalyticsIdentitySnapshot = {
 const OPENED: NotificationInteraction = {
 	event: Events.NotificationOpened,
 	notificationId: 'notif-1',
-	path: '/dashboard',
+	path: '/timetable',
 	uuid: 'uuid-1',
 	timestamp: '2026-07-01T00:00:00.000Z',
 }
@@ -163,7 +163,7 @@ describe('notification interaction properties', () => {
 		const metadata = resolvePushMetadata({
 			title: 'Sales open',
 			data: {
-				url: '/events/e-1?from=push',
+				url: '/concerts/e-1?from=push',
 				notification_id: 'notif-9',
 				type: 'sales_reminder',
 				milestone: 'apply_open',
@@ -180,14 +180,14 @@ describe('notification interaction properties', () => {
 			notification_id: 'notif-9',
 			type: 'sales_reminder',
 			milestone: 'apply_open',
-			path: '/events/e-1',
+			path: '/concerts/e-1',
 			$insert_id: interaction.uuid,
 		})
 	})
 
 	it(`@spec ${SPEC} "Older message without a type"`, () => {
 		const metadata = resolvePushMetadata({
-			data: { url: '/dashboard', notification_id: 'notif-1' },
+			data: { url: '/timetable', notification_id: 'notif-1' },
 		})
 
 		const interaction = notificationInteraction(
@@ -200,7 +200,7 @@ describe('notification interaction properties', () => {
 		expect(body.event).toBe(Events.NotificationDismissed)
 		expect(body.properties).toEqual({
 			notification_id: 'notif-1',
-			path: '/dashboard',
+			path: '/timetable',
 			$insert_id: interaction.uuid,
 		})
 	})
@@ -215,7 +215,7 @@ describe('buildCaptureBody / captureUrl', () => {
 			timestamp: '2026-07-01T00:00:00.000Z',
 			properties: {
 				notification_id: 'notif-1',
-				path: '/dashboard',
+				path: '/timetable',
 				$insert_id: 'uuid-1',
 			},
 		})

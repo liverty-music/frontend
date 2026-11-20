@@ -1,7 +1,6 @@
 <import from="./checkout-route.css"></import>
 
 <article class="[ checkout ] [ flow wrapper ]" data-step.bind="step">
-  <h1 class="[ checkout-title ] [ md-typescale-headline-small ]" t="checkout.title"></h1>
 
   <p if.bind="step === 'loading'" class="checkout-status" role="status" t="checkout.loading"></p>
 
@@ -11,7 +10,7 @@
 
   <section if.bind="step === 'not-found'" class="[ checkout-panel card ] [ flow ]" data-testid="checkout-not-found">
     <p t="checkout.notFound"></p>
-    <a href="/events/${event.id}" if.bind="event" class="text-link" data-variant="standalone" t="checkout.backToEvent"></a>
+    <a href="/concerts/${event.id}" if.bind="event" class="text-link" data-variant="standalone" t="checkout.backToEvent"></a>
   </section>
 
   <!-- Event summary, shown on every step of the checkout -->
@@ -104,8 +103,8 @@
         <dd data-testid="checkout-confirm-event">
           ${event.title}<br />${dateLabel}<br />${event.venueName}
           <template if.bind="openTimeLabel || startTimeLabel">
-            <br /><span if.bind="openTimeLabel"><span t="eventPage.open"></span> ${openTimeLabel}</span>
-            <span if.bind="startTimeLabel"><span t="eventPage.start"></span> ${startTimeLabel}</span>
+            <br /><span if.bind="openTimeLabel"><span t="concert.open"></span> ${openTimeLabel}</span>
+            <span if.bind="startTimeLabel"><span t="concert.start"></span> ${startTimeLabel}</span>
           </template>
         </dd>
       </div>

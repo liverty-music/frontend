@@ -64,11 +64,11 @@ export class ConcertStore {
 		(from, signal) => this.rpcClient.listFollowed(from, signal),
 	)
 
-	// The timetable the dashboard last rendered, with the scroll place the fan
-	// left it at. Stored here (not on DashboardRoute) because DashboardRoute is
+	// The timetable the timetable last rendered, with the scroll place the fan
+	// left it at. Stored here (not on TimetableRoute) because TimetableRoute is
 	// re-instantiated on every navigation: on re-entry it is painted at once (no
 	// spinner) and a background refresh then replaces it. It is valid only for
-	// the dashboard inputs it was built from (home area, date window), named by
+	// the timetable inputs it was built from (home area, date window), named by
 	// `key`; any other key reads nothing. A follow-set change clears it
 	// (invalidateFollowerCache), so neither ever paints a stale timetable.
 	private rendered: RenderedTimetable | null = null
@@ -99,7 +99,7 @@ export class ConcertStore {
 		ea.subscribe(HomeChanged, () => this.invalidateFollowerCache())
 	}
 
-	/** Forget every cached concert list and the dashboard's view state. */
+	/** Forget every cached concert list and the timetable's view state. */
 	public clear(): void {
 		this.invalidateFollowerCache()
 		this.proximityConcerts.clear()
@@ -168,7 +168,7 @@ export class ConcertStore {
 	}
 
 	/**
-	 * Keep the latest rendered groups for the next DashboardRoute instance. The
+	 * Keep the latest rendered groups for the next TimetableRoute instance. The
 	 * scroll place survives only a refresh of the same timetable: against a
 	 * different one it would land somewhere arbitrary.
 	 */
@@ -178,7 +178,7 @@ export class ConcertStore {
 	}
 
 	/**
-	 * Where the fan left this timetable, so returning to the dashboard puts them
+	 * Where the fan left this timetable, so returning to the timetable puts them
 	 * back there instead of at the top.
 	 */
 	public timetableAnchor(key: string): TimetableAnchor | null {
@@ -212,9 +212,9 @@ export class ConcertStore {
 	}
 
 	/**
-	 * The "All Nearby" concert list: every catalog concert HOME/NEARBY to a
+	 * The "the Concerts view" concert list: every catalog concert HOME/NEARBY to a
 	 * geographic reference point within a date range. Unlike the follower/artist
-	 * paths this is not cached here — the Dashboard route owns a route-local cache
+	 * paths this is not cached here — the Timetable route owns a route-local cache
 	 * keyed by (area, date range) so it stays separate from the My Timetable cache.
 	 */
 	public async listByLocation(
@@ -227,16 +227,16 @@ export class ConcertStore {
 	}
 
 	/**
-	 * Convert All Nearby ProximityGroup[] into DateGroup[], resolving each card's
+	 * Convert the Concerts view ProximityGroup[] into DateGroup[], resolving each card's
 	 * artist identity from the concert's OWN artists.
 	 *
-	 * Matching follows the dashboard: a card resolves to the first performer
+	 * Matching follows the timetable: a card resolves to the first performer
 	 * the fan follows, carrying the fan's hype level (`hypeByArtist`, from
 	 * `FollowService.List` or the guest's device). The concerts belong to
 	 * arbitrary catalog artists, mostly not followed, so a bill on which the
 	 * fan follows nobody falls back to its first performer at `watch`, which no
 	 * lane matches, and its name renders. The journey map shows the
-	 * dashboard's journey badges.
+	 * timetable's journey badges.
 	 */
 	public toDateGroupsForLocation(
 		groups: ProximityGroup[],
@@ -273,7 +273,7 @@ export class ConcertStore {
 
 	/**
 	 * Convert ProximityGroup[] into DateGroup[] for rendering.
-	 * Shared by dashboard-route (authenticated) and welcome-route (preview).
+	 * Shared by timetable-route (authenticated) and welcome-route (preview).
 	 */
 	public toDateGroups(
 		groups: ProximityGroup[],
@@ -372,7 +372,7 @@ export class ConcertStore {
 				// fallback — leaving all three fields empty keeps artistId /
 				// artistName / artist internally consistent; a partial fill
 				// (e.g. artistId from headliner while name is blank) would
-				// silently break dashboard filters and card rendering).
+				// silently break timetable filters and card rendering).
 				// Tiebreaker note: when the user follows multiple
 				// performers on the same bill (e.g. both the headliner
 				// and a support act), the FIRST matched performer wins —
@@ -383,7 +383,7 @@ export class ConcertStore {
 				// candidates instead of breaking on first match; intent
 				// today is "first listed performer the user follows = the
 				// primary identity for this card", consistent with the
-				// dashboard's single-artist-per-row model.
+				// timetable's single-artist-per-row model.
 				let entry: { artist: Artist; hype: Hype } | undefined
 				for (const p of c.artists) {
 					// Skip performers whose id is missing/empty — otherwise an
@@ -399,7 +399,7 @@ export class ConcertStore {
 					}
 				}
 				if (!entry && fallbackMap) {
-					// Nobody on the bill is in the map (All Nearby: nobody
+					// Nobody on the bill is in the map (the Concerts view: nobody
 					// followed): the first listed performer names the card.
 					const first = c.artists.find((p) => p.id?.value)?.id?.value
 					entry = first ? fallbackMap.get(first) : undefined

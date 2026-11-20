@@ -96,7 +96,7 @@ const theEntry = (host: Element) =>
 
 describe('ResaleEntriesRoute (fixture)', () => {
 	it('shows a lapsed entry as 期限切れ, says nothing was charged and offers to apply again', async () => {
-		// @spec components/infrastructure/fan/web/route/resale-entry "Lapsed entry"
+		// @spec components/infrastructure/fan/web/route/resale-entries "Lapsed entry"
 		const { fixture } = await render(
 			vi.fn().mockResolvedValue(listOf(entry({ state: 'lapsed' }))),
 		)
@@ -114,12 +114,12 @@ describe('ResaleEntriesRoute (fixture)', () => {
 			(
 				byTestId(row, 'resale-entries-apply-again') as HTMLAnchorElement
 			).getAttribute('href'),
-		).toBe(`/events/${EVENT_ID}/resale/stock-s`)
+		).toBe(`/concerts/${EVENT_ID}/resale-entries/new?stock=stock-s`)
 		await fixture.stop(true)
 	})
 
 	it('offers no new application once the resale has closed', async () => {
-		// @spec components/infrastructure/fan/web/route/resale-entry "Lapsed entry"
+		// @spec components/infrastructure/fan/web/route/resale-entries "Lapsed entry"
 		const { fixture } = await render(
 			vi.fn().mockResolvedValue({
 				entries: [entry({ state: 'lapsed' })],
@@ -133,7 +133,7 @@ describe('ResaleEntriesRoute (fixture)', () => {
 	})
 
 	it('shows a won entry as 当選 with a link to the tickets screen', async () => {
-		// @spec components/infrastructure/fan/web/route/resale-entry "Won entry"
+		// @spec components/infrastructure/fan/web/route/resale-entries "Won entry"
 		const { fixture } = await render(
 			vi.fn().mockResolvedValue(listOf(entry({ state: 'won' }))),
 		)
@@ -149,7 +149,7 @@ describe('ResaleEntriesRoute (fixture)', () => {
 	})
 
 	it('withdraws a waiting entry after the fan confirms, then offers to apply again', async () => {
-		// @spec components/infrastructure/fan/web/route/resale-entry "Withdrawing a waiting entry"
+		// @spec components/infrastructure/fan/web/route/resale-entries "Withdrawing a waiting entry"
 		const withdraw = vi.fn().mockResolvedValue(
 			entry({
 				state: 'withdrawn',
@@ -194,7 +194,7 @@ describe('ResaleEntriesRoute (fixture)', () => {
 	})
 
 	it('says the draw has already decided the entry and shows it as 当選', async () => {
-		// @spec components/infrastructure/fan/web/route/resale-entry "Draw decided first"
+		// @spec components/infrastructure/fan/web/route/resale-entries "Draw decided first"
 		const list = vi
 			.fn()
 			.mockResolvedValueOnce(listOf(entry()))

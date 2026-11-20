@@ -54,7 +54,7 @@ export type CompleteOutcome =
 /**
  * Why the last return from the PocketSign app did not verify the fan. Settings
  * keeps it in the identity verification row until the fan starts again; each
- * names a `verifyCallback.error.*` key.
+ * names a `identityVerificationCallback.error.*` key.
  */
 export type VerificationFailure =
 	| 'sessionMismatch'
@@ -76,7 +76,7 @@ export type VerificationFailure =
  *     redirectUrl (the browser opens the PocketSign app; the service returns immediately
  *     after initiating the navigation).
  *
- *   Leg 2 — `create()` (called by VerifyCallbackRoute):
+ *   Leg 2 — `create()` (called by IdentityVerificationCallbackRoute):
  *     Read the session id from persisted storage →
  *     IdentityVerificationService.Create → update observable `current` →
  *     return CompleteOutcome for the UI.
@@ -206,7 +206,7 @@ export class IdentityVerificationService {
 	}
 
 	/**
-	 * Leg 2 of the Stamp flow: called by VerifyCallbackRoute when the PocketSign
+	 * Leg 2 of the Stamp flow: called by IdentityVerificationCallbackRoute when the PocketSign
 	 * app returns the fan to `/verify/callback` (no query parameters — the backend
 	 * sets callbackWithSessionId=false, per the official reference flow).
 	 *

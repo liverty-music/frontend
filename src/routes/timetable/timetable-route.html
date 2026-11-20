@@ -1,0 +1,108 @@
+<import from="./timetable-route.css"></import>
+
+<!-- The page title is owned by the shell-hosted <page-header>, driven from
+     the route's data.titleKey. -->
+
+<!-- Filter + help surfaces stay owned by the timetable: only their triggers
+     moved to the FAB launcher, so the components render sheet-only here (their
+     bottom sheets and bindings are unchanged). The launcher opens them via the
+     component refs. -->
+<artist-filter-bar
+  if.bind="!isOnboarding"
+  component.ref="filterBar"
+  counted-artists.bind="countedArtists"
+  selected-ids.two-way="filteredArtistIds"
+  selected-statuses.two-way="filteredStatuses"
+  active-from.bind="fromDate"
+  date-changed.trigger="onDateFilterChanged($event)"
+  is-authenticated.bind="isAuthenticated"
+></artist-filter-bar>
+<page-help component.ref="pageHelp" page="timetable"></page-help>
+
+<!-- ── My Timetable ── -->
+<!-- The loading placeholder lives inside <timetable-grid>, which owns the
+     lane grid and so can shape it like the real timetable — see its `loading`
+     binding below. A generic bar stack here would have had to be replaced by a
+     differently-shaped grid, shifting layout at exactly the moment the fan is
+     watching. -->
+
+<!-- Concert highway — always in DOM for E2E compatibility. First in the
+     content cell, so the error and the empty states that share the cell
+     paint over it and their links and retry button take the tap. -->
+<timetable-grid
+  component.ref="highway"
+  loading.bind="!hasSettled && !loadError"
+  date-groups.bind="filteredDateGroups"
+  initial-anchor.bind="timetableAnchor"
+  show-beams.bind="showBeams"
+  data-blurred.bind="needsRegion"
+  event-selected.trigger="onEventSelected($event)"
+></timetable-grid>
+
+<!-- Error state -->
+<inline-error
+  if.bind="loadError"
+  message.bind="i18n.tr('timetable.error.load')"
+  retry-action.bind="() => loadData()"
+></inline-error>
+
+<!-- Guest empty-state CTA: unauthenticated visitor with zero follows. Soft gate
+     guidance toward discovery instead of a guard redirect, and toward the
+     concerts nearby on Discovery's Concerts view. -->
+<state-placeholder if.bind="hasSettled && !loadError && showGuestEmptyState && !needsRegion" icon="clock">
+  <div class="[ timetable-empty ] [ stack flow ]">
+    <p t="timetable.guestEmpty.title" class="[ state-placeholder-title ] [ md-typescale-title-large ]"></p>
+    <p t="timetable.guestEmpty.subtitle" class="[ timetable-empty-subtitle ] [ md-typescale-body-medium ]"></p>
+    <div class="[ timetable-empty-actions ] [ cluster ]">
+      <a href="/discovery" t="timetable.guestEmpty.cta" class="[ button ] [ state-layer ]" data-testid="discover-link"></a>
+      <a href="/discovery?view=concerts" t="timetable.concertsCta" class="[ button ] [ state-layer ]" data-variant="outlined" data-testid="concerts-link"></a>
+    </div>
+  </div>
+</state-placeholder>
+
+<!-- Empty state. `hasSettled` is required: `filteredDateGroups.length === 0`
+     alone is also true before the cached groups have been reflected, which is
+     exactly when this must NOT render. -->
+<state-placeholder if.bind="hasSettled && !loadError && !showGuestEmptyState && filteredDateGroups.length === 0" icon="clock">
+  <div class="[ timetable-empty ] [ stack flow ]">
+    <p t="timetable.empty.title" class="[ state-placeholder-title ] [ md-typescale-title-large ]"></p>
+    <p t="timetable.empty.subtitle" class="[ timetable-empty-subtitle ] [ md-typescale-body-medium ]"></p>
+    <div class="[ timetable-empty-actions ] [ cluster ]">
+      <a href="/discovery" t="timetable.empty.discoverLink" class="[ button ] [ state-layer ]" data-testid="discover-link"></a>
+      <a href="/discovery?view=concerts" t="timetable.concertsCta" class="[ button ] [ state-layer ]" data-variant="outlined" data-testid="concerts-link"></a>
+    </div>
+  </div>
+</state-placeholder>
+
+<!-- Bottom sheet for event details (top-layer dialog). -->
+<concert-sheet component.ref="detailSheet"></concert-sheet>
+
+<!-- Signup prompt banner for unauthenticated users (non-dismissable) -->
+<signup-prompt-banner
+  visible.bind="showSignupBanner && !isAuthenticated"
+  message.bind="i18n.tr('myArtists.signupBanner.message')"
+  signup-requested.trigger="onSignupRequested()">
+</signup-prompt-banner>
+
+<!-- Home area sheet for a person without a home -->
+<home-area-selector
+  component.ref="homeSelector"
+  current-code.bind="userStore.currentHome"
+  on-home-selected.bind="(code) => onHomeSelected(code)"
+  required.bind="homeRequired"
+></home-area-selector>
+
+<!-- Celebration overlay — two tiers (guest light / post-signup confetti),
+     gated on timetable readiness via maybeCelebrate() -->
+<celebration-overlay
+  active.bind="showCelebration"
+  confetti.bind="celebrationConfetti"
+  message.bind="celebrationMessage"
+  sub-message.bind="celebrationSubMessage"
+  hint.bind="celebrationHint"
+  on-open.bind="() => onCelebrationOpened()"
+  on-dismissed.bind="() => onCelebrationDismissed()"
+></celebration-overlay>
+
+<!-- PostSignupDialog — shown once after first-time signup -->
+<post-signup-dialog active.bind="showPostSignupDialog"></post-signup-dialog>

@@ -242,7 +242,7 @@ test.describe('buy tickets first come (signed in)', () => {
 			storageState: { cookies: [], origins: [] },
 		})
 		const view = await guest.newPage()
-		await view.goto(`/events/${SALE_EVENT_ID}`)
+		await view.goto(`/concerts/${SALE_EVENT_ID}`)
 		await expect(stockRow(view, saleStock)).toHaveAttribute(
 			'data-stock-state',
 			'allHeld',

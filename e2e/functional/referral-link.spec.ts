@@ -71,13 +71,13 @@ async function mockBackend(page: Page): Promise<void> {
 	})
 }
 
-test('@spec components/infrastructure/fan/web/route/event "Code survives sign-up"', async ({
+test('@spec components/infrastructure/fan/web/route/concert "Code survives sign-up"', async ({
 	page,
 }) => {
 	await mockBackend(page)
 	await mockIdentityProvider(page)
 
-	await page.goto(`/events/${EVENT_ID}?ref=member-a`)
+	await page.goto(`/concerts/${EVENT_ID}?ref=member-a`)
 	await expect(page.getByText('XX Tour 2026').first()).toBeVisible({
 		timeout: 20_000,
 	})
@@ -88,7 +88,7 @@ test('@spec components/infrastructure/fan/web/route/event "Code survives sign-up
 	await page.getByTestId('event-signup').click()
 
 	// Back on the Event page, signed in, without the query.
-	await expect(page).toHaveURL(new RegExp(`/events/${EVENT_ID}$`), {
+	await expect(page).toHaveURL(new RegExp(`/concerts/${EVENT_ID}$`), {
 		timeout: 20_000,
 	})
 	await expect(page.getByTestId('event-signup')).toHaveCount(0)

@@ -49,7 +49,7 @@
 		   signup-prompt-banner), and block-size:0/overflow:hidden would clip it. */
 		snack-bar,
 		error-banner,
-		fab-menu {
+		action-menu {
 			position: fixed;
 			overflow: hidden;
 			block-size: 0;

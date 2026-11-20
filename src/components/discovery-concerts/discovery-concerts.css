@@ -1,0 +1,43 @@
+@layer block {
+	@scope (discovery-concerts) {
+		:scope {
+			/* No filter row: the stage header sits directly under the page
+			   header, as on the timetable; the filters open from the launcher. */
+			display: grid;
+			grid-template-areas: "content";
+			grid-template-rows: minmax(0, 1fr);
+
+			block-size: 100%;
+			min-block-size: 0;
+		}
+
+		timetable-grid,
+		inline-error,
+		state-placeholder {
+			grid-area: content;
+		}
+
+		/* Positioned, after the highway in the DOM, so they paint over it and
+		   take the tap (the highway is positioned and fills the same cell). */
+		inline-error,
+		state-placeholder {
+			position: relative;
+		}
+
+		state-placeholder {
+			place-self: center;
+		}
+
+		timetable-grid {
+			min-block-size: 0;
+		}
+
+		/* The title and subtitle sit a step further apart than the
+		   placeholder's own gap, each centred at its own width. */
+		.nearby-empty-text {
+			--stack-gap: calc(var(--space-s) + var(--space-3xs));
+
+			align-items: center;
+		}
+	}
+}

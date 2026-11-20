@@ -4,12 +4,12 @@ import { artistHue } from '../../../adapter/view/artist-color'
 import { toDomesticDisplay } from '../../../lib/to-e164'
 import { currentLanguage } from '../../../util/change-locale'
 import {
-	type EventPageEvent,
+	type ConcertPageConcert,
 	formatEventDate,
 	formatEventTime,
 	prefectureLabel,
-} from '../../event/event-page'
-import type { WalletPersonalDetails, WalletTicket } from '../wallet-view'
+} from '../../concert/concert-page'
+import type { TicketView, WalletPersonalDetails } from '../ticket-view'
 import { STAMP_ANIMATION } from './admission-stamp'
 import { ticketSize } from './share-image'
 import { TICKET_LOOKS, type TicketPreset } from './ticket-presets'
@@ -68,8 +68,8 @@ let nextId = 0
  */
 export class VirtualTicket {
 	/** The ticket's event; null when its details could not be read. */
-	@bindable public event: EventPageEvent | null = null
-	@bindable public ticket: WalletTicket | null = null
+	@bindable public event: ConcertPageConcert | null = null
+	@bindable public ticket: TicketView | null = null
 	@bindable public personalDetails: WalletPersonalDetails | null = null
 	/** The design preset, by the kind of concert. */
 	@bindable({ mode: BindingMode.twoWay })

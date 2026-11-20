@@ -1,0 +1,68 @@
+<bottom-sheet
+  open.bind="isOpen"
+  dismissable.bind="!required"
+  sheet-closed.trigger="onSheetClosed()"
+  heading.bind="(selectedRegion ? 'homeAreaSelector.regions.' + selectedRegion.key : 'homeAreaSelector.title') | t"
+>
+  <div class="[ selector-content ] [ flow ]">
+    <!-- Step 1: Quick-select cities + Region selection -->
+    <template if.bind="!selectedRegion">
+      <p t="homeAreaSelector.description" class="[ selector-desc ] [ md-typescale-body-medium ]"></p>
+
+      <!-- Quick-select cities -->
+      <section class="[ selector-section ] [ flow ]">
+        <p t="homeAreaSelector.quickSelect" class="[ selector-label ] [ md-typescale-title-small ]"></p>
+        <div class="selector-grid">
+          <button
+            repeat.for="city of quickCities; key.bind: city.code"
+            busy-on-click.bind="() => selectQuickCity(city.code)"
+            class="[ chip selector-option ] [ state-layer ] [ md-typescale-label-large ]"
+            data-selected.bind="city.code === currentCode"
+            aria-current.bind="city.code === currentCode"
+          >
+            <span t.bind="'homeAreaSelector.cities.' + city.key"></span>
+          </button>
+        </div>
+      </section>
+
+      <!-- Region buttons -->
+      <div class="[ selector-section ] [ flow ]">
+        <p t="homeAreaSelector.selectByRegion" class="[ selector-label ] [ md-typescale-title-small ]"></p>
+        <div class="selector-grid">
+          <button
+            repeat.for="region of regions; key.bind: region.key"
+            click.trigger="selectRegion(region)"
+            class="[ chip selector-option ] [ state-layer ] [ md-typescale-label-large ]"
+          >
+            <span t.bind="'homeAreaSelector.regions.' + region.key"></span>
+          </button>
+        </div>
+      </div>
+    </template>
+
+    <!-- Step 2: Prefecture selection -->
+    <template if.bind="selectedRegion">
+      <button
+        click.trigger="backToRegions()"
+        class="[ button selector-back ] [ state-layer ]"
+        data-variant="outlined"
+      >
+        <svg-icon name="chevron-left" size="sm"></svg-icon>
+        <span t="homeAreaSelector.backToRegions"></span>
+      </button>
+      <p t="homeAreaSelector.selectPrefecture" class="[ selector-desc ] [ md-typescale-body-medium ]"></p>
+
+      <div class="selector-grid">
+        <button
+          repeat.for="pref of selectedRegion.prefectures; key.bind: pref.code"
+          busy-on-click.bind="() => selectPrefecture(pref.code)"
+          class="[ chip selector-option ] [ state-layer ] [ md-typescale-label-large ]"
+          data-selected.bind="pref.code === currentCode"
+          aria-current.bind="pref.code === currentCode"
+        >
+          <span t.bind="'homeAreaSelector.prefectures.' + pref.key"></span>
+        </button>
+      </div>
+    </template>
+  </div>
+</bottom-sheet>

@@ -3,7 +3,7 @@ import { bindable } from 'aurelia'
 /**
  * How close the fan's onboarding timetable is to ready, shown on Discovery
  * under the genre chips: a band of light that fills with every follow. At
- * ready it becomes the link that opens the Dashboard. The caller decides when
+ * ready it becomes the link that opens the Timetable. The caller decides when
  * the row exists (onboarding only, not in search mode) and computes `value`.
  */
 export class OnboardingProgress {

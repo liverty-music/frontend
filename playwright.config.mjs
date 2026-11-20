@@ -55,7 +55,7 @@ export default defineConfig({
 				// Covered by onboarding project (Pixel 7 viewport)
 				'e2e/functional/onboarding-flow.spec.ts',
 				'e2e/functional/detail-sheet-dismiss.spec.ts',
-				'e2e/functional/dashboard-lane-classification.spec.ts',
+				'e2e/functional/timetable-lane-classification.spec.ts',
 				'e2e/functional/artist-image-ui.spec.ts',
 				// Covered by webkit-repro / chromium-control projects (engine-specific)
 				'e2e/functional/page-help-sheet-webkit.spec.ts',
@@ -98,8 +98,8 @@ export default defineConfig({
 			name: 'webkit-shell',
 			testMatch: [
 				'e2e/functional/fan-shell-navigation.spec.ts',
-				'e2e/functional/fab-menu-arc.spec.ts',
-				'e2e/functional/fab-menu-top-layer.spec.ts',
+				'e2e/functional/action-menu-arc.spec.ts',
+				'e2e/functional/action-menu-top-layer.spec.ts',
 				// The timetable's deal-in without scroll-triggered animations.
 				'e2e/functional/deal-in.spec.ts',
 				// The month jump without scroll-state queries.
@@ -170,7 +170,7 @@ export default defineConfig({
 			testMatch: [
 				'e2e/functional/onboarding-flow.spec.ts',
 				'e2e/functional/detail-sheet-dismiss.spec.ts',
-				'e2e/functional/dashboard-lane-classification.spec.ts',
+				'e2e/functional/timetable-lane-classification.spec.ts',
 				'e2e/functional/artist-image-ui.spec.ts',
 			],
 			use: {

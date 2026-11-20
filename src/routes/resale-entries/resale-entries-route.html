@@ -1,7 +1,4 @@
 <template class="[ resale-entries-route ] [ flow ]">
-	<header class="resale-entries-header">
-		<h1 class="[ resale-entries-title ] [ md-typescale-headline-small ]" t="resaleEntries.title"></h1>
-	</header>
 
 	<p if.bind="state === 'loading'" class="[ resale-entries-lead ] [ md-typescale-body-medium ]" role="status" t="resaleEntries.loading"></p>
 
@@ -27,7 +24,7 @@
 
 			<template switch.bind="row.entry.state">
 				<template case="entered">
-					<p if.bind="nextDrawLabel(row)" class="[ resale-entries-lead ] [ md-typescale-body-medium ]" data-testid="resale-entries-next-draw" t="resaleEntry.nextDraw" t-params.bind="{ time: nextDrawLabel(row) }"></p>
+					<p if.bind="nextDrawLabel(row)" class="[ resale-entries-lead ] [ md-typescale-body-medium ]" data-testid="resale-entries-next-draw" t="newResaleEntry.nextDraw" t-params.bind="{ time: nextDrawLabel(row) }"></p>
 					<template if.bind="confirmingId === row.entry.id">
 						<p class="[ resale-entries-lead ] [ md-typescale-body-medium ]" role="alert" data-testid="resale-entries-withdraw-confirm" t="resaleEntries.withdraw.confirm"></p>
 						<div class="[ resale-entries-actions ] [ cluster ]">

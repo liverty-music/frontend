@@ -12,11 +12,11 @@ import {
 	IAnalyticsService,
 } from '../../src/lib/analytics/analytics-service'
 import { resetRevealEntryForTests } from '../../src/routes/discovery/reveal-timing'
-import { IErrorBoundaryService } from '../../src/services/error-boundary-service'
 import {
-	type FabAction,
-	IFabMenuService,
-} from '../../src/services/fab-menu-service'
+	IActionMenuService,
+	type MenuAction,
+} from '../../src/services/action-menu-service'
+import { IErrorBoundaryService } from '../../src/services/error-boundary-service'
 import { createTestContainer } from '../helpers/create-container'
 import { createMockAppConfig } from '../helpers/mock-app-config'
 import { createMockErrorBoundary } from '../helpers/mock-error-boundary'
@@ -79,7 +79,7 @@ vi.mock('../../src/routes/discovery/discovery-route.$au.ts', () => ({
 }))
 
 const preloadPhysics = vi.fn(() => Promise.resolve())
-vi.mock('../../src/components/dna-orb/bubble-physics', () => ({
+vi.mock('../../src/components/artist-bubbles/bubble-physics', () => ({
 	preloadPhysics,
 }))
 
@@ -135,7 +135,7 @@ describe('DiscoveryRoute', () => {
 	}
 	/** The launcher: the actions the route registered last. */
 	let mockFab: {
-		actions: FabAction[]
+		actions: MenuAction[]
 		register: ReturnType<typeof vi.fn>
 		handed: string
 	}
@@ -143,7 +143,7 @@ describe('DiscoveryRoute', () => {
 
 	function buildSut() {
 		const container = createTestContainer(
-			Registration.instance(IFabMenuService, mockFab),
+			Registration.instance(IActionMenuService, mockFab),
 			Registration.instance(mockIUserStore, mockUserStore),
 			Registration.instance(mockIArtistStore, mockArtistClient),
 			Registration.instance(mockIFollowStore, mockFollowClient),
@@ -158,9 +158,9 @@ describe('DiscoveryRoute', () => {
 		container.register(DiscoveryRoute)
 		const route = container.get(DiscoveryRoute)
 
-		// Stub the dnaOrbCanvas ref. The field owner (ArtistBubbleStore) now drives
+		// Stub the artistBubbles ref. The field owner (ArtistBubbleStore) now drives
 		// physics via the field binding; the route only calls the absorb flourish.
-		route.dnaOrbCanvas = {
+		route.artistBubbles = {
 			pause: vi.fn(),
 			resume: vi.fn(),
 			endFrameMeasurement: vi.fn(),
@@ -180,7 +180,7 @@ describe('DiscoveryRoute', () => {
 		mockFab = {
 			actions: [],
 			handed: 'right',
-			register: vi.fn((_owner: object, actions: FabAction[]) => {
+			register: vi.fn((_owner: object, actions: MenuAction[]) => {
 				mockFab.actions = actions
 				return () => {}
 			}),
@@ -219,7 +219,7 @@ describe('DiscoveryRoute', () => {
 	})
 
 	describe('refreshField', () => {
-		// @spec components/infrastructure/fan/web/route/discovery "Default Bubble UI display"
+		// @spec components/infrastructure/fan/web/route/discovery "Default Artists view display"
 		it('should load initial artists via artistClient.listTop', async () => {
 			;(mockArtistClient.listTop as ReturnType<typeof vi.fn>).mockResolvedValue(
 				[makeArtist('a1', 'Artist One')],
@@ -398,18 +398,18 @@ describe('DiscoveryRoute', () => {
 	})
 
 	describe('clearSearch', () => {
-		// @spec components/infrastructure/fan/web/route/discovery "Clear search restores bubble view"
+		// @spec components/infrastructure/fan/web/route/discovery "Clear search restores Artists view"
 		it('empties the query and resumes the bubble canvas', () => {
 			sut.search.searchQuery = 'something'
 			sut.search.onQueryChanged('something')
-			expect(sut.dnaOrbCanvas.pause).toHaveBeenCalled()
+			expect(sut.artistBubbles.pause).toHaveBeenCalled()
 
 			sut.clearSearch()
 			sut.search.onQueryChanged(sut.search.searchQuery)
 
 			expect(sut.search.searchQuery).toBe('')
 			expect(sut.search.isSearchMode).toBe(false)
-			expect(sut.dnaOrbCanvas.resume).toHaveBeenCalled()
+			expect(sut.artistBubbles.resume).toHaveBeenCalled()
 		})
 	})
 
@@ -426,14 +426,14 @@ describe('DiscoveryRoute', () => {
 			sut.search.onQueryChanged('vau')
 
 			expect(sut.search.isSearchMode).toBe(true)
-			expect(sut.dnaOrbCanvas.pause).toHaveBeenCalled()
+			expect(sut.artistBubbles.pause).toHaveBeenCalled()
 			expect(sut.showProgressRow).toBe(false)
 
 			sut.search.searchQuery = ''
 			sut.search.onQueryChanged('')
 
 			expect(sut.search.isSearchMode).toBe(false)
-			expect(sut.dnaOrbCanvas.resume).toHaveBeenCalled()
+			expect(sut.artistBubbles.resume).toHaveBeenCalled()
 			expect(sut.showProgressRow).toBe(true)
 		})
 	})
@@ -512,7 +512,7 @@ describe('DiscoveryRoute', () => {
 			expect(sut.search.isSearchMode).toBe(true)
 			expect(sut.search.searchQuery).toBe('test')
 			expect(sut.search.searchResults).toHaveLength(1)
-			expect(sut.dnaOrbCanvas.spawnAndAbsorbAfterSearch).not.toHaveBeenCalled()
+			expect(sut.artistBubbles.spawnAndAbsorbAfterSearch).not.toHaveBeenCalled()
 			expect(mockEa.published).toHaveLength(1)
 			expect(mockEa.published[0].severity).toBe('error')
 			expect(mockEa.published[0].message).toBe(
@@ -535,7 +535,7 @@ describe('DiscoveryRoute', () => {
 			expect(sut.search.searchResults).toHaveLength(0)
 			// The route removes the artist from the field and delegates the absorb
 			// animation to the canvas (which owns the rAF + zero-rect guard).
-			expect(sut.dnaOrbCanvas.spawnAndAbsorbAfterSearch).toHaveBeenCalledWith(
+			expect(sut.artistBubbles.spawnAndAbsorbAfterSearch).toHaveBeenCalledWith(
 				artist,
 			)
 		})
@@ -882,19 +882,19 @@ describe('DiscoveryRoute', () => {
 		})
 	})
 
-	describe('switch to the All Nearby view', () => {
-		// The event itself is checked in test/components/dna-orb-canvas.spec.ts.
+	describe('switch to the Concerts view', () => {
+		// The event itself is checked in test/components/artist-bubbles.spec.ts.
 		it('ends the frame measurement of the visit and pauses the bubbles', () => {
-			;(sut as any).viewChanged('nearby')
+			;(sut as any).viewChanged('concerts')
 
-			expect(sut.dnaOrbCanvas.endFrameMeasurement).toHaveBeenCalledOnce()
-			expect(sut.dnaOrbCanvas.pause).toHaveBeenCalled()
+			expect(sut.artistBubbles.endFrameMeasurement).toHaveBeenCalledOnce()
+			expect(sut.artistBubbles.pause).toHaveBeenCalled()
 		})
 
 		it('does not end it when switching back to the bubbles', () => {
 			;(sut as any).viewChanged('artists')
 
-			expect(sut.dnaOrbCanvas.endFrameMeasurement).not.toHaveBeenCalled()
+			expect(sut.artistBubbles.endFrameMeasurement).not.toHaveBeenCalled()
 		})
 	})
 
@@ -909,7 +909,7 @@ describe('DiscoveryRoute', () => {
 			})
 			document.dispatchEvent(new Event('visibilitychange'))
 
-			expect(sut.dnaOrbCanvas.pause).toHaveBeenCalled()
+			expect(sut.artistBubbles.pause).toHaveBeenCalled()
 
 			// Cleanup
 			Object.defineProperty(document, 'hidden', {
@@ -930,7 +930,7 @@ describe('DiscoveryRoute', () => {
 			})
 			document.dispatchEvent(new Event('visibilitychange'))
 
-			expect(sut.dnaOrbCanvas.resume).toHaveBeenCalled()
+			expect(sut.artistBubbles.resume).toHaveBeenCalled()
 			sut.detaching()
 		})
 
@@ -944,7 +944,7 @@ describe('DiscoveryRoute', () => {
 			})
 			document.dispatchEvent(new Event('visibilitychange'))
 
-			expect(sut.dnaOrbCanvas.resume).not.toHaveBeenCalled()
+			expect(sut.artistBubbles.resume).not.toHaveBeenCalled()
 			sut.detaching()
 		})
 	})
@@ -1129,7 +1129,7 @@ describe('DiscoveryRoute', () => {
 			const vm = CustomElement.for(
 				fixture.appHost.querySelector('mounted-discovery-route') as HTMLElement,
 			).viewModel as DiscoveryRoute
-			vm.dnaOrbCanvas = sut.dnaOrbCanvas
+			vm.artistBubbles = sut.artistBubbles
 			return { vm, stop: () => fixture.stop(true) as Promise<void> }
 		}
 
@@ -1484,7 +1484,7 @@ describe('DiscoveryRoute', () => {
 				document.dispatchEvent(new Event('visibilitychange'))
 				revealAll([100, 200, 300])
 
-				expect(sut.dnaOrbCanvas.resume).toHaveBeenCalled()
+				expect(sut.artistBubbles.resume).toHaveBeenCalled()
 				expect(mockAnalytics.capture).not.toHaveBeenCalled()
 			})
 
@@ -1506,8 +1506,8 @@ describe('DiscoveryRoute', () => {
 			})
 
 			// @spec components/infrastructure/fan/web/route/discovery "Field paused before the reveal completes"
-			it('sends nothing when Discovery opens on the All Nearby view', async () => {
-				sut.loading(undefined, routeTo('view=nearby'))
+			it('sends nothing when Discovery opens on the Concerts view', async () => {
+				sut.loading(undefined, routeTo('view=concerts'))
 				sut.attached()
 				await vi.runAllTimersAsync()
 
@@ -1519,14 +1519,14 @@ describe('DiscoveryRoute', () => {
 			})
 
 			// @spec components/infrastructure/fan/web/route/discovery "Field paused before the reveal completes"
-			it('sends nothing when the fan switches to the All Nearby view during the reveal', async () => {
+			it('sends nothing when the fan switches to the Concerts view during the reveal', async () => {
 				sut.loading(undefined, routeTo())
 				sut.attached()
 				await vi.runAllTimersAsync()
 				sut.onRevealMark(revealMark('ghosts', 100))
 
 				sut.switchView()
-				expect(sut.view).toBe('nearby')
+				expect(sut.view).toBe('concerts')
 				await swapDone(sut)
 				sut.switchView()
 				expect(sut.view).toBe('artists')
@@ -1561,13 +1561,13 @@ describe('DiscoveryRoute', () => {
 	})
 
 	describe('launcher actions per view', () => {
-		const SPEC = 'components/infrastructure/fan/web/global/fab-menu'
+		const SPEC = 'components/infrastructure/fan/web/global/action-menu'
 		const routeTo = (query = '') =>
 			({ queryParams: new URLSearchParams(query) }) as never
 		const ids = () => mockFab.actions.map((a) => a.id)
 
 		it(`@spec ${SPEC} "Discovery contributes its actions per view"`, () => {
-			sut.loading(undefined, routeTo('view=nearby'))
+			sut.loading(undefined, routeTo('view=concerts'))
 			sut.attached()
 			// The filter first: closest to the FAB.
 			expect(ids()).toEqual(['filter', 'help'])
@@ -1581,7 +1581,7 @@ describe('DiscoveryRoute', () => {
 		})
 
 		it(`@spec ${SPEC} "Switching Discovery's view replaces its actions"`, async () => {
-			sut.loading(undefined, routeTo('view=nearby'))
+			sut.loading(undefined, routeTo('view=concerts'))
 			sut.attached()
 			sut.switchView()
 			// @ts-expect-error -- the @observable change callback, as Aurelia calls it
@@ -1590,7 +1590,7 @@ describe('DiscoveryRoute', () => {
 			await swapDone(sut)
 			sut.switchView()
 			// @ts-expect-error -- the @observable change callback, as Aurelia calls it
-			sut.viewChanged('nearby')
+			sut.viewChanged('concerts')
 			expect(ids()).toEqual(['filter', 'help'])
 			// Each switch replaces the set registered by the same owner.
 			for (const call of mockFab.register.mock.calls) {
@@ -1599,38 +1599,38 @@ describe('DiscoveryRoute', () => {
 			sut.detaching()
 		})
 
-		it('opens the All Nearby filter sheet from the filter item', () => {
-			sut.loading(undefined, routeTo('view=nearby'))
+		it('opens the Concerts view filter sheet from the filter item', () => {
+			sut.loading(undefined, routeTo('view=concerts'))
 			sut.attached()
 			const openFilters = vi.fn()
-			sut.nearbyConcerts = { openFilters } as never
+			sut.discoveryConcerts = { openFilters } as never
 			mockFab.actions[0].invoke()
 			expect(openFilters).toHaveBeenCalledOnce()
 			sut.detaching()
 		})
 
 		it(`@spec components/infrastructure/fan/web/route/discovery "Filter item shows its active state"`, () => {
-			sut.loading(undefined, routeTo('view=nearby'))
+			sut.loading(undefined, routeTo('view=concerts'))
 			sut.attached()
 			const isOn = () => mockFab.actions[0].isOn?.()
 			// The fan's home area and 7日以内: default.
 			expect(isOn()).toBe(false)
-			sut.nearbyVisit.datePreset = 'weekend'
+			sut.concertsVisit.datePreset = 'weekend'
 			expect(isOn()).toBe(true)
-			sut.nearbyVisit.datePreset = 'week'
-			sut.nearbyVisit.areaCode = 'JP-27'
+			sut.concertsVisit.datePreset = 'week'
+			sut.concertsVisit.areaCode = 'JP-27'
 			expect(isOn()).toBe(true)
 			// An override equal to the home area reads as the default.
-			sut.nearbyVisit.areaCode = 'JP-13'
+			sut.concertsVisit.areaCode = 'JP-13'
 			expect(isOn()).toBe(false)
 			// A custom range is not the default period.
-			sut.nearbyVisit.datePreset = null
+			sut.concertsVisit.datePreset = null
 			expect(isOn()).toBe(true)
 			sut.detaching()
 		})
 	})
 
-	describe('view: artist bubbles or All Nearby', () => {
+	describe('view: artist bubbles or the Concerts view', () => {
 		function routeTo(query = '') {
 			return { queryParams: new URLSearchParams(query) } as never
 		}
@@ -1644,17 +1644,17 @@ describe('DiscoveryRoute', () => {
 
 		afterEach(() => setHidden(false))
 
-		// @spec components/infrastructure/fan/web/route/discovery "Link to the All Nearby view"
-		it('opens on the All Nearby view from /discovery?view=nearby, at any onboarding state', () => {
-			sut.loading(undefined, routeTo('view=nearby'))
-			expect(sut.view).toBe('nearby')
+		// @spec components/infrastructure/fan/web/route/discovery "Link to the Concerts view"
+		it('opens on the Concerts view from /discovery?view=concerts, at any onboarding state', () => {
+			sut.loading(undefined, routeTo('view=concerts'))
+			expect(sut.view).toBe('concerts')
 
 			mockOnboarding.isOnboarding = true
 			const onboarding = buildSut()
-			onboarding.loading(undefined, routeTo('view=nearby'))
-			expect(onboarding.view).toBe('nearby')
+			onboarding.loading(undefined, routeTo('view=concerts'))
+			expect(onboarding.view).toBe('concerts')
 			onboarding.attached()
-			expect(onboarding.dnaOrbCanvas.pause).toHaveBeenCalled()
+			expect(onboarding.artistBubbles.pause).toHaveBeenCalled()
 			onboarding.detaching()
 		})
 
@@ -1664,11 +1664,11 @@ describe('DiscoveryRoute', () => {
 			expect(sut.view).toBe('artists')
 
 			sut.switchView()
-			expect(sut.view).toBe('nearby')
+			expect(sut.view).toBe('concerts')
 			expect(mockHistory.replaceState).toHaveBeenLastCalledWith(
 				null,
 				'',
-				'/discovery?view=nearby',
+				'/discovery?view=concerts',
 			)
 
 			await swapDone(sut)
@@ -1686,25 +1686,25 @@ describe('DiscoveryRoute', () => {
 		it('opens on the view the fan left on this device', () => {
 			sut.loading(undefined, routeTo())
 			sut.switchView()
-			expect(localStorage.getItem('discovery.view')).toBe('nearby')
+			expect(localStorage.getItem('discovery.view')).toBe('concerts')
 
 			// Later, from the bottom navigation (no query): a new route instance.
 			const later = buildSut()
 			later.loading(undefined, routeTo())
-			expect(later.view).toBe('nearby')
+			expect(later.view).toBe('concerts')
 			// The address names the view it opened on.
 			later.attached()
 			expect(mockHistory.replaceState).toHaveBeenLastCalledWith(
 				null,
 				'',
-				'/discovery?view=nearby',
+				'/discovery?view=concerts',
 			)
 			later.detaching()
 		})
 
 		// @spec components/infrastructure/fan/web/route/discovery "Onboarding opens on the artist bubbles"
 		it('opens on the bubbles while the fan is onboarding, whatever was used last', () => {
-			localStorage.setItem('discovery.view', 'nearby')
+			localStorage.setItem('discovery.view', 'concerts')
 			mockOnboarding.isOnboarding = true
 			const onboarding = buildSut()
 			onboarding.loading(undefined, routeTo())
@@ -1722,18 +1722,18 @@ describe('DiscoveryRoute', () => {
 				sut.loading(undefined, routeTo())
 				expect(sut.view).toBe('artists')
 				expect(() => sut.switchView()).not.toThrow()
-				expect(sut.view).toBe('nearby')
+				expect(sut.view).toBe('concerts')
 			} finally {
 				read.mockRestore()
 				write.mockRestore()
 			}
 		})
 
-		// @spec components/infrastructure/fan/web/route/discovery "All Nearby view pauses the simulation"
-		it('pauses the bubbles on the All Nearby view and resumes them on the way back', async () => {
+		// @spec components/infrastructure/fan/web/route/discovery "Concerts view pauses the simulation"
+		it('pauses the bubbles on the Concerts view and resumes them on the way back', async () => {
 			sut.loading(undefined, routeTo())
 			sut.attached()
-			const canvas = sut.dnaOrbCanvas as unknown as {
+			const canvas = sut.artistBubbles as unknown as {
 				pause: ReturnType<typeof vi.fn>
 				resume: ReturnType<typeof vi.fn>
 			}
@@ -1747,7 +1747,7 @@ describe('DiscoveryRoute', () => {
 			sut.switchView()
 			expect(canvas.resume).toHaveBeenCalledOnce()
 
-			// A visibility change on the All Nearby view keeps them paused.
+			// A visibility change on the Concerts view keeps them paused.
 			await swapDone(sut)
 			sut.switchView()
 			setHidden(false)
@@ -1762,15 +1762,15 @@ describe('DiscoveryRoute', () => {
 			sut.detaching()
 		})
 
-		// @spec components/infrastructure/fan/web/route/discovery "All Nearby view pauses the simulation"
+		// @spec components/infrastructure/fan/web/route/discovery "Concerts view pauses the simulation"
 		it('does not resume the bubbles under search mode', () => {
-			sut.loading(undefined, routeTo('view=nearby'))
+			sut.loading(undefined, routeTo('view=concerts'))
 			sut.search.isSearchMode = true
 			sut.switchView()
-			expect(sut.dnaOrbCanvas.resume).not.toHaveBeenCalled()
+			expect(sut.artistBubbles.resume).not.toHaveBeenCalled()
 		})
 
-		// @spec components/infrastructure/fan/web/route/discovery "The bubble field is kept while the All Nearby view is shown"
+		// @spec components/infrastructure/fan/web/route/discovery "The bubble field is kept while the Concerts view is shown"
 		it('keeps the bubble field and the follows across a switch and back', async () => {
 			;(mockArtistClient.listTop as ReturnType<typeof vi.fn>).mockResolvedValue(
 				[makeArtist('a1', 'Artist One'), makeArtist('a2', 'Artist Two')],
@@ -1787,14 +1787,14 @@ describe('DiscoveryRoute', () => {
 			expect(sut.followedIds.has('f1')).toBe(true)
 		})
 
-		it('keeps the All Nearby visit across switches within a visit', () => {
+		it('keeps the Concerts view visit across switches within a visit', () => {
 			sut.loading(undefined, routeTo())
-			const visit = sut.nearbyVisit
+			const visit = sut.concertsVisit
 			visit.areaCode = 'JP-43'
 			sut.switchView()
 			sut.switchView()
-			expect(sut.nearbyVisit).toBe(visit)
-			expect(buildSut().nearbyVisit.areaCode).toBeNull()
+			expect(sut.concertsVisit).toBe(visit)
+			expect(buildSut().concertsVisit.areaCode).toBeNull()
 		})
 
 		it('ignores a tap while the previous swap is still revealing', () => {
@@ -1813,13 +1813,13 @@ describe('DiscoveryRoute', () => {
 			try {
 				sut.loading(undefined, routeTo())
 				sut.switchView()
-				expect(sut.view).toBe('nearby')
+				expect(sut.view).toBe('concerts')
 				expect(sut.revealing).toBe(true)
 
 				// A second tap during the reveal changes nothing.
 				sut.switchView()
 				expect(start).toHaveBeenCalledOnce()
-				expect(sut.view).toBe('nearby')
+				expect(sut.view).toBe('concerts')
 				finish()
 			} finally {
 				Object.assign(document, { startViewTransition: original })
@@ -1827,12 +1827,12 @@ describe('DiscoveryRoute', () => {
 		})
 
 		// @spec components/infrastructure/fan/web/global/bottom-sheet "Follow prompt for unauthenticated user"
-		it('shows the sign-up prompt banner when a guest taps follow in the All Nearby view', () => {
+		it('shows the sign-up prompt banner when a guest taps follow in the Concerts view', () => {
 			sut.offerSignUp()
 			expect(sut.showSignupBanner).toBe(true)
 			sut.onSignupRequested()
 			expect(mockAuth.signUp).toHaveBeenCalledWith(
-				expect.objectContaining({ source: 'all_nearby_prompt' }),
+				expect.objectContaining({ source: 'discovery_concerts_prompt' }),
 			)
 
 			mockAuth.isAuthenticated = true
@@ -1841,7 +1841,7 @@ describe('DiscoveryRoute', () => {
 			expect(signedIn.showSignupBanner).toBe(false)
 		})
 
-		it('hides the onboarding progress row on the All Nearby view', () => {
+		it('hides the onboarding progress row on the Concerts view', () => {
 			mockOnboarding.isOnboarding = true
 			const onboarding = buildSut()
 			onboarding.loading(undefined, routeTo())

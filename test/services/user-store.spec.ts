@@ -333,28 +333,28 @@ describe('UserStore', () => {
 		})
 
 		// @spec components/infrastructure/fan/web/route/discovery "Signing in, signing up or signing out clears the kept filter"
-		it('clearGuest() (before sign-in, after sign-up) forgets the All Nearby filter', () => {
+		it('clearGuest() (before sign-in, after sign-up) forgets the Concerts view filter', () => {
 			localStorage.setItem(
-				'discovery.nearbyFilter',
+				'discovery.concertsFilter',
 				JSON.stringify({ areaCode: 'JP-27', datePreset: 'weekend' }),
 			)
 			const { store } = build({ auth: makeAuth(false) })
 
 			store.clearGuest()
 
-			expect(localStorage.getItem('discovery.nearbyFilter')).toBeNull()
+			expect(localStorage.getItem('discovery.concertsFilter')).toBeNull()
 		})
 
-		it('sign-out forgets the All Nearby filter', () => {
+		it('sign-out forgets the Concerts view filter', () => {
 			localStorage.setItem(
-				'discovery.nearbyFilter',
+				'discovery.concertsFilter',
 				JSON.stringify({ areaCode: 'JP-27', datePreset: null }),
 			)
 			const { emitSignedOut } = build({ auth: makeAuth(true) })
 
 			emitSignedOut()
 
-			expect(localStorage.getItem('discovery.nearbyFilter')).toBeNull()
+			expect(localStorage.getItem('discovery.concertsFilter')).toBeNull()
 		})
 
 		// @spec components/infrastructure/fan/web/route/tickets "Design forgotten on sign-out"

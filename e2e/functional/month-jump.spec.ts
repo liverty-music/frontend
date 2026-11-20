@@ -1,13 +1,13 @@
 import { expect, type Page, test } from '../support/test'
-import { openDashboard } from '../support/timetable'
+import { openTimetable } from '../support/timetable'
 
 /**
  * The month-jump capsule's first display in a browser that cannot tell
  * whether a list has been scrolled (WebKit). The rest of the month jump is
- * checked by the `concert-highway` stories.
+ * checked by the `timetable-grid` stories.
  */
 
-const DASHBOARD = 'components/infrastructure/fan/web/route/dashboard'
+const TIMETABLE = 'components/infrastructure/fan/web/route/timetable'
 
 // The first page load compiles the app on the dev server; allow for it.
 test.describe.configure({ timeout: 60_000 })
@@ -15,14 +15,14 @@ test.use({ viewport: { width: 390, height: 800 } })
 
 const jump = (page: Page, direction: 'prev' | 'next') =>
 	page.locator(
-		`concert-highway .month-jump-button[data-direction="${direction}"]`,
+		`timetable-grid .month-jump-button[data-direction="${direction}"]`,
 	)
 
 test.describe('month jump', () => {
-	test(`@spec ${DASHBOARD} "First display in a browser that cannot tell whether a list has been scrolled"`, {
+	test(`@spec ${TIMETABLE} "First display in a browser that cannot tell whether a list has been scrolled"`, {
 		tag: '@webkit',
 	}, async ({ page }) => {
-		await openDashboard(page)
+		await openTimetable(page)
 		test.skip(
 			await page.evaluate(() => CSS.supports('container-type: scroll-state')),
 			'this browser can tell whether a list has been scrolled',

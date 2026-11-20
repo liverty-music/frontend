@@ -1,14 +1,14 @@
 import { expect, type Page, test } from '../support/test'
-import { frames, openDashboard, scrollBy } from '../support/timetable'
+import { frames, openTimetable, scrollBy } from '../support/timetable'
 
 /**
- * The deal-in of the timetable's concert cards on the dashboard, in a browser
+ * The deal-in of the timetable's concert cards on the timetable, in a browser
  * without scroll-triggered animations (WebKit, `webkit-shell`), where the same
  * motion is tied to the scroll. Chromium's scroll-triggered deal-in is checked
- * by the `DealInWhenRowsArrive` story of `concert-highway`.
+ * by the `DealInWhenRowsArrive` story of `timetable-grid`.
  */
 
-const HIGHWAY = 'components/infrastructure/fan/web/global/live-highway'
+const HIGHWAY = 'components/infrastructure/fan/web/global/timetable-grid'
 
 // The first page load compiles the app on the dev server; allow for it.
 test.describe.configure({ timeout: 60_000 })
@@ -21,7 +21,7 @@ test.use({ viewport: { width: 390, height: 800 } })
 function rowInView(page: Page) {
 	return page.evaluate(() => {
 		const scroll = document.querySelector(
-			'concert-highway .concert-scroll',
+			'timetable-grid .concert-scroll',
 		) as HTMLElement
 		const box = scroll.getBoundingClientRect()
 		const row = [
@@ -36,12 +36,12 @@ function rowInView(page: Page) {
 			.filter((a) => (a as CSSAnimation).animationName === 'deal-in')
 		const others = all.filter(
 			(a) =>
-				(a.effect as KeyframeEffect).target?.localName !== 'event-card' ||
+				(a.effect as KeyframeEffect).target?.localName !== 'concert-card' ||
 				(a.effect as KeyframeEffect).pseudoElement !== null,
 		).length
 		const cards = [...row.querySelectorAll<HTMLElement>('.lane')].flatMap(
 			(lane, laneAt) =>
-				[...lane.querySelectorAll<HTMLElement>('event-card')].map(
+				[...lane.querySelectorAll<HTMLElement>('concert-card')].map(
 					(card, index) => {
 						const mine = all.filter(
 							(a) => (a.effect as KeyframeEffect).target === card,
@@ -68,7 +68,7 @@ test.describe('deal-in, scroll-linked (no scroll triggers)', () => {
 	test(`@spec ${HIGHWAY} "Leaving through the top without entry-triggered animations"`, {
 		tag: '@webkit',
 	}, async ({ page }) => {
-		await openDashboard(page)
+		await openTimetable(page)
 		test.skip(
 			await page.evaluate(() => CSS.supports('timeline-trigger: --t view()')),
 			'this browser has scroll-triggered animations',
@@ -86,12 +86,12 @@ test.describe('deal-in, scroll-linked (no scroll triggers)', () => {
 		const state = () =>
 			page.evaluate((key) => {
 				const scroll = document.querySelector(
-					'concert-highway .concert-scroll',
+					'timetable-grid .concert-scroll',
 				) as HTMLElement
 				const g = [...scroll.querySelectorAll<HTMLElement>('.date-group')].find(
 					(n) => n.dataset.dateKey === key,
 				) as HTMLElement
-				const card = g.querySelector('event-card') as HTMLElement
+				const card = g.querySelector('concert-card') as HTMLElement
 				const box = card.getBoundingClientRect()
 				return {
 					opacity: Number(getComputedStyle(card).opacity),

@@ -151,19 +151,19 @@ test.describe('the notification center', () => {
 	test(`@spec ${SERVICE_WORKER} "Open a lottery loss notification"`, async ({
 		page,
 	}) => {
-		const stored = [{ ...lotteryLoss(1), url: `/events/${ID(9)}` }]
+		const stored = [{ ...lotteryLoss(1), url: `/concerts/${ID(9)}` }]
 		await openAs(page, stored)
 
 		await page.goto(`${stored[0].url}?notification=${ID(1)}`)
 
-		await expect(page).toHaveURL(new RegExp(`/events/${ID(9)}$`))
+		await expect(page).toHaveURL(new RegExp(`/concerts/${ID(9)}$`))
 		await expect.poll(() => stored[0].read).toBe(true)
 		await page.goto('/notifications')
 		await expect(items(page).first()).toHaveAttribute('data-read', 'true')
 	})
 
 	test(`@spec ${SERVICE_WORKER} "Marking fails"`, async ({ page }) => {
-		const stored = [{ ...lotteryLoss(1), url: `/events/${ID(9)}` }]
+		const stored = [{ ...lotteryLoss(1), url: `/concerts/${ID(9)}` }]
 		await openAs(page, stored, { markingFails: true })
 		const refused = page.waitForResponse((r) =>
 			r.url().includes('NotificationService/MarkRead'),
@@ -172,7 +172,7 @@ test.describe('the notification center', () => {
 		await page.goto(`${stored[0].url}?notification=${ID(1)}`)
 		expect((await refused).status()).toBe(503)
 
-		await expect(page).toHaveURL(new RegExp(`/events/${ID(9)}$`))
+		await expect(page).toHaveURL(new RegExp(`/concerts/${ID(9)}$`))
 		await page.goto('/notifications')
 		await expect(page.getByTestId('notifications-unread')).toHaveCount(1)
 	})

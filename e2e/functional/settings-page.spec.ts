@@ -354,7 +354,7 @@ test.describe('sign out', () => {
 	})
 })
 
-test(`@spec ${GUEST_STORY} "Guest navigates to Settings after dashboard"`, async ({
+test(`@spec ${GUEST_STORY} "Guest navigates to Settings after timetable"`, async ({
 	page,
 }) => {
 	await page.addInitScript(() => {
@@ -364,14 +364,14 @@ test(`@spec ${GUEST_STORY} "Guest navigates to Settings after dashboard"`, async
 		localStorage.setItem('guest.home', 'JP-13')
 	})
 	await mockFanRpc(page)
-	await openShell(page, '/dashboard')
-	await page.locator('fab-menu .fab-toggle').click()
-	await page.locator('fab-menu .fab-item[data-action-id="settings"]').click()
+	await openShell(page, '/timetable')
+	await page.locator('action-menu .action-menu-toggle').click()
+	await page.locator('action-menu .fab-item[data-action-id="settings"]').click()
 	await page.waitForURL((url) => url.pathname === '/settings')
 	await expect(page.getByTestId('settings-sign-in')).toBeVisible()
 })
 
-test(`@spec ${GUEST_STORY} "Guest navigates to Tickets after dashboard"`, async ({
+test(`@spec ${GUEST_STORY} "Guest navigates to Tickets after timetable"`, async ({
 	page,
 }) => {
 	await page.addInitScript(() => {
@@ -382,8 +382,8 @@ test(`@spec ${GUEST_STORY} "Guest navigates to Tickets after dashboard"`, async 
 		localStorage.setItem('language', 'ja')
 	})
 	await mockFanRpc(page)
-	await openShell(page, '/dashboard')
-	await tapTab(page, 'ticket')
+	await openShell(page, '/timetable')
+	await tapTab(page, 'tickets')
 	await page.waitForURL((url) => url.pathname === '/tickets')
 	// The Tickets screen's own empty state, not a redirect.
 	await expect(page.locator('tickets-route')).toBeVisible()

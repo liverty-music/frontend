@@ -399,7 +399,7 @@ async function round(browser: Browser, port: number, n: number) {
 		idle = await idleWindow()
 	}
 
-	const canvas = page.locator('dna-orb-canvas canvas')
+	const canvas = page.locator('artist-bubbles canvas')
 	const box = await canvas.boundingBox()
 	if (!box) throw new Error('no canvas')
 	await page.evaluate(() => (window as unknown as Window_).__probe.start())
@@ -446,7 +446,7 @@ async function saveStills(page: Page, dir: string): Promise<void> {
 		page.evaluate(async (step) => {
 			// biome-ignore lint/suspicious/noExplicitAny: the build's own canvas fields, read by name
 			type Vm = Record<string, any>
-			const host = document.querySelector('dna-orb-canvas') as Element & {
+			const host = document.querySelector('artist-bubbles') as Element & {
 				$au: Record<string, { viewModel: Vm }>
 			}
 			const vm = host.$au['au:resource:custom-element'].viewModel

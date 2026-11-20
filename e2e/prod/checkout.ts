@@ -26,10 +26,10 @@ export async function openCheckout(
 	stock: SaleStock,
 	query = '',
 ): Promise<void> {
-	await page.goto(`/events/${eventId}${query}`)
+	await page.goto(`/concerts/${eventId}${query}`)
 	await stockRow(page, stock).getByTestId('event-buy').click()
 	await expect(page).toHaveURL(
-		new RegExp(`/events/${eventId}/checkout/${stock.id}$`),
+		new RegExp(`/concerts/${eventId}/checkout\\?stock=${stock.id}$`),
 	)
 	await expect(page.getByTestId('checkout-count')).toBeVisible()
 	await expect(page.getByTestId('checkout-seat-type')).toHaveText(

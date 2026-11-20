@@ -15,13 +15,13 @@ import {
 	loadDiscoveryView,
 	saveDiscoveryView,
 } from '../../adapter/storage/discovery-view-storage'
+import type { ArtistBubbles } from '../../components/artist-bubbles/artist-bubbles'
+import { preloadPhysics } from '../../components/artist-bubbles/bubble-physics'
+import type { RevealMark } from '../../components/artist-bubbles/reveal-marks'
 import {
-	type NearbyConcerts,
-	NearbyVisit,
-} from '../../components/all-nearby/nearby-concerts'
-import { preloadPhysics } from '../../components/dna-orb/bubble-physics'
-import type { DnaOrbCanvas } from '../../components/dna-orb/dna-orb-canvas'
-import type { RevealMark } from '../../components/dna-orb/reveal-marks'
+	type DiscoveryConcerts,
+	DiscoveryConcertsVisit,
+} from '../../components/discovery-concerts/discovery-concerts'
 import type { PageHelp } from '../../components/page-help/page-help'
 import { timetableReadiness } from '../../constants/onboarding'
 import type { Artist } from '../../entities/artist'
@@ -29,16 +29,16 @@ import {
 	Events,
 	IAnalyticsService,
 } from '../../lib/analytics/analytics-service'
+import {
+	helpAction,
+	IActionMenuService,
+	type MenuAction,
+} from '../../services/action-menu-service'
 import { IArtistBubbleStore } from '../../services/artist-bubble-store'
 import { IArtistStore } from '../../services/artist-store'
 import { IAuthService } from '../../services/auth-service'
 import { IConcertStore } from '../../services/concert-store'
 import { IErrorBoundaryService } from '../../services/error-boundary-service'
-import {
-	type FabAction,
-	helpAction,
-	IFabMenuService,
-} from '../../services/fab-menu-service'
 import { IFollowStore } from '../../services/follow-store'
 import { IOnboardingService } from '../../services/onboarding-service'
 import { IResumeRevalidator } from '../../services/resume-revalidator'
@@ -57,7 +57,7 @@ export class DiscoveryRoute {
 	private readonly concertService = resolve(IConcertStore)
 	private readonly analytics = resolve(IAnalyticsService)
 	private readonly resumeRevalidator = resolve(IResumeRevalidator)
-	public readonly fabMenu = resolve(IFabMenuService)
+	public readonly actionMenu = resolve(IActionMenuService)
 	private readonly history = resolve(IHistory)
 	private readonly authService = resolve(IAuthService)
 	private readonly userStore = resolve(IUserStore)
@@ -65,35 +65,35 @@ export class DiscoveryRoute {
 	private readonly logger = resolve(ILogger).scopeTo('DiscoveryRoute')
 	public readonly i18n = resolve(I18N)
 
-	public dnaOrbCanvas!: DnaOrbCanvas
+	public artistBubbles!: ArtistBubbles
 
 	/**
-	 * The view on screen: the artist bubbles or the All Nearby view. Chosen in
+	 * The view on screen: the artist bubbles or the Concerts view. Chosen in
 	 * loading() from the address, the device's last choice and onboarding; the
 	 * swap tile switches it (see switchView).
 	 */
 	@observable public view: DiscoveryView = 'artists'
 
 	/**
-	 * The All Nearby view's area, date range and results for this visit, so
+	 * The Concerts view's area, date range and results for this visit, so
 	 * switching to the bubbles and back finds them unchanged. A new visit (a new
 	 * route instance) starts from the filter kept on the device.
 	 */
-	public readonly nearbyVisit = new NearbyVisit()
-	/** The All Nearby view while it is shown; its filters open from the launcher. */
-	public nearbyConcerts: NearbyConcerts | undefined
+	public readonly concertsVisit = new DiscoveryConcertsVisit()
+	/** The Concerts view while it is shown; its filters open from the launcher. */
+	public discoveryConcerts: DiscoveryConcerts | undefined
 
 	/** True while a swap's View Transition runs (names the layout for it). */
 	public revealing = false
 
-	/** A guest tapped follow in the All Nearby view: offer sign-up. */
+	/** A guest tapped follow in the Concerts view: offer sign-up. */
 	public showSignupBanner = false
 
 	public get isAuthenticated(): boolean {
 		return this.authService.isAuthenticated
 	}
 
-	/** A guest tapped follow in the All Nearby view. */
+	/** A guest tapped follow in the Concerts view. */
 	public offerSignUp(): void {
 		if (this.isAuthenticated) return
 		this.showSignupBanner = true
@@ -103,7 +103,7 @@ export class DiscoveryRoute {
 		this.errorBoundary.addBreadcrumb('action', 'start_sign_up')
 		this.authService.signUp({
 			uiLocales: currentLanguage(this.i18n),
-			source: 'all_nearby_prompt',
+			source: 'discovery_concerts_prompt',
 		})
 	}
 
@@ -124,7 +124,7 @@ export class DiscoveryRoute {
 		this.artistClient,
 		{
 			onEnterSearchMode: () => this.pauseField(),
-			onExitSearchMode: () => this.dnaOrbCanvas?.resume(),
+			onExitSearchMode: () => this.artistBubbles?.resume(),
 			onError: (key) =>
 				this.ea.publish(new Snack(this.i18n.tr(key), 'warning')),
 			onSearchCompleted: ({ queryLength, resultCount }) => {
@@ -170,7 +170,7 @@ export class DiscoveryRoute {
 
 	/**
 	 * Report once per visit the moment the onboarding progress row is shown
-	 * as the link to the Dashboard, with the counts that made it ready. The
+	 * as the link to the Timetable, with the counts that made it ready. The
 	 * row is hidden in search mode, so a follow from search results reports
 	 * when the search closes.
 	 */
@@ -217,12 +217,12 @@ export class DiscoveryRoute {
 
 	public loading(_params?: Params, next?: RouteNode): void {
 		this.logger.info('Loading discovery page')
-		// `view=nearby` in the address wins at any onboarding state; otherwise
+		// `view=concerts` in the address wins at any onboarding state; otherwise
 		// the device's last choice, except while onboarding, which always starts
 		// on the bubbles.
 		this.view =
-			next?.queryParams.get('view') === 'nearby'
-				? 'nearby'
+			next?.queryParams.get('view') === 'concerts'
+				? 'concerts'
 				: this.isOnboarding
 					? 'artists'
 					: loadDiscoveryView()
@@ -301,37 +301,37 @@ export class DiscoveryRoute {
 
 	public attached(): void {
 		document.addEventListener('visibilitychange', this.onVisibilityChange)
-		// Opened on the All Nearby view: the bubbles are not shown, so they do
+		// Opened on the Concerts view: the bubbles are not shown, so they do
 		// not run, and the address names the view.
-		if (this.view === 'nearby') {
+		if (this.view === 'concerts') {
 			this.pauseField()
 			this.writeViewAddress()
 		}
 		this.resumeRevalidator.register(this.revalidate)
-		this.refreshFabActions()
+		this.refreshMenuActions()
 	}
 
 	/**
-	 * This route's launcher actions for the view on screen: the All Nearby
+	 * This route's launcher actions for the view on screen: the Concerts view
 	 * filter (closest to the FAB) and help, or help alone on the bubbles. A
 	 * re-register replaces the previous set, so a view switch never leaves a
 	 * stale or duplicated item.
 	 */
-	private refreshFabActions(): void {
-		const actions: FabAction[] = []
-		if (this.view === 'nearby') {
+	private refreshMenuActions(): void {
+		const actions: MenuAction[] = []
+		if (this.view === 'concerts') {
 			actions.push({
 				id: 'filter',
-				labelKey: 'fabMenu.filter',
+				labelKey: 'actionMenu.filter',
 				icon: 'filter',
 				kind: 'command',
-				isOn: () => this.nearbyVisit.isFiltered(this.userStore.currentHome),
-				invoke: () => this.nearbyConcerts?.openFilters(),
+				isOn: () => this.concertsVisit.isFiltered(this.userStore.currentHome),
+				invoke: () => this.discoveryConcerts?.openFilters(),
 			})
 		}
 		actions.push(helpAction(() => this.pageHelp?.open()))
 		this.fabDisposer?.()
-		this.fabDisposer = this.fabMenu.register(this, actions)
+		this.fabDisposer = this.actionMenu.register(this, actions)
 	}
 
 	public detaching(): void {
@@ -362,7 +362,7 @@ export class DiscoveryRoute {
 		if (document.hidden) {
 			this.pauseField()
 		} else if (this.bubblesShown) {
-			this.dnaOrbCanvas?.resume()
+			this.artistBubbles?.resume()
 		}
 	}
 
@@ -372,7 +372,7 @@ export class DiscoveryRoute {
 	 */
 	private pauseField(): void {
 		this.revealTiming = null
-		this.dnaOrbCanvas?.pause()
+		this.artistBubbles?.pause()
 	}
 
 	/** Whether the bubble field is on screen: the bubbles, outside search. */
@@ -380,7 +380,7 @@ export class DiscoveryRoute {
 		return this.view === 'artists' && !this.search.isSearchMode
 	}
 
-	// --- Swap between the artist bubbles and the All Nearby view ---
+	// --- Swap between the artist bubbles and the Concerts view ---
 
 	/**
 	 * The swap tile was tapped. The view turns over like a card, the same half
@@ -395,7 +395,8 @@ export class DiscoveryRoute {
 		// Transition would skip the first, whose cleanup would then clear the
 		// flags the second one still needs.
 		if (this.revealing) return
-		const next: DiscoveryView = this.view === 'nearby' ? 'artists' : 'nearby'
+		const next: DiscoveryView =
+			this.view === 'concerts' ? 'artists' : 'concerts'
 		// Name the layout before the old snapshot is taken, so the old and new
 		// views pair up and turn over; the page chrome swaps without a
 		// cross-fade.
@@ -417,19 +418,19 @@ export class DiscoveryRoute {
 	}
 
 	/**
-	 * The All Nearby view hides the bubble field, so the simulation pauses on
+	 * The Concerts view hides the bubble field, so the simulation pauses on
 	 * the way in, and resumes on the way out unless search mode is on or the
 	 * document is hidden.
 	 */
 	protected viewChanged(view: DiscoveryView): void {
 		// Before attach the launcher is seeded by attached().
-		if (this.fabDisposer) this.refreshFabActions()
-		if (view === 'nearby') {
-			// Switching to All Nearby ends the visit's frame measurement.
-			this.dnaOrbCanvas?.endFrameMeasurement()
+		if (this.fabDisposer) this.refreshMenuActions()
+		if (view === 'concerts') {
+			// Switching to the Concerts view ends the visit's frame measurement.
+			this.artistBubbles?.endFrameMeasurement()
 			this.pauseField()
 		} else if (this.bubblesShown && !document.hidden) {
-			this.dnaOrbCanvas?.resume()
+			this.artistBubbles?.resume()
 		}
 	}
 
@@ -447,7 +448,7 @@ export class DiscoveryRoute {
 		this.history.replaceState(
 			null,
 			'',
-			this.view === 'nearby' ? '/discovery?view=nearby' : '/discovery',
+			this.view === 'concerts' ? '/discovery?view=concerts' : '/discovery',
 		)
 	}
 
@@ -598,7 +599,7 @@ export class DiscoveryRoute {
 		// bubble for this artist; the absorb animation is a transient flourish.
 		this.bubbleStore.remove(artistId)
 
-		this.dnaOrbCanvas.spawnAndAbsorbAfterSearch(artist)
+		this.artistBubbles.spawnAndAbsorbAfterSearch(artist)
 
 		void this.searchConcertsForArtist(artistId, artist.name)
 	}

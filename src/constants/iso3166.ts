@@ -19,7 +19,7 @@ export interface PrefectureOption {
 
 /**
  * All Japanese prefecture entries as { code, key } pairs for UI selectors.
- * Use i18n tr(`userHome.prefectures.${key}`) for display.
+ * Use i18n tr(`homeAreaSelector.prefectures.${key}`) for display.
  */
 import { JP_PREFECTURES } from '../entities/user'
 

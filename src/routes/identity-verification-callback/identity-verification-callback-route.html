@@ -1,0 +1,12 @@
+<import from="./identity-verification-callback-route.css"></import>
+<import from="../../../shared/ui/circular-progress/circular-progress"></import>
+
+<!-- Waits for IdentityVerificationService.Create, then opens Settings, which
+     shows the result (identity-ekyc-jpki design "The verification result is
+     shown on Settings"). -->
+<main class="[ verify-callback ]">
+  <output class="[ verify-loading ] [ cluster ]" aria-live="polite" aria-busy="true">
+    <circular-progress></circular-progress>
+    <p t="identityVerificationCallback.loading"></p>
+  </output>
+</main>

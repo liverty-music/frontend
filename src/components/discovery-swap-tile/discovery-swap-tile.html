@@ -1,0 +1,18 @@
+<import from="./discovery-swap-tile.css"></import>
+<import from="./discovery-swap-icon"></import>
+<import from="./discovery-swap-sparkles"></import>
+
+<!-- The icon is decoration (aria-hidden); the visually hidden label names
+     the view a tap leads to and is the button's accessible name. -->
+<button
+  type="button"
+  class="[ discovery-swap-tile ] [ state-layer ]"
+  data-testid="discovery-swap"
+  click.trigger="swap()"
+>
+  <span class="swap-tile">
+    <discovery-swap-icon view.bind="view" turn.bind="ringTurn"></discovery-swap-icon>
+    <discovery-swap-sparkles class="swap-sparkles" data-view.bind="view" aria-hidden="true"></discovery-swap-sparkles>
+  </span>
+  <span class="visually-hidden" t.bind="labelKey"></span>
+</button>

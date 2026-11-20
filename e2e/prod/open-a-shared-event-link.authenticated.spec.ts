@@ -23,7 +23,7 @@ test.describe('open a shared event link (signed in)', () => {
 		page,
 	}) => {
 		test.skip(!EVENTS.public, 'E2E_EVENT_PUBLIC_ID is required')
-		await page.goto(`/events/${EVENTS.public}`)
+		await page.goto(`/concerts/${EVENTS.public}`)
 		// The captured session must still be signed in.
 		expect(
 			await page.evaluate(() =>
@@ -73,7 +73,7 @@ test.describe('open a shared event link (signed in)', () => {
 			storageState: { cookies: [], origins: [] },
 		})
 		const page = await context.newPage()
-		await page.goto(`/events/${EVENTS.upcoming}`)
+		await page.goto(`/concerts/${EVENTS.upcoming}`)
 
 		const follow = page.getByTestId('event-follow').first()
 		await expect(follow).toBeEnabled()
@@ -86,7 +86,7 @@ test.describe('open a shared event link (signed in)', () => {
 		await page.waitForURL(/auth\.liverty-music\.app/, { waitUntil: 'commit' })
 
 		// The test user already exists, so leave the registration form for the
-		// sign-in form; the callback still runs the event-page sign-up flow.
+		// sign-in form; the callback still runs the concert-page sign-up flow.
 		// Login V2's registration page offers no sign-in link, so open the
 		// login-name step for the same auth request (same query string).
 		const register = new URL(page.url())
@@ -100,7 +100,7 @@ test.describe('open a shared event link (signed in)', () => {
 		// @spec components/infrastructure/fan/web/global/hosted-login "Existing password still signs in"
 		await fillAndSubmit(page, 'input[type="password"]', password)
 
-		await page.waitForURL(new RegExp(`/events/${EVENTS.upcoming}$`), {
+		await page.waitForURL(new RegExp(`/concerts/${EVENTS.upcoming}$`), {
 			timeout: 60_000,
 		})
 		await expect(page.getByTestId('event-follow').first()).toHaveAttribute(

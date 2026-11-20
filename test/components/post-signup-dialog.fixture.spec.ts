@@ -9,11 +9,11 @@ import en from '../../src/locales/en/translation.json'
 import ja from '../../src/locales/ja/translation.json'
 import { IFollowStore } from '../../src/services/follow-store'
 import { INotificationManager } from '../../src/services/notification-manager'
-import { IPromptCoordinator } from '../../src/services/prompt-coordinator'
 import {
-	IPushOfferService,
-	type PushOfferOutcome,
-} from '../../src/services/push-offer-service'
+	INotificationPromptService,
+	type NotificationPromptOutcome,
+} from '../../src/services/notification-prompt-service'
+import { IPromptCoordinator } from '../../src/services/prompt-coordinator'
 import { IPwaInstallService } from '../../src/services/pwa-install-service'
 
 /**
@@ -41,13 +41,13 @@ interface RenderOptions {
 	installed?: boolean
 	ios?: boolean
 	followed?: number
-	outcome?: PushOfferOutcome
+	outcome?: NotificationPromptOutcome
 	lng?: 'ja' | 'en'
 }
 
 async function render(opts: RenderOptions = {}) {
 	const notifications = { permission: opts.permission ?? 'default' }
-	const pushOffer = {
+	const notificationPrompt = {
 		canReceivePush: opts.canReceivePush ?? true,
 		accept: vi.fn(async () => {
 			const outcome = opts.outcome ?? 'granted'
@@ -80,7 +80,7 @@ async function render(opts: RenderOptions = {}) {
 			BottomSheetStub,
 			BusyOnClickCustomAttribute,
 			Registration.instance(INotificationManager, notifications),
-			Registration.instance(IPushOfferService, pushOffer),
+			Registration.instance(INotificationPromptService, notificationPrompt),
 			Registration.instance(IPwaInstallService, pwaInstall),
 			Registration.instance(IPromptCoordinator, coordinator),
 			Registration.instance(IFollowStore, {
@@ -121,7 +121,7 @@ async function render(opts: RenderOptions = {}) {
 		buttons,
 		press,
 		step,
-		pushOffer,
+		notificationPrompt,
 		pwaInstall,
 		coordinator,
 	}
@@ -195,7 +195,7 @@ describe('PostSignupDialog', () => {
 
 			await d.press(t.notify.enable)
 
-			expect(d.pushOffer.accept).toHaveBeenCalledWith({
+			expect(d.notificationPrompt.accept).toHaveBeenCalledWith({
 				source: 'post_signup_dialog',
 				inline: true,
 			})

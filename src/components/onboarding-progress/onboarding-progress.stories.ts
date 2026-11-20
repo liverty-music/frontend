@@ -14,7 +14,7 @@ const meta = {
 		value: {
 			control: { type: 'range', min: 0, max: 1, step: 0.01 },
 			description:
-				'Readiness of the onboarding timetable from 0 to 1; at 1 the row becomes the link to the Dashboard.',
+				'Readiness of the onboarding timetable from 0 to 1; at 1 the row becomes the link to the Timetable.',
 		},
 	},
 	args: { value: 0 },
@@ -93,7 +93,7 @@ export const Filling = {
 	},
 } satisfies Story
 
-/** Ready: the row is the one action that opens the Dashboard. */
+/** Ready: the row is the one action that opens the Timetable. */
 export const Ready = {
 	render,
 	args: { value: 1 },
@@ -102,7 +102,7 @@ export const Ready = {
 		const link = canvas.getByRole('link', {
 			name: '完成しました！ タイムテーブルを見る',
 		})
-		await expect(link).toHaveAttribute('href', '/dashboard')
+		await expect(link).toHaveAttribute('href', '/timetable')
 		await expect(canvas.queryByRole('progressbar')).toBeNull()
 		// Once the row has grown in: a 48 px tap.
 		await waitFor(() => expectTargets(canvasElement, 'a'))

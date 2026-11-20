@@ -5,7 +5,7 @@ import { IEventAggregator, ILogger, resolve, watch } from 'aurelia'
 import { Snack } from '../../../shared/ui/snack-bar/snack'
 import { ILocalStorage } from '../../adapter/storage/local-storage'
 import type { ConfirmDialog } from '../../components/confirm-dialog/confirm-dialog'
-import type { UserHomeSelector } from '../../components/user-home-selector/user-home-selector'
+import type { HomeAreaSelector } from '../../components/home-area-selector/home-area-selector'
 import { IAppConfig } from '../../config/app-config'
 import { codeToHome, translationKey } from '../../constants/iso3166'
 import {
@@ -20,13 +20,13 @@ import {
 	IConsentService,
 } from '../../lib/consent/consent-service'
 import { toDomesticDisplay, toE164 } from '../../lib/to-e164'
+import { IActionMenuService } from '../../services/action-menu-service'
 import { IAudioEngine } from '../../services/audio-engine'
 import { IAuthService } from '../../services/auth-service'
 import {
 	IErrorBoundaryService,
 	REPORT_EMAIL_ADDRESS,
 } from '../../services/error-boundary-service'
-import { IFabMenuService } from '../../services/fab-menu-service'
 import {
 	DELETE_ACCOUNT_PATH,
 	PASSKEY_MANAGEMENT_PATH,
@@ -64,15 +64,15 @@ export class SettingsRoute {
 	// `auth` exposure pattern. Both default ON under the opt-out model.
 	public readonly consent = resolve(IConsentService)
 	// Public so the left-handed-mode toggle binds the launcher placement
-	// (`fabMenu.isLeftHanded`) directly; toggleHanded() persists via the storage
+	// (`actionMenu.isLeftHanded`) directly; toggleHanded() persists via the storage
 	// adapter (mirrors the consent/auth exposure pattern).
-	public readonly fabMenu = resolve(IFabMenuService)
+	public readonly actionMenu = resolve(IActionMenuService)
 
 	public soundEnabled = !this.audio.muted
 	public soundVolume = Math.round(this.audio.volume * 100)
 	public notificationsEnabled = false
 	public vapidAvailable = !!resolve(IAppConfig).vapidPublicKey
-	public homeSelector!: UserHomeSelector
+	public homeSelector!: HomeAreaSelector
 	public languageSelectorOpen = false
 	public readonly supportedLanguages = SUPPORTED_LANGUAGES
 	private isToggling = false
@@ -131,7 +131,7 @@ export class SettingsRoute {
 
 	public get currentHomeKey(): string {
 		return this.currentHome
-			? `userHome.prefectures.${this.currentHome}`
+			? `homeAreaSelector.prefectures.${this.currentHome}`
 			: 'settings.notSet'
 	}
 
@@ -175,7 +175,7 @@ export class SettingsRoute {
 	public get identityFailureKey(): string | null {
 		const failure = this.identityVerifications.failure
 		if (this.isVerified || !failure) return null
-		return `verifyCallback.error.${failure}`
+		return `identityVerificationCallback.error.${failure}`
 	}
 
 	/** A card already used by another account cannot be retried here. */
@@ -374,9 +374,13 @@ export class SettingsRoute {
 	private announceIdentityVerified(): void {
 		if (!this.identityVerifications.takeVerifiedNotice()) return
 		this.ea.publish(
-			new Snack(this.i18n.tr('verifyCallback.success.heading'), 'info', {
-				icon: 'shield-check',
-			}),
+			new Snack(
+				this.i18n.tr('identityVerificationCallback.success.heading'),
+				'info',
+				{
+					icon: 'shield-check',
+				},
+			),
 		)
 	}
 
@@ -481,7 +485,7 @@ export class SettingsRoute {
 	}
 
 	public async onHomeSelected(code: string): Promise<void> {
-		// UserHomeSelector is now a pure selection UI — the caller owns
+		// HomeAreaSelector is now a pure selection UI — the caller owns
 		// persistence. Authenticated users write through UserService.updateHome;
 		// guests persist to localStorage via setGuestHome. `currentHome` is
 		// derived from the store, so the view updates reactively afterwards.
@@ -491,7 +495,9 @@ export class SettingsRoute {
 				await this.userStore.updateHome(codeToHome(code))
 			} catch (err) {
 				this.logger.error('Failed to update home via RPC', err)
-				this.ea.publish(new Snack(this.i18n.tr('userHome.saveFailed'), 'error'))
+				this.ea.publish(
+					new Snack(this.i18n.tr('homeAreaSelector.saveFailed'), 'error'),
+				)
 				// The selector stays open on the choice so it can be tried again.
 				throw err
 			}

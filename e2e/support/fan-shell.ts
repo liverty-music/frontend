@@ -63,9 +63,10 @@ export async function seedSignedInFan(
 
 export const nav = (page: Page): Locator => page.locator('bottom-nav-bar nav')
 export const tabs = (page: Page): Locator => page.locator('.nav-tab')
-export const fab = (page: Page): Locator => page.locator('fab-menu .fab-toggle')
+export const fab = (page: Page): Locator =>
+	page.locator('action-menu .action-menu-toggle')
 export const fabItems = (page: Page): Locator =>
-	page.locator('fab-menu .fab-item')
+	page.locator('action-menu .fab-item')
 
 /** Open `path` and wait until the bar shows its four tabs. */
 export async function openShell(page: Page, path: string): Promise<void> {
@@ -73,9 +74,9 @@ export async function openShell(page: Page, path: string): Promise<void> {
 	await tabs(page).nth(3).waitFor({ timeout: 30_000 })
 }
 
-/** Navigate inside the app by tapping the tab with this icon. */
-export async function tapTab(page: Page, icon: string): Promise<void> {
-	await page.locator(`.nav-tab[data-nav="${icon}"]`).click()
+/** Navigate inside the app by tapping the tab of this route (its `data-nav`). */
+export async function tapTab(page: Page, route: string): Promise<void> {
+	await page.locator(`.nav-tab[data-nav="${route}"]`).click()
 }
 
 export interface Box {
@@ -147,14 +148,14 @@ export async function publishSnack(
 }
 
 /**
- * Open the All Nearby filter sheet from the launcher's filter item, and return
+ * Open the Concerts view filter sheet from the launcher's filter item, and return
  * its area and period rows.
  */
-export async function openNearbyFilters(
+export async function openConcertsFilters(
 	page: Page,
 ): Promise<{ area: Locator; period: Locator }> {
 	await fab(page).click()
-	await page.locator('fab-menu .fab-item[data-action-id="filter"]').click()
+	await page.locator('action-menu .fab-item[data-action-id="filter"]').click()
 	const area = page.getByTestId('nearby-area-row')
 	const period = page.getByTestId('nearby-period-row')
 	await area.waitFor({ state: 'visible' })

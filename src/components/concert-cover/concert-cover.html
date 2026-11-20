@@ -1,0 +1,16 @@
+<import from="./concert-cover.css"></import>
+
+<figure class="concert-cover">
+  <img
+    if.bind="url"
+    src.bind="url"
+    alt=""
+    decoding="async"
+    fetchpriority="high"
+    class="concert-cover-img"
+    data-testid="concert-cover"
+  />
+  <div else class="[ concert-cover-placeholder ] [ md-typescale-display-small ]" data-testid="concert-cover-placeholder" role="presentation">
+    <svg-icon name="music" size="md"></svg-icon>
+  </div>
+</figure>

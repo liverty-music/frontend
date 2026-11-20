@@ -86,7 +86,7 @@ describe('ConcertStore', () => {
 	})
 
 	describe('listFollowed — caching', () => {
-		// @spec components/infrastructure/fan/web/route/dashboard "Cache hit on Dashboard re-entry"
+		// @spec components/infrastructure/fan/web/route/timetable "Cache hit on Timetable re-entry"
 		it('returns cached result on second call without issuing RPC', async () => {
 			const groups = makeGroups(2)
 			mockRpcClient.listFollowed.mockResolvedValueOnce(groups)
@@ -98,7 +98,7 @@ describe('ConcertStore', () => {
 			expect(result).toBe(groups)
 		})
 
-		// @spec components/infrastructure/fan/web/route/dashboard "Cache miss on first load"
+		// @spec components/infrastructure/fan/web/route/timetable "Cache miss on first load"
 		it('issues RPC on first call (cache miss) and stores result', async () => {
 			const groups = makeGroups(3)
 			mockRpcClient.listFollowed.mockResolvedValueOnce(groups)
@@ -109,7 +109,7 @@ describe('ConcertStore', () => {
 			expect(result).toEqual(groups)
 		})
 
-		// @spec components/infrastructure/fan/web/route/dashboard "Cache expiry after 24 hours"
+		// @spec components/infrastructure/fan/web/route/timetable "Cache expiry after 24 hours"
 		it('serves the stale value then revalidates in the background after TTL expiry', async () => {
 			const first = makeGroups(1)
 			const second = makeGroups(2)
@@ -208,7 +208,7 @@ describe('ConcertStore', () => {
 	})
 
 	describe('invalidateFollowerCache', () => {
-		// @spec components/infrastructure/fan/web/route/dashboard "Cache invalidated after follow"
+		// @spec components/infrastructure/fan/web/route/timetable "Cache invalidated after follow"
 		it('causes next listFollowed() call to issue RPC', async () => {
 			mockRpcClient.listFollowed.mockResolvedValue(makeGroups(1))
 
@@ -345,7 +345,7 @@ describe('ConcertStore', () => {
 	})
 
 	describe('SignedOut', () => {
-		it('drops every cached list and the dashboard view state', async () => {
+		it('drops every cached list and the timetable view state', async () => {
 			mockRpcClient.listFollowed.mockResolvedValue(makeGroups(1))
 			await sut.listFollowed()
 			sut.setDateGroups('JP-13|2026-04-01|a1', [])
@@ -372,9 +372,9 @@ describe('ConcertStore', () => {
 			} as unknown as ResolvedConcert
 		}
 
-		// @spec components/infrastructure/fan/web/global/live-highway "Lane 1 - HOME STAGE"
-		// @spec components/infrastructure/fan/web/global/live-highway "Lane 2 - NEAR STAGE"
-		// @spec components/infrastructure/fan/web/global/live-highway "Lane 3 - AWAY STAGE"
+		// @spec components/infrastructure/fan/web/global/timetable-grid "Lane 1 - HOME STAGE"
+		// @spec components/infrastructure/fan/web/global/timetable-grid "Lane 2 - NEAR STAGE"
+		// @spec components/infrastructure/fan/web/global/timetable-grid "Lane 3 - AWAY STAGE"
 		it('puts the proto fields home, nearby and away into the HOME, NEAR and AWAY lanes', () => {
 			const [group] = sut.toDateGroups(
 				[

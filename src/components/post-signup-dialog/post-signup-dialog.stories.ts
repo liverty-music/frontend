@@ -9,8 +9,8 @@ import { BusyOnClickCustomAttribute } from '../../custom-attributes/busy-on-clic
 import ja from '../../locales/ja/translation.json'
 import { IFollowStore } from '../../services/follow-store'
 import { INotificationManager } from '../../services/notification-manager'
+import { INotificationPromptService } from '../../services/notification-prompt-service'
 import { IPromptCoordinator } from '../../services/prompt-coordinator'
-import { IPushOfferService } from '../../services/push-offer-service'
 import { IPwaInstallService } from '../../services/pwa-install-service'
 import { PostSignupDialog } from './post-signup-dialog'
 
@@ -34,7 +34,7 @@ function story(setup: Setup) {
 			Registration.instance(INotificationManager, {
 				permission: setup.permission,
 			}),
-			Registration.instance(IPushOfferService, {
+			Registration.instance(INotificationPromptService, {
 				canReceivePush: !setup.ios || setup.installed,
 				accept: fn(async () => 'granted'),
 			}),

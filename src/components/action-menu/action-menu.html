@@ -1,0 +1,50 @@
+<import from="./action-menu.css"></import>
+<import from="./action-menu-toggle/action-menu-toggle"></import>
+<import from="./action-menu-item/action-menu-item"></import>
+
+<!-- Collapsed FAB: a disclosure button that is itself a manual popover
+     (see action-menu-toggle), handed back here so the launcher owns its top layer. -->
+<action-menu-toggle
+  button.from-view="fabButton"
+  open.bind="isOpen"
+  handed.bind="actionMenu.handed"
+></action-menu-toggle>
+
+<!-- Expanded panel: top-layer auto popover, a role="group" of plain buttons
+     (disclosure, not menu). Uses a dialog element (project lint requires popovers
+     to be dialogs, not divs); the popover="auto" attribute governs behavior
+     (light-dismiss + Esc), not modal dialog semantics, and role="group" keeps the
+     disclosure contract. Each item is icon + text label (labels mandatory),
+     placed along the thumb arc by its index (--i) out of the count (--n);
+     toggle items carry aria-pressed, command/active items carry data-active. -->
+<dialog
+  ref="panel"
+  id="action-menu-panel"
+  popover="auto"
+  role="group"
+  class="fab-panel"
+  data-handed.bind="actionMenu.handed"
+  t="[aria-label]actionMenu.panelAriaLabel"
+  toggle.trigger="onPanelToggle($event)"
+>
+  <!-- Full-screen scrim inside the panel: a tap outside the arc lands here and
+       only closes the arc. (A popover's own ::backdrop lets that tap through to
+       the page underneath.) Hidden from assistive technology; Escape and the
+       FAB close the arc for them. -->
+  <div class="fab-scrim" aria-hidden="true" click.trigger="dismiss()"></div>
+  <ul class="fab-list">
+    <li
+      repeat.for="action of actionMenu.actions"
+      key.bind="action.id"
+      class="fab-list-item"
+      style="--i: ${$index}; --n: ${actionMenu.actions.length}"
+    >
+      <action-menu-item
+        action.bind="action"
+        active.bind="isActive(action) & signal:'action-menu:state'"
+        pressed.bind="(action.kind === 'toggle' ? isPressed(action) : null) & signal:'action-menu:state'"
+        click.trigger="onAction(action)"
+      ></action-menu-item>
+    </li>
+  </ul>
+</dialog>

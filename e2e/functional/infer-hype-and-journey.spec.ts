@@ -7,7 +7,7 @@ import { expect, type Page, test } from '../support/test'
 test.describe.configure({ timeout: 90_000 })
 
 /**
- * What the app infers from a signed-in fan's own actions on the Dashboard's
+ * What the app infers from a signed-in fan's own actions on the Timetable's
  * event detail sheet: a calendar add starts tracking the concert (with undo
  * when the fan comes back), and a journey for a concert the fan's hype level
  * does not match raises the level (with undo). The backend is a stateful mock
@@ -185,7 +185,7 @@ async function seedSignedIn(page: Page) {
 		({ sub, email }) => {
 			localStorage.setItem('onboardingComplete', 'true')
 			localStorage.setItem('onboarding.celebrationShown', '1')
-			localStorage.setItem('onboarding.helpSeen:dashboard', '1')
+			localStorage.setItem('onboarding.helpSeen:timetable', '1')
 			localStorage.setItem('onboarding.helpSeen:my-artists', '1')
 			localStorage.setItem('pwa.installed', 'true')
 			localStorage.setItem('ui.notificationPromptDismissed', 'true')
@@ -212,7 +212,7 @@ async function seedSignedIn(page: Page) {
 		)
 }
 
-const sheet = (page: Page) => page.locator('event-detail-sheet')
+const sheet = (page: Page) => page.locator('concert-sheet')
 const snack = (page: Page, text: string) =>
 	page.locator('snack-bar .snack-item', { hasText: text })
 
@@ -249,7 +249,7 @@ function cardOf(page: Page, venue: string) {
 
 async function closeSheet(page: Page) {
 	await page.keyboard.press('Escape')
-	await expect(page).toHaveURL(/\/dashboard/)
+	await expect(page).toHaveURL(/\/timetable/)
 }
 
 test.describe('calendar add starts tracking', () => {
@@ -265,7 +265,7 @@ test.describe('calendar add starts tracking', () => {
 		}
 		await seedSignedIn(page)
 		const calls = await mockBackend(page, server)
-		await page.goto('/dashboard')
+		await page.goto('/timetable')
 
 		await openSheet(page, 'Home Show Hall')
 		const tab = page.context().waitForEvent('page')
@@ -284,7 +284,7 @@ test.describe('calendar add starts tracking', () => {
 		await page.bringToFront()
 		const tracking = snack(page, '🔔 チケット販売の通知を受け取ります')
 		await expect(tracking).toBeVisible()
-		// The sheet and the Dashboard card show Tracking.
+		// The sheet and the Timetable card show Tracking.
 		await expect(sheet(page).getByTestId('journey-notify-btn')).toHaveAttribute(
 			'aria-pressed',
 			'true',
@@ -319,8 +319,8 @@ test.describe('calendar add starts tracking', () => {
 		await seedSignedIn(page)
 		const calls = await mockBackend(page, server)
 
-		// A new-concert push opens the Dashboard on the concert's detail sheet.
-		await page.goto(`/concerts/${HOME_CONCERT}`)
+		// A new-concert push opens the Timetable on the concert's detail sheet.
+		await page.goto(`/timetable?concert=${HOME_CONCERT}`)
 		await expect(sheet(page).getByText('Home Show Hall').first()).toBeVisible({
 			timeout: 30_000,
 		})
@@ -341,7 +341,7 @@ test.describe('a journey for a distant concert raises the hype level', () => {
 		}
 		await seedSignedIn(page)
 		await mockBackend(page, server)
-		await page.goto('/dashboard')
+		await page.goto('/timetable')
 
 		const away = cardOf(page, 'Away Show 2 Hall')
 		await away.waitFor({ timeout: 30_000 })
@@ -355,7 +355,7 @@ test.describe('a journey for a distant concert raises the hype level', () => {
 		const raised = snack(page, `${ARTIST.name}の全ての新着ライブを`)
 		await expect(raised).toBeVisible()
 		await closeSheet(page)
-		// The Dashboard highlights the away concert at the new level.
+		// The Timetable highlights the away concert at the new level.
 		await expect(cardOf(page, 'Away Show 2 Hall')).toHaveAttribute(
 			'data-matched',
 			'true',
@@ -379,7 +379,7 @@ test.describe('a journey for a distant concert raises the hype level', () => {
 		}
 		await seedSignedIn(page)
 		const calls = await mockBackend(page, server)
-		await page.goto('/dashboard')
+		await page.goto('/timetable')
 
 		await openSheet(page, 'Away Show 2 Hall')
 		await sheet(page)
@@ -426,7 +426,7 @@ test.describe('a journey for a distant concert raises the hype level', () => {
 		}
 		await seedSignedIn(page)
 		const calls = await mockBackend(page, server)
-		await page.goto('/dashboard')
+		await page.goto('/timetable')
 
 		await openSheet(page, 'Away Show 2 Hall')
 		const readsBefore = callsOf(calls, 'FollowService/List').length

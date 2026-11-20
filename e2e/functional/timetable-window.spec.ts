@@ -6,7 +6,7 @@ import { expect, type Page, test } from '../support/test'
  * The timetable's date window across a route change, on a timetable the size of
  * the reference account (225 dates): a re-entry paints the remembered date
  * first, with no skeleton in between. The window's growth, the lanes and the
- * scroll up from a restored date are `concert-highway` stories.
+ * scroll up from a restored date are `timetable-grid` stories.
  */
 
 const DAYS = 225
@@ -100,7 +100,7 @@ async function mockRpc(page: Page): Promise<void> {
 	)
 }
 
-async function openDashboard(page: Page): Promise<void> {
+async function openTimetable(page: Page): Promise<void> {
 	await page.addInitScript(() => {
 		localStorage.setItem('onboardingComplete', 'true')
 		localStorage.setItem('onboarding.celebrationShown', '1')
@@ -120,7 +120,7 @@ async function openDashboard(page: Page): Promise<void> {
 		)
 	})
 	await mockRpc(page)
-	await page.goto(`/dashboard`)
+	await page.goto(`/timetable`)
 	await page.locator('[data-live-card]').first().waitFor({ timeout: 10000 })
 	await settle(page)
 }
@@ -141,7 +141,7 @@ function builtKeys(page: Page): Promise<string[]> {
 	return page.evaluate(() =>
 		[
 			...document.querySelectorAll<HTMLElement>(
-				'concert-highway .date-group[data-date-key]',
+				'timetable-grid .date-group[data-date-key]',
 			),
 		].map((g) => g.dataset.dateKey ?? ''),
 	)
@@ -151,7 +151,7 @@ function builtKeys(page: Page): Promise<string[]> {
 function topDate(page: Page) {
 	return page.evaluate(() => {
 		const scroll = document.querySelector(
-			'concert-highway .concert-scroll',
+			'timetable-grid .concert-scroll',
 		) as HTMLElement
 		const edge = scroll.getBoundingClientRect().top
 		for (const g of scroll.querySelectorAll<HTMLElement>('[data-date-key]')) {
@@ -168,7 +168,7 @@ async function scrollDown(page: Page, screens: number): Promise<void> {
 	for (let i = 0; i < screens; i++) {
 		await page.evaluate(() => {
 			const s = document.querySelector(
-				'concert-highway .concert-scroll',
+				'timetable-grid .concert-scroll',
 			) as HTMLElement
 			s.scrollBy({ top: s.clientHeight, behavior: 'instant' })
 		})
@@ -177,10 +177,10 @@ async function scrollDown(page: Page, screens: number): Promise<void> {
 }
 
 test.describe('timetable date window', () => {
-	test(`@spec components/infrastructure/fan/web/route/dashboard "Re-entry restores the same date, at any depth"`, async ({
+	test(`@spec components/infrastructure/fan/web/route/timetable "Re-entry restores the same date, at any depth"`, async ({
 		page,
 	}) => {
-		await openDashboard(page)
+		await openTimetable(page)
 		await scrollDown(page, 40)
 		const left = await topDate(page)
 		expect(left).not.toBeNull()
@@ -201,7 +201,7 @@ test.describe('timetable date window', () => {
 			w.__frames = []
 			const tick = () => {
 				const scroll = document.querySelector(
-					'dashboard-route concert-highway .concert-scroll',
+					'timetable-route timetable-grid .concert-scroll',
 				)
 				let top: string | null = null
 				if (scroll) {
@@ -217,7 +217,7 @@ test.describe('timetable date window', () => {
 				}
 				w.__frames.push({
 					skeleton: !!document.querySelector(
-						'dashboard-route [data-testid="dashboard-loading"]',
+						'timetable-route [data-testid="timetable-loading"]',
 					),
 					top,
 				})
@@ -225,8 +225,8 @@ test.describe('timetable date window', () => {
 			}
 			requestAnimationFrame(tick)
 		})
-		await page.locator('.nav-tab[data-nav="home"]').click()
-		await page.locator('dashboard-route [data-live-card]').first().waitFor()
+		await page.locator('.nav-tab[data-nav="timetable"]').click()
+		await page.locator('timetable-route [data-live-card]').first().waitFor()
 		await settle(page)
 
 		const frames = await page.evaluate(

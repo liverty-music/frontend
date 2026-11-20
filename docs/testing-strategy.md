@@ -247,8 +247,8 @@ describe('bytesToHex', () => {
 **When to use**: Custom elements that query the DOM via `INode`.
 
 ```typescript
-describe('EventDetailSheet', () => {
-  let sut: EventDetailSheet
+describe('ConcertSheet', () => {
+  let sut: ConcertSheet
   let mockElement: HTMLElement
 
   beforeEach(async () => {
@@ -260,8 +260,8 @@ describe('EventDetailSheet', () => {
     const container = createTestContainer(
       Registration.instance(INode, mockElement),
     )
-    container.register(EventDetailSheet)
-    sut = container.get(EventDetailSheet)
+    container.register(ConcertSheet)
+    sut = container.get(ConcertSheet)
   })
 })
 ```
@@ -396,11 +396,11 @@ Tests MUST import the target Custom Element class directly from its source file.
 
 ```typescript
 // CORRECT: Direct import — no module graph expansion
-import { ConcertHighway } from '../../src/components/live-highway/concert-highway'
-import { EventCard } from '../../src/components/event-card/event-card'
+import { TimetableGrid } from '../../src/components/timetable-grid/timetable-grid'
+import { ConcertCard } from '../../src/components/concert-card/concert-card'
 
-// WRONG: Import via route — triggers ConcertHighway → EventCard → INode chain
-import { DashboardRoute } from '../../src/routes/dashboard/dashboard-route'
+// WRONG: Import via route — triggers TimetableGrid → ConcertCard → INode chain
+import { TimetableRoute } from '../../src/routes/timetable/timetable-route'
 ```
 
 ### Why this matters
@@ -410,12 +410,12 @@ Vitest evaluates `import` statements eagerly. Aurelia's convention maps `foo-rou
 The module chain looks like:
 
 ```
-dashboard-route.ts
-  └─ dashboard-route.html (convention)
-       └─ <import from="concert-highway">
-            └─ concert-highway.ts → concert-highway.html
-                 └─ <import from="event-card">
-                      └─ event-card.ts → resolve(INode) → document 💥
+timetable-route.ts
+  └─ timetable-route.html (convention)
+       └─ <import from="timetable-grid">
+            └─ timetable-grid.ts → timetable-grid.html
+                 └─ <import from="concert-card">
+                      └─ concert-card.ts → resolve(INode) → document 💥
 ```
 
 ### How templates avoid <import> chains
@@ -424,24 +424,24 @@ All shared CEs are globally registered in `main.ts`. Templates use CE tag names 
 
 ```html
 <!-- CORRECT: no <import> needed — CE is globally registered -->
-<concert-highway date-groups.bind="dateGroups"></concert-highway>
+<timetable-grid date-groups.bind="dateGroups"></timetable-grid>
 
 <!-- WRONG: adds module graph edge that vitest must resolve -->
-<import from="./concert-highway">
-<concert-highway date-groups.bind="dateGroups"></concert-highway>
+<import from="./timetable-grid">
+<timetable-grid date-groups.bind="dateGroups"></timetable-grid>
 ```
 
 ### When route-level testing is required
 
-If a test must import a route module (e.g., dashboard-route.ts), mock its HTML template to prevent child CE chain loading:
+If a test must import a route module (e.g., timetable-route.ts), mock its HTML template to prevent child CE chain loading:
 
 ```typescript
 // vi.mock() is hoisted before imports — prevents template resolution
-vi.mock('../../src/routes/dashboard/dashboard-route.html', () => ({
+vi.mock('../../src/routes/timetable/timetable-route.html', () => ({
   default: '<div data-testid="dashboard-loading" if.bind="isLoading">Loading</div>',
 }))
 
-import { DashboardRoute } from '../../src/routes/dashboard/dashboard-route'
+import { TimetableRoute } from '../../src/routes/timetable/timetable-route'
 ```
 
 ---
@@ -502,7 +502,7 @@ e2e/
 ### POM Best Practices
 
 - Each page class encapsulates locators and actions
-- Tests read like user stories: `await dashboard.openEventDetail(0)`
+- Tests read like user stories: `await dashboard.openConcertSheet(0)`
 - Use `data-testid` attributes for stable selectors (not CSS classes)
 - Keep E2E tests few but high-value (cover critical paths only)
 - Use Playwright's `storageState` for authenticated test sessions

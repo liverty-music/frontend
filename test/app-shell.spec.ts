@@ -1,4 +1,4 @@
-import { I18nConfiguration } from '@aurelia/i18n'
+import { I18N, I18nConfiguration } from '@aurelia/i18n'
 import { IRouter, RouterConfiguration } from '@aurelia/router'
 import { tasksSettled } from '@aurelia/runtime'
 import { createFixture } from '@aurelia/testing'
@@ -11,10 +11,11 @@ import { PageHeader } from '../src/components/page-header/page-header'
 import { SvgIcon } from '../src/components/svg-icon/svg-icon'
 import { IAnalyticsService } from '../src/lib/analytics/analytics-service'
 import ja from '../src/locales/ja/translation.json'
+import { documentTitle } from '../src/route-title'
+import { IActionMenuService } from '../src/services/action-menu-service'
 import { IAuthService } from '../src/services/auth-service'
 import { IBottomSheetTracker } from '../src/services/bottom-sheet-tracker'
 import { IErrorBoundaryService } from '../src/services/error-boundary-service'
-import { IFabMenuService } from '../src/services/fab-menu-service'
 import { INotificationManager } from '../src/services/notification-manager'
 import { INotificationStore } from '../src/services/notification-store'
 import { IOnboardingService } from '../src/services/onboarding-service'
@@ -32,36 +33,37 @@ const { stub } = vi.hoisted(() => ({
 vi.mock('../src/routes/welcome/welcome-route', stub('WelcomeRoute'))
 vi.mock('../src/routes/about/about-route', stub('AboutRoute'))
 vi.mock(
-	'../src/routes/auth-callback/auth-callback-route',
-	stub('AuthCallbackRoute'),
+	'../src/routes/sign-in-callback/sign-in-callback-route',
+	stub('SignInCallbackRoute'),
 )
-vi.mock('../src/routes/dashboard/dashboard-route', stub('DashboardRoute'))
-vi.mock('../src/routes/event/event-route', stub('EventRoute'))
+vi.mock('../src/routes/timetable/timetable-route', stub('TimetableRoute'))
+vi.mock('../src/routes/concert/concert-route', stub('ConcertRoute'))
 vi.mock('../src/routes/discovery/discovery-route', stub('DiscoveryRoute'))
 vi.mock('../src/routes/my-artists/my-artists-route', stub('MyArtistsRoute'))
 vi.mock('../src/routes/settings/settings-route', stub('SettingsRoute'))
 vi.mock('../src/routes/consent/consent-route', stub('ConsentRoute'))
 vi.mock(
-	'../src/routes/verify-callback/verify-callback-route',
-	stub('VerifyCallbackRoute'),
+	'../src/routes/identity-verification-callback/identity-verification-callback-route',
+	stub('IdentityVerificationCallbackRoute'),
 )
 vi.mock(
-	'../src/routes/lottery-entry/lottery-entry-route',
-	stub('LotteryEntryRoute'),
+	'../src/routes/new-lottery-entry/new-lottery-entry-route',
+	stub('NewLotteryEntryRoute'),
 )
 vi.mock(
-	'../src/routes/lottery-entry-status/lottery-entry-status-route',
-	stub('LotteryEntryStatusRoute'),
+	'../src/routes/lottery-entries/lottery-entries-route',
+	stub('LotteryEntriesRoute'),
 )
 vi.mock('../src/routes/legal/terms-route', stub('TermsRoute'))
 vi.mock('../src/routes/legal/privacy-route', stub('PrivacyRoute'))
 vi.mock('../src/routes/legal/licenses-route', stub('LicensesRoute'))
 vi.mock('../src/routes/tickets/tickets-route', stub('TicketsRoute'))
 vi.mock('../src/routes/order/order-route', stub('OrderRoute'))
-vi.mock('../src/routes/not-found/not-found-route', stub('NotFoundRoute'))
+// The not-found fallback is rendered for real: its own route config carries
+// its title.
 vi.mock(
-	'../src/routes/passkey-recovery/passkey-recovery-route',
-	stub('PasskeyRecoveryRoute'),
+	'../src/routes/sign-in-help/sign-in-help-route',
+	stub('SignInHelpRoute'),
 )
 vi.mock(
 	'../src/routes/verify-email/verify-email-route',
@@ -79,6 +81,15 @@ vi.mock(
 vi.mock(
 	'../src/routes/delete-account/delete-account-route',
 	stub('DeleteAccountRoute'),
+)
+vi.mock('../src/routes/checkout/checkout-route', stub('CheckoutRoute'))
+vi.mock(
+	'../src/routes/new-resale-entry/new-resale-entry-route',
+	stub('NewResaleEntryRoute'),
+)
+vi.mock(
+	'../src/routes/resale-entries/resale-entries-route',
+	stub('ResaleEntriesRoute'),
 )
 
 const PAGE_HEADER = 'page-header'
@@ -118,11 +129,19 @@ describe('app-shell', () => {
 			refresh: vi.fn(async () => {}),
 			markRead: vi.fn(async () => {}),
 		}
-		const shell = createFixture(
+		let shell: ReturnType<typeof createFixture> | undefined
+		shell = createFixture(
 			CustomElement.getDefinition(AppShell).template as string,
 			AppShell,
 			[
-				RouterConfiguration,
+				// The tab title is built as in main.ts.
+				RouterConfiguration.customize({
+					buildTitle: (transition) =>
+						documentTitle(
+							transition,
+							(key) => shell?.container.get(I18N).tr(key) ?? key,
+						),
+				}),
 				// Child CEs in the shell template (error-banner, snack-bar, …)
 				// resolve I18N at construction, so the real plugin is registered;
 				// with no resources `t` renders the key itself.
@@ -190,8 +209,9 @@ describe('app-shell', () => {
 	}
 
 	const host = () => fixture.appHost
+	/** The tag of the route element in the viewport (a stub, or not-found). */
 	const displayedRoute = () =>
-		host().querySelector('au-viewport [data-route]')?.getAttribute('data-route')
+		host().querySelector('au-viewport > *')?.localName
 	const headerTitle = () =>
 		host().querySelector(`${PAGE_HEADER} h1`)?.textContent ?? null
 	const activeTabs = () =>
@@ -245,10 +265,21 @@ describe('app-shell', () => {
 			await go('discovery')
 			expect(host().querySelector(BOTTOM_NAV)).not.toBeNull()
 		})
+
+		// @spec components/infrastructure/fan/web/global/bottom-nav-bar "Non-fullscreen route"
+		it.each(['timetable', 'about'])(
+			'shows the navigation on %s',
+			async (path) => {
+				await go('welcome')
+				await go(path)
+				expect(host().querySelector(BOTTOM_NAV)).not.toBeNull()
+			},
+		)
 	})
 
 	describe('chrome', () => {
 		// @spec components/infrastructure/fan/web/global/bottom-nav-bar "Navigation hidden on Landing Page and auth callback only"
+		// @spec components/infrastructure/fan/web/global/bottom-nav-bar "Fullscreen route"
 		it.each(['welcome', 'auth/callback', 'auth/passkeys-callback'])(
 			'hides the header and nav bar on %s (data.chrome: false)',
 			async (path) => {
@@ -259,16 +290,16 @@ describe('app-shell', () => {
 			},
 		)
 
-		it('opens the passkey recovery screen for a guest', async () => {
-			await go('passkey-recovery')
-			expect(displayedRoute()).toBe('passkey-recovery-route')
-			expect(headerTitle()).toBe('passkeyRecovery.title')
+		it('opens the sign-in help screen for a guest', async () => {
+			await go('sign-in-help')
+			expect(displayedRoute()).toBe('sign-in-help-route')
+			expect(headerTitle()).toBe('nav.signInHelp')
 		})
 
 		it('opens the email verification screen for a guest', async () => {
 			await go('verify-email')
 			expect(displayedRoute()).toBe('verify-email-route')
-			expect(headerTitle()).toBe('verifyEmail.title')
+			expect(headerTitle()).toBe('nav.verifyEmail')
 		})
 
 		it('shows the nav bar again when leaving a chrome-less route', async () => {
@@ -293,9 +324,9 @@ describe('app-shell', () => {
 			expect(headerTitle()).toBe('nav.myArtists')
 			expect(activeTabs()).toEqual(['my-artists'])
 
-			await go('dashboard')
-			expect(headerTitle()).toBe('nav.home')
-			expect(activeTabs()).toEqual(['home'])
+			await go('timetable')
+			expect(headerTitle()).toBe('nav.timetable')
+			expect(activeTabs()).toEqual(['timetable'])
 		})
 
 		// @spec components/infrastructure/fan/web/route/settings "Header reads \"Settings\" regardless of active locale"
@@ -363,16 +394,26 @@ describe('app-shell', () => {
 			expect(host().querySelector(BOTTOM_NAV)).toBeNull()
 		})
 
-		// @spec components/infrastructure/fan/web/global/page-header "Routes without a title show no header"
-		it.each(['legal/terms', 'about'])(
-			'renders no header on %s',
-			async (path) => {
-				await go('settings')
-				await go(path)
-				expect(host().querySelector(BOTTOM_NAV)).not.toBeNull()
-				expect(host().querySelector(PAGE_HEADER)).toBeNull()
-			},
-		)
+		// @spec components/infrastructure/fan/web/global/page-header "Routes without a page header"
+		it.each([
+			['about', 'About'],
+			['concerts/e-1', 'Concert'],
+			['consent', 'Privacy & Analytics'],
+			['legal/terms', 'Terms of Service'],
+			['legal/privacy', 'Privacy Policy'],
+			['legal/licenses', 'OSS Licenses'],
+			['verify/callback', 'Identity Verification'],
+			['no-such-page', 'Page Not Found'],
+		])('renders no header on %s, and titles its tab', async (path, title) => {
+			await fixture.stop(true)
+			fixture = await renderShell({ japanese: true })
+			router = fixture.container.get(IRouter)
+			await go('settings')
+			await go(path)
+			expect(host().querySelector(BOTTOM_NAV)).not.toBeNull()
+			expect(host().querySelector(PAGE_HEADER)).toBeNull()
+			expect(document.title).toBe(`${title} | Liverty Music`)
+		})
 	})
 
 	describe('single shell-hosted page header', () => {
@@ -409,16 +450,117 @@ describe('app-shell', () => {
 		})
 	})
 
+	describe('addresses', () => {
+		const path = () => window.location.pathname
+		const tapTab = async (nav: string) => {
+			host()
+				.querySelector<HTMLAnchorElement>(`.nav-tab[data-nav="${nav}"]`)
+				?.click()
+			await vi.waitFor(() => expect(path()).toBe(`/${nav}`))
+			await tasksSettled()
+		}
+
+		// @spec components/infrastructure/fan/web/route/timetable "The timetable's address"
+		it('serves the timetable at /timetable', async () => {
+			await go('settings')
+			await tapTab('timetable')
+			expect(displayedRoute()).toBe('timetable-route')
+		})
+
+		// @spec components/infrastructure/fan/web/route/my-artists "The screen's address"
+		// @spec components/infrastructure/fan/web/route/tickets "The screen's address"
+		it.each([
+			['my-artists', 'my-artists-route'],
+			['tickets', 'tickets-route'],
+		])('serves the %s tab at its own address', async (nav, route) => {
+			await go('settings')
+			await tapTab(nav)
+			expect(displayedRoute()).toBe(route)
+		})
+
+		it.each([
+			// @spec components/infrastructure/fan/web/route/concert "The page's address"
+			['concerts/e-1', 'concert-route', '/concerts/e-1'],
+			// @spec components/infrastructure/fan/web/route/settings "The screen's address"
+			['settings', 'settings-route', '/settings'],
+			// @spec components/infrastructure/fan/web/route/delete-account "The screen's address"
+			[
+				'settings/delete-account',
+				'delete-account-route',
+				'/settings/delete-account',
+			],
+			// @spec components/infrastructure/fan/web/route/resale-entries "The screen's address"
+			['resale-entries', 'resale-entries-route', '/resale-entries'],
+			// @spec components/infrastructure/fan/web/route/welcome "The page's address"
+			['', 'welcome-route', '/welcome'],
+		])('opens %s as %s at %s', async (target, route, address) => {
+			await go('discovery')
+			await go(target)
+			expect(displayedRoute()).toBe(route)
+			expect(path()).toBe(address)
+		})
+
+		// @spec components/infrastructure/fan/web/route/verify-email "The screen's address"
+		it("serves the verification screen at /verify-email with the link's user and code", async () => {
+			await go('verify-email?user=u-1&code=c-1')
+			expect(displayedRoute()).toBe('verify-email-route')
+			expect(path()).toBe('/verify-email')
+			const query = new URLSearchParams(window.location.search)
+			expect(query.get('user')).toBe('u-1')
+			expect(query.get('code')).toBe('c-1')
+		})
+
+		it.each([
+			// @spec components/infrastructure/fan/web/route/timetable "The old address is gone"
+			['dashboard'],
+			// @spec components/infrastructure/fan/web/route/concert "The old address is gone"
+			['events/e-1'],
+			['passkey-recovery'],
+		])('shows the not-found screen at the old address /%s', async (old) => {
+			await go('discovery')
+			await go(old)
+			expect(displayedRoute()).toBe('not-found-route')
+		})
+	})
+
 	describe('document title', () => {
-		it('names the concert deep-link "Concert" and the dashboard "Dashboard"', async () => {
-			await go('dashboard')
-			expect(document.title).toMatch(/^Dashboard\b/)
+		beforeEach(async () => {
+			await fixture.stop(true)
+			fixture = await renderShell({ japanese: true })
+			router = fixture.container.get(IRouter)
+		})
 
-			await go('concerts/concert-1')
-			expect(document.title).toMatch(/^Concert\b/)
+		// @spec components/infrastructure/fan/web/global/page-header "Japanese display keeps the English title"
+		it('shows "Checkout" in the header and the tab of checkout in Japanese', async () => {
+			await go('concerts/e-1/checkout?stock=s-1')
+			expect(displayedRoute()).toBe('checkout-route')
+			expect(headerTitle()).toBe('Checkout')
+			expect(document.title).toBe('Checkout | Liverty Music')
+		})
 
-			await go('dashboard')
-			expect(document.title).toMatch(/^Dashboard\b/)
+		// @spec components/infrastructure/fan/web/global/page-header "A sheet does not change the title"
+		it('titles the timetable with an open concert sheet "Timetable"', async () => {
+			await go('timetable?concert=c-1')
+			expect(displayedRoute()).toBe('timetable-route')
+			expect(document.title).toBe('Timetable | Liverty Music')
+		})
+
+		it('gives the screens with a header the same English title in the tab', async () => {
+			for (const [path, title] of [
+				['tickets', 'Tickets'],
+				['resale-entries', 'Resale Entries'],
+				['concerts/e-1/resale-entries/new?stock=s-1', 'Resale Entry'],
+				[
+					'concerts/e-1/lottery-entries/new?sale=t-1&stock=s-1',
+					'Lottery Entry',
+				],
+				['concerts/e-1/lottery-entries?sale=t-1', 'Lottery Entries'],
+				['sign-in-help', "Can't Sign In"],
+			]) {
+				await go(path)
+				expect(headerTitle()).toBe(title)
+				expect(document.title).toBe(`${title} | Liverty Music`)
+			}
 		})
 	})
 
@@ -433,13 +575,13 @@ describe('app-shell', () => {
 	})
 
 	describe('FAB', () => {
-		const fab = () => host().querySelector('fab-menu')
+		const fab = () => host().querySelector('action-menu')
 		const itemIds = () =>
-			fixture.container.get(IFabMenuService).actions.map((a) => a.id)
+			fixture.container.get(IActionMenuService).actions.map((a) => a.id)
 
-		// @spec components/infrastructure/fan/web/global/fab-menu "Settings is the only item on Tickets"
+		// @spec components/infrastructure/fan/web/global/action-menu "Settings is the only item on Tickets"
 		it('ends the launcher with Settings on every tab page, so Tickets shows the FAB', async () => {
-			for (const tab of ['dashboard', 'discovery', 'my-artists', 'tickets']) {
+			for (const tab of ['timetable', 'discovery', 'my-artists', 'tickets']) {
 				await go(tab)
 				expect(itemIds().at(-1)).toBe('settings')
 			}
@@ -448,24 +590,24 @@ describe('app-shell', () => {
 			expect(fab()).not.toBeNull()
 		})
 
-		// @spec components/infrastructure/fan/web/global/fab-menu "No Settings item outside the tabs"
+		// @spec components/infrastructure/fan/web/global/action-menu "No Settings item outside the tabs"
 		it.each(['settings', 'events/event-1', 'orders/order-1'])(
 			'offers no Settings item on %s',
 			async (path) => {
-				await go('dashboard')
+				await go('timetable')
 				expect(itemIds()).toContain('settings')
 				await go(path)
 				expect(itemIds()).not.toContain('settings')
-				// @spec components/infrastructure/fan/web/global/fab-menu "FAB hidden when no actions are contributed"
+				// @spec components/infrastructure/fan/web/global/action-menu "action menu hidden when no actions are contributed"
 				expect(fab()).toBeNull()
 			},
 		)
 
-		// @spec components/infrastructure/fan/web/global/fab-menu "Choosing Settings"
+		// @spec components/infrastructure/fan/web/global/action-menu "Choosing Settings"
 		it('displays Settings when the Settings item is chosen', async () => {
 			await go('tickets')
 			const item = fixture.container
-				.get(IFabMenuService)
+				.get(IActionMenuService)
 				.actions.find((a) => a.id === 'settings')
 			item?.invoke()
 			await new Promise((r) => setTimeout(r, 0))
@@ -473,10 +615,10 @@ describe('app-shell', () => {
 			expect(displayedRoute()).toBe('settings-route')
 		})
 
-		// @spec components/infrastructure/fan/web/global/fab-menu "FAB hidden while a bottom sheet is open"
+		// @spec components/infrastructure/fan/web/global/action-menu "action menu hidden while a bottom sheet is open"
 		it('is not shown while any bottom sheet is open and returns when it closes', async () => {
 			await go('discovery')
-			const dispose = fixture.container.get(IFabMenuService).register({}, [
+			const dispose = fixture.container.get(IActionMenuService).register({}, [
 				{
 					id: 'search',
 					icon: 'search',

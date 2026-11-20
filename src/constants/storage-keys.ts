@@ -5,7 +5,7 @@ export const StorageKeys = {
 	pushOfferDeclines: 'push.offerDeclines',
 	pwaInstalled: 'pwa.installed',
 	postSignupShown: 'postSignup.shown',
-	// Celebration shown-once flag (guest light tier on first dashboard arrival).
+	// Celebration shown-once flag (guest light tier on first timetable arrival).
 	// Shared with the E2E suite, which seeds/removes this key to control the
 	// celebration overlay's visibility.
 	celebrationShown: 'onboarding.celebrationShown',
@@ -15,17 +15,21 @@ export const StorageKeys = {
 	// Discovery bubble sound-effect preferences. '1'/'0' for mute, '0'..'1' for volume.
 	soundMuted: 'sound.muted',
 	soundVolume: 'sound.volume',
-	// Laser beam spotlight effect on dashboard. 'true'/'false', defaults to off.
+	// Laser beam spotlight effect on timetable. 'true'/'false', defaults to off.
 	beamsEnabled: 'beams.enabled',
 	// FAB action-launcher placement (left-handed mode). 'left'/'right',
 	// defaults to 'right' (bottom-right corner). Mirrors the beam preference.
 	fabHanded: 'fab.handed',
 	// The Discovery view used last on this device: 'artists' (the bubbles) or
-	// 'nearby' (the All Nearby view). Absent means the bubbles.
+	// 'concerts' (the Concerts view). Absent, or the retired 'nearby', means
+	// the bubbles.
 	discoveryView: 'discovery.view',
-	// The All Nearby view's filter kept for the next visit: JSON
-	// { areaCode, datePreset } (see nearby-filter-storage.ts). Cleared on
+	// The Concerts view's filter kept for the next visit: JSON
+	// { areaCode, datePreset } (see concerts-filter-storage.ts). Cleared on
 	// sign-in, sign-up and sign-out.
+	concertsFilter: 'discovery.concertsFilter',
+	// Retired: the same filter under the view's former name; main.ts removes
+	// the key on startup.
 	nearbyFilter: 'discovery.nearbyFilter',
 	// The language last applied on this device, in every auth state; the
 	// i18next detector reads it on boot (see FanI18nConfiguration).

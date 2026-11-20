@@ -159,7 +159,7 @@ export function callsOf(calls: RpcCall[], method: string): RpcCall[] {
 /**
  * Finish a sign-up that returns to the app's callback, and choose a home area
  * when the app asks for one. The callback never asks: it creates the account
- * and opens the screen the sign-up started from. When that is the Dashboard or
+ * and opens the screen the sign-up started from. When that is the Timetable or
  * My Artists and the account has no home, the home sheet opens there and this
  * picks `area` (the quick-select label in the app's language). Resolves once
  * the app has left the callback and no home sheet is open.
@@ -169,7 +169,7 @@ export async function chooseHomeAtSignUp(
 	area = '東京',
 	timeout = 60_000,
 ): Promise<void> {
-	const sheet = page.locator('user-home-selector .selector-content')
+	const sheet = page.locator('home-area-selector .selector-content')
 	await expect(async () => {
 		const url = new URL(page.url())
 		if (url.hostname.startsWith('auth.')) throw new Error('still signing in')

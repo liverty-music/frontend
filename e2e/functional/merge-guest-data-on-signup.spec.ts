@@ -104,7 +104,7 @@ async function signUpFromMyArtists(page: Page): Promise<void> {
 	await page
 		.locator('signup-prompt-banner .bottom-banner-action')
 		.click({ timeout: 20_000 })
-	await expect(page).toHaveURL(/\/dashboard/, { timeout: 20_000 })
+	await expect(page).toHaveURL(/\/timetable/, { timeout: 20_000 })
 }
 
 test.describe('boot reconciliation of unmerged guest data', () => {
@@ -251,7 +251,7 @@ test.describe('data merge on authentication', () => {
 		await expect(page.getByRole('status', { name: 'Loading' })).toBeVisible()
 
 		releaseUser()
-		await expect(page).toHaveURL(/\/dashboard/, { timeout: 20_000 })
+		await expect(page).toHaveURL(/\/timetable/, { timeout: 20_000 })
 		// Navigated while the follow migration is still in flight.
 		await expect
 			.poll(() => callsOf(calls, 'FollowService/Follow').length)

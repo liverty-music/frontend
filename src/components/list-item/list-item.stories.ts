@@ -197,7 +197,7 @@ export const TwoLines = {
 } satisfies Story
 
 /**
- * A Settings row and an All Nearby filter row: the same list item in a
+ * A Settings row and an the Concerts view filter row: the same list item in a
  * Settings card and in a plain list on a sheet's surface.
  */
 export const SettingsRowMatchesFilterRow = {

@@ -2,7 +2,8 @@ import { I18nConfiguration } from '@aurelia/i18n'
 import { createFixture } from '@aurelia/testing'
 import { describe, expect, it, vi } from 'vitest'
 import ja from '../../src/locales/ja/translation.json'
-import type { EventPageEvent } from '../../src/routes/event/event-page'
+import type { ConcertPageConcert } from '../../src/routes/concert/concert-page'
+import type { TicketView } from '../../src/routes/tickets/ticket-view'
 import { AdmissionStamp } from '../../src/routes/tickets/virtual-ticket/admission-stamp'
 import {
 	SHARE_FILE_NAME,
@@ -10,7 +11,6 @@ import {
 	type ShareImageEnv,
 } from '../../src/routes/tickets/virtual-ticket/share-image'
 import { VirtualTicket } from '../../src/routes/tickets/virtual-ticket/virtual-ticket'
-import type { WalletTicket } from '../../src/routes/tickets/wallet-view'
 
 const i18n = I18nConfiguration.customize((options) => {
 	options.initOptions = {
@@ -23,7 +23,7 @@ const i18n = I18nConfiguration.customize((options) => {
 
 const COVER_URL = 'https://cdn.liverty-music.app/cdn/org/cover/large.webp'
 
-const EVENT: EventPageEvent = {
+const EVENT: ConcertPageConcert = {
 	id: 'event-1',
 	seriesId: 'series-1',
 	title: 'Autumn Tour 2026',
@@ -37,7 +37,7 @@ const EVENT: EventPageEvent = {
 	cancelled: false,
 }
 
-function ticket(o: Partial<WalletTicket> = {}): WalletTicket {
+function ticket(o: Partial<TicketView> = {}): TicketView {
 	return {
 		id: 'ticket-1',
 		eventId: 'event-1',
@@ -56,7 +56,7 @@ const ENTERED = ticket({
 	admitTime: new Date(Date.UTC(2026, 10, 20, 9, 2)),
 })
 
-async function liveFace(t: WalletTicket): Promise<HTMLElement> {
+async function liveFace(t: TicketView): Promise<HTMLElement> {
 	const fixture = await createFixture
 		.html(
 			'<virtual-ticket event.bind="event" ticket.bind="ticket" personal-details.bind="person"></virtual-ticket>',

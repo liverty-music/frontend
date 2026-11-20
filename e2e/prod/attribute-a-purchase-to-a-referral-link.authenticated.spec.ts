@@ -153,7 +153,7 @@ test.describe('attribute a purchase to a referral link (signed in)', () => {
 
 		// The fan opens member A's link first, then member B's; the newer
 		// link replaces the kept code.
-		await page.goto(`/events/${EVENT_ID}?ref=e2e-member-a`)
+		await page.goto(`/concerts/${EVENT_ID}?ref=e2e-member-a`)
 		await expect(
 			stockRow(page, saleStock).getByTestId('event-buy'),
 		).toBeVisible()

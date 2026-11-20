@@ -1,10 +1,10 @@
-/* The All Nearby view and the swap tile that switches to it, on Discovery. */
+/* The Concerts view and the swap tile that switches to it, on Discovery. */
 @layer block {
 	@scope (discovery-route) {
-		/* The All Nearby view covers the whole column, over the search bar,
+		/* The Concerts view covers the whole column, over the search bar,
 		   the genre chips and the bubbles, which keep their size underneath.
 		   Positioned like the bubble area, so DOM order puts it on top. */
-		.nearby-view {
+		.concerts-view {
 			position: relative;
 			grid-column: 1 / -1;
 			grid-row: 1 / -1;
@@ -43,9 +43,9 @@
 			display: none;
 		}
 
-		/* Under the All Nearby view the bubble field keeps its layout (the
+		/* Under the Concerts view the bubble field keeps its layout (the
 		   canvas is not resized) but is neither seen nor reachable. */
-		.discovery-layout[data-view="nearby"]
+		.discovery-layout[data-view="concerts"]
 			:is(.search-bar, .genre-bar, .bubble-area) {
 			visibility: hidden;
 		}

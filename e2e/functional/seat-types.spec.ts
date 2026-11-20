@@ -18,7 +18,7 @@ test.use({ locale: 'ja-JP', viewport: { width: 390, height: 844 } })
  * per date.
  */
 
-const EVENT_SPEC = 'components/infrastructure/fan/web/route/event'
+const EVENT_SPEC = 'components/infrastructure/fan/web/route/concert'
 const STORY_SPEC = 'stories/win-tickets-in-a-lottery'
 
 const SERIES_ID = fakeId('seat-types-series')
@@ -197,7 +197,7 @@ test(`@spec ${EVENT_SPEC} "Fan already holds another seat type" — buys 2 A席 
 	})
 
 	// Both seat types are offered before the fan buys.
-	await page.goto(`/events/${eventId}`)
+	await page.goto(`/concerts/${eventId}`)
 	expect(await offeredSeatTypes(page, 'event-buy')).toEqual(['S席', 'A席'])
 
 	// Pick A席 and buy 2.
@@ -205,7 +205,8 @@ test(`@spec ${EVENT_SPEC} "Fan already holds another seat type" — buys 2 A席 
 		.getByTestId('event-stock')
 		.filter({ has: page.getByText('A席', { exact: true }) })
 	await aRow.getByTestId('event-buy').click()
-	await expect(page).toHaveURL(`/events/${eventId}/checkout/${aStock}`)
+	// @spec components/infrastructure/fan/web/route/checkout "Opening checkout from the concert page"
+	await expect(page).toHaveURL(`/concerts/${eventId}/checkout?stock=${aStock}`)
 	await expect(page.getByTestId('checkout-seat-type')).toHaveText('A席', {
 		timeout: 30_000,
 	})
@@ -230,7 +231,7 @@ test(`@spec ${EVENT_SPEC} "Fan already holds another seat type" — buys 2 A席 
 	expect(callsOf(calls, 'CheckoutService/Confirm')).toHaveLength(1)
 
 	// Reopen the event: only A席 is offered, and the section says why.
-	await page.goto(`/events/${eventId}`)
+	await page.goto(`/concerts/${eventId}`)
 	await expect(page.getByTestId('event-sale-held')).toContainText(
 		'この日程でお持ちのチケットはA席です',
 		{ timeout: 30_000 },
@@ -328,11 +329,12 @@ test(`@spec ${STORY_SPEC} "Second entry into the same sale" — a two-date lotte
 
 	/** Enter the lottery for 2 tickets of the date's S席 from its event page. */
 	async function enter(eventId: string): Promise<void> {
-		await page.goto(`/events/${eventId}`)
+		await page.goto(`/concerts/${eventId}`)
 		expect(await offeredSeatTypes(page, 'event-enter')).toEqual(['S席'])
 		await page.getByTestId('event-enter').click()
+		// @spec components/infrastructure/fan/web/route/new-lottery-entry "Opening the entry form"
 		await expect(page).toHaveURL(
-			`/events/${eventId}/lottery/${saleId}/${stocks[eventId]}`,
+			`/concerts/${eventId}/lottery-entries/new?sale=${saleId}&stock=${stocks[eventId]}`,
 		)
 		await expect(page.getByTestId('lottery-entry-seat-type')).toHaveText(
 			'S席',

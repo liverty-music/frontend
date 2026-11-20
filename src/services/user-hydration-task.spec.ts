@@ -315,7 +315,7 @@ describe('startUserHydration', () => {
 	it('makes the first render wait for the user on a route that reads it', async () => {
 		mockAuth.isAuthenticated = false
 
-		const waitFor = startUserHydration(makeContainer(), '/dashboard')
+		const waitFor = startUserHydration(makeContainer(), '/timetable')
 
 		expect(waitFor).toBeInstanceOf(Promise)
 		await waitFor

@@ -46,8 +46,8 @@ describe('onboarding-progress', () => {
 		expect(fixture.appHost.querySelector('a')).toBeNull()
 	})
 
-	// @spec components/infrastructure/fan/web/route/discovery "Button opens the Dashboard"
-	it('becomes the link to the Dashboard when ready', async () => {
+	// @spec components/infrastructure/fan/web/route/discovery "Button opens the Timetable"
+	it('becomes the link to the Timetable when ready', async () => {
 		const fixture = await render(1)
 		const link = fixture.appHost.querySelector('a')
 
@@ -64,7 +64,7 @@ describe('onboarding-progress', () => {
 				?.querySelector('[aria-hidden="true"] svg-icon path')
 				?.getAttribute('d'),
 		).toBe('m9 16 2 2 4-4')
-		expect(link?.getAttribute('href')).toBe('/dashboard')
+		expect(link?.getAttribute('href')).toBe('/timetable')
 		expect(fixture.appHost.querySelector('[role="progressbar"]')).toBeNull()
 	})
 

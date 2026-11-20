@@ -36,7 +36,7 @@ const SPEC = 'components/infrastructure/organizer/web/route/event'
 /** 2026-11-03 18:00 in Japan time. */
 const START = new Date(Date.UTC(2026, 10, 3, 9, 0))
 /** The fan origin of the `dev` environment. */
-const FAN_PAGE = 'https://dev.liverty-music.app/events/e-1103'
+const FAN_PAGE = 'https://dev.liverty-music.app/concerts/e-1103'
 const BASE = '/organizers/org-1/artists/a-1/series/s-tour'
 
 function tour(
@@ -247,7 +247,7 @@ describe('event page header', () => {
 			'公開中',
 		)
 		expect(host.querySelector('copy-field')).toBeNull()
-		expect(deepText(host)).not.toContain('/events/e-1103')
+		expect(deepText(host)).not.toContain('/concerts/e-1103')
 		await fixture.tearDown()
 	})
 })

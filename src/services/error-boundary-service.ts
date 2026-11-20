@@ -170,7 +170,7 @@ export class ErrorBoundaryService {
 			this.breadcrumbs.shift()
 		}
 		// The report gets the type only: the route path can hold an id
-		// (`/events/<id>`), and the report carries its own current address.
+		// (`/concerts/<id>`), and the report carries its own current address.
 		this.analytics.addExceptionStep(label, { type })
 	}
 

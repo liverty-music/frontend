@@ -39,13 +39,13 @@ const maskOf = (page: Page) =>
 async function openLauncher(page: Page): Promise<void> {
 	await fab(page).click()
 	await expect(fab(page)).toHaveAttribute('aria-expanded', 'true')
-	await settle(page, 'fab-menu')
+	await settle(page, 'action-menu')
 }
 
 /** Open Settings the way a fan does: the last item of the launcher. */
 async function openSettingsFromLauncher(page: Page): Promise<void> {
 	await openLauncher(page)
-	await page.locator('fab-menu .fab-item[data-action-id="settings"]').click()
+	await page.locator('action-menu .fab-item[data-action-id="settings"]').click()
 	await page.waitForURL('**/settings')
 	await expect(page.locator('settings-route')).toBeVisible()
 }
@@ -55,22 +55,22 @@ test.beforeEach(async ({ page }) => {
 })
 
 test.describe('bottom navigation', () => {
-	test(`@spec ${NAV} "Route with FAB actions"`, { tag: '@webkit' }, async ({
-		page,
-	}) => {
-		await openShell(page, '/dashboard')
+	test(`@spec ${NAV} "Route with action menu actions"`, {
+		tag: '@webkit',
+	}, async ({ page }) => {
+		await openShell(page, '/timetable')
 		await expect(fab(page)).toBeVisible()
 
 		await expect(nav(page)).toHaveAttribute('data-notch', 'true')
 		expect(await maskOf(page)).toContain('radial-gradient')
 	})
 
-	test(`@spec ${NAV} "Route without FAB actions"`, { tag: '@webkit' }, async ({
-		page,
-	}) => {
+	test(`@spec ${NAV} "Route without action menu actions"`, {
+		tag: '@webkit',
+	}, async ({ page }) => {
 		await openShell(page, '/settings')
 
-		await expect(page.locator('fab-menu')).toHaveCount(0)
+		await expect(page.locator('action-menu')).toHaveCount(0)
 		await expect(nav(page)).toHaveAttribute('data-notch', 'false')
 		expect(await maskOf(page)).toBe('none')
 		// The centre slot stays, empty.
@@ -82,14 +82,14 @@ test.describe('bottom navigation', () => {
 	test(`@spec ${NAV} "Tabs do not move between routes"`, {
 		tag: '@webkit',
 	}, async ({ page }) => {
-		await openShell(page, '/dashboard')
+		await openShell(page, '/timetable')
 		await expect(fab(page)).toBeVisible()
-		const onDashboard = await tabs(page).evaluateAll((els) =>
+		const onTimetable = await tabs(page).evaluateAll((els) =>
 			els.map((el) => el.getBoundingClientRect().x),
 		)
 
 		await openSettingsFromLauncher(page)
-		await expect(page.locator('fab-menu')).toHaveCount(0)
+		await expect(page.locator('action-menu')).toHaveCount(0)
 		// Read the boxes at rest.
 		await page.mouse.move(0, 0)
 		await settle(page, 'bottom-nav-bar')
@@ -97,6 +97,6 @@ test.describe('bottom navigation', () => {
 			els.map((el) => el.getBoundingClientRect().x),
 		)
 
-		expect(onSettings).toEqual(onDashboard)
+		expect(onSettings).toEqual(onTimetable)
 	})
 })

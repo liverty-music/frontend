@@ -1,7 +1,7 @@
 /**
  * Requests migration of the guest follow queue into the authenticated account.
  *
- * Published by `AuthCallbackRoute` on EVERY successful authenticated callback
+ * Published by `SignInCallbackRoute` on EVERY successful authenticated callback
  * (sign-up AND sign-in) once the user has been provisioned and the internal
  * `userId` is available. The single ordering edge in the auth-boundary
  * transition is "provision before migrate" (migration needs a `userId`), which

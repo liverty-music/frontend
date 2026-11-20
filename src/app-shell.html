@@ -1,7 +1,7 @@
 <import from="./components/error-banner/error-banner"></import>
 <import from="./components/pwa-install-banner/pwa-install-banner"></import>
 <import from="../shared/ui/snack-bar/snack-bar"></import>
-<import from="./components/fab-menu/fab-menu"></import>
+<import from="./components/action-menu/action-menu"></import>
 <import from="./components/notification-bell/notification-bell"></import>
 
 <!-- Single shell-hosted page header, positioned in the shell grid's `header`
@@ -39,4 +39,4 @@
      only when the launcher has at least one item (a route's action, or the
      Settings item of the tab pages), and not while any bottom sheet is open
      (it would cover the sheet). -->
-<fab-menu if.bind="showNav && fabMenu.actions.length && !sheets.anyOpen"></fab-menu>
+<action-menu if.bind="showNav && actionMenu.actions.length && !sheets.anyOpen"></action-menu>

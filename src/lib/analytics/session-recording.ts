@@ -10,10 +10,10 @@ import { stripUrl } from './strip-own-url-query'
  */
 export const UNRECORDED_SCREENS = [
 	'checkout-route',
-	'lottery-entry-route',
-	'lottery-entry-status-route',
-	'resale-entry-route',
-	'verify-callback-route',
+	'new-lottery-entry-route',
+	'lottery-entries-route',
+	'new-resale-entry-route',
+	'identity-verification-callback-route',
 	'settings-route',
 	'passkeys-route',
 ] as const
@@ -77,9 +77,9 @@ export function sessionRecordingOptions(
  * screen.
  */
 const UNRECORDED_PATHS: readonly RegExp[] = [
-	/^\/events\/[^/]+\/checkout(\/[^/]+)?\/?$/,
-	/^\/events\/[^/]+\/lottery\//,
-	/^\/events\/[^/]+\/resale\//,
+	/^\/concerts\/[^/]+\/checkout\/?$/,
+	/^\/concerts\/[^/]+\/lottery-entries(\/new)?\/?$/,
+	/^\/concerts\/[^/]+\/resale-entries\/new\/?$/,
 	/^\/verify\//,
 	/^\/settings(\/|$)/,
 ]

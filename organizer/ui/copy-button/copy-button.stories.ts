@@ -18,7 +18,7 @@ const meta = {
 	},
 	args: {
 		label: 'ファンページ',
-		value: 'https://liverty-music.app/events/e-1103',
+		value: 'https://liverty-music.app/concerts/e-1103',
 	},
 } satisfies Meta<typeof CopyButton>
 

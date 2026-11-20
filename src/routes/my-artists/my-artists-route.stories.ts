@@ -11,20 +11,20 @@ import { resolveColor } from '../../../.storybook/contrast'
 import { capturePixels, expectScreenshot } from '../../../.storybook/screenshot'
 import { expectTargets } from '../../../.storybook/target-size'
 import { artistColor } from '../../adapter/view/artist-color'
+import { HomeAreaSelector } from '../../components/home-area-selector/home-area-selector'
 import { PageHelp } from '../../components/page-help/page-help'
 import { SignupPromptBanner } from '../../components/signup-prompt-banner/signup-prompt-banner'
 import { StatePlaceholder } from '../../components/state-placeholder/state-placeholder'
-import { UserHomeSelector } from '../../components/user-home-selector/user-home-selector'
 import type { FollowedArtist, Hype } from '../../entities/follow'
+import {
+	IActionMenuService,
+	type MenuAction,
+} from '../../services/action-menu-service'
 import { IAuthService } from '../../services/auth-service'
 import { IErrorBoundaryService } from '../../services/error-boundary-service'
-import {
-	type FabAction,
-	IFabMenuService,
-} from '../../services/fab-menu-service'
 import { IFollowStore } from '../../services/follow-store'
+import { INotificationPromptService } from '../../services/notification-prompt-service'
 import { IOnboardingService } from '../../services/onboarding-service'
-import { IPushOfferService } from '../../services/push-offer-service'
 import { IUserStore } from '../../services/user-store'
 import { MyArtistsRoute } from './my-artists-route'
 
@@ -50,7 +50,7 @@ function follows(count: number, hypes: Hype[] = STILL_HYPES): FollowedArtist[] {
 const saved: string[] = []
 
 /** The launcher's actions the route registered last, so a story can invoke them. */
-const fab = { actions: [] as FabAction[] }
+const fab = { actions: [] as MenuAction[] }
 
 function items(
 	count: number,
@@ -75,14 +75,14 @@ function items(
 			currentHome: 'JP-13',
 			saveHome: async () => {},
 		}),
-		Registration.instance(IFabMenuService, {
-			register: (_owner: object, actions: FabAction[]) => {
+		Registration.instance(IActionMenuService, {
+			register: (_owner: object, actions: MenuAction[]) => {
 				fab.actions = actions
 				return () => {}
 			},
 			hide: () => () => {},
 		}),
-		Registration.instance(IPushOfferService, {
+		Registration.instance(INotificationPromptService, {
 			pushState: async () => 'on',
 		}),
 		Registration.instance(IErrorBoundaryService, {}),
@@ -94,7 +94,7 @@ const register = [
 	MyArtistsRoute,
 	PageHelp,
 	StatePlaceholder,
-	UserHomeSelector,
+	HomeAreaSelector,
 	SignupPromptBanner,
 ]
 
@@ -565,7 +565,7 @@ export const PickingHypeLevels = {
 /**
  * The active dot's pulse follows the system preference. The story runs in
  * both Storybook projects (see MotionFollowsSystemPreference in the
- * ConcertHighway stories) and asserts the presentation of the one in use.
+ * TimetableGrid stories) and asserts the presentation of the one in use.
  */
 export const HypeDotMotionFollowsSystemPreference = {
 	tags: ['reduced-motion'],

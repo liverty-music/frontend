@@ -43,7 +43,7 @@
 			position: relative;
 
 			/* Clip the internally-scrolled timetable at the bottom fade mask so it
-			   never spills past the demo screen (concert-highway keeps its own
+			   never spills past the demo screen (timetable-grid keeps its own
 			   .concert-scroll — this only trims sub-pixel overflow at the frame). */
 			overflow: hidden;
 			inline-size: 100%;
@@ -68,7 +68,7 @@
 			}
 		}
 
-		.welcome-preview > concert-highway {
+		.welcome-preview > timetable-grid {
 			block-size: 100%;
 		}
 

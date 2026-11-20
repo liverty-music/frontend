@@ -26,7 +26,7 @@ describe('ConsentRoute (transparency notice)', () => {
 		localStorage.clear()
 	})
 
-	it('acknowledge routes to dashboard WITHOUT touching consent state or storage', async () => {
+	it('acknowledge routes to timetable WITHOUT touching consent state or storage', async () => {
 		// The route no longer resolves IConsentService at all — acknowledging
 		// the notice must never mutate the default-on opt-out posture. The
 		// absence of any ConsentService dependency is the structural guarantee
@@ -36,7 +36,7 @@ describe('ConsentRoute (transparency notice)', () => {
 		await sut.acknowledge()
 
 		expect(setItem).not.toHaveBeenCalled()
-		expect(mockRouter.load).toHaveBeenCalledWith('/dashboard')
+		expect(mockRouter.load).toHaveBeenCalledWith('/timetable')
 	})
 
 	it('openSettings routes to the settings opt-out controls', async () => {

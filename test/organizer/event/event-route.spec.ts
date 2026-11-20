@@ -267,7 +267,9 @@ describe('event page publish', () => {
 		const published = await mount({
 			list: vi.fn().mockResolvedValue([concertOf(PublishState.PUBLISHED)]),
 		})
-		expect(published.vm.fanPageUrl).toBe('https://liverty-music.app/events/e-1')
+		expect(published.vm.fanPageUrl).toBe(
+			'https://liverty-music.app/concerts/e-1',
+		)
 		expect(published.vm.badge.labelKey).toBe('publishState.published')
 		await published.done()
 

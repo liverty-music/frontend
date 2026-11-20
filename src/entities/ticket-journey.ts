@@ -22,7 +22,7 @@ export interface JourneyStatusConfig {
 
 /**
  * Canonical journey-status presentation map: the single source of truth for the
- * label, icon, and semantic hue of each status, consumed by the dashboard filter
+ * label, icon, and semantic hue of each status, consumed by the timetable filter
  * chips, the concert-card badge, and the concert-detail status control, so a
  * status's visual identity is consistent app-wide. Ordered in journey-flow order
  * (process then outcome) so consumers can iterate it directly.
@@ -30,31 +30,31 @@ export interface JourneyStatusConfig {
 export const JOURNEY_STATUS_CONFIG: readonly JourneyStatusConfig[] = [
 	{
 		status: 'tracking',
-		labelKey: 'eventDetail.journeyStatus.tracking',
+		labelKey: 'concertSheet.journeyStatus.tracking',
 		icon: '🔔',
 		hueToken: '--journey-hue-tracking',
 	},
 	{
 		status: 'applied',
-		labelKey: 'eventDetail.journeyStatus.applied',
+		labelKey: 'concertSheet.journeyStatus.applied',
 		icon: '📝',
 		hueToken: '--journey-hue-applied',
 	},
 	{
 		status: 'unpaid',
-		labelKey: 'eventDetail.journeyStatus.unpaid',
+		labelKey: 'concertSheet.journeyStatus.unpaid',
 		icon: '💰',
 		hueToken: '--journey-hue-unpaid',
 	},
 	{
 		status: 'paid',
-		labelKey: 'eventDetail.journeyStatus.paid',
+		labelKey: 'concertSheet.journeyStatus.paid',
 		icon: '🎟️',
 		hueToken: '--journey-hue-paid',
 	},
 	{
 		status: 'lost',
-		labelKey: 'eventDetail.journeyStatus.lost',
+		labelKey: 'concertSheet.journeyStatus.lost',
 		icon: '💔',
 		hueToken: '--journey-hue-lost',
 	},

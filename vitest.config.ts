@@ -315,7 +315,7 @@ export default defineConfig({
 				'organizer/main.ts',
 				'reception/main.ts',
 				// Canvas components (require complex setup, deferred)
-				'src/components/dna-orb/**',
+				'src/components/artist-bubbles/**',
 				// Scripts directory
 				'scripts/**',
 				// Temporary files (not part of the app)

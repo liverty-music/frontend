@@ -64,11 +64,8 @@ describe('BottomNavBar', () => {
 		await fixture.stop(true)
 	})
 
-	it('renders one tab per `nav: true` route, in route order', () => {
-		expect(tabs().map((t) => t.getAttribute('data-nav'))).toEqual([
-			'home',
-			'settings',
-		])
+	it('renders one tab per `nav: true` route, in route order, named by route id', () => {
+		expect(tabs().map((t) => t.getAttribute('data-nav'))).toEqual(['a', 'b'])
 	})
 
 	it('links each tab to its route’s first path', () => {

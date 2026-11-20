@@ -1,9 +1,0 @@
-@layer block {
-	@scope (nearby-filter-sheet) {
-		/* The rows are list items reaching both edges of the sheet, as a
-		   Material 3 list does; only the space below the list is the sheet's. */
-		.nearby-filter-sheet {
-			padding-block-end: var(--space-m);
-		}
-	}
-}

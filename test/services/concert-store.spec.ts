@@ -27,7 +27,7 @@ vi.mock('../../src/services/onboarding-service', () => ({
 	OnboardingStep: {
 		LP: 'lp',
 		DISCOVERY: 'discovery',
-		DASHBOARD: 'dashboard',
+		TIMETABLE: 'timetable',
 		DETAIL: 'detail',
 		MY_ARTISTS: 'my-artists',
 		COMPLETED: 'completed',
@@ -202,7 +202,7 @@ describe('ConcertStore', () => {
 			}
 		}
 
-		// @spec components/infrastructure/fan/web/route/dashboard "Nearby artist with a distant concert"
+		// @spec components/infrastructure/fan/web/route/timetable "Nearby artist with a distant concert"
 		it('highlights a Nearby artist in the home and nearby lanes, not the away lane', () => {
 			expect(matchedByLane('nearby')).toMatchObject({
 				home: true,
@@ -211,8 +211,8 @@ describe('ConcertStore', () => {
 			})
 		})
 
-		// @spec components/infrastructure/fan/web/route/dashboard "Watch artist"
-		// @spec components/infrastructure/fan/web/global/live-highway "Watch artist always unmatched"
+		// @spec components/infrastructure/fan/web/route/timetable "Watch artist"
+		// @spec components/infrastructure/fan/web/global/timetable-grid "Watch artist always unmatched"
 		it('shows a Watch artist concerts in every lane, none highlighted', () => {
 			expect(matchedByLane('watch')).toEqual({
 				shown: ['c-home', 'c-nearby', 'c-away'],
@@ -222,7 +222,7 @@ describe('ConcertStore', () => {
 			})
 		})
 
-		// @spec components/infrastructure/fan/web/global/live-highway "Away artist matched on all stages"
+		// @spec components/infrastructure/fan/web/global/timetable-grid "Away artist matched on all stages"
 		it('highlights an Away artist in every lane', () => {
 			expect(matchedByLane('away')).toMatchObject({
 				home: true,
@@ -231,7 +231,7 @@ describe('ConcertStore', () => {
 			})
 		})
 
-		// @spec components/infrastructure/fan/web/global/live-highway "Home artist matched only on home stage"
+		// @spec components/infrastructure/fan/web/global/timetable-grid "Home artist matched only on home stage"
 		it('highlights a Home artist in the home lane only', () => {
 			expect(matchedByLane('home')).toMatchObject({
 				home: true,
@@ -240,7 +240,7 @@ describe('ConcertStore', () => {
 			})
 		})
 
-		// @spec components/infrastructure/fan/web/global/live-highway "Match computation is application-code responsibility"
+		// @spec components/infrastructure/fan/web/global/timetable-grid "Match computation is application-code responsibility"
 		it('exposes the match as data on each concert, computed from hype level and lane', () => {
 			const { home, away } = matchedByLane('home')
 			expect(typeof home).toBe('boolean')
@@ -248,7 +248,7 @@ describe('ConcertStore', () => {
 		})
 	})
 
-	describe('toDateGroupsForLocation (All Nearby matching and journeys)', () => {
+	describe('toDateGroupsForLocation (the Concerts view matching and journeys)', () => {
 		const SPEC = 'components/infrastructure/fan/web/route/discovery'
 		const dateLD = { year: 2026, month: 3, day: 15 }
 
@@ -392,7 +392,7 @@ describe('ConcertStore', () => {
 		}
 
 		it('stamps the journey status on a discovered concert', () => {
-			// @spec components/infrastructure/fan/web/route/dashboard "Tracked concert"
+			// @spec components/infrastructure/fan/web/route/timetable "Tracked concert"
 			const [dg] = sut.toDateGroups(
 				[group() as never],
 				artistMap,
@@ -403,13 +403,13 @@ describe('ConcertStore', () => {
 		})
 
 		it('leaves a discovered concert without a journey unbadged', () => {
-			// @spec components/infrastructure/fan/web/route/dashboard "Concert without a journey"
+			// @spec components/infrastructure/fan/web/route/timetable "Concert without a journey"
 			const [dg] = sut.toDateGroups([group() as never], artistMap, new Map())
 			expect(dg.home[0].journeyStatus).toBeUndefined()
 		})
 
 		it('stamps the purchased count and no journey on a first-party concert', () => {
-			// @spec components/infrastructure/fan/web/route/dashboard "Purchased first-party concert"
+			// @spec components/infrastructure/fan/web/route/timetable "Purchased first-party concert"
 			const [dg] = sut.toDateGroups(
 				[group('org-1') as never],
 				artistMap,
@@ -422,7 +422,7 @@ describe('ConcertStore', () => {
 		})
 
 		it('gives a first-party concert with only a journey no badge', () => {
-			// @spec components/infrastructure/fan/web/route/dashboard "First-party concert not purchased"
+			// @spec components/infrastructure/fan/web/route/timetable "First-party concert not purchased"
 			const [dg] = sut.toDateGroups(
 				[group('org-1') as never],
 				artistMap,
@@ -435,14 +435,14 @@ describe('ConcertStore', () => {
 	})
 
 	describe('toDateGroups (fanart enrichment)', () => {
-		// @spec components/infrastructure/fan/web/global/live-highway "Dashboard events enriched with fanart"
-		it('attaches the fanart of the followed artist, looked up by artist ID, to each LiveEvent', () => {
+		// @spec components/infrastructure/fan/web/global/timetable-grid "Timetable events enriched with fanart"
+		it('attaches the fanart of the followed artist, looked up by artist ID, to each Concert', () => {
 			const dateLD = { year: 2026, month: 3, day: 15 }
 			const fanart = {
 				artistBackground: 'https://assets.fanart.tv/background.jpg',
 				artistThumb: 'https://assets.fanart.tv/thumb.jpg',
 			}
-			// The followed-artist map as the dashboard builds it from the
+			// The followed-artist map as the timetable builds it from the
 			// FollowService.List response: keyed by artist ID.
 			const artistMap = new Map([
 				[
@@ -548,7 +548,7 @@ describe('ConcertStore', () => {
 			expect(mockLoggerWarn).not.toHaveBeenCalled()
 		})
 
-		// @spec components/infrastructure/fan/web/global/live-highway "Artist color source"
+		// @spec components/infrastructure/fan/web/global/timetable-grid "Artist color source"
 		it("carries the resolved artist's hue, computed once from its name", () => {
 			const group = {
 				date: { value: dateLD },

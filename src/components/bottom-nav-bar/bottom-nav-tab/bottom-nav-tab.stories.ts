@@ -15,10 +15,10 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 const TAB = {
-	id: 'dashboard',
-	path: ['dashboard'],
+	id: 'timetable',
+	path: ['timetable'],
 	isActive: false,
-	data: { icon: 'home', labelKey: 'nav.home' },
+	data: { icon: 'home', labelKey: 'nav.timetable' },
 }
 
 /**

@@ -1,6 +1,6 @@
 import type { Artist } from './artist'
 
-/** Lane type for proximity-based grouping on the dashboard. */
+/** Lane type for proximity-based grouping on the timetable. */
 export type LaneType = 'home' | 'nearby' | 'away'
 
 /** Hype level determining which lanes an artist's concerts appear matched in. */
@@ -10,7 +10,7 @@ export type HypeLevel = 'watch' | 'home' | 'nearby' | 'away'
 export type JourneyStatus = 'tracking' | 'applied' | 'lost' | 'unpaid' | 'paid'
 
 /**
- * A concert event displayed on the dashboard.
+ * A concert event displayed on the timetable.
  * @source proto/liverty_music/rpc/concert/v1/concert_service.proto — Concert
  */
 export interface Concert {
@@ -28,7 +28,7 @@ export interface Concert {
 	/**
 	 * True when the concert's Series belongs to an Organizer (it carries an
 	 * organizer id). A first-party concert has a public Event page
-	 * (`/events/:id`) and shows the purchased badge instead of a journey badge.
+	 * (`/concerts/:id`) and shows the purchased badge instead of a journey badge.
 	 */
 	isFirstParty: boolean
 
@@ -36,8 +36,8 @@ export interface Concert {
 	hypeLevel: HypeLevel
 	matched: boolean
 	/**
-	 * The proximity lane the concert was listed in: on the Dashboard the
-	 * distance from the fan's home, in the All Nearby view the distance from
+	 * The proximity lane the concert was listed in: on the Timetable the
+	 * distance from the fan's home, in the Concerts view the distance from
 	 * the browsed area.
 	 */
 	lane?: LaneType

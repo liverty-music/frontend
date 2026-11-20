@@ -105,7 +105,7 @@ describe('runDiscoveryPrefetch', () => {
 	})
 
 	it('does nothing when the app opens on another route', async () => {
-		runDiscoveryPrefetch(container, '/dashboard', 400)
+		runDiscoveryPrefetch(container, '/timetable', 400)
 		await flush()
 
 		expect(mockFollows.ensureLoaded).not.toHaveBeenCalled()

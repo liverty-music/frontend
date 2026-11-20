@@ -4,7 +4,7 @@
 
 <!-- The filter trigger moved to the FAB action launcher; this component now
      renders only its bottom sheet, opened via openSheet(). The sheet and its
-     dashboard-owned bindings are unchanged. See dashboard-artist-filter spec. -->
+     timetable-owned bindings are unchanged. See timetable-artist-filter spec. -->
 
 <!-- Filter bottom sheet -->
 <!-- sheet-closed keeps isSheetOpen in sync when user swipes/clicks outside -->
@@ -49,7 +49,7 @@
       class="[ filter-facet ] [ stack ]"
       aria-labelledby="filter-journey-heading"
     >
-      <h3 class="[ facet-heading ] [ md-typescale-title-small ]" id="filter-journey-heading" t="eventDetail.ticketStatus"></h3>
+      <h3 class="[ facet-heading ] [ md-typescale-title-small ]" id="filter-journey-heading" t="concertSheet.ticketStatus"></h3>
       <ul class="journey-list" aria-labelledby="filter-journey-heading">
         <!-- Process phase: tracking -> applied -->
         <li repeat.for="config of processStatuses" key.bind="config.status">

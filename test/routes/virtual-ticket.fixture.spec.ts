@@ -2,7 +2,11 @@ import { I18nConfiguration } from '@aurelia/i18n'
 import { createFixture } from '@aurelia/testing'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import ja from '../../src/locales/ja/translation.json'
-import type { EventPageEvent } from '../../src/routes/event/event-page'
+import type { ConcertPageConcert } from '../../src/routes/concert/concert-page'
+import type {
+	TicketView,
+	WalletPersonalDetails,
+} from '../../src/routes/tickets/ticket-view'
 import {
 	AdmissionStamp,
 	STAMP_ANIMATION,
@@ -11,10 +15,6 @@ import {
 	PRESET_CHOSEN,
 	VirtualTicket,
 } from '../../src/routes/tickets/virtual-ticket/virtual-ticket'
-import type {
-	WalletPersonalDetails,
-	WalletTicket,
-} from '../../src/routes/tickets/wallet-view'
 
 const i18n = I18nConfiguration.customize((options) => {
 	options.initOptions = {
@@ -30,7 +30,7 @@ function jst(day: number, hour: number, minute = 0): Date {
 	return new Date(Date.UTC(2026, 10, day, hour - 9, minute))
 }
 
-const EVENT: EventPageEvent = {
+const EVENT: ConcertPageConcert = {
 	id: 'event-1',
 	seriesId: 'series-1',
 	title: 'Autumn Tour 2026',
@@ -49,7 +49,7 @@ const EVENT: EventPageEvent = {
 	cancelled: false,
 }
 
-function ticket(o: Partial<WalletTicket> = {}): WalletTicket {
+function ticket(o: Partial<TicketView> = {}): TicketView {
 	return {
 		id: 'ticket-1',
 		eventId: 'event-1',
@@ -71,8 +71,8 @@ const PERSON: WalletPersonalDetails = {
 }
 
 interface Host {
-	event: EventPageEvent | null
-	ticket: WalletTicket
+	event: ConcertPageConcert | null
+	ticket: TicketView
 	person: WalletPersonalDetails
 	press: boolean
 	pressed: number

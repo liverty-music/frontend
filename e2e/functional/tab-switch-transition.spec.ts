@@ -1,6 +1,6 @@
 import { openShell, seedSignedInFan, tapTab } from '../support/fan-shell'
 import { expect, type Page, test } from '../support/test'
-import { openDashboard } from '../support/timetable'
+import { openTimetable } from '../support/timetable'
 
 // The first page load compiles the app on the dev server; allow for it.
 test.describe.configure({ timeout: 60_000 })
@@ -87,19 +87,19 @@ test.describe('tab switches', () => {
 	})
 
 	test(`@spec ${SHELL} "Tab switch"`, async ({ page }) => {
-		await openShell(page, '/dashboard')
+		await openShell(page, '/timetable')
 
-		// Home → My Artists → Discovery → Home: each switch is one transition
+		// Timetable → My Artists → Discovery → Timetable: each switch is one transition
 		// that settles (no TimeoutError: the update callback never waits for a
 		// frame).
 		const steps: [string, RegExp][] = [
 			['my-artists', /\/my-artists$/],
 			['discovery', /\/discovery/],
-			['home', /\/dashboard$/],
+			['timetable', /\/timetable$/],
 		]
-		for (const [icon, url] of steps) {
+		for (const [route, url] of steps) {
 			const before = (await transitions(page)).length
-			await tapTab(page, icon)
+			await tapTab(page, route)
 			await expect(page).toHaveURL(url)
 			const vt = await lastFinished(page)
 			expect((await transitions(page)).length).toBe(before + 1)
@@ -130,7 +130,7 @@ test.describe('tab switches', () => {
 
 	test(`@spec ${SHELL} "Reduced motion preference"`, async ({ page }) => {
 		await page.emulateMedia({ reducedMotion: 'reduce' })
-		await openShell(page, '/dashboard')
+		await openShell(page, '/timetable')
 
 		await tapTab(page, 'my-artists')
 		await expect(page).toHaveURL(/\/my-artists$/)
@@ -143,11 +143,12 @@ test.describe('tab switches', () => {
 
 test(`@spec ${SHELL} "Route change from inside a page"`, async ({ page }) => {
 	// A route opened from inside a page changes without a page transition:
-	// only a tab tap starts one. Here a concert on the timetable opens its
-	// event page.
+	// only a tab tap starts one. Here a first-party concert on the timetable
+	// opens its concert page.
 	await recordTransitions(page)
-	await openDashboard(page)
+	await openTimetable(page, { firstParty: true })
 	await page.locator('[data-live-card]').first().click()
-	await expect(page).toHaveURL(/\/concerts\//)
+	await expect(page).toHaveURL(/\/concerts\/[^/?]+$/)
+	await expect(page.locator('concert-route')).toBeVisible()
 	expect(await transitions(page)).toEqual([])
 })

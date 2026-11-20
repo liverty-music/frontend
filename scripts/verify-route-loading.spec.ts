@@ -66,11 +66,11 @@ describe('checkRouteLoading', () => {
 
 	it('catches assigning a cache read to render state in the hook', () => {
 		// Render state assigned from a cache in a router hook — the shape the
-		// dashboard once had. The component lifecycle is where it belongs.
+		// timetable once had. The component lifecycle is where it belongs.
 		const result = checkRouteLoading(
 			file(
-				'src/routes/dashboard/dashboard-route.ts',
-				`export class DashboardRoute {
+				'src/routes/timetable/timetable-route.ts',
+				`export class TimetableRoute {
 					public async loading(): Promise<void> {
 						this.dateGroups = this.concertService.peekDateGroups()
 					}

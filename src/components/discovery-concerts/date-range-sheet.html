@@ -1,0 +1,66 @@
+<import from="./date-range-sheet.css"></import>
+<import from="../bottom-sheet/bottom-sheet"></import>
+
+<!-- sheet-closed keeps isOpen in sync when the user swipes / taps outside -->
+<bottom-sheet
+  open.bind="isOpen"
+  sheet-closed.trigger="onSheetClosed()"
+  heading.bind="'discoveryConcerts.dateRange.title' | t"
+>
+  <div class="[ date-range-sheet ] [ flow ]">
+    <!-- Quick presets: apply-and-close in one tap -->
+    <section class="[ preset-section ] [ flow ]">
+      <p class="[ section-label ] [ md-typescale-title-small ]" t="discoveryConcerts.dateRange.presetsLabel"></p>
+      <div class="[ preset-group ] [ cluster ]" role="group" t="[aria-label]discoveryConcerts.datePreset.groupLabel">
+        <button
+          repeat.for="p of presets"
+          type="button"
+          class="[ chip ] [ state-layer ] [ md-typescale-label-large ]"
+          aria-pressed.bind="isPresetActive(p)"
+          click.trigger="selectPreset(p)"
+        >
+          <svg-icon if.bind="isPresetActive(p)" name="check" class="chip-icon"></svg-icon>
+          <span t.bind="'discoveryConcerts.datePreset.' + p"></span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Editable custom range: keeps the sheet open while editing -->
+    <section class="[ custom-section ] [ flow ]">
+      <p class="[ section-label ] [ md-typescale-title-small ]" t="discoveryConcerts.dateRange.customLabel"></p>
+      <div class="[ custom-range ] [ cluster ]">
+        <label class="[ custom-field ] [ stack ] [ md-typescale-body-medium ]">
+          <span class="custom-field-label" t="discoveryConcerts.datePreset.from"></span>
+          <input
+            type="date"
+            class="[ text-field ] [ md-typescale-body-large ]"
+            value.bind="draftFrom"
+            change.trigger="onDraftChanged()"
+          />
+        </label>
+        <label class="[ custom-field ] [ stack ] [ md-typescale-body-medium ]">
+          <span class="custom-field-label" t="discoveryConcerts.datePreset.to"></span>
+          <input
+            type="date"
+            class="[ text-field ] [ md-typescale-body-large ]"
+            value.bind="draftTo"
+            min.bind="toMin"
+            max.bind="toMax"
+            change.trigger="onDraftChanged()"
+          />
+        </label>
+      </div>
+      <output class="[ range-hint ] [ md-typescale-body-small ]" data-invalid.bind="!isDraftValid">${hint}</output>
+    </section>
+
+    <div class="apply-row">
+      <button
+        type="button"
+        class="[ button ] [ state-layer ]"
+        click.trigger="applyCustom()"
+        disabled.bind="!isDraftValid"
+        t="discoveryConcerts.dateRange.apply"
+      ></button>
+    </div>
+  </div>
+</bottom-sheet>

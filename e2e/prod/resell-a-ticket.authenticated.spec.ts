@@ -137,9 +137,9 @@ test.describe('resell a ticket (signed in)', () => {
 		expect(stock.state).toBe(SOLD_OUT)
 		expect(stock.resaleOpen).toBe(true)
 
-		// @spec components/infrastructure/fan/web/route/event "Sold out with resale open"
+		// @spec components/infrastructure/fan/web/route/concert "Sold out with resale open"
 		const other = await second.newPage()
-		await other.goto(`/events/${EVENT_ID}`)
+		await other.goto(`/concerts/${EVENT_ID}`)
 		const row = stockRow(other, saleStock)
 		await expect(row.getByTestId('event-sale-sold-out')).toBeVisible()
 		await expect(row.getByTestId('event-resale-listing')).toBeVisible()
@@ -152,7 +152,7 @@ test.describe('resell a ticket (signed in)', () => {
 	}) => {
 		// @spec components/infrastructure/fan/web/route/tickets "Fan lists a ticket"
 		// @spec stories/resell-a-ticket "One of two tickets listed"
-		const cards = await eventCards(page)
+		const cards = await concertCards(page)
 		await expect(cards).toHaveCount(2)
 		await cards.nth(0).getByTestId('tickets-list-for-resale').click()
 
@@ -204,7 +204,7 @@ test.describe('resell a ticket (signed in)', () => {
 		page,
 	}) => {
 		// @spec components/infrastructure/fan/web/route/tickets "Fan withdraws"
-		const cards = await eventCards(page)
+		const cards = await concertCards(page)
 		await expect(cards.nth(0).getByTestId('tickets-state')).toHaveText(LISTED)
 		await cards.nth(0).getByTestId('tickets-withdraw').click()
 		await expect(cards.nth(0).getByTestId('tickets-state')).toHaveText(
@@ -212,7 +212,7 @@ test.describe('resell a ticket (signed in)', () => {
 		)
 
 		const other = await second.newPage()
-		await other.goto(`/events/${EVENT_ID}`)
+		await other.goto(`/concerts/${EVENT_ID}`)
 		const row = stockRow(other, saleStock)
 		await expect(row.getByTestId('event-resale-listing')).toBeVisible()
 		await expect(row.getByTestId('event-buy')).toHaveCount(0)
@@ -269,7 +269,7 @@ async function accessToken(page: Page): Promise<string> {
 }
 
 /** The fan's ticket cards for the event, on a freshly loaded Tickets screen. */
-async function eventCards(page: Page): Promise<Locator> {
+async function concertCards(page: Page): Promise<Locator> {
 	await page.goto('/tickets')
 	const section = page.locator(
 		`section[aria-labelledby="tickets-event-${EVENT_ID}"]`,

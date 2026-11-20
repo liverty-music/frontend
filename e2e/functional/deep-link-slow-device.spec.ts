@@ -3,7 +3,7 @@ import { fakeId } from '../support/fake-id'
 import { expect, test } from '../support/test'
 
 /**
- * A `/concerts/:id` deep-link on a slow device. Resolving it used to flush
+ * A `/timetable?concert=:id` deep-link on a slow device. Resolving it used to flush
  * Aurelia's task queue synchronously; on a slow CPU that flush — which also ran
  * the filtered timetable's render — exceeded the 100 ms synchronous budget,
  * threw "Potential deadlock", and dropped every queued task, so the sheet never
@@ -52,7 +52,7 @@ const groups = Array.from({ length: 212 }, (_, i) => ({
 
 test.use({ viewport: { width: 375, height: 667 } })
 
-// @spec components/infrastructure/fan/web/route/dashboard "Deferring the render preserves load-path side effects"
+// @spec components/infrastructure/fan/web/route/timetable "Deferring the render preserves load-path side effects"
 test('a concert deep-link opens its sheet on a slow device, and the timetable renders', async ({
 	page,
 	context,
@@ -90,7 +90,7 @@ test('a concert deep-link opens its sheet on a slow device, and the timetable re
 	const cdp = await context.newCDPSession(page)
 	await cdp.send('Emulation.setCPUThrottlingRate', { rate: 10 })
 
-	await page.goto(`/concerts/${fakeId('h-150-0')}`)
+	await page.goto(`/timetable?concert=${fakeId('h-150-0')}`)
 
 	// The sheet opens for the linked concert, and its URL is the final entry.
 	await expect
@@ -99,16 +99,18 @@ test('a concert deep-link opens its sheet on a slow device, and the timetable re
 				page.evaluate(
 					() =>
 						!!document.querySelector(
-							'event-detail-sheet dialog[open], event-detail-sheet :popover-open',
+							'concert-sheet dialog[open], concert-sheet :popover-open',
 						),
 				),
 			{ timeout: 60_000 },
 		)
 		.toBe(true)
-	await expect(page).toHaveURL(new RegExp(`/concerts/${fakeId('h-150-0')}$`))
+	await expect(page).toHaveURL(
+		new RegExp(`/timetable\\?.*concert=${fakeId('h-150-0')}$`),
+	)
 	// The filtered timetable rendered behind it.
 	await expect
-		.poll(() => page.locator('concert-highway .date-group').count())
+		.poll(() => page.locator('timetable-grid .date-group').count())
 		.toBeGreaterThan(0)
 	expect(errors.filter((e) => /deadlock/i.test(e))).toEqual([])
 })

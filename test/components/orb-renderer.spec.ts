@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { OrbRenderer } from '../../src/components/dna-orb/orb-renderer'
+import { OrbRenderer } from '../../src/components/artist-bubbles/orb-renderer'
 
 describe('OrbRenderer', () => {
 	function createRenderer(): OrbRenderer {

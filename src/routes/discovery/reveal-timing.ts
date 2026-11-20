@@ -1,4 +1,4 @@
-import type { RevealMark } from '../../components/dna-orb/reveal-marks'
+import type { RevealMark } from '../../components/artist-bubbles/reveal-marks'
 import type { DiscoveryRevealProps } from '../../services/analytics-events'
 
 export type RevealEntry = DiscoveryRevealProps['entry']

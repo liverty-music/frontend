@@ -6,7 +6,7 @@ import {
 	centre,
 	fab,
 	intersects,
-	openNearbyFilters,
+	openConcertsFilters,
 	publishSnack,
 	seedSignedInFan,
 	settle,
@@ -15,7 +15,7 @@ import { expect, type Page, test } from '../support/test'
 
 /**
  * Discovery's swap tile beside the orb: where it sits against the bubble field
- * and the largest orb on a 375px phone, the switch to the All Nearby view and
+ * and the largest orb on a 375px phone, the switch to the Concerts view and
  * back, and how it behaves under an open snack bar and an open FAB arc.
  */
 
@@ -133,7 +133,7 @@ const tileBox = (page: Page) => box(tile(page))
 /** The bubbles and the orb as drawn on the canvas, in page coordinates. */
 function drawn(page: Page) {
 	return page.evaluate(() => {
-		const el = document.querySelector('dna-orb-canvas') as HTMLElement & {
+		const el = document.querySelector('artist-bubbles') as HTMLElement & {
 			$au: Record<string, { viewModel: unknown }>
 		}
 		const vm = el.$au['au:resource:custom-element'].viewModel as {
@@ -185,7 +185,7 @@ test.describe('Discovery swap tile', () => {
 		// The orb grows one stage per follow made in this visit; grow it to its
 		// largest (the narrow-screen ceiling, 56px) as ten follows would.
 		await page.evaluate(() => {
-			const el = document.querySelector('dna-orb-canvas') as HTMLElement & {
+			const el = document.querySelector('artist-bubbles') as HTMLElement & {
 				$au: Record<string, { viewModel: unknown }>
 			}
 			const vm = el.$au['au:resource:custom-element'].viewModel as {
@@ -220,34 +220,34 @@ test.describe('Discovery swap tile', () => {
 		// The bubble field is as tall as it is without the tile.
 		const area = page.locator('.bubble-area')
 		const withTile = (await box(area)).height
-		await page.locator('discovery-swap-button').evaluate((el) => {
+		await page.locator('discovery-swap-tile').evaluate((el) => {
 			;(el as HTMLElement).style.display = 'none'
 		})
 		const without = (await box(area)).height
 		expect(withTile).toBe(without)
 	})
 
-	test(`@spec ${CAPABILITY} "Switching to the All Nearby view"`, async ({
+	test(`@spec ${CAPABILITY} "Switching to the Concerts view"`, async ({
 		page,
 	}) => {
 		await openDiscovery(page)
 		await tile(page).click()
 
-		const view = page.locator('nearby-concerts')
+		const view = page.locator('discovery-concerts')
 		await expect(view).toBeVisible()
-		await expect(page).toHaveURL(/\/discovery\?view=nearby$/)
+		await expect(page).toHaveURL(/\/discovery\?view=concerts$/)
 		await expect(view.locator('[data-live-card]').first()).toBeVisible({
 			timeout: 15_000,
 		})
 
 		// @spec components/infrastructure/fan/web/route/discovery "Stage header under the page header"
-		// No filter row between them, as on the dashboard.
+		// No filter row between them, as on the timetable.
 		const header = await box(page.locator('page-header header').first())
 		const stage = await box(view.locator('.stage-header').first())
 		expect(stage.y).toBeCloseTo(header.y + header.height, 0)
 
 		// @spec components/infrastructure/fan/web/route/discovery "Filter item opens the filter sheet"
-		const rows = await openNearbyFilters(page)
+		const rows = await openConcertsFilters(page)
 		await expect(rows.area).toContainText('福岡県')
 		await expect(rows.period).toContainText('7日以内')
 		await page.keyboard.press('Escape')
@@ -261,7 +261,7 @@ test.describe('Discovery swap tile', () => {
 		await expect(page).toHaveURL(/\/discovery$/)
 		await expect(page.locator('.search-bar')).toBeVisible()
 		await expect(page.locator('.genre-bar')).toBeVisible()
-		await expect(tile(page)).toHaveAccessibleName('近くのライブ')
+		await expect(tile(page)).toHaveAccessibleName('ライブ')
 	})
 
 	test(`@spec ${CAPABILITY} "Left-handed mode"`, async ({ page }) => {
@@ -301,7 +301,7 @@ test.describe('Discovery swap tile', () => {
 
 		// Still tappable under the open snack bar.
 		await tile(page).click()
-		await expect(page.locator('nearby-concerts')).toBeVisible()
+		await expect(page.locator('discovery-concerts')).toBeVisible()
 	})
 
 	test(`@spec components/infrastructure/fan/web/global/snack-bar "A banner and a floating control are both visible"`, async ({
@@ -331,25 +331,25 @@ test.describe('Discovery swap tile', () => {
 		expect(intersects(await box(banner), s)).toBe(false)
 	})
 
-	test(`@spec ${CAPABILITY} "The FAB menu is open"`, async ({ page }) => {
+	test(`@spec ${CAPABILITY} "The action menu is open"`, async ({ page }) => {
 		await openDiscovery(page)
 		await fab(page).click()
 		await expect(fab(page)).toHaveAttribute('aria-expanded', 'true')
-		await settle(page, 'fab-menu')
+		await settle(page, 'action-menu')
 
 		const c = centre(await tileBox(page))
 		await page.mouse.click(c.x, c.y)
 
 		await expect(fab(page)).toHaveAttribute('aria-expanded', 'false')
-		await expect(page.locator('nearby-concerts')).toHaveCount(0)
+		await expect(page.locator('discovery-concerts')).toHaveCount(0)
 		await expect(page).toHaveURL(/\/discovery$/)
 	})
 
 	test(`@spec ${CAPABILITY} "Closing the detail sheet returns to the list"`, async ({
 		page,
 	}) => {
-		await openDiscovery(page, '/discovery?view=nearby')
-		const view = page.locator('nearby-concerts')
+		await openDiscovery(page, '/discovery?view=concerts')
+		const view = page.locator('discovery-concerts')
 		const cards = view.locator('[data-live-card]')
 		await expect(cards.first()).toBeVisible({ timeout: 15_000 })
 		const scroll = view.locator('.concert-scroll')
@@ -365,33 +365,31 @@ test.describe('Discovery swap tile', () => {
 		await cards.first().evaluate((card) =>
 			Promise.all(
 				card
-					.closest('event-card')
+					.closest('concert-card')
 					?.getAnimations()
 					.map((a) => a.finished) ?? [],
 			),
 		)
 		await cards.first().click()
 		const sheet = page.locator(
-			'event-detail-sheet dialog[open], event-detail-sheet :popover-open',
+			'concert-sheet dialog[open], concert-sheet :popover-open',
 		)
 		await expect(sheet.first()).toBeVisible()
-		await expect(page).toHaveURL(/\/concerts\//)
+		await expect(page).toHaveURL(/\/discovery\?view=concerts&concert=/)
 
 		await page.keyboard.press('Escape')
 		await expect(sheet).toHaveCount(0)
-		await expect(page).toHaveURL(/\/discovery\?view=nearby$/)
+		await expect(page).toHaveURL(/\/discovery\?view=concerts$/)
 		await expect(view).toBeVisible()
 		expect(await scroll.evaluate((s) => s.scrollTop)).toBe(scrolled)
-		const rows = await openNearbyFilters(page)
+		const rows = await openConcertsFilters(page)
 		await expect(rows.area).toContainText('福岡県')
 		await expect(rows.period).toContainText('7日以内')
 	})
 
-	test(`@spec ${CAPABILITY} "Link to the All Nearby view"`, async ({
-		page,
-	}) => {
-		await openDiscovery(page, '/discovery?view=nearby')
-		await expect(page.locator('nearby-concerts')).toBeVisible()
+	test(`@spec ${CAPABILITY} "Link to the Concerts view"`, async ({ page }) => {
+		await openDiscovery(page, '/discovery?view=concerts')
+		await expect(page.locator('discovery-concerts')).toBeVisible()
 		await expect(tile(page)).toHaveAccessibleName('アーティスト')
 	})
 })

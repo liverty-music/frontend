@@ -1,10 +1,10 @@
 <template>
   <import from="./discovery-route.css"></import>
   <import from="./discovery-swap.css"></import>
-  <import from="../../components/dna-orb/dna-orb-canvas"></import>
+  <import from="../../components/artist-bubbles/artist-bubbles"></import>
   <import from="../../components/onboarding-progress/onboarding-progress"></import>
-  <import from="../../components/all-nearby/nearby-concerts"></import>
-  <import from="../../components/discovery-swap-button/discovery-swap-button"></import>
+  <import from="../../components/discovery-concerts/discovery-concerts"></import>
+  <import from="../../components/discovery-swap-tile/discovery-swap-tile"></import>
   <import from="./discovery-starfield"></import>
   <import from="./discovery-search-bar"></import>
   <import from="./discovery-genre-bar"></import>
@@ -41,15 +41,15 @@
 
     <!-- Bubble UI (hidden during search) -->
     <div class="bubble-area">
-      <dna-orb-canvas
-        component.ref="dnaOrbCanvas"
+      <artist-bubbles
+        component.ref="artistBubbles"
         artists.bind="bubbleStore.field"
         placements.bind="bubbleStore.pendingPlacements"
         followed-count.bind="followedCount"
         artist-selected.trigger="onArtistSelected($event)"
         need-more-bubbles.trigger="onNeedMoreBubbles($event)"
         reveal-mark.trigger="onRevealMark($event)"
-      ></dna-orb-canvas>
+      ></artist-bubbles>
 
     </div>
 
@@ -60,24 +60,24 @@
       follow.trigger="$event.detail.waitUntil(onFollowFromSearch($event.detail.artist))"
     ></discovery-search-results>
 
-    <!-- All Nearby view: in place of the search bar, the genre chips and the
+    <!-- Concerts view: in place of the search bar, the genre chips and the
          bubbles, which keep their size underneath (the field is not rebuilt). -->
-    <nearby-concerts
-      component.ref="nearbyConcerts"
-      if.bind="view === 'nearby'"
-      class="nearby-view"
-      visit.bind="nearbyVisit"
+    <discovery-concerts
+      component.ref="discoveryConcerts"
+      if.bind="view === 'concerts'"
+      class="concerts-view"
+      visit.bind="concertsVisit"
       on-signup-requested.bind="() => offerSignUp()"
-    ></nearby-concerts>
+    ></discovery-concerts>
 
     <!-- Swap tile beside the orb, in the band under the bubbles' floor that no
          bubble enters; mirrored in left-handed mode, hidden in search mode. -->
-    <discovery-swap-button
+    <discovery-swap-tile
       class="swap-tile-slot"
-      data-handed.bind="fabMenu.handed"
+      data-handed.bind="actionMenu.handed"
       view.bind="view"
       on-swap.bind="() => switchView()"
-    ></discovery-swap-button>
+    ></discovery-swap-tile>
 
     <!-- Screen reader status -->
     <output
@@ -88,7 +88,7 @@
     ></output>
   </main>
 
-  <!-- Sign-up prompt for a guest who tapped follow in the All Nearby view.
+  <!-- Sign-up prompt for a guest who tapped follow in the Concerts view.
        Outside <main>: the banner is fixed to the viewport, and the layout is
        a size container that would become its containing block. -->
   <signup-prompt-banner

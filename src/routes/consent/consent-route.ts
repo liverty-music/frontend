@@ -14,7 +14,7 @@ import { ILogger, resolve } from 'aurelia'
  * Acknowledging NEVER changes the default-on opt-out state and NEVER gates
  * onboarding progression: the route is a standalone public page
  * (`data: { auth: false }`) reached by an explicit link, not a step in the
- * onboarding flow. The acknowledge action navigates to the dashboard.
+ * onboarding flow. The acknowledge action navigates to the timetable.
  */
 
 export class ConsentRoute implements IRouteViewModel {
@@ -22,13 +22,13 @@ export class ConsentRoute implements IRouteViewModel {
 	private readonly logger = resolve(ILogger).scopeTo('ConsentRoute')
 
 	/**
-	 * Acknowledge the notice and exit to the dashboard. Deliberately does NOT
+	 * Acknowledge the notice and exit to the timetable. Deliberately does NOT
 	 * touch ConsentService — the default-on opt-out posture is unchanged by
 	 * acknowledging the notice.
 	 */
 	public async acknowledge(): Promise<void> {
 		this.logger.info('Analytics transparency notice acknowledged')
-		await this.router.load('/dashboard')
+		await this.router.load('/timetable')
 	}
 
 	/** Navigate to the settings page where the opt-out toggles live. */

@@ -74,7 +74,7 @@ test.describe('starts of sign-up and sign-in are reported', () => {
 		await seedGuest(page)
 		const events = await recordPostHog(page)
 		const left = leavesForHostedLogin(page)
-		await page.goto('/dashboard')
+		await page.goto('/timetable')
 		await analyticsReady(events)
 
 		await page
@@ -88,7 +88,7 @@ test.describe('starts of sign-up and sign-in are reported', () => {
 		const [started] = named(events, 'auth.started')
 		expect(started.properties).toMatchObject({
 			kind: 'sign_up',
-			source: 'dashboard_prompt',
+			source: 'timetable_prompt',
 		})
 		// Captured before the app left for hosted login.
 		expect(Date.parse(started.timestamp ?? '')).toBeLessThanOrEqual(leftAt)
@@ -167,10 +167,10 @@ test.describe('a new account without a home', () => {
 		}
 	}
 
-	// @spec components/infrastructure/fan/web/global/user-home-selector "New account without a home opens the Dashboard"
-	// @spec components/infrastructure/fan/web/global/user-home-selector "Event page does not ask"
-	// @spec components/infrastructure/fan/web/global/user-home-selector "Sheet left without a choice"
-	test(`@spec ${STORY} "Sign-up from the event page without a home"`, async ({
+	// @spec components/infrastructure/fan/web/global/home-area-selector "New account without a home opens the Timetable"
+	// @spec components/infrastructure/fan/web/global/home-area-selector "Concert page does not ask"
+	// @spec components/infrastructure/fan/web/global/home-area-selector "Sheet left without a choice"
+	test(`@spec ${STORY} "Sign-up from the concert page without a home"`, async ({
 		page,
 	}) => {
 		let home: Record<string, unknown> | undefined
@@ -191,7 +191,7 @@ test.describe('a new account without a home', () => {
 		})
 		await mockIdentityProvider(page)
 
-		await page.goto(`/events/${EVENT_ID}`)
+		await page.goto(`/concerts/${EVENT_ID}`)
 		await expect(page.getByText('Home Tour 2026').first()).toBeVisible({
 			timeout: 20_000,
 		})
@@ -199,18 +199,18 @@ test.describe('a new account without a home', () => {
 
 		// The account is created without a home and the event page opens again,
 		// signed in, with no home sheet.
-		await expect(page).toHaveURL(new RegExp(`/events/${EVENT_ID}$`), {
+		await expect(page).toHaveURL(new RegExp(`/concerts/${EVENT_ID}$`), {
 			timeout: 20_000,
 		})
 		await expect(page.getByTestId('event-signup')).toHaveCount(0)
 		expect(
 			callsOf(calls, 'UserService/Create').at(-1)?.body.home,
 		).toBeUndefined()
-		const sheet = page.locator('user-home-selector .selector-content')
+		const sheet = page.locator('home-area-selector .selector-content')
 		await expect(sheet).toHaveCount(0)
 
-		// The Dashboard asks for the home in a sheet that cannot be closed.
-		await page.goto('/dashboard')
+		// The Timetable asks for the home in a sheet that cannot be closed.
+		await page.goto('/timetable')
 		await expect(sheet).toBeVisible({ timeout: 20_000 })
 		await page.keyboard.press('Escape')
 		await page.mouse.click(5, 5)
@@ -292,7 +292,7 @@ test.describe('sign-up and sign-in start only where the person chooses', () => {
 	async function seedFollowingGuest(page: Page): Promise<void> {
 		await seedGuest(page, {
 			'onboarding.celebrationShown': '1',
-			'onboarding.helpSeen:dashboard': '1',
+			'onboarding.helpSeen:timetable': '1',
 			'pwa.installed': 'true',
 			'guest.followedArtists': JSON.stringify([
 				{ artist: ARTIST, hype: 'nearby' },
@@ -338,12 +338,12 @@ test.describe('sign-up and sign-in start only where the person chooses', () => {
 		expect(url.searchParams.get('code_challenge_method')).toBe('S256')
 	})
 
-	test(`@spec ${STORY} "Sign-up from the Dashboard banner"`, async ({
+	test(`@spec ${STORY} "Sign-up from the Timetable banner"`, async ({
 		page,
 	}) => {
 		await seedFollowingGuest(page)
 		const calls = await mockAccount(page, () => ({ body: { user } }))
-		await page.goto('/dashboard')
+		await page.goto('/timetable')
 
 		await page
 			.locator('signup-prompt-banner .bottom-banner-action')
@@ -354,7 +354,7 @@ test.describe('sign-up and sign-in start only where the person chooses', () => {
 				timeout: 30_000,
 			})
 			.toBe(1)
-		await page.waitForURL((url) => url.pathname === '/dashboard', {
+		await page.waitForURL((url) => url.pathname === '/timetable', {
 			timeout: 30_000,
 		})
 		await expect(
@@ -362,19 +362,19 @@ test.describe('sign-up and sign-in start only where the person chooses', () => {
 		).toHaveCount(0)
 	})
 
-	test(`@spec ${STORY} "Sign-up from an event page returns to it"`, async ({
+	test(`@spec ${STORY} "Sign-up from a concert page returns to it"`, async ({
 		page,
 	}) => {
 		await seedFollowingGuest(page)
 		const calls = await mockAccount(page, () => ({ body: { user } }))
-		await page.goto(`/events/${EVENT_ID}`)
+		await page.goto(`/concerts/${EVENT_ID}`)
 		await expect(page.getByText('Choose Tour 2026').first()).toBeVisible({
 			timeout: 20_000,
 		})
 
 		await page.getByTestId('event-signup').click()
 
-		await expect(page).toHaveURL(new RegExp(`/events/${EVENT_ID}$`), {
+		await expect(page).toHaveURL(new RegExp(`/concerts/${EVENT_ID}$`), {
 			timeout: 30_000,
 		})
 		await expect(page.getByTestId('event-signup')).toHaveCount(0)
@@ -392,7 +392,7 @@ test.describe('sign-up and sign-in start only where the person chooses', () => {
 			return route.fulfill({ contentType: 'text/html', body: '<p>login</p>' })
 		})
 
-		await page.goto('/dashboard')
+		await page.goto('/timetable')
 		await expect(
 			page.locator('signup-prompt-banner .bottom-banner-action'),
 		).toBeVisible({
@@ -402,7 +402,7 @@ test.describe('sign-up and sign-in start only where the person chooses', () => {
 		await page.waitForTimeout(1_500)
 
 		expect(authorized).toBe(false)
-		expect(new URL(page.url()).pathname).toBe('/dashboard')
+		expect(new URL(page.url()).pathname).toBe('/timetable')
 		await expect(page.locator('dialog:modal')).toHaveCount(0)
 	})
 
@@ -413,7 +413,7 @@ test.describe('sign-up and sign-in start only where the person chooses', () => {
 		const calls = await mockAccount(page, () =>
 			connectError('already_exists', 409),
 		)
-		await page.goto('/dashboard')
+		await page.goto('/timetable')
 
 		await page
 			.locator('signup-prompt-banner .bottom-banner-action')

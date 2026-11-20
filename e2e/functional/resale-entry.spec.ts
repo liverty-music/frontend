@@ -16,8 +16,8 @@ test.use({ locale: 'ja-JP', viewport: { width: 390, height: 844 } })
  * withdraws their entries on the entries screen.
  */
 
-const ENTRY_SPEC = 'components/infrastructure/fan/web/route/resale-entry'
-const EVENT_SPEC = 'components/infrastructure/fan/web/route/event'
+const ENTRY_SPEC = 'components/infrastructure/fan/web/route/new-resale-entry'
+const EVENT_SPEC = 'components/infrastructure/fan/web/route/concert'
 const EVENT_ID = fakeId('resale-entry-event')
 const SALE_ID = fakeId('resale-entry-sale')
 // UUIDs: the client validates the ids it sends.
@@ -160,11 +160,15 @@ test(`@spec ${ENTRY_SPEC} "Applying for two tickets" and @spec ${EVENT_SPEC} "Al
 	})
 
 	// The sold-out event offers official resale.
-	await page.goto(`/events/${EVENT_ID}`)
+	await page.goto(`/concerts/${EVENT_ID}`)
 	const resale = page.getByTestId('event-resale')
 	await expect(resale).toBeVisible({ timeout: 30_000 })
 	await expect(resale).toContainText('公式リセール')
 	await page.getByTestId('event-resale-apply').click()
+	// @spec components/infrastructure/fan/web/route/new-resale-entry "Opening the application"
+	await expect(page).toHaveURL(
+		new RegExp(`/concerts/${EVENT_ID}/resale-entries/new\\?stock=[^&]+$`),
+	)
 
 	// Apply for 2 S席.
 	await expect(page.getByTestId('resale-entry-count')).toBeVisible()
@@ -190,7 +194,7 @@ test(`@spec ${ENTRY_SPEC} "Applying for two tickets" and @spec ${EVENT_SPEC} "Al
 	).toEqual([2])
 
 	// Back on the event page, the action reads 申し込み済み.
-	await page.goto(`/events/${EVENT_ID}`)
+	await page.goto(`/concerts/${EVENT_ID}`)
 	await expect(page.getByTestId('event-resale-applied')).toHaveText(
 		'申し込み済み',
 		{ timeout: 30_000 },

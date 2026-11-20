@@ -128,7 +128,7 @@ export interface AuthFlowState {
 }
 
 /** Surfaces that start a sign-up with their own follow-up. */
-export type AuthFlowOrigin = 'event-page'
+export type AuthFlowOrigin = 'concert-page'
 
 /** Options of {@link AuthService.signUp}. */
 export interface SignUpOptions {

@@ -53,7 +53,7 @@
 		"button": "Passkeyでアカウント作成（30秒）",
 		"error": "アカウント作成を完了できませんでした。ネットワークが不安定なようです。少し時間を置いてもう一度お試しください。"
 	},
-	"userHome": {
+	"homeAreaSelector": {
 		"saveFailed": "居住エリアを保存できませんでした。少し時間を置いてもう一度お試しください。",
 		"title": "ホームエリアを選択",
 		"description": "HOMEのレーンには、選んだエリアのライブが並びます。あなたの居住エリアはどこですか？",
@@ -129,7 +129,7 @@
 			"kyushu": "九州"
 		}
 	},
-	"eventDetail": {
+	"concertSheet": {
 		"ariaLabel": "ライブ詳細",
 		"openStart": "開場 {{open}} / 開演 {{start}}",
 		"openInGoogleMaps": "Google Maps で開く",
@@ -171,7 +171,7 @@
 		"undo": "取り消す",
 		"undoFailed": "取り消せませんでした。もう一度お試しください。"
 	},
-	"dashboard": {
+	"timetable": {
 		"monthJump": {
 			"prev": "{{date, datetime(month: long)}}へ移動",
 			"next": "{{date, datetime(month: long)}}へ移動"
@@ -202,28 +202,16 @@
 			"subtitle": "アーティストをフォローすると、今後のライブがここに表示されます。",
 			"cta": "アーティストを探す"
 		},
-		"nearbyCta": "近くのライブを見る",
+		"concertsCta": "ライブを探す",
 		"error": {
 			"load": "ライブの読み込みに失敗しました"
 		}
 	},
-	"pushOffer": {
+	"notificationPrompt": {
 		"action": "オンにする",
 		"allowed": "新しいライブを通知します。設定からいつでも止められます",
 		"blocked": "通知はブロックされています。ブラウザの設定から変更できます",
 		"failed": "通知をオンにできませんでした。少し時間を置いてもう一度お試しください。"
-	},
-	"notification": {
-		"title": "ライブを見逃さない",
-		"description": "フォローしたアーティストの新しいライブが見つかったら通知を受け取れます。",
-		"notNow": "今はしない",
-		"enable": "通知を有効にする",
-		"enabling": "有効化中…",
-		"blocked": {
-			"title": "通知がブロックされています",
-			"description": "ライブのお知らせを受け取るには、ブラウザの設定でこのサイトの通知を有効にしてください。",
-			"dismiss": "閉じる"
-		}
 	},
 	"pwa": {
 		"updateAvailable": "新しいバージョンがあります",
@@ -274,7 +262,7 @@
 			"readyAction": "タイムテーブルを見る"
 		},
 		"popoverGuide": "気になるアーティストをタップ — フォローしたアーティストのライブが、次のステップでタイムテーブルになります",
-		"generateDashboard": "👉 タイムテーブルを生成する",
+		"generateTimetable": "👉 タイムテーブルを生成する",
 		"viewSchedule": "ライブスケジュールを見る（{{count}}アーティスト）",
 		"loadFailed": "アーティストの読み込みに失敗しました。リトライしてください。",
 		"retryFailed": "読み込みに失敗しました。後ほど再度お試しください。",
@@ -297,7 +285,7 @@
 		"genreLoadFailed": "{{tag}}のアーティストを読み込めませんでした",
 		"searchFailed": "検索が完了しませんでした。ネットワークが不安定なようです。少し時間を置いてもう一度お試しください。",
 		"swap": {
-			"toNearby": "近くのライブ",
+			"toConcerts": "ライブ",
 			"toArtists": "アーティスト"
 		}
 	},
@@ -324,7 +312,7 @@
 	},
 	"auth": {
 		"loginRequired": "ログインが必要です",
-		"lockedDashboard": "あと{{count}}組フォローでタイムテーブルが見られます",
+		"lockedTimetable": "あと{{count}}組フォローでタイムテーブルが見られます",
 		"lockedGeneric": "アーティストを見つけたら開放されます"
 	},
 	"settings": {
@@ -434,7 +422,6 @@
 	},
 	"notifications": {
 		"signInRequired": "通知を見るにはログインが必要です。",
-		"title": "通知",
 		"loading": "読み込んでいます…",
 		"error": "通知を読み込めませんでした。",
 		"retry": "再読み込み",
@@ -446,15 +433,35 @@
 		"bell": "通知(未読{{count}}件)"
 	},
 	"nav": {
-		"home": "Timetable",
+		"timetable": "Timetable",
 		"discovery": "Discovery",
 		"myArtists": "My Artists",
 		"tickets": "Tickets",
-		"order": "注文詳細",
-		"settings": "Settings"
+		"settings": "Settings",
+		"concert": "Concert",
+		"notifications": "Notifications",
+		"passkeys": "Passkeys",
+		"deleteAccount": "Delete Account",
+		"order": "Order Detail",
+		"checkout": "Checkout",
+		"newLotteryEntry": "Lottery Entry",
+		"lotteryEntries": "Lottery Entries",
+		"newResaleEntry": "Resale Entry",
+		"resaleEntries": "Resale Entries",
+		"signInHelp": "Can't Sign In",
+		"verifyEmail": "Verify Email",
+		"welcome": "Welcome",
+		"about": "About",
+		"consent": "Privacy & Analytics",
+		"legalTerms": "Terms of Service",
+		"legalPrivacy": "Privacy Policy",
+		"legalLicenses": "OSS Licenses",
+		"signInCallback": "Signing In",
+		"identityVerificationCallback": "Identity Verification",
+		"passkeysCallback": "Passkeys",
+		"notFound": "Page Not Found"
 	},
 	"tickets": {
-		"title": "マイチケット",
 		"loading": "読み込んでいます…",
 		"empty": {
 			"title": "まだチケットがありません",
@@ -564,7 +571,6 @@
 		}
 	},
 	"order": {
-		"title": "注文詳細",
 		"loading": "読み込んでいます…",
 		"notFound": {
 			"title": "注文が見つかりません",
@@ -632,12 +638,12 @@
 			"description": "バブルをタップしてフォローしましょう。",
 			"genreTip": "ジャンルタブで絞り込めます",
 			"searchTip": "検索バーで名前からも探せます",
-			"nearbySectionTitle": "近くのライブ",
-			"nearbyDesc": "オーブの横のタイルで、選んだエリアと期間のライブをまとめて見られます。まだフォローしていないアーティストのライブも並び、ライブの詳細からそのアーティストをフォローできます。",
+			"concertsSectionTitle": "ライブ",
+			"concertsDesc": "オーブの横のタイルで、選んだエリアと期間のライブをまとめて見られます。まだフォローしていないアーティストのライブも並び、ライブの詳細からそのアーティストをフォローできます。",
 			"unfollowSectionTitle": "フォロー解除",
 			"unfollowDesc": "フォロー解除は My Artists ページから行えます。"
 		},
-		"dashboard": {
+		"timetable": {
 			"lanesSectionTitle": "ステージレーンの読み方",
 			"description": "フォローしたアーティストのライブが距離ごとに表示されます。",
 			"homeLabel": "HOME",
@@ -864,7 +870,7 @@
 			"viewLicenseText": "ライセンス全文を表示"
 		}
 	},
-	"allNearby": {
+	"discoveryConcerts": {
 		"filter": {
 			"title": "エリアと期間",
 			"area": "エリア",
@@ -900,7 +906,7 @@
 			"following": "フォロー中"
 		}
 	},
-	"fabMenu": {
+	"actionMenu": {
 		"toggleAriaLabel": "アクションメニュー",
 		"panelAriaLabel": "アクション",
 		"beam": "レーザー演出切り替え",
@@ -910,8 +916,7 @@
 		"leftHandedDesc": "アクションメニューを左手側に開きます",
 		"settings": "設定"
 	},
-	"lotteryEntry": {
-		"title": "チケット抽選に申し込む",
+	"newLotteryEntry": {
 		"loading": "読み込んでいます…",
 		"unavailable": "現在、この環境ではお支払いをご利用いただけません。時間をおいて再度お試しください。",
 		"notFound": "この抽選は見つかりませんでした。",
@@ -972,8 +977,7 @@
 		},
 		"phoneInvalid": "電話番号を正しく入力してください（例：090-1234-5678、+81 90 1234 5678）。"
 	},
-	"resaleEntry": {
-		"title": "公式リセールに申し込む",
+	"newResaleEntry": {
 		"loading": "読み込んでいます…",
 		"unavailable": "現在、この環境ではお支払いをご利用いただけません。時間をおいて再度お試しください。",
 		"notFound": "この席種の公式リセールは見つかりませんでした。",
@@ -1056,7 +1060,6 @@
 		}
 	},
 	"resaleEntries": {
-		"title": "公式リセールの申し込み",
 		"loading": "読み込んでいます…",
 		"error": "申し込みを読み込めませんでした。",
 		"retry": "再読み込み",
@@ -1085,8 +1088,7 @@
 			"failed": "取り消せませんでした。もう一度お試しください。"
 		}
 	},
-	"lotteryEntryStatus": {
-		"title": "お申し込みの状況",
+	"lotteryEntries": {
 		"loading": "読み込んでいます…",
 		"empty": "この抽選へのお申し込みは見つかりませんでした。",
 		"error": "お申し込み内容の読み込みに失敗しました。時間をおいて再度お試しください。",
@@ -1107,10 +1109,10 @@
 			"lost": "今回は落選となりました。確保していた与信枠は解除され、請求は発生しません。"
 		}
 	},
-	"eventCard": {
+	"concertCard": {
 		"purchased": "購入済み"
 	},
-	"eventPage": {
+	"concert": {
 		"loading": "読み込み中…",
 		"open": "OPEN",
 		"start": "START",
@@ -1119,7 +1121,7 @@
 		"notFound": {
 			"title": "ライブが見つかりません",
 			"body": "このページは存在しないか、公開されていません。",
-			"toDashboard": "タイムテーブルへ"
+			"toTimetable": "タイムテーブルへ"
 		},
 		"error": {
 			"body": "ライブ情報を読み込めませんでした。",
@@ -1178,7 +1180,6 @@
 		}
 	},
 	"checkout": {
-		"title": "チケット購入",
 		"loading": "読み込んでいます…",
 		"unavailable": "現在、この環境ではお支払いをご利用いただけません。時間をおいて再度お試しください。",
 		"notFound": "このイベントのチケットは販売していません。",
@@ -1266,7 +1267,7 @@
 			"payment": "決済の準備に失敗しました。時間をおいて再度お試しください。"
 		}
 	},
-	"verifyCallback": {
+	"identityVerificationCallback": {
 		"loading": "本人確認の結果を確認しています…",
 		"success": {
 			"heading": "本人確認が完了しました"
@@ -1281,7 +1282,7 @@
 			"contact": "連絡先："
 		}
 	},
-	"authCallback": {
+	"signInCallback": {
 		"verifying": "認証を確認しています…",
 		"failed": "サインインできませんでした。ホームに戻って、もう一度お試しください。",
 		"home": "ホームに戻る"
@@ -1293,8 +1294,7 @@
 			"failed": "カードを確認できませんでした。もう一度お試しください。"
 		}
 	},
-	"passkeyRecovery": {
-		"title": "ログインできない場合",
+	"signInHelp": {
 		"lead": "アカウントのメールアドレスに、新しいパスキーを作成するためのリンクをお送りします。",
 		"noteValidity": "リンクの有効期限は1時間です。",
 		"noteDevice": "新しいパスキーを保存する端末でリンクを開いてください。",
@@ -1309,7 +1309,6 @@
 		"failed": "リクエストを送信できませんでした。もう一度お試しください。"
 	},
 	"verifyEmail": {
-		"title": "メールアドレスの確認",
 		"lead": "下のボタンを押すと、Liverty Music に登録したメールアドレスの確認が完了します。",
 		"confirm": "メールアドレスを確認する",
 		"retry": "もう一度試す",
@@ -1321,7 +1320,6 @@
 		"tooMany": "試行回数が多すぎます。しばらくしてからもう一度お試しください。"
 	},
 	"passkeys": {
-		"title": "パスキー",
 		"lead": "このアカウントにログインできるパスキーです。使わなくなったものや心当たりのないものは削除してください。",
 		"loading": "読み込み中…",
 		"listFailed": "パスキーを読み込めませんでした。",
@@ -1352,7 +1350,6 @@
 		}
 	},
 	"deleteAccount": {
-		"title": "アカウントの削除",
 		"lead": "Liverty Music のアカウントを削除して、退会します。",
 		"loading": "読み込み中…",
 		"loadFailed": "アカウントを削除できるかどうかを確認できませんでした。",

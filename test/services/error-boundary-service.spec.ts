@@ -113,7 +113,7 @@ describe('ErrorBoundaryService', () => {
 		})
 
 		it(`@spec ${BANNER_SPEC} "Error is captured with context"`, () => {
-			window.history.replaceState(null, '', '/dashboard?artists=a1')
+			window.history.replaceState(null, '', '/timetable?artists=a1')
 
 			sut.captureError(new Error('test'), 'ctx')
 
@@ -121,7 +121,7 @@ describe('ErrorBoundaryService', () => {
 			expect(current).toMatchObject({
 				message: 'test',
 				context: 'ctx',
-				routeUrl: '/dashboard',
+				routeUrl: '/timetable',
 			})
 			expect(current?.id).toMatch(/^ERR-/)
 			expect(current?.stack).toContain('Error: test')
@@ -164,17 +164,17 @@ describe('ErrorBoundaryService', () => {
 
 	describe('error report', () => {
 		it(`@spec ${BANNER_SPEC} "Error is reported with its Error ID and steps"`, () => {
-			window.history.replaceState(null, '', '/dashboard')
-			sut.addBreadcrumb('navigation', 'dashboard')
-			window.history.replaceState(null, '', '/events/e-1')
+			window.history.replaceState(null, '', '/timetable')
+			sut.addBreadcrumb('navigation', 'timetable')
+			window.history.replaceState(null, '', '/concerts/e-1')
 			sut.addBreadcrumb('navigation', 'events/:id')
 			const err = new Error('boom')
 
 			sut.captureError(err, 'unhandled_error')
 
 			expect(analytics.addExceptionStep.mock.calls).toEqual([
-				// No route: a path such as /events/e-1 holds an id.
-				['dashboard', { type: 'navigation' }],
+				// No route: a path such as /concerts/e-1 holds an id.
+				['timetable', { type: 'navigation' }],
 				['events/:id', { type: 'navigation' }],
 			])
 			expect(analytics.captureException).toHaveBeenCalledOnce()
@@ -189,7 +189,7 @@ describe('ErrorBoundaryService', () => {
 		})
 
 		it('states that a ref key was present without its value', () => {
-			window.history.replaceState(null, '', '/events/e-1?ref=member-a')
+			window.history.replaceState(null, '', '/concerts/e-1?ref=member-a')
 
 			sut.captureError(new Error('boom'))
 
@@ -351,16 +351,16 @@ describe('ErrorBoundaryService', () => {
 
 	describe('addBreadcrumb', () => {
 		it(`@spec ${BANNER_SPEC} "Breadcrumb tracking"`, () => {
-			window.history.replaceState(null, '', '/dashboard')
+			window.history.replaceState(null, '', '/timetable')
 			setRpcFailureStepSink(null)
-			sut.addBreadcrumb('navigation', 'dashboard')
+			sut.addBreadcrumb('navigation', 'timetable')
 			sut.addBreadcrumb('rpc', 'ArtistService/Follow Internal')
 			sut.addBreadcrumb('action', 'follow_artist')
 
 			expect(sut.breadcrumbs.map((b) => [b.type, b.label, b.route])).toEqual([
-				['navigation', 'dashboard', '/dashboard'],
-				['rpc', 'ArtistService/Follow Internal', '/dashboard'],
-				['action', 'follow_artist', '/dashboard'],
+				['navigation', 'timetable', '/timetable'],
+				['rpc', 'ArtistService/Follow Internal', '/timetable'],
+				['action', 'follow_artist', '/timetable'],
 			])
 			expect(sut.breadcrumbs[0].timestamp).toBeInstanceOf(Date)
 			// Every step also goes to the error report.
@@ -430,7 +430,7 @@ describe('ErrorBoundaryService', () => {
 		})
 
 		it('lays out the hint, the inquiry number, the time and the screen', () => {
-			window.history.replaceState(null, '', '/events/e-1?ref=member-a')
+			window.history.replaceState(null, '', '/concerts/e-1?ref=member-a')
 			sut.captureError(new Error('boom'))
 			const appError = sut.currentError as AppError
 
@@ -451,7 +451,7 @@ describe('ErrorBoundaryService', () => {
 			])
 			expect(lines[7]).toBe(`お問い合わせ番号：${appError.id}`)
 			expect(lines[8]).toMatch(/^日時：\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}:\d{2} /)
-			expect(lines[9]).toBe('画面：/events/e-1')
+			expect(lines[9]).toBe('画面：/concerts/e-1')
 		})
 	})
 })

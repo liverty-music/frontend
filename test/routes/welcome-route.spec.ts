@@ -137,10 +137,10 @@ describe('WelcomeRoute', () => {
 	})
 
 	describe('canLoad', () => {
-		it('redirects authenticated user to dashboard', async () => {
+		it('redirects authenticated user to timetable', async () => {
 			mockAuth.isAuthenticated = true
 			const result = await sut.canLoad()
-			expect(result).toBe('dashboard')
+			expect(result).toBe('timetable')
 		})
 
 		it('allows unauthenticated user', async () => {
@@ -154,15 +154,15 @@ describe('WelcomeRoute', () => {
 			mockAuth.isAuthenticated = true
 			savePasskeyReturn('/settings/passkeys')
 			expect(await sut.canLoad()).toBe('/settings/passkeys')
-			// Single-shot: the next visit to the root goes to the dashboard.
-			expect(await sut.canLoad()).toBe('dashboard')
+			// Single-shot: the next visit to the root goes to the timetable.
+			expect(await sut.canLoad()).toBe('timetable')
 		})
 
 		it('drops the passkey marker for a guest', async () => {
 			savePasskeyReturn('/settings/passkeys')
 			expect(await sut.canLoad()).toBe(true)
 			mockAuth.isAuthenticated = true
-			expect(await sut.canLoad()).toBe('dashboard')
+			expect(await sut.canLoad()).toBe('timetable')
 		})
 
 		it('allows an onboarding user to view Welcome (no forced resume)', async () => {

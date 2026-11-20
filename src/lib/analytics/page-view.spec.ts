@@ -159,20 +159,20 @@ describe('page views and campaign values (real SDK)', () => {
 		// A query-only change on the same screen is not a page view.
 		window.history.pushState(null, '', '/discovery?artists=a1')
 		await settle()
-		window.history.pushState(null, '', '/dashboard')
+		window.history.pushState(null, '', '/timetable')
 		await settle()
 
-		expect(pageviews()).toEqual(['/welcome', '/discovery', '/dashboard'])
+		expect(pageviews()).toEqual(['/welcome', '/discovery', '/timetable'])
 	})
 
 	it(`@spec ${SPEC} "Leaving the app"`, async () => {
-		await start('/dashboard')
+		await start('/timetable')
 
 		window.dispatchEvent(new Event('pagehide'))
 
 		const leaves = sent.filter((e) => e.event === '$pageleave')
 		expect(leaves).toHaveLength(1)
-		expect(leaves[0].properties.$pathname).toBe('/dashboard')
+		expect(leaves[0].properties.$pathname).toBe('/timetable')
 	})
 
 	it(`@spec ${SPEC} "No page views with analytics off"`, async () => {
@@ -236,7 +236,7 @@ describe('page views and campaign values (real SDK)', () => {
 	})
 
 	it(`@spec ${SPEC} "Analytics turned off and on again"`, async () => {
-		const sut = await start('/dashboard')
+		const sut = await start('/timetable')
 
 		for (const analytics of [false, true]) {
 			mockConsent.analytics = analytics
@@ -252,7 +252,7 @@ describe('page views and campaign values (real SDK)', () => {
 
 	it('keeps the display mode after a sign-out', async () => {
 		// @spec components/infrastructure/fan/web/global/analytics "Analytics turned off and on again"
-		const sut = await start('/dashboard')
+		const sut = await start('/timetable')
 
 		publish(new SignedOut())
 		sent.length = 0

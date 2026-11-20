@@ -6,7 +6,7 @@ import {
 } from '../../adapter/storage/onboarding-storage'
 import { IOnboardingService } from '../../services/onboarding-service'
 
-export type PageHelpPage = 'discovery' | 'dashboard' | 'my-artists'
+export type PageHelpPage = 'discovery' | 'timetable' | 'my-artists'
 
 /** Pages where the help sheet auto-opens on first visit (spec-defined). */
 const AUTO_OPEN_PAGES: ReadonlySet<PageHelpPage> = new Set([

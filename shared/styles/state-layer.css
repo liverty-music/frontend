@@ -8,7 +8,7 @@
 
    A label around a visually hidden input (a chip) maps the input's focus
    and disabled state in its own block. A `:has(> input…)` here, on every
-   control of both apps, made the dashboard too slow to open on a 10x
+   control of both apps, made the timetable too slow to open on a 10x
    throttled CPU (e2e/functional/deep-link-slow-device.spec.ts times out
    with it and passes without it).
 

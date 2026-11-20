@@ -69,7 +69,7 @@ async function seedGuest(page: Page): Promise<void> {
 		localStorage.setItem('__e2e_seeded', '1')
 		localStorage.setItem('onboardingComplete', 'true')
 		localStorage.setItem('onboarding.celebrationShown', '1')
-		localStorage.setItem('onboarding.helpSeen:dashboard', '1')
+		localStorage.setItem('onboarding.helpSeen:timetable', '1')
 		localStorage.setItem('pwa.installed', 'true')
 		localStorage.setItem('language', 'ja')
 		localStorage.setItem('guest.home', 'JP-13')
@@ -124,7 +124,7 @@ async function mockBackend(
 	return calls
 }
 
-const sheet = (page: Page) => page.locator('event-detail-sheet')
+const sheet = (page: Page) => page.locator('concert-sheet')
 const notifyButton = (page: Page) =>
 	sheet(page).getByTestId('journey-notify-btn')
 const card = (page: Page) =>
@@ -136,10 +136,10 @@ async function openSheet(page: Page): Promise<void> {
 }
 
 test.describe('guests see no statuses', () => {
-	test(`@spec ${TRACK} "A guest opens the Dashboard"`, async ({ page }) => {
+	test(`@spec ${TRACK} "A guest opens the Timetable"`, async ({ page }) => {
 		await seedGuest(page)
 		const calls = await mockBackend(page, new Map())
-		await page.goto('/dashboard')
+		await page.goto('/timetable')
 
 		await expect(card(page).first()).toBeVisible({ timeout: 30_000 })
 		await expect(card(page).getByTestId('journey-badge')).toHaveCount(0)
@@ -149,7 +149,7 @@ test.describe('guests see no statuses', () => {
 	test(`@spec ${TRACK} "A guest opens a concert"`, async ({ page }) => {
 		await seedGuest(page)
 		await mockBackend(page, new Map())
-		await page.goto('/dashboard')
+		await page.goto('/timetable')
 
 		await openSheet(page)
 
@@ -167,7 +167,7 @@ test.describe('guests see no statuses', () => {
 				localStorage.setItem('__e2e_seeded', '1')
 				localStorage.setItem('onboardingComplete', 'true')
 				localStorage.setItem('onboarding.celebrationShown', '1')
-				localStorage.setItem('onboarding.helpSeen:dashboard', '1')
+				localStorage.setItem('onboarding.helpSeen:timetable', '1')
 				localStorage.setItem('pwa.installed', 'true')
 				localStorage.setItem('language', 'ja')
 				localStorage.setItem(
@@ -202,7 +202,7 @@ test.describe('guests see no statuses', () => {
 				},
 			})
 		})
-		await page.goto('/dashboard')
+		await page.goto('/timetable')
 		await expect(card(page).getByTestId('journey-badge')).toHaveAttribute(
 			'data-journey-status',
 			'tracking',
@@ -227,7 +227,7 @@ test.describe('guests see no statuses', () => {
 			)
 		}, ARTIST)
 		const listsBefore = callsOf(calls, 'TicketJourneyService/List').length
-		await page.goto('/dashboard')
+		await page.goto('/timetable')
 		await expect(card(page).first()).toBeVisible({ timeout: 30_000 })
 		await expect(card(page).getByTestId('journey-badge')).toHaveCount(0)
 		expect(callsOf(calls, 'TicketJourneyService/List')).toHaveLength(
@@ -237,7 +237,7 @@ test.describe('guests see no statuses', () => {
 })
 
 test.describe('a guest request for ticket sale notifications survives sign-up', () => {
-	// @spec components/infrastructure/fan/web/global/event-detail-sheet "Back after sign-up"
+	// @spec components/infrastructure/fan/web/global/concert-sheet "Back after sign-up"
 	test(`@spec ${TRACK} "Guest signs up from the notification button"`, async ({
 		page,
 	}) => {
@@ -245,15 +245,18 @@ test.describe('a guest request for ticket sale notifications survives sign-up', 
 		const journeys = new Map<string, string>()
 		const calls = await mockBackend(page, journeys)
 		await mockIdentityProvider(page)
-		await page.goto('/dashboard')
+		await page.goto('/timetable')
 		await openSheet(page)
 
 		await notifyButton(page).click()
 
 		// Back from sign-up on the same concert's sheet, tracking it.
-		await expect(page).toHaveURL(new RegExp(`/concerts/${EVENT_ID}$`), {
-			timeout: 30_000,
-		})
+		await expect(page).toHaveURL(
+			new RegExp(`/timetable\\?.*concert=${EVENT_ID}$`),
+			{
+				timeout: 30_000,
+			},
+		)
 		await expect(notifyButton(page)).toHaveText(
 			'🔔 チケット販売の通知を受け取り中 ✓',
 			{ timeout: 30_000 },
@@ -271,7 +274,7 @@ test.describe('a guest request for ticket sale notifications survives sign-up', 
 			calls.findIndex((c) => c.method === 'TicketJourneyService/SetStatus'),
 		)
 
-		// The Dashboard card shows the bell.
+		// The Timetable card shows the bell.
 		await page.keyboard.press('Escape')
 		await expect(card(page).getByTestId('journey-badge')).toHaveAttribute(
 			'data-journey-status',
@@ -288,19 +291,19 @@ test.describe('a guest request for ticket sale notifications survives sign-up', 
 		await page.route(`${OIDC_AUTHORITY}/oauth/v2/authorize**`, (route) =>
 			route.fulfill({ contentType: 'text/html', body: '<p>login</p>' }),
 		)
-		await page.goto('/dashboard')
+		await page.goto('/timetable')
 		await openSheet(page)
 		await notifyButton(page).click()
 		await page.waitForURL((url) => url.hostname.startsWith('auth.'))
 
-		// Later, a sign-up from the Dashboard banner completes.
+		// Later, a sign-up from the Timetable banner completes.
 		await page.unroute(`${OIDC_AUTHORITY}/oauth/v2/authorize**`)
 		await mockIdentityProvider(page)
-		await page.goto('/dashboard')
+		await page.goto('/timetable')
 		await page
 			.locator('signup-prompt-banner .bottom-banner-action')
 			.click({ timeout: 30_000 })
-		await page.waitForURL((url) => url.pathname === '/dashboard', {
+		await page.waitForURL((url) => url.pathname === '/timetable', {
 			timeout: 30_000,
 		})
 		await expect
@@ -316,14 +319,14 @@ test.describe('a guest request for ticket sale notifications survives sign-up', 
 test.describe('ticket section layout', () => {
 	test.use({ viewport: { width: 320, height: 640 } })
 
-	test('@spec components/infrastructure/fan/web/route/dashboard "Narrow viewport does not overflow"', async ({
+	test('@spec components/infrastructure/fan/web/route/timetable "Narrow viewport does not overflow"', async ({
 		page,
 	}) => {
 		await page.context().addInitScript(
 			({ sub, email }) => {
 				localStorage.setItem('onboardingComplete', 'true')
 				localStorage.setItem('onboarding.celebrationShown', '1')
-				localStorage.setItem('onboarding.helpSeen:dashboard', '1')
+				localStorage.setItem('onboarding.helpSeen:timetable', '1')
 				localStorage.setItem('pwa.installed', 'true')
 				localStorage.setItem('language', 'ja')
 				localStorage.setItem(
@@ -348,7 +351,7 @@ test.describe('ticket section layout', () => {
 				body: JSON.stringify({ user: USER }),
 			}),
 		)
-		await page.goto('/dashboard')
+		await page.goto('/timetable')
 		await openSheet(page)
 
 		const row = sheet(page).locator('.journey-row')
@@ -368,8 +371,8 @@ test.describe('ticket section layout', () => {
 		expect(layout.overflow).toBeLessThanOrEqual(0)
 		expect(layout.rows).toBeGreaterThan(1)
 		expect(layout.right).toBeLessThanOrEqual(320)
-		// The 48 px tap of dashboard "Canonical presentation kept"; its labels,
-		// icons and hues are checked in event-detail-sheet.fixture.spec.ts.
+		// The 48 px tap of timetable "Canonical presentation kept"; its labels,
+		// icons and hues are checked in concert-sheet.fixture.spec.ts.
 		expect(layout.smallest).toBeGreaterThanOrEqual(48)
 	})
 })

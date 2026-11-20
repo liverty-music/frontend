@@ -99,14 +99,14 @@
 	::view-transition-new(bottom-nav),
 	::view-transition-old(page-header),
 	::view-transition-new(page-header),
-	::view-transition-old(fab-toggle),
-	::view-transition-new(fab-toggle) {
+	::view-transition-old(action-menu-toggle),
+	::view-transition-new(action-menu-toggle) {
 		animation: none;
 	}
 
 	::view-transition-old(bottom-nav),
 	::view-transition-old(page-header),
-	::view-transition-old(fab-toggle) {
+	::view-transition-old(action-menu-toggle) {
 		opacity: 0;
 	}
 
@@ -160,7 +160,7 @@
 	   install banner) is visible, the FAB sinks into the navigation bar's notch
 	   so the snack or the banner can sit directly above the bar. Both banners
 	   render their surface only while visible (if.bind). A flag on :root,
-	   because a rule inside @scope (fab-menu) cannot match :root. */
+	   because a rule inside @scope (action-menu) cannot match :root. */
 	:where(:root:has(.snack-item:popover-open, .bottom-banner)) {
 		--fab-sunk: 1;
 	}

@@ -1,0 +1,32 @@
+<import from="./concert-details.css"></import>
+
+<section class="concert-details">
+  <div class="concert-details-row">
+    <svg-icon name="calendar" size="lg" class="concert-details-icon"></svg-icon>
+    <div>
+      <time datetime.bind="dateKey" class="[ concert-details-primary ] [ md-typescale-title-medium ]" data-testid="event-date">${dateLabel}</time>
+      <p class="event-times" data-testid="event-times">
+        <span if.bind="openTimeLabel"><span t="concert.open"></span> ${openTimeLabel}</span>
+        <span if.bind="startTimeLabel"><span t="concert.start"></span> ${startTimeLabel}</span>
+      </p>
+    </div>
+  </div>
+
+  <!-- Venue -->
+  <div class="concert-details-row">
+    <svg-icon name="map-pin" size="lg" class="concert-details-icon"></svg-icon>
+    <div>
+      <p class="[ concert-details-primary ] [ md-typescale-title-medium ]" data-testid="event-venue">${venueName}</p>
+      <p if.bind="prefecture" class="concert-details-secondary" data-testid="event-prefecture">${prefecture}</p>
+      <a
+        href.bind="mapsUrl"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="text-link"
+        data-variant="standalone"
+        data-testid="event-maps"
+        t="concertSheet.openInGoogleMaps"
+      ></a>
+    </div>
+  </div>
+</section>

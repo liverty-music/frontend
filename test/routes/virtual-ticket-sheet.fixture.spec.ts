@@ -2,9 +2,9 @@ import { I18nConfiguration } from '@aurelia/i18n'
 import { createFixture } from '@aurelia/testing'
 import { describe, expect, it, vi } from 'vitest'
 import ja from '../../src/locales/ja/translation.json'
+import type { TicketView } from '../../src/routes/tickets/ticket-view'
 import { AdmissionStamp } from '../../src/routes/tickets/virtual-ticket/admission-stamp'
 import { VirtualTicket } from '../../src/routes/tickets/virtual-ticket/virtual-ticket'
-import type { WalletTicket } from '../../src/routes/tickets/wallet-view'
 
 // A browser with HTML-in-Canvas: the sheet renderer is replaced, so the test
 // sees only what the component does to the DOM around it.
@@ -42,7 +42,7 @@ const i18n = I18nConfiguration.customize((options) => {
 	}
 })
 
-const TICKET: WalletTicket = {
+const TICKET: TicketView = {
 	id: 'ticket-1',
 	eventId: 'event-1',
 	orderId: 'order-1',

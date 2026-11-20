@@ -34,16 +34,12 @@ const items = [
 
 // The detail sheet opens from a card tap, which no story here makes; the
 // route only holds a reference to it, so an empty element stands in.
-const EventDetailSheetStub = CustomElement.define(
-	{ name: 'event-detail-sheet', template: '' },
+const ConcertSheetStub = CustomElement.define(
+	{ name: 'concert-sheet', template: '' },
 	class {},
 )
 
-const register = [
-	WelcomeRoute,
-	BusyOnClickCustomAttribute,
-	EventDetailSheetStub,
-]
+const register = [WelcomeRoute, BusyOnClickCustomAttribute, ConcertSheetStub]
 
 const meta = {
 	title: 'Routes/Welcome',

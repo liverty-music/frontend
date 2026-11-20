@@ -13,7 +13,7 @@ export interface Artist {
 
 /**
  * A followed artist projected with the count of its upcoming concerts in the
- * loaded dashboard set — drives the count-prefixed, count-sorted filter chips.
+ * loaded timetable set — drives the count-prefixed, count-sorted filter chips.
  */
 export interface CountedArtist {
 	id: string

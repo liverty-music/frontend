@@ -224,20 +224,20 @@ async function captureAuthStatePassword(): Promise<void> {
 		smokePage.setDefaultTimeout(15_000)
 
 		// Navigate to a protected route. Authenticated traffic lands on
-		// `/dashboard`; unauthenticated traffic gets redirected by
+		// `/timetable`; unauthenticated traffic gets redirected by
 		// `AuthHook` (priority 5 returns '') → root route's
 		// `redirectTo: 'welcome'` → `/welcome`. Use a POSITIVE check
 		// (must land on the requested protected route) rather than
 		// enumerating redirect targets — the check is robust even when
 		// the unauthenticated landing path changes.
-		await smokePage.goto(`${APP_URL}/dashboard`)
+		await smokePage.goto(`${APP_URL}/timetable`)
 		await smokePage.waitForLoadState('networkidle')
 		const finalUrl = smokePage.url()
 		await smokeContext.close()
 
-		if (!finalUrl.startsWith(`${APP_URL}/dashboard`)) {
+		if (!finalUrl.startsWith(`${APP_URL}/timetable`)) {
 			console.error(
-				`[error] Smoke test FAILED: protected route redirected away from /dashboard (landed at ${finalUrl}).`,
+				`[error] Smoke test FAILED: protected route redirected away from /timetable (landed at ${finalUrl}).`,
 			)
 			console.error('The captured storageState does not authenticate the user.')
 			console.error(

@@ -1,0 +1,23 @@
+/* Verify-callback route styles (identity-ekyc-jpki, Stamp flow).
+   Mirrors the auth-callback layout: a centered transient screen that shows
+   while the Create RPC is in flight, before opening Settings. */
+@layer block {
+	@scope (identity-verification-callback-route) {
+		:scope {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+
+			block-size: 100dvb;
+			padding: var(--space-l);
+		}
+
+		/* Loading cluster: indicator + text side by side. */
+		.verify-loading {
+			--cluster-gap: var(--space-s);
+
+			color: var(--md-sys-color-on-surface-variant);
+		}
+	}
+}

@@ -15,7 +15,7 @@ import { expect, type Page, test } from '../support/test'
 test.use({ viewport: { width: 390, height: 700 } })
 
 async function seedGuest(page: Page): Promise<void> {
-	// A guest with a home region + one follow, so the dashboard renders without
+	// A guest with a home region + one follow, so the timetable renders without
 	// the home selector.
 	await page.addInitScript(() => {
 		localStorage.setItem('onboardingComplete', 'true')
@@ -42,12 +42,12 @@ const tab = (page: Page, icon: string) =>
 
 test.describe('Timetable tab (guest)', () => {
 	// @spec components/infrastructure/fan/web/global/bottom-nav-bar "Tapping a menu tab swaps the view immediately"
-	test('the dashboard view replaces Discovery while its data is still in flight', async ({
+	test('the timetable view replaces Discovery while its data is still in flight', async ({
 		page,
 	}) => {
 		await page.route('**/liverty_music.rpc.**', async (route) => {
 			if (route.request().url().includes('ListByArtists')) {
-				// Hold the dashboard's data back: the view must not wait for it.
+				// Hold the timetable's data back: the view must not wait for it.
 				await new Promise((resolve) => setTimeout(resolve, 1500))
 				return route.fulfill({
 					status: 200,
@@ -74,20 +74,20 @@ test.describe('Timetable tab (guest)', () => {
 			timeout: 10_000,
 		})
 
-		await tab(page, 'home').click()
-		// The dashboard is attached and showing its loading state while the fetch
+		await tab(page, 'timetable').click()
+		// The timetable is attached and showing its loading state while the fetch
 		// is still held, and Discovery is no longer on screen.
 		await expect(
-			page.locator('dashboard-route [data-testid="dashboard-loading"]').first(),
+			page.locator('timetable-route [data-testid="timetable-loading"]').first(),
 		).toBeVisible()
 		await expect(page.locator('discovery-route')).toHaveCount(0)
 		// Once the data arrives, the loading state clears.
 		await expect(
-			page.locator('dashboard-route [data-testid="dashboard-loading"]').first(),
+			page.locator('timetable-route [data-testid="timetable-loading"]').first(),
 		).toBeHidden({ timeout: 10_000 })
 	})
 
-	// @spec components/infrastructure/fan/web/route/dashboard "Header and nav switch before the timetable renders"
+	// @spec components/infrastructure/fan/web/route/timetable "Header and nav switch before the timetable renders"
 	test('re-entry switches identity and shows the cached timetable together, with no skeleton', async ({
 		page,
 	}) => {
@@ -163,7 +163,7 @@ test.describe('Timetable tab (guest)', () => {
 		})
 
 		// First visit fills the cache.
-		await page.goto('/dashboard')
+		await page.goto('/timetable')
 		await page.locator('[data-live-card]').first().waitFor({ timeout: 10_000 })
 		await page.locator('.nav-tab[data-nav="discovery"]').click()
 		await expect(page.locator('discovery-route')).toBeVisible({
@@ -179,20 +179,20 @@ test.describe('Timetable tab (guest)', () => {
 				w.__frames.push({
 					home:
 						document
-							.querySelector('.nav-tab[data-nav="home"]')
+							.querySelector('.nav-tab[data-nav="timetable"]')
 							?.getAttribute('data-active') === 'true',
 					title: document.querySelector('page-header h1')?.textContent?.trim(),
-					cards: !!document.querySelector('dashboard-route [data-live-card]'),
+					cards: !!document.querySelector('timetable-route [data-live-card]'),
 					skeleton: !!document.querySelector(
-						'dashboard-route [data-testid="dashboard-loading"]',
+						'timetable-route [data-testid="timetable-loading"]',
 					),
 				})
 				if (w.__frames.length < 90) requestAnimationFrame(tick)
 			}
 			requestAnimationFrame(tick)
 		})
-		await page.locator('.nav-tab[data-nav="home"]').click()
-		await page.locator('dashboard-route [data-live-card]').first().waitFor()
+		await page.locator('.nav-tab[data-nav="timetable"]').click()
+		await page.locator('timetable-route [data-live-card]').first().waitFor()
 		await page.waitForFunction(
 			() =>
 				(window as unknown as { __frames: unknown[] }).__frames.length >= 90,

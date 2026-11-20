@@ -78,7 +78,7 @@ describe('ArtistFilterBar', () => {
 			expect(sut.isSheetOpen).toBe(false)
 		})
 
-		// @spec components/infrastructure/fan/web/global/fab-menu "Dismissing an active filter"
+		// @spec components/infrastructure/fan/web/global/action-menu "Dismissing an active filter"
 		it('clears both filters when all pending are deselected', () => {
 			sut.selectedIds = ['a1']
 			sut.selectedStatuses = ['applied']
@@ -149,19 +149,19 @@ describe('ArtistFilterBar', () => {
 		})
 	})
 
-	// @spec components/infrastructure/fan/web/route/dashboard "Same status looks the same everywhere"
+	// @spec components/infrastructure/fan/web/route/timetable "Same status looks the same everywhere"
 	it('shows the bell from the canonical map on the Tracking chip', () => {
 		expect(sut.processStatuses[0]).toMatchObject({
 			status: 'tracking',
 			icon: '🔔',
-			labelKey: 'eventDetail.journeyStatus.tracking',
+			labelKey: 'concertSheet.journeyStatus.tracking',
 		})
 	})
 
 	describe('date facet', () => {
 		const past = { year: 2020, month: 1, day: 1 }
 
-		// @spec components/infrastructure/fan/web/route/dashboard "Expanding the date facet"
+		// @spec components/infrastructure/fan/web/route/timetable "Expanding the date facet"
 		it('seeds the pending date from activeFrom and stays collapsed for the default', () => {
 			sut.activeFrom = todayCalendarDate()
 			sut.openSheet()
@@ -178,7 +178,7 @@ describe('ArtistFilterBar', () => {
 			expect(sut.isDateFacetExpanded).toBe(true)
 		})
 
-		// @spec components/infrastructure/fan/web/route/dashboard "Choosing a past date and confirming"
+		// @spec components/infrastructure/fan/web/route/timetable "Choosing a past date and confirming"
 		it('dispatches date-changed with the parsed date on confirm when it changed', () => {
 			sut.activeFrom = todayCalendarDate()
 			sut.openSheet()
@@ -210,7 +210,7 @@ describe('ArtistFilterBar', () => {
 			expect(dispatched[0].detail).toEqual(todayCalendarDate())
 		})
 
-		// @spec components/infrastructure/fan/web/route/dashboard "Collapsing back to today onward"
+		// @spec components/infrastructure/fan/web/route/timetable "Collapsing back to today onward"
 		it('clearAll resets the pending date to today and collapses the facet', () => {
 			sut.activeFrom = past
 			sut.openSheet()

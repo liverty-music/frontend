@@ -1,0 +1,8 @@
+<main class="[ callback-layout ] [ center flow ]">
+  <output if.bind="!failed" class="[ callback-loading ] [ stack ]" role="status" aria-busy="true">
+    <div class="callback-spinner"></div>
+    <p class="[ callback-status ] [ md-typescale-body-large ]" t="signInCallback.verifying"></p>
+  </output>
+  <section if.bind="failed" class="[ callback-error ] [ md-typescale-body-large-emphasized ]" role="alert" t="signInCallback.failed"></section>
+  <a if.bind="failed" load="/" class="[ text-link callback-home-link ]" data-variant="standalone" t="signInCallback.home"></a>
+</main>

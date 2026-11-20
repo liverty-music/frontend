@@ -24,7 +24,7 @@ describe('Welcome "can\'t sign in" link', () => {
 		for (const login of logins) {
 			const link = login.nextElementSibling
 			expect(link?.tagName).toBe('A')
-			expect(link?.getAttribute('href')).toBe('/passkey-recovery')
+			expect(link?.getAttribute('href')).toBe('/sign-in-help')
 			expect(link?.getAttribute('t')).toBe('welcome.cta.cantSignIn')
 		}
 	})
