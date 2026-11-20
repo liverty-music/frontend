@@ -77,7 +77,12 @@ test.describe('deal-in, scroll-linked (no scroll triggers)', () => {
 		const row = await rowInView(page)
 		if (!row) throw new Error('no row in view')
 
-		/** The row's first card's opacity and the row's top, relative to the list. */
+		/**
+		 * The row's first card: its opacity, and its top and height relative to
+		 * the list. The deal-out follows the card's own view progress
+		 * (lane-grid.css), so the scroll is measured on the card, not on the
+		 * row: the first row of a month also holds the month heading above it.
+		 */
 		const state = () =>
 			page.evaluate((key) => {
 				const scroll = document.querySelector(
@@ -87,11 +92,11 @@ test.describe('deal-in, scroll-linked (no scroll triggers)', () => {
 					(n) => n.dataset.dateKey === key,
 				) as HTMLElement
 				const card = g.querySelector('event-card') as HTMLElement
+				const box = card.getBoundingClientRect()
 				return {
 					opacity: Number(getComputedStyle(card).opacity),
-					top:
-						g.getBoundingClientRect().top - scroll.getBoundingClientRect().top,
-					height: g.getBoundingClientRect().height,
+					top: box.top - scroll.getBoundingClientRect().top,
+					height: box.height,
 				}
 			}, row.key)
 
