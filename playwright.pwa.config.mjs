@@ -44,6 +44,9 @@ export default defineConfig({
 	fullyParallel: true,
 	forbidOnly: !!process.env.CI,
 	retries: process.env.CI ? 2 : 0,
+	/* A test that passes only on a retry fails the run: fix its cause (see
+	 * playwright.config.mjs). The retry stays, so the report shows it flaky. */
+	failOnFlakyTests: !!process.env.CI,
 	workers: process.env.CI ? 1 : undefined,
 	reporter: 'list',
 
