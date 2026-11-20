@@ -39,7 +39,7 @@
 		"posthog-js": "^1.390.2",
 		"web-vitals": "^6.0.1",
 		"workbox-background-sync": "^7.4.0",
-		"zxing-wasm": "3.1.6"
+		"zxing-wasm": "3.1.7"
 	},
 	"devDependencies": {
 		"@aurelia/storybook": "3.0.0",
