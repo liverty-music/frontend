@@ -28,8 +28,12 @@ export default defineConfig({
 	fullyParallel: true,
 	/* Fail the build on CI if you accidentally left test.only in the source code. */
 	forbidOnly: !!process.env.CI,
-	/* Retry on CI only */
+	/* Retry on CI only. A test that passes only on a retry still fails the
+	 * run: a flaky test is fixed from its cause or deleted with the reason,
+	 * never left to pass on a retry. The retry stays so the report marks the
+	 * test flaky (and records its trace) instead of plain failed. */
 	retries: process.env.CI ? 2 : 0,
+	failOnFlakyTests: !!process.env.CI,
 	/* Playwright's default (half the logical CPUs) on CI too. The scaffold's
 	 * `workers: 1` ran 346 tests serially for ~8 minutes while `fullyParallel`
 	 * runs them in parallel locally (cloud-provisioning#666). */
