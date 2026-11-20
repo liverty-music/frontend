@@ -420,10 +420,10 @@ export const TabPage = {
 			// @spec components/infrastructure/fan/web/global/bottom-nav-bar "Navigation shown on post-onboarding routes"
 			const tabs = [...canvasElement.querySelectorAll('.nav-tab')]
 			await expect(tabs.map((t) => t.getAttribute('data-nav'))).toEqual([
-				'home',
+				'timetable',
 				'discovery',
 				'my-artists',
-				'ticket',
+				'tickets',
 			])
 			// Two tabs on each side of an empty centre slot wider than the FAB.
 			await expect(

@@ -9,7 +9,7 @@ import { atWidth } from '../../../.storybook/viewport'
 import { AreaFilterSheet } from './area-filter-sheet'
 
 const meta = {
-	title: 'Components/AllNearby/AreaFilterSheet',
+	title: 'Components/DiscoveryConcerts/AreaFilterSheet',
 	component: AreaFilterSheet,
 	argTypes: {
 		areaName: { control: 'text', description: 'The area row’s value.' },
