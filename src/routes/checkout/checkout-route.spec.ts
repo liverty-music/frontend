@@ -230,6 +230,11 @@ function ja_(path: string, params: Record<string, string | number>): string {
 
 describe('CheckoutRoute', () => {
 	beforeEach(() => {
+		// The fixtures are dated (the sale runs 11/1 10:00 – 11/20 18:00 JST):
+		// read them on a fixed day inside the sale, not on today's date, or the
+		// sale reads as ended once the real date passes its end.
+		vi.useFakeTimers({ toFake: ['Date'] })
+		vi.setSystemTime(jst(5, 12))
 		vi.clearAllMocks()
 		localStorage.clear()
 		mockStripe.isConfigured = true

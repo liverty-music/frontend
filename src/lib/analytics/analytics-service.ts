@@ -292,7 +292,10 @@ export class AnalyticsService implements IAnalyticsService {
 	 * right after, so the event is sent at once (`fetch` with keepalive
 	 * outlives the navigation) rather than left in the SDK's batch queue.
 	 * Before the SDK has loaded it is kept on the device and sent, with the
-	 * time of the start, once the SDK loads on the return.
+	 * time of the start, once the SDK loads on the return. While the pre-init
+	 * queue is still replaying in idle slices, the rest of the queue is
+	 * replayed now, ahead of it: a busy page gives the replay one slice per
+	 * idle timeout, so a start queued behind it was lost with the page.
 	 */
 	private handleAuthStarted(event: AuthStarted): void {
 		if (event.source === undefined || !this.isEnabled()) return
@@ -306,11 +309,8 @@ export class AnalyticsService implements IAnalyticsService {
 			}
 			return
 		}
-		if (!this.flushing) {
-			this.dispatch(Events.AuthStarted, props, { send_instantly: true })
-			return
-		}
-		this.capture(Events.AuthStarted, props)
+		if (this.flushing) this.drainQueue()
+		this.dispatch(Events.AuthStarted, props, { send_instantly: true })
 	}
 
 	/** Send a start of sign-up or sign-in kept before the SDK loaded. */
@@ -645,9 +645,7 @@ export class AnalyticsService implements IAnalyticsService {
 		}
 		const idle = win.requestIdleCallback
 		if (typeof idle !== 'function') {
-			for (const entry of this.queue.splice(0, this.queue.length)) {
-				this.replay(entry)
-			}
+			this.drainQueue()
 			return
 		}
 		this.flushing = true
@@ -664,6 +662,17 @@ export class AnalyticsService implements IAnalyticsService {
 			}
 		}
 		idle(slice, { timeout: INIT_IDLE_TIMEOUT_MS })
+	}
+
+	/**
+	 * Replays what is left of the queue at once, ending an idle replay; its
+	 * pending slice then finds the queue empty.
+	 */
+	private drainQueue(): void {
+		for (const entry of this.queue.splice(0, this.queue.length)) {
+			this.replay(entry)
+		}
+		this.flushing = false
 	}
 
 	/** Forwards one queued entry to the SDK. */
