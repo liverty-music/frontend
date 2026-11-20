@@ -18,7 +18,7 @@ import { IUserHydration } from '../services/user-hydration-task'
  *  - Guests (unauthenticated) get free roam across application routes (soft
  *    gate); account-only features are hidden at point of use per
  *    `guest-mode-access`, not blocked by navigation. A guest with no follows who
- *    lands on the dashboard sees an in-page empty-state CTA toward discovery
+ *    lands on the timetable sees an in-page empty-state CTA toward discovery
  *    rather than a guard redirect.
  */
 @lifecycleHooks()

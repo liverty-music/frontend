@@ -15,7 +15,7 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 /**
- * The Dashboard help's lane legend, on the `<dl>` it renders on: each lane's
+ * The Timetable help's lane legend, on the `<dl>` it renders on: each lane's
  * label in its lane colour, the descriptions in one column.
  */
 export const Default = {

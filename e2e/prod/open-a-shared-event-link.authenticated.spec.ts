@@ -86,7 +86,7 @@ test.describe('open a shared event link (signed in)', () => {
 		await page.waitForURL(/auth\.liverty-music\.app/, { waitUntil: 'commit' })
 
 		// The test user already exists, so leave the registration form for the
-		// sign-in form; the callback still runs the event-page sign-up flow.
+		// sign-in form; the callback still runs the concert-page sign-up flow.
 		// Login V2's registration page offers no sign-in link, so open the
 		// login-name step for the same auth request (same query string).
 		const register = new URL(page.url())

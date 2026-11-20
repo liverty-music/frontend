@@ -42,7 +42,7 @@ export type EventSource =
 	| 'page'
 	| 'artist_page'
 	| 'search_result'
-	| 'dashboard'
+	| 'timetable'
 	| 'notification'
 	| 'discovery_orb'
 	| 'all_nearby'
@@ -128,7 +128,7 @@ export type OnboardingStartedProps = Record<string, never>
 /** The screen or control a sign-up or sign-in was started from. */
 export type AuthStartSource =
 	| 'welcome'
-	| 'dashboard_prompt'
+	| 'timetable_prompt'
 	| 'all_nearby_prompt'
 	| 'event_page'
 	| 'my_artists_prompt'
@@ -151,7 +151,7 @@ export type ArtistFollowGuestProps = {
 	followed_count: number
 }
 
-/** Discovery's onboarding progress row reached ready (the link to the Dashboard). */
+/** Discovery's onboarding progress row reached ready (the link to the Timetable). */
 export type OnboardingTimetableReadyProps = {
 	followed_count: number
 	artists_with_concerts_count: number
@@ -357,7 +357,7 @@ export type DiscoveryFramesProps = {
  *   analytics.capture(Events.ConcertDetailViewed, {
  *     event_id: event.id.value,
  *     artist_id: artist.id.value,
- *     source: 'dashboard',
+ *     source: 'timetable',
  *   })
  */
 export const Events = {

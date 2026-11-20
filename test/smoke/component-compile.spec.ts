@@ -24,7 +24,7 @@ import { createMockRouter } from '../helpers/mock-router'
  * Aurelia 2 testing docs (https://docs.aurelia.io/developer-guides/overview/testing-components).
  *
  * Excluded components:
- * - dna-orb: Requires HTMLCanvasElement.getContext() which JSDOM does not support.
+ * - artist-bubbles: Requires HTMLCanvasElement.getContext() which JSDOM does not support.
  *
  * Note: ILogger is NOT registered here — createFixture's TestContext
  * provides its own logger with the required .root.config structure.
@@ -78,10 +78,10 @@ describe('Component template compilation smoke tests', () => {
 						navigationModel: {
 							routes: [
 								{
-									id: 'dashboard',
-									path: ['dashboard'],
+									id: 'timetable',
+									path: ['timetable'],
 									title: null,
-									data: { icon: 'home', labelKey: 'nav.home' },
+									data: { icon: 'home', labelKey: 'nav.timetable' },
 									isActive: true,
 								},
 							],

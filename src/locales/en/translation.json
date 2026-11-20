@@ -53,7 +53,7 @@
 		"button": "Create Account with Passkey (30s)",
 		"error": "Could not finish creating your account — your connection may be unstable. Wait a moment and try again."
 	},
-	"userHome": {
+	"homeAreaSelector": {
 		"saveFailed": "Couldn't save your area. Please try again in a moment.",
 		"title": "Select Your Home Area",
 		"description": "The HOME lane shows lives in the area you select. Where do you live?",
@@ -129,7 +129,7 @@
 			"kyushu": "Kyushu"
 		}
 	},
-	"eventDetail": {
+	"concertSheet": {
 		"ariaLabel": "Event details",
 		"openStart": "Open {{open}} / Start {{start}}",
 		"openInGoogleMaps": "Open in Google Maps",
@@ -171,7 +171,7 @@
 		"undo": "Undo",
 		"undoFailed": "Couldn't undo. Please try again."
 	},
-	"dashboard": {
+	"timetable": {
 		"monthJump": {
 			"prev": "Go to {{date, datetime(month: long)}}",
 			"next": "Go to {{date, datetime(month: long)}}"
@@ -207,23 +207,11 @@
 			"load": "Failed to load live events"
 		}
 	},
-	"pushOffer": {
+	"notificationPrompt": {
 		"action": "Turn on",
 		"allowed": "We'll notify you of new concerts. You can turn this off in Settings anytime.",
 		"blocked": "Notifications are blocked. You can change this in your browser settings.",
 		"failed": "Couldn't turn on notifications. Wait a moment and try again."
-	},
-	"notification": {
-		"title": "Never miss a live event",
-		"description": "Get notified when new concerts are found for artists you follow.",
-		"notNow": "Not now",
-		"enable": "Enable notifications",
-		"enabling": "Enabling…",
-		"blocked": {
-			"title": "Notifications blocked",
-			"description": "To receive concert alerts, enable notifications in your browser settings for this site.",
-			"dismiss": "Dismiss"
-		}
 	},
 	"pwa": {
 		"updateAvailable": "A new version is available",
@@ -274,7 +262,7 @@
 			"readyAction": "Open my timetable"
 		},
 		"popoverGuide": "Tap the artists you care about — your picks become a timetable in the next step",
-		"generateDashboard": "👉 Generate Timetable",
+		"generateTimetable": "👉 Generate Timetable",
 		"viewSchedule": "View Live Schedule ({{count}} artists)",
 		"loadFailed": "Failed to load artists. Tap retry to try again.",
 		"retryFailed": "Still unable to load artists. Please try again later.",
@@ -324,7 +312,7 @@
 	},
 	"auth": {
 		"loginRequired": "Login required",
-		"lockedDashboard": "Follow {{count}} more to unlock your timetable",
+		"lockedTimetable": "Follow {{count}} more to unlock your timetable",
 		"lockedGeneric": "Unlocks once you've found some artists"
 	},
 	"settings": {
@@ -448,7 +436,7 @@
 		"bell": "Notifications ({{count}} unread)"
 	},
 	"nav": {
-		"home": "Timetable",
+		"timetable": "Timetable",
 		"discovery": "Discovery",
 		"myArtists": "My Artists",
 		"tickets": "Tickets",
@@ -639,7 +627,7 @@
 			"unfollowSectionTitle": "Unfollowing",
 			"unfollowDesc": "You can unfollow from the My Artists page."
 		},
-		"dashboard": {
+		"timetable": {
 			"lanesSectionTitle": "Reading the Stage Lanes",
 			"description": "Your followed artists' lives are shown by distance.",
 			"homeLabel": "HOME",
@@ -866,7 +854,7 @@
 			"viewLicenseText": "View full license text"
 		}
 	},
-	"allNearby": {
+	"discoveryConcerts": {
 		"filter": {
 			"title": "Area and period",
 			"area": "Area",
@@ -902,7 +890,7 @@
 			"following": "Following"
 		}
 	},
-	"fabMenu": {
+	"actionMenu": {
 		"toggleAriaLabel": "Actions",
 		"panelAriaLabel": "Actions",
 		"beam": "Laser effect",
@@ -912,7 +900,7 @@
 		"leftHandedDesc": "Open the action menu toward your left hand",
 		"settings": "Settings"
 	},
-	"lotteryEntry": {
+	"newLotteryEntry": {
 		"title": "Enter the ticket lottery",
 		"loading": "Loading…",
 		"unavailable": "Payments are not available in this environment right now. Please try again later.",
@@ -974,7 +962,7 @@
 		},
 		"phoneInvalid": "Enter a valid phone number (e.g. 090-1234-5678 or +81 90 1234 5678)."
 	},
-	"resaleEntry": {
+	"newResaleEntry": {
 		"title": "Apply for official resale",
 		"loading": "Loading…",
 		"unavailable": "Payments are not available in this environment right now. Please try again later.",
@@ -1087,7 +1075,7 @@
 			"failed": "Could not withdraw it. Please try again."
 		}
 	},
-	"lotteryEntryStatus": {
+	"lotteryEntries": {
 		"title": "Your lottery entry",
 		"loading": "Loading…",
 		"empty": "No entry to this lottery was found.",
@@ -1109,10 +1097,10 @@
 			"lost": "You did not win this time. The amount reserved on your card is released and you are not charged."
 		}
 	},
-	"eventCard": {
+	"concertCard": {
 		"purchased": "Purchased"
 	},
-	"eventPage": {
+	"concert": {
 		"loading": "Loading…",
 		"open": "OPEN",
 		"start": "START",
@@ -1121,7 +1109,7 @@
 		"notFound": {
 			"title": "Concert not found",
 			"body": "This page does not exist or is not public.",
-			"toDashboard": "Go to Timetable"
+			"toTimetable": "Go to Timetable"
 		},
 		"error": {
 			"body": "Could not load the concert.",
@@ -1268,7 +1256,7 @@
 			"payment": "Payment could not be prepared. Please try again later."
 		}
 	},
-	"verifyCallback": {
+	"identityVerificationCallback": {
 		"loading": "Checking your identity verification…",
 		"success": {
 			"heading": "Identity verified"
@@ -1283,7 +1271,7 @@
 			"contact": "Contact: "
 		}
 	},
-	"authCallback": {
+	"signInCallback": {
 		"verifying": "Verifying sign-in…",
 		"failed": "Could not sign in. Return home and try again.",
 		"home": "Return home"
@@ -1295,7 +1283,7 @@
 			"failed": "The card could not be checked. Try again."
 		}
 	},
-	"passkeyRecovery": {
+	"signInHelp": {
 		"title": "Can't sign in",
 		"lead": "We'll email your account's address a link that creates a new passkey.",
 		"noteValidity": "The link works for 1 hour.",

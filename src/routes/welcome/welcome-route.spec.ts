@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { LiveEvent } from '../../components/live-highway/live-event'
+import type { Concert } from '../../entities/concert'
 
 // ── Dependency mocks ──────────────────────────────────────────────────────────
 
@@ -48,8 +48,8 @@ import { WelcomeRoute } from './welcome-route'
 
 const reducedMotionMock = vi.mocked(prefersReducedMotion)
 
-function makeEvent(id: string): LiveEvent {
-	return { id, artistName: 'A', artistId: id } as LiveEvent
+function makeEvent(id: string): Concert {
+	return { id, artistName: 'A', artistId: id } as Concert
 }
 
 describe('WelcomeRoute — guided demo state machine', () => {
@@ -113,7 +113,7 @@ describe('WelcomeRoute — guided demo state machine', () => {
 			const event = new CustomEvent('event-selected', {
 				detail: { event: makeEvent('c1') },
 			})
-			sut.onEventSelected(event as CustomEvent<{ event: LiveEvent }>)
+			sut.onEventSelected(event as CustomEvent<{ event: Concert }>)
 			await vi.advanceTimersByTimeAsync(5000)
 			expect(sut.coachActive).toBe(false)
 		} finally {
@@ -128,7 +128,7 @@ describe('WelcomeRoute — guided demo state machine', () => {
 		const event = new CustomEvent('event-selected', {
 			detail: { event: makeEvent('c1') },
 		})
-		sut.onEventSelected(event as CustomEvent<{ event: LiveEvent }>)
+		sut.onEventSelected(event as CustomEvent<{ event: Concert }>)
 		expect(open).toHaveBeenCalledWith(
 			expect.objectContaining({ id: 'c1' }),
 			'page',

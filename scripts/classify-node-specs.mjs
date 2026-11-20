@@ -18,13 +18,7 @@ const out = join(tmpdir(), `classify-node-specs-${process.pid}.json`)
 
 const run = spawnSync(
 	'npx',
-	[
-		'vitest',
-		'run',
-		'--project=unit',
-		'--reporter=json',
-		`--outputFile=${out}`,
-	],
+	['vitest', 'run', '--project=unit', '--reporter=json', `--outputFile=${out}`],
 	{
 		cwd: root,
 		stdio: ['ignore', 'inherit', 'inherit'],
@@ -41,7 +35,9 @@ rmSync(out, { force: true })
 const pinned = /@vitest-environment\s+\S+/
 
 const passing = report.testResults
-	.filter((file) => file.status === 'passed' && file.assertionResults.length > 0)
+	.filter(
+		(file) => file.status === 'passed' && file.assertionResults.length > 0,
+	)
 	.map((file) => relative(root, file.name))
 	.filter((file) => !pinned.test(readFileSync(join(root, file), 'utf8')))
 	.sort()
@@ -50,4 +46,6 @@ writeFileSync(
 	join(root, 'test/node-environment-specs.json'),
 	`${JSON.stringify(passing, null, '\t')}\n`,
 )
-console.log(`${passing.length} of ${report.testResults.length} spec files run on Node`)
+console.log(
+	`${passing.length} of ${report.testResults.length} spec files run on Node`,
+)

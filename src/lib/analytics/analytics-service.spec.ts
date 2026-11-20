@@ -242,7 +242,7 @@ describe('AnalyticsService', () => {
 			sut.capture(Events.ConcertDetailViewed, {
 				event_id: 'evt-1',
 				artist_id: 'art-1',
-				source: 'dashboard',
+				source: 'timetable',
 			})
 			sut.capture(Events.ArtistSearch, { query_length: 3, result_count: 5 })
 
@@ -398,13 +398,13 @@ describe('AnalyticsService', () => {
 			const sut = new AnalyticsService()
 			await sut._waitForInitForTests()
 
-			mockEa.publish(new AuthStarted('sign_up', 'dashboard_prompt'))
+			mockEa.publish(new AuthStarted('sign_up', 'timetable_prompt'))
 			mockEa.publish(new AuthStarted('sign_in', 'welcome'))
 			// A start without a source (the admin app's) is not reported.
 			mockEa.publish(new AuthStarted('sign_in', undefined))
 
 			expect(posthogStub.capture.mock.calls.map(([n, p]) => [n, p])).toEqual([
-				[Events.AuthStarted, { kind: 'sign_up', source: 'dashboard_prompt' }],
+				[Events.AuthStarted, { kind: 'sign_up', source: 'timetable_prompt' }],
 				[Events.AuthStarted, { kind: 'sign_in', source: 'welcome' }],
 			])
 			sut.dispose()
@@ -860,9 +860,9 @@ describe('AnalyticsService', () => {
 			const blocked = options.blockSelector.split(', ')
 			for (const screen of [
 				'checkout-route',
-				'lottery-entry-route',
-				'lottery-entry-status-route',
-				'verify-callback-route',
+				'new-lottery-entry-route',
+				'lottery-entries-route',
+				'identity-verification-callback-route',
 				'settings-route',
 				'passkeys-route',
 			]) {
@@ -871,7 +871,7 @@ describe('AnalyticsService', () => {
 			// The selector is valid CSS and matches a route element.
 			const host = document.createElement('div')
 			host.innerHTML =
-				'<checkout-route></checkout-route><dashboard-route></dashboard-route>'
+				'<checkout-route></checkout-route><timetable-route></timetable-route>'
 			expect(
 				[...host.querySelectorAll(options.blockSelector)].map(
 					(e) => e.localName,
@@ -888,7 +888,7 @@ describe('AnalyticsService', () => {
 
 		it('stops recording on a screen that is never recorded and resumes after it', async () => {
 			// @spec components/infrastructure/fan/web/global/analytics "Screen that is never recorded"
-			navigate('/dashboard')
+			navigate('/timetable')
 			const sut = new AnalyticsService()
 			await sut._waitForInitForTests()
 			expect(initConfig()).toMatchObject({ disable_session_recording: false })
@@ -901,7 +901,7 @@ describe('AnalyticsService', () => {
 				'/settings',
 				'/settings/passkeys',
 			]) {
-				navigate('/dashboard')
+				navigate('/timetable')
 				navigate(path)
 				expect(lastRecordingSetting()).toBe(true)
 			}
@@ -921,7 +921,7 @@ describe('AnalyticsService', () => {
 		})
 
 		it('does not reconfigure the SDK when the posture stays the same', async () => {
-			navigate('/dashboard')
+			navigate('/timetable')
 			const sut = new AnalyticsService()
 			await sut._waitForInitForTests()
 			posthogStub.set_config.mockReset()
@@ -1094,23 +1094,23 @@ describe('AnalyticsService', () => {
 			expect(config).toMatchObject({ capture_exceptions: false })
 		})
 
-		it(`@spec ${ANALYTICS_SPEC} "Error report on a filtered dashboard"`, async () => {
+		it(`@spec ${ANALYTICS_SPEC} "Error report on a filtered timetable"`, async () => {
 			const send = await beforeSend()
 			const origin = window.location.origin
 
 			const sent = send({
 				event: '$exception',
 				properties: {
-					$current_url: `${origin}/dashboard?artists=a1,a2&journey=tour&from=welcome&utm_source=x#top`,
-					$initial_current_url: `${origin}/dashboard?artists=a1`,
+					$current_url: `${origin}/timetable?artists=a1,a2&journey=tour&from=welcome&utm_source=x#top`,
+					$initial_current_url: `${origin}/timetable?artists=a1`,
 				},
 			})
 
 			expect(sent?.properties.$current_url).toBe(
-				`${origin}/dashboard?artists=a1,a2&journey=tour&from=welcome`,
+				`${origin}/timetable?artists=a1,a2&journey=tour&from=welcome`,
 			)
 			// Only the current address keeps the filter.
-			expect(sent?.properties.$initial_current_url).toBe(`${origin}/dashboard`)
+			expect(sent?.properties.$initial_current_url).toBe(`${origin}/timetable`)
 		})
 
 		it(`@spec ${ANALYTICS_SPEC} "Error report on a referral link"`, async () => {
@@ -1132,16 +1132,16 @@ describe('AnalyticsService', () => {
 			expect(sent?.properties.has_ref).toBe(true)
 		})
 
-		it(`@spec ${ANALYTICS_SPEC} "Other events keep the dashboard filter out"`, async () => {
+		it(`@spec ${ANALYTICS_SPEC} "Other events keep the timetable filter out"`, async () => {
 			const send = await beforeSend()
 			const origin = window.location.origin
 
 			const sent = send({
 				event: 'concert_detail_viewed',
-				properties: { $current_url: `${origin}/dashboard?artists=a1` },
+				properties: { $current_url: `${origin}/timetable?artists=a1` },
 			})
 
-			expect(sent?.properties.$current_url).toBe(`${origin}/dashboard`)
+			expect(sent?.properties.$current_url).toBe(`${origin}/timetable`)
 		})
 
 		it('redacts tokens in the exception values', async () => {
@@ -1213,7 +1213,7 @@ describe('AnalyticsService', () => {
 			posthogStub.captureException.mockReturnValue({ uuid: 'u-1' })
 			const onAccepted = vi.fn()
 
-			sut.addExceptionStep('dashboard', { type: 'navigation' })
+			sut.addExceptionStep('timetable', { type: 'navigation' })
 			expect(sut.captureException(new Error('early'), {}, onAccepted)).toBe(
 				false,
 			)
@@ -1223,7 +1223,7 @@ describe('AnalyticsService', () => {
 			await sut._waitForInitForTests()
 
 			expect(posthogStub.init).toHaveBeenCalledTimes(1)
-			expect(posthogStub.addExceptionStep).toHaveBeenCalledWith('dashboard', {
+			expect(posthogStub.addExceptionStep).toHaveBeenCalledWith('timetable', {
 				type: 'navigation',
 			})
 			// The step is queued first, so it is attached to the report.

@@ -1,4 +1,4 @@
-import type { DatePresetId } from '../../components/all-nearby/date-presets'
+import type { DatePresetId } from '../../components/discovery-concerts/date-presets'
 import { StorageKeys } from '../../constants/storage-keys'
 
 /**

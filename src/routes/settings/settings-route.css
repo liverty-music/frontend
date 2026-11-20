@@ -13,7 +13,7 @@
 		   owned by the app shell). `min-block-size: 0` lets the grid item shrink
 		   below its content height so the inner `.settings-scroll` can own the
 		   overflow — without it the track grows past the route box and the list
-		   slides under the header. Matches the my-artists / tickets / dashboard
+		   slides under the header. Matches the my-artists / tickets / timetable
 		   / discovery scroll pattern. */
 		main {
 			overflow: hidden;

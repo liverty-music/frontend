@@ -52,7 +52,7 @@ test.describe('complete onboarding (guest)', () => {
 		await expect(ready).toContainText('完成しました！')
 
 		await ready.click()
-		await expect(page).toHaveURL(/\/dashboard/)
+		await expect(page).toHaveURL(/\/timetable/)
 
 		// No home area yet: the Timetable asks for one first.
 		await page.getByRole('button', { name: '東京', exact: true }).click()

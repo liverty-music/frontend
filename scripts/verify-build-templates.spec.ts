@@ -109,13 +109,13 @@ describe('checkBuildTemplates', () => {
 	it('reports every failing route in a single pass', () => {
 		scaffoldDist(workDir, {
 			welcome: '// blank',
-			dashboard: '// blank too',
+			timetable: '// blank too',
 		})
 		const result = checkBuildTemplates(workDir)
 		assert(result.kind === 'failed')
 		expect(result.failures).toHaveLength(2)
 		expect(result.failures.some((f) => f.includes('welcome'))).toBe(true)
-		expect(result.failures.some((f) => f.includes('dashboard'))).toBe(true)
+		expect(result.failures.some((f) => f.includes('timetable'))).toBe(true)
 	})
 
 	it('shape: ROUTE_MARKERS entries are well-formed, with unique routes and unique markers', () => {

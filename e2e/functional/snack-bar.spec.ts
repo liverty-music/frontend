@@ -170,7 +170,7 @@ test.describe('Snack bar: multiple rapid snacks (5.1)', () => {
 			)
 		})
 		await mockRpcRoutes(page)
-		await page.goto('/dashboard')
+		await page.goto('/timetable')
 		await expect(page.locator('snack-bar')).toBeAttached({ timeout: 10_000 })
 	})
 

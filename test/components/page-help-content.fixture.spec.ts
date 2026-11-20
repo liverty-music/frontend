@@ -72,10 +72,10 @@ describe('page help content', () => {
 		expect(text).toContain(t.unfollowDesc)
 	})
 
-	// @spec components/infrastructure/fan/web/global/page-help "Dashboard help content"
-	it('Dashboard: the stage lanes and concert details', async () => {
-		const { host, titles, text } = await render('dashboard')
-		const t = ja.pageHelp.dashboard
+	// @spec components/infrastructure/fan/web/global/page-help "Timetable help content"
+	it('Timetable: the stage lanes and concert details', async () => {
+		const { host, titles, text } = await render('timetable')
+		const t = ja.pageHelp.timetable
 
 		expect(titles).toEqual([t.lanesSectionTitle, t.detailsSectionTitle])
 		expect(

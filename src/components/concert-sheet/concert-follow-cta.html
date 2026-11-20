@@ -1,0 +1,18 @@
+<template>
+  <import from="./concert-follow-cta.css"></import>
+
+  <button
+    if.bind="!followed"
+    type="button"
+    class="[ button follow-action ] [ state-layer ]"
+    disabled.bind="updating"
+    click.trigger="follow()"
+    t="discoveryConcerts.follow.action"
+  ></button>
+  <p
+    else
+    class="[ follow-state ] [ md-typescale-label-large ]"
+    data-testid="discovery-concerts-following"
+    t="discoveryConcerts.follow.following"
+  ></p>
+</template>

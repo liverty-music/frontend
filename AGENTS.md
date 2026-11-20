@@ -150,7 +150,7 @@ with Storybook"). Use one when the defect lives in the route's own layout (its s
 sits above what), which a component story does not render; cf. `src/routes/my-artists/my-artists-route.stories.ts`.
 `src/app-shell.stories.ts` renders the real `AppShell` this way, with a stand-in `<au-viewport>` that shows the page: use it for what the shell composes (the grid, the FAB in the notch, snack and banner placement).
 
-**Do NOT story**: `dna-orb` (canvas/Matter.js), or anything that needs live RPC, auth or canvas context.
+**Do NOT story**: `artist-bubbles` (canvas/Matter.js), or anything that needs live RPC, auth or canvas context.
 
 ### Visual regression
 
@@ -236,7 +236,7 @@ and was deleted with zero lockfile change.
 
 ### 1. Canvas + Matter.js for Artist Discovery
 
-The artist discovery bubble UI uses HTML5 Canvas 2D with Matter.js physics engine. This was chosen over DOM-based animation for performance with 30+ animated elements on mobile. See `src/components/dna-orb/`.
+The artist discovery bubble UI uses HTML5 Canvas 2D with Matter.js physics engine. This was chosen over DOM-based animation for performance with 30+ animated elements on mobile. See `src/components/artist-bubbles/`.
 
 ### 2. Direct Last.fm API Calls
 
@@ -255,7 +255,7 @@ New vs returning users are distinguished by the `isSignUp` flag in the OIDC stat
 - A layout that changes with the window's width changes at the Material 3 breakpoints: 600, 840, 1200 and 1600 px. Lint cannot check this, because `@container` conditions cannot read custom properties. A component adapting to its own container may use other widths.
 - No direct `localStorage` in services — persist `@observable` state via `src/adapter/storage/` (cf. `follow-store.ts`).
 - A route reachable without auth MUST set `data: { auth: false }` in `app-shell.ts`; the gate lives in `auth-hook.ts`, not components.
-- Any `attached()` that adds a listener / starts a `requestAnimationFrame` / subscribes MUST release it in `detaching()` (cf. `concert-highway.ts`).
+- Any `attached()` that adds a listener / starts a `requestAnimationFrame` / subscribes MUST release it in `detaching()` (cf. `timetable-grid.ts`).
 - RPC goes through a client in `src/adapter/rpc/client/` built with `createTransport`; auth is at the transport, not the call site.
 - Services export an `IName` token via `DI.createInterface()`, register `.singleton()`, and re-export the interface (cf. `concert-store.ts`).
 - `@observable` mutations update optimistically and roll back on RPC failure (cf. `follow-store.ts follow()`).

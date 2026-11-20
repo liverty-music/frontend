@@ -16,7 +16,7 @@ import { expect, test } from '../support/test'
 // The first page load compiles the app on the dev server; allow for it.
 test.describe.configure({ timeout: 90_000 })
 
-const PAGES = ['discovery', 'dashboard', 'my-artists'] as const
+const PAGES = ['discovery', 'timetable', 'my-artists'] as const
 
 const USER = {
 	user: {
@@ -71,7 +71,7 @@ test('@spec components/infrastructure/fan/web/global/page-help "Help-seen flags 
 	const signIn = await freshGuest(browser)
 	await signIn.goto('/')
 	await signIn.getByTestId('welcome-login').first().click({ timeout: 30_000 })
-	await expect(signIn).toHaveURL(/\/dashboard/, { timeout: 30_000 })
+	await expect(signIn).toHaveURL(/\/timetable/, { timeout: 30_000 })
 	expect(await helpSeen(signIn)).toEqual([null, null, null])
 	await signIn.context().close()
 
@@ -81,7 +81,7 @@ test('@spec components/infrastructure/fan/web/global/page-help "Help-seen flags 
 	await signUp
 		.locator('signup-prompt-banner .bottom-banner-action')
 		.click({ timeout: 30_000 })
-	await expect(signUp).toHaveURL(/\/dashboard/, { timeout: 30_000 })
+	await expect(signUp).toHaveURL(/\/timetable/, { timeout: 30_000 })
 	expect(await helpSeen(signUp)).toEqual([null, null, null])
 	await signUp.context().close()
 })

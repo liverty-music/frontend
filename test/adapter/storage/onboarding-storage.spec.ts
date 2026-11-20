@@ -33,9 +33,9 @@ describe('onboarding-storage', () => {
 
 	describe('help-seen helpers', () => {
 		it('records and reads per-page help-seen flags', () => {
-			expect(loadHelpSeen('dashboard')).toBe(false)
-			saveHelpSeen('dashboard')
-			expect(loadHelpSeen('dashboard')).toBe(true)
+			expect(loadHelpSeen('timetable')).toBe(false)
+			saveHelpSeen('timetable')
+			expect(loadHelpSeen('timetable')).toBe(true)
 		})
 
 		it('clears every onboarding.helpSeen:* key and nothing else', () => {
@@ -57,13 +57,13 @@ describe('onboarding-storage', () => {
 
 		it('clears all known per-page help-seen flags', () => {
 			saveHelpSeen('discovery')
-			saveHelpSeen('dashboard')
+			saveHelpSeen('timetable')
 			saveHelpSeen('my-artists')
 
 			clearOnboardingSeenFlags()
 
 			expect(loadHelpSeen('discovery')).toBe(false)
-			expect(loadHelpSeen('dashboard')).toBe(false)
+			expect(loadHelpSeen('timetable')).toBe(false)
 			expect(loadHelpSeen('my-artists')).toBe(false)
 		})
 	})

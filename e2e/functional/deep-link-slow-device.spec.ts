@@ -52,7 +52,7 @@ const groups = Array.from({ length: 212 }, (_, i) => ({
 
 test.use({ viewport: { width: 375, height: 667 } })
 
-// @spec components/infrastructure/fan/web/route/dashboard "Deferring the render preserves load-path side effects"
+// @spec components/infrastructure/fan/web/route/timetable "Deferring the render preserves load-path side effects"
 test('a concert deep-link opens its sheet on a slow device, and the timetable renders', async ({
 	page,
 	context,
@@ -99,7 +99,7 @@ test('a concert deep-link opens its sheet on a slow device, and the timetable re
 				page.evaluate(
 					() =>
 						!!document.querySelector(
-							'event-detail-sheet dialog[open], event-detail-sheet :popover-open',
+							'concert-sheet dialog[open], concert-sheet :popover-open',
 						),
 				),
 			{ timeout: 60_000 },
@@ -108,7 +108,7 @@ test('a concert deep-link opens its sheet on a slow device, and the timetable re
 	await expect(page).toHaveURL(new RegExp(`/concerts/${fakeId('h-150-0')}$`))
 	// The filtered timetable rendered behind it.
 	await expect
-		.poll(() => page.locator('concert-highway .date-group').count())
+		.poll(() => page.locator('timetable-grid .date-group').count())
 		.toBeGreaterThan(0)
 	expect(errors.filter((e) => /deadlock/i.test(e))).toEqual([])
 })

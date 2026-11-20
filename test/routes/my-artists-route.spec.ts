@@ -47,8 +47,8 @@ vi.mock('../../src/services/user-store', () => ({
 const { MyArtistsRoute } = await import(
 	'../../src/routes/my-artists/my-artists-route'
 )
-const { IPushOfferService } = await import(
-	'../../src/services/push-offer-service'
+const { INotificationPromptService } = await import(
+	'../../src/services/notification-prompt-service'
 )
 
 function makeFollowedArtist(id: string, name: string, hype = 'nearby') {
@@ -69,7 +69,7 @@ describe('MyArtistsRoute', () => {
 	let mockRouter: { load: ReturnType<typeof vi.fn> }
 	let mockAuth: { isAuthenticated: boolean; signUp: ReturnType<typeof vi.fn> }
 	let publishedSnacks: Snack[]
-	let pushOffer: {
+	let notificationPrompt: {
 		pushState: ReturnType<typeof vi.fn>
 		accept: ReturnType<typeof vi.fn>
 	}
@@ -98,7 +98,7 @@ describe('MyArtistsRoute', () => {
 			finish: vi.fn(),
 		}
 
-		pushOffer = {
+		notificationPrompt = {
 			pushState: vi.fn(async () => 'offerable'),
 			accept: vi.fn(async () => 'granted'),
 		}
@@ -109,7 +109,7 @@ describe('MyArtistsRoute', () => {
 			Registration.instance(mockIRouter, mockRouter),
 			Registration.instance(mockIOnboardingService, mockOnboarding),
 			Registration.instance(mockIAuthService, mockAuth),
-			Registration.instance(IPushOfferService, pushOffer),
+			Registration.instance(INotificationPromptService, notificationPrompt),
 		)
 		container.register(MyArtistsRoute)
 		sut = container.get(MyArtistsRoute)
@@ -226,7 +226,7 @@ describe('MyArtistsRoute', () => {
 					finish: vi.fn(),
 				}),
 				Registration.instance(mockIAuthService, mockAuth),
-				Registration.instance(IPushOfferService, pushOffer),
+				Registration.instance(INotificationPromptService, notificationPrompt),
 			)
 			container.register(MyArtistsRoute)
 			const route = container.get(MyArtistsRoute)
@@ -235,7 +235,7 @@ describe('MyArtistsRoute', () => {
 			return { route, open, ea: container.get(IEventAggregator) }
 		}
 
-		// @spec components/infrastructure/fan/web/global/user-home-selector "Signed-in fan without a home opens My Artists"
+		// @spec components/infrastructure/fan/web/global/home-area-selector "Signed-in fan without a home opens My Artists"
 		it('opens a sheet that closes only on a choice for a signed-in fan, and saves the choice', async () => {
 			mockAuth.isAuthenticated = true
 			mockUserStore.needsHome = true
@@ -262,7 +262,7 @@ describe('MyArtistsRoute', () => {
 			expect(openIfFirstVisit).toHaveBeenCalledOnce()
 		})
 
-		// @spec components/infrastructure/fan/web/global/user-home-selector "Guest after onboarding closes the sheet"
+		// @spec components/infrastructure/fan/web/global/home-area-selector "Guest after onboarding closes the sheet"
 		it('lets a guest after onboarding close the sheet, and asks again on the next visit', async () => {
 			mockAuth.isAuthenticated = false
 			mockUserStore.needsHome = true
@@ -510,7 +510,7 @@ describe('MyArtistsRoute', () => {
 					Registration.instance(mockIOnboardingService, onboardingOnboarding),
 					Registration.instance(mockIAuthService, mockAuth),
 					Registration.instance(IEventAggregator, { publish: vi.fn() }),
-					Registration.instance(IPushOfferService, pushOffer),
+					Registration.instance(INotificationPromptService, notificationPrompt),
 				)
 				container.register(MyArtistsRoute)
 				onboardingSut = container.get(MyArtistsRoute)
@@ -577,7 +577,7 @@ describe('MyArtistsRoute', () => {
 				sut.onHypeInput(artist, 'away')
 				await Promise.resolve()
 
-				expect(pushOffer.accept).not.toHaveBeenCalled()
+				expect(notificationPrompt.accept).not.toHaveBeenCalled()
 
 				expect(artist.hype).toBe('away')
 				// The follow service facade now resolves guest vs authed internally:
@@ -649,7 +649,7 @@ describe('MyArtistsRoute', () => {
 
 		/** Let the route read the push state and publish its snack. */
 		const settle = () =>
-			vi.waitFor(() => expect(pushOffer.pushState).toHaveBeenCalled())
+			vi.waitFor(() => expect(notificationPrompt.pushState).toHaveBeenCalled())
 
 		beforeEach(async () => {
 			const { I18N } = await import('@aurelia/i18n')
@@ -663,7 +663,7 @@ describe('MyArtistsRoute', () => {
 					finish: vi.fn(),
 				}),
 				Registration.instance(mockIAuthService, mockAuth),
-				Registration.instance(IPushOfferService, pushOffer),
+				Registration.instance(INotificationPromptService, notificationPrompt),
 			)
 			// The words the fan reads, from the real catalog.
 			container.deregister(I18N)
@@ -692,7 +692,7 @@ describe('MyArtistsRoute', () => {
 
 		// @spec components/infrastructure/fan/web/route/my-artists "First pick of Away with push on"
 		it('says where new concerts are pushed the first time a level is picked with push on', async () => {
-			pushOffer.pushState.mockResolvedValue('on')
+			notificationPrompt.pushState.mockResolvedValue('on')
 
 			route.onHypeInput(artist('ヨルシカ'), 'away')
 			await vi.waitFor(() => expect(snacks).toHaveLength(1))
@@ -707,7 +707,7 @@ describe('MyArtistsRoute', () => {
 		// @spec components/infrastructure/fan/web/route/my-artists "Second pick of the same level"
 		// @spec components/infrastructure/fan/web/global/notification-prompt "Permission already granted"
 		it('shows no snack for a later pick of the same level with push on', async () => {
-			pushOffer.pushState.mockResolvedValue('on')
+			notificationPrompt.pushState.mockResolvedValue('on')
 			route.onHypeInput(artist('ヨルシカ'), 'away')
 			await vi.waitFor(() => expect(snacks).toHaveLength(1))
 
@@ -716,7 +716,7 @@ describe('MyArtistsRoute', () => {
 				expect(mockFollowService.setHype).toHaveBeenCalledWith('id-2', 'away'),
 			)
 			await vi.waitFor(() =>
-				expect(pushOffer.pushState).toHaveBeenCalledTimes(2),
+				expect(notificationPrompt.pushState).toHaveBeenCalledTimes(2),
 			)
 			await Promise.resolve()
 
@@ -747,7 +747,7 @@ describe('MyArtistsRoute', () => {
 			snacks[0].action?.callback()
 
 			// Synchronously inside the press, so the browser prompt follows it.
-			expect(pushOffer.accept).toHaveBeenCalledWith({
+			expect(notificationPrompt.accept).toHaveBeenCalledWith({
 				source: 'notification_prompt',
 			})
 		})
@@ -755,7 +755,7 @@ describe('MyArtistsRoute', () => {
 		// @spec components/infrastructure/fan/web/global/notification-prompt "Permission blocked"
 		// @spec components/infrastructure/fan/web/global/notification-prompt "iOS Safari without the app on the home screen"
 		it('links to Settings instead of an offer where push cannot be turned on here', async () => {
-			pushOffer.pushState.mockResolvedValue('settings')
+			notificationPrompt.pushState.mockResolvedValue('settings')
 
 			route.onHypeInput(artist('Vaundy'), 'away')
 			await vi.waitFor(() => expect(snacks).toHaveLength(1))
@@ -763,12 +763,12 @@ describe('MyArtistsRoute', () => {
 			expect(snacks[0].action?.label).toBe('設定')
 			snacks[0].action?.callback()
 			expect(mockRouter.load).toHaveBeenCalledWith('settings')
-			expect(pushOffer.accept).not.toHaveBeenCalled()
+			expect(notificationPrompt.accept).not.toHaveBeenCalled()
 		})
 
 		// @spec components/infrastructure/fan/web/route/my-artists "Watch for the first time"
 		it('says Watch pushes nothing the first time Watch is picked with push on', async () => {
-			pushOffer.pushState.mockResolvedValue('on')
+			notificationPrompt.pushState.mockResolvedValue('on')
 
 			route.onHypeInput(artist('King Gnu'), 'watch')
 			await vi.waitFor(() => expect(snacks).toHaveLength(1))
@@ -797,7 +797,7 @@ describe('MyArtistsRoute', () => {
 				'ヨルシカの大阪の新着ライブをプッシュ通知で受け取ろう🔔',
 			])
 			expect(snacks[0].action?.label).toBe('登録する')
-			expect(pushOffer.pushState).not.toHaveBeenCalled()
+			expect(notificationPrompt.pushState).not.toHaveBeenCalled()
 			snacks[0].action?.callback()
 			expect(mockAuth.signUp).toHaveBeenCalledTimes(1)
 		})
@@ -815,7 +815,7 @@ describe('MyArtistsRoute', () => {
 			// Sign-up completes: the callback's UserStore.clearGuest() clears them.
 			clearOnboardingSeenFlags()
 			mockAuth.isAuthenticated = true
-			pushOffer.pushState.mockResolvedValue('on')
+			notificationPrompt.pushState.mockResolvedValue('on')
 			route.onHypeInput(artist('YOASOBI'), 'away')
 
 			await vi.waitFor(() =>
@@ -835,7 +835,7 @@ describe('MyArtistsRoute', () => {
 
 		// @spec components/infrastructure/fan/web/route/my-artists "Quick changes to one artist"
 		it('keys every hype snack by artist so a newer one replaces the earlier', async () => {
-			pushOffer.pushState.mockResolvedValue('on')
+			notificationPrompt.pushState.mockResolvedValue('on')
 
 			route.onHypeInput(artist('ヨルシカ'), 'home')
 			route.onHypeInput(artist('ヨルシカ'), 'away')
@@ -853,7 +853,7 @@ describe('MyArtistsRoute', () => {
 		})
 
 		it('names 居住エリア without a home', async () => {
-			pushOffer.pushState.mockResolvedValue('on')
+			notificationPrompt.pushState.mockResolvedValue('on')
 			mockUserStore.currentHome = null
 
 			route.onHypeInput(artist('ヨルシカ'), 'nearby')
@@ -880,8 +880,8 @@ describe('MyArtistsRoute', () => {
 			)
 
 		beforeEach(async () => {
-			const { IFabMenuService } = await import(
-				'../../src/services/fab-menu-service'
+			const { IActionMenuService } = await import(
+				'../../src/services/action-menu-service'
 			)
 			showLauncher = vi.fn()
 			fab = { register: vi.fn(() => vi.fn()), hide: vi.fn(() => showLauncher) }
@@ -894,8 +894,8 @@ describe('MyArtistsRoute', () => {
 					finish: vi.fn(),
 				}),
 				Registration.instance(mockIAuthService, mockAuth),
-				Registration.instance(IPushOfferService, pushOffer),
-				Registration.instance(IFabMenuService, fab),
+				Registration.instance(INotificationPromptService, notificationPrompt),
+				Registration.instance(IActionMenuService, fab),
 			)
 			container.register(MyArtistsRoute)
 			route = container.get(MyArtistsRoute)

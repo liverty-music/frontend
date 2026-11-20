@@ -66,12 +66,12 @@ test.describe('complete onboarding (sign-up payoff)', () => {
 		await page.evaluate(() =>
 			localStorage.setItem('postSignup.shown', 'pending'),
 		)
-		await page.goto('/dashboard')
+		await page.goto('/timetable')
 
 		// The home-area choice precedes the payoff. The test user keeps the
 		// area from its first run, so later runs go straight to the payoff.
 		const tokyo = page.getByRole('button', {
-			name: copy.userHome.cities.tokyo,
+			name: copy.homeAreaSelector.cities.tokyo,
 			exact: true,
 		})
 		const overlay = page.locator('.celebration-overlay[data-state="active"]')
@@ -80,7 +80,7 @@ test.describe('complete onboarding (sign-up payoff)', () => {
 
 		await expect(overlay).toBeVisible({ timeout: 30_000 })
 		await expect(overlay).toContainText(
-			copy.dashboard.celebration.welcome.split('\n')[0],
+			copy.timetable.celebration.welcome.split('\n')[0],
 		)
 		await expect(overlay.locator('.confetti')).not.toHaveCount(0)
 		await overlay.click()

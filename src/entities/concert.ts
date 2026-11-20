@@ -1,6 +1,6 @@
 import type { Artist } from './artist'
 
-/** Lane type for proximity-based grouping on the dashboard. */
+/** Lane type for proximity-based grouping on the timetable. */
 export type LaneType = 'home' | 'nearby' | 'away'
 
 /** Hype level determining which lanes an artist's concerts appear matched in. */
@@ -10,7 +10,7 @@ export type HypeLevel = 'watch' | 'home' | 'nearby' | 'away'
 export type JourneyStatus = 'tracking' | 'applied' | 'lost' | 'unpaid' | 'paid'
 
 /**
- * A concert event displayed on the dashboard.
+ * A concert event displayed on the timetable.
  * @source proto/liverty_music/rpc/concert/v1/concert_service.proto — Concert
  */
 export interface Concert {
@@ -36,7 +36,7 @@ export interface Concert {
 	hypeLevel: HypeLevel
 	matched: boolean
 	/**
-	 * The proximity lane the concert was listed in: on the Dashboard the
+	 * The proximity lane the concert was listed in: on the Timetable the
 	 * distance from the fan's home, in the All Nearby view the distance from
 	 * the browsed area.
 	 */

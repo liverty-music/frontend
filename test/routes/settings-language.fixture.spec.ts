@@ -14,9 +14,9 @@ import { IConsentService } from '../../src/lib/consent/consent-service'
 import en from '../../src/locales/en/translation.json'
 import ja from '../../src/locales/ja/translation.json'
 import { SettingsRoute } from '../../src/routes/settings/settings-route'
+import { IActionMenuService } from '../../src/services/action-menu-service'
 import { IAudioEngine } from '../../src/services/audio-engine'
 import { IAuthService } from '../../src/services/auth-service'
-import { IFabMenuService } from '../../src/services/fab-menu-service'
 import { IIdentityVerificationService } from '../../src/services/identity-verification-service'
 import { IPushService } from '../../src/services/push-service'
 import { IUserStore, UserStore } from '../../src/services/user-store'
@@ -32,9 +32,9 @@ vi.mock('../../src/util/change-locale', async (importOriginal) => {
 const { changeLocale } = await import('../../src/util/change-locale')
 
 /** The home selector is not under test here; the bottom sheet passes through. */
-const UserHomeSelectorStub = CustomElement.define(
+const HomeAreaSelectorStub = CustomElement.define(
 	{
-		name: 'user-home-selector',
+		name: 'home-area-selector',
 		template: '',
 		bindables: ['currentCode', 'onHomeSelected'],
 	},
@@ -105,9 +105,9 @@ async function render(o: Options) {
 				analytics: true,
 				sessionReplay: true,
 			}),
-			Registration.instance(IFabMenuService, { isLeftHanded: false }),
+			Registration.instance(IActionMenuService, { isLeftHanded: false }),
 			BusyOnClickCustomAttribute,
-			UserHomeSelectorStub,
+			HomeAreaSelectorStub,
 			BottomSheetStub,
 			...SETTINGS_ROWS,
 			SettingsRoute,
@@ -335,14 +335,14 @@ describe('Settings language and home area (fixture)', () => {
 		const r = await render({ authenticated: false, lng: 'ja' })
 		const homeRow = () => r.rowValue(ja.settings.myHomeArea)
 
-		expect(homeRow()).toBe(ja.userHome.prefectures.tokyo)
+		expect(homeRow()).toBe(ja.homeAreaSelector.prefectures.tokyo)
 
 		await r.vm.onHomeSelected('JP-27')
 		await tasksSettled()
 
 		expect(r.userStore.currentHome).toBe('JP-27')
 		expect(localStorage.getItem('guest.home')).toBe('JP-27')
-		expect(homeRow()).toBe(ja.userHome.prefectures.osaka)
+		expect(homeRow()).toBe(ja.homeAreaSelector.prefectures.osaka)
 		await r.fixture.stop(true)
 	})
 })

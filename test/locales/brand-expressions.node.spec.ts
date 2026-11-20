@@ -28,7 +28,7 @@ function leaves(tree: Tree, prefix = ''): [string, string][] {
 }
 
 const TABS = [
-	['nav.home', 'Timetable'],
+	['nav.timetable', 'Timetable'],
 	['nav.discovery', 'Discovery'],
 	['nav.myArtists', 'My Artists'],
 	['nav.tickets', 'Tickets'],
@@ -54,12 +54,12 @@ describe('Layer B brand expressions', () => {
 			expect(lookup(en as Tree, key), `en ${key}`).toBe(label)
 		}
 		for (const [key, label] of [
-			['dashboard.lane.home', 'HOME'],
-			['dashboard.lane.near', 'NEAR'],
-			['dashboard.lane.away', 'AWAY'],
-			['pageHelp.dashboard.homeLabel', 'HOME'],
-			['pageHelp.dashboard.nearLabel', 'NEAR'],
-			['pageHelp.dashboard.awayLabel', 'AWAY'],
+			['timetable.lane.home', 'HOME'],
+			['timetable.lane.near', 'NEAR'],
+			['timetable.lane.away', 'AWAY'],
+			['pageHelp.timetable.homeLabel', 'HOME'],
+			['pageHelp.timetable.nearLabel', 'NEAR'],
+			['pageHelp.timetable.awayLabel', 'AWAY'],
 		] as const) {
 			expect(lookup(ja as Tree, key), `ja ${key}`).toBe(label)
 			expect(lookup(en as Tree, key), `en ${key}`).toBe(label)

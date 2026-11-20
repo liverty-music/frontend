@@ -16,16 +16,16 @@ tomorrow.setDate(tomorrow.getDate() + 1)
 // open the FAB, then tap the filter command (which opens the sheet and closes
 // the launcher panel).
 async function openFilterSheet(page: Page): Promise<void> {
-	await page.click('fab-menu .fab-toggle')
-	await page.click('fab-menu .fab-item[data-action-id="filter"]')
+	await page.click('action-menu .action-menu-toggle')
+	await page.click('action-menu .fab-item[data-action-id="filter"]')
 }
 
 // The active-filter indicator now lives on the launcher's filter item. Reopen
 // the FAB to read it, then dismiss the launcher again.
 async function expectFilterActive(page: Page): Promise<void> {
-	await page.click('fab-menu .fab-toggle')
+	await page.click('action-menu .action-menu-toggle')
 	await expect(
-		page.locator('fab-menu .fab-item[data-action-id="filter"]'),
+		page.locator('action-menu .fab-item[data-action-id="filter"]'),
 	).toHaveAttribute('data-active', 'true')
 	await page.keyboard.press('Escape')
 }
@@ -201,8 +201,8 @@ test.describe('Artist filter bar bottom sheet', () => {
 			)
 		})
 
-		await page.goto('/dashboard')
-		await expect(page.locator('dashboard-route')).toBeVisible({
+		await page.goto('/timetable')
+		await expect(page.locator('timetable-route')).toBeVisible({
 			timeout: 10_000,
 		})
 
@@ -214,7 +214,7 @@ test.describe('Artist filter bar bottom sheet', () => {
 		await expect(sheet).toBeVisible()
 
 		// Both artists should be present as chips in the sheet (scoped to the
-		// sheet — the artist name also appears on the concert-highway cards).
+		// sheet — the artist name also appears on the timetable-grid cards).
 		await expect(
 			sheet.locator('label.artist-chip', { hasText: 'YOASOBI' }),
 		).toBeVisible()
@@ -228,7 +228,7 @@ test.describe('Artist filter bar bottom sheet', () => {
 		)
 
 		// The launcher panel closed as the sheet opened.
-		await expect(page.locator('fab-menu .fab-panel')).toBeHidden()
+		await expect(page.locator('action-menu .fab-panel')).toBeHidden()
 	})
 
 	test('selecting an artist and confirming activates the filter button', async ({
@@ -261,8 +261,8 @@ test.describe('Artist filter bar bottom sheet', () => {
 			)
 		})
 
-		await page.goto('/dashboard')
-		await expect(page.locator('dashboard-route')).toBeVisible({
+		await page.goto('/timetable')
+		await expect(page.locator('timetable-route')).toBeVisible({
 			timeout: 10_000,
 		})
 
@@ -317,8 +317,8 @@ test.describe('Artist filter bar bottom sheet', () => {
 		})
 
 		// Deep link: the artist filter is parsed from the URL on load.
-		await page.goto('/dashboard?artists=00000000-0000-4000-8000-a00000000001')
-		await expect(page.locator('dashboard-route')).toBeVisible({
+		await page.goto('/timetable?artists=00000000-0000-4000-8000-a00000000001')
+		await expect(page.locator('timetable-route')).toBeVisible({
 			timeout: 10_000,
 		})
 
@@ -339,7 +339,7 @@ test.describe('Artist filter bar bottom sheet', () => {
 			.click()
 
 		await expect(page).toHaveURL(
-			/\/dashboard\?artists=00000000-0000-4000-8000-a00000000001,00000000-0000-4000-8000-a00000000002$/,
+			/\/timetable\?artists=00000000-0000-4000-8000-a00000000001,00000000-0000-4000-8000-a00000000002$/,
 		)
 	})
 })

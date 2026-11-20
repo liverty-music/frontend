@@ -48,12 +48,12 @@ import {
 } from '../../services/stripe-service'
 import { IUserStore } from '../../services/user-store'
 import {
-	type EventPageEvent,
+	type ConcertPageConcert,
 	eventFromConcert,
 	formatEventDate,
 	formatEventTime,
 	formatSaleStart,
-} from '../event/event-page'
+} from '../concert/concert-page'
 import {
 	type BusinessDetails,
 	businessDetailsFromConcert,
@@ -122,7 +122,7 @@ export class CheckoutRoute implements IRouteViewModel {
 	private readonly heldSeatTypes = resolve(IHeldSeatTypeService)
 
 	@observable public step: CheckoutStep = 'loading'
-	public event: EventPageEvent | null = null
+	public event: ConcertPageConcert | null = null
 	/** The Organizer's 特商法 business details, for the final confirmation. */
 	public businessDetails: BusinessDetails | null = null
 	/** The event's first-come sale. */

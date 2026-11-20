@@ -43,7 +43,7 @@ function rpc(concert: ConcertSpec): RpcMocks {
 }
 
 const actions = (page: Page) =>
-	page.locator('event-route header.header .actions')
+	page.locator('concert-route header.header .actions')
 const menuButton = (page: Page) =>
 	actions(page).getByRole('button', { name: 'その他の操作' })
 const menu = (page: Page) => page.getByRole('menu', { name: 'その他の操作' })

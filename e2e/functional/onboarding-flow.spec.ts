@@ -373,7 +373,7 @@ test.describe('Onboarding flow (single-flag model)', () => {
 		// The preview is present and renders at least one event card.
 		const preview = page.locator('[data-testid="welcome-preview"]')
 		await expect(preview).toBeAttached({ timeout: 10_000 })
-		const cards = preview.locator('event-card')
+		const cards = preview.locator('concert-card')
 		await expect(cards.first()).toBeVisible({ timeout: 15_000 })
 	})
 
@@ -394,7 +394,7 @@ test.describe('Onboarding flow (single-flag model)', () => {
 		const spotlight = page.locator('coach-mark .visual-spotlight')
 		await expect(spotlight).toBeVisible({ timeout: 10_000 })
 		await expect(firstCard).toHaveCSS('anchor-name', '--coach-target')
-		const sheet = page.locator('event-detail-sheet bottom-sheet')
+		const sheet = page.locator('concert-sheet bottom-sheet')
 		await expect(sheet).not.toBeVisible()
 
 		// A real tap at the card's centre lands on the coach mark's interceptor…
@@ -421,7 +421,7 @@ test.describe('Onboarding flow (single-flag model)', () => {
 		await expect(page.locator('coach-mark .coach-mark-overlay')).toHaveCount(0)
 	})
 
-	test('Dashboard preview is hidden when no concert data; hero CTAs fall back inline', async ({
+	test('Timetable preview is hidden when no concert data; hero CTAs fall back inline', async ({
 		page,
 	}) => {
 		// Override the default mock to return empty concerts for all ConcertService/List calls.
@@ -525,10 +525,10 @@ test.describe('Onboarding flow (single-flag model)', () => {
 	})
 
 	// -------------------------------------------------------------------------
-	// Dashboard (reachable any time; non-blocking overlays)
+	// Timetable (reachable any time; non-blocking overlays)
 	// -------------------------------------------------------------------------
 
-	test('Dashboard is reachable directly while onboarding (no forced redirect)', async ({
+	test('Timetable is reachable directly while onboarding (no forced redirect)', async ({
 		page,
 	}) => {
 		await page.addInitScript(() => {
@@ -561,13 +561,13 @@ test.describe('Onboarding flow (single-flag model)', () => {
 				]),
 			)
 		})
-		await page.goto('/dashboard')
+		await page.goto('/timetable')
 
-		await expect(page).toHaveURL(/dashboard/)
+		await expect(page).toHaveURL(/timetable/)
 		await expect(page.locator('au-viewport')).toBeVisible({ timeout: 10_000 })
 	})
 
-	test('Guest with zero follows sees the dashboard empty-state CTA (no redirect)', async ({
+	test('Guest with zero follows sees the timetable empty-state CTA (no redirect)', async ({
 		page,
 	}) => {
 		await page.addInitScript(() => {
@@ -575,12 +575,12 @@ test.describe('Onboarding flow (single-flag model)', () => {
 			localStorage.setItem('guest.home', 'JP-13')
 			// No guest.followedArtists → followedCount === 0 → showGuestEmptyState
 		})
-		await page.goto('/dashboard')
+		await page.goto('/timetable')
 
-		// Soft gate: stays on the dashboard and surfaces the in-page empty-state
+		// Soft gate: stays on the timetable and surfaces the in-page empty-state
 		// CTA toward discovery instead of a guard redirect. The CTA placeholder is
 		// gated on `!isLoading` settling, so allow the initial load to complete.
-		await expect(page).toHaveURL(/dashboard/)
+		await expect(page).toHaveURL(/timetable/)
 		await expect(page.locator('state-placeholder').first()).toBeVisible({
 			timeout: 15_000,
 		})
@@ -591,9 +591,9 @@ test.describe('Onboarding flow (single-flag model)', () => {
 		page,
 	}) => {
 		// Three follows (preview artists, which the ListByArtists mock returns
-		// concerts for) and no home area: the Dashboard asks for one first.
+		// concerts for) and no home area: the Timetable asks for one first.
 		await page.addInitScript(() => {
-			localStorage.setItem('onboarding.helpSeen:dashboard', '1')
+			localStorage.setItem('onboarding.helpSeen:timetable', '1')
 			localStorage.setItem(
 				'guest.followedArtists',
 				JSON.stringify(
@@ -608,7 +608,7 @@ test.describe('Onboarding flow (single-flag model)', () => {
 				),
 			)
 		})
-		await page.goto('/dashboard')
+		await page.goto('/timetable')
 
 		await page.getByRole('button', { name: 'Tokyo' }).first().click()
 
@@ -630,10 +630,10 @@ test.describe('Onboarding flow (single-flag model)', () => {
 			localStorage.setItem('onboarding.celebrationShown', '1')
 			localStorage.setItem('guest.home', 'JP-13')
 		})
-		await page.goto('/dashboard')
+		await page.goto('/timetable')
 
 		// The overlay element is always in the DOM; `data-state` says whether it
-		// is showing. Waiting for the element also makes sure the dashboard has
+		// is showing. Waiting for the element also makes sure the timetable has
 		// rendered, so the check cannot pass before the page exists.
 		await expect(page.locator('.celebration-overlay')).toHaveAttribute(
 			'data-state',
@@ -641,7 +641,7 @@ test.describe('Onboarding flow (single-flag model)', () => {
 		)
 	})
 
-	test('Dashboard is interactive after reload (no stuck overlay)', async ({
+	test('Timetable is interactive after reload (no stuck overlay)', async ({
 		page,
 	}) => {
 		await page.addInitScript(() => {
@@ -649,11 +649,11 @@ test.describe('Onboarding flow (single-flag model)', () => {
 			localStorage.setItem('onboarding.celebrationShown', '1')
 			localStorage.setItem('guest.home', 'JP-13')
 		})
-		await page.goto('/dashboard')
+		await page.goto('/timetable')
 
 		await expect(page.locator('au-viewport')).toBeVisible({ timeout: 10_000 })
 		// The overlay element is always in the DOM; `data-state` says whether it
-		// is showing. Waiting for the element also makes sure the dashboard has
+		// is showing. Waiting for the element also makes sure the timetable has
 		// rendered, so the check cannot pass before the page exists.
 		await expect(page.locator('.celebration-overlay')).toHaveAttribute(
 			'data-state',
@@ -729,7 +729,7 @@ test.describe('Onboarding flow (single-flag model)', () => {
 
 		// Hype change is fully decoupled from onboarding (#444): the flag must NOT
 		// flip to completed as a side effect of a hype tap. It stays "still
-		// onboarding" (false) — completion latches only on a meaningful dashboard
+		// onboarding" (false) — completion latches only on a meaningful timetable
 		// arrival or sign-up, never here.
 		await expect
 			.poll(
@@ -742,15 +742,15 @@ test.describe('Onboarding flow (single-flag model)', () => {
 
 /**
  * End-to-end soft-gate roam: a guest freely moves
- *   Discovery → Dashboard → My Artists
+ *   Discovery → Timetable → My Artists
  * with NO step machine, NO forced redirects, NO blocking overlays, and NO
  * consent screen. Onboarding completion latches on the first MEANINGFUL
- * dashboard arrival (region set + data loaded + followedCount >= 1).
+ * timetable arrival (region set + data loaded + followedCount >= 1).
  */
-test.describe('Soft-gate roam (Discovery → Dashboard → My Artists)', () => {
+test.describe('Soft-gate roam (Discovery → Timetable → My Artists)', () => {
 	test.use({ viewport: { width: 412, height: 915 } })
 
-	test('guest roams across tabs and onboarding latches on meaningful dashboard arrival', async ({
+	test('guest roams across tabs and onboarding latches on meaningful timetable arrival', async ({
 		page,
 	}) => {
 		test.setTimeout(90_000)
@@ -759,8 +759,8 @@ test.describe('Soft-gate roam (Discovery → Dashboard → My Artists)', () => {
 		await mockLastFmApi(page)
 
 		// Seed: still onboarding, 3 follows, home set (needed for ListByArtists
-		// on dashboard). celebrationShown suppresses the light celebration overlay
-		// so it never intercepts nav-tab clicks (covered by dashboard unit tests).
+		// on timetable). celebrationShown suppresses the light celebration overlay
+		// so it never intercepts nav-tab clicks (covered by timetable unit tests).
 		await page.addInitScript(() => {
 			localStorage.setItem('onboardingComplete', 'false')
 			localStorage.setItem('onboarding.celebrationShown', '1')
@@ -769,7 +769,7 @@ test.describe('Soft-gate roam (Discovery → Dashboard → My Artists)', () => {
 			// intercepts the nav-tab clicks this roam test performs (page-help is
 			// covered by its own unit/visual tests).
 			localStorage.setItem('onboarding.helpSeen:discovery', '1')
-			localStorage.setItem('onboarding.helpSeen:dashboard', '1')
+			localStorage.setItem('onboarding.helpSeen:timetable', '1')
 			localStorage.setItem('onboarding.helpSeen:my-artists', '1')
 			localStorage.setItem(
 				'guest.followedArtists',
@@ -806,7 +806,7 @@ test.describe('Soft-gate roam (Discovery → Dashboard → My Artists)', () => {
 		})
 
 		// The lookups for the 3 restored follows each find a concert, which
-		// fills the progress row and turns it into the link to the Dashboard.
+		// fills the progress row and turns it into the link to the Timetable.
 		const ready = page.locator('onboarding-progress').getByRole('link')
 		await expect(ready).toBeVisible({ timeout: 30_000 })
 		// No spotlight on the bottom navigation.
@@ -817,9 +817,9 @@ test.describe('Soft-gate roam (Discovery → Dashboard → My Artists)', () => {
 			await page.evaluate(() => localStorage.getItem('onboardingComplete')),
 		).toBe('false')
 
-		// -- DASHBOARD: the ready row opens it; meaningful arrival latches --------
+		// -- TIMETABLE: the ready row opens it; meaningful arrival latches --------
 		await ready.click()
-		await expect(page).toHaveURL(/dashboard/, { timeout: 10_000 })
+		await expect(page).toHaveURL(/timetable/, { timeout: 10_000 })
 		await expect(page.locator('au-viewport')).toBeVisible({ timeout: 10_000 })
 
 		// Completion latch (B1): region set + data loaded + followedCount >= 1 →

@@ -56,12 +56,12 @@
 <!-- The product's real detail sheet, opened by a concert-card tap. The
      ticket-journey block inside is gated by `isAuthenticated`, so it stays hidden
      for the anonymous visitor. `manage-history=false`: on Welcome there is no
-     /concerts or /dashboard route, so the sheet must not rewrite the URL. -->
-<event-detail-sheet
+     /concerts or /timetable route, so the sheet must not rewrite the URL. -->
+<concert-sheet
   component.ref="detailSheet"
   manage-history.bind="false"
   actions-hint.bind="'welcome.demo.sheetHint' | t"
-></event-detail-sheet>
+></concert-sheet>
 
 <!-- Coach-mark: once the timetable is interactive, it spotlights the first card
      and invites the tap. Tapping it forwards the click to the card (opening the

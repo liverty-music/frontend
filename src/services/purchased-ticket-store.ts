@@ -49,7 +49,7 @@ export function issuedOrderIdsByEvent(
 
 /**
  * Single observable owner of the signed-in fan's purchased (Issued) ticket
- * counts per event id. The Dashboard's first-party cards and the Event page's
+ * counts per event id. The Timetable's first-party cards and the Event page's
  * ticket section both read it, from one `TicketService.List` call per load.
  *
  * Reads are network-first. Guests have no tickets: an empty map, no RPC.
@@ -82,7 +82,7 @@ export class PurchasedTicketStore {
 
 	/**
 	 * Populate the store from the backend. Rejects when the RPC fails; callers
-	 * that must not fail on it (the Dashboard) fall back to an empty map.
+	 * that must not fail on it (the Timetable) fall back to an empty map.
 	 */
 	public async load(signal?: AbortSignal): Promise<Map<string, number>> {
 		if (!this.authService.isAuthenticated) {

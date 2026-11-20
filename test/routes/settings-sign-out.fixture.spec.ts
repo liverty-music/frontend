@@ -15,20 +15,20 @@ import type { IdentityVerification } from '../../src/entities/identity-verificat
 import { IConsentService } from '../../src/lib/consent/consent-service'
 import ja from '../../src/locales/ja/translation.json'
 import { SettingsRoute } from '../../src/routes/settings/settings-route'
+import { IActionMenuService } from '../../src/services/action-menu-service'
 import { IAudioEngine } from '../../src/services/audio-engine'
 import { IAuthService } from '../../src/services/auth-service'
 import { IConcertStore } from '../../src/services/concert-store'
 import { SignedOut } from '../../src/services/events/signed-out'
-import { IFabMenuService } from '../../src/services/fab-menu-service'
 import { IIdentityVerificationService } from '../../src/services/identity-verification-service'
 import { IPushService } from '../../src/services/push-service'
 import { ITicketJourneyStore } from '../../src/services/ticket-journey-store'
 import { IUserStore } from '../../src/services/user-store'
 import { SETTINGS_ROWS } from '../helpers/settings-rows'
 
-const UserHomeSelectorStub = CustomElement.define(
+const HomeAreaSelectorStub = CustomElement.define(
 	{
-		name: 'user-home-selector',
+		name: 'home-area-selector',
 		template: '',
 		bindables: ['currentCode', 'onHomeSelected'],
 	},
@@ -118,8 +118,8 @@ describe('Sign-out from the settings screen (fixture)', () => {
 					analytics: true,
 					sessionReplay: true,
 				}),
-				Registration.instance(IFabMenuService, { isLeftHanded: false }),
-				UserHomeSelectorStub,
+				Registration.instance(IActionMenuService, { isLeftHanded: false }),
+				HomeAreaSelectorStub,
 				BottomSheetStub,
 				BusyOnClickCustomAttribute,
 				...SETTINGS_ROWS,
@@ -236,8 +236,8 @@ async function renderGuest() {
 				analytics: true,
 				sessionReplay: true,
 			}),
-			Registration.instance(IFabMenuService, { isLeftHanded: false }),
-			UserHomeSelectorStub,
+			Registration.instance(IActionMenuService, { isLeftHanded: false }),
+			HomeAreaSelectorStub,
 			BottomSheetStub,
 			BusyOnClickCustomAttribute,
 			...SETTINGS_ROWS,

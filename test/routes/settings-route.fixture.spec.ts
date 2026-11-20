@@ -12,9 +12,9 @@ import { IConsentService } from '../../src/lib/consent/consent-service'
 import en from '../../src/locales/en/translation.json'
 import ja from '../../src/locales/ja/translation.json'
 import { SettingsRoute } from '../../src/routes/settings/settings-route'
+import { IActionMenuService } from '../../src/services/action-menu-service'
 import { IAudioEngine } from '../../src/services/audio-engine'
 import { IAuthService } from '../../src/services/auth-service'
-import { IFabMenuService } from '../../src/services/fab-menu-service'
 import {
 	IIdentityVerificationService,
 	type VerificationFailure,
@@ -27,9 +27,9 @@ import { SETTINGS_ROWS } from '../helpers/settings-rows'
  * Sheet and selector stand-ins. The sheet projects its content, so the name
  * and phone form in it renders; whether it is open is `vm.personalDetailsOpen`.
  */
-const UserHomeSelectorStub = CustomElement.define(
+const HomeAreaSelectorStub = CustomElement.define(
 	{
-		name: 'user-home-selector',
+		name: 'home-area-selector',
 		template: '',
 		bindables: ['currentCode', 'onHomeSelected'],
 	},
@@ -125,8 +125,8 @@ async function render(
 				analytics: true,
 				sessionReplay: true,
 			}),
-			Registration.instance(IFabMenuService, { isLeftHanded: false }),
-			UserHomeSelectorStub,
+			Registration.instance(IActionMenuService, { isLeftHanded: false }),
+			HomeAreaSelectorStub,
 			BottomSheetStub,
 			BusyOnClickCustomAttribute,
 			...SETTINGS_ROWS,
@@ -732,7 +732,7 @@ describe('SettingsRoute identity verification result (fixture)', () => {
 		)
 
 		expect(row(host)?.textContent).toContain(
-			ja.verifyCallback.error.notCompleted,
+			ja.identityVerificationCallback.error.notCompleted,
 		)
 		expect(row(host)?.querySelector('a')).toBeNull()
 		expect(verifyButton(host)?.getAttribute('aria-describedby')).toBe(
@@ -750,7 +750,7 @@ describe('SettingsRoute identity verification result (fixture)', () => {
 		)
 
 		expect(row(host)?.textContent).toContain(
-			ja.verifyCallback.error.alreadyVerified,
+			ja.identityVerificationCallback.error.alreadyVerified,
 		)
 		expect(row(host)?.querySelector('a')?.getAttribute('href')).toBe(
 			'mailto:pannpers@pannpers.dev',

@@ -1,0 +1,97 @@
+@layer block {
+	@scope (concert-sheet) {
+		:scope {
+			--_event-title-color: oklch(100% 0 0deg / 80%);
+			--_border-light: oklch(100% 0 0deg / 20%);
+		}
+
+		/* The sections follow one another in the content's flow; each sets
+		   the step above it. */
+		.sheet-content {
+			padding-block-end: var(--space-l);
+			padding-inline: var(--space-m);
+		}
+
+		.sheet-artist-header {
+			--flow-space: var(--space-s);
+
+			padding: var(--space-s);
+		}
+
+		.sheet-artist-name {
+			color: var(--color-white);
+		}
+
+		.sheet-event-title {
+			--flow-space: var(--space-3xs);
+
+			color: var(--_event-title-color);
+		}
+
+		/* Event details list */
+		.sheet-details {
+			--flow-space: var(--space-s);
+			--stack-gap: var(--space-xs);
+		}
+
+		.detail-row {
+			display: flex;
+			gap: var(--space-2xs);
+			align-items: start;
+		}
+
+		/* The 24 px icon is as tall as the title-medium line beside it. */
+		.detail-icon {
+			color: var(--md-sys-color-on-surface-variant);
+		}
+
+		.detail-primary {
+			color: var(--md-sys-color-on-surface);
+		}
+
+		.detail-secondary {
+			color: var(--md-sys-color-on-surface-variant);
+		}
+
+		/* Ticket section: notification button, status row, push line, official site */
+		.sheet-tickets {
+			--flow-space: var(--space-s);
+			--stack-gap: var(--space-xs);
+
+			padding-block-start: var(--space-s);
+			border-block-start: 1px solid var(--_border-light);
+		}
+
+		.journey-heading {
+			color: var(--md-sys-color-on-surface-variant);
+		}
+
+		.journey-notify {
+			inline-size: 100%;
+			min-block-size: var(--md-sys-target-size);
+		}
+
+		/* Tracking: the selected style, the canonical Tracking hue filled */
+		.journey-notify[data-emphasis="selected"] {
+			--_node-fill: oklch(52% 0.14 var(--journey-hue-tracking));
+			--_node-on: oklch(98% 0.02 var(--journey-hue-tracking));
+
+			border-color: var(--_node-fill);
+			color: var(--_node-on);
+			background: var(--_node-fill);
+		}
+
+		/* What the current status brings by push, with the offer beside it */
+		.push-line {
+			--cluster-gap: var(--space-2xs);
+
+			color: var(--md-sys-color-on-surface-variant);
+			text-wrap: pretty;
+			word-break: auto-phrase;
+		}
+
+		.official-site {
+			inline-size: 100%;
+		}
+	}
+}

@@ -4,9 +4,9 @@
  */
 
 /** Followed artists without a found concert that make the timetable ready. */
-export const DASHBOARD_FOLLOW_TARGET = 5
+export const TIMETABLE_FOLLOW_TARGET = 5
 /** Followed artists with a found concert that make the timetable ready. */
-export const DASHBOARD_CONCERT_TARGET = 3
+export const TIMETABLE_CONCERT_TARGET = 3
 
 /**
  * How close the onboarding timetable is to ready, from 0 to 1. Every follow
@@ -22,6 +22,6 @@ export function timetableReadiness(
 	const without = Math.max(0, followed - found)
 	return Math.min(
 		1,
-		without / DASHBOARD_FOLLOW_TARGET + found / DASHBOARD_CONCERT_TARGET,
+		without / TIMETABLE_FOLLOW_TARGET + found / TIMETABLE_CONCERT_TARGET,
 	)
 }

@@ -147,7 +147,7 @@ export class UserStore {
 	}
 
 	/**
-	 * Whether the person has no home area, so the Dashboard and My Artists ask
+	 * Whether the person has no home area, so the Timetable and My Artists ask
 	 * for one: a guest who has not chosen one, or a signed-in fan whose account
 	 * has none. A signed-in fan whose account has not loaded is not asked; the
 	 * missing account is not a missing home.
@@ -205,7 +205,7 @@ export class UserStore {
 	//   2. UserService.Get for the signed-in caller
 	//   3. recovery: idempotent Create using the JWT email when Get answers
 	//      NotFound — covers the first sign-up and any boot path
-	//      (auth-callback, UserHydrationTask, direct dashboard reload) that needs
+	//      (auth-callback, UserHydrationTask, direct timetable reload) that needs
 	//      a guaranteed user.
 	// No request names the user: the backend takes the caller from the token.
 	public async ensureLoaded(
@@ -235,7 +235,7 @@ export class UserStore {
 		home?: { countryCode: string; level1: string; level2?: string },
 	): Promise<ProvisionResult> {
 		// NOTE: the guest-follow migration trigger (GuestMigrationRequested) is
-		// published by AuthCallbackRoute on every successful authenticated
+		// published by SignInCallbackRoute on every successful authenticated
 		// callback, NOT here, so the trigger stays at a single site.
 		return this.getOrCreate(preferredLanguage, home, email)
 	}
@@ -328,7 +328,7 @@ export class UserStore {
 	/**
 	 * Set the guest home area (ISO 3166-2 code). Persisted via
 	 * `guestHomeChanged`. Used by the unauthenticated home-selection paths
-	 * (onboarding home selector, dashboard region setup).
+	 * (onboarding home selector, timetable region setup).
 	 */
 	public setGuestHome(code: string): void {
 		this.guestHome = code

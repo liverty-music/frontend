@@ -82,7 +82,7 @@ export class FollowStore {
 	/**
 	 * The hype level per followed artist, as of the last follow-list read or
 	 * hype save. Replaced (never mutated) on every change so observers fire: the
-	 * Dashboard re-derives its highlights when a level changes, for example after
+	 * Timetable re-derives its highlights when a level changes, for example after
 	 * the app raised it for a journey or the fan undid that raise.
 	 */
 	@observable public hypeByArtist: ReadonlyMap<string, Hype> = new Map()
@@ -305,14 +305,14 @@ export class FollowStore {
 		await this.rpcClient.setHype(artistId, hype)
 		this.recordHype(artistId, hype)
 		// Hype is rendered from the follower-scoped concert list, so a successful
-		// change must invalidate it (after the RPC succeeds) or the dashboard would
+		// change must invalidate it (after the RPC succeeds) or the timetable would
 		// paint the old hype lane from cache for up to the stale window.
 		this.concertStore.invalidateFollowerCache()
 	}
 
 	/**
 	 * Build a lookup map of followed artists keyed by artist ID.
-	 * Used by dashboard-route to enrich concert data with artist info and hype levels.
+	 * Used by timetable-route to enrich concert data with artist info and hype levels.
 	 */
 	public async getFollowedArtistMap(
 		signal?: AbortSignal,

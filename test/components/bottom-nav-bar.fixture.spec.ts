@@ -16,26 +16,26 @@ const { stub } = vi.hoisted(() => ({
 vi.mock('../../src/routes/welcome/welcome-route', stub('WelcomeRoute'))
 vi.mock('../../src/routes/about/about-route', stub('AboutRoute'))
 vi.mock(
-	'../../src/routes/auth-callback/auth-callback-route',
-	stub('AuthCallbackRoute'),
+	'../../src/routes/sign-in-callback/sign-in-callback-route',
+	stub('SignInCallbackRoute'),
 )
-vi.mock('../../src/routes/dashboard/dashboard-route', stub('DashboardRoute'))
-vi.mock('../../src/routes/event/event-route', stub('EventRoute'))
+vi.mock('../../src/routes/timetable/timetable-route', stub('TimetableRoute'))
+vi.mock('../../src/routes/concert/concert-route', stub('ConcertRoute'))
 vi.mock('../../src/routes/discovery/discovery-route', stub('DiscoveryRoute'))
 vi.mock('../../src/routes/my-artists/my-artists-route', stub('MyArtistsRoute'))
 vi.mock('../../src/routes/settings/settings-route', stub('SettingsRoute'))
 vi.mock('../../src/routes/consent/consent-route', stub('ConsentRoute'))
 vi.mock(
-	'../../src/routes/verify-callback/verify-callback-route',
-	stub('VerifyCallbackRoute'),
+	'../../src/routes/identity-verification-callback/identity-verification-callback-route',
+	stub('IdentityVerificationCallbackRoute'),
 )
 vi.mock(
-	'../../src/routes/lottery-entry/lottery-entry-route',
-	stub('LotteryEntryRoute'),
+	'../../src/routes/new-lottery-entry/new-lottery-entry-route',
+	stub('NewLotteryEntryRoute'),
 )
 vi.mock(
-	'../../src/routes/lottery-entry-status/lottery-entry-status-route',
-	stub('LotteryEntryStatusRoute'),
+	'../../src/routes/lottery-entries/lottery-entries-route',
+	stub('LotteryEntriesRoute'),
 )
 vi.mock('../../src/routes/legal/terms-route', stub('TermsRoute'))
 vi.mock('../../src/routes/legal/privacy-route', stub('PrivacyRoute'))
@@ -107,7 +107,7 @@ describe('BottomNavBar (fixture, app route table)', () => {
 
 	// @spec components/infrastructure/fan/web/global/bottom-nav-bar "Tab route displayed"
 	it.each([
-		['dashboard', 'home'],
+		['timetable', 'home'],
 		['discovery', 'discovery'],
 		['my-artists', 'my-artists'],
 		['tickets', 'ticket'],
@@ -133,7 +133,7 @@ describe('BottomNavBar (fixture, app route table)', () => {
 	it.each(['settings', 'orders/ord-1', 'legal/terms', 'about'])(
 		'highlights no tab on %s',
 		async (path) => {
-			await go('dashboard')
+			await go('timetable')
 			await go(path)
 			expect(tabs()).toHaveLength(4)
 			expect(activeTabs()).toEqual([])

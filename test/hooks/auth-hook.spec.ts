@@ -88,12 +88,12 @@ describe('AuthHook', () => {
 		it('allows a guest free roam on application routes (soft gate, no redirect)', async () => {
 			const sut = makeHook(createMockAuth({ isAuthenticated: false }))
 			const result = await sut.canLoad({}, {}, makeRouteNode({}), null)
-			// Guest with zero follows still reaches e.g. the dashboard; the empty
+			// Guest with zero follows still reaches e.g. the timetable; the empty
 			// state is rendered in-page rather than blocked by a guard redirect.
 			expect(result).toBe(true)
 		})
 
-		it('allows a guest on the dashboard route (reachable at any onboarding state)', async () => {
+		it('allows a guest on the timetable route (reachable at any onboarding state)', async () => {
 			const sut = makeHook(createMockAuth({ isAuthenticated: false }))
 			const result = await sut.canLoad({}, {}, makeRouteNode({}), null)
 			expect(result).toBe(true)

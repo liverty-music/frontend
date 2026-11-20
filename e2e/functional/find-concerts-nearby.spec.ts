@@ -152,7 +152,7 @@ async function openApp(page: Page, seed: Seed = {}): Promise<RpcCall[]> {
 		'FollowService/List': () => ({
 			body: { artists: followed ? [kumamoto] : [] },
 		}),
-		// The followed artist's concerts, for the dashboard timetable.
+		// The followed artist's concerts, for the timetable.
 		'ConcertService/ListFollowed': () => ({
 			body: followed
 				? concertWire({
@@ -174,7 +174,7 @@ async function openApp(page: Page, seed: Seed = {}): Promise<RpcCall[]> {
 	return calls
 }
 
-const view = (page: Page) => page.locator('nearby-concerts')
+const view = (page: Page) => page.locator('discovery-concerts')
 const cardOf = (page: Page, name: string) =>
 	view(page).locator('[data-live-card]', { hasText: name })
 
@@ -232,7 +232,7 @@ test(`@spec ${STORY} "No home area yet"`, async ({ page }) => {
 	await expect(
 		view(page)
 			.locator(
-				'user-home-selector dialog[open], user-home-selector :popover-open',
+				'home-area-selector dialog[open], home-area-selector :popover-open',
 			)
 			.first(),
 	).toBeVisible()
@@ -251,7 +251,7 @@ test(`@spec ${STORY} "Signed-in fan follows from a nearby concert"`, async ({
 		name: 'このアーティストをフォロー',
 	})
 	await follow.click()
-	await expect(page.getByTestId('all-nearby-following')).toBeVisible()
+	await expect(page.getByTestId('discovery-concerts-following')).toBeVisible()
 	expect(callsOf(calls, 'FollowService/Follow').map((c) => c.body)).toEqual([
 		{ artistId: { value: ARTISTS.kumamoto.id } },
 	])
@@ -266,10 +266,10 @@ test(`@spec ${STORY} "Signed-in fan follows from a nearby concert"`, async ({
 		'nearby',
 	)
 
-	// …and its concerts on the dashboard timetable.
-	await page.goto('/dashboard')
+	// …and its concerts on the timetable.
+	await page.goto('/timetable')
 	await expect(
-		page.locator('dashboard-route [data-live-card]', {
+		page.locator('timetable-route [data-live-card]', {
 			hasText: ARTISTS.kumamoto.name,
 		}),
 	).toBeVisible({ timeout: 30_000 })
@@ -306,11 +306,11 @@ test(`@spec ${STORY} "Guest taps follow"`, async ({ page }) => {
 	).toBeNull()
 })
 
-test(`@spec components/infrastructure/fan/web/route/dashboard "Guest with no follows"`, async ({
+test(`@spec components/infrastructure/fan/web/route/timetable "Guest with no follows"`, async ({
 	page,
 }) => {
 	await openApp(page)
-	await page.goto('/dashboard')
+	await page.goto('/timetable')
 	const link = page.getByTestId('nearby-link')
 	await expect(link).toHaveText('近くのライブを見る', { timeout: 30_000 })
 	await expect(page.getByTestId('discover-link')).toBeVisible()

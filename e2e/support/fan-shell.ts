@@ -63,9 +63,10 @@ export async function seedSignedInFan(
 
 export const nav = (page: Page): Locator => page.locator('bottom-nav-bar nav')
 export const tabs = (page: Page): Locator => page.locator('.nav-tab')
-export const fab = (page: Page): Locator => page.locator('fab-menu .fab-toggle')
+export const fab = (page: Page): Locator =>
+	page.locator('action-menu .action-menu-toggle')
 export const fabItems = (page: Page): Locator =>
-	page.locator('fab-menu .fab-item')
+	page.locator('action-menu .fab-item')
 
 /** Open `path` and wait until the bar shows its four tabs. */
 export async function openShell(page: Page, path: string): Promise<void> {
@@ -154,7 +155,7 @@ export async function openNearbyFilters(
 	page: Page,
 ): Promise<{ area: Locator; period: Locator }> {
 	await fab(page).click()
-	await page.locator('fab-menu .fab-item[data-action-id="filter"]').click()
+	await page.locator('action-menu .fab-item[data-action-id="filter"]').click()
 	const area = page.getByTestId('nearby-area-row')
 	const period = page.getByTestId('nearby-period-row')
 	await area.waitFor({ state: 'visible' })

@@ -98,8 +98,8 @@ export default defineConfig({
 			name: 'webkit-shell',
 			testMatch: [
 				'e2e/functional/fan-shell-navigation.spec.ts',
-				'e2e/functional/fab-menu-arc.spec.ts',
-				'e2e/functional/fab-menu-top-layer.spec.ts',
+				'e2e/functional/action-menu-arc.spec.ts',
+				'e2e/functional/action-menu-top-layer.spec.ts',
 				// The timetable's deal-in without scroll-triggered animations.
 				'e2e/functional/deal-in.spec.ts',
 				// The month jump without scroll-state queries.

@@ -3,7 +3,7 @@
  * promise of its work to `waitUntil`, and the element that dispatched the event
  * keeps its control busy until that promise settles.
  */
-export interface SettlingEventDetail {
+export interface SettlingConcertSheet {
 	waitUntil(work: Promise<unknown>): void
 }
 
@@ -20,7 +20,7 @@ export function dispatchSettling<T extends object = Record<never, never>>(
 ): Promise<unknown> | undefined {
 	let pending: Promise<unknown> | undefined
 	host.dispatchEvent(
-		new CustomEvent<SettlingEventDetail & T>(name, {
+		new CustomEvent<SettlingConcertSheet & T>(name, {
 			bubbles: true,
 			detail: {
 				...(detail as T),

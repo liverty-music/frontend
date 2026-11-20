@@ -14,10 +14,10 @@ export interface ITicketJourneyStore extends TicketJourneyStore {}
 /**
  * Single observable owner of ticket-journey status (event id → status).
  *
- * The Dashboard and the event detail sheet both read from this store, so a
+ * The Timetable and the event detail sheet both read from this store, so a
  * status change from either surface reflects everywhere without a re-fetch or a
  * route re-entry — fixing the previous bug where each held a separate copy and
- * diverged until the dashboard route was re-entered.
+ * diverged until the timetable route was re-entered.
  *
  * Reads (`load` → `list`) are network-first (no stale window). Writes
  * (`setStatus`, `delete`) are write-through: the RPC runs first, and the

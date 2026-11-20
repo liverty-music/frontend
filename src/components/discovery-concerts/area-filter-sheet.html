@@ -1,0 +1,46 @@
+<import from="./area-filter-sheet.css"></import>
+<import from="../bottom-sheet/bottom-sheet"></import>
+<import from="../list-item/list-item"></import>
+
+<bottom-sheet
+  open.bind="isOpen"
+  sheet-closed.trigger="onSheetClosed()"
+  sheet-hidden.trigger="onSheetHidden()"
+  heading.bind="'discoveryConcerts.filter.title' | t"
+>
+  <div class="area-filter-sheet">
+    <ul class="filter-rows" role="list">
+      <li>
+        <list-item
+          if.bind="areaName"
+          icon="map-pin"
+          label.bind="'discoveryConcerts.filter.area' | t"
+          value.bind="areaName"
+          caret.bind="true"
+          test-id="nearby-area-row"
+          click.trigger="choose('area')"
+        ></list-item>
+        <!-- A guest without a home area is asked to choose one. -->
+        <list-item
+          else
+          icon="map-pin"
+          label.bind="'discoveryConcerts.filter.area' | t"
+          value.bind="'discoveryConcerts.area.choose' | t"
+          caret.bind="true"
+          test-id="nearby-area-row"
+          click.trigger="choose('area')"
+        ></list-item>
+      </li>
+      <li>
+        <list-item
+          icon="calendar"
+          label.bind="'discoveryConcerts.filter.period' | t"
+          value.bind="periodLabel"
+          caret.bind="true"
+          test-id="nearby-period-row"
+          click.trigger="choose('period')"
+        ></list-item>
+      </li>
+    </ul>
+  </div>
+</bottom-sheet>

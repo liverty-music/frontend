@@ -42,14 +42,14 @@ test('page-help sheet opens and stays open (not auto-dismissed)', async ({
 
 	// Open the page-help sheet from the FAB launcher. The help trigger used to
 	// be a `?` button in the page-header; it now lives in the FAB menu
-	// (`helpAction()` in `src/services/fab-menu-service.ts`, registered by
+	// (`helpAction()` in `src/services/action-menu-service.ts`, registered by
 	// `my-artists-route.ts`). The FAB renders for all route states (loading,
 	// empty, populated), so no artist data is required.
-	const fabToggle = page.locator('fab-menu .fab-toggle')
+	const fabToggle = page.locator('action-menu .action-menu-toggle')
 	await expect(fabToggle).toBeVisible()
 	await fabToggle.click()
 
-	const helpBtn = page.locator('fab-menu [data-action-id="help"]')
+	const helpBtn = page.locator('action-menu [data-action-id="help"]')
 	await expect(helpBtn).toBeVisible()
 	await helpBtn.click()
 

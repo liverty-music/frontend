@@ -8,19 +8,19 @@ import {
 } from '../../adapter/storage/onboarding-storage'
 import { artistColor } from '../../adapter/view/artist-color'
 import { HYPE_TIERS, hypeReachWords } from '../../adapter/view/hype-display'
+import type { HomeAreaSelector } from '../../components/home-area-selector/home-area-selector'
 import type { PageHelp } from '../../components/page-help/page-help'
-import type { UserHomeSelector } from '../../components/user-home-selector/user-home-selector'
 import type { FollowedArtist, Hype } from '../../entities/follow'
+import {
+	helpAction,
+	IActionMenuService,
+	type MenuAction,
+} from '../../services/action-menu-service'
 import { IAuthService } from '../../services/auth-service'
 import { IErrorBoundaryService } from '../../services/error-boundary-service'
-import {
-	type FabAction,
-	helpAction,
-	IFabMenuService,
-} from '../../services/fab-menu-service'
 import { IFollowStore } from '../../services/follow-store'
+import { INotificationPromptService } from '../../services/notification-prompt-service'
 import { IOnboardingService } from '../../services/onboarding-service'
-import { IPushOfferService } from '../../services/push-offer-service'
 import { IUserStore } from '../../services/user-store'
 import { currentLanguage } from '../../util/change-locale'
 
@@ -36,10 +36,10 @@ export class MyArtistsRoute {
 
 	/**
 	 * The person has no home area, so the home sheet is open (or was closed by a
-	 * guest after onboarding). Decided when the route opens, as on the Dashboard.
+	 * guest after onboarding). Decided when the route opens, as on the Timetable.
 	 */
 	public needsHome = false
-	public homeSelector: UserHomeSelector | undefined
+	public homeSelector: HomeAreaSelector | undefined
 
 	// Edit-mode state: toggles per-row remove controls. @observable so
 	// `editingChanged` hides the launcher while editing (exit is via the in-list
@@ -62,8 +62,8 @@ export class MyArtistsRoute {
 	private readonly followStore = resolve(IFollowStore)
 	private readonly onboarding = resolve(IOnboardingService)
 	private readonly ea = resolve(IEventAggregator)
-	private readonly fabMenu = resolve(IFabMenuService)
-	private readonly pushOffer = resolve(IPushOfferService)
+	private readonly actionMenu = resolve(IActionMenuService)
+	private readonly notificationPrompt = resolve(INotificationPromptService)
 	private readonly router = resolve(IRouter)
 	public readonly userStore = resolve(IUserStore)
 	private abortController: AbortController | null = null
@@ -111,7 +111,7 @@ export class MyArtistsRoute {
 		this.isLoading = true
 		// Edit mode is not persisted across navigation — always start fresh.
 		this.editing = false
-		// A person without a home area is asked for it here and on the Dashboard,
+		// A person without a home area is asked for it here and on the Timetable,
 		// every time either screen opens until they choose one.
 		this.needsHome = this.userStore.needsHome
 		void this.loadArtists()
@@ -126,7 +126,7 @@ export class MyArtistsRoute {
 
 	/**
 	 * Fetch followed artists. Owns the request AbortController (abort-first then
-	 * create), mirroring dashboard-route.ts's loadData(). Returns a Promise so
+	 * create), mirroring timetable-route.ts's loadData(). Returns a Promise so
 	 * production can fire-and-forget it (`void this.loadArtists()`) while tests
 	 * await it deterministically.
 	 */
@@ -158,7 +158,7 @@ export class MyArtistsRoute {
 
 	public attached(): void {
 		// @watch does not fire on initial bind, so seed the registration here.
-		this.refreshFabActions()
+		this.refreshMenuActions()
 		// The sheet is in the DOM only now, so showPopover() works.
 		if (this.needsHome) this.homeSelector?.open()
 	}
@@ -173,7 +173,9 @@ export class MyArtistsRoute {
 			await this.userStore.saveHome(code)
 		} catch (err) {
 			this.logger.error('Failed to save the home area', { error: err })
-			this.ea.publish(new Snack(this.i18n.tr('userHome.saveFailed'), 'error'))
+			this.ea.publish(
+				new Snack(this.i18n.tr('homeAreaSelector.saveFailed'), 'error'),
+			)
 			// Still without a home: the sheet stays open on the choice.
 			throw err
 		}
@@ -201,9 +203,9 @@ export class MyArtistsRoute {
 	 * lands directly on the un-dimmed, editable list. While editing, the route
 	 * hides the launcher (`editingChanged`); exit is via the in-list Done bar.
 	 */
-	private buildFabActions(): FabAction[] {
+	private buildMenuActions(): MenuAction[] {
 		// The first action sits closest to the FAB on the thumb arc.
-		const actions: FabAction[] = []
+		const actions: MenuAction[] = []
 		if (this.canEdit) {
 			actions.push({
 				id: 'edit',
@@ -220,11 +222,11 @@ export class MyArtistsRoute {
 	/**
 	 * Re-register whenever edit-availability changes, so the edit item appears
 	 * and drops with the list — one declarative trigger rather than scattered
-	 * manual refresh calls (mirrors the dashboard's context @watch).
+	 * manual refresh calls (mirrors the timetable's context @watch).
 	 */
 	@watch((vm: MyArtistsRoute) => vm.canEdit)
 	protected onFabContextChanged(): void {
-		this.refreshFabActions()
+		this.refreshMenuActions()
 	}
 
 	/**
@@ -234,16 +236,16 @@ export class MyArtistsRoute {
 	 */
 	public editingChanged(editing: boolean): void {
 		if (editing) {
-			this.showLauncher ??= this.fabMenu.hide(this)
+			this.showLauncher ??= this.actionMenu.hide(this)
 		} else {
 			this.showLauncher?.()
 			this.showLauncher = null
 		}
 	}
 
-	private refreshFabActions(): void {
+	private refreshMenuActions(): void {
 		this.fabDisposer?.()
-		this.fabDisposer = this.fabMenu.register(this, this.buildFabActions())
+		this.fabDisposer = this.actionMenu.register(this, this.buildMenuActions())
 	}
 
 	public detaching(): void {
@@ -466,7 +468,7 @@ export class MyArtistsRoute {
 	 * replaces the earlier one.
 	 */
 	private async showHypeSnack(artist: MyArtist, hype: Hype): Promise<void> {
-		const state = await this.pushOffer.pushState()
+		const state = await this.notificationPrompt.pushState()
 		if (state === 'on') {
 			if (loadHypeSnackSeen(hype)) return
 			saveHypeSnackSeen(hype)
@@ -481,9 +483,11 @@ export class MyArtistsRoute {
 		const action =
 			state === 'offerable'
 				? {
-						label: this.i18n.tr('pushOffer.action'),
+						label: this.i18n.tr('notificationPrompt.action'),
 						callback: () => {
-							void this.pushOffer.accept({ source: 'notification_prompt' })
+							void this.notificationPrompt.accept({
+								source: 'notification_prompt',
+							})
 						},
 					}
 				: {

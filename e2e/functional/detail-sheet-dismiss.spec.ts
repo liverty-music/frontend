@@ -6,11 +6,11 @@ import { expect, type Page, test } from '../support/test'
  *
  * Covers:
  * - Normal dismiss — tap outside, Escape, swipe down, browser back
- * - Reload recovery for a still-onboarding guest deep-linking to the dashboard
+ * - Reload recovery for a still-onboarding guest deep-linking to the timetable
  *   (single-flag model: no per-screen step, soft gate, no blocking overlays)
  */
 
-/** Mock Connect-RPC routes with concert data for dashboard rendering. */
+/** Mock Connect-RPC routes with concert data for timetable rendering. */
 async function mockRpcRoutes(page: Page): Promise<void> {
 	const tomorrow = new Date()
 	tomorrow.setDate(tomorrow.getDate() + 1)
@@ -210,8 +210,8 @@ function seedMyArtistsSpotlightState() {
 	}
 }
 
-/** Seed localStorage for a still-onboarding guest (dashboard reachable, sheet dismiss). */
-function seedPostDashboardState() {
+/** Seed localStorage for a still-onboarding guest (timetable reachable, sheet dismiss). */
+function seedPostTimetableState() {
 	return () => {
 		localStorage.setItem('onboardingComplete', 'false')
 		localStorage.setItem('onboarding.celebrationShown', '1')
@@ -252,7 +252,7 @@ async function openDetailSheet(page: Page): Promise<void> {
 	await card.click()
 
 	// Wait for sheet — bottom-sheet is a popover, wait for popover-open state
-	const sheet = page.locator('event-detail-sheet bottom-sheet')
+	const sheet = page.locator('concert-sheet bottom-sheet')
 	await expect(sheet).toBeVisible({ timeout: 5000 })
 }
 
@@ -264,9 +264,9 @@ test.describe('Normal detail sheet dismiss', () => {
 	test.use({ viewport: { width: 412, height: 915 } })
 
 	test.beforeEach(async ({ page }) => {
-		await page.addInitScript(seedPostDashboardState())
+		await page.addInitScript(seedPostTimetableState())
 		await mockRpcRoutes(page)
-		await page.goto('/dashboard')
+		await page.goto('/timetable')
 	})
 
 	test('browser back button closes sheet', async ({ page }) => {
@@ -279,17 +279,17 @@ test.describe('Normal detail sheet dismiss', () => {
 		await page.goBack()
 
 		// Sheet should close
-		const sheet = page.locator('event-detail-sheet bottom-sheet')
+		const sheet = page.locator('concert-sheet bottom-sheet')
 		await expect(sheet).not.toBeVisible({ timeout: 3000 })
 
-		// URL should be dashboard (browser navigated back)
-		await expect(page).toHaveURL(/dashboard/)
+		// URL should be timetable (browser navigated back)
+		await expect(page).toHaveURL(/timetable/)
 	})
 
 	test.fixme('swipe down closes sheet', async ({ page }) => {
 		await openDetailSheet(page)
 
-		const sheet = page.locator('event-detail-sheet bottom-sheet')
+		const sheet = page.locator('concert-sheet bottom-sheet')
 		const box = await sheet.boundingBox()
 		expect(box).toBeTruthy()
 
@@ -310,8 +310,8 @@ test.describe('Normal detail sheet dismiss', () => {
 })
 
 // =========================================================================
-// Reload recovery: a still-onboarding guest deep-links to the dashboard.
-// Single-flag model — there is no per-screen step, and the dashboard is
+// Reload recovery: a still-onboarding guest deep-links to the timetable.
+// Single-flag model — there is no per-screen step, and the timetable is
 // reachable any time under the soft gate. No coach-mark/lane overlay blocks
 // the page, and the nav stays fully interactive.
 // =========================================================================
@@ -324,14 +324,14 @@ test.describe('Still-onboarding reload recovery', () => {
 		await mockRpcRoutes(page)
 	})
 
-	test('dashboard loads with no blocking overlay and interactive nav', async ({
+	test('timetable loads with no blocking overlay and interactive nav', async ({
 		page,
 	}) => {
-		await page.goto('/dashboard')
+		await page.goto('/timetable')
 
 		await expect(page.locator('au-viewport')).toBeVisible({ timeout: 10_000 })
 
-		// No coach-mark overlay on the dashboard (the only coach mark is the
+		// No coach-mark overlay on the timetable (the only coach mark is the
 		// Welcome demo's own).
 		await expect(page.locator('.coach-mark-overlay')).not.toBeVisible()
 

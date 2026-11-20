@@ -8,17 +8,17 @@ import { Registration } from 'aurelia'
 import { expect, waitFor } from 'storybook/test'
 import { ILocalStorage } from '../../adapter/storage/local-storage'
 import { ConfirmDialog } from '../../components/confirm-dialog/confirm-dialog'
+import { HomeAreaSelector } from '../../components/home-area-selector/home-area-selector'
 import { ListItem } from '../../components/list-item/list-item'
 import { SettingsConsentRow } from '../../components/settings-consent-row/settings-consent-row'
 import { SettingsStatusRow } from '../../components/settings-status-row/settings-status-row'
 import { SettingsSwitchRow } from '../../components/settings-switch-row/settings-switch-row'
-import { UserHomeSelector } from '../../components/user-home-selector/user-home-selector'
 import { IAppConfig } from '../../config/app-config'
 import { IConsentService } from '../../lib/consent/consent-service'
+import { IActionMenuService } from '../../services/action-menu-service'
 import { IAudioEngine } from '../../services/audio-engine'
 import { IAuthService } from '../../services/auth-service'
 import { IErrorBoundaryService } from '../../services/error-boundary-service'
-import { IFabMenuService } from '../../services/fab-menu-service'
 import { IIdentityVerificationService } from '../../services/identity-verification-service'
 import { IPushService } from '../../services/push-service'
 import { IUserStore } from '../../services/user-store'
@@ -58,7 +58,7 @@ const items = [
 		analytics: true,
 		sessionReplay: true,
 	}),
-	Registration.instance(IFabMenuService, { isLeftHanded: false }),
+	Registration.instance(IActionMenuService, { isLeftHanded: false }),
 ]
 
 const register = [
@@ -67,7 +67,7 @@ const register = [
 	SettingsSwitchRow,
 	SettingsConsentRow,
 	SettingsStatusRow,
-	UserHomeSelector,
+	HomeAreaSelector,
 	ConfirmDialog,
 ]
 

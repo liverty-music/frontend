@@ -3,7 +3,7 @@ import { concertWire } from './concert-wire'
 import { fakeId } from './fake-id'
 
 /**
- * The dashboard's timetable on a mocked backend, for specs about how it moves:
+ * The timetable on a mocked backend, for specs about how it moves:
  * a guest following one artist, with a concert every other day for 100 days
  * (four months of dates), each in the HOME lane.
  */
@@ -50,7 +50,7 @@ function groups() {
 	}))
 }
 
-export async function openDashboard(page: Page): Promise<void> {
+export async function openTimetable(page: Page): Promise<void> {
 	await page.addInitScript((artist) => {
 		localStorage.setItem('onboardingComplete', 'true')
 		localStorage.setItem('onboarding.celebrationShown', '1')
@@ -76,7 +76,7 @@ export async function openDashboard(page: Page): Promise<void> {
 	await page.route('**/ws.audioscrobbler.com/**', (route) =>
 		route.fulfill({ status: 200, contentType: 'application/json', body: '{}' }),
 	)
-	await page.goto('/dashboard')
+	await page.goto('/timetable')
 	await page.locator('[data-live-card]').first().waitFor({ timeout: 15_000 })
 	await frames(page)
 }
@@ -97,7 +97,7 @@ export function frames(page: Page, n = 4): Promise<void> {
 export async function scrollBy(page: Page, top: number): Promise<void> {
 	await page.evaluate((y) => {
 		const s = document.querySelector(
-			'concert-highway .concert-scroll',
+			'timetable-grid .concert-scroll',
 		) as HTMLElement
 		s.scrollBy({ top: y, behavior: 'instant' })
 	}, top)
@@ -108,7 +108,7 @@ export async function scrollBy(page: Page, top: number): Promise<void> {
 export function topDate(page: Page): Promise<string | undefined> {
 	return page.evaluate(() => {
 		const scroll = document.querySelector(
-			'concert-highway .concert-scroll',
+			'timetable-grid .concert-scroll',
 		) as HTMLElement
 		const edge = scroll.getBoundingClientRect().top
 		return [...scroll.querySelectorAll<HTMLElement>('[data-date-key]')].find(

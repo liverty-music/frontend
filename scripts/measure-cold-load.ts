@@ -9,7 +9,7 @@
  *
  * Options:
  *   --dist <dir>     build to serve (default: dist)
- *   --route <path>   /discovery (default) or /dashboard
+ *   --route <path>   /discovery (default) or /timetable
  *   --fan <who>      guest (default) or signed-in (follows 5 artists)
  *   --runs <n>       loads after the warm-up (default: 10)
  *   --cdp <url>      drive an already running Chrome over the DevTools
@@ -31,7 +31,7 @@
  * Reported per load: the cold-load reveal marks of Discovery (`ghosts`,
  * `first-name`), the first contentful paint, and the long animation frames
  * that started before the first route paint (Discovery: the first bubble;
- * Dashboard: the first contentful paint after the route's content).
+ * Timetable: the first contentful paint after the route's content).
  */
 import { appendFileSync, writeFileSync } from 'node:fs'
 import { readFile, stat } from 'node:fs/promises'
@@ -154,7 +154,7 @@ function probe(opts: { rtt: number; signedIn: boolean }): void {
 		}))
 	try {
 		localStorage.setItem('onboarding.helpSeen:discovery', '1')
-		localStorage.setItem('onboarding.helpSeen:dashboard', '1')
+		localStorage.setItem('onboarding.helpSeen:timetable', '1')
 		localStorage.setItem('pwa.installed', 'true')
 		if (opts.signedIn) {
 			localStorage.setItem('onboardingComplete', 'true')

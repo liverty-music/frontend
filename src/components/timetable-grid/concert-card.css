@@ -1,0 +1,102 @@
+/* stylelint-disable no-unknown-custom-properties -- --artist-hue is set inline by the template from the concert data */
+@layer block {
+	@scope (concert-card) {
+		:scope {
+			--_label-color: oklch(100% 0 0deg / 70%);
+			--_drop-shadow: oklch(0% 0 0deg / 30%);
+			--_noise-url: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E");
+		}
+
+		/* Card base styles */
+		.concert-card {
+			/* The artist's hue, set on the card from the concert data. */
+			--_hue: var(--artist-hue);
+
+			cursor: pointer;
+
+			position: relative;
+
+			/* No overflow clip: the gradient is rounded by border-radius, the
+			   noise ::after self-rounds via border-radius:inherit, and the
+			   matched beam ::after is hidden at the corners by its mask — so
+			   the journey badge can bleed past the corner without a wrapper. */
+			display: flex;
+			flex-direction: column;
+			row-gap: var(--space-3xs);
+			align-items: center;
+			justify-content: end;
+
+			padding: var(--space-xs);
+			border-radius: var(--md-sys-shape-corner-large);
+
+			/* The content colour, which the state layer takes. */
+			color: var(--color-white);
+
+			/* No entrance of its own: the lane grid deals the card in
+			   (lane-grid.css). A press shows only the shared state layer:
+			   Material 3 scales no pressed card. The lane spaces the cards
+			   (concert-lane.css). */
+			&[data-lane="nearby"],
+			&[data-lane="away"] {
+				padding: var(--space-2xs);
+				border-radius: var(--md-sys-shape-corner-medium);
+			}
+		}
+
+		/* --- Artist name --- */
+		.artist-name {
+			/* stylelint-disable property-disallowed-list, cube/require-token-variables -- the artist name is sized to its lane (design-tokens, the one exception to type styles) */
+			font-family: var(--md-ref-typeface-brand);
+			font-size: clamp(14px, 8cqi, 32px);
+			font-weight: 400;
+			line-height: 1.2;
+			/* stylelint-enable property-disallowed-list, cube/require-token-variables */
+			color: var(--color-white);
+			overflow-wrap: break-word;
+
+			filter: drop-shadow(0 2px 4px var(--_drop-shadow));
+		}
+
+		.location-label {
+			color: var(--_label-color);
+		}
+
+		/* --- Journey status badge ---
+		   The status emoji alone, sitting on the top-right corner and bleeding
+		   half outside the card (notification-badge convention) so it never
+		   collides with the bottom-aligned artist name regardless of name
+		   length. No background/hue: the emoji is the sole, self-coloured cue. */
+		.journey-badge {
+			position: absolute;
+			inset-block-start: var(--space-3xs);
+			inset-inline-end: var(--space-3xs);
+			translate: 40% -40%;
+		}
+
+		/* Unmatched: a vivid diagonal gradient. The matched look is
+		   concert-card-spotlight.css. */
+		.concert-card:not([data-matched]) {
+			border: 1px solid oklch(100% 0 0deg / 12%);
+			background: linear-gradient(
+				135deg,
+				oklch(75% 0.3 var(--_hue)) 0%,
+				oklch(75% 0.3 calc(var(--_hue) + 40)) 100%
+			);
+		}
+
+		/* Noise texture overlay — subtle surface grain */
+		.concert-card:not([data-matched])::after {
+			pointer-events: none;
+			content: "";
+
+			position: absolute;
+			inset: 0;
+
+			border-radius: inherit;
+
+			opacity: 0.08;
+			background-image: var(--_noise-url);
+			background-size: 200px 200px;
+		}
+	}
+}

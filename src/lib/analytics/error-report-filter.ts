@@ -5,9 +5,9 @@ import {
 } from './strip-own-url-query'
 
 /**
- * Query keys an error report keeps on its current address: the dashboard's
+ * Query keys an error report keeps on its current address: the timetable's
  * filter state (selected artists, journey stage, entry point). An error on a
- * filtered dashboard cannot be reproduced without them, and none of them is
+ * filtered timetable cannot be reproduced without them, and none of them is
  * personal or referral data (OpenSpec `global/analytics`, design D5).
  */
 const KEPT_QUERY_KEYS = new Set(['artists', 'journey', 'from'])

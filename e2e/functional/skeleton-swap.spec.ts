@@ -81,7 +81,7 @@ async function prepare(page: Page): Promise<void> {
 						(s.node instanceof Element
 							? s.node
 							: s.node?.parentElement
-						)?.closest('concert-highway'),
+						)?.closest('timetable-grid'),
 					)
 				if (!e.hadRecentInput && inTimetable) w.__cls += e.value
 			}
@@ -89,10 +89,10 @@ async function prepare(page: Page): Promise<void> {
 		// Every frame: is the placeholder on screen together with real groups?
 		const tick = () => {
 			const placeholder = document.querySelector(
-				'[data-testid="dashboard-loading"]',
+				'[data-testid="timetable-loading"]',
 			)
 			const real = document.querySelector(
-				'concert-highway .date-group:not(.date-group-skeleton)',
+				'timetable-grid .date-group:not(.date-group-skeleton)',
 			)
 			if (placeholder && real) w.__both++
 			requestAnimationFrame(tick)
@@ -119,8 +119,8 @@ async function prepare(page: Page): Promise<void> {
 	)
 }
 
-for (const path of ['/dashboard', `/concerts/${fakeId('h-150-0')}`]) {
-	// @spec components/infrastructure/fan/web/route/dashboard "Viewport-scoping off-screen content does not regress sticky headers or shift layout"
+for (const path of ['/timetable', `/concerts/${fakeId('h-150-0')}`]) {
+	// @spec components/infrastructure/fan/web/route/timetable "Viewport-scoping off-screen content does not regress sticky headers or shift layout"
 	test(`the placeholder and the concerts swap in one frame (${path})`, async ({
 		page,
 		context,
@@ -140,7 +140,7 @@ for (const path of ['/dashboard', `/concerts/${fakeId('h-150-0')}`]) {
 			.poll(
 				() =>
 					page
-						.locator('concert-highway .date-group:not(.date-group-skeleton)')
+						.locator('timetable-grid .date-group:not(.date-group-skeleton)')
 						.count(),
 				{
 					timeout: 60_000,

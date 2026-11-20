@@ -15,13 +15,13 @@ import {
 	loadDiscoveryView,
 	saveDiscoveryView,
 } from '../../adapter/storage/discovery-view-storage'
+import type { ArtistBubbles } from '../../components/artist-bubbles/artist-bubbles'
+import { preloadPhysics } from '../../components/artist-bubbles/bubble-physics'
+import type { RevealMark } from '../../components/artist-bubbles/reveal-marks'
 import {
-	type NearbyConcerts,
-	NearbyVisit,
-} from '../../components/all-nearby/nearby-concerts'
-import { preloadPhysics } from '../../components/dna-orb/bubble-physics'
-import type { DnaOrbCanvas } from '../../components/dna-orb/dna-orb-canvas'
-import type { RevealMark } from '../../components/dna-orb/reveal-marks'
+	type DiscoveryConcerts,
+	DiscoveryConcertsVisit,
+} from '../../components/discovery-concerts/discovery-concerts'
 import type { PageHelp } from '../../components/page-help/page-help'
 import { timetableReadiness } from '../../constants/onboarding'
 import type { Artist } from '../../entities/artist'
@@ -29,16 +29,16 @@ import {
 	Events,
 	IAnalyticsService,
 } from '../../lib/analytics/analytics-service'
+import {
+	helpAction,
+	IActionMenuService,
+	type MenuAction,
+} from '../../services/action-menu-service'
 import { IArtistBubbleStore } from '../../services/artist-bubble-store'
 import { IArtistStore } from '../../services/artist-store'
 import { IAuthService } from '../../services/auth-service'
 import { IConcertStore } from '../../services/concert-store'
 import { IErrorBoundaryService } from '../../services/error-boundary-service'
-import {
-	type FabAction,
-	helpAction,
-	IFabMenuService,
-} from '../../services/fab-menu-service'
 import { IFollowStore } from '../../services/follow-store'
 import { IOnboardingService } from '../../services/onboarding-service'
 import { IResumeRevalidator } from '../../services/resume-revalidator'
@@ -57,7 +57,7 @@ export class DiscoveryRoute {
 	private readonly concertService = resolve(IConcertStore)
 	private readonly analytics = resolve(IAnalyticsService)
 	private readonly resumeRevalidator = resolve(IResumeRevalidator)
-	public readonly fabMenu = resolve(IFabMenuService)
+	public readonly actionMenu = resolve(IActionMenuService)
 	private readonly history = resolve(IHistory)
 	private readonly authService = resolve(IAuthService)
 	private readonly userStore = resolve(IUserStore)
@@ -65,7 +65,7 @@ export class DiscoveryRoute {
 	private readonly logger = resolve(ILogger).scopeTo('DiscoveryRoute')
 	public readonly i18n = resolve(I18N)
 
-	public dnaOrbCanvas!: DnaOrbCanvas
+	public artistBubbles!: ArtistBubbles
 
 	/**
 	 * The view on screen: the artist bubbles or the All Nearby view. Chosen in
@@ -79,9 +79,9 @@ export class DiscoveryRoute {
 	 * switching to the bubbles and back finds them unchanged. A new visit (a new
 	 * route instance) starts from the filter kept on the device.
 	 */
-	public readonly nearbyVisit = new NearbyVisit()
+	public readonly nearbyVisit = new DiscoveryConcertsVisit()
 	/** The All Nearby view while it is shown; its filters open from the launcher. */
-	public nearbyConcerts: NearbyConcerts | undefined
+	public nearbyConcerts: DiscoveryConcerts | undefined
 
 	/** True while a swap's View Transition runs (names the layout for it). */
 	public revealing = false
@@ -124,7 +124,7 @@ export class DiscoveryRoute {
 		this.artistClient,
 		{
 			onEnterSearchMode: () => this.pauseField(),
-			onExitSearchMode: () => this.dnaOrbCanvas?.resume(),
+			onExitSearchMode: () => this.artistBubbles?.resume(),
 			onError: (key) =>
 				this.ea.publish(new Snack(this.i18n.tr(key), 'warning')),
 			onSearchCompleted: ({ queryLength, resultCount }) => {
@@ -170,7 +170,7 @@ export class DiscoveryRoute {
 
 	/**
 	 * Report once per visit the moment the onboarding progress row is shown
-	 * as the link to the Dashboard, with the counts that made it ready. The
+	 * as the link to the Timetable, with the counts that made it ready. The
 	 * row is hidden in search mode, so a follow from search results reports
 	 * when the search closes.
 	 */
@@ -308,7 +308,7 @@ export class DiscoveryRoute {
 			this.writeViewAddress()
 		}
 		this.resumeRevalidator.register(this.revalidate)
-		this.refreshFabActions()
+		this.refreshMenuActions()
 	}
 
 	/**
@@ -317,12 +317,12 @@ export class DiscoveryRoute {
 	 * re-register replaces the previous set, so a view switch never leaves a
 	 * stale or duplicated item.
 	 */
-	private refreshFabActions(): void {
-		const actions: FabAction[] = []
+	private refreshMenuActions(): void {
+		const actions: MenuAction[] = []
 		if (this.view === 'nearby') {
 			actions.push({
 				id: 'filter',
-				labelKey: 'fabMenu.filter',
+				labelKey: 'actionMenu.filter',
 				icon: 'filter',
 				kind: 'command',
 				isOn: () => this.nearbyVisit.isFiltered(this.userStore.currentHome),
@@ -331,7 +331,7 @@ export class DiscoveryRoute {
 		}
 		actions.push(helpAction(() => this.pageHelp?.open()))
 		this.fabDisposer?.()
-		this.fabDisposer = this.fabMenu.register(this, actions)
+		this.fabDisposer = this.actionMenu.register(this, actions)
 	}
 
 	public detaching(): void {
@@ -362,7 +362,7 @@ export class DiscoveryRoute {
 		if (document.hidden) {
 			this.pauseField()
 		} else if (this.bubblesShown) {
-			this.dnaOrbCanvas?.resume()
+			this.artistBubbles?.resume()
 		}
 	}
 
@@ -372,7 +372,7 @@ export class DiscoveryRoute {
 	 */
 	private pauseField(): void {
 		this.revealTiming = null
-		this.dnaOrbCanvas?.pause()
+		this.artistBubbles?.pause()
 	}
 
 	/** Whether the bubble field is on screen: the bubbles, outside search. */
@@ -423,13 +423,13 @@ export class DiscoveryRoute {
 	 */
 	protected viewChanged(view: DiscoveryView): void {
 		// Before attach the launcher is seeded by attached().
-		if (this.fabDisposer) this.refreshFabActions()
+		if (this.fabDisposer) this.refreshMenuActions()
 		if (view === 'nearby') {
 			// Switching to All Nearby ends the visit's frame measurement.
-			this.dnaOrbCanvas?.endFrameMeasurement()
+			this.artistBubbles?.endFrameMeasurement()
 			this.pauseField()
 		} else if (this.bubblesShown && !document.hidden) {
-			this.dnaOrbCanvas?.resume()
+			this.artistBubbles?.resume()
 		}
 	}
 
@@ -598,7 +598,7 @@ export class DiscoveryRoute {
 		// bubble for this artist; the absorb animation is a transient flourish.
 		this.bubbleStore.remove(artistId)
 
-		this.dnaOrbCanvas.spawnAndAbsorbAfterSearch(artist)
+		this.artistBubbles.spawnAndAbsorbAfterSearch(artist)
 
 		void this.searchConcertsForArtist(artistId, artist.name)
 	}

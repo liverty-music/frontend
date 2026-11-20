@@ -12,11 +12,11 @@ import {
 	IAnalyticsService,
 } from '../../src/lib/analytics/analytics-service'
 import { resetRevealEntryForTests } from '../../src/routes/discovery/reveal-timing'
-import { IErrorBoundaryService } from '../../src/services/error-boundary-service'
 import {
-	type FabAction,
-	IFabMenuService,
-} from '../../src/services/fab-menu-service'
+	IActionMenuService,
+	type MenuAction,
+} from '../../src/services/action-menu-service'
+import { IErrorBoundaryService } from '../../src/services/error-boundary-service'
 import { createTestContainer } from '../helpers/create-container'
 import { createMockAppConfig } from '../helpers/mock-app-config'
 import { createMockErrorBoundary } from '../helpers/mock-error-boundary'
@@ -79,7 +79,7 @@ vi.mock('../../src/routes/discovery/discovery-route.$au.ts', () => ({
 }))
 
 const preloadPhysics = vi.fn(() => Promise.resolve())
-vi.mock('../../src/components/dna-orb/bubble-physics', () => ({
+vi.mock('../../src/components/artist-bubbles/bubble-physics', () => ({
 	preloadPhysics,
 }))
 
@@ -135,7 +135,7 @@ describe('DiscoveryRoute', () => {
 	}
 	/** The launcher: the actions the route registered last. */
 	let mockFab: {
-		actions: FabAction[]
+		actions: MenuAction[]
 		register: ReturnType<typeof vi.fn>
 		handed: string
 	}
@@ -143,7 +143,7 @@ describe('DiscoveryRoute', () => {
 
 	function buildSut() {
 		const container = createTestContainer(
-			Registration.instance(IFabMenuService, mockFab),
+			Registration.instance(IActionMenuService, mockFab),
 			Registration.instance(mockIUserStore, mockUserStore),
 			Registration.instance(mockIArtistStore, mockArtistClient),
 			Registration.instance(mockIFollowStore, mockFollowClient),
@@ -158,9 +158,9 @@ describe('DiscoveryRoute', () => {
 		container.register(DiscoveryRoute)
 		const route = container.get(DiscoveryRoute)
 
-		// Stub the dnaOrbCanvas ref. The field owner (ArtistBubbleStore) now drives
+		// Stub the artistBubbles ref. The field owner (ArtistBubbleStore) now drives
 		// physics via the field binding; the route only calls the absorb flourish.
-		route.dnaOrbCanvas = {
+		route.artistBubbles = {
 			pause: vi.fn(),
 			resume: vi.fn(),
 			endFrameMeasurement: vi.fn(),
@@ -180,7 +180,7 @@ describe('DiscoveryRoute', () => {
 		mockFab = {
 			actions: [],
 			handed: 'right',
-			register: vi.fn((_owner: object, actions: FabAction[]) => {
+			register: vi.fn((_owner: object, actions: MenuAction[]) => {
 				mockFab.actions = actions
 				return () => {}
 			}),
@@ -402,14 +402,14 @@ describe('DiscoveryRoute', () => {
 		it('empties the query and resumes the bubble canvas', () => {
 			sut.search.searchQuery = 'something'
 			sut.search.onQueryChanged('something')
-			expect(sut.dnaOrbCanvas.pause).toHaveBeenCalled()
+			expect(sut.artistBubbles.pause).toHaveBeenCalled()
 
 			sut.clearSearch()
 			sut.search.onQueryChanged(sut.search.searchQuery)
 
 			expect(sut.search.searchQuery).toBe('')
 			expect(sut.search.isSearchMode).toBe(false)
-			expect(sut.dnaOrbCanvas.resume).toHaveBeenCalled()
+			expect(sut.artistBubbles.resume).toHaveBeenCalled()
 		})
 	})
 
@@ -426,14 +426,14 @@ describe('DiscoveryRoute', () => {
 			sut.search.onQueryChanged('vau')
 
 			expect(sut.search.isSearchMode).toBe(true)
-			expect(sut.dnaOrbCanvas.pause).toHaveBeenCalled()
+			expect(sut.artistBubbles.pause).toHaveBeenCalled()
 			expect(sut.showProgressRow).toBe(false)
 
 			sut.search.searchQuery = ''
 			sut.search.onQueryChanged('')
 
 			expect(sut.search.isSearchMode).toBe(false)
-			expect(sut.dnaOrbCanvas.resume).toHaveBeenCalled()
+			expect(sut.artistBubbles.resume).toHaveBeenCalled()
 			expect(sut.showProgressRow).toBe(true)
 		})
 	})
@@ -512,7 +512,7 @@ describe('DiscoveryRoute', () => {
 			expect(sut.search.isSearchMode).toBe(true)
 			expect(sut.search.searchQuery).toBe('test')
 			expect(sut.search.searchResults).toHaveLength(1)
-			expect(sut.dnaOrbCanvas.spawnAndAbsorbAfterSearch).not.toHaveBeenCalled()
+			expect(sut.artistBubbles.spawnAndAbsorbAfterSearch).not.toHaveBeenCalled()
 			expect(mockEa.published).toHaveLength(1)
 			expect(mockEa.published[0].severity).toBe('error')
 			expect(mockEa.published[0].message).toBe(
@@ -535,7 +535,7 @@ describe('DiscoveryRoute', () => {
 			expect(sut.search.searchResults).toHaveLength(0)
 			// The route removes the artist from the field and delegates the absorb
 			// animation to the canvas (which owns the rAF + zero-rect guard).
-			expect(sut.dnaOrbCanvas.spawnAndAbsorbAfterSearch).toHaveBeenCalledWith(
+			expect(sut.artistBubbles.spawnAndAbsorbAfterSearch).toHaveBeenCalledWith(
 				artist,
 			)
 		})
@@ -883,18 +883,18 @@ describe('DiscoveryRoute', () => {
 	})
 
 	describe('switch to the All Nearby view', () => {
-		// The event itself is checked in test/components/dna-orb-canvas.spec.ts.
+		// The event itself is checked in test/components/artist-bubbles.spec.ts.
 		it('ends the frame measurement of the visit and pauses the bubbles', () => {
 			;(sut as any).viewChanged('nearby')
 
-			expect(sut.dnaOrbCanvas.endFrameMeasurement).toHaveBeenCalledOnce()
-			expect(sut.dnaOrbCanvas.pause).toHaveBeenCalled()
+			expect(sut.artistBubbles.endFrameMeasurement).toHaveBeenCalledOnce()
+			expect(sut.artistBubbles.pause).toHaveBeenCalled()
 		})
 
 		it('does not end it when switching back to the bubbles', () => {
 			;(sut as any).viewChanged('artists')
 
-			expect(sut.dnaOrbCanvas.endFrameMeasurement).not.toHaveBeenCalled()
+			expect(sut.artistBubbles.endFrameMeasurement).not.toHaveBeenCalled()
 		})
 	})
 
@@ -909,7 +909,7 @@ describe('DiscoveryRoute', () => {
 			})
 			document.dispatchEvent(new Event('visibilitychange'))
 
-			expect(sut.dnaOrbCanvas.pause).toHaveBeenCalled()
+			expect(sut.artistBubbles.pause).toHaveBeenCalled()
 
 			// Cleanup
 			Object.defineProperty(document, 'hidden', {
@@ -930,7 +930,7 @@ describe('DiscoveryRoute', () => {
 			})
 			document.dispatchEvent(new Event('visibilitychange'))
 
-			expect(sut.dnaOrbCanvas.resume).toHaveBeenCalled()
+			expect(sut.artistBubbles.resume).toHaveBeenCalled()
 			sut.detaching()
 		})
 
@@ -944,7 +944,7 @@ describe('DiscoveryRoute', () => {
 			})
 			document.dispatchEvent(new Event('visibilitychange'))
 
-			expect(sut.dnaOrbCanvas.resume).not.toHaveBeenCalled()
+			expect(sut.artistBubbles.resume).not.toHaveBeenCalled()
 			sut.detaching()
 		})
 	})
@@ -1129,7 +1129,7 @@ describe('DiscoveryRoute', () => {
 			const vm = CustomElement.for(
 				fixture.appHost.querySelector('mounted-discovery-route') as HTMLElement,
 			).viewModel as DiscoveryRoute
-			vm.dnaOrbCanvas = sut.dnaOrbCanvas
+			vm.artistBubbles = sut.artistBubbles
 			return { vm, stop: () => fixture.stop(true) as Promise<void> }
 		}
 
@@ -1484,7 +1484,7 @@ describe('DiscoveryRoute', () => {
 				document.dispatchEvent(new Event('visibilitychange'))
 				revealAll([100, 200, 300])
 
-				expect(sut.dnaOrbCanvas.resume).toHaveBeenCalled()
+				expect(sut.artistBubbles.resume).toHaveBeenCalled()
 				expect(mockAnalytics.capture).not.toHaveBeenCalled()
 			})
 
@@ -1561,7 +1561,7 @@ describe('DiscoveryRoute', () => {
 	})
 
 	describe('launcher actions per view', () => {
-		const SPEC = 'components/infrastructure/fan/web/global/fab-menu'
+		const SPEC = 'components/infrastructure/fan/web/global/action-menu'
 		const routeTo = (query = '') =>
 			({ queryParams: new URLSearchParams(query) }) as never
 		const ids = () => mockFab.actions.map((a) => a.id)
@@ -1654,7 +1654,7 @@ describe('DiscoveryRoute', () => {
 			onboarding.loading(undefined, routeTo('view=nearby'))
 			expect(onboarding.view).toBe('nearby')
 			onboarding.attached()
-			expect(onboarding.dnaOrbCanvas.pause).toHaveBeenCalled()
+			expect(onboarding.artistBubbles.pause).toHaveBeenCalled()
 			onboarding.detaching()
 		})
 
@@ -1733,7 +1733,7 @@ describe('DiscoveryRoute', () => {
 		it('pauses the bubbles on the All Nearby view and resumes them on the way back', async () => {
 			sut.loading(undefined, routeTo())
 			sut.attached()
-			const canvas = sut.dnaOrbCanvas as unknown as {
+			const canvas = sut.artistBubbles as unknown as {
 				pause: ReturnType<typeof vi.fn>
 				resume: ReturnType<typeof vi.fn>
 			}
@@ -1767,7 +1767,7 @@ describe('DiscoveryRoute', () => {
 			sut.loading(undefined, routeTo('view=nearby'))
 			sut.search.isSearchMode = true
 			sut.switchView()
-			expect(sut.dnaOrbCanvas.resume).not.toHaveBeenCalled()
+			expect(sut.artistBubbles.resume).not.toHaveBeenCalled()
 		})
 
 		// @spec components/infrastructure/fan/web/route/discovery "The bubble field is kept while the All Nearby view is shown"

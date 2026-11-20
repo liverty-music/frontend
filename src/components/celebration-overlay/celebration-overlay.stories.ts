@@ -15,7 +15,7 @@ interface Args {
 	backdrop: Backdrop
 }
 
-const t = ja.dashboard.celebration
+const t = ja.timetable.celebration
 
 const TIERS: Record<
 	Tier,
@@ -73,7 +73,7 @@ const TIMETABLE = `
 
 const EMPTY = `
 	<div class="[ center ] [ story-stage ]">
-		<p>${ja.dashboard.empty.title}</p>
+		<p>${ja.timetable.empty.title}</p>
 	</div>
 `
 
@@ -112,7 +112,7 @@ type Story = StoryObj<typeof meta>
 
 /**
  * The overlay over a backdrop, with a button that plays it again (the overlay
- * itself shows once, like on the Dashboard).
+ * itself shows once, like on the Timetable).
  */
 const render = (args: Args) =>
 	defineAureliaStory({
@@ -171,7 +171,7 @@ async function expectMotion(canvasElement: HTMLElement, confetti: boolean) {
 	}
 }
 
-/** Post-signup over the Dashboard empty state: dark, blurred scrim. */
+/** Post-signup over the Timetable empty state: dark, blurred scrim. */
 export const PostSignupOverEmptyState = {
 	tags: ['reduced-motion'],
 	render,

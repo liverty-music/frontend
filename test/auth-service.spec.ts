@@ -288,10 +288,14 @@ describe('AuthService', () => {
 	})
 
 	it('signUp from an Event page carries its origin and return path in the OIDC state', async () => {
-		await sut.signUp({ origin: 'event-page', returnTo: '/events/ev-1' })
+		await sut.signUp({ origin: 'concert-page', returnTo: '/events/ev-1' })
 		expect(userManagerMock.signinRedirect).toHaveBeenCalledWith({
 			prompt: 'create',
-			state: { flow: 'signup', origin: 'event-page', returnTo: '/events/ev-1' },
+			state: {
+				flow: 'signup',
+				origin: 'concert-page',
+				returnTo: '/events/ev-1',
+			},
 		})
 	})
 
@@ -324,11 +328,11 @@ describe('AuthService', () => {
 		container.register(AuthService)
 		const s = container.get(IAuthService)
 
-		await s.signUp({ source: 'dashboard_prompt' })
+		await s.signUp({ source: 'timetable_prompt' })
 		await s.signIn({ source: 'welcome' })
 
 		expect(publish.mock.calls.map(([e]) => e)).toEqual([
-			new AuthStarted('sign_up', 'dashboard_prompt'),
+			new AuthStarted('sign_up', 'timetable_prompt'),
 			new AuthStarted('sign_in', 'welcome'),
 		])
 		// Published before leaving for hosted login.

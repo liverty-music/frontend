@@ -1,6 +1,6 @@
 import { expect, test } from '../support/test'
 
-// The dashboard is reachable any time under the soft gate. Mark onboarding
+// The timetable is reachable any time under the soft gate. Mark onboarding
 // complete and set the guest home region so the region-setup dialog (and its
 // blur) stays closed while the PWA banner assertions run.
 const ONBOARDING_SETUP = () => {
@@ -11,8 +11,8 @@ const ONBOARDING_SETUP = () => {
 test.describe('PWA Install Prompt', () => {
 	test('does not show banner on first session', async ({ page }) => {
 		await page.addInitScript(ONBOARDING_SETUP)
-		await page.goto('/dashboard')
-		await expect(page.locator('dashboard-route')).toBeVisible({
+		await page.goto('/timetable')
+		await expect(page.locator('timetable-route')).toBeVisible({
 			timeout: 10_000,
 		})
 		await expect(page.getByTestId('pwa-install-banner')).not.toBeVisible()
@@ -27,8 +27,8 @@ test.describe('PWA Install Prompt', () => {
 			localStorage.setItem('pwa.sessionCount', '1')
 		})
 
-		await page.goto('/dashboard')
-		await expect(page.locator('dashboard-route')).toBeVisible({
+		await page.goto('/timetable')
+		await expect(page.locator('timetable-route')).toBeVisible({
 			timeout: 10_000,
 		})
 
@@ -54,8 +54,8 @@ test.describe('PWA Install Prompt', () => {
 			localStorage.setItem('pwa.sessionCount', '1')
 		})
 
-		await page.goto('/dashboard')
-		await expect(page.locator('dashboard-route')).toBeVisible({
+		await page.goto('/timetable')
+		await expect(page.locator('timetable-route')).toBeVisible({
 			timeout: 10_000,
 		})
 
@@ -87,8 +87,8 @@ test.describe('PWA Install Prompt', () => {
 			localStorage.setItem('pwa.sessionCount', '1')
 		})
 
-		await page.goto('/dashboard')
-		await expect(page.locator('dashboard-route')).toBeVisible({
+		await page.goto('/timetable')
+		await expect(page.locator('timetable-route')).toBeVisible({
 			timeout: 10_000,
 		})
 

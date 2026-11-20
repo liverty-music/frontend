@@ -25,7 +25,7 @@ const ARTISTS = [
 ]
 
 /**
- * The filter sheet as the dashboard binds it. The two outputs show the
+ * The filter sheet as the timetable binds it. The two outputs show the
  * committed selection, which only the confirm button may change.
  */
 const render =

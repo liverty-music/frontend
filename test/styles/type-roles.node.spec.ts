@@ -28,11 +28,11 @@ describe('type roles', () => {
 				'checkout-step-title',
 			),
 			typeStyles(
-				'src/routes/lottery-entry/lottery-entry-route.html',
+				'src/routes/new-lottery-entry/new-lottery-entry-route.html',
 				'lottery-entry-step-title',
 			),
 			typeStyles(
-				'src/routes/resale-entry/resale-entry-route.html',
+				'src/routes/new-resale-entry/new-resale-entry-route.html',
 				'resale-entry-step-title',
 			),
 		]

@@ -481,7 +481,7 @@ describe('Where a coach mark is rendered', () => {
 		for (const screen of [
 			'../../src/app-shell.html',
 			'../../src/routes/discovery/discovery-route.html',
-			'../../src/routes/dashboard/dashboard-route.html',
+			'../../src/routes/timetable/timetable-route.html',
 			'../../src/routes/my-artists/my-artists-route.html',
 		]) {
 			expect(templates[screen], screen).toBeDefined()

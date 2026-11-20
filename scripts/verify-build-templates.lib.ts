@@ -24,7 +24,7 @@ export const ROUTE_MARKERS: readonly RouteMarker[] = [
 	{ route: 'welcome', marker: 'welcome-ambient' },
 	{ route: 'about', marker: 'about-title' },
 	{ route: 'auth-callback', marker: 'callback-loading' },
-	{ route: 'dashboard', marker: 'dashboard-empty-subtitle' },
+	{ route: 'timetable', marker: 'timetable-empty-subtitle' },
 	{ route: 'discovery', marker: 'bubble-area' },
 	{ route: 'my-artists', marker: 'empty-subtitle' },
 	{ route: 'not-found', marker: 'not-found-code' },
@@ -43,7 +43,7 @@ export const ROUTE_MARKERS: readonly RouteMarker[] = [
 
 /**
  * The Caddy `templates` placeholder in `index.html` that pulls an Event
- * page's link-preview tags from fan-api (OpenSpec change `public-event-page`,
+ * page's link-preview tags from fan-api (OpenSpec change `public-concert-page`,
  * design D4). A build that minifies HTML comments away would silently drop
  * every event preview, so the built `index.html` must still carry it verbatim.
  */

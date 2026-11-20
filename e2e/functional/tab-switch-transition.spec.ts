@@ -1,6 +1,6 @@
 import { openShell, seedSignedInFan, tapTab } from '../support/fan-shell'
 import { expect, type Page, test } from '../support/test'
-import { openDashboard } from '../support/timetable'
+import { openTimetable } from '../support/timetable'
 
 // The first page load compiles the app on the dev server; allow for it.
 test.describe.configure({ timeout: 60_000 })
@@ -87,7 +87,7 @@ test.describe('tab switches', () => {
 	})
 
 	test(`@spec ${SHELL} "Tab switch"`, async ({ page }) => {
-		await openShell(page, '/dashboard')
+		await openShell(page, '/timetable')
 
 		// Home → My Artists → Discovery → Home: each switch is one transition
 		// that settles (no TimeoutError: the update callback never waits for a
@@ -95,7 +95,7 @@ test.describe('tab switches', () => {
 		const steps: [string, RegExp][] = [
 			['my-artists', /\/my-artists$/],
 			['discovery', /\/discovery/],
-			['home', /\/dashboard$/],
+			['home', /\/timetable$/],
 		]
 		for (const [icon, url] of steps) {
 			const before = (await transitions(page)).length
@@ -130,7 +130,7 @@ test.describe('tab switches', () => {
 
 	test(`@spec ${SHELL} "Reduced motion preference"`, async ({ page }) => {
 		await page.emulateMedia({ reducedMotion: 'reduce' })
-		await openShell(page, '/dashboard')
+		await openShell(page, '/timetable')
 
 		await tapTab(page, 'my-artists')
 		await expect(page).toHaveURL(/\/my-artists$/)
@@ -146,7 +146,7 @@ test(`@spec ${SHELL} "Route change from inside a page"`, async ({ page }) => {
 	// only a tab tap starts one. Here a concert on the timetable opens its
 	// event page.
 	await recordTransitions(page)
-	await openDashboard(page)
+	await openTimetable(page)
 	await page.locator('[data-live-card]').first().click()
 	await expect(page).toHaveURL(/\/concerts\//)
 	expect(await transitions(page)).toEqual([])

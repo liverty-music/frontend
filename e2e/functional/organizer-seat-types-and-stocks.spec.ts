@@ -250,7 +250,7 @@ test("seat types, a date's stocks and limit, a presale, and deleting them", asyn
 		.first()
 		.click()
 	await confirmDialog(page).getByRole('button', { name: '公開する' }).click()
-	await expect(page.locator('event-route status-badge').first()).toHaveText(
+	await expect(page.locator('concert-route status-badge').first()).toHaveText(
 		/公開中/,
 	)
 	// Published and timed, but nothing to sell yet.

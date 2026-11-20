@@ -7,10 +7,13 @@ import {
 } from '@aurelia/router'
 import { type IDisposable, ILogger, resolve, watch } from 'aurelia'
 import { createRouteModules } from './route-modules'
+import {
+	IActionMenuService,
+	settingsAction,
+} from './services/action-menu-service'
 import { IAuthService } from './services/auth-service'
 import { IBottomSheetTracker } from './services/bottom-sheet-tracker'
 import { IErrorBoundaryService } from './services/error-boundary-service'
-import { IFabMenuService, settingsAction } from './services/fab-menu-service'
 import { INotificationStore } from './services/notification-store'
 import { IOnboardingService } from './services/onboarding-service'
 import { IPromptCoordinator } from './services/prompt-coordinator'
@@ -67,7 +70,7 @@ const routeTable = [
 	{
 		path: 'auth/callback',
 		component: lazyRoute(
-			() => import('./routes/auth-callback/auth-callback-route'),
+			() => import('./routes/sign-in-callback/sign-in-callback-route'),
 		),
 		title: 'Signing In',
 		data: { auth: false, chrome: false },
@@ -89,10 +92,10 @@ const routeTable = [
 		// link that registers a new passkey.
 		path: 'passkey-recovery',
 		component: lazyRoute(
-			() => import('./routes/passkey-recovery/passkey-recovery-route'),
+			() => import('./routes/sign-in-help/sign-in-help-route'),
 		),
 		title: "Can't Sign In",
-		data: { auth: false, titleKey: 'passkeyRecovery.title' },
+		data: { auth: false, titleKey: 'signInHelp.title' },
 	},
 	{
 		// The link of a verification email opens here, on any device and
@@ -106,27 +109,31 @@ const routeTable = [
 		data: { auth: false, titleKey: 'verifyEmail.title' },
 	},
 	{
-		// `concerts/:id` is a deep-link into the same dashboard (it opens the
+		// `concerts/:id` is a deep-link into the same timetable (it opens the
 		// concert's detail sheet), so it is a second path of this route: the
 		// navigation model then highlights Home for it with no special case.
-		id: 'dashboard',
-		path: ['dashboard', 'concerts/:id'],
-		component: import('./routes/dashboard/dashboard-route'),
+		id: 'timetable',
+		path: ['timetable', 'concerts/:id'],
+		component: import('./routes/timetable/timetable-route'),
 		// The document title still tells the two paths apart: a deep-link (e.g.
 		// from a push notification) opens a concert, not the bare timetable.
 		title: (node: RouteNode) =>
-			node.path.startsWith('concerts/') ? 'Concert' : 'Dashboard',
+			node.path.startsWith('concerts/') ? 'Concert' : 'Timetable',
 		nav: true,
-		data: { titleKey: 'nav.home', icon: 'home', labelKey: 'nav.home' },
+		data: {
+			titleKey: 'nav.timetable',
+			icon: 'home',
+			labelKey: 'nav.timetable',
+		},
 	},
 	{
 		// The public, shareable page of one first-party Event. Guests open it
 		// from shared links, so it does not wait for auth readiness. It belongs
-		// to Home: the dashboard's first-party cards open it.
+		// to Home: the timetable's first-party cards open it.
 		path: 'events/:id',
-		component: lazyRoute(() => import('./routes/event/event-route')),
+		component: lazyRoute(() => import('./routes/concert/concert-route')),
 		title: 'Event',
-		data: { auth: false, section: 'dashboard' },
+		data: { auth: false, section: 'timetable' },
 	},
 	{
 		// The checkout of one TicketStock (seat type) of an Event, in its
@@ -135,7 +142,7 @@ const routeTable = [
 		path: 'events/:id/checkout/:stockId',
 		component: lazyRoute(() => import('./routes/checkout/checkout-route')),
 		title: 'Checkout',
-		data: { titleKey: 'checkout.title', section: 'dashboard' },
+		data: { titleKey: 'checkout.title', section: 'timetable' },
 	},
 	{
 		path: 'discovery',
@@ -176,7 +183,10 @@ const routeTable = [
 	{
 		path: 'verify/callback',
 		component: lazyRoute(
-			() => import('./routes/verify-callback/verify-callback-route'),
+			() =>
+				import(
+					'./routes/identity-verification-callback/identity-verification-callback-route'
+				),
 		),
 		title: 'Identity Verification',
 	},
@@ -186,20 +196,20 @@ const routeTable = [
 	{
 		path: 'events/:id/lottery/:saleId/:stockId',
 		component: lazyRoute(
-			() => import('./routes/lottery-entry/lottery-entry-route'),
+			() => import('./routes/new-lottery-entry/new-lottery-entry-route'),
 		),
 		title: 'Lottery Entry',
-		data: { titleKey: 'lotteryEntry.title', section: 'dashboard' },
+		data: { titleKey: 'newLotteryEntry.title', section: 'timetable' },
 	},
 	// The fan's entry in that sale for that event and its state.
 	// Reached from the entry screen once the entry is made.
 	{
 		path: 'events/:id/lottery/:saleId/:stockId/entry',
 		component: lazyRoute(
-			() => import('./routes/lottery-entry-status/lottery-entry-status-route'),
+			() => import('./routes/lottery-entries/lottery-entries-route'),
 		),
 		title: 'My Lottery Entry',
-		data: { titleKey: 'lotteryEntryStatus.title', section: 'dashboard' },
+		data: { titleKey: 'lotteryEntries.title', section: 'timetable' },
 	},
 	// The application for official resale tickets of one sold-out TicketStock
 	// (seat type) of an Event, opened from the Event page's ticket section.
@@ -207,10 +217,10 @@ const routeTable = [
 	{
 		path: 'events/:id/resale/:stockId',
 		component: lazyRoute(
-			() => import('./routes/resale-entry/resale-entry-route'),
+			() => import('./routes/new-resale-entry/new-resale-entry-route'),
 		),
 		title: 'Official Resale Entry',
-		data: { titleKey: 'resaleEntry.title', section: 'dashboard' },
+		data: { titleKey: 'newResaleEntry.title', section: 'timetable' },
 	},
 	// The fan's resale entries and their states; the resale emails link here.
 	{
@@ -219,7 +229,7 @@ const routeTable = [
 			() => import('./routes/resale-entries/resale-entries-route'),
 		),
 		title: 'My Resale Entries',
-		data: { titleKey: 'resaleEntries.title', section: 'dashboard' },
+		data: { titleKey: 'resaleEntries.title', section: 'timetable' },
 	},
 	// My Tickets (roadmap ⑤, task 5.1). Authenticated by default — tickets are
 	// account-bound covered tickets issued from captured lottery wins (④).
@@ -332,7 +342,7 @@ export class AppShell {
 	public readonly notifications = resolve(INotificationStore)
 	// Global FAB action launcher registry. The shell owns the single launcher
 	// instance and gates its visibility on `showNav && actions.length`.
-	public readonly fabMenu = resolve(IFabMenuService)
+	public readonly actionMenu = resolve(IActionMenuService)
 	// The launcher's last item on the tab pages: the only way into Settings.
 	private readonly settingsItem = settingsAction(() => {
 		void this.router.load('settings')
@@ -388,7 +398,7 @@ export class AppShell {
 	}
 
 	private applySettingsItem(): void {
-		this.fabMenu.setTrailing(this.isTabRoute ? this.settingsItem : null)
+		this.actionMenu.setTrailing(this.isTabRoute ? this.settingsItem : null)
 	}
 
 	// Updated on every navigation-end via route data `chrome: false`.
@@ -494,6 +504,6 @@ export class AppShell {
 			'message',
 			this.onServiceWorkerMessage,
 		)
-		this.fabMenu.setTrailing(null)
+		this.actionMenu.setTrailing(null)
 	}
 }

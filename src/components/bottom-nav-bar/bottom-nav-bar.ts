@@ -6,7 +6,7 @@ import {
 } from '@aurelia/router'
 import { type IDisposable, ILogger, resolve, runTasks } from 'aurelia'
 import type { ShellRouteData } from '../../app-shell'
-import { IFabMenuService } from '../../services/fab-menu-service'
+import { IActionMenuService } from '../../services/action-menu-service'
 
 /**
  * The bottom navigation bar. Its tabs are the shell routes marked `nav: true`,
@@ -27,7 +27,7 @@ export class BottomNavBar {
 
 	private readonly router = resolve(IRouter)
 	private readonly routerEvents = resolve(IRouterEvents)
-	public readonly fabMenu = resolve(IFabMenuService)
+	public readonly actionMenu = resolve(IActionMenuService)
 	private readonly logger = resolve(ILogger).scopeTo('BottomNavBar')
 	private subscription: IDisposable | null = null
 

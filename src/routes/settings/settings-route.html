@@ -90,7 +90,7 @@
           >
             <span t.bind="identityFailureKey"></span>
             <span if.bind="identityFailureNeedsSupport">
-              <span t="verifyCallback.error.contact"></span><a href="mailto:${supportEmail}" class="text-link">${supportEmail}</a>
+              <span t="identityVerificationCallback.error.contact"></span><a href="mailto:${supportEmail}" class="text-link">${supportEmail}</a>
             </span>
           </p>
           <!-- Method + dedupe strength, verified-only. -->
@@ -230,15 +230,15 @@
       </li>
 
       <!-- Left-handed mode: mirrors the FAB's action arc to open toward the left
-           hand. Persisted via the storage adapter (fab-menu spec). -->
+           hand. Persisted via the storage adapter (action-menu spec). -->
       <li class="settings-list-item">
         <settings-switch-row
           icon="swap"
           label.bind="'settings.leftHanded' | t"
           description.bind="'settings.leftHandedDesc' | t"
           description-id="left-handed-desc"
-          checked.bind="fabMenu.isLeftHanded"
-          action.bind="() => fabMenu.toggleHanded()"
+          checked.bind="actionMenu.isLeftHanded"
+          action.bind="() => actionMenu.toggleHanded()"
         ></settings-switch-row>
       </li>
     </ul>
@@ -437,11 +437,11 @@
 </bottom-sheet>
 
 <!-- Home Area Selector Bottom Sheet -->
-<user-home-selector
+<home-area-selector
   component.ref="homeSelector"
   current-code.bind="userStore.currentHome"
   on-home-selected.bind="(code) => onHomeSelected(code)"
-></user-home-selector>
+></home-area-selector>
 
 <!-- Language Selector Bottom Sheet. Single-select: a radiogroup whose options
      expose `aria-checked` so SR users perceive the active language and that

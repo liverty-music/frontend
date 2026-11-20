@@ -70,7 +70,7 @@
 		{
 			"includes": [
 				"src/components/coach-mark/coach-mark.css",
-				"src/components/live-highway/beam-timeline.css"
+				"src/components/timetable-grid/beam-timeline.css"
 			],
 			"linter": {
 				"enabled": false

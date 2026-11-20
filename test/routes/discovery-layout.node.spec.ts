@@ -27,7 +27,7 @@ describe('Discovery layout', () => {
 
 		const progress = html.indexOf('<onboarding-progress')
 		const bubbles = html.indexOf('<div class="bubble-area">')
-		const bubblesEnd = html.indexOf('</dna-orb-canvas>')
+		const bubblesEnd = html.indexOf('</artist-bubbles>')
 		expect(progress).toBeGreaterThan(-1)
 		// A sibling before the bubble area, never inside it with the canvas.
 		expect(progress).toBeLessThan(bubbles)
@@ -44,7 +44,7 @@ describe('Discovery layout', () => {
 
 	// @spec components/infrastructure/fan/web/route/discovery "Search mode"
 	it('hides the swap tile with the genre chips while searching', () => {
-		const tile = html.indexOf('<discovery-swap-button')
+		const tile = html.indexOf('<discovery-swap-tile')
 		expect(html.lastIndexOf('<main', tile)).toBeGreaterThan(-1)
 		expect(html).toMatch(
 			/<main [^>]*data-search-mode\.bind="search\.isSearchMode"/,
@@ -60,7 +60,7 @@ describe('Discovery layout', () => {
 	// @spec components/infrastructure/fan/web/route/discovery "Left-handed mode"
 	it('mirrors the swap tile to the left of the orb in left-handed mode', () => {
 		expect(html).toMatch(
-			/<discovery-swap-button[^>]*data-handed\.bind="fabMenu\.handed"/,
+			/<discovery-swap-tile[^>]*data-handed\.bind="actionMenu\.handed"/,
 		)
 		expect(swapCss).toMatch(
 			/\.swap-tile-slot \{[\s\S]*?place-self: end start;[\s\S]*?margin-inline-start: calc\(50% \+ var\(--orb-max-r\) \+ var\(--space-s\)\);/,

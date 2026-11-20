@@ -38,7 +38,7 @@ export function hypeReachWords(
 	if (hype === 'away') return tr('hypeReach.all')
 	const entry = home ? JP_PREFECTURES[home] : undefined
 	const place = entry
-		? tr(`userHome.prefectures.${entry.key}`)
+		? tr(`homeAreaSelector.prefectures.${entry.key}`)
 		: tr('hypeReach.noHome')
 	return tr(`hypeReach.${hype}`, { place })
 }

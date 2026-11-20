@@ -10,10 +10,10 @@ import { stripUrl } from './strip-own-url-query'
  */
 export const UNRECORDED_SCREENS = [
 	'checkout-route',
-	'lottery-entry-route',
-	'lottery-entry-status-route',
-	'resale-entry-route',
-	'verify-callback-route',
+	'new-lottery-entry-route',
+	'lottery-entries-route',
+	'new-resale-entry-route',
+	'identity-verification-callback-route',
 	'settings-route',
 	'passkeys-route',
 ] as const

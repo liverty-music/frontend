@@ -133,7 +133,7 @@ const tileBox = (page: Page) => box(tile(page))
 /** The bubbles and the orb as drawn on the canvas, in page coordinates. */
 function drawn(page: Page) {
 	return page.evaluate(() => {
-		const el = document.querySelector('dna-orb-canvas') as HTMLElement & {
+		const el = document.querySelector('artist-bubbles') as HTMLElement & {
 			$au: Record<string, { viewModel: unknown }>
 		}
 		const vm = el.$au['au:resource:custom-element'].viewModel as {
@@ -185,7 +185,7 @@ test.describe('Discovery swap tile', () => {
 		// The orb grows one stage per follow made in this visit; grow it to its
 		// largest (the narrow-screen ceiling, 56px) as ten follows would.
 		await page.evaluate(() => {
-			const el = document.querySelector('dna-orb-canvas') as HTMLElement & {
+			const el = document.querySelector('artist-bubbles') as HTMLElement & {
 				$au: Record<string, { viewModel: unknown }>
 			}
 			const vm = el.$au['au:resource:custom-element'].viewModel as {
@@ -220,7 +220,7 @@ test.describe('Discovery swap tile', () => {
 		// The bubble field is as tall as it is without the tile.
 		const area = page.locator('.bubble-area')
 		const withTile = (await box(area)).height
-		await page.locator('discovery-swap-button').evaluate((el) => {
+		await page.locator('discovery-swap-tile').evaluate((el) => {
 			;(el as HTMLElement).style.display = 'none'
 		})
 		const without = (await box(area)).height
@@ -233,7 +233,7 @@ test.describe('Discovery swap tile', () => {
 		await openDiscovery(page)
 		await tile(page).click()
 
-		const view = page.locator('nearby-concerts')
+		const view = page.locator('discovery-concerts')
 		await expect(view).toBeVisible()
 		await expect(page).toHaveURL(/\/discovery\?view=nearby$/)
 		await expect(view.locator('[data-live-card]').first()).toBeVisible({
@@ -241,7 +241,7 @@ test.describe('Discovery swap tile', () => {
 		})
 
 		// @spec components/infrastructure/fan/web/route/discovery "Stage header under the page header"
-		// No filter row between them, as on the dashboard.
+		// No filter row between them, as on the timetable.
 		const header = await box(page.locator('page-header header').first())
 		const stage = await box(view.locator('.stage-header').first())
 		expect(stage.y).toBeCloseTo(header.y + header.height, 0)
@@ -301,7 +301,7 @@ test.describe('Discovery swap tile', () => {
 
 		// Still tappable under the open snack bar.
 		await tile(page).click()
-		await expect(page.locator('nearby-concerts')).toBeVisible()
+		await expect(page.locator('discovery-concerts')).toBeVisible()
 	})
 
 	test(`@spec components/infrastructure/fan/web/global/snack-bar "A banner and a floating control are both visible"`, async ({
@@ -335,13 +335,13 @@ test.describe('Discovery swap tile', () => {
 		await openDiscovery(page)
 		await fab(page).click()
 		await expect(fab(page)).toHaveAttribute('aria-expanded', 'true')
-		await settle(page, 'fab-menu')
+		await settle(page, 'action-menu')
 
 		const c = centre(await tileBox(page))
 		await page.mouse.click(c.x, c.y)
 
 		await expect(fab(page)).toHaveAttribute('aria-expanded', 'false')
-		await expect(page.locator('nearby-concerts')).toHaveCount(0)
+		await expect(page.locator('discovery-concerts')).toHaveCount(0)
 		await expect(page).toHaveURL(/\/discovery$/)
 	})
 
@@ -349,7 +349,7 @@ test.describe('Discovery swap tile', () => {
 		page,
 	}) => {
 		await openDiscovery(page, '/discovery?view=nearby')
-		const view = page.locator('nearby-concerts')
+		const view = page.locator('discovery-concerts')
 		const cards = view.locator('[data-live-card]')
 		await expect(cards.first()).toBeVisible({ timeout: 15_000 })
 		const scroll = view.locator('.concert-scroll')
@@ -365,14 +365,14 @@ test.describe('Discovery swap tile', () => {
 		await cards.first().evaluate((card) =>
 			Promise.all(
 				card
-					.closest('event-card')
+					.closest('concert-card')
 					?.getAnimations()
 					.map((a) => a.finished) ?? [],
 			),
 		)
 		await cards.first().click()
 		const sheet = page.locator(
-			'event-detail-sheet dialog[open], event-detail-sheet :popover-open',
+			'concert-sheet dialog[open], concert-sheet :popover-open',
 		)
 		await expect(sheet.first()).toBeVisible()
 		await expect(page).toHaveURL(/\/concerts\//)
@@ -391,7 +391,7 @@ test.describe('Discovery swap tile', () => {
 		page,
 	}) => {
 		await openDiscovery(page, '/discovery?view=nearby')
-		await expect(page.locator('nearby-concerts')).toBeVisible()
+		await expect(page.locator('discovery-concerts')).toBeVisible()
 		await expect(tile(page)).toHaveAccessibleName('アーティスト')
 	})
 })

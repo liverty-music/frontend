@@ -11,10 +11,10 @@ import { PageHeader } from '../src/components/page-header/page-header'
 import { SvgIcon } from '../src/components/svg-icon/svg-icon'
 import { IAnalyticsService } from '../src/lib/analytics/analytics-service'
 import ja from '../src/locales/ja/translation.json'
+import { IActionMenuService } from '../src/services/action-menu-service'
 import { IAuthService } from '../src/services/auth-service'
 import { IBottomSheetTracker } from '../src/services/bottom-sheet-tracker'
 import { IErrorBoundaryService } from '../src/services/error-boundary-service'
-import { IFabMenuService } from '../src/services/fab-menu-service'
 import { INotificationManager } from '../src/services/notification-manager'
 import { INotificationStore } from '../src/services/notification-store'
 import { IOnboardingService } from '../src/services/onboarding-service'
@@ -32,26 +32,26 @@ const { stub } = vi.hoisted(() => ({
 vi.mock('../src/routes/welcome/welcome-route', stub('WelcomeRoute'))
 vi.mock('../src/routes/about/about-route', stub('AboutRoute'))
 vi.mock(
-	'../src/routes/auth-callback/auth-callback-route',
-	stub('AuthCallbackRoute'),
+	'../src/routes/sign-in-callback/sign-in-callback-route',
+	stub('SignInCallbackRoute'),
 )
-vi.mock('../src/routes/dashboard/dashboard-route', stub('DashboardRoute'))
-vi.mock('../src/routes/event/event-route', stub('EventRoute'))
+vi.mock('../src/routes/timetable/timetable-route', stub('TimetableRoute'))
+vi.mock('../src/routes/concert/concert-route', stub('ConcertRoute'))
 vi.mock('../src/routes/discovery/discovery-route', stub('DiscoveryRoute'))
 vi.mock('../src/routes/my-artists/my-artists-route', stub('MyArtistsRoute'))
 vi.mock('../src/routes/settings/settings-route', stub('SettingsRoute'))
 vi.mock('../src/routes/consent/consent-route', stub('ConsentRoute'))
 vi.mock(
-	'../src/routes/verify-callback/verify-callback-route',
-	stub('VerifyCallbackRoute'),
+	'../src/routes/identity-verification-callback/identity-verification-callback-route',
+	stub('IdentityVerificationCallbackRoute'),
 )
 vi.mock(
-	'../src/routes/lottery-entry/lottery-entry-route',
-	stub('LotteryEntryRoute'),
+	'../src/routes/new-lottery-entry/new-lottery-entry-route',
+	stub('NewLotteryEntryRoute'),
 )
 vi.mock(
-	'../src/routes/lottery-entry-status/lottery-entry-status-route',
-	stub('LotteryEntryStatusRoute'),
+	'../src/routes/lottery-entries/lottery-entries-route',
+	stub('LotteryEntriesRoute'),
 )
 vi.mock('../src/routes/legal/terms-route', stub('TermsRoute'))
 vi.mock('../src/routes/legal/privacy-route', stub('PrivacyRoute'))
@@ -60,8 +60,8 @@ vi.mock('../src/routes/tickets/tickets-route', stub('TicketsRoute'))
 vi.mock('../src/routes/order/order-route', stub('OrderRoute'))
 vi.mock('../src/routes/not-found/not-found-route', stub('NotFoundRoute'))
 vi.mock(
-	'../src/routes/passkey-recovery/passkey-recovery-route',
-	stub('PasskeyRecoveryRoute'),
+	'../src/routes/sign-in-help/sign-in-help-route',
+	stub('SignInHelpRoute'),
 )
 vi.mock(
 	'../src/routes/verify-email/verify-email-route',
@@ -261,8 +261,8 @@ describe('app-shell', () => {
 
 		it('opens the passkey recovery screen for a guest', async () => {
 			await go('passkey-recovery')
-			expect(displayedRoute()).toBe('passkey-recovery-route')
-			expect(headerTitle()).toBe('passkeyRecovery.title')
+			expect(displayedRoute()).toBe('sign-in-help-route')
+			expect(headerTitle()).toBe('signInHelp.title')
 		})
 
 		it('opens the email verification screen for a guest', async () => {
@@ -293,8 +293,8 @@ describe('app-shell', () => {
 			expect(headerTitle()).toBe('nav.myArtists')
 			expect(activeTabs()).toEqual(['my-artists'])
 
-			await go('dashboard')
-			expect(headerTitle()).toBe('nav.home')
+			await go('timetable')
+			expect(headerTitle()).toBe('nav.timetable')
 			expect(activeTabs()).toEqual(['home'])
 		})
 
@@ -410,15 +410,15 @@ describe('app-shell', () => {
 	})
 
 	describe('document title', () => {
-		it('names the concert deep-link "Concert" and the dashboard "Dashboard"', async () => {
-			await go('dashboard')
-			expect(document.title).toMatch(/^Dashboard\b/)
+		it('names the concert deep-link "Concert" and the timetable "Timetable"', async () => {
+			await go('timetable')
+			expect(document.title).toMatch(/^Timetable\b/)
 
 			await go('concerts/concert-1')
 			expect(document.title).toMatch(/^Concert\b/)
 
-			await go('dashboard')
-			expect(document.title).toMatch(/^Dashboard\b/)
+			await go('timetable')
+			expect(document.title).toMatch(/^Timetable\b/)
 		})
 	})
 
@@ -433,13 +433,13 @@ describe('app-shell', () => {
 	})
 
 	describe('FAB', () => {
-		const fab = () => host().querySelector('fab-menu')
+		const fab = () => host().querySelector('action-menu')
 		const itemIds = () =>
-			fixture.container.get(IFabMenuService).actions.map((a) => a.id)
+			fixture.container.get(IActionMenuService).actions.map((a) => a.id)
 
-		// @spec components/infrastructure/fan/web/global/fab-menu "Settings is the only item on Tickets"
+		// @spec components/infrastructure/fan/web/global/action-menu "Settings is the only item on Tickets"
 		it('ends the launcher with Settings on every tab page, so Tickets shows the FAB', async () => {
-			for (const tab of ['dashboard', 'discovery', 'my-artists', 'tickets']) {
+			for (const tab of ['timetable', 'discovery', 'my-artists', 'tickets']) {
 				await go(tab)
 				expect(itemIds().at(-1)).toBe('settings')
 			}
@@ -448,24 +448,24 @@ describe('app-shell', () => {
 			expect(fab()).not.toBeNull()
 		})
 
-		// @spec components/infrastructure/fan/web/global/fab-menu "No Settings item outside the tabs"
+		// @spec components/infrastructure/fan/web/global/action-menu "No Settings item outside the tabs"
 		it.each(['settings', 'events/event-1', 'orders/order-1'])(
 			'offers no Settings item on %s',
 			async (path) => {
-				await go('dashboard')
+				await go('timetable')
 				expect(itemIds()).toContain('settings')
 				await go(path)
 				expect(itemIds()).not.toContain('settings')
-				// @spec components/infrastructure/fan/web/global/fab-menu "FAB hidden when no actions are contributed"
+				// @spec components/infrastructure/fan/web/global/action-menu "FAB hidden when no actions are contributed"
 				expect(fab()).toBeNull()
 			},
 		)
 
-		// @spec components/infrastructure/fan/web/global/fab-menu "Choosing Settings"
+		// @spec components/infrastructure/fan/web/global/action-menu "Choosing Settings"
 		it('displays Settings when the Settings item is chosen', async () => {
 			await go('tickets')
 			const item = fixture.container
-				.get(IFabMenuService)
+				.get(IActionMenuService)
 				.actions.find((a) => a.id === 'settings')
 			item?.invoke()
 			await new Promise((r) => setTimeout(r, 0))
@@ -473,10 +473,10 @@ describe('app-shell', () => {
 			expect(displayedRoute()).toBe('settings-route')
 		})
 
-		// @spec components/infrastructure/fan/web/global/fab-menu "FAB hidden while a bottom sheet is open"
+		// @spec components/infrastructure/fan/web/global/action-menu "FAB hidden while a bottom sheet is open"
 		it('is not shown while any bottom sheet is open and returns when it closes', async () => {
 			await go('discovery')
-			const dispose = fixture.container.get(IFabMenuService).register({}, [
+			const dispose = fixture.container.get(IActionMenuService).register({}, [
 				{
 					id: 'search',
 					icon: 'search',

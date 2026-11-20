@@ -113,7 +113,7 @@ describe('ErrorBoundaryService', () => {
 		})
 
 		it(`@spec ${BANNER_SPEC} "Error is captured with context"`, () => {
-			window.history.replaceState(null, '', '/dashboard?artists=a1')
+			window.history.replaceState(null, '', '/timetable?artists=a1')
 
 			sut.captureError(new Error('test'), 'ctx')
 
@@ -121,7 +121,7 @@ describe('ErrorBoundaryService', () => {
 			expect(current).toMatchObject({
 				message: 'test',
 				context: 'ctx',
-				routeUrl: '/dashboard',
+				routeUrl: '/timetable',
 			})
 			expect(current?.id).toMatch(/^ERR-/)
 			expect(current?.stack).toContain('Error: test')
@@ -164,8 +164,8 @@ describe('ErrorBoundaryService', () => {
 
 	describe('error report', () => {
 		it(`@spec ${BANNER_SPEC} "Error is reported with its Error ID and steps"`, () => {
-			window.history.replaceState(null, '', '/dashboard')
-			sut.addBreadcrumb('navigation', 'dashboard')
+			window.history.replaceState(null, '', '/timetable')
+			sut.addBreadcrumb('navigation', 'timetable')
 			window.history.replaceState(null, '', '/events/e-1')
 			sut.addBreadcrumb('navigation', 'events/:id')
 			const err = new Error('boom')
@@ -174,7 +174,7 @@ describe('ErrorBoundaryService', () => {
 
 			expect(analytics.addExceptionStep.mock.calls).toEqual([
 				// No route: a path such as /events/e-1 holds an id.
-				['dashboard', { type: 'navigation' }],
+				['timetable', { type: 'navigation' }],
 				['events/:id', { type: 'navigation' }],
 			])
 			expect(analytics.captureException).toHaveBeenCalledOnce()
@@ -351,16 +351,16 @@ describe('ErrorBoundaryService', () => {
 
 	describe('addBreadcrumb', () => {
 		it(`@spec ${BANNER_SPEC} "Breadcrumb tracking"`, () => {
-			window.history.replaceState(null, '', '/dashboard')
+			window.history.replaceState(null, '', '/timetable')
 			setRpcFailureStepSink(null)
-			sut.addBreadcrumb('navigation', 'dashboard')
+			sut.addBreadcrumb('navigation', 'timetable')
 			sut.addBreadcrumb('rpc', 'ArtistService/Follow Internal')
 			sut.addBreadcrumb('action', 'follow_artist')
 
 			expect(sut.breadcrumbs.map((b) => [b.type, b.label, b.route])).toEqual([
-				['navigation', 'dashboard', '/dashboard'],
-				['rpc', 'ArtistService/Follow Internal', '/dashboard'],
-				['action', 'follow_artist', '/dashboard'],
+				['navigation', 'timetable', '/timetable'],
+				['rpc', 'ArtistService/Follow Internal', '/timetable'],
+				['action', 'follow_artist', '/timetable'],
 			])
 			expect(sut.breadcrumbs[0].timestamp).toBeInstanceOf(Date)
 			// Every step also goes to the error report.

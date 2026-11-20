@@ -125,7 +125,7 @@ export function checkRouteLoading(
 		// Render state belongs to the component lifecycle, not to a router hook.
 		// A route MAY reflect cached content before its first render (e.g. from
 		// `bound()`) when the render it causes is bounded by what the fan can see —
-		// the dashboard does, behind the timetable's date window — but it must not
+		// the timetable does, behind the timetable's date window — but it must not
 		// do it in `loading()`, where the router, not the component, decides when it
 		// runs and what it holds back. Narrow by design: it matches the cache-read shape (`peek*` / `getCached*`)
 		// rather than guessing which fields the template renders, so it reports no

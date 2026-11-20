@@ -42,7 +42,7 @@ async function seedGuest(
 	)
 }
 
-test(`@spec ${NAV} "Navigation shown during onboarding (discover, dashboard, my-artists)"`, async ({
+test(`@spec ${NAV} "Navigation shown during onboarding (discover, timetable, my-artists)"`, async ({
 	page,
 }) => {
 	await seedGuest(page, { onboarded: false, home: false })
@@ -56,7 +56,7 @@ test(`@spec ${NAV} "Navigation shown during onboarding (discover, dashboard, my-
 	).not.toBe('none')
 })
 
-test(`@spec ${NAV} "Dashboard icon data attribute for coach mark targeting"`, async ({
+test(`@spec ${NAV} "Timetable icon data attribute for coach mark targeting"`, async ({
 	page,
 }) => {
 	await seedGuest(page, { onboarded: true, home: true })
@@ -64,7 +64,7 @@ test(`@spec ${NAV} "Dashboard icon data attribute for coach mark targeting"`, as
 
 	await expect(page.locator('.nav-tab[data-nav="home"]')).toHaveAttribute(
 		'href',
-		/dashboard/,
+		/timetable/,
 	)
 	await expect(page.locator('.nav-tab[data-nav="my-artists"]')).toHaveAttribute(
 		'href',
@@ -84,7 +84,9 @@ async function navAt320(page: Page) {
 		const tabs = [...document.querySelectorAll<HTMLElement>('.nav-tab')]
 		const labels = tabs.map((t) => t.querySelector('.nav-label') as HTMLElement)
 		const boxes = labels.map((l) => l.getBoundingClientRect())
-		const fabEl = document.querySelector('fab-menu .fab-toggle') as HTMLElement
+		const fabEl = document.querySelector(
+			'action-menu .action-menu-toggle',
+		) as HTMLElement
 		const f = fabEl.getBoundingClientRect()
 		const centre = { x: f.left + f.width / 2, y: f.top + f.height / 2 }
 		// Distance from a label's box to the FAB's circle.
@@ -122,12 +124,12 @@ async function navAt320(page: Page) {
 test(`@spec ${NAV} "Bar on a 320 px screen"`, async ({ page }) => {
 	await seedSignedInFan(page, { language: 'ja' })
 	await page.setViewportSize({ width: 320, height: 844 })
-	await openShell(page, '/dashboard')
+	await openShell(page, '/timetable')
 	await expect(fab(page)).toBeVisible()
 	await page.evaluate(() => document.fonts.ready)
 
 	const check = async () => {
-		await settle(page, 'fab-menu, bottom-nav-bar')
+		await settle(page, 'action-menu, bottom-nav-bar')
 		await expect
 			.poll(async () => (await navAt320(page)).fontSizes)
 			.toEqual(['11px', '11px', '11px', '11px'])

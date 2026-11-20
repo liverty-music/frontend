@@ -1,7 +1,7 @@
 // @vitest-environment node
 
 import { describe, expect, it } from 'vitest'
-import { getStageParams } from '../../src/components/dna-orb/stage-effects'
+import { getStageParams } from '../../src/components/artist-bubbles/stage-effects'
 
 describe('getStageParams', () => {
 	describe('boundary values', () => {

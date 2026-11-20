@@ -63,10 +63,10 @@
 </signup-prompt-banner>
 
 <!-- Home area sheet for a person without a home -->
-<user-home-selector
+<home-area-selector
   component.ref="homeSelector"
   current-code.bind="userStore.currentHome"
   on-home-selected.bind="(code) => onHomeSelected(code)"
   required.bind="homeRequired"
   sheet-hidden.trigger="onHomeSheetHidden()"
-></user-home-selector>
+></home-area-selector>

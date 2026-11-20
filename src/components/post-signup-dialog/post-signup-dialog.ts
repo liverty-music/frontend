@@ -1,8 +1,8 @@
 import { bindable, ILogger, observable, resolve, watch } from 'aurelia'
 import { IFollowStore } from '../../services/follow-store'
 import { INotificationManager } from '../../services/notification-manager'
+import { INotificationPromptService } from '../../services/notification-prompt-service'
 import { IPromptCoordinator } from '../../services/prompt-coordinator'
-import { IPushOfferService } from '../../services/push-offer-service'
 import { IPwaInstallService } from '../../services/pwa-install-service'
 
 /**
@@ -39,7 +39,7 @@ export class PostSignupDialog {
 
 	private readonly logger = resolve(ILogger).scopeTo('PostSignupDialog')
 	private readonly notificationManager = resolve(INotificationManager)
-	private readonly pushOffer = resolve(IPushOfferService)
+	private readonly notificationPrompt = resolve(INotificationPromptService)
 	private readonly pwaInstall = resolve(IPwaInstallService)
 	private readonly promptCoordinator = resolve(IPromptCoordinator)
 	private readonly followStore = resolve(IFollowStore)
@@ -93,7 +93,7 @@ export class PostSignupDialog {
 		if (this.pwaInstall.isIos && !installed) return ['iosGuide']
 		const steps: PostSignupStep[] = []
 		if (
-			this.pushOffer.canReceivePush &&
+			this.notificationPrompt.canReceivePush &&
 			this.notificationManager.permission === 'default'
 		) {
 			steps.push('notify')
@@ -115,7 +115,7 @@ export class PostSignupDialog {
 	 * closed moves on; blocked or failed stays to say so, until 「次へ」.
 	 */
 	public async onEnableNotifications(): Promise<void> {
-		const outcome = await this.pushOffer.accept({
+		const outcome = await this.notificationPrompt.accept({
 			source: 'post_signup_dialog',
 			inline: true,
 		})

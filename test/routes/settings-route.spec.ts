@@ -327,7 +327,7 @@ describe('SettingsRoute', () => {
 	})
 
 	describe('onHomeSelected', () => {
-		it('is a notification-only handler — UserHomeSelector owns the userService.updateHome call', () => {
+		it('is a notification-only handler — HomeAreaSelector owns the userService.updateHome call', () => {
 			// The old behavior wrote `currentHome` directly here; that has
 			// moved into the derived getter. Calling onHomeSelected with
 			// arbitrary code must NOT mutate observable state — the only
@@ -345,7 +345,7 @@ describe('SettingsRoute', () => {
 	})
 
 	describe('home area persistence (the caller owns it)', () => {
-		// @spec components/infrastructure/fan/web/global/user-home-selector "Caller owns persistence — authenticated home save"
+		// @spec components/infrastructure/fan/web/global/home-area-selector "Caller owns persistence — authenticated home save"
 		it("saves a signed-in fan's home with UserService.SetHome", async () => {
 			mockAuth.isAuthenticated = true
 			const updateHome = vi.fn().mockResolvedValue(undefined)
@@ -372,7 +372,7 @@ describe('SettingsRoute', () => {
 			)
 		})
 
-		// @spec components/infrastructure/fan/web/global/user-home-selector "Caller owns persistence — guest home save"
+		// @spec components/infrastructure/fan/web/global/home-area-selector "Caller owns persistence — guest home save"
 		it("saves a guest's home as the guest home, without an RPC", async () => {
 			mockAuth.isAuthenticated = false
 			const updateHome = vi.fn()

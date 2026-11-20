@@ -11,12 +11,12 @@ import { hoverPointer } from '../../../.storybook/gestures'
 import { expectScreenshot } from '../../../.storybook/screenshot'
 import { expectTargets } from '../../../.storybook/target-size'
 import { atWidth } from '../../../.storybook/viewport'
-import { IFabMenuService } from '../../services/fab-menu-service'
+import { IActionMenuService } from '../../services/action-menu-service'
 import { BottomNavBar } from './bottom-nav-bar'
 
 /** The four tab routes of the shell, as the router's navigation model gives them. */
 const TABS = [
-	{ id: 'dashboard', icon: 'home', labelKey: 'nav.home', active: true },
+	{ id: 'timetable', icon: 'home', labelKey: 'nav.timetable', active: true },
 	{ id: 'discovery', icon: 'discovery', labelKey: 'nav.discovery' },
 	{ id: 'my-artists', icon: 'my-artists', labelKey: 'nav.myArtists' },
 	{ id: 'tickets', icon: 'ticket', labelKey: 'nav.tickets' },
@@ -39,7 +39,7 @@ const items = [
 		subscribe: () => ({ dispose: () => undefined }),
 	}),
 	// One launcher action: the FAB shows and the bar cuts its notch.
-	Registration.instance(IFabMenuService, {
+	Registration.instance(IActionMenuService, {
 		actions: [{ id: 'help', icon: 'info', labelKey: 'fab.help' }],
 	}),
 ]

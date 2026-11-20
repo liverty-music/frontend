@@ -1,7 +1,7 @@
 import { I18N } from '@aurelia/i18n'
 import { DI, LoggerConfiguration, LogLevel, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { UserHomeSelector } from '../../src/components/user-home-selector/user-home-selector'
+import { HomeAreaSelector } from '../../src/components/home-area-selector/home-area-selector'
 import { IAuthService } from '../../src/services/auth-service'
 import { IUserStore } from '../../src/services/user-store'
 import { createMockI18n } from '../helpers/mock-i18n'
@@ -9,7 +9,7 @@ import { createMockAuthService } from '../helpers/mock-rpc-clients'
 
 // UserStore is the single owner of the User entity: it owns both the
 // authenticated write path (updateHome) and the guest home write path
-// (setGuestHome) that UserHomeSelector calls depending on auth state.
+// (setGuestHome) that HomeAreaSelector calls depending on auth state.
 function createMockUserStore() {
 	return {
 		guestHome: null,
@@ -18,8 +18,8 @@ function createMockUserStore() {
 	}
 }
 
-describe('UserHomeSelector', () => {
-	let sut: UserHomeSelector
+describe('HomeAreaSelector', () => {
+	let sut: HomeAreaSelector
 	let mockUserStore: ReturnType<typeof createMockUserStore>
 
 	beforeEach(() => {
@@ -34,8 +34,8 @@ describe('UserHomeSelector', () => {
 		container.register(
 			Registration.instance(IUserStore, mockUserStore as unknown as IUserStore),
 		)
-		container.register(UserHomeSelector)
-		sut = container.get(UserHomeSelector)
+		container.register(HomeAreaSelector)
+		sut = container.get(HomeAreaSelector)
 	})
 
 	afterEach(() => {

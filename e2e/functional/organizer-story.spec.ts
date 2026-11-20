@@ -186,7 +186,7 @@ async function walk(page: Page, api: Server, log: RpcLog): Promise<void> {
 	const dialog = confirmDialog(page)
 	await expect(dialog).toContainText('フォロワーに通知します')
 	await dialog.getByRole('button', { name: '公開する' }).click()
-	await expect(page.locator('event-route status-badge').first()).toHaveText(
+	await expect(page.locator('concert-route status-badge').first()).toHaveText(
 		/公開中/,
 	)
 	expect(api.published()).toBe(true)

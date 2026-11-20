@@ -1,0 +1,164 @@
+import {
+	defineAureliaStory,
+	type Meta,
+	type StoryObj,
+} from '@aurelia/storybook'
+import { expect, userEvent, waitFor, within } from 'storybook/test'
+import { expectScreenshot } from '../../../.storybook/screenshot'
+import { atWidth } from '../../../.storybook/viewport'
+import { AreaFilterSheet } from './area-filter-sheet'
+
+const meta = {
+	title: 'Components/AllNearby/AreaFilterSheet',
+	component: AreaFilterSheet,
+	argTypes: {
+		areaName: { control: 'text', description: 'The area row’s value.' },
+		periodLabel: { control: 'text', description: 'The period row’s value.' },
+	},
+} satisfies Meta<typeof AreaFilterSheet>
+
+export default meta
+type Story = StoryObj<typeof meta>
+
+/**
+ * The sheet with a button that opens it, as the launcher's filter action does,
+ * so the sheet can be opened again after the play function has closed it.
+ */
+const render: Story['render'] = (args) =>
+	defineAureliaStory({
+		template: `
+			<button type="button" click.trigger="sheet.open()">Open filters</button>
+			<area-filter-sheet
+				component.ref="sheet"
+				area-name.bind="areaName"
+				period-label.bind="periodLabel"
+			></area-filter-sheet>
+		`,
+		props: args,
+		register: [AreaFilterSheet],
+	})
+
+/**
+ * Opens the sheet, checks both rows show their values, then taps the area row:
+ * the sheet closes and reports the row only once it has finished closing
+ * (which also lifts the sheet's inert from the page for the next story).
+ */
+function play(area: string, period: string): Story['play'] {
+	return async ({ canvasElement }) => {
+		const host = canvasElement.querySelector('area-filter-sheet')
+		if (!host) throw new Error('not rendered')
+		const canvas = within(canvasElement)
+		await userEvent.click(canvas.getByRole('button', { name: 'Open filters' }))
+		const areaRow = canvas.getByRole('button', {
+			name: new RegExp(`エリア\\s*${area}`),
+		})
+		const periodRow = canvas.getByRole('button', {
+			name: new RegExp(`期間\\s*${period}`),
+		})
+		await waitFor(() => {
+			expect(areaRow).toBeVisible()
+			expect(periodRow).toBeVisible()
+		})
+		// @spec components/infrastructure/fan/web/global/bottom-sheet "Sheet with a heading"
+		// The sheet's own heading, below the handle bar in the title-large
+		// style, names the dialog; the rows start 16 px below it.
+		const title = canvas.getByRole('heading', { name: 'エリアと期間' })
+		const handle = canvasElement.querySelector('.handle-bar') as HTMLElement
+		await expect(getComputedStyle(title).fontSize).toBe('22px')
+		await expect(
+			title.getBoundingClientRect().top - handle.getBoundingClientRect().bottom,
+		).toBeCloseTo(0, 0)
+		await expect(
+			canvas.getByRole('dialog', { name: 'エリアと期間' }),
+		).toBeInTheDocument()
+		const list = canvas.getByRole('list')
+		await expect(
+			list.getBoundingClientRect().top - title.getBoundingClientRect().bottom,
+		).toBeCloseTo(16, 0)
+
+		let chosen = ''
+		host.addEventListener('filter-row-chosen', (e) => {
+			chosen = (e as CustomEvent<string>).detail
+		})
+		await userEvent.click(areaRow)
+		// @spec components/infrastructure/fan/web/route/discovery "A row opens its selector"
+		await waitFor(() => expect(chosen).toBe('area'), { timeout: 2000 })
+	}
+}
+
+/** The fan's home area and 7日以内: the defaults. */
+export const Default = {
+	render,
+	args: { areaName: '福岡県', periodLabel: '7日以内' },
+	play: play('福岡県', '7日以内'),
+} satisfies Story
+
+/** Another area than home, and a preset other than 7日以内. */
+export const OverrideSet = {
+	render,
+	args: { areaName: '大阪府', periodLabel: '今週末' },
+	play: play('大阪府', '今週末'),
+} satisfies Story
+
+/** A custom range shows as a localized range. */
+export const CustomRange = {
+	render,
+	args: { areaName: '福岡県', periodLabel: '8/12〜8/20' },
+	play: play('福岡県', '8/12〜8/20'),
+} satisfies Story
+
+/** A guest without a home area is asked to choose one. */
+export const NoArea = {
+	render,
+	args: { areaName: '', periodLabel: '7日以内' },
+	play: play('エリアを選ぶ', '7日以内'),
+} satisfies Story
+
+/**
+ * On a 320 px phone, where this change started: the heading and both rows
+ * keep their text. Each label shows in full on one line, and each value shows
+ * in full (a long area name would end in an ellipsis instead).
+ */
+export const NarrowWindow = {
+	render,
+	args: { areaName: '鹿児島県', periodLabel: '8/12〜8/20' },
+	play: async (context) => {
+		await atWidth(320, async () => {
+			const { canvasElement } = context
+			const canvas = within(canvasElement)
+			await userEvent.click(
+				canvas.getByRole('button', { name: 'Open filters' }),
+			)
+			const rows = ['nearby-area-row', 'nearby-period-row'].map(
+				(id) =>
+					canvasElement.querySelector(`[data-testid="${id}"]`) as HTMLElement,
+			)
+			await waitFor(() => expect(rows[0]).toBeVisible())
+			const title = canvas.getByRole('heading', { name: 'エリアと期間' })
+			await expect(title.getBoundingClientRect().height).toBe(28)
+			for (const row of rows) {
+				await expect(row.getBoundingClientRect().width).toBeLessThanOrEqual(320)
+				for (const part of ['.list-item-label', '.list-item-value']) {
+					const el = row.querySelector(part) as HTMLElement
+					await expect(el.scrollWidth).toBeLessThanOrEqual(el.clientWidth)
+				}
+				await expect(
+					(
+						row.querySelector('.list-item-label') as HTMLElement
+					).getBoundingClientRect().height,
+				).toBe(24)
+			}
+			await expectScreenshot(
+				canvasElement.querySelector('.sheet-body') as HTMLElement,
+				'area-filter-sheet-320',
+			)
+			// Close it, lifting the sheet's inert for the next story.
+			await userEvent.keyboard('{Escape}')
+			await waitFor(() =>
+				expect(
+					canvasElement.querySelector('dialog')?.matches(':popover-open'),
+				).toBe(false),
+			)
+		})
+	},
+} satisfies Story

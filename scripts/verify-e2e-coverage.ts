@@ -12,7 +12,7 @@
  */
 
 import { execFileSync } from 'node:child_process'
-import { readFileSync, readdirSync, statSync } from 'node:fs'
+import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { exit } from 'node:process'
 import {
@@ -82,7 +82,7 @@ const KNOWN_GAPS: KnownGap[] = [
 	{
 		spec: 'e2e/prod/hosted-login-offers-no-password-setup.guest.spec.ts',
 		reason:
-			"Checks the patched Login V2 image that only production runs; a pull-request build has no hosted login.",
+			'Checks the patched Login V2 image that only production runs; a pull-request build has no hosted login.',
 	},
 	{
 		spec: 'e2e/smoke/post-deploy.spec.ts',

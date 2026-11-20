@@ -187,9 +187,11 @@ describe('SettingsRoute — identity verification', () => {
 			sut.attached()
 
 			expect(published().map((snack) => snack.message)).toEqual([
-				'verifyCallback.success.heading',
+				'identityVerificationCallback.success.heading',
 			])
-			expect(ja.verifyCallback.success.heading).toBe('本人確認が完了しました')
+			expect(ja.identityVerificationCallback.success.heading).toBe(
+				'本人確認が完了しました',
+			)
 			expect(sut.isVerified).toBe(true)
 			expect(sut.canStartIdentityVerification).toBe(false)
 			expect(sut.identityFailureKey).toBeNull()
@@ -202,8 +204,10 @@ describe('SettingsRoute — identity verification', () => {
 			sut.attached()
 			vi.advanceTimersByTime(10_000)
 
-			expect(sut.identityFailureKey).toBe('verifyCallback.error.notCompleted')
-			expect(ja.verifyCallback.error.notCompleted).toBe(
+			expect(sut.identityFailureKey).toBe(
+				'identityVerificationCallback.error.notCompleted',
+			)
+			expect(ja.identityVerificationCallback.error.notCompleted).toBe(
 				'カードの読み取りが終わっていないか、期限が切れました。もう一度お試しください。',
 			)
 			expect(sut.canStartIdentityVerification).toBe(true)
@@ -214,7 +218,7 @@ describe('SettingsRoute — identity verification', () => {
 			mockIdentityVerifications.failure = 'alreadyVerified'
 
 			expect(sut.identityFailureKey).toBe(
-				'verifyCallback.error.alreadyVerified',
+				'identityVerificationCallback.error.alreadyVerified',
 			)
 			expect(sut.identityFailureNeedsSupport).toBe(true)
 			expect(sut.supportEmail).toBe('pannpers@pannpers.dev')
@@ -224,8 +228,10 @@ describe('SettingsRoute — identity verification', () => {
 		it(`@spec ${SPEC} "Verification unavailable"`, () => {
 			mockIdentityVerifications.failure = 'unavailable'
 
-			expect(sut.identityFailureKey).toBe('verifyCallback.error.unavailable')
-			expect(ja.verifyCallback.error.unavailable).toBe(
+			expect(sut.identityFailureKey).toBe(
+				'identityVerificationCallback.error.unavailable',
+			)
+			expect(ja.identityVerificationCallback.error.unavailable).toBe(
 				'本人確認は現在ご利用いただけません。時間をおいてお試しください。',
 			)
 			expect(sut.identityFailureNeedsSupport).toBe(false)
@@ -248,9 +254,9 @@ describe('SettingsRoute — identity verification', () => {
 			mockIdentityVerifications.failure = 'sessionMismatch'
 
 			expect(sut.identityFailureKey).toBe(
-				'verifyCallback.error.sessionMismatch',
+				'identityVerificationCallback.error.sessionMismatch',
 			)
-			expect(ja.verifyCallback.error.sessionMismatch).toBe(
+			expect(ja.identityVerificationCallback.error.sessionMismatch).toBe(
 				'本人確認の手続きが見つかりませんでした。設定画面からもう一度お試しください。',
 			)
 			expect(sut.canStartIdentityVerification).toBe(true)

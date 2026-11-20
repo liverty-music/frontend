@@ -60,10 +60,10 @@ describe('PageHelp', () => {
 
 		// BUG DETECTION: This test will FAIL against current code.
 		// The spec defines auto-open only for discovery and my-artists.
-		// Dashboard should show the ? icon only (manual open).
-		// @spec components/infrastructure/fan/web/global/page-help "Dashboard help never auto-opens"
-		it('does NOT auto-open on dashboard page', () => {
-			sut.page = 'dashboard'
+		// Timetable should show the ? icon only (manual open).
+		// @spec components/infrastructure/fan/web/global/page-help "Timetable help never auto-opens"
+		it('does NOT auto-open on timetable page', () => {
+			sut.page = 'timetable'
 
 			sut.attached()
 
@@ -93,7 +93,7 @@ describe('PageHelp', () => {
 
 	describe('manual open', () => {
 		it('opens on help tap regardless of page', () => {
-			sut.page = 'dashboard'
+			sut.page = 'timetable'
 
 			sut.open()
 
@@ -130,7 +130,7 @@ describe('PageHelp', () => {
 		})
 
 		it('accepts all valid page values', () => {
-			const pages: PageHelpPage[] = ['discovery', 'dashboard', 'my-artists']
+			const pages: PageHelpPage[] = ['discovery', 'timetable', 'my-artists']
 			for (const page of pages) {
 				sut.page = page
 				expect(sut.page).toBe(page)
@@ -141,7 +141,7 @@ describe('PageHelp', () => {
 			sut.open()
 			expect(sut.isOpen).toBe(true)
 
-			sut.page = 'dashboard'
+			sut.page = 'timetable'
 
 			expect(sut.isOpen).toBe(true)
 		})

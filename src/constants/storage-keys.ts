@@ -5,7 +5,7 @@ export const StorageKeys = {
 	pushOfferDeclines: 'push.offerDeclines',
 	pwaInstalled: 'pwa.installed',
 	postSignupShown: 'postSignup.shown',
-	// Celebration shown-once flag (guest light tier on first dashboard arrival).
+	// Celebration shown-once flag (guest light tier on first timetable arrival).
 	// Shared with the E2E suite, which seeds/removes this key to control the
 	// celebration overlay's visibility.
 	celebrationShown: 'onboarding.celebrationShown',
@@ -15,7 +15,7 @@ export const StorageKeys = {
 	// Discovery bubble sound-effect preferences. '1'/'0' for mute, '0'..'1' for volume.
 	soundMuted: 'sound.muted',
 	soundVolume: 'sound.volume',
-	// Laser beam spotlight effect on dashboard. 'true'/'false', defaults to off.
+	// Laser beam spotlight effect on timetable. 'true'/'false', defaults to off.
 	beamsEnabled: 'beams.enabled',
 	// FAB action-launcher placement (left-handed mode). 'left'/'right',
 	// defaults to 'right' (bottom-right corner). Mirrors the beam preference.

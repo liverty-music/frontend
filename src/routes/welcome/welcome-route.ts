@@ -16,8 +16,7 @@ import { Snack } from '../../../shared/ui/snack-bar/snack'
 import { ILocalStorage } from '../../adapter/storage/local-storage'
 import { takePasskeyReturn } from '../../adapter/storage/passkey-return-storage'
 import { artistHue } from '../../adapter/view/artist-color'
-import type { EventDetailSheet } from '../../components/live-highway/event-detail-sheet'
-import type { LiveEvent } from '../../components/live-highway/live-event'
+import type { ConcertSheet } from '../../components/concert-sheet/concert-sheet'
 import {
 	getPreviewArtistIds,
 	getPreviewArtistNameMap,
@@ -101,7 +100,7 @@ export class WelcomeRoute implements IRouteViewModel {
 	public demoExiting = false
 
 	/** Bound via `component.ref` — the real detail sheet opened by card taps. */
-	public detailSheet?: EventDetailSheet
+	public detailSheet?: ConcertSheet
 
 	/** Set by `ref` in the template — the demo section observed for scroll entry. */
 	public demoEl?: HTMLElement
@@ -252,7 +251,7 @@ export class WelcomeRoute implements IRouteViewModel {
 	}
 
 	/** A concert card was activated → open the product's real detail sheet. */
-	public onEventSelected(event: CustomEvent<{ event: LiveEvent }>): void {
+	public onEventSelected(event: CustomEvent<{ event: Concert }>): void {
 		this.clearCoachTimer()
 		this.coachActive = false
 		this.detailSheet?.open(event.detail.event, 'page', false)
@@ -311,7 +310,7 @@ export class WelcomeRoute implements IRouteViewModel {
 			// Preview-only synthetic hype. Intentionally NOT DEFAULT_HYPE — `watch`
 			// makes preview concerts render as "unmatched" (faded-poster treatment)
 			// per the passion-level hype-lane match rule, which keeps the welcome
-			// page softer than a real fan's dashboard. Changing this to DEFAULT_HYPE
+			// page softer than a real fan's timetable. Changing this to DEFAULT_HYPE
 			// would shift the visual treatment to "matched" (festival-stage) and
 			// alter the welcome page's intended aesthetic.
 			const artistMap = new Map<string, { artist: Artist; hype: Hype }>()
@@ -387,7 +386,7 @@ export class WelcomeRoute implements IRouteViewModel {
 	public async selectLanguage(newLocale: string): Promise<void> {
 		if (!newLocale || newLocale === this.i18n.getLocale()) return
 		// Welcome is anonymous-only — canLoad redirects authenticated
-		// callers to /dashboard before this code runs, so
+		// callers to /timetable before this code runs, so
 		// `authService.isAuthenticated` is guaranteed false here. The
 		// `userStore.updatePreferredLanguage` branch inside changeLocale
 		// is therefore intentional dead code from this call site.
@@ -420,8 +419,8 @@ export class WelcomeRoute implements IRouteViewModel {
 				this.logger.info('Returning after creating a passkey')
 				return passkeyReturn
 			}
-			this.logger.info('User is authenticated, redirecting to dashboard')
-			return 'dashboard'
+			this.logger.info('User is authenticated, redirecting to timetable')
+			return 'timetable'
 		}
 
 		// A guest never keeps a marker.

@@ -1,0 +1,94 @@
+import {
+	defineAureliaStory,
+	type Meta,
+	type StoryObj,
+} from '@aurelia/storybook'
+import { expect, within } from 'storybook/test'
+import { expectScreenshot } from '../../../.storybook/screenshot'
+import { expectTargets } from '../../../.storybook/target-size'
+import { type ConcertDateTab, ConcertDateTabs } from './concert-date-tabs'
+
+const meta = {
+	title: 'Components/ConcertDateTabs',
+	component: ConcertDateTabs,
+	argTypes: {
+		label: { control: 'text', description: 'Accessible name of the tabs.' },
+		cancelledLabel: {
+			control: 'text',
+			description: 'Mark of a cancelled date, e.g. 中止.',
+		},
+	},
+} satisfies Meta<typeof ConcertDateTabs>
+
+export default meta
+type Story = StoryObj<typeof meta>
+
+function tabs(
+	labels: string[],
+	selected: number,
+	cancelled: number[] = [],
+): ConcertDateTab[] {
+	return labels.map((label, i) => ({
+		id: `ev-${i + 1}`,
+		label,
+		selected: i === selected,
+		cancelled: cancelled.includes(i),
+	}))
+}
+
+// Rendered in a 360px-wide frame: the narrowest supported phone viewport.
+function story(items: ConcertDateTab[]) {
+	return defineAureliaStory({
+		template: `<div class="frame-360" style="inline-size: 360px">
+			<concert-date-tabs tabs.bind="tabs" label="Dates" cancelled-label="中止"></concert-date-tabs>
+		</div>`,
+		props: { tabs: items },
+		register: [ConcertDateTabs],
+	})
+}
+
+/** A two-day run with the first day displayed. */
+export const TwoDays = {
+	render: () => story(tabs(['11/20(金)', '11/21(土)'], 0)),
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement)
+		const links = canvas.getAllByRole('link')
+		await expect(links).toHaveLength(2)
+		await expect(links[0]).toHaveAttribute('aria-current', 'page')
+		await expect(links[1]).toHaveAttribute('href', '/events/ev-2')
+	},
+} satisfies Story
+
+/** Four dates, the most shown as tabs, at 360px. */
+export const FourDates = {
+	render: () =>
+		story(tabs(['11/20(金)', '11/21(土)', '11/27(金)', '11/28(土)'], 2)),
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement)
+		const links = canvas.getAllByRole('link')
+		await expect(links).toHaveLength(4)
+		// Every tab is a 48 px touch target, side by side without overlap,
+		// and the four fit the 360px frame.
+		// @spec components/infrastructure/fan/web/global/design-tokens "Neighbouring controls"
+		expectTargets(canvasElement, 'a')
+		const frame = canvasElement.querySelector('.frame-360') as HTMLElement
+		await expect(frame.scrollWidth).toBeLessThanOrEqual(360)
+		await expectScreenshot(frame, 'concert-date-tabs-four-360')
+	},
+} satisfies Story
+
+/** Four dates, one of them cancelled and marked 中止, at 360px. */
+export const WithCancelledDate = {
+	render: () =>
+		story(tabs(['11/20(金)', '11/21(土)', '11/27(金)', '11/28(土)'], 0, [1])),
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement)
+		const links = canvas.getAllByRole('link')
+		await expect(links[1]).toHaveTextContent('11/21(土)中止')
+		await expect(links[0]).not.toHaveTextContent('中止')
+		// The mark stays inside the tap target and the 360px frame.
+		expectTargets(canvasElement, 'a')
+		const frame = canvasElement.querySelector('.frame-360') as HTMLElement
+		await expect(frame.scrollWidth).toBeLessThanOrEqual(360)
+	},
+} satisfies Story

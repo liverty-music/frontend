@@ -23,17 +23,16 @@ import { ITicketJourneyRpcClient } from './adapter/rpc/client/ticket-journey-cli
 import { IUserRpcClient } from './adapter/rpc/client/user-client'
 import { ILocalStorage } from './adapter/storage/local-storage'
 import { AppShell } from './app-shell'
+import { ActionMenu } from './components/action-menu/action-menu'
 import { ArtistFilterBar } from './components/artist-filter-bar/artist-filter-bar'
 import { BottomNavBar } from './components/bottom-nav-bar/bottom-nav-bar'
 import { BottomSheet } from './components/bottom-sheet/bottom-sheet'
 import { CelebrationOverlay } from './components/celebration-overlay/celebration-overlay'
-import { FabMenu } from './components/fab-menu/fab-menu'
+import { ConcertSheet } from './components/concert-sheet/concert-sheet'
+import { HomeAreaSelector } from './components/home-area-selector/home-area-selector'
 import { InlineError } from './components/inline-error/inline-error'
 import { LegalDocument } from './components/legal-document/legal-document'
 import { ListItem } from './components/list-item/list-item'
-import { ConcertHighway } from './components/live-highway/concert-highway'
-import { EventCard } from './components/live-highway/event-card'
-import { EventDetailSheet } from './components/live-highway/event-detail-sheet'
 import { NotificationMockCard } from './components/notification-mock/notification-mock-card'
 import { PageHeader } from './components/page-header/page-header'
 import { PageHelp } from './components/page-help/page-help'
@@ -45,7 +44,8 @@ import { SignupPromptBanner } from './components/signup-prompt-banner/signup-pro
 import { StatePlaceholder } from './components/state-placeholder/state-placeholder'
 import { SuccessMark } from './components/success-mark/success-mark'
 import { SvgIcon } from './components/svg-icon/svg-icon'
-import { UserHomeSelector } from './components/user-home-selector/user-home-selector'
+import { ConcertCard } from './components/timetable-grid/concert-card'
+import { TimetableGrid } from './components/timetable-grid/timetable-grid'
 import {
 	type AppConfig,
 	IAppConfig,
@@ -71,6 +71,7 @@ import { IConsentService } from './lib/consent/consent-service'
 import { FanI18nConfiguration } from './lib/i18n/fan-i18n-configuration'
 import { PUSH_SUBSCRIPTION_CHANGED_MESSAGE } from './lib/push/push-renewal'
 import { checkForServiceWorkerUpdates } from './lib/pwa/sw-update-check'
+import { IActionMenuService } from './services/action-menu-service'
 import { Events } from './services/analytics-events'
 import { IArtistBubbleStore } from './services/artist-bubble-store'
 import { IArtistStore } from './services/artist-store'
@@ -79,7 +80,6 @@ import { IAuthService } from './services/auth-service'
 import { IConcertStore } from './services/concert-store'
 import { DiscoveryPrefetchTask } from './services/discovery-prefetch-task'
 import { IErrorBoundaryService } from './services/error-boundary-service'
-import { IFabMenuService } from './services/fab-menu-service'
 import { FollowPrefetchTask } from './services/follow-prefetch-task'
 import { FollowReconcileTask } from './services/follow-reconcile-task'
 import { IFollowStore } from './services/follow-store'
@@ -253,7 +253,7 @@ async function bootstrap(): Promise<void> {
 	au.register(ITicketJourneyStore)
 	au.register(IIdentityVerificationService)
 	au.register(IResumeRevalidator)
-	au.register(IFabMenuService)
+	au.register(IActionMenuService)
 	au.register(IArtistRpcClient)
 	au.register(IConcertRpcClient)
 	au.register(IFollowRpcClient)
@@ -267,10 +267,10 @@ async function bootstrap(): Promise<void> {
 	au.register(BottomNavBar)
 	au.register(BottomSheet)
 	au.register(CelebrationOverlay)
-	au.register(ConcertHighway)
-	au.register(EventCard)
-	au.register(EventDetailSheet)
-	au.register(FabMenu)
+	au.register(TimetableGrid)
+	au.register(ConcertCard)
+	au.register(ConcertSheet)
+	au.register(ActionMenu)
 	au.register(InlineError)
 	au.register(NotificationMockCard)
 	au.register(LegalDocument)
@@ -283,7 +283,7 @@ async function bootstrap(): Promise<void> {
 	au.register(SettingsConsentRow, SettingsStatusRow, SettingsSwitchRow)
 	au.register(ListItem)
 	au.register(SvgIcon)
-	au.register(UserHomeSelector)
+	au.register(HomeAreaSelector)
 	au.register(AuthHook)
 	au.register(AmbientGlowCustomAttribute)
 	au.register(BusyOnClickCustomAttribute)

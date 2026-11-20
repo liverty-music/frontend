@@ -17,7 +17,7 @@
 		--color-white: oklch(100% 0 0deg);
 
 		/* Ticket journey status hues — single source of semantic identity,
-		   shared by the dashboard card badge and the detail-sheet flow nodes.
+		   shared by the timetable card badge and the detail-sheet flow nodes.
 		   Each consumer chooses its own lightness/chroma/opacity. */
 		--journey-hue-tracking: 255deg; /* process — neutral blue */
 		--journey-hue-applied: 255deg; /* process — neutral blue */

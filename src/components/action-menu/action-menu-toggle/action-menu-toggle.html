@@ -1,0 +1,22 @@
+<import from="./action-menu-toggle.css"></import>
+<import from="../action-menu-glyph/action-menu-glyph"></import>
+
+<!-- A disclosure button (aria-expanded + aria-controls), NOT an ARIA menu.
+     It is itself a manual popover (shown by action-menu on attach) so it floats
+     in the top layer, and controls the arc (action-menu's #action-menu-panel) via
+     popovertarget so the browser handles the open/close toggle natively (no
+     invoker double-fire). -->
+<button
+  ref="button"
+  type="button"
+  class="[ action-menu-toggle ] [ state-layer ]"
+  popover="manual"
+  popovertarget="action-menu-panel"
+  popovertargetaction="toggle"
+  data-handed.bind="handed"
+  aria-controls="action-menu-panel"
+  aria-expanded.bind="open"
+  t="[aria-label]actionMenu.toggleAriaLabel"
+>
+  <action-menu-glyph open.bind="open"></action-menu-glyph>
+</button>

@@ -22,6 +22,7 @@ import { ILocalStorage } from './adapter/storage/local-storage'
 import { AppShell } from './app-shell'
 import { BottomNavBar } from './components/bottom-nav-bar/bottom-nav-bar'
 import { ConfirmDialog } from './components/confirm-dialog/confirm-dialog'
+import { HomeAreaSelector } from './components/home-area-selector/home-area-selector'
 import { ListItem } from './components/list-item/list-item'
 import { PageHeader } from './components/page-header/page-header'
 import { PageHelp } from './components/page-help/page-help'
@@ -30,22 +31,21 @@ import { SettingsStatusRow } from './components/settings-status-row/settings-sta
 import { SettingsSwitchRow } from './components/settings-switch-row/settings-switch-row'
 import { SignupPromptBanner } from './components/signup-prompt-banner/signup-prompt-banner'
 import { StatePlaceholder } from './components/state-placeholder/state-placeholder'
-import { UserHomeSelector } from './components/user-home-selector/user-home-selector'
 import { IAppConfig } from './config/app-config'
 import type { FollowedArtist } from './entities/follow'
 import { IAnalyticsService } from './lib/analytics/analytics-service'
 import { IConsentService } from './lib/consent/consent-service'
 import { MyArtistsRoute } from './routes/my-artists/my-artists-route'
 import { SettingsRoute } from './routes/settings/settings-route'
+import type { MenuAction } from './services/action-menu-service'
 import { IAudioEngine } from './services/audio-engine'
 import { IAuthService } from './services/auth-service'
 import { IErrorBoundaryService } from './services/error-boundary-service'
-import type { FabAction } from './services/fab-menu-service'
 import { IFollowStore } from './services/follow-store'
 import { IIdentityVerificationService } from './services/identity-verification-service'
+import { INotificationPromptService } from './services/notification-prompt-service'
 import { INotificationStore } from './services/notification-store'
 import { IOnboardingService } from './services/onboarding-service'
-import { IPushOfferService } from './services/push-offer-service'
 import { IPushService } from './services/push-service'
 import { IPwaInstallService } from './services/pwa-install-service'
 import { IUserStore } from './services/user-store'
@@ -62,7 +62,7 @@ const noop = () => {}
 
 /** The four tab routes, as the router's navigation model gives them. */
 const TABS = [
-	{ id: 'dashboard', icon: 'home', labelKey: 'nav.home', active: true },
+	{ id: 'timetable', icon: 'home', labelKey: 'nav.timetable', active: true },
 	{ id: 'discovery', icon: 'discovery', labelKey: 'nav.discovery' },
 	{ id: 'my-artists', icon: 'my-artists', labelKey: 'nav.myArtists' },
 	{ id: 'tickets', icon: 'ticket', labelKey: 'nav.tickets' },
@@ -73,11 +73,11 @@ const TABS = [
 	data: { icon: t.icon, labelKey: t.labelKey },
 }))
 
-/** The dashboard's own launcher actions; the shell adds Settings after them. */
-const DASHBOARD_ACTIONS: FabAction[] = [
+/** The timetable's own launcher actions; the shell adds Settings after them. */
+const TIMETABLE_ACTIONS: MenuAction[] = [
 	{
 		id: 'beam',
-		labelKey: 'fabMenu.beam',
+		labelKey: 'actionMenu.beam',
 		icon: 'spotlight',
 		kind: 'toggle',
 		isOn: () => false,
@@ -85,14 +85,14 @@ const DASHBOARD_ACTIONS: FabAction[] = [
 	},
 	{
 		id: 'filter',
-		labelKey: 'fabMenu.filter',
+		labelKey: 'actionMenu.filter',
 		icon: 'filter',
 		kind: 'command',
 		invoke: noop,
 	},
 	{
 		id: 'help',
-		labelKey: 'fabMenu.help',
+		labelKey: 'actionMenu.help',
 		icon: 'help-circle',
 		kind: 'command',
 		invoke: noop,
@@ -137,7 +137,7 @@ function shell({
 	pageRegister = [],
 	pageItems = {},
 	tab = true,
-	titleKey = 'nav.home',
+	titleKey = 'nav.timetable',
 	signedIn = true,
 	installBanner = false,
 }: ShellOptions = {}) {
@@ -203,7 +203,7 @@ const meta = {
 					// The route area is a scroll container reached by keyboard
 					// through the controls inside it.
 					{ id: 'scrollable-region-focusable', enabled: false },
-					// Known defect (fab-menu.stories.ts): the open panel is a
+					// Known defect (action-menu.stories.ts): the open panel is a
 					// `dialog` given `role="group"`.
 					{ id: 'aria-allowed-role', enabled: false },
 				],
@@ -237,7 +237,7 @@ function one<T extends Element = HTMLElement>(
 const shellOf = (root: HTMLElement) => one(root, 'app-shell')
 const nav = (root: HTMLElement) => one(root, 'bottom-nav-bar nav')
 const fab = (root: HTMLElement) =>
-	one<HTMLButtonElement>(root, 'fab-menu .fab-toggle')
+	one<HTMLButtonElement>(root, 'action-menu .action-menu-toggle')
 const banner = (root: HTMLElement) =>
 	one(root, 'pwa-install-banner .bottom-banner')
 
@@ -281,13 +281,13 @@ async function shown(root: HTMLElement, { withFab = true } = {}) {
 	await waitFor(() => expect(root.querySelectorAll('.nav-tab')).toHaveLength(4))
 	if (withFab) {
 		await waitFor(() => fab(root))
-		await settled(one(root, 'fab-menu'))
+		await settled(one(root, 'action-menu'))
 	}
 }
 
-/** The route contributes the dashboard's actions to the launcher. */
-function contributeDashboardActions(root: HTMLElement): void {
-	shellParts(root).vm.fabMenu.register({}, DASHBOARD_ACTIONS)
+/** The route contributes the timetable's actions to the launcher. */
+function contributeTimetableActions(root: HTMLElement): void {
+	shellParts(root).vm.actionMenu.register({}, TIMETABLE_ACTIONS)
 }
 
 /** Publish a snack on the app's event aggregator; resolves once it is at rest. */
@@ -301,7 +301,7 @@ async function openSnack(
 	shellParts(root).container.get(IEventAggregator).publish(snack)
 	const item = await waitFor(() => one(root, '.snack-item:popover-open'))
 	await settled(item)
-	await settled(one(root, 'fab-menu'))
+	await settled(one(root, 'action-menu'))
 	return snack
 }
 
@@ -312,7 +312,7 @@ async function closeSnack(root: HTMLElement, snack: Snack): Promise<void> {
 		() => expect(root.querySelectorAll('.snack-item')).toHaveLength(0),
 		{ timeout: 5000 },
 	)
-	await settled(one(root, 'fab-menu'))
+	await settled(one(root, 'action-menu'))
 }
 
 async function openArc(root: HTMLElement): Promise<void> {
@@ -320,7 +320,7 @@ async function openArc(root: HTMLElement): Promise<void> {
 	await waitFor(() =>
 		expect(fab(root).getAttribute('aria-expanded')).toBe('true'),
 	)
-	await settled(one(root, 'fab-menu'))
+	await settled(one(root, 'action-menu'))
 }
 
 async function closeArc(root: HTMLElement): Promise<void> {
@@ -328,12 +328,12 @@ async function closeArc(root: HTMLElement): Promise<void> {
 	await waitFor(() =>
 		expect(fab(root).getAttribute('aria-expanded')).toBe('false'),
 	)
-	await settled(one(root, 'fab-menu'))
+	await settled(one(root, 'action-menu'))
 }
 
 /** The open arc's items, each one higher than the FAB. */
 async function expectArcAboveFab(root: HTMLElement, count: number) {
-	const items = [...root.querySelectorAll('fab-menu .fab-item')]
+	const items = [...root.querySelectorAll('action-menu .fab-item')]
 	await expect(items).toHaveLength(count)
 	const f = centre(box(fab(root)))
 	for (const item of items) {
@@ -383,7 +383,7 @@ function tapAt(el: Element): string {
 // ---- stories --------------------------------------------------------------
 
 /**
- * A tab page with the dashboard's actions and no banner: the shell's grid,
+ * A tab page with the timetable's actions and no banner: the shell's grid,
  * the four tabs around the centre slot, the FAB in the notch, and the route
  * area ending at the bar. No URL change: the shell runs without a router.
  */
@@ -391,7 +391,7 @@ export const TabPage = {
 	render: () => shell(),
 	play: async ({ canvasElement }) => {
 		const url = location.href
-		contributeDashboardActions(canvasElement)
+		contributeTimetableActions(canvasElement)
 		await atSize(390, 844, async () => {
 			await shown(canvasElement)
 			const root = shellOf(canvasElement)
@@ -430,7 +430,7 @@ export const TabPage = {
 				box(tabs[2]).left - box(tabs[1]).right,
 			).toBeGreaterThanOrEqual(56)
 
-			// @spec components/infrastructure/fan/web/global/fab-menu "FAB floats in the thumb zone above content"
+			// @spec components/infrastructure/fan/web/global/action-menu "FAB floats in the thumb zone above content"
 			const f = box(fab(canvasElement))
 			await expect(Math.abs(centre(f).x - innerWidth / 2)).toBeLessThan(1)
 			await expectRaised(canvasElement)
@@ -466,7 +466,7 @@ export const TabPageWithoutActions = {
 			// @spec components/infrastructure/fan/web/global/bottom-nav-bar "Tickets shows the FAB"
 			await expect(fab(canvasElement).checkVisibility()).toBe(true)
 			await expect(
-				shellParts(canvasElement).vm.fabMenu.actions.map((a) => a.id),
+				shellParts(canvasElement).vm.actionMenu.actions.map((a) => a.id),
 			).toEqual(['settings'])
 			await expect(nav(canvasElement).dataset.notch).toBe('true')
 			await expect(getComputedStyle(nav(canvasElement)).maskImage).toContain(
@@ -484,14 +484,14 @@ export const TabPageWithoutActions = {
 export const SnackSinksTheFab = {
 	render: () => shell(),
 	play: async ({ canvasElement }) => {
-		contributeDashboardActions(canvasElement)
+		contributeTimetableActions(canvasElement)
 		await atSize(390, 844, async () => {
 			await shown(canvasElement)
 			await expectRaised(canvasElement)
 			const spaceS = px(canvasElement, 'var(--space-s)')
 
 			const first = await openSnack(canvasElement)
-			// @spec components/infrastructure/fan/web/global/fab-menu "A snack bar opens"
+			// @spec components/infrastructure/fan/web/global/action-menu "A snack bar opens"
 			const f = await expectSunk(canvasElement)
 			const snack = box(one(canvasElement, '.snack-item'))
 			await expect(intersects(f, snack)).toBe(false)
@@ -501,12 +501,12 @@ export const SnackSinksTheFab = {
 			await expect(gap).toBeGreaterThanOrEqual(16)
 			await expect(gap).toBeLessThanOrEqual(20)
 
-			// @spec components/infrastructure/fan/web/global/fab-menu "The sunk FAB still opens the actions"
+			// @spec components/infrastructure/fan/web/global/action-menu "The sunk FAB still opens the actions"
 			await openArc(canvasElement)
 			await expectArcAboveFab(canvasElement, 4)
 			await closeArc(canvasElement)
 
-			// @spec components/infrastructure/fan/web/global/fab-menu "The last snack bar closes"
+			// @spec components/infrastructure/fan/web/global/action-menu "The last snack bar closes"
 			await closeSnack(canvasElement, first)
 			await expectRaised(canvasElement)
 
@@ -537,13 +537,13 @@ export const BannerSinksTheFab = {
 			pageRegister: [SignupPromptBanner],
 		}),
 	play: async ({ canvasElement }) => {
-		contributeDashboardActions(canvasElement)
+		contributeTimetableActions(canvasElement)
 		await atSize(390, 844, async () => {
 			await shown(canvasElement)
 			await settled(one(canvasElement, 'pwa-install-banner'))
 			const b = box(banner(canvasElement))
 
-			// @spec components/infrastructure/fan/web/global/fab-menu "A bottom banner is visible"
+			// @spec components/infrastructure/fan/web/global/action-menu "A bottom banner is visible"
 			const f = await expectSunk(canvasElement)
 			await expect(intersects(f, b)).toBe(false)
 			await expect(f.top).toBeGreaterThanOrEqual(b.bottom - 0.5)
@@ -557,12 +557,12 @@ export const BannerSinksTheFab = {
 				Math.abs(routeAreaBottom(canvasElement) - b.top),
 			).toBeLessThan(1)
 
-			// @spec components/infrastructure/fan/web/global/fab-menu "The sunk FAB still opens the actions"
+			// @spec components/infrastructure/fan/web/global/action-menu "The sunk FAB still opens the actions"
 			await openArc(canvasElement)
 			await expectArcAboveFab(canvasElement, 4)
 			await closeArc(canvasElement)
 
-			// @spec components/infrastructure/fan/web/global/fab-menu "A snack bar opens above a bottom banner"
+			// @spec components/infrastructure/fan/web/global/action-menu "A snack bar opens above a bottom banner"
 			// @spec components/infrastructure/fan/web/global/snack-bar "A banner is visible"
 			// @spec components/infrastructure/fan/web/global/snack-bar "The FAB stays sunk under a banner and a snack bar"
 			await expect(
@@ -580,7 +580,7 @@ export const BannerSinksTheFab = {
 			await expect(intersects(snack, box(banner(canvasElement)))).toBe(false)
 			await closeSnack(canvasElement, above)
 
-			// @spec components/infrastructure/fan/web/global/fab-menu "The bottom banner goes away"
+			// @spec components/infrastructure/fan/web/global/action-menu "The bottom banner goes away"
 			await userEvent.click(
 				one(canvasElement, '[data-testid="pwa-install-banner-cta"]'),
 			)
@@ -595,7 +595,7 @@ export const BannerSinksTheFab = {
 				).toHaveLength(0),
 			)
 			await waitFor(() => fab(canvasElement))
-			await settled(one(canvasElement, 'fab-menu'))
+			await settled(one(canvasElement, 'action-menu'))
 			await expectRaised(canvasElement)
 		})
 	},
@@ -636,7 +636,7 @@ export const HiddenBannersAddNoHeight = {
 } satisfies Story
 
 /**
- * The first-visit area dialog on the dashboard: it opens in the top layer,
+ * The first-visit area dialog on the timetable: it opens in the top layer,
  * the bar keeps its place at the bottom of the grid, and the backdrop dims
  * the page, bar included.
  */
@@ -644,17 +644,17 @@ export const AreaDialogOverTheBar = {
 	render: () =>
 		shell({
 			signedIn: false,
-			page: `${PLAIN_PAGE}<user-home-selector required.bind="true"></user-home-selector>`,
-			pageRegister: [UserHomeSelector],
+			page: `${PLAIN_PAGE}<home-area-selector required.bind="true"></home-area-selector>`,
+			pageRegister: [HomeAreaSelector],
 		}),
 	play: async ({ canvasElement }) => {
 		await atSize(390, 844, async () => {
 			await shown(canvasElement)
-			CustomElement.for<UserHomeSelector>(
-				one(canvasElement, 'user-home-selector'),
+			CustomElement.for<HomeAreaSelector>(
+				one(canvasElement, 'home-area-selector'),
 			).viewModel.open()
 			const dialog = await waitFor(() => {
-				const el = one(canvasElement, 'user-home-selector dialog')
+				const el = one(canvasElement, 'home-area-selector dialog')
 				if (!el.matches(':popover-open')) throw new Error('not open yet')
 				return el
 			})
@@ -713,7 +713,7 @@ export const SettingsEndsAboveTheBanner = {
 				SettingsSwitchRow,
 				SettingsConsentRow,
 				SettingsStatusRow,
-				UserHomeSelector,
+				HomeAreaSelector,
 				ConfirmDialog,
 			],
 			pageItems: SETTINGS_ITEMS,
@@ -751,7 +751,10 @@ function myArtistsItems(follows: FollowedArtist[]) {
 			IUserStore,
 			{ needsHome: false, currentHome: 'JP-13', saveHome: async () => {} },
 		],
-		pushOffer: [IPushOfferService, { pushState: async () => 'on' }],
+		notificationPrompt: [
+			INotificationPromptService,
+			{ pushState: async () => 'on' },
+		],
 		storage: [ILocalStorage, { getItem: () => '1', setItem: noop }],
 	} satisfies Record<string, [unknown, object]>
 }
@@ -760,7 +763,7 @@ const MY_ARTISTS_REGISTER = [
 	MyArtistsRoute,
 	PageHelp,
 	StatePlaceholder,
-	UserHomeSelector,
+	HomeAreaSelector,
 	SignupPromptBanner,
 ]
 
@@ -834,7 +837,7 @@ export const DoneBarStaysTappable = {
 			await shown(canvasElement)
 			await openArc(canvasElement)
 			await userEvent.click(
-				one(canvasElement, 'fab-menu .fab-item[data-action-id="edit"]'),
+				one(canvasElement, 'action-menu .fab-item[data-action-id="edit"]'),
 			)
 			const done = await waitFor(() =>
 				one<HTMLButtonElement>(canvasElement, '.edit-action-bar button'),

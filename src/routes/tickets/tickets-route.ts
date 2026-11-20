@@ -24,16 +24,13 @@ import {
 } from '../../services/ticket-wallet'
 import { IUserStore } from '../../services/user-store'
 import {
-	type EventPageEvent,
+	type ConcertPageConcert,
 	eventFromConcert,
 	formatEventDate,
 	formatEventTime,
 	formatSaleStart,
-} from '../event/event-page'
+} from '../concert/concert-page'
 import { AdmissionCodeSession } from './admission-code-session'
-import { IShareImage, shareImageScale } from './virtual-ticket/share-image'
-import type { TicketPreset } from './virtual-ticket/ticket-presets'
-import type { VirtualTicket } from './virtual-ticket/virtual-ticket'
 import {
 	enterableTickets,
 	groupByEvent,
@@ -42,12 +39,15 @@ import {
 	type ShownTicketState,
 	type StockResale,
 	shownState,
+	type TicketView,
+	ticketViewFromProto,
 	type WalletEventGroup,
 	type WalletPersonalDetails,
 	type WalletSnapshot,
-	type WalletTicket,
-	walletTicketFromProto,
-} from './wallet-view'
+} from './ticket-view'
+import { IShareImage, shareImageScale } from './virtual-ticket/share-image'
+import type { TicketPreset } from './virtual-ticket/ticket-presets'
+import type { VirtualTicket } from './virtual-ticket/virtual-ticket'
 
 /**
  * Discrete UI phases of the tickets screen.
@@ -119,7 +119,7 @@ export class TicketsRoute {
 	/** Each TicketStock's resale, keyed by stock id, read online; absent offline. */
 	public resaleByStock = new Map<string, StockResale>()
 	/** The ticket whose listing is being confirmed. */
-	public listingTicket: WalletTicket | null = null
+	public listingTicket: TicketView | null = null
 	public listingGroup: WalletEventGroup | null = null
 	/** A listing call is in flight. */
 	public resaleBusy = false
@@ -140,7 +140,7 @@ export class TicketsRoute {
 	// ── Admission code state ─────────────────────────────────────────────────
 	public codeGroup: WalletEventGroup | null = null
 	/** The tickets the code presents: every enterable one, up to 10. */
-	public presented: WalletTicket[] = []
+	public presented: TicketView[] = []
 	public readonly session = new AdmissionCodeSession((ticketIds, signTime) =>
 		this.signFor(ticketIds, signTime),
 	)
@@ -148,7 +148,7 @@ export class TicketsRoute {
 	// ── Virtual ticket ───────────────────────────────────────────────────────
 	/** The ticket whose virtual ticket is open, and its event. */
 	public ticketGroup: WalletEventGroup | null = null
-	public openedTicket: WalletTicket | null = null
+	public openedTicket: TicketView | null = null
 	/** Press the open ticket's stamp with its animation (first showing on this device). */
 	public pressStamp = false
 	/** The open ticket's design, as the fan chose it on this device. */
@@ -231,7 +231,7 @@ export class TicketsRoute {
 		signal: AbortSignal,
 	): Promise<WalletEventGroup[]> {
 		const tickets = (await this.ticketClient.list(signal)).map(
-			walletTicketFromProto,
+			ticketViewFromProto,
 		)
 		const savedEvents = new Map(
 			(saved?.groups ?? []).flatMap((g) =>
@@ -239,7 +239,7 @@ export class TicketsRoute {
 			),
 		)
 		const eventIds = [...new Set(tickets.map((t) => t.eventId))]
-		const events = new Map<string, EventPageEvent>()
+		const events = new Map<string, ConcertPageConcert>()
 		await Promise.all(
 			eventIds.map(async (id) => {
 				try {
@@ -531,11 +531,9 @@ export class TicketsRoute {
 	 */
 	public async refreshStates(): Promise<void> {
 		const signal = this.abortController?.signal
-		let tickets: WalletTicket[]
+		let tickets: TicketView[]
 		try {
-			tickets = (await this.ticketClient.list(signal)).map(
-				walletTicketFromProto,
-			)
+			tickets = (await this.ticketClient.list(signal)).map(ticketViewFromProto)
 		} catch {
 			return
 		}
@@ -591,7 +589,7 @@ export class TicketsRoute {
 	public onCardClick(
 		event: MouseEvent,
 		group: WalletEventGroup,
-		ticket: WalletTicket,
+		ticket: TicketView,
 	): void {
 		const target = event.target
 		if (target instanceof Element && target.closest('button, a')) return
@@ -604,7 +602,7 @@ export class TicketsRoute {
 	 */
 	public async openTicket(
 		group: WalletEventGroup,
-		ticket: WalletTicket,
+		ticket: TicketView,
 	): Promise<void> {
 		const stamped = await this.wallet.stampedIds()
 		this.shareFailed = false
@@ -685,7 +683,7 @@ export class TicketsRoute {
 
 	/** The ticket's state as shown, with its listing taken into account. */
 	public shownState(
-		ticket: WalletTicket,
+		ticket: TicketView,
 		listings: readonly ResaleListing[] = this.listings,
 	): ShownTicketState {
 		return shownState(ticket, listings)
@@ -693,7 +691,7 @@ export class TicketsRoute {
 
 	/** The ticket's Listed or Sold listing, if any. */
 	public listingOf(
-		ticket: WalletTicket,
+		ticket: TicketView,
 		listings: readonly ResaleListing[] = this.listings,
 	): ResaleListing | null {
 		return listingOf(ticket, listings)
@@ -701,7 +699,7 @@ export class TicketsRoute {
 
 	/** Whether the ticket can be listed: 未入場, online, and its stock's resale open. */
 	public offersListing(
-		ticket: WalletTicket,
+		ticket: TicketView,
 		listings: readonly ResaleListing[] = this.listings,
 		resaleByStock: ReadonlyMap<string, StockResale> = this.resaleByStock,
 		offline: boolean = this.offline,
@@ -741,7 +739,7 @@ export class TicketsRoute {
 	}
 
 	/** The price a listing of the ticket would have: its seat type's, in yen. */
-	public listingPrice(ticket: WalletTicket | null): number {
+	public listingPrice(ticket: TicketView | null): number {
 		const stockId = ticket?.ticketStockId
 		return stockId ? (this.resaleByStock.get(stockId)?.price ?? 0) : 0
 	}
@@ -760,7 +758,7 @@ export class TicketsRoute {
 	}
 
 	/** Open the confirmation before listing one ticket. */
-	public askToList(group: WalletEventGroup, ticket: WalletTicket): void {
+	public askToList(group: WalletEventGroup, ticket: TicketView): void {
 		if (!this.offersListing(ticket)) return
 		this.resaleMessage = null
 		this.listingGroup = group
@@ -805,7 +803,7 @@ export class TicketsRoute {
 	}
 
 	/** Take back the ticket's listing. */
-	public async withdraw(ticket: WalletTicket): Promise<void> {
+	public async withdraw(ticket: TicketView): Promise<void> {
 		const listing = this.listingOf(ticket)
 		if (listing?.status !== 'listed' || this.resaleBusy) return
 		this.resaleBusy = true
@@ -838,7 +836,7 @@ export class TicketsRoute {
 
 	/** The message of the last listing call for this ticket, if any. */
 	public resaleMessageFor(
-		ticket: WalletTicket,
+		ticket: TicketView,
 		message: { ticketId: string; key: string } | null = this.resaleMessage,
 	): string | null {
 		return message?.ticketId === ticket.id ? message.key : null
@@ -862,7 +860,7 @@ export class TicketsRoute {
 	// ── Labels ───────────────────────────────────────────────────────────────
 
 	/** The ticket's 1-based position within its event, as shown on its card. */
-	public ticketNumber(group: WalletEventGroup, ticket: WalletTicket): number {
+	public ticketNumber(group: WalletEventGroup, ticket: TicketView): number {
 		return group.tickets.findIndex((t) => t.id === ticket.id) + 1
 	}
 
@@ -874,7 +872,7 @@ export class TicketsRoute {
 	}
 
 	public stateLabel(
-		ticket: WalletTicket,
+		ticket: TicketView,
 		listings: readonly ResaleListing[] = this.listings,
 	): string {
 		return this.i18n.tr(`tickets.state.${shownState(ticket, listings)}`)
@@ -882,7 +880,7 @@ export class TicketsRoute {
 
 	/** Tone of the state label: 未入場 is the ticket the fan can still use. */
 	public stateTone(
-		ticket: WalletTicket,
+		ticket: TicketView,
 		listings: readonly ResaleListing[] = this.listings,
 	): 'positive' | 'neutral' {
 		return shownState(ticket, listings) === 'not-entered'
@@ -901,7 +899,7 @@ export class TicketsRoute {
 	}
 
 	/** Admitted time as month/day and time in Japan time, e.g. "11/20 18:32". */
-	public admitted(ticket: WalletTicket): string {
+	public admitted(ticket: TicketView): string {
 		if (!ticket.admitTime) return ''
 		return new Intl.DateTimeFormat(this.userStore.currentLanguage, {
 			timeZone: 'Asia/Tokyo',

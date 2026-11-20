@@ -1,7 +1,7 @@
 import { getAppConfig } from '../config/app-config'
 
 /**
- * Curated artist IDs and names for the Welcome page dashboard preview.
+ * Curated artist IDs and names for the Welcome page timetable preview.
  * Sourced from the runtime AppConfig (`/config.json` `previewArtistIds`
  * + `previewArtistNames`).
  *

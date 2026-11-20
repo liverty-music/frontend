@@ -1,0 +1,78 @@
+@layer block {
+	@scope (new-lottery-entry-route) {
+		:scope {
+			--flow-space: var(--space-m);
+
+			overflow-y: auto;
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-m);
+
+			block-size: 100%;
+			padding-block: var(--space-l);
+			padding-inline: var(--space-m);
+		}
+
+		/* The `card` block draws the panel. */
+		.lottery-entry-panel {
+			--flow-space: var(--space-m);
+
+			inline-size: 100%;
+			max-inline-size: var(--page-max-inline-size);
+		}
+
+		.lottery-entry-lead {
+			color: var(--md-sys-color-on-surface-variant);
+		}
+
+		.lottery-entry-field {
+			--stack-gap: var(--space-2xs);
+		}
+
+		.lottery-entry-terms {
+			--flow-space: var(--space-s);
+
+			padding: var(--space-s);
+			border: 1px solid
+				color-mix(in oklch, var(--color-brand-primary) 25%, transparent);
+			border-radius: var(--md-sys-shape-corner-large);
+
+			color: var(--md-sys-color-on-surface-variant);
+
+			background: color-mix(
+				in oklch,
+				var(--color-brand-primary) 6%,
+				transparent
+			);
+		}
+
+		.lottery-entry-terms-lead {
+			color: var(--md-sys-color-on-surface);
+		}
+
+		.lottery-entry-terms-list {
+			--stack-gap: var(--space-2xs);
+
+			padding-inline-start: var(--space-m);
+			list-style: disc;
+		}
+
+		.lottery-entry-payment-element {
+			min-block-size: 3rem;
+			padding-block: var(--space-2xs);
+		}
+
+		.lottery-entry-error {
+			color: var(--color-error);
+		}
+
+		.lottery-entry-actions {
+			--cluster-gap: var(--space-s);
+		}
+
+		/* Layout only; the look comes from the shared `button` block. */
+		.lottery-entry-action {
+			inline-size: 100%;
+		}
+	}
+}
