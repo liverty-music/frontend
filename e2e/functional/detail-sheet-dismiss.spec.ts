@@ -5,7 +5,7 @@ import { expect, type Page, test } from '../support/test'
  * E2E tests for concert detail sheet dismiss behavior.
  *
  * Covers:
- * - Normal dismiss — tap outside, Escape, swipe down, browser back
+ * - Normal dismiss — swipe down, browser back
  * - Reload recovery for a still-onboarding guest deep-linking to the timetable
  *   (single-flag model: no per-screen step, soft gate, no blocking overlays)
  */
@@ -286,26 +286,37 @@ test.describe('Normal detail sheet dismiss', () => {
 		await expect(page).toHaveURL(/timetable/)
 	})
 
-	test.fixme('swipe down closes sheet', async ({ page }) => {
+	test('swipe down closes sheet', async ({ page }) => {
 		await openDetailSheet(page)
+		await expect(page).toHaveURL(/[?&]concert=/)
+		// The sheet slides up by scrolling; wait until it has come to rest.
+		const sheetBody = page.locator('concert-sheet .sheet-body')
+		await expect(sheetBody).toBeInViewport({ ratio: 1 })
 
-		const sheet = page.locator('concert-sheet bottom-sheet')
-		const box = await sheet.boundingBox()
-		expect(box).toBeTruthy()
+		// The sheet closes by scrolling to the dismiss zone above it, so the
+		// swipe must be a touch scroll: a mouse drag does not scroll, and
+		// Chromium's synthesized scroll gesture did not scroll the sheet either.
+		// Drag a finger from the handle to the bottom of the screen.
+		const box = await sheetBody.boundingBox()
+		const viewport = page.viewportSize()
+		if (!box || !viewport) throw new Error('the sheet or the page has no size')
+		const x = Math.round(box.x + box.width / 2)
+		const startY = Math.round(box.y + 12)
+		const endY = viewport.height - 4
+		const cdp = await page.context().newCDPSession(page)
+		const touch = (type: 'touchStart' | 'touchMove' | 'touchEnd', y?: number) =>
+			cdp.send('Input.dispatchTouchEvent', {
+				type,
+				touchPoints: y === undefined ? [] : [{ x, y }],
+			})
+		await touch('touchStart', startY)
+		for (let i = 1; i <= 20; i++) {
+			await touch('touchMove', Math.round(startY + ((endY - startY) * i) / 20))
+		}
+		await touch('touchEnd')
 
-		// Simulate swipe down from top of sheet (150px > 100px threshold)
-		const startX = box!.x + box!.width / 2
-		const startY = box!.y + 20
-
-		await page.touchscreen.tap(startX, startY)
-		// Playwright touchscreen doesn't have swipe, use mouse to simulate
-		await page.mouse.move(startX, startY)
-		await page.mouse.down()
-		await page.mouse.move(startX, startY + 160, { steps: 10 })
-		await page.mouse.up()
-
-		// Sheet should close (or at least start closing transition)
-		await expect(sheet).not.toBeVisible({ timeout: 5000 })
+		await expect(page.locator('concert-sheet bottom-sheet')).not.toBeVisible()
+		await expect(page).not.toHaveURL(/[?&]concert=/)
 	})
 })
 

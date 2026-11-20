@@ -507,6 +507,45 @@ describe('AnalyticsService', () => {
 			}
 		})
 
+		// @spec stories/sign-up-or-sign-in "Sign-in from the landing page"
+		it('sends a start at once while the pre-init queue is still replaying', async () => {
+			const sut = new AnalyticsService()
+			await sut._waitForInitForTests()
+
+			// A busy page: the replay's next idle slice has not run yet.
+			const slices: ((d: { timeRemaining(): number }) => void)[] = []
+			vi.stubGlobal('requestIdleCallback', (cb: (typeof slices)[number]) => {
+				slices.push(cb)
+			})
+			try {
+				posthogStub.capture.mockClear()
+				;(sut as unknown as { queue: unknown[] }).queue.push({
+					name: Events.ArtistSearch,
+					props: { query_length: 1, result_count: 1 },
+				})
+				;(sut as unknown as { flushQueue(): void }).flushQueue()
+
+				mockEa.publish(new AuthStarted('sign_in', 'welcome'))
+
+				// The queue goes first, then the start, sent without batching:
+				// the page leaves for hosted login before another slice runs.
+				expect(
+					posthogStub.capture.mock.calls.map(([n, , o]) => [n, o]),
+				).toEqual([
+					[Events.ArtistSearch, undefined],
+					[Events.AuthStarted, { send_instantly: true }],
+				])
+				// The pending slice finds nothing left to replay.
+				slices.shift()?.({ timeRemaining: () => 0 })
+				expect(posthogStub.capture).toHaveBeenCalledTimes(2)
+				sut.capture(Events.ArtistSearch, { query_length: 2, result_count: 1 })
+				expect(posthogStub.capture).toHaveBeenCalledTimes(3)
+			} finally {
+				vi.unstubAllGlobals()
+				sut.dispose()
+			}
+		})
+
 		it('warns and drops excess events when the pre-init queue overflows 100 entries', async () => {
 			const warn = vi.fn()
 			const scopedLogger = {
