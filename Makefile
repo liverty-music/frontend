@@ -1,4 +1,4 @@
-.PHONY: lint pre-commit lint-brand-vocabulary lint-boundaries lint-route-loading lint-no-style lint-no-class-ternary lint-no-data-interpolation lint-no-bind-ternary lint-no-div-popover lint-no-div-role-status lint-templates fix test check verify-bundle-isolation verify-reception-bundle
+.PHONY: lint pre-commit pre-push lint-brand-vocabulary lint-boundaries lint-route-loading lint-no-style lint-no-class-ternary lint-no-data-interpolation lint-no-bind-ternary lint-no-div-popover lint-no-div-role-status lint-templates fix test check verify-bundle-isolation verify-reception-bundle
 
 ## lint: biome lint + format check + stylelint + typecheck + brand-vocabulary + import-boundaries + route-loading + e2e-coverage (matches CI)
 lint: lint-brand-vocabulary lint-boundaries lint-route-loading lint-e2e-coverage
@@ -22,6 +22,10 @@ lint: lint-brand-vocabulary lint-boundaries lint-route-loading lint-e2e-coverage
 ## (scripts/pre-commit.sh). CI runs `make lint` and `make test` on everything.
 pre-commit:
 	scripts/pre-commit.sh
+
+## pre-push: what the push hook runs before `git push`: the whole of `make check`
+## (lint, unit tests, the bundle checks). E2E stays in CI.
+pre-push: check
 
 ## lint-boundaries: enforce src/ <-> admin/ <-> organizer/ <-> reception/ isolation (only shared/ crosses)
 lint-boundaries:
