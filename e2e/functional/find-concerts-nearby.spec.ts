@@ -312,7 +312,7 @@ test(`@spec components/infrastructure/fan/web/route/timetable "Guest with no fol
 	await openApp(page)
 	await page.goto('/timetable')
 	const link = page.getByTestId('concerts-link')
-	await expect(link).toHaveText('近くのライブを見る', { timeout: 30_000 })
+	await expect(link).toHaveText('ライブを探す', { timeout: 30_000 })
 	await expect(page.getByTestId('discover-link')).toBeVisible()
 
 	await link.click()

@@ -120,7 +120,7 @@ test('@spec components/infrastructure/fan/web/route/timetable "Closing keeps the
 
 	await page.locator('[data-live-card]').first().click()
 	await expect.poll(() => sheetOpen(page)).toBe(true)
-	await expect(page).toHaveURL(/\/concerts\//)
+	await expect(page).toHaveURL(/\/timetable\?artists=[^&]+&concert=/)
 
 	await page.keyboard.press('Escape')
 	await expect.poll(() => sheetOpen(page)).toBe(false)

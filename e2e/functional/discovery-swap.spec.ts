@@ -261,7 +261,7 @@ test.describe('Discovery swap tile', () => {
 		await expect(page).toHaveURL(/\/discovery$/)
 		await expect(page.locator('.search-bar')).toBeVisible()
 		await expect(page.locator('.genre-bar')).toBeVisible()
-		await expect(tile(page)).toHaveAccessibleName('近くのライブ')
+		await expect(tile(page)).toHaveAccessibleName('ライブ')
 	})
 
 	test(`@spec ${CAPABILITY} "Left-handed mode"`, async ({ page }) => {
@@ -375,7 +375,7 @@ test.describe('Discovery swap tile', () => {
 			'concert-sheet dialog[open], concert-sheet :popover-open',
 		)
 		await expect(sheet.first()).toBeVisible()
-		await expect(page).toHaveURL(/\/concerts\//)
+		await expect(page).toHaveURL(/\/discovery\?view=concerts&concert=/)
 
 		await page.keyboard.press('Escape')
 		await expect(sheet).toHaveCount(0)

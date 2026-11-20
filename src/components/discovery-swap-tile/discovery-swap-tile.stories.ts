@@ -93,7 +93,7 @@ export const Artists = {
 			onBadge: true,
 		})
 		await expect(
-			within(canvasElement).getByRole('button', { name: '近くのライブ' }),
+			within(canvasElement).getByRole('button', { name: 'ライブ' }),
 		).toBeVisible()
 	},
 } satisfies Story
@@ -129,7 +129,7 @@ export const Swapping = {
 		const { icon } = parts(canvasElement)
 
 		// @spec components/infrastructure/fan/web/route/discovery "Switching to the Concerts view"
-		await userEvent.click(canvas.getByRole('button', { name: '近くのライブ' }))
+		await userEvent.click(canvas.getByRole('button', { name: 'ライブ' }))
 		await settled(canvasElement, 'concerts')
 		await expect(slots(canvasElement)).toEqual({
 			large: 'concerts',
@@ -149,9 +149,7 @@ export const Swapping = {
 			small: 'concerts',
 			onBadge: true,
 		})
-		await expect(
-			canvas.getByRole('button', { name: '近くのライブ' }),
-		).toBeVisible()
+		await expect(canvas.getByRole('button', { name: 'ライブ' })).toBeVisible()
 		// Two half turns, not one forward and one back.
 		await expect(icon.style.getPropertyValue('--ring-turn')).toBe('2')
 
