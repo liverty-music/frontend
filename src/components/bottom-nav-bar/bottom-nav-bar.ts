@@ -4,7 +4,7 @@ import {
 	IRouter,
 	IRouterEvents,
 } from '@aurelia/router'
-import { type IDisposable, resolve, runTasks } from 'aurelia'
+import { type IDisposable, ILogger, resolve, runTasks } from 'aurelia'
 import type { ShellRouteData } from '../../app-shell'
 import { IFabMenuService } from '../../services/fab-menu-service'
 
@@ -28,6 +28,7 @@ export class BottomNavBar {
 	private readonly router = resolve(IRouter)
 	private readonly routerEvents = resolve(IRouterEvents)
 	public readonly fabMenu = resolve(IFabMenuService)
+	private readonly logger = resolve(ILogger).scopeTo('BottomNavBar')
 	private subscription: IDisposable | null = null
 
 	/**
@@ -73,7 +74,10 @@ export class BottomNavBar {
 	 *
 	 * The update callback settles once the router has swapped the route and
 	 * Aurelia's queue is flushed; it never waits for a frame, which the
-	 * browser does not produce while it captures the old view.
+	 * browser does not produce while it captures the old view. It catches a
+	 * failed route load, so only `ready` can reject: the browser rejects it
+	 * when it skips the transition, and the route still changes without the
+	 * cross-fade.
 	 */
 	public switchTab(event: MouseEvent, tab: INavigationRoute): boolean {
 		if (
@@ -92,10 +96,15 @@ export class BottomNavBar {
 			void this.router.load(path)
 			return false
 		}
-		document.startViewTransition(async () => {
-			await this.router.load(path)
+		const transition = document.startViewTransition(async () => {
+			try {
+				await this.router.load(path)
+			} catch (error) {
+				this.logger.error('Tab switch failed', { path, error })
+			}
 			runTasks()
 		})
+		void transition.ready.catch(() => {})
 		return false
 	}
 

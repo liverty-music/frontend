@@ -108,4 +108,59 @@ describe('BottomNavBar', () => {
 			'false',
 		])
 	})
+
+	describe('a tab switch inside a View Transition', () => {
+		const unhandled: unknown[] = []
+		const onUnhandled = (reason: unknown) => unhandled.push(reason)
+
+		// Chromium skips a transition (e.g. a failed prepaint check) by
+		// rejecting `ready`; it still runs the update callback, whose promise
+		// settles `updateCallbackDone` and `finished`.
+		const skippingTransition = (update: () => Promise<void>) => {
+			const done = update()
+			return {
+				ready: Promise.reject(
+					new DOMException('Transition was skipped', 'InvalidStateError'),
+				),
+				updateCallbackDone: done,
+				finished: done,
+			}
+		}
+
+		const settle = () => new Promise((r) => setTimeout(r, 0))
+		const original = document.startViewTransition
+
+		beforeEach(() => {
+			unhandled.length = 0
+			globalThis.process.on('unhandledRejection', onUnhandled)
+			Object.assign(document, { startViewTransition: skippingTransition })
+		})
+
+		afterEach(() => {
+			globalThis.process.off('unhandledRejection', onUnhandled)
+			Object.assign(document, { startViewTransition: original })
+		})
+
+		it('changes the route and leaves no unhandled rejection when the browser skips it', async () => {
+			tabs()[1].dispatchEvent(
+				new MouseEvent('click', { bubbles: true, cancelable: true }),
+			)
+			await vi.waitFor(() =>
+				expect(fixture.appHost.querySelector('route-b')).not.toBeNull(),
+			)
+			await settle()
+			expect(unhandled).toEqual([])
+		})
+
+		it('leaves no unhandled rejection when the route load fails', async () => {
+			vi.spyOn(router, 'load').mockRejectedValueOnce(new Error('load failed'))
+			tabs()[1].dispatchEvent(
+				new MouseEvent('click', { bubbles: true, cancelable: true }),
+			)
+			await settle()
+			await settle()
+			expect(router.load).toHaveBeenCalledWith('b')
+			expect(unhandled).toEqual([])
+		})
+	})
 })

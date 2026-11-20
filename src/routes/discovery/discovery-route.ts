@@ -407,6 +407,9 @@ export class DiscoveryRoute {
 			this.applyView(next)
 			runTasks()
 		})
+		// The browser can skip the transition and reject `ready`; the view
+		// still swaps, without the turn.
+		void transition.ready.catch(() => {})
 		void transition.finished.finally(() => {
 			root.classList.remove('vt-suppress-root')
 			this.revealing = false
