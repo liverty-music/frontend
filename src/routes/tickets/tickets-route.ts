@@ -1,6 +1,6 @@
 import { I18N } from '@aurelia/i18n'
 import { Code, ConnectError } from '@connectrpc/connect'
-import { ILogger, resolve } from 'aurelia'
+import { computed, ILogger, resolve } from 'aurelia'
 import { admissionQrDataUrl } from '../../../shared/lib/admission-code/qr-svg'
 import { IScreenWakeLock } from '../../adapter/browser/screen-wake-lock'
 import { IConcertRpcClient } from '../../adapter/rpc/client/concert-client'
@@ -676,39 +676,32 @@ export class TicketsRoute {
 
 	// ── Official resale (公式リセール) ────────────────────────────────────────
 
-	// The template passes the state these read (listings, resaleByStock,
-	// offline, resaleMessage) as arguments: a binding to a method call is
-	// re-evaluated only when its arguments change, not when the method reads
-	// another property.
+	// These read component state (listings, resaleByStock, offline) and are
+	// called from template bindings: `@computed` makes such a binding track what
+	// the method reads, so the view re-renders when a listing is created or
+	// withdrawn. Without it, Aurelia re-evaluates a method call only when its
+	// arguments change.
 
 	/** The ticket's state as shown, with its listing taken into account. */
-	public shownState(
-		ticket: TicketView,
-		listings: readonly ResaleListing[] = this.listings,
-	): ShownTicketState {
-		return shownState(ticket, listings)
+	@computed
+	public shownState(ticket: TicketView): ShownTicketState {
+		return shownState(ticket, this.listings)
 	}
 
 	/** The ticket's Listed or Sold listing, if any. */
-	public listingOf(
-		ticket: TicketView,
-		listings: readonly ResaleListing[] = this.listings,
-	): ResaleListing | null {
-		return listingOf(ticket, listings)
+	@computed
+	public listingOf(ticket: TicketView): ResaleListing | null {
+		return listingOf(ticket, this.listings)
 	}
 
 	/** Whether the ticket can be listed: 未入場, online, and its stock's resale open. */
-	public offersListing(
-		ticket: TicketView,
-		listings: readonly ResaleListing[] = this.listings,
-		resaleByStock: ReadonlyMap<string, StockResale> = this.resaleByStock,
-		offline: boolean = this.offline,
-	): boolean {
+	@computed
+	public offersListing(ticket: TicketView): boolean {
 		return (
-			!offline &&
-			shownState(ticket, listings) === 'not-entered' &&
+			!this.offline &&
+			shownState(ticket, this.listings) === 'not-entered' &&
 			ticket.ticketStockId !== undefined &&
-			resaleByStock.get(ticket.ticketStockId)?.open === true
+			this.resaleByStock.get(ticket.ticketStockId)?.open === true
 		)
 	}
 
@@ -717,21 +710,17 @@ export class TicketsRoute {
 	 * out for the event: online, before the resale deadline, with a 未入場 ticket
 	 * whose stock is read and not open for resale.
 	 */
-	public explainsNoResale(
-		group: WalletEventGroup,
-		listings: readonly ResaleListing[] = this.listings,
-		resaleByStock: ReadonlyMap<string, StockResale> = this.resaleByStock,
-		offline: boolean = this.offline,
-	): boolean {
+	@computed
+	public explainsNoResale(group: WalletEventGroup): boolean {
 		const start = group.event?.startTime
 		return (
-			!offline &&
+			!this.offline &&
 			start !== undefined &&
 			Date.now() < resaleDeadline(start).getTime() &&
 			group.tickets.some((t) => {
-				if (shownState(t, listings) !== 'not-entered') return false
+				if (shownState(t, this.listings) !== 'not-entered') return false
 				const resale = t.ticketStockId
-					? resaleByStock.get(t.ticketStockId)
+					? this.resaleByStock.get(t.ticketStockId)
 					: undefined
 				return resale !== undefined && !resale.open
 			})
@@ -835,11 +824,11 @@ export class TicketsRoute {
 	}
 
 	/** The message of the last listing call for this ticket, if any. */
-	public resaleMessageFor(
-		ticket: TicketView,
-		message: { ticketId: string; key: string } | null = this.resaleMessage,
-	): string | null {
-		return message?.ticketId === ticket.id ? message.key : null
+	@computed
+	public resaleMessageFor(ticket: TicketView): string | null {
+		return this.resaleMessage?.ticketId === ticket.id
+			? this.resaleMessage.key
+			: null
 	}
 
 	/** A yen amount with thousands separators, e.g. "4,500". */
@@ -871,19 +860,15 @@ export class TicketsRoute {
 			: ''
 	}
 
-	public stateLabel(
-		ticket: TicketView,
-		listings: readonly ResaleListing[] = this.listings,
-	): string {
-		return this.i18n.tr(`tickets.state.${shownState(ticket, listings)}`)
+	@computed
+	public stateLabel(ticket: TicketView): string {
+		return this.i18n.tr(`tickets.state.${shownState(ticket, this.listings)}`)
 	}
 
 	/** Tone of the state label: 未入場 is the ticket the fan can still use. */
-	public stateTone(
-		ticket: TicketView,
-		listings: readonly ResaleListing[] = this.listings,
-	): 'positive' | 'neutral' {
-		return shownState(ticket, listings) === 'not-entered'
+	@computed
+	public stateTone(ticket: TicketView): 'positive' | 'neutral' {
+		return shownState(ticket, this.listings) === 'not-entered'
 			? 'positive'
 			: 'neutral'
 	}

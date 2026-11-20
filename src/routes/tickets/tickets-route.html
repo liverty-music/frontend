@@ -85,7 +85,7 @@
 				<li
 					class="[ tickets-card ] [ flow ]"
 					repeat.for="ticket of group.tickets"
-					data-state.bind="shownState(ticket, listings)"
+					data-state.bind="shownState(ticket)"
 					data-testid="tickets-card"
 					click.trigger="onCardClick($event, group, ticket)"
 				>
@@ -99,8 +99,8 @@
 							t="tickets.ticketN"
 							t-params.bind="{ n: ticketNumber(group, ticket) }"
 						></button>
-						<span class="[ status-label ] [ md-typescale-label-large ]" data-tone.bind="stateTone(ticket, listings)" data-testid="tickets-state">
-							${stateLabel(ticket, listings)}
+						<span class="[ status-label ] [ md-typescale-label-large ]" data-tone.bind="stateTone(ticket)" data-testid="tickets-state">
+							${stateLabel(ticket)}
 						</span>
 						<span class="[ tickets-admitted ] [ md-typescale-body-medium ]" if.bind="ticket.state === 'entered'">
 							${admitted(ticket)}
@@ -129,7 +129,7 @@
 					<ticket-resale-notice></ticket-resale-notice>
 
 					<!-- Official resale (公式リセール) of this ticket -->
-					<template switch.bind="shownState(ticket, listings)">
+					<template switch.bind="shownState(ticket)">
 						<template case="listed">
 							<p class="[ tickets-lead ] [ md-typescale-body-medium ]" t="tickets.resale.listedNote" t-params.bind="{ deadline: listingDeadlineLabel(group) }"></p>
 							<button
@@ -147,11 +147,11 @@
 							<dl class="summary-list" data-testid="tickets-resold">
 								<div>
 									<dt class="md-typescale-label-large" t="tickets.resale.refundAmount"></dt>
-									<dd class="md-typescale-body-large" t="tickets.resale.yen" t-params.bind="{ amount: yen(listingOf(ticket, listings).refundAmount) }"></dd>
+									<dd class="md-typescale-body-large" t="tickets.resale.yen" t-params.bind="{ amount: yen(listingOf(ticket).refundAmount) }"></dd>
 								</div>
 								<div>
 									<dt class="md-typescale-label-large" t="tickets.resale.refund"></dt>
-									<dd class="md-typescale-body-large" if.bind="listingOf(ticket, listings).refundTime" t="tickets.resale.refunded" t-params.bind="{ date: day(listingOf(ticket, listings).refundTime) }"></dd>
+									<dd class="md-typescale-body-large" if.bind="listingOf(ticket).refundTime" t="tickets.resale.refunded" t-params.bind="{ date: day(listingOf(ticket).refundTime) }"></dd>
 									<dd class="md-typescale-body-large" else t="tickets.resale.refunding"></dd>
 								</div>
 							</dl>
@@ -162,11 +162,11 @@
 						class="[ button tickets-action ] [ state-layer ]"
 						data-variant="outlined"
 						data-testid="tickets-list-for-resale"
-						if.bind="offersListing(ticket, listings, resaleByStock, offline)"
+						if.bind="offersListing(ticket)"
 						click.trigger="askToList(group, ticket)"
 						t="tickets.resale.list"
 					></button>
-					<output class="[ tickets-error ] [ md-typescale-body-medium ]" if.bind="resaleMessageFor(ticket, resaleMessage)" t.bind="resaleMessageFor(ticket, resaleMessage)"></output>
+					<output class="[ tickets-error ] [ md-typescale-body-medium ]" if.bind="resaleMessageFor(ticket)" t.bind="resaleMessageFor(ticket)"></output>
 
 					<a
 						class="[ text-link ] [ md-typescale-label-large ]"
@@ -178,7 +178,7 @@
 				</li>
 			</ul>
 
-			<p class="[ tickets-lead ] [ md-typescale-body-medium ]" if.bind="explainsNoResale(group, listings, resaleByStock, offline)" data-testid="tickets-resale-only-sold-out" t="tickets.resale.onlyWhenSoldOut"></p>
+			<p class="[ tickets-lead ] [ md-typescale-body-medium ]" if.bind="explainsNoResale(group)" data-testid="tickets-resale-only-sold-out" t="tickets.resale.onlyWhenSoldOut"></p>
 
 			<button
 				type="button"
@@ -283,7 +283,7 @@
 				class="[ button tickets-action ] [ state-layer ]"
 				data-variant="outlined"
 				data-testid="tickets-virtual-list-for-resale"
-				if.bind="offersListing(openedTicket, listings, resaleByStock, offline)"
+				if.bind="offersListing(openedTicket)"
 				click.trigger="askToListFromTicket()"
 				t="tickets.resale.list"
 			></button>
@@ -292,12 +292,12 @@
 				class="[ button tickets-action ] [ state-layer ]"
 				data-variant="outlined"
 				data-testid="tickets-virtual-withdraw"
-				if.bind="shownState(openedTicket, listings) === 'listed' && !offline"
+				if.bind="shownState(openedTicket) === 'listed' && !offline"
 				disabled.bind="resaleBusy"
 				click.trigger="withdraw(openedTicket)"
 				t="tickets.resale.withdraw"
 			></button>
-			<output class="[ tickets-error ] [ md-typescale-body-medium ]" if.bind="resaleMessageFor(openedTicket, resaleMessage)" t.bind="resaleMessageFor(openedTicket, resaleMessage)"></output>
+			<output class="[ tickets-error ] [ md-typescale-body-medium ]" if.bind="resaleMessageFor(openedTicket)" t.bind="resaleMessageFor(openedTicket)"></output>
 			<button
 				type="button"
 				class="[ button tickets-action ] [ state-layer ]"
