@@ -206,8 +206,18 @@ export class SettingsRoute {
 	/** The row's action: reload after a failed load, else start verification. */
 	public identityAction(): Promise<void> {
 		return this.identityLoadFailed
-			? this.loadIdentityVerification()
+			? this.reloadIdentityVerification()
 			: this.startIdentityVerification()
+	}
+
+	/**
+	 * The reload after a failed load. The tab may have stayed open until the
+	 * access token expired, which makes the fan look signed out to the load;
+	 * refresh the token first so the reload sends the RPC.
+	 */
+	private async reloadIdentityVerification(): Promise<void> {
+		if (!this.auth.isAuthenticated) await this.auth.ensureFreshToken()
+		await this.loadIdentityVerification()
 	}
 
 	/**

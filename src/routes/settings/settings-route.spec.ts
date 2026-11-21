@@ -25,6 +25,7 @@ const mockLogger = {
 const mockAuth = {
 	isAuthenticated: true,
 	refreshEmailVerified: vi.fn(async () => {}),
+	ensureFreshToken: vi.fn(async () => null),
 }
 
 // Mutable `current` so the getters can be exercised across states.
@@ -148,6 +149,28 @@ describe('SettingsRoute — identity verification', () => {
 				'settings.identityVerification.loadFailed',
 			)
 			expect(sut.identityActionKey).toBe('settings.identityVerification.reload')
+		})
+
+		it('refreshes an expired session before the reload sends Get', async () => {
+			mockAuth.isAuthenticated = true
+			mockIdentityVerifications.get.mockRejectedValueOnce(
+				new ConnectError('unavailable', Code.Unavailable),
+			)
+			sut.loading()
+			await flush()
+			expect(sut.identityLoadFailed).toBe(true)
+
+			// The access token expired while the tab stayed open.
+			mockAuth.isAuthenticated = false
+			mockAuth.ensureFreshToken.mockImplementationOnce(async () => {
+				mockAuth.isAuthenticated = true
+				return null
+			})
+			await sut.identityAction()
+
+			expect(mockAuth.ensureFreshToken).toHaveBeenCalledOnce()
+			expect(mockIdentityVerifications.get).toHaveBeenCalledTimes(2)
+			expect(sut.identityLoadFailed).toBe(false)
 		})
 
 		it('does not show a stale verified snapshot once a reload fails', async () => {
