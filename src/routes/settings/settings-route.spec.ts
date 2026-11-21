@@ -255,7 +255,7 @@ describe('SettingsRoute — identity verification', () => {
 
 		// liverty-music/frontend#1078: until Settings has loaded the fan's
 		// verification it cannot tell a verified fan from an unverified one.
-		// @spec components/infrastructure/fan/web/route/settings "Callback opened again after success"
+		// @spec components/infrastructure/fan/web/route/settings "Verified fan on a slow connection"
 		it('shows no reason and no 本人確認する before the verification loads', () => {
 			mockIdentityVerifications.failure = 'sessionMismatch'
 			mockIdentityVerifications.loaded = false

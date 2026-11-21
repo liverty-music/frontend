@@ -112,6 +112,7 @@ describe('resolveOrgPin', () => {
 
 	// liverty-music/frontend#1076: a link to an Organizer that does not exist
 	// (or was deactivated) fails at sign-in. It must not stick to the device.
+	// @spec components/infrastructure/organizer/web/global/hosted-login "Link to an Organizer that does not exist"
 	it('does not remember a pin from the address that no sign-in admitted', () => {
 		const { local, tab } = stores()
 
@@ -124,6 +125,7 @@ describe('resolveOrgPin', () => {
 		expect(tab.getItem(PENDING_ORG_PIN_STORAGE_KEY)).toBeNull()
 	})
 
+	// @spec components/infrastructure/organizer/web/global/hosted-login "Failed link keeps the remembered Organization"
 	it('keeps the remembered pin when a link to another Organizer fails at sign-in', () => {
 		const { local, tab } = stores({
 			[ORG_SHORT_NAME_STORAGE_KEY]: 'xx-records',

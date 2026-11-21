@@ -105,6 +105,7 @@ test.describe('who enters and where they land', () => {
 	// liverty-music/frontend#1076: a link naming an Organizer that does not
 	// exist starts a sign-in that never comes back. It must not stick to the
 	// device: the next visit without the link asks for the email again.
+	// @spec components/infrastructure/organizer/web/global/hosted-login "Link to an Organizer that does not exist"
 	test('a link whose sign-in never completes is not remembered', async ({
 		page,
 	}) => {
