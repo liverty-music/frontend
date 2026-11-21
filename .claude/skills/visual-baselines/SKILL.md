@@ -13,10 +13,12 @@ state-placeholder, page-header). Baselines are **committed** under
 - Generate/compare baselines INSIDE the pinned container so rendering is deterministic with CI:
   ```bash
   # regenerate after an intentional visual change, then commit the PNGs
-  docker run --rm -v "$PWD":/work -w /work -e HOME=/tmp \
+  docker run --rm --user "$(id -u):$(id -g)" -v "$PWD":/work -w /work -e HOME=/tmp \
     mcr.microsoft.com/playwright:v1.64.1-noble \
     npx vitest run --project=storybook --update
   ```
+  `--user` keeps the files the run writes (`node_modules/.vite`, `.cache`, the PNGs) owned by you;
+  without it they are root's, and the next commit gate fails with EACCES (2026-11-21: 371 files).
 - The `storybook-test` CI job runs in that same image; on failure it uploads the Vitest HTML report
   (`storybook-test-report/`, which embeds the diff/actual images). Page-level visual regression
   (the old Playwright `mobile-visual`) has been retired — one visual pipeline only.
