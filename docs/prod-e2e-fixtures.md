@@ -176,7 +176,8 @@ header shows. Mount `.auth/` so the renewed sessions are written back to it:
 
 ```bash
 docker run --rm --network host --env-file .auth/prod-e2e.env \
-  -v "$PWD":/work -w /work mcr.microsoft.com/playwright:v1.64.1-noble \
+  --user "$(id -u):$(id -g)" -e HOME=/tmp -v "$PWD":/work -w /work \
+  mcr.microsoft.com/playwright:v1.64.1-noble \
   npx playwright test -c playwright.prod.config.mjs
 ```
 
