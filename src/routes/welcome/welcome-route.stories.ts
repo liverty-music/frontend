@@ -6,14 +6,22 @@ import {
 } from '@aurelia/storybook'
 import { CustomElement, Registration } from 'aurelia'
 import { expect, userEvent, waitFor } from 'storybook/test'
+import { IHistory } from '../../adapter/browser/history'
 import { ILocalStorage } from '../../adapter/storage/local-storage'
+import { ConcertSheet } from '../../components/concert-sheet/concert-sheet'
+import { ConcertCard } from '../../components/timetable-grid/concert-card'
+import { TimetableGrid } from '../../components/timetable-grid/timetable-grid'
 import { BusyOnClickCustomAttribute } from '../../custom-attributes/busy-on-click'
+import { GuideTargetCustomAttribute } from '../../custom-attributes/guide-target'
 import { IAnalyticsService } from '../../lib/analytics/analytics-service'
 import { IAuthService } from '../../services/auth-service'
 import { IConcertStore } from '../../services/concert-store'
 import { IErrorBoundaryService } from '../../services/error-boundary-service'
 import { IFollowStore } from '../../services/follow-store'
+import { INotificationPromptService } from '../../services/notification-prompt-service'
+import { ITicketJourneyStore } from '../../services/ticket-journey-store'
 import { IUserStore } from '../../services/user-store'
+import { DateValueConverter } from '../../value-converters/date'
 import { WelcomeRoute } from './welcome-route'
 
 // A route story: every store and service the route resolves is a fake
@@ -121,6 +129,105 @@ export const RevealingThePreview = {
 					timeout: 3000,
 				})
 			}
+		} finally {
+			history.replaceState(null, '', originalUrl)
+		}
+	},
+} satisfies Story
+
+/**
+ * A visitor taps a card of the demo timetable: the real detail sheet opens,
+ * with the official information, the venue and the calendar link, and nothing
+ * that needs an account or starts sign-up.
+ */
+export const CardOpensTheDetailView = {
+	render: () => {
+		history.replaceState(null, '', `${location.pathname}?devPreview=1`)
+		return defineAureliaStory({
+			template:
+				'<div style="display: grid; block-size: 100svh"><welcome-route></welcome-route></div>',
+			register: [
+				WelcomeRoute,
+				BusyOnClickCustomAttribute,
+				ConcertSheet,
+				TimetableGrid,
+				ConcertCard,
+				GuideTargetCustomAttribute,
+				DateValueConverter,
+			],
+			items: [
+				...items.filter((r) => r !== items[0] && r !== items[3]),
+				Registration.instance(IAuthService, {
+					ready: Promise.resolve(),
+					isAuthenticated: false,
+				}),
+				Registration.instance(IFollowStore, {
+					followedIds: new Set(),
+					hypeByArtist: new Map(),
+				}),
+				Registration.instance(ITicketJourneyStore, {
+					journeyMap: new Map(),
+					known: true,
+					statusFor: () => undefined,
+				}),
+				Registration.instance(INotificationPromptService, {
+					pushState: async () => 'offerable',
+				}),
+				Registration.instance(IHistory, {
+					pushState() {},
+					replaceState() {},
+				}),
+			],
+		})
+	},
+	play: async ({ canvasElement }) => {
+		try {
+			const route = canvasElement.querySelector<HTMLElement>('welcome-route')
+			if (!route) throw new Error('route not rendered')
+			// The demo opens on the mock notification; its tap reveals the
+			// timetable.
+			const notification = await waitFor(() => {
+				const el = route.querySelector<HTMLElement>(
+					'[data-testid="welcome-demo-notification"] button',
+				)
+				if (!el) throw new Error('no notification yet')
+				return el
+			})
+			notification.scrollIntoView()
+			await userEvent.click(notification)
+			const card = await waitFor(
+				() => {
+					const el = route.querySelector<HTMLElement>(
+						'.welcome-demo-timetable [data-live-card]',
+					)
+					if (!el) throw new Error('no card yet')
+					return el
+				},
+				{ timeout: 5000 },
+			)
+			card.scrollIntoView()
+			await userEvent.click(card)
+			const sheet = await waitFor(() => {
+				const el = route.querySelector<HTMLElement>(
+					'concert-sheet .sheet-content',
+				)
+				if (!el) throw new Error('detail view not open yet')
+				return el
+			})
+
+			// @spec components/infrastructure/fan/web/route/welcome "Card opens the real detail view"
+			await expect(sheet.querySelector('a.official-site')).not.toBeNull()
+			await expect(
+				sheet.querySelector('[data-testid="add-to-calendar"]'),
+			).not.toBeNull()
+			await expect(
+				sheet.querySelector('[data-testid="journey-notify-btn"]'),
+			).toBeNull()
+			await expect(sheet.querySelector('[data-testid="push-line"]')).toBeNull()
+			await expect(sheet.querySelector('.journey-row')).toBeNull()
+			await expect(
+				sheet.querySelector('[data-testid="sheet-notify-guide"]'),
+			).toBeNull()
 		} finally {
 			history.replaceState(null, '', originalUrl)
 		}

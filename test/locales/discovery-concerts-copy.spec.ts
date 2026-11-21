@@ -36,14 +36,23 @@ describe('the Concerts view copy', () => {
 		// Every Japanese string is written in Japanese — none is left as the
 		// English source or as a bare placeholder. Whether the phrasing reads
 		// naturally is judged in review; this guards against untranslated copy.
+		// The follow action reads 「Follow」 / 「Following」 in both locales
+		// (bottom-sheet "Follow CTA in Concert Sheet").
+		const english = new Set([
+			'discoveryConcerts.follow.action',
+			'discoveryConcerts.follow.following',
+		])
 		const untranslated = [...jaKeys]
+			.filter(([key]) => !english.has(key))
 			.filter(([, text]) => !JAPANESE.test(text.replace(/\{\{\w+\}\}/g, '')))
 			.map(([key]) => key)
 		expect(untranslated).toEqual([])
 		const copiedFromEnglish = [...jaKeys]
+			.filter(([key]) => !english.has(key))
 			.filter(([key, text]) => text === enKeys.get(key))
 			.map(([key]) => key)
 		expect(copiedFromEnglish).toEqual([])
+		expect(jaKeys.get('discoveryConcerts.follow.action')).toBe('Follow')
 		expect(jaKeys.get('discovery.swap.toConcerts')).toBe('ライブ')
 		expect(jaKeys.get('discovery.swap.toArtists')).toBe('アーティスト')
 	})

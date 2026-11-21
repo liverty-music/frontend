@@ -1,25 +1,26 @@
 @layer block {
-	/* Follow CTA of the event detail sheet (the Concerts view context). */
-	@scope (.sheet-follow) {
+	/* The artist name row of the event detail sheet's header, and the follow
+	   action on the right of the name (the Concerts view context). The name
+	   takes the room left and wraps; the action keeps its size. */
+	@scope (.sheet-artist-row) {
 		:scope {
-			--flow-space: var(--space-m);
-
-			display: flex;
-			justify-content: center;
+			display: grid;
+			grid-template-columns: 1fr auto;
+			gap: var(--space-xs);
+			align-items: start;
 		}
 
-		.follow-action {
-			inline-size: 100%;
+		.follow-action,
+		.follow-state {
+			white-space: nowrap;
 		}
 
 		.follow-state {
 			display: flex;
-			gap: var(--space-3xs);
 			align-items: center;
-			justify-content: center;
 
-			inline-size: 100%;
-			padding-block: var(--space-2xs);
+			min-block-size: var(--md-sys-target-size);
+			padding-inline: var(--space-s);
 
 			color: var(--color-brand-primary);
 		}

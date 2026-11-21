@@ -34,11 +34,8 @@
   </div>
 </state-placeholder>
 
-<!-- The follow action dispatches onSignupRequested for a guest. -->
-<concert-sheet
-  component.ref="detailSheet"
-  on-signup-requested.bind="() => onFollowSignupRequested()"
-></concert-sheet>
+<!-- Opened with the follow action beside the artist name. -->
+<concert-sheet component.ref="detailSheet"></concert-sheet>
 
 <!-- The filters, opened from the action launcher's filter item: one sheet with
      the area and period rows, each opening its own selector once it closes. -->

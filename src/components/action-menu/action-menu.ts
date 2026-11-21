@@ -5,6 +5,7 @@ import {
 	IActionMenuService,
 	type MenuAction,
 } from '../../services/action-menu-service'
+import { IGuideService } from '../../services/guide-service'
 
 /**
  * Global thumb-zone action launcher. A single instance is mounted by the app
@@ -23,6 +24,7 @@ export class ActionMenu {
 	public readonly actionMenu = resolve(IActionMenuService)
 	private readonly signaler = resolve(ISignaler)
 	private readonly routerEvents = resolve(IRouterEvents)
+	private readonly guide = resolve(IGuideService)
 	private navigationSub: IDisposable | null = null
 
 	public isOpen = false
@@ -80,6 +82,11 @@ export class ActionMenu {
 		const open = event.newState === 'open'
 		this.isOpen = open
 		if (open) {
+			// Opening the menu uses the Concerts view's guide moment, which
+			// points at this button.
+			if (this.guide.current === 'concerts.filter') {
+				this.guide.acted('concerts.filter')
+			}
 			// The panel entered the top layer above the FAB; re-show the FAB so it
 			// sits above the panel's scrim and stays the visible, tappable close
 			// control. Hiding a manual popover leaves the auto panel open.

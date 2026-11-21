@@ -12,12 +12,12 @@ import {
 	type GeoLocationInit,
 	geoLocationFromLevel1,
 } from '../../entities/user'
-import { IAuthService } from '../../services/auth-service'
 import {
 	IConcertStore,
 	type ProximityGroup,
 } from '../../services/concert-store'
 import { IFollowStore } from '../../services/follow-store'
+import { IGuideService } from '../../services/guide-service'
 import { IPurchasedTicketStore } from '../../services/purchased-ticket-store'
 import { ITicketJourneyStore } from '../../services/ticket-journey-store'
 import { IUserHydration } from '../../services/user-hydration-task'
@@ -90,13 +90,6 @@ export class DiscoveryConcerts {
 	@bindable public visit: DiscoveryConcertsVisit = new DiscoveryConcertsVisit()
 
 	/**
-	 * Invoked when a guest taps the follow action. The host shows the sign-up
-	 * prompt banner, outside this view: the banner is fixed to the viewport,
-	 * and Discovery's layout is a container that would anchor it instead.
-	 */
-	@bindable public onSignupRequested?: () => void
-
-	/**
 	 * The period's label — a preset name (今週末 / 7日以内 / 30日以内) or a
 	 * localized range (e.g. `8/12〜8/20`), supplied by the date-range sheet
 	 * alongside the resolved range so the filter sheet never re-derives it.
@@ -118,7 +111,6 @@ export class DiscoveryConcerts {
 
 	private readonly logger = resolve(ILogger).scopeTo('DiscoveryConcerts')
 	public readonly i18n = resolve(I18N)
-	private readonly authService = resolve(IAuthService)
 	private readonly concertStore = resolve(IConcertStore)
 	public readonly followStore = resolve(IFollowStore)
 	public readonly journeyStore = resolve(ITicketJourneyStore)
@@ -126,10 +118,7 @@ export class DiscoveryConcerts {
 	private readonly router = resolve(IRouter)
 	public readonly userStore = resolve(IUserStore)
 	private readonly userHydration = resolve(IUserHydration)
-
-	public get isAuthenticated(): boolean {
-		return this.authService.isAuthenticated
-	}
+	private readonly guide = resolve(IGuideService)
 
 	/** The override, else the fan's home area, else null (ask for one). */
 	public get effectiveAreaCode(): string | null {
@@ -274,6 +263,7 @@ export class DiscoveryConcerts {
 			this.shownGroups = cached
 			this.derive()
 			this.loadError = null
+			this.requestFilterMoment()
 			return
 		}
 
@@ -290,6 +280,7 @@ export class DiscoveryConcerts {
 			this.visit.cache.set(key, groups)
 			this.shownGroups = groups
 			this.derive()
+			this.requestFilterMoment()
 			this.logger.info('the Concerts view loaded', {
 				adminArea: geo.adminArea,
 				groups: groups.length,
@@ -345,16 +336,17 @@ export class DiscoveryConcerts {
 	}
 
 	/**
-	 * A guest tapped the follow action. Following is the conversion moment, so
-	 * the host's sign-up prompt banner appears instead of a guest follow,
-	 * keeping the concert in view.
+	 * The list or the empty state is on screen: the first time on this device,
+	 * the action menu's guide moment points at where the area and the period
+	 * change (Discovery "The Concerts view's guide moment"). Opening the menu
+	 * uses it (action-menu).
 	 */
-	public onFollowSignupRequested(): void {
-		if (this.isAuthenticated) return
-		this.onSignupRequested?.()
+	private requestFilterMoment(): void {
+		this.guide.request('concerts.filter')
 	}
 
 	public detaching(): void {
+		this.guide.dismiss('concerts.filter', 'route_leave')
 		this.abortController?.abort()
 		this.abortController = null
 	}

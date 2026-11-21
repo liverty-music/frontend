@@ -56,7 +56,7 @@
 	"homeAreaSelector": {
 		"saveFailed": "Couldn't save your area. Please try again in a moment.",
 		"title": "Select Your Home Area",
-		"description": "The HOME lane shows lives in the area you select. Where do you live?",
+		"description": "Tell us where you live! We'll put concerts near you in HOME",
 		"quickSelect": "Quick Select",
 		"selectByRegion": "Select by Region",
 		"selectPrefecture": "Select your prefecture.",
@@ -145,8 +145,7 @@
 			"trackingOff": "Get the sale opening and the lottery deadline by push 🔔",
 			"appliedOn": "For a lottery with a known results day, we'll push on that day 🔔",
 			"appliedOff": "For a lottery with a known results day, get a push on that day 🔔",
-			"unpaid": "Pay before the deadline.",
-			"guest": "Create an account to get ticket sale notifications."
+			"unpaid": "Pay before the deadline."
 		},
 		"outOfRange": {
 			"current": "Right now only new concerts <strong class=\"[ reach-words ] [ md-typescale-title-large-emphasized ]\">{{places}}</strong> are pushed",
@@ -169,7 +168,13 @@
 		},
 		"trackingStarted": "🔔 You will get ticket sale notifications.",
 		"undo": "Undo",
-		"undoFailed": "Couldn't undo. Please try again."
+		"undoFailed": "Couldn't undo. Please try again.",
+		"signUpDialog": {
+			"title": "Looks like you don't have an account yet?",
+			"body": "The account you need for notifications is free and quick to make!",
+			"later": "Later",
+			"signUp": "Sign Up"
+		}
 	},
 	"timetable": {
 		"monthJump": {
@@ -189,7 +194,7 @@
 			"welcome": "Welcome!\nYou won't miss a live show again",
 			"found": "Found {{concerts}} shows by {{artists}} artists",
 			"tapToView": "Tap to take a look",
-			"chasing": "Liverty Music keeps track of new shows for you!"
+			"chasing": "New concerts?\nLeave them to Liverty Music!"
 		},
 		"loading": "Loading events…",
 		"empty": {
@@ -244,7 +249,7 @@
 			"removeCol": "Remove"
 		},
 		"signupBanner": {
-			"message": "Save your follows!"
+			"message": "Get notified of new concerts!"
 		},
 		"edit": "Edit",
 		"done": "Done",
@@ -612,7 +617,8 @@
 			"bodyNoFollows": "We'll notify you when we find new shows.",
 			"enable": "Turn on notifications",
 			"blocked": "Notifications are blocked. You can change this later in Settings.",
-			"failed": "Couldn't turn on notifications. You can turn them on later in Settings."
+			"failed": "Couldn't turn on notifications. You can turn them on later in Settings.",
+			"titleTrack": "Just turn on push notifications!"
 		},
 		"install": {
 			"title": "Your timetable, one tap away",
@@ -904,7 +910,7 @@
 			"subtitle": "Try a wider date range or a different area."
 		},
 		"follow": {
-			"action": "Follow this artist",
+			"action": "Follow",
 			"following": "Following"
 		}
 	},
@@ -916,7 +922,8 @@
 		"help": "Help",
 		"leftHanded": "Left-handed mode",
 		"leftHandedDesc": "Open the action menu toward your left hand",
-		"settings": "Settings"
+		"settings": "Settings",
+		"concertsFilter": "Change area and dates"
 	},
 	"newLotteryEntry": {
 		"loading": "Loading…",
@@ -1399,10 +1406,18 @@
 		"on": "We'll push new {{name}} concerts {{places}} 🔔",
 		"watch": "We won't push new {{name}} concerts",
 		"off": "Get new {{name}} concerts {{places}} by push 🔔",
-		"signUp": "Sign up",
+		"signUp": "Sign Up",
 		"settings": "Settings"
 	},
 	"confirmDialog": {
 		"cancel": "Cancel"
+	},
+	"guide": {
+		"discoveryFollow": "Tap an artist you like to follow!",
+		"discoverySwap": "There are concerts you can go to soon!",
+		"concertsFilter": "Going somewhere? Change it here!",
+		"sheetNotify": "Don't miss the concerts you care about!",
+		"myArtistsHype": "Change the 🔥 to match your Hype!",
+		"replay": "Show me"
 	}
 }

@@ -21,12 +21,14 @@
         <th if.bind="editing" scope="col"><span class="[ visually-hidden ]" t="myArtists.table.removeCol"></span></th>
       </tr>
     </thead>
+    <!-- The hype dots' guide moment lights the first row's dots. -->
     <tbody data-artist-rows>
       <tr
         repeat.for="artist of artists; key.bind: artist.artist.id"
         as-element="artist-hype-row"
         class="artist-row"
         css="--_vt-name: artist-${artist.artist.id}; --_dot-color: ${artist.color}"
+        guide-target="value.bind: $first ? 'myArtists.hype' : ''; shape: dots"
         artist.bind="artist"
         editing.bind="editing"
       ></tr>

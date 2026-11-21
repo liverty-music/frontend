@@ -17,6 +17,10 @@ const meta = {
 			description: 'What happens on confirm; a newline starts a new line.',
 		},
 		confirmLabel: { control: 'text', description: 'The confirm control.' },
+		cancelLabel: {
+			control: 'text',
+			description: 'The safe choice; empty reads 「キャンセル」.',
+		},
 		tone: {
 			control: 'inline-radio',
 			options: ['default', 'danger'],
@@ -27,6 +31,7 @@ const meta = {
 		heading: 'サインアウトしますか？',
 		body: '次に使うときは、パスキーでもう一度ログインします。',
 		confirmLabel: 'サインアウト',
+		cancelLabel: '',
 		tone: 'default',
 	},
 } satisfies Meta<typeof ConfirmDialog>
@@ -39,6 +44,7 @@ const template = `
 		heading.bind="heading"
 		body.bind="body"
 		confirm-label.bind="confirmLabel"
+		cancel-label.bind="cancelLabel"
 		tone.bind="tone"
 	></confirm-dialog>
 `
@@ -95,6 +101,32 @@ export const Danger = {
 		await userEvent.click(
 			within(dialog).getByRole('button', { name: 'キャンセル' }),
 		)
+		await expect(await answer).toBe(false)
+	},
+} satisfies Story
+
+// The guest's sign-up dialog of the concert sheet's notification button: the
+// safe choice reads 「あとで」 and still takes focus first.
+export const CustomCancelLabel = {
+	render,
+	args: {
+		heading: 'おっと、まだアカウントを持っていないね？',
+		body: '通知に必要なアカウントは無料ですぐに作成できるよ！',
+		confirmLabel: 'Sign Up',
+		cancelLabel: 'あとで',
+	},
+	play: async ({ canvasElement }) => {
+		const answer = ask(canvasElement)
+		const dialog = within(canvasElement).getByRole('dialog', {
+			name: 'おっと、まだアカウントを持っていないね？',
+		})
+		await waitFor(() => expect(dialog).toBeVisible())
+		const later = within(dialog).getByRole('button', { name: 'あとで' })
+		await expect(later).toHaveFocus()
+		await expect(
+			within(dialog).queryByRole('button', { name: 'キャンセル' }),
+		).toBeNull()
+		await userEvent.click(later)
 		await expect(await answer).toBe(false)
 	},
 } satisfies Story

@@ -12,7 +12,7 @@
 			"label": "アーティスト"
 		},
 		"homeArea": {
-			"label": "ホームエリア"
+			"label": "HOMEエリア"
 		}
 	},
 	"welcome": {
@@ -54,9 +54,9 @@
 		"error": "アカウント作成を完了できませんでした。ネットワークが不安定なようです。少し時間を置いてもう一度お試しください。"
 	},
 	"homeAreaSelector": {
-		"saveFailed": "居住エリアを保存できませんでした。少し時間を置いてもう一度お試しください。",
-		"title": "ホームエリアを選択",
-		"description": "HOMEのレーンには、選んだエリアのライブが並びます。あなたの居住エリアはどこですか？",
+		"saveFailed": "HOMEエリアを保存できませんでした。少し時間を置いてもう一度お試しください。",
+		"title": "HOMEエリアを選択",
+		"description": "住んでるエリアを教えてね！近くのライブを HOME に並べるよ",
 		"quickSelect": "主要都市",
 		"selectByRegion": "地方から選ぶ",
 		"selectPrefecture": "都道府県を選んでください。",
@@ -145,8 +145,7 @@
 			"trackingOff": "販売開始と抽選の締め切りをプッシュ通知で受け取ろう🔔",
 			"appliedOn": "発表日がわかる抽選は、結果発表の日にプッシュ通知します🔔",
 			"appliedOff": "発表日がわかる抽選は、結果発表の日のプッシュ通知を受け取ろう🔔",
-			"unpaid": "期限までに入金を済ませましょう",
-			"guest": "アカウントを作ると、販売開始をプッシュ通知で受け取れます"
+			"unpaid": "期限までに入金を済ませましょう"
 		},
 		"outOfRange": {
 			"current": "今は<strong class=\"[ reach-words ] [ md-typescale-title-large-emphasized ]\">{{places}}</strong>の新着ライブだけプッシュ通知対象です",
@@ -169,7 +168,13 @@
 		},
 		"trackingStarted": "🔔 チケット販売の通知を受け取ります",
 		"undo": "取り消す",
-		"undoFailed": "取り消せませんでした。もう一度お試しください。"
+		"undoFailed": "取り消せませんでした。もう一度お試しください。",
+		"signUpDialog": {
+			"title": "おっと、まだアカウントを持っていないね？",
+			"body": "通知に必要なアカウントは無料ですぐに作成できるよ！",
+			"later": "あとで",
+			"signUp": "Sign Up"
+		}
 	},
 	"timetable": {
 		"monthJump": {
@@ -189,7 +194,7 @@
 			"welcome": "ようこそ！\nもうライブは見逃さない",
 			"found": "{{artists}}組のアーティストの{{concerts}}公演が見つかりました",
 			"tapToView": "タップして見てみよう",
-			"chasing": "新着ライブは、\nLiverty Music が追いかけます！"
+			"chasing": "新着ライブは\nLiverty Music にお任せ！"
 		},
 		"loading": "イベントを読み込み中…",
 		"empty": {
@@ -244,7 +249,7 @@
 			"removeCol": "削除"
 		},
 		"signupBanner": {
-			"message": "フォロー履歴を保存しよう！"
+			"message": "新着ライブを通知で受け取ろう！"
 		},
 		"edit": "編集",
 		"done": "完了",
@@ -320,7 +325,7 @@
 			"notificationsSound": "通知とサウンド",
 			"displayControls": "表示と操作"
 		},
-		"myHomeArea": "ホームエリア",
+		"myHomeArea": "HOMEエリア",
 		"notSet": "未設定",
 		"pushNotifications": "プッシュ通知",
 		"notAvailable": "この環境では利用できません",
@@ -610,7 +615,8 @@
 			"bodyNoFollows": "新しいライブが見つかったら、通知で届けます。",
 			"enable": "通知をオンにする",
 			"blocked": "通知はブロックされています。あとで設定から変更できます。",
-			"failed": "通知をオンにできませんでした。あとで設定からオンにできます。"
+			"failed": "通知をオンにできませんでした。あとで設定からオンにできます。",
+			"titleTrack": "あとはプッシュ通知をオンにするだけ！"
 		},
 		"install": {
 			"title": "ワンタップでタイムテーブルへ",
@@ -647,7 +653,7 @@
 			"lanesSectionTitle": "ステージレーンの読み方",
 			"description": "フォローしたアーティストのライブが距離ごとに表示されます。",
 			"homeLabel": "HOME",
-			"homeDesc": "居住エリアのライブ",
+			"homeDesc": "HOMEエリアのライブ",
 			"nearLabel": "NEAR",
 			"nearDesc": "少し足を伸ばせば行けるライブ",
 			"awayLabel": "AWAY",
@@ -659,7 +665,7 @@
 			"hypeSectionTitle": "Hype（熱量） について",
 			"description": "Hype（熱量）で通知の範囲が変わります。",
 			"watchDesc": "通知なし",
-			"homeDesc": "居住エリアのライブを通知",
+			"homeDesc": "HOMEエリアのライブを通知",
 			"nearbyDesc": "近くのライブも通知",
 			"awayDesc": "全てのライブを通知",
 			"tip": "遠征してでも見たいアーティストは Away に設定してみましょう！",
@@ -772,7 +778,7 @@
 						"当方は、本サービスの提供にあたり、以下の個人情報を取得します。",
 						"・アカウント情報：メールアドレスおよびアカウント識別子（ユーザーID）",
 						"・ウォレットアドレス（safe_address）：ユーザーIDから生成されるアカウント識別用のアドレス",
-						"・ホームエリア（お住まいの地域に関する設定）",
+						"・HOMEエリア（お住まいの地域に関する設定）",
 						"・フォロー中のアーティスト",
 						"・言語設定",
 						"・プッシュ通知の購読情報および端末トークン",
@@ -902,8 +908,8 @@
 			"subtitle": "期間を広げるか、別のエリアで探してみてください。"
 		},
 		"follow": {
-			"action": "このアーティストをフォロー",
-			"following": "フォロー中"
+			"action": "Follow",
+			"following": "Following"
 		}
 	},
 	"actionMenu": {
@@ -914,7 +920,8 @@
 		"help": "ヘルプ",
 		"leftHanded": "左利きモード",
 		"leftHandedDesc": "アクションメニューを左手側に開きます",
-		"settings": "設定"
+		"settings": "設定",
+		"concertsFilter": "エリアと期間を変える"
 	},
 	"newLotteryEntry": {
 		"loading": "読み込んでいます…",
@@ -1393,14 +1400,22 @@
 		"all": "全て",
 		"home": "{{place}}",
 		"nearby": "{{place}}周辺",
-		"noHome": "居住エリア",
+		"noHome": "HOMEエリア",
 		"on": "{{name}}の{{places}}の新着ライブをプッシュ通知します🔔",
 		"watch": "{{name}}の新着ライブはプッシュ通知しません",
 		"off": "{{name}}の{{places}}の新着ライブをプッシュ通知で受け取ろう🔔",
-		"signUp": "登録する",
+		"signUp": "Sign Up",
 		"settings": "設定"
 	},
 	"confirmDialog": {
 		"cancel": "キャンセル"
+	},
+	"guide": {
+		"discoveryFollow": "気になるアーティストをタップしてフォローしよう！",
+		"discoverySwap": "すぐに行けるライブも見てみよう！",
+		"concertsFilter": "遠征するときはココを変更！",
+		"sheetNotify": "気になるライブは見逃しNG！",
+		"myArtistsHype": "Hype（熱量）に合わせて 🔥 を変えてみよう！",
+		"replay": "チュートリアル"
 	}
 }

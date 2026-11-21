@@ -1353,11 +1353,59 @@ describe('TimetableRoute', () => {
 			expect(sut.celebrationSubMessage).toBe('timetable.celebration.chasing')
 			expect(mockStorage.removeItem).toHaveBeenCalledWith('postSignup.shown')
 			expect(sut.showPostSignupDialog).toBe(false)
+			expect(sut.postSignupVariant).toBe('default')
 
 			sut.onCelebrationDismissed()
 
 			expect(sut.showCelebration).toBe(false)
 			expect(sut.showPostSignupDialog).toBe(true)
+		})
+
+		// @spec components/infrastructure/fan/web/global/post-signup-dialog "Back from sign-up"
+		// @spec components/infrastructure/fan/web/global/celebration-overlay "Sign-up from the notification button"
+		it('shows no celebration after a sign-up from the notification button, and the dialog once the sheet closes', async () => {
+			mockAuth.isAuthenticated = true
+			mockStorage.getItem.mockImplementation((k: string) =>
+				k === 'postSignup.shown' ? 'pending-track' : null,
+			)
+			sut = new TimetableRoute()
+			sut.needsRegion = false
+			sut.detailSheet = { isOpen: true, open: vi.fn() } as never
+
+			await sut.loadData()
+			await new Promise((r) => setTimeout(r))
+
+			expect(sut.showCelebration).toBe(false)
+			expect(sut.showPostSignupDialog).toBe(false)
+			expect(mockStorage.removeItem).toHaveBeenCalledWith('postSignup.shown')
+
+			// @spec components/infrastructure/fan/web/global/post-signup-dialog "Closing the sheet"
+			sut.onDetailSheetClosed()
+			expect(sut.showPostSignupDialog).toBe(true)
+			expect(sut.postSignupVariant).toBe('track')
+			expect(sut.showCelebration).toBe(false)
+
+			// Once: a later close opens nothing new.
+			sut.showPostSignupDialog = false
+			sut.onDetailSheetClosed()
+			expect(sut.showPostSignupDialog).toBe(false)
+		})
+
+		it('opens the dialog at once when the concert of the sign-up is not on the timetable', async () => {
+			mockAuth.isAuthenticated = true
+			mockStorage.getItem.mockImplementation((k: string) =>
+				k === 'postSignup.shown' ? 'pending-track' : null,
+			)
+			sut = new TimetableRoute()
+			sut.needsRegion = false
+			sut.detailSheet = { isOpen: false, open: vi.fn() } as never
+
+			await sut.loadData()
+			await new Promise((r) => setTimeout(r))
+
+			expect(sut.showCelebration).toBe(false)
+			expect(sut.showPostSignupDialog).toBe(true)
+			expect(sut.postSignupVariant).toBe('track')
 		})
 
 		// @spec components/infrastructure/fan/web/global/celebration-overlay "Follows but no concert yet"

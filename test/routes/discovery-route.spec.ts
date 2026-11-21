@@ -37,6 +37,7 @@ const mockIRouter = DI.createInterface('IRouter')
 const mockIOnboardingService = DI.createInterface('IOnboardingService')
 const mockIAuthService = DI.createInterface('IAuthService')
 const mockIUserStore = DI.createInterface('IUserStore')
+const mockIGuideService = DI.createInterface('IGuideService')
 
 // The real module (other code imports its IRouterEvents) with IRouter
 // swapped; the getter defers the read past this hoisted factory.
@@ -68,6 +69,9 @@ vi.mock('../../src/services/user-store', () => ({
 }))
 vi.mock('../../src/services/auth-service', () => ({
 	IAuthService: mockIAuthService,
+}))
+vi.mock('../../src/services/guide-service', () => ({
+	IGuideService: mockIGuideService,
 }))
 
 vi.mock('../../src/routes/discovery/discovery-route.css?raw', () => ({
@@ -140,6 +144,11 @@ describe('DiscoveryRoute', () => {
 		handed: string
 	}
 	let mockUserStore: { currentHome: string | null }
+	let mockGuide: {
+		request: ReturnType<typeof vi.fn>
+		acted: ReturnType<typeof vi.fn>
+		dismiss: ReturnType<typeof vi.fn>
+	}
 
 	function buildSut() {
 		const container = createTestContainer(
@@ -154,6 +163,7 @@ describe('DiscoveryRoute', () => {
 			Registration.instance(IAnalyticsService, mockAnalytics),
 			Registration.instance(IHistory, mockHistory),
 			Registration.instance(mockIAuthService, mockAuth),
+			Registration.instance(mockIGuideService, mockGuide),
 		)
 		container.register(DiscoveryRoute)
 		const route = container.get(DiscoveryRoute)
@@ -176,7 +186,9 @@ describe('DiscoveryRoute', () => {
 		resetRevealEntryForTests()
 		localStorage.clear()
 		mockHistory = createMockHistory()
-		mockAuth = { isAuthenticated: false, signUp: vi.fn() }
+		// Signed in by default: the Concerts view is a signed-in fan's.
+		mockAuth = { isAuthenticated: true, signUp: vi.fn() }
+		mockGuide = { request: vi.fn(), acted: vi.fn(), dismiss: vi.fn() }
 		mockFab = {
 			actions: [],
 			handed: 'right',
@@ -1116,6 +1128,7 @@ describe('DiscoveryRoute', () => {
 					Registration.instance(mockIRouter, mockRouter),
 					Registration.instance(mockIOnboardingService, mockOnboarding),
 					Registration.instance(mockIAuthService, mockAuth),
+					Registration.instance(mockIGuideService, mockGuide),
 					Registration.instance(mockIUserStore, mockUserStore),
 					Registration.instance(IAnalyticsService, mockAnalytics),
 					Registration.instance(I18N, createMockI18n()),
@@ -1634,6 +1647,7 @@ describe('DiscoveryRoute', () => {
 		function routeTo(query = '') {
 			return { queryParams: new URLSearchParams(query) } as never
 		}
+		const ids = () => mockFab.actions.map((a) => a.id)
 
 		function setHidden(hidden: boolean) {
 			Object.defineProperty(document, 'hidden', {
@@ -1646,6 +1660,7 @@ describe('DiscoveryRoute', () => {
 
 		// @spec components/infrastructure/fan/web/route/discovery "Link to the Concerts view"
 		it('opens on the Concerts view from /discovery?view=concerts, at any onboarding state', () => {
+			expect(sut.canLoad(undefined, routeTo('view=concerts'))).toBe(true)
 			sut.loading(undefined, routeTo('view=concerts'))
 			expect(sut.view).toBe('concerts')
 
@@ -1703,7 +1718,7 @@ describe('DiscoveryRoute', () => {
 		})
 
 		// @spec components/infrastructure/fan/web/route/discovery "Onboarding opens on the artist bubbles"
-		it('opens on the bubbles while the fan is onboarding, whatever was used last', () => {
+		it('opens a signed-in fan in onboarding on the bubbles, whatever was used last', () => {
 			localStorage.setItem('discovery.view', 'concerts')
 			mockOnboarding.isOnboarding = true
 			const onboarding = buildSut()
@@ -1826,19 +1841,43 @@ describe('DiscoveryRoute', () => {
 			}
 		})
 
-		// @spec components/infrastructure/fan/web/global/bottom-sheet "Follow prompt for unauthenticated user"
-		it('shows the sign-up prompt banner when a guest taps follow in the Concerts view', () => {
-			sut.offerSignUp()
-			expect(sut.showSignupBanner).toBe(true)
-			sut.onSignupRequested()
-			expect(mockAuth.signUp).toHaveBeenCalledWith(
-				expect.objectContaining({ source: 'discovery_concerts_prompt' }),
+		// @spec components/infrastructure/fan/web/route/discovery "A guest follows a link to the Concerts view"
+		// @spec components/infrastructure/fan/web/route/discovery "Guest with no follows"
+		// @spec components/infrastructure/fan/web/route/discovery "Area override for unauthenticated user"
+		it('opens a guest on the bubbles, whatever the address says, and rewrites it to /discovery', () => {
+			mockAuth.isAuthenticated = false
+			const guest = buildSut()
+			// The link is sent to /discovery before the route loads.
+			expect(guest.canLoad(undefined, routeTo('view=concerts'))).toBe(
+				'discovery',
 			)
+			expect(guest.canLoad(undefined, routeTo())).toBe(true)
+			// And should it load with the query anyway, the bubbles show.
+			guest.loading(undefined, routeTo('view=concerts'))
+			guest.attached()
 
-			mockAuth.isAuthenticated = true
-			const signedIn = buildSut()
-			signedIn.offerSignUp()
-			expect(signedIn.showSignupBanner).toBe(false)
+			expect(guest.view).toBe('artists')
+			expect(guest.isAuthenticated).toBe(false)
+			// No Concerts view: no filter item, no area selector, nothing kept.
+			expect(ids()).toEqual(['help'])
+			expect(localStorage.getItem('discovery.concertsFilter')).toBeNull()
+			guest.detaching()
+		})
+
+		// @spec components/infrastructure/fan/web/route/discovery "A guest sees no swap tile"
+		it('offers the swap tile to a signed-in fan only', () => {
+			// The template renders the tile with if.bind="isAuthenticated".
+			expect(sut.isAuthenticated).toBe(true)
+			mockAuth.isAuthenticated = false
+			expect(buildSut().isAuthenticated).toBe(false)
+		})
+
+		it('opens a guest on the bubbles even with the Concerts view kept as last used', () => {
+			localStorage.setItem('discovery.view', 'concerts')
+			mockAuth.isAuthenticated = false
+			const guest = buildSut()
+			guest.loading(undefined, routeTo())
+			expect(guest.view).toBe('artists')
 		})
 
 		it('hides the onboarding progress row on the Concerts view', () => {
@@ -1848,6 +1887,162 @@ describe('DiscoveryRoute', () => {
 			expect(onboarding.showProgressRow).toBe(true)
 			onboarding.switchView()
 			expect(onboarding.showProgressRow).toBe(false)
+		})
+	})
+
+	describe('guide moments', () => {
+		const SPEC = 'components/infrastructure/fan/web/route/discovery'
+		const firstName = { detail: { mark: 'first-name', time: 1 } } as never
+		const requested = () => mockGuide.request.mock.calls.map((c) => c[0])
+
+		function open(): InstanceType<typeof DiscoveryRoute> {
+			const route = buildSut()
+			route.loading(undefined, {
+				queryParams: new URLSearchParams(),
+			} as never)
+			route.attached()
+			return route
+		}
+
+		it(`@spec ${SPEC} "A new guest opens Discovery"`, () => {
+			mockAuth.isAuthenticated = false
+			mockOnboarding.isOnboarding = true
+			mockOnboarding.isCompleted = false
+			const route = open()
+			// Not over bubbles that show no name yet.
+			expect(mockGuide.request).not.toHaveBeenCalled()
+
+			route.onRevealMark(firstName)
+			expect(requested()).toEqual(['discovery.follow'])
+			route.detaching()
+		})
+
+		it(`@spec ${SPEC} "Onboarding guidance overlay"`, () => {
+			// The bubble field's moment guides a fan in onboarding; help stays
+			// closed (page-help has no auto-open) and the progress row shows.
+			mockAuth.isAuthenticated = false
+			mockOnboarding.isOnboarding = true
+			const route = open()
+			route.onRevealMark(firstName)
+			expect(requested()).toEqual(['discovery.follow'])
+			expect(route.showProgressRow).toBe(true)
+			route.detaching()
+		})
+
+		it(`@spec ${SPEC} "Follow from search"`, async () => {
+			mockAuth.isAuthenticated = false
+			const route = open()
+			await route.onFollowFromSearch(makeArtist('a1', 'Ado'))
+			expect(mockGuide.acted).toHaveBeenCalledWith('discovery.follow')
+			route.detaching()
+		})
+
+		it('ends the bubble field moment on the first follow from a bubble', async () => {
+			const route = open()
+			await route.onArtistSelected({
+				detail: { artist: makeArtist('a1', 'Ado'), position: { x: 0, y: 0 } },
+			} as never)
+			expect(mockGuide.acted).toHaveBeenCalledWith('discovery.follow')
+			route.detaching()
+		})
+
+		it(`@spec ${SPEC} "A fan who already follows"`, () => {
+			for (let i = 0; i < 20; i++) {
+				simulateFollow(mockFollowClient, makeArtist(`a${i}`, `A${i}`))
+			}
+			const route = open()
+			route.onRevealMark(firstName)
+			expect(requested()).not.toContain('discovery.follow')
+			route.detaching()
+		})
+
+		it(`@spec ${SPEC} "First visit after onboarding"`, async () => {
+			simulateFollow(mockFollowClient, makeArtist('a1', 'Ado'))
+			const route = open()
+			route.onRevealMark(firstName)
+			expect(requested()).toEqual(['discovery.swap'])
+
+			route.switchView()
+			expect(mockGuide.acted).toHaveBeenCalledWith('discovery.swap')
+			await swapDone(route)
+			route.detaching()
+
+			// The view-swap mark keeps it from coming back on this device.
+			mockGuide.request.mockClear()
+			const again = open()
+			again.onRevealMark(firstName)
+			expect(requested()).toEqual([])
+			again.detaching()
+		})
+
+		it(`@spec ${SPEC} "Fan who signed up with no follows"`, () => {
+			const route = open()
+			route.onRevealMark(firstName)
+			expect(requested()).toEqual(['discovery.follow'])
+			route.detaching()
+
+			simulateFollow(mockFollowClient, makeArtist('a1', 'Ado'))
+			mockGuide.request.mockClear()
+			const later = open()
+			later.onRevealMark(firstName)
+			expect(requested()).toEqual(['discovery.swap'])
+			later.detaching()
+		})
+
+		it(`@spec ${SPEC} "Fan in onboarding"`, () => {
+			simulateFollow(mockFollowClient, makeArtist('a1', 'Ado'))
+			mockOnboarding.isOnboarding = true
+			mockOnboarding.isCompleted = false
+			const route = open()
+			route.onRevealMark(firstName)
+			expect(requested()).toEqual([])
+			route.detaching()
+		})
+
+		it(`@spec ${SPEC} "Fan who switched before"`, () => {
+			simulateFollow(mockFollowClient, makeArtist('a1', 'Ado'))
+			localStorage.setItem('guide.discoveryViewSwapped', '1')
+			const route = open()
+			route.onRevealMark(firstName)
+			expect(requested()).toEqual([])
+			route.detaching()
+		})
+
+		it('gives a guest no swap tile moment', () => {
+			mockAuth.isAuthenticated = false
+			simulateFollow(mockFollowClient, makeArtist('a1', 'Ado'))
+			const route = open()
+			route.onRevealMark(firstName)
+			expect(requested()).toEqual([])
+			route.detaching()
+		})
+
+		it('ends its moments when the fan leaves Discovery', () => {
+			const route = open()
+			route.detaching()
+			expect(mockGuide.dismiss).toHaveBeenCalledWith(
+				'discovery.follow',
+				'route_leave',
+			)
+			expect(mockGuide.dismiss).toHaveBeenCalledWith(
+				'discovery.swap',
+				'route_leave',
+			)
+		})
+
+		it(`@spec ${SPEC} "Filter item opens the filter sheet"`, () => {
+			const route = buildSut()
+			route.loading(undefined, {
+				queryParams: new URLSearchParams('view=concerts'),
+			} as never)
+			route.attached()
+			const openFilters = vi.fn()
+			route.discoveryConcerts = { openFilters } as never
+			const filter = mockFab.actions[0]
+			expect(filter.labelKey).toBe('actionMenu.concertsFilter')
+			filter.invoke()
+			expect(openFilters).toHaveBeenCalledOnce()
+			route.detaching()
 		})
 	})
 

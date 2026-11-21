@@ -1,7 +1,6 @@
 import { StorageKeys } from '../../constants/storage-keys'
 import type { Hype } from '../../entities/follow'
 
-const HELP_SEEN_PREFIX = 'onboarding.helpSeen:'
 const HYPE_SNACK_SEEN_PREFIX = 'onboarding.hypeSnackSeen:'
 
 export function saveOnboardingComplete(complete: boolean): void {
@@ -9,14 +8,6 @@ export function saveOnboardingComplete(complete: boolean): void {
 		StorageKeys.onboardingComplete,
 		complete ? 'true' : 'false',
 	)
-}
-
-export function saveHelpSeen(page: string): void {
-	localStorage.setItem(HELP_SEEN_PREFIX + page, '1')
-}
-
-export function loadHelpSeen(page: string): boolean {
-	return localStorage.getItem(HELP_SEEN_PREFIX + page) !== null
 }
 
 /**
@@ -33,19 +24,16 @@ export function loadHypeSnackSeen(hype: Hype): boolean {
 }
 
 /**
- * Remove every `onboarding.helpSeen:<page>` and `onboarding.hypeSnackSeen:<level>`
- * flag, so page help opens and each hype snack shows again.
+ * Remove every `onboarding.hypeSnackSeen:<level>` flag, so each hype snack
+ * shows again. The seen guide moments (`guide.seen:*`, guide-storage) are
+ * kept: they survive sign-up and sign-in. The retired
+ * `onboarding.helpSeen:<page>` flags are no longer read and are left alone.
  */
 export function clearOnboardingSeenFlags(): void {
 	const keys: string[] = []
 	for (let i = 0; i < localStorage.length; i++) {
 		const key = localStorage.key(i)
-		if (
-			key?.startsWith(HELP_SEEN_PREFIX) ||
-			key?.startsWith(HYPE_SNACK_SEEN_PREFIX)
-		) {
-			keys.push(key)
-		}
+		if (key?.startsWith(HYPE_SNACK_SEEN_PREFIX)) keys.push(key)
 	}
 	for (const key of keys) localStorage.removeItem(key)
 }

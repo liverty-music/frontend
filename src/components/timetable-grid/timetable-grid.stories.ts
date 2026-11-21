@@ -7,6 +7,7 @@ import {
 import { CustomElement, Registration } from 'aurelia'
 import { expect, userEvent, waitFor } from 'storybook/test'
 import { composite, contrast, resolveColor } from '../../../.storybook/contrast'
+import { noGuide } from '../../../.storybook/guide'
 import { artistHue } from '../../adapter/view/artist-color'
 import { BeamVarsCustomAttribute } from '../../custom-attributes/beam-vars'
 import type { Concert, DateGroup, LaneType } from '../../entities/concert'
@@ -1639,6 +1640,7 @@ export const MonthJumpHiddenWhileFabOpen = {
 				ActionMenu,
 			],
 			items: [
+				noGuide,
 				Registration.instance(IActionMenuService, {
 					actions: [
 						{

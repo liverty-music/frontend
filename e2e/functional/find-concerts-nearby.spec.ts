@@ -11,10 +11,10 @@ import { openConcertsFilters } from '../support/fan-shell'
 import { expect, type Page, test } from '../support/test'
 
 /**
- * A fan finds the concerts near their area in a period from Discovery —
- * including artists they do not follow — and follows an artist from one of
- * them, against a mocked backend (ConcertService.ListByLocation,
- * FollowService.Follow).
+ * A signed-in fan finds the concerts near their area in a period from
+ * Discovery — including artists they do not follow — and follows an artist
+ * from one of them, against a mocked backend (ConcertService.ListByLocation,
+ * FollowService.Follow). A guest is offered no Concerts view.
  */
 
 // The first page load compiles the app on the dev server; allow for it.
@@ -93,20 +93,34 @@ function nearbyAnswer(from: Day) {
 }
 
 interface Seed {
+	/** Signed in unless false: the Concerts view is a signed-in fan's. */
 	signedIn?: boolean
+	/** The home area: the account's for a fan, the device's for a guest. */
 	home?: string | null
+	/** A guest's follows on the device. */
+	guestFollows?: (keyof typeof ARTISTS)[]
 }
 
 async function openApp(page: Page, seed: Seed = {}): Promise<RpcCall[]> {
 	const { from } = thisWeekend()
 	let followed = false
+	const signedIn = seed.signedIn ?? true
+	const home = seed.home === undefined ? 'JP-40' : seed.home
 	await page.addInitScript(
-		({ home, signedIn, sub, email }) => {
+		({ home, signedIn, sub, email, guestFollows }) => {
 			localStorage.setItem('onboardingComplete', 'true')
 			localStorage.setItem('onboarding.celebrationShown', '1')
 			localStorage.setItem('pwa.installed', 'true')
 			localStorage.setItem('language', 'ja')
-			if (home) localStorage.setItem('guest.home', home)
+			if (home && !signedIn) localStorage.setItem('guest.home', home)
+			if (guestFollows.length > 0) {
+				localStorage.setItem(
+					'guest.followedArtists',
+					JSON.stringify(
+						guestFollows.map((artist) => ({ artist, hype: 'nearby' })),
+					),
+				)
+			}
 			if (signedIn) {
 				localStorage.setItem(
 					'oidc.user:https://auth.dev.liverty-music.app:371355407710421859',
@@ -122,10 +136,14 @@ async function openApp(page: Page, seed: Seed = {}): Promise<RpcCall[]> {
 			}
 		},
 		{
-			home: seed.home === undefined ? 'JP-40' : seed.home,
-			signedIn: !!seed.signedIn,
+			home,
+			signedIn,
 			sub: FAN_SUB,
 			email: FAN_EMAIL,
+			guestFollows: (seed.guestFollows ?? []).map((k) => ({
+				...ARTISTS[k],
+				mbid: '',
+			})),
 		},
 	)
 	const kumamoto = {
@@ -141,9 +159,20 @@ async function openApp(page: Page, seed: Seed = {}): Promise<RpcCall[]> {
 			user: {
 				id: { value: FAN_SUB },
 				email: { value: FAN_EMAIL },
-				home: { countryCode: 'JP', level1: 'JP-40' },
+				...(home && { home: { countryCode: 'JP', level1: home } }),
 			},
 		},
+		// A guest's follows' concerts, for the guest timetable.
+		'ConcertService/ListByArtists': concertWire({
+			groups: [
+				{
+					date: { value: from },
+					home: [concert('fukuoka', from, 'Zepp Fukuoka', 'JP-40')],
+					nearby: [],
+					away: [],
+				},
+			],
+		}),
 		'ConcertService/ListByLocation': nearbyAnswer(from),
 		'FollowService/Follow': () => {
 			followed = true
@@ -247,9 +276,8 @@ test(`@spec ${STORY} "Signed-in fan follows from a nearby concert"`, async ({
 	await openNearby(page)
 
 	await cardOf(page, ARTISTS.kumamoto.name).click({ timeout: 15_000 })
-	const follow = page.getByRole('button', {
-		name: 'このアーティストをフォロー',
-	})
+	// 「Follow」 on the right of the artist name, at the top of the sheet.
+	const follow = page.getByRole('button', { name: 'Follow', exact: true })
 	await follow.click()
 	await expect(page.getByTestId('discovery-concerts-following')).toBeVisible()
 	expect(callsOf(calls, 'FollowService/Follow').map((c) => c.body)).toEqual([
@@ -275,38 +303,53 @@ test(`@spec ${STORY} "Signed-in fan follows from a nearby concert"`, async ({
 	).toBeVisible({ timeout: 30_000 })
 })
 
+test(`@spec ${STORY} "A guest"`, async ({ page }) => {
+	const calls = await openApp(page, { signedIn: false })
+	await page.goto('/discovery?view=concerts')
+
+	// The artist bubbles, no swap tile, and the address without the view.
+	await expect(page.locator('artist-bubbles')).toBeVisible({ timeout: 30_000 })
+	await expect(page).toHaveURL(/\/discovery$/)
+	await expect(page.getByTestId('discovery-swap')).toHaveCount(0)
+	await expect(view(page)).toHaveCount(0)
+	expect(callsOf(calls, 'ConcertService/ListByLocation')).toEqual([])
+})
+
 test(`@spec ${STORY} "Guest taps follow"`, async ({ page }) => {
-	const calls = await openApp(page)
-	await openNearby(page)
+	const calls = await openApp(page, {
+		signedIn: false,
+		guestFollows: ['fukuoka'],
+	})
+	await page.goto('/timetable')
+	await page
+		.locator('timetable-route [data-live-card]', {
+			hasText: ARTISTS.fukuoka.name,
+		})
+		.click({ timeout: 30_000 })
+	await expect(
+		page.locator('concert-sheet').getByText('Zepp Fukuoka').first(),
+	).toBeVisible()
 
-	await cardOf(page, ARTISTS.kumamoto.name).click({ timeout: 15_000 })
-	await page.getByRole('button', { name: 'このアーティストをフォロー' }).click()
-
-	const banner = page.locator('signup-prompt-banner .bottom-banner')
-	await expect(banner).toBeVisible()
-	// Docked on the navigation bar across the full width, as on every other
-	// screen — not anchored to Discovery's layout box. Measured once the
-	// banner has slid in: its entrance moves it up from below.
-	await banner.evaluate((el) =>
-		Promise.all(
-			el
-				.getAnimations()
-				.filter((a) => (a as CSSAnimation).animationName !== 'banner-cue')
-				.map((a) => a.finished),
-		),
-	)
-	const b = await banner.boundingBox()
-	const nav = await page.locator('bottom-nav-bar nav').boundingBox()
-	expect(b && nav && Math.abs(b.y + b.height - nav.y)).toBeLessThanOrEqual(1)
-	expect(b?.x).toBe(0)
-	expect(b?.width).toBe(390)
+	// No follow action in a guest's sheet.
+	await expect(
+		page.getByRole('button', { name: 'Follow', exact: true }),
+	).toHaveCount(0)
+	await expect(page.getByTestId('discovery-concerts-follow')).toHaveCount(0)
 	expect(callsOf(calls, 'FollowService/Follow')).toEqual([])
-	expect(
-		await page.evaluate(() => localStorage.getItem('guest.followedArtists')),
-	).toBeNull()
 })
 
 test(`@spec components/infrastructure/fan/web/route/timetable "Guest with no follows"`, async ({
+	page,
+}) => {
+	await openApp(page, { signedIn: false })
+	await page.goto('/timetable')
+	await expect(page.getByTestId('discover-link')).toBeVisible({
+		timeout: 30_000,
+	})
+	await expect(page.getByTestId('concerts-link')).toHaveCount(0)
+})
+
+test(`@spec components/infrastructure/fan/web/route/timetable "Signed-in fan with no follows"`, async ({
 	page,
 }) => {
 	await openApp(page)

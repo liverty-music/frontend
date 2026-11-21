@@ -5,6 +5,7 @@
   <import from="./concert-sheet-hint"></import>
   <import from="./journey-status-row"></import>
   <import from="./concert-follow-cta"></import>
+  <import from="../confirm-dialog/confirm-dialog"></import>
 
   <bottom-sheet
     open.bind="isOpen"
@@ -22,11 +23,24 @@
         src.bind="backgroundUrl"
       ></div>
 
-      <!-- Artist name header -->
+      <!-- Artist name header. In the Concerts view a signed-in fan's follow
+           action sits on the right of the name, seen without scrolling; a long
+           name wraps while the button keeps its size. -->
       <header class="[ sheet-artist-header ] [ flow ]">
-        <h2 class="[ sheet-artist-name ] [ md-typescale-headline-small ]">
-          ${event.artistName}
-        </h2>
+        <div class="sheet-artist-row">
+          <h2 class="[ sheet-artist-name ] [ md-typescale-headline-small ]">
+            ${event.artistName}
+          </h2>
+          <div
+            as-element="concert-follow-cta"
+            if.bind="showFollowAction"
+            class="sheet-follow"
+            data-testid="discovery-concerts-follow"
+            followed.bind="isFollowed"
+            updating.bind="followUpdating"
+            follow.trigger="follow()"
+          ></div>
+        </div>
         <p class="[ sheet-event-title ] [ md-typescale-body-medium ]">${event.title}</p>
       </header>
 
@@ -96,6 +110,18 @@
         text.bind="actionsHint"
       ></p>
 
+      <!-- The notification button's guide moment: its line rides in the same
+           slot, inside the sheet, right above the ticket section; the button
+           glows and swings. Announced once as a status. -->
+      <p
+        as-element="concert-sheet-hint"
+        if.bind="notifyMomentShown"
+        class="[ sheet-actions-hint ] [ md-typescale-body-medium ]"
+        role="status"
+        data-testid="sheet-notify-guide"
+        text.bind="'guide.sheetNotify' | t"
+      ></p>
+
       <!-- Ticket section: the notification button, the other four statuses,
            the push line and the official site button -->
       <section class="[ sheet-tickets ] [ stack ]" data-testid="sheet-journey" aria-labelledby="ticket-section-heading">
@@ -112,6 +138,7 @@
           aria-pressed.bind="status === 'tracking' ? 'true' : 'false'"
           disabled.bind="journeyUpdating"
           click.trigger="onNotifyPressed()"
+          guide-target="value: sheet.notify; shape: bell"
           t.bind="notifyLabelKey"
         ></button>
 
@@ -152,18 +179,17 @@
         </a>
       </section>
 
-      <!-- Follow CTA — the Concerts view context only. Converts a discovered concert
-           into a followed artist. No DNA Orb animation on success; the button
-           simply flips to a static "Following" state. -->
-      <section
-        as-element="concert-follow-cta"
-        if.bind="isConcertsView && event.artist"
-        class="sheet-follow"
-        data-testid="discovery-concerts-follow"
-        followed.bind="isFollowed"
-        updating.bind="followUpdating"
-        follow.trigger="follow()"
-      ></section>
     </div>
   </bottom-sheet>
+
+  <!-- A guest's press of the notification button: notifications need an
+       account. A modal dialog over the sheet; 「あとで」 takes focus first. -->
+  <confirm-dialog
+    component.ref="signUpDialog"
+    test-id="sign-up-dialog"
+    heading.bind="'concertSheet.signUpDialog.title' | t"
+    body.bind="'concertSheet.signUpDialog.body' | t"
+    confirm-label.bind="'concertSheet.signUpDialog.signUp' | t"
+    cancel-label.bind="'concertSheet.signUpDialog.later' | t"
+  ></confirm-dialog>
 </template>

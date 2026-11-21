@@ -3,10 +3,11 @@ import {
 	type Meta,
 	type StoryObj,
 } from '@aurelia/storybook'
-import { Registration } from 'aurelia'
+import { CustomElement, Registration } from 'aurelia'
 import { expect, waitFor } from 'storybook/test'
 import { resolveColor } from '../../../.storybook/contrast'
-import { IOnboardingService } from '../../services/onboarding-service'
+import { IAuthService } from '../../services/auth-service'
+import { IGuideService } from '../../services/guide-service'
 import { PageHelp } from './page-help'
 
 const meta = {
@@ -18,8 +19,9 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 /**
- * The My Artists help sheet, opened as on a first visit during onboarding.
- * Its hype tiers sit on one shared 3-column grid.
+ * The My Artists help sheet, opened from the action menu's help item. Its
+ * hype tiers sit on one shared 3-column grid, and the Hype section ends with
+ * 「チュートリアル」.
  */
 export const MyArtists = {
 	// The shared bottom sheet's scroll area is not focusable when its content
@@ -34,14 +36,18 @@ export const MyArtists = {
 	},
 	render: () =>
 		defineAureliaStory({
-			template: '<page-help page="my-artists"></page-help>',
+			template:
+				'<page-help page="my-artists" has-artists.bind="true"></page-help>',
 			register: [PageHelp],
 			items: [
-				Registration.instance(IOnboardingService, { isOnboarding: true }),
+				Registration.instance(IAuthService, { isAuthenticated: false }),
+				Registration.instance(IGuideService, { replay() {} }),
 			],
 		}),
 	play: async ({ canvasElement }) => {
-		localStorage.clear()
+		const host = canvasElement.querySelector('page-help')
+		if (!host) throw new Error('no help')
+		CustomElement.for<PageHelp>(host).viewModel.open()
 		const doc = canvasElement.ownerDocument
 		const rows = await waitFor(() => {
 			const found = [
@@ -91,5 +97,10 @@ export const MyArtists = {
 		for (const li of rows) {
 			await expect(getComputedStyle(li).display).not.toBe('contents')
 		}
+
+		const replay = doc.querySelector<HTMLElement>(
+			'[data-testid="help-replay-hype"]',
+		)
+		await expect(replay?.textContent).toBe('チュートリアル')
 	},
 } satisfies Story

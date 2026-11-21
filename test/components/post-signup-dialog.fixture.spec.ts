@@ -43,6 +43,7 @@ interface RenderOptions {
 	followed?: number
 	outcome?: NotificationPromptOutcome
 	lng?: 'ja' | 'en'
+	variant?: 'default' | 'track'
 }
 
 async function render(opts: RenderOptions = {}) {
@@ -65,9 +66,10 @@ async function render(opts: RenderOptions = {}) {
 	}
 	const coordinator = { isPostSignupSurfaceOpen: false }
 	const fixture = await createFixture(
-		'<post-signup-dialog active.bind="active"></post-signup-dialog>',
+		'<post-signup-dialog active.bind="active" variant.bind="variant"></post-signup-dialog>',
 		class Host {
 			public active = true
+			public variant = opts.variant ?? 'default'
 		},
 		[
 			I18nConfiguration.customize((o) => {
@@ -157,10 +159,19 @@ describe('PostSignupDialog', () => {
 
 		// @spec components/infrastructure/fan/web/global/post-signup-dialog "Nothing left to ask"
 		// @spec components/infrastructure/fan/web/global/post-signup-dialog "Celebration Precedes Post-Signup Dialog"
+		// @spec components/infrastructure/fan/web/global/post-signup-dialog "Notifications already allowed"
 		it('does not open when nothing is left to ask', async () => {
 			const installed = await render({ permission: 'granted', installed: true })
 			expect(installed.step()).toBeNull()
 			expect(installed.coordinator.isPostSignupSurfaceOpen).toBe(false)
+
+			// Also after a sign-up from the notification button.
+			const track = await render({
+				permission: 'granted',
+				installed: true,
+				variant: 'track',
+			})
+			expect(track.step()).toBeNull()
 
 			const cannot = await render({ permission: 'denied', installable: false })
 			expect(cannot.step()).toBeNull()
@@ -177,6 +188,24 @@ describe('PostSignupDialog', () => {
 			expect(d.text('.post-signup-body')).toBe(
 				'フォロー中の5組のライブを探し始めました。見つかったら通知で届けます。',
 			)
+		})
+
+		// @spec components/infrastructure/fan/web/global/post-signup-dialog "Closing the sheet"
+		it('only asks to turn push on after a sign-up from the notification button', async () => {
+			const d = await render({ followed: 5, variant: 'track' })
+
+			expect(d.step()).toBe('notify')
+			expect(d.text('.sheet-heading')).toBe(t.notify.titleTrack)
+			expect(d.text('.sheet-heading')).toBe(
+				'あとはプッシュ通知をオンにするだけ！',
+			)
+			expect(d.host.querySelector('.post-signup-body')).toBeNull()
+			expect(d.buttons()).toEqual([t.notify.enable, t.defer])
+
+			// The install step follows as it does otherwise.
+			await d.press(t.defer)
+			expect(d.step()).toBe('install')
+			expect(d.text('.sheet-heading')).toBe(t.install.title)
 		})
 
 		// @spec components/infrastructure/fan/web/global/post-signup-dialog "Fan follows no artist"

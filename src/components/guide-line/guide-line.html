@@ -1,0 +1,8 @@
+<import from="./guide-line.css"></import>
+
+<!-- A manual popover in the top layer; it takes no pointer events, so a tap
+     reaches the page beneath. An <output> (role="status"), not a <dialog>:
+     showing a dialog popover moves focus into it, and the line must leave
+     focus where the fan is. It announces the line once: its text is set after
+     the popover opens. -->
+<output ref="popoverEl" popover="manual" class="guide-line" data-variant.bind="variant"><span class="[ guide-line-text ] [ md-typescale-title-small ]" t.bind="messageKey"></span></output>

@@ -155,10 +155,20 @@ export class SignInCallbackRoute {
 			// A sign-up started on a concert page skips both surfaces: the fan
 			// returns to the event to buy, and the purchase flow owns the
 			// notification / install prompts that follow it.
+			//
+			// A sign-up started from a concert sheet's ticket sale notification
+			// button returns to that concert's sheet: it schedules no celebration,
+			// and the dialog's notification step follows the sheet instead
+			// ('pending-track', post-signup-dialog "Sign-up from the ticket sale
+			// notification button").
 			const isSignUpFlow = resolveAuthFlow(user) === 'signup'
 			const fromConcertPage = resolveAuthOrigin(user) === 'concert-page'
+			const trackEventId = resolveAuthTrackEventId(user)
 			if (isSignUpFlow && created && !fromConcertPage) {
-				this.storage.setItem(StorageKeys.postSignupShown, 'pending')
+				this.storage.setItem(
+					StorageKeys.postSignupShown,
+					trackEventId ? 'pending-track' : 'pending',
+				)
 			}
 
 			// A guest who pressed the ticket sale notification button on a
@@ -167,7 +177,6 @@ export class SignInCallbackRoute {
 			// choice before returning to that sheet. An existing account may
 			// already hold a journey for the event (Paid, say), which is kept. A
 			// failed save leaves the button unpressed there, with no message.
-			const trackEventId = resolveAuthTrackEventId(user)
 			if (trackEventId) {
 				try {
 					await this.journeyStore.load()

@@ -82,12 +82,10 @@ async function render(ev: Concert, isConcertsView: boolean, o: Options = {}) {
 			followedIds.add(artist.id)
 		}),
 	}
-	const onSignupRequested = vi.fn()
 	const fixture = await createFixture(
-		'<concert-sheet component.ref="sheet" on-signup-requested.bind="onSignupRequested"></concert-sheet>',
+		'<concert-sheet component.ref="sheet"></concert-sheet>',
 		class Host {
 			public sheet!: ConcertSheet
-			public onSignupRequested = onSignupRequested
 		},
 		[
 			// Key actions add a step for the error report.
@@ -135,15 +133,25 @@ async function render(ev: Concert, isConcertsView: boolean, o: Options = {}) {
 		fixture.appHost.querySelector(
 			'[data-testid="discovery-concerts-following"]',
 		)
-	return { fixture, followStore, onSignupRequested, button, following }
+	const header = () =>
+		fixture.appHost.querySelector<HTMLElement>('.sheet-artist-row')
+	return { fixture, followStore, button, following, header }
 }
 
 describe('ConcertSheet follow CTA (fixture)', () => {
 	// @spec components/infrastructure/fan/web/global/bottom-sheet "Follow button visible for unfollowed artist in Concerts view context"
-	it('shows the follow button for an unfollowed artist in the Concerts view', async () => {
-		const { fixture, button } = await render(event(), true)
+	it('shows the follow button beside the artist name, above the date and venue', async () => {
+		const { fixture, button, header } = await render(event(), true)
 
 		expect(button()?.textContent).toBe('discoveryConcerts.follow.action')
+		// In the header row with the name, before the details.
+		expect(header()?.contains(button())).toBe(true)
+		expect(header()?.querySelector('.sheet-artist-name')).not.toBeNull()
+		const details = fixture.appHost.querySelector('.sheet-details')
+		expect(
+			button()?.compareDocumentPosition(details as Node) &
+				Node.DOCUMENT_POSITION_FOLLOWING,
+		).toBeTruthy()
 		await fixture.stop(true)
 	})
 
@@ -207,18 +215,19 @@ describe('ConcertSheet follow CTA (fixture)', () => {
 	})
 
 	// @spec components/infrastructure/fan/web/global/bottom-sheet "Follow prompt for unauthenticated user"
-	it('asks a guest to sign up instead of following', async () => {
-		const { fixture, followStore, onSignupRequested, button } = await render(
-			event(),
-			true,
-			{ authenticated: false },
-		)
+	it('shows a guest no follow button in any context', async () => {
+		for (const concertsView of [true, false]) {
+			const { fixture, followStore, button, following } = await render(
+				event(),
+				concertsView,
+				{ authenticated: false },
+			)
 
-		button()?.click()
-		await tasksSettled()
-
-		expect(onSignupRequested).toHaveBeenCalledOnce()
-		expect(followStore.follow).not.toHaveBeenCalled()
-		await fixture.stop(true)
+			expect(button()).toBeNull()
+			expect(following()).toBeNull()
+			await fixture.component.sheet.follow()
+			expect(followStore.follow).not.toHaveBeenCalled()
+			await fixture.stop(true)
+		}
 	})
 })

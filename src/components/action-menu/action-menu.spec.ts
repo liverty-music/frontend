@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const fakeActionMenu = { actions: [] as unknown[], handed: 'right' }
 const fakeSignaler = { dispatchSignal: vi.fn() }
+const fakeGuide = { current: null as string | null, acted: vi.fn() }
 /**
  * Router events stand-in: `navigate()` publishes a navigation start, so only a
  * listener subscribed to that event hears it.
@@ -30,6 +31,7 @@ vi.mock('aurelia', async (importOriginal) => {
 			const name = (token as { friendlyName?: string })?.friendlyName
 			if (name === 'ISignaler') return fakeSignaler
 			if (name === 'IRouterEvents') return fakeRouterEvents
+			if (name === 'IGuideService') return fakeGuide
 			return fakeActionMenu
 		}),
 	}
@@ -73,6 +75,22 @@ describe('ActionMenu', () => {
 			writable: true,
 		})
 		Object.defineProperty(sut, 'panel', { value: panel, writable: true })
+	})
+
+	describe("the Concerts view's guide moment", () => {
+		// @spec components/infrastructure/fan/web/route/discovery "First visit to the Concerts view"
+		it('uses the moment when the menu opens while it points at the FAB', () => {
+			fakeGuide.current = 'concerts.filter'
+			sut.onPanelToggle({ newState: 'open' } as ToggleEvent)
+			expect(fakeGuide.acted).toHaveBeenCalledWith('concerts.filter')
+		})
+
+		it('leaves other moments alone', () => {
+			fakeGuide.current = 'discovery.swap'
+			sut.onPanelToggle({ newState: 'open' } as ToggleEvent)
+			expect(fakeGuide.acted).not.toHaveBeenCalled()
+			fakeGuide.current = null
+		})
 	})
 
 	describe('onPanelToggle (disclosure state + focus)', () => {

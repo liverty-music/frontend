@@ -14,4 +14,19 @@ export class PromptCoordinator {
 	// PostSignupDialog that follows it — set by the timetable route and the
 	// dialog; read by app-shell.
 	@observable public isPostSignupSurfaceOpen = false
+
+	private readonly listeners = new Set<() => void>()
+
+	/**
+	 * Call `listener` whenever the post-signup surface opens or closes (the
+	 * guide moments wait while it is open). Returns the unsubscribe function.
+	 */
+	public onChange(listener: () => void): () => void {
+		this.listeners.add(listener)
+		return () => this.listeners.delete(listener)
+	}
+
+	public isPostSignupSurfaceOpenChanged(): void {
+		for (const listener of this.listeners) listener()
+	}
 }

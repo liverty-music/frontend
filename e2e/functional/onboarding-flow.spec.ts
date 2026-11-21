@@ -567,6 +567,7 @@ test.describe('Onboarding flow (single-flag model)', () => {
 		await expect(page.locator('au-viewport')).toBeVisible({ timeout: 10_000 })
 	})
 
+	// @spec stories/complete-onboarding "No latch for a zero-follow timetable arrival"
 	test('Guest with zero follows sees the timetable empty-state CTA (no redirect)', async ({
 		page,
 	}) => {
@@ -584,6 +585,16 @@ test.describe('Onboarding flow (single-flag model)', () => {
 		await expect(page.locator('state-placeholder').first()).toBeVisible({
 			timeout: 15_000,
 		})
+		// The guest stays in onboarding: Discovery's progress row still applies,
+		// and Discovery's help does not open on its own.
+		expect(
+			await page.evaluate(() => localStorage.getItem('onboardingComplete')),
+		).toBe('false')
+		await page.getByTestId('discover-link').click()
+		await expect(page.locator('onboarding-progress')).toBeVisible({
+			timeout: 30_000,
+		})
+		await expect(page.locator('page-help .sheet-body')).toBeHidden()
 	})
 
 	// @spec stories/complete-onboarding "Completion latches after choosing the home area on arrival"

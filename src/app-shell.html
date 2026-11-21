@@ -3,6 +3,7 @@
 <import from="../shared/ui/snack-bar/snack-bar"></import>
 <import from="./components/action-menu/action-menu"></import>
 <import from="./components/notification-bell/notification-bell"></import>
+<import from="./components/guide-line/guide-line"></import>
 
 <!-- Single shell-hosted page header, positioned in the shell grid's `header`
      area (the CE sets its own `grid-area: header`). Its title is the displayed
@@ -33,6 +34,9 @@
 <!-- Stays interactive while a bottom sheet is open: a snack's action (an undo
      of what the fan just did in the sheet) shows above the sheet. -->
 <snack-bar data-over-sheets></snack-bar>
+<!-- The line of the current guide moment (guide-moment surface), anchored next
+     to its target. It takes no taps. -->
+<guide-line></guide-line>
 <error-banner></error-banner>
 
 <!-- Global FAB action launcher (top layer). Shown only with the bottom nav,

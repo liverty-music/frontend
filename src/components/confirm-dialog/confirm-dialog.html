@@ -24,9 +24,8 @@
         click.trigger="cancel()"
         class="[ button ] [ state-layer ]"
         data-variant="outlined"
-        t="confirmDialog.cancel"
         data-testid.bind="cancelTestId"
-      ></button>
+      >${cancelLabel}<span if.bind="!cancelLabel" t="confirmDialog.cancel"></span></button>
       <button
         type="button"
         click.trigger="confirm()"

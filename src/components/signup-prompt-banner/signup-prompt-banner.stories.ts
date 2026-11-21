@@ -111,13 +111,17 @@ export const FitsOneLineAtEveryPhoneWidth = {
 		await atEveryPhoneWidthAndLanguage(host, async (language) => {
 			await expectFitsOneLine(message, action)
 			await expect(message.textContent).toBe(
-				language === 'en' ? 'Save your follows!' : 'フォロー履歴を保存しよう！',
+				language === 'en'
+					? 'Get notified of new concerts!'
+					: '新着ライブを通知で受け取ろう！',
 			)
 			await expect(action.textContent?.trim()).toBe('Sign Up')
 		})
-		await expect(en.myArtists.signupBanner.message).toBe('Save your follows!')
+		await expect(en.myArtists.signupBanner.message).toBe(
+			'Get notified of new concerts!',
+		)
 		await expect(ja.myArtists.signupBanner.message).toBe(
-			'フォロー履歴を保存しよう！',
+			'新着ライブを通知で受け取ろう！',
 		)
 	},
 } satisfies Story

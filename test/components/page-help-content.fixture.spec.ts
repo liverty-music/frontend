@@ -2,13 +2,15 @@ import { I18nConfiguration } from '@aurelia/i18n'
 import { tasksSettled } from '@aurelia/runtime'
 import { createFixture } from '@aurelia/testing'
 import { CustomElement, Registration } from 'aurelia'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
 	PageHelp,
 	type PageHelpPage,
 } from '../../src/components/page-help/page-help'
 import en from '../../src/locales/en/translation.json'
 import ja from '../../src/locales/ja/translation.json'
+import { IAuthService } from '../../src/services/auth-service'
+import { IGuideService } from '../../src/services/guide-service'
 import { IOnboardingService } from '../../src/services/onboarding-service'
 
 /** Pass-through sheet (jsdom has no Popover API); always shows its content. */
@@ -25,10 +27,27 @@ const SvgIconStub = CustomElement.define(
 	class {},
 )
 
-async function render(page: PageHelpPage, lng: 'ja' | 'en' = 'ja') {
+interface Options {
+	signedIn?: boolean
+	view?: 'artists' | 'concerts'
+	hasArtists?: boolean
+}
+
+async function render(
+	page: PageHelpPage,
+	lng: 'ja' | 'en' = 'ja',
+	opts: Options = {},
+) {
+	const guide = { replay: vi.fn() }
 	const fixture = await createFixture
-		.html(`<page-help page="${page}"></page-help>`)
+		.html(
+			`<page-help page="${page}" view="${opts.view ?? 'artists'}" has-artists.bind="${opts.hasArtists ?? true}"></page-help>`,
+		)
 		.deps(
+			Registration.instance(IAuthService, {
+				isAuthenticated: opts.signedIn ?? true,
+			}),
+			Registration.instance(IGuideService, guide),
 			I18nConfiguration.customize((options) => {
 				options.initOptions = {
 					lng,
@@ -46,7 +65,10 @@ async function render(page: PageHelpPage, lng: 'ja' | 'en' = 'ja') {
 	const titles = [...host.querySelectorAll('.help-section-title')].map(
 		(h) => h.textContent,
 	)
-	return { host, titles, text: host.textContent ?? '' }
+	const replays = [...host.querySelectorAll('.page-help-replay')].map(
+		(b) => (b as HTMLElement).dataset.testid,
+	)
+	return { host, titles, text: host.textContent ?? '', replays, guide }
 }
 
 describe('page help content', () => {
@@ -70,6 +92,27 @@ describe('page help content', () => {
 			),
 		).toEqual([t.genreTip, t.searchTip])
 		expect(text).toContain(t.unfollowDesc)
+		// On the bubbles each section with a moment ends with 「チュートリアル」.
+		const { replays } = await render('discovery')
+		expect(replays).toEqual(['help-replay-finding', 'help-replay-concerts'])
+		expect(
+			host.querySelector('[data-testid="help-replay-finding"]')?.textContent,
+		).toBe('チュートリアル')
+	})
+
+	// @spec components/infrastructure/fan/web/global/page-help "Discovery help content"
+	it('Discovery for a guest: no 「ライブ」 section', async () => {
+		const { titles, replays } = await render('discovery', 'ja', {
+			signedIn: false,
+		})
+		const t = ja.pageHelp.discovery
+		expect(titles).toEqual([t.findingSectionTitle, t.unfollowSectionTitle])
+		expect(replays).toEqual(['help-replay-finding'])
+	})
+
+	it('Discovery on the Concerts view: no replay of the bubble field moment', async () => {
+		const { replays } = await render('discovery', 'ja', { view: 'concerts' })
+		expect(replays).toEqual(['help-replay-concerts'])
 	})
 
 	// @spec components/infrastructure/fan/web/global/page-help "Timetable help content"
@@ -107,6 +150,13 @@ describe('page help content', () => {
 		expect(text).not.toMatch(/スライダー|ヘッダー|長押し|右下/)
 	})
 
+	it('My Artists: 「チュートリアル」 in the Hype section only with a followed artist', async () => {
+		const withArtists = await render('my-artists')
+		expect(withArtists.replays).toEqual(['help-replay-hype'])
+		const without = await render('my-artists', 'ja', { hasArtists: false })
+		expect(without.replays).toEqual([])
+	})
+
 	// @spec components/infrastructure/fan/web/route/my-artists "Help text available in all supported locales"
 	it('My Artists in English', async () => {
 		const { titles, text } = await render('my-artists', 'en')
@@ -127,7 +177,7 @@ describe('page help content', () => {
 				'ja',
 				[
 					'通知なし',
-					'居住エリアのライブを通知',
+					'HOMEエリアのライブを通知',
 					'近くのライブも通知',
 					'全てのライブを通知',
 				],

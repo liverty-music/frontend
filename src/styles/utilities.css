@@ -120,6 +120,59 @@
 	}
 }
 
+/* Guide moment target — applied by the `guide-target` custom attribute while
+   its moment is shown (guide-moment "A guide moment is a glow and one line that
+   never blocks"). A ring with a pulsing halo, or for a target that fills the
+   screen (the bubble field) a glow along its inner edge; steady under reduced
+   motion. It names the anchor the guide line sits next to. In the exception
+   layer, so it shows over the target's own shadow (the FAB, the swap tile). A
+   block whose target moves too (the hype dots, the bell) adds that in its own
+   stylesheet. */
+@layer utility {
+	@keyframes guide-pulse {
+		0%,
+		100% {
+			box-shadow: var(--glow-guide-dim);
+		}
+
+		50% {
+			box-shadow: var(--glow-guide);
+		}
+	}
+
+	/* A bell's swing, from its top edge; it rests between swings. */
+	@keyframes guide-swing {
+		0%,
+		40%,
+		100% {
+			rotate: 0deg;
+		}
+
+		10% {
+			rotate: 3deg;
+		}
+
+		20% {
+			rotate: -3deg;
+		}
+
+		30% {
+			rotate: 1.5deg;
+		}
+	}
+
+	@keyframes guide-pulse-inset {
+		0%,
+		100% {
+			box-shadow: var(--glow-guide-inset);
+		}
+
+		50% {
+			box-shadow: var(--glow-guide-inset-dim);
+		}
+	}
+}
+
 /* Busy state — applied by the `busy-on-click` custom attribute while an async
    click handler is in flight. Dims the control, blocks further interaction,
    hides its label (still read by assistive technology) so it does not show
@@ -162,6 +215,44 @@
 
 	@media (prefers-reduced-motion: reduce) {
 		[data-busy]::after {
+			animation: none;
+		}
+	}
+}
+
+/* Guide moment target, the state itself (see the keyframes above). */
+@layer exception {
+	/* stylelint-disable-next-line cube/data-attr-naming -- set by the guide-target attribute on any block's control, like data-busy; not one block's own state */
+	[data-guide-active] {
+		anchor-name: --guide-target;
+		box-shadow: var(--glow-guide);
+		animation: guide-pulse 1.6s ease-in-out infinite;
+	}
+
+	/* stylelint-disable-next-line cube/data-attr-naming -- the inner-edge form of the same state */
+	[data-guide-active="inset"] {
+		box-shadow: var(--glow-guide-inset);
+		animation-name: guide-pulse-inset;
+	}
+
+	/* stylelint-disable-next-line cube/data-attr-naming -- the bell form of the same state: the ring also swings */
+	[data-guide-active="bell"] {
+		transform-origin: 50% 0;
+		animation:
+			guide-pulse 1.6s ease-in-out infinite,
+			guide-swing 1.6s ease-in-out infinite;
+	}
+
+	/* stylelint-disable-next-line cube/data-attr-naming -- the form whose block lights its own parts (the hype dots): the anchor only */
+	[data-guide-active="dots"] {
+		box-shadow: none;
+		animation: none;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		/* stylelint-disable-next-line cube/data-attr-naming -- the same state, steady */
+		[data-guide-active],
+		[data-guide-active="bell"] {
 			animation: none;
 		}
 	}

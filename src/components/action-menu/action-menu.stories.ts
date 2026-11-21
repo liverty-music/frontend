@@ -7,6 +7,7 @@ import {
 import { Registration } from 'aurelia'
 import { expect, userEvent, waitFor } from 'storybook/test'
 import { composite, contrast, resolveColor } from '../../../.storybook/contrast'
+import { noGuide } from '../../../.storybook/guide'
 import { atWidth } from '../../../.storybook/viewport'
 import {
 	IActionMenuService,
@@ -88,6 +89,7 @@ function launcher(handed: 'left' | 'right' = 'right') {
 			Registration.instance(IRouterEvents, {
 				subscribe: () => ({ dispose: () => {} }),
 			}),
+			noGuide,
 		],
 	})
 }

@@ -34,6 +34,16 @@ export class TicketJourneyStore {
 
 	@observable public journeyMap: Map<string, JourneyStatus> = new Map()
 
+	/**
+	 * Whether the map holds the signed-in fan's journeys from the server (always
+	 * true for a guest, who has none). Until then an empty map means "not
+	 * known yet", not "no journey" (the concert sheet's guide moment asks).
+	 */
+	public get known(): boolean {
+		return !this.authService.isAuthenticated || this.loaded
+	}
+	private loaded = false
+
 	// Bumped on every write-through / clear. A load() captures it at issue and
 	// skips its assignment if a write landed while the RPC was in flight, so a
 	// stale server snapshot can never clobber a newer optimistic write.
@@ -68,6 +78,7 @@ export class TicketJourneyStore {
 		if (this.writeGeneration === generationAtIssue) {
 			this.journeyMap = map
 		}
+		this.loaded = true
 		return this.journeyMap
 	}
 
@@ -119,6 +130,7 @@ export class TicketJourneyStore {
 	public clear(): void {
 		this.writeGeneration++
 		this.journeyMap = new Map()
+		this.loaded = false
 		this.logger.info('Journey state cleared')
 	}
 }

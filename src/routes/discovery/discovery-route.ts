@@ -15,6 +15,10 @@ import {
 	loadDiscoveryView,
 	saveDiscoveryView,
 } from '../../adapter/storage/discovery-view-storage'
+import {
+	loadDiscoveryViewSwapped,
+	saveDiscoveryViewSwapped,
+} from '../../adapter/storage/guide-storage'
 import type { ArtistBubbles } from '../../components/artist-bubbles/artist-bubbles'
 import { preloadPhysics } from '../../components/artist-bubbles/bubble-physics'
 import type { RevealMark } from '../../components/artist-bubbles/reveal-marks'
@@ -38,12 +42,11 @@ import { IArtistBubbleStore } from '../../services/artist-bubble-store'
 import { IArtistStore } from '../../services/artist-store'
 import { IAuthService } from '../../services/auth-service'
 import { IConcertStore } from '../../services/concert-store'
-import { IErrorBoundaryService } from '../../services/error-boundary-service'
 import { IFollowStore } from '../../services/follow-store'
+import { IGuideService } from '../../services/guide-service'
 import { IOnboardingService } from '../../services/onboarding-service'
 import { IResumeRevalidator } from '../../services/resume-revalidator'
 import { IUserStore } from '../../services/user-store'
-import { currentLanguage } from '../../util/change-locale'
 import { GenreFilterController } from './genre-filter-controller'
 import { detectRevealEntry, RevealTiming } from './reveal-timing'
 import { SearchController } from './search-controller'
@@ -61,7 +64,7 @@ export class DiscoveryRoute {
 	private readonly history = resolve(IHistory)
 	private readonly authService = resolve(IAuthService)
 	private readonly userStore = resolve(IUserStore)
-	private readonly errorBoundary = resolve(IErrorBoundaryService)
+	private readonly guide = resolve(IGuideService)
 	private readonly logger = resolve(ILogger).scopeTo('DiscoveryRoute')
 	public readonly i18n = resolve(I18N)
 
@@ -86,26 +89,17 @@ export class DiscoveryRoute {
 	/** True while a swap's View Transition runs (names the layout for it). */
 	public revealing = false
 
-	/** A guest tapped follow in the Concerts view: offer sign-up. */
-	public showSignupBanner = false
-
+	/**
+	 * Whether the swap tile and the Concerts view are offered: to a signed-in
+	 * fan only. A guest follows artists first, and the Concerts view's follow
+	 * and ticket actions need an account.
+	 */
 	public get isAuthenticated(): boolean {
 		return this.authService.isAuthenticated
 	}
 
-	/** A guest tapped follow in the Concerts view. */
-	public offerSignUp(): void {
-		if (this.isAuthenticated) return
-		this.showSignupBanner = true
-	}
-
-	public onSignupRequested(): void {
-		this.errorBoundary.addBreadcrumb('action', 'start_sign_up')
-		this.authService.signUp({
-			uiLocales: currentLanguage(this.i18n),
-			source: 'discovery_concerts_prompt',
-		})
-	}
+	/** The bubble field has drawn its first artist name on this visit. */
+	private firstNameShown = false
 
 	/** Help sheet ref; its trigger lives in the FAB launcher. */
 	public pageHelp: PageHelp | undefined
@@ -215,13 +209,28 @@ export class DiscoveryRoute {
 		return parts.join('. ')
 	}
 
+	/**
+	 * A guest gets the artist bubbles whatever the address says: a link to the
+	 * Concerts view (`/discovery?view=concerts`) is sent to `/discovery`, so
+	 * the address never names a view the guest is not shown.
+	 */
+	public canLoad(_params?: Params, next?: RouteNode): boolean | string {
+		if (!this.isAuthenticated && next?.queryParams.get('view') === 'concerts') {
+			return 'discovery'
+		}
+		return true
+	}
+
 	public loading(_params?: Params, next?: RouteNode): void {
 		this.logger.info('Loading discovery page')
 		// `view=concerts` in the address wins at any onboarding state; otherwise
 		// the device's last choice, except while onboarding, which always starts
 		// on the bubbles.
-		this.view =
-			next?.queryParams.get('view') === 'concerts'
+		// A guest always gets the bubbles, whatever the address says.
+		const asked = next?.queryParams.get('view') === 'concerts'
+		this.view = !this.isAuthenticated
+			? 'artists'
+			: asked
 				? 'concerts'
 				: this.isOnboarding
 					? 'artists'
@@ -322,7 +331,7 @@ export class DiscoveryRoute {
 		if (this.view === 'concerts') {
 			actions.push({
 				id: 'filter',
-				labelKey: 'actionMenu.filter',
+				labelKey: 'actionMenu.concertsFilter',
 				icon: 'filter',
 				kind: 'command',
 				isOn: () => this.concertsVisit.isFiltered(this.userStore.currentHome),
@@ -335,6 +344,8 @@ export class DiscoveryRoute {
 	}
 
 	public detaching(): void {
+		this.guide.dismiss('discovery.follow', 'route_leave')
+		this.guide.dismiss('discovery.swap', 'route_leave')
 		this.revealTiming = null
 		this.abortController.abort()
 		document.removeEventListener('visibilitychange', this.onVisibilityChange)
@@ -395,6 +406,8 @@ export class DiscoveryRoute {
 		// Transition would skip the first, whose cleanup would then clear the
 		// flags the second one still needs.
 		if (this.revealing) return
+		this.guide.acted('discovery.swap')
+		saveDiscoveryViewSwapped()
 		const next: DiscoveryView =
 			this.view === 'concerts' ? 'artists' : 'concerts'
 		// Name the layout before the old snapshot is taken, so the old and new
@@ -429,8 +442,29 @@ export class DiscoveryRoute {
 			// Switching to the Concerts view ends the visit's frame measurement.
 			this.artistBubbles?.endFrameMeasurement()
 			this.pauseField()
+			this.guide.dismiss('discovery.follow', 'route_leave')
 		} else if (this.bubblesShown && !document.hidden) {
 			this.artistBubbles?.resume()
+			this.requestFieldMoment()
+		}
+	}
+
+	/**
+	 * The guide moment of the artist bubbles, once a name shows in the field:
+	 * the bubble field's for a fan who follows no artist; the swap tile's for a
+	 * signed-in fan whose onboarding is complete, who follows an artist and has
+	 * never switched the view on this device.
+	 */
+	private requestFieldMoment(): void {
+		if (!this.firstNameShown || !this.bubblesShown) return
+		if (this.followedCount === 0) {
+			this.guide.request('discovery.follow')
+		} else if (
+			this.isAuthenticated &&
+			this.onboarding.isCompleted &&
+			!loadDiscoveryViewSwapped()
+		) {
+			this.guide.request('discovery.swap')
 		}
 	}
 
@@ -498,6 +532,7 @@ export class DiscoveryRoute {
 		const { artist, position } = event.detail
 		const artistId = artist.id
 		if (this.followedIds.has(artistId)) return
+		this.guide.acted('discovery.follow')
 		this.logger.info('Artist selected from bubbles', {
 			artist: artist.name,
 		})
@@ -525,6 +560,10 @@ export class DiscoveryRoute {
 	public onRevealMark(
 		event: CustomEvent<{ mark: RevealMark; time: number }>,
 	): void {
+		if (event.detail.mark === 'first-name') {
+			this.firstNameShown = true
+			this.requestFieldMoment()
+		}
 		const timings = this.revealTiming?.record(
 			event.detail.mark,
 			event.detail.time,
@@ -576,6 +615,7 @@ export class DiscoveryRoute {
 	public async onFollowFromSearch(artist: Artist): Promise<void> {
 		const artistId = artist.id
 		if (this.followedIds.has(artistId)) return
+		this.guide.acted('discovery.follow')
 
 		this.logger.info('Following artist from search', {
 			artist: artist.name,

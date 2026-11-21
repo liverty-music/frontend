@@ -62,6 +62,21 @@
 		--glow-progress-ready: 0 0 1.25rem
 			oklch(from var(--color-brand-primary) l c h / 55%);
 		--glow-beacon: 0 0 0 2px var(--color-brand-accent);
+
+		/* A guide moment's target (guide-moment): a ring with a soft halo, and the
+		   halo's dim end of the pulse. The bubble field uses the inset pair. */
+		--glow-guide:
+			0 0 0 2px var(--color-brand-accent),
+			0 0 18px 4px oklch(from var(--color-brand-accent) l c h / 55%);
+		--glow-guide-dim:
+			0 0 0 2px var(--color-brand-accent),
+			0 0 6px 1px oklch(from var(--color-brand-accent) l c h / 30%);
+		--glow-guide-inset:
+			inset 0 0 0 2px oklch(from var(--color-brand-accent) l c h / 70%),
+			inset 0 0 28px 6px oklch(from var(--color-brand-accent) l c h / 40%);
+		--glow-guide-inset-dim:
+			inset 0 0 0 2px oklch(from var(--color-brand-accent) l c h / 50%),
+			inset 0 0 12px 2px oklch(from var(--color-brand-accent) l c h / 25%);
 		--glow-attention-off: 0 0 0 0
 			color-mix(in oklch, var(--color-white) 0%, transparent);
 		--glow-attention: 0 0 14px 2px

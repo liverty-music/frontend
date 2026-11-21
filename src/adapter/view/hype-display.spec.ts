@@ -45,8 +45,8 @@ describe('hypeReachWords', () => {
 
 	it.each([
 		['away', '全て'],
-		['home', '居住エリア'],
-		['nearby', '居住エリア周辺'],
+		['home', 'HOMEエリア'],
+		['nearby', 'HOMEエリア周辺'],
 	] as const)('%s without a home reads %s', (hype, expected) => {
 		expect(words(hype, undefined)).toBe(expected)
 	})

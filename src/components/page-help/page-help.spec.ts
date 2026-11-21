@@ -1,129 +1,94 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('../../adapter/storage/onboarding-storage', () => ({
-	loadHelpSeen: vi.fn(() => false),
-	saveHelpSeen: vi.fn(),
-	clearOnboardingSeenFlags: vi.fn(),
-}))
-
-const fakeOnboarding = {
-	isOnboarding: true,
-}
+const fakeAuth = { isAuthenticated: true }
+const fakeGuide = { replay: vi.fn() }
 
 vi.mock('aurelia', async (importOriginal) => {
 	const actual = await importOriginal<typeof import('aurelia')>()
 	return {
 		...actual,
-		resolve: vi.fn(() => fakeOnboarding),
+		resolve: vi.fn((token: { friendlyName?: string }) =>
+			token.friendlyName === 'IGuideService' ? fakeGuide : fakeAuth,
+		),
 		bindable: actual.bindable,
 	}
 })
 
-import {
-	loadHelpSeen,
-	saveHelpSeen,
-} from '../../adapter/storage/onboarding-storage'
 import { PageHelp, type PageHelpPage } from './page-help'
+
+const SPEC = 'components/infrastructure/fan/web/global/page-help'
 
 describe('PageHelp', () => {
 	let sut: PageHelp
 
 	beforeEach(() => {
-		vi.mocked(loadHelpSeen).mockReturnValue(false)
-		vi.mocked(saveHelpSeen).mockClear()
-		fakeOnboarding.isOnboarding = true
+		fakeAuth.isAuthenticated = true
+		fakeGuide.replay.mockClear()
 		sut = new PageHelp()
 	})
 
-	afterEach(() => {
-		vi.restoreAllMocks()
-	})
-
-	describe('attached() auto-open', () => {
-		it('auto-opens on discovery page during onboarding', () => {
-			sut.page = 'discovery'
-
-			sut.attached()
-
-			expect(sut.isOpen).toBe(true)
-			expect(saveHelpSeen).toHaveBeenCalledWith('discovery')
+	describe('opening', () => {
+		it(`@spec ${SPEC} "Help never opens on its own"`, () => {
+			// No lifecycle opens it: only the action launcher's help item does.
+			for (const page of ['discovery', 'my-artists', 'timetable'] as const) {
+				const help = new PageHelp()
+				help.page = page
+				expect(help.isOpen).toBe(false)
+				expect('attached' in help).toBe(false)
+				help.open()
+				expect(help.isOpen).toBe(true)
+			}
 		})
 
-		it('auto-opens on my-artists page during onboarding', () => {
-			sut.page = 'my-artists'
-
-			sut.attached()
-
-			expect(sut.isOpen).toBe(true)
-			expect(saveHelpSeen).toHaveBeenCalledWith('my-artists')
-		})
-
-		// BUG DETECTION: This test will FAIL against current code.
-		// The spec defines auto-open only for discovery and my-artists.
-		// Timetable should show the ? icon only (manual open).
-		// @spec components/infrastructure/fan/web/global/page-help "Timetable help never auto-opens"
-		it('does NOT auto-open on timetable page', () => {
-			sut.page = 'timetable'
-
-			sut.attached()
-
-			expect(sut.isOpen).toBe(false)
-			expect(saveHelpSeen).not.toHaveBeenCalled()
-		})
-
-		it('does NOT auto-open when help already seen', () => {
-			vi.mocked(loadHelpSeen).mockReturnValue(true)
-			sut.page = 'discovery'
-
-			sut.attached()
-
-			expect(sut.isOpen).toBe(false)
-		})
-
-		// @spec components/infrastructure/fan/web/global/page-help "No auto-open after onboarding"
-		it('does NOT auto-open when not onboarding', () => {
-			fakeOnboarding.isOnboarding = false
-			sut.page = 'discovery'
-
-			sut.attached()
-
-			expect(sut.isOpen).toBe(false)
-		})
-	})
-
-	describe('manual open', () => {
-		it('opens on help tap regardless of page', () => {
-			sut.page = 'timetable'
-
-			sut.open()
-
-			expect(sut.isOpen).toBe(true)
-		})
-
-		it('opens on help tap when not onboarding', () => {
-			fakeOnboarding.isOnboarding = false
-			sut.page = 'discovery'
-
-			sut.open()
-
-			expect(sut.isOpen).toBe(true)
-		})
-	})
-
-	describe('sheet close', () => {
 		it('closes the sheet', () => {
 			sut.isOpen = true
-
 			sut.onSheetClosed()
-
 			expect(sut.isOpen).toBe(false)
 		})
 	})
 
-	// Spec: "Only active page content is rendered"
-	// The switch.bind template controller guarantees DOM mutual exclusivity at the
-	// framework level. These tests verify that the page bindable behaves correctly
-	// at the ViewModel level, ensuring the right value is passed to the template.
+	describe('「チュートリアル」', () => {
+		it(`@spec ${SPEC} "Replay from Discovery help"`, () => {
+			sut.page = 'discovery'
+			sut.view = 'artists'
+			sut.open()
+
+			expect(sut.findingReplay).toBe('discovery.follow')
+			sut.replay('discovery.follow')
+
+			expect(sut.isOpen).toBe(false)
+			expect(fakeGuide.replay).toHaveBeenCalledWith('discovery.follow')
+		})
+
+		it('offers the bubble field moment only while the bubbles are shown', () => {
+			sut.view = 'concerts'
+			expect(sut.findingReplay).toBeNull()
+		})
+
+		it("replays the swap tile's moment on the bubbles and the filter's on the Concerts view", () => {
+			sut.view = 'artists'
+			expect(sut.concertsReplay).toBe('discovery.swap')
+			sut.view = 'concerts'
+			expect(sut.concertsReplay).toBe('concerts.filter')
+		})
+
+		it(`@spec components/infrastructure/fan/web/global/guide-moment "Replay the hype moment"`, () => {
+			sut.page = 'my-artists'
+			sut.hasArtists = true
+			sut.open()
+
+			sut.replay(sut.hypeReplay ?? 'myArtists.hype')
+
+			expect(sut.isOpen).toBe(false)
+			expect(fakeGuide.replay).toHaveBeenCalledWith('myArtists.hype')
+		})
+
+		it('offers no hype replay without a followed artist', () => {
+			sut.hasArtists = false
+			expect(sut.hypeReplay).toBeNull()
+		})
+	})
+
 	describe('page bindable', () => {
 		it('defaults to discovery', () => {
 			expect(sut.page).toBe('discovery')
@@ -135,15 +100,6 @@ describe('PageHelp', () => {
 				sut.page = page
 				expect(sut.page).toBe(page)
 			}
-		})
-
-		it('does not reset isOpen when page changes', () => {
-			sut.open()
-			expect(sut.isOpen).toBe(true)
-
-			sut.page = 'timetable'
-
-			expect(sut.isOpen).toBe(true)
 		})
 	})
 })
