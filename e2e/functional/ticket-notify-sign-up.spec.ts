@@ -11,6 +11,7 @@ import {
 	type RpcCall,
 	seedSignedIn,
 } from '../support/fan-auth'
+import { flowShot } from '../support/flow-shot'
 import { expect, type Page, test } from '../support/test'
 
 // The first page load compiles the app on the dev server; allow for it.
@@ -150,6 +151,7 @@ async function undecidedNotifications(page: Page): Promise<void> {
 async function pressNotifyAndChoose(
 	page: Page,
 	choice: 'Sign Up' | 'あとで',
+	shot?: string,
 ): Promise<void> {
 	await notifyButton(page).click()
 	const dialog = signUpDialog(page)
@@ -157,6 +159,7 @@ async function pressNotifyAndChoose(
 	await expect(dialog).toContainText(
 		'通知に必要なアカウントは無料ですぐに作成できるよ！',
 	)
+	if (shot) await flowShot(page, shot)
 	await dialog.getByRole('button', { name: choice, exact: true }).click()
 }
 
@@ -268,9 +271,9 @@ test.describe('guests see no statuses', () => {
 
 test.describe('a guest request for ticket sale notifications survives sign-up', () => {
 	// @spec components/infrastructure/fan/web/global/concert-sheet "Back after sign-up"
-	test(`@spec ${TRACK} "Guest signs up from the notification button"`, async ({
-		page,
-	}) => {
+	test(`@spec ${TRACK} "Guest signs up from the notification button"`, {
+		tag: '@flow',
+	}, async ({ page }) => {
 		await seedGuest(page)
 		await undecidedNotifications(page)
 		const journeys = new Map<string, string>()
@@ -278,10 +281,12 @@ test.describe('a guest request for ticket sale notifications survives sign-up', 
 		await mockIdentityProvider(page)
 		await page.goto('/timetable')
 		await openSheet(page)
+		await expect(sheet(page).getByTestId('sheet-notify-guide')).toBeVisible()
+		await flowShot(page, 'A guest opens a concert: the 🔔 guide moment')
 
 		// @spec components/infrastructure/fan/web/global/concert-sheet "Guest presses the button"
 		// @spec stories/sign-up-or-sign-in "Sign-up from the notification button"
-		await pressNotifyAndChoose(page, 'Sign Up')
+		await pressNotifyAndChoose(page, 'Sign Up', 'The sign-up dialog')
 
 		// Back from sign-up on the same concert's sheet, tracking it.
 		await expect(page).toHaveURL(
@@ -311,6 +316,7 @@ test.describe('a guest request for ticket sale notifications survives sign-up', 
 		// No celebration over or behind the sheet, and no post-signup dialog yet.
 		await expect(celebration(page)).toHaveCount(0)
 		await expect(page.getByText(TRACK_STEP_TITLE)).toHaveCount(0)
+		await flowShot(page, 'Back from sign-up: the same concert, tracking')
 
 		// The Timetable card shows the bell.
 		await page.keyboard.press('Escape')
@@ -324,6 +330,7 @@ test.describe('a guest request for ticket sale notifications survives sign-up', 
 		// @spec components/infrastructure/fan/web/global/post-signup-dialog "Closing the sheet"
 		// Closing the sheet opens the notification step, and still no celebration.
 		await expect(page.getByText(TRACK_STEP_TITLE)).toBeVisible()
+		await flowShot(page, 'Sheet closed: turn on push')
 		await expect(
 			page.getByText('フォロー中の1組のライブを探し始めました'),
 		).toHaveCount(0)
@@ -362,17 +369,20 @@ test.describe('a guest request for ticket sale notifications survives sign-up', 
 	})
 
 	// @spec components/infrastructure/fan/web/global/concert-sheet "Guest chooses later"
-	test(`@spec ${TRACK} "Guest chooses later"`, async ({ page }) => {
+	test(`@spec ${TRACK} "Guest chooses later"`, {
+		tag: '@flow',
+	}, async ({ page }) => {
 		await seedGuest(page)
 		const calls = await mockBackend(page, new Map())
 		await mockIdentityProvider(page)
 		await page.goto('/timetable')
 		await openSheet(page)
 
-		await pressNotifyAndChoose(page, 'あとで')
+		await pressNotifyAndChoose(page, 'あとで', 'The sign-up dialog')
 
 		await expect(signUpDialog(page)).toHaveCount(0)
 		await expect(notifyButton(page)).toBeVisible()
+		await flowShot(page, 'Later: the sheet as it was')
 		expect(new URL(page.url()).pathname).toBe('/timetable')
 
 		// Later, a sign-up from the Timetable banner tracks nothing.
