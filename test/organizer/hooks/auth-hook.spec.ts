@@ -29,6 +29,13 @@ const { IConsoleLanguage } = await import(
 const { savePendingReturn } = await import(
 	'../../../organizer/adapter/storage/pending-return-storage'
 )
+const {
+	IOrgPin,
+	ORG_SHORT_NAME_STORAGE_KEY,
+	PENDING_ORG_PIN_STORAGE_KEY,
+	resolveOrgPin,
+} = await import('../../../organizer/services/org-handle')
+type OrgPin = import('../../../organizer/services/org-handle').OrgPin
 
 const ROLES_CLAIM = 'urn:zitadel:iam:org:project:roles'
 
@@ -258,6 +265,7 @@ describe('OrganizerAuthHook', () => {
 		function buildPinned(
 			pin: Pick<AppConfig, 'zitadelOrgId' | 'zitadelOrgPrimaryDomain'>,
 			authOverrides: Parameters<typeof createMockAuth>[0],
+			orgPin: OrgPin | null = null,
 		) {
 			mockAuth = createMockAuth(authOverrides)
 			const container = DI.createContainer()
@@ -270,6 +278,7 @@ describe('OrganizerAuthHook', () => {
 				Registration.instance(mockIAuthService, mockAuth),
 				Registration.instance(mockILoginHint, null),
 				Registration.instance(IConsoleLanguage, language),
+				Registration.instance(IOrgPin, orgPin),
 				OrganizerAuthHook,
 			)
 			sut = container.get(OrganizerAuthHook)
@@ -358,6 +367,49 @@ describe('OrganizerAuthHook', () => {
 
 			expect(result).toBe(true)
 			expect(mockAuth.signIn).not.toHaveBeenCalled()
+		})
+
+		// liverty-music/frontend#1076: the pin of a link is remembered only once
+		// a sign-in to its Organization admits the member.
+		it('remembers the pinned Organization once its session is admitted', async () => {
+			const storage = window.localStorage
+			// The link opens /?org=xx-records; its sign-in returns to the callback.
+			resolveOrgPin('?org=xx-records', storage, '/')
+			const pin = resolveOrgPin('', storage, '/auth/callback')
+			expect(storage.getItem(ORG_SHORT_NAME_STORAGE_KEY)).toBeNull()
+
+			buildPinned(
+				{ zitadelOrgPrimaryDomain: PRIMARY_DOMAIN },
+				{
+					isAuthenticated: true,
+					user: userWithRoles({ owner: { '394': PRIMARY_DOMAIN } }),
+				},
+				pin,
+			)
+			const result = await sut.canLoad({} as never, {}, makeRouteNode({}), null)
+
+			expect(result).toBe(true)
+			expect(storage.getItem(ORG_SHORT_NAME_STORAGE_KEY)).toBe('xx-records')
+			expect(storage.getItem(PENDING_ORG_PIN_STORAGE_KEY)).toBeNull()
+			// The next visit without the link names the same Organization.
+			expect(resolveOrgPin('', storage, '/')).toEqual(pin)
+		})
+
+		it('does not remember a pin whose sign-in returned a session of another Organization', async () => {
+			buildPinned(
+				{ zitadelOrgPrimaryDomain: PRIMARY_DOMAIN },
+				{
+					isAuthenticated: true,
+					user: userWithRoles({
+						owner: { '777': 'other-label.auth.liverty-music.app' },
+					}),
+				},
+				{ kind: 'shortName', shortName: 'xx-records' },
+			)
+
+			await sut.canLoad({} as never, {}, makeRouteNode({}), null)
+
+			expect(window.localStorage.getItem(ORG_SHORT_NAME_STORAGE_KEY)).toBeNull()
 		})
 
 		it('re-authenticates a session of another Organization than the short name names', async () => {
