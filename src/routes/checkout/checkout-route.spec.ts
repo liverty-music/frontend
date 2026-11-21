@@ -337,6 +337,29 @@ describe('CheckoutRoute', () => {
 			)
 		})
 
+		it('holds nothing for a count above the per-account limit', async () => {
+			// @spec components/infrastructure/fan/web/route/checkout "Count above the limit is not sent"
+			const sut = await open()
+			sut.ticketCount = 5
+
+			await sut.hold()
+
+			expect(mockCheckout.start).not.toHaveBeenCalled()
+			expect(sut.step).toBe('count')
+			expect(sut.message).toEqual({
+				key: 'checkout.count.limit',
+				params: { limit: 4 },
+			})
+		})
+
+		it('shows a retryable error, not the limit, for an InvalidArgument from Start', async () => {
+			mockCheckout.start.mockRejectedValue(connectError(Code.InvalidArgument))
+			const sut = await holdTwo()
+
+			expect(sut.step).toBe('count')
+			expect(sut.message).toEqual({ key: 'checkout.error.retry' })
+		})
+
 		it('says the fan holds another seat type of the date', async () => {
 			// @spec components/infrastructure/fan/web/route/checkout "Another seat type held"
 			mockCheckout.start.mockRejectedValue(
@@ -662,6 +685,39 @@ describe('CheckoutRoute', () => {
 			expect(sut.message?.key).toBe('checkout.payment.holdEnded')
 			sut.startAgain()
 			expect(sut.step).toBe('count')
+		})
+	})
+
+	describe('refused personal details', () => {
+		it('returns to the personal details from the card form and keeps the hold', async () => {
+			// @spec components/infrastructure/fan/web/route/checkout "Name or phone number refused"
+			mockCheckout.authorizeCard.mockRejectedValue(
+				connectError(Code.InvalidArgument),
+			)
+			const sut = await toCard()
+
+			await sut.authorizeCard()
+
+			expect(sut.step).toBe('personal-details')
+			expect(sut.message).toEqual({ key: 'checkout.personalDetails.refused' })
+			expect(sut.fullName).toBe('山田 花子')
+			expect(sut.phoneNumber).toBe('090-1234-5678')
+			expect(sut.checkout?.id).toBe('res-1')
+			expect(mockStripe.confirmCheckoutCardAuthorization).not.toHaveBeenCalled()
+		})
+
+		it('stays on the personal details when correcting them from the final confirmation is refused', async () => {
+			const sut = await toConfirm()
+			sut.changePersonalDetails()
+			mockCheckout.authorizeCard.mockRejectedValue(
+				connectError(Code.InvalidArgument),
+			)
+
+			await sut.toPayment()
+
+			expect(sut.step).toBe('personal-details')
+			expect(sut.message).toEqual({ key: 'checkout.personalDetails.refused' })
+			expect(sut.checkout?.id).toBe('res-1')
 		})
 	})
 

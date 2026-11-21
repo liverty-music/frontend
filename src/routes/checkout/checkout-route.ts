@@ -439,6 +439,14 @@ export class CheckoutRoute implements IRouteViewModel {
 	/** Hold the chosen count for 15 minutes and continue to the 本人確認 step. */
 	public async hold(): Promise<void> {
 		if (this.busy || !this.sale || !this.stock) return
+		if (!this.countOptions.includes(this.ticketCount)) {
+			// Start refuses any other count; hold nothing.
+			this.message = {
+				key: 'checkout.count.limit',
+				params: { limit: this.perAccountLimit },
+			}
+			return
+		}
 		this.errorBoundary.addBreadcrumb('action', 'start_checkout')
 		this.busy = true
 		this.message = null
@@ -507,7 +515,7 @@ export class CheckoutRoute implements IRouteViewModel {
 			this.step = 'verify-required'
 			return
 		}
-		if (code === Code.FailedPrecondition || code === Code.InvalidArgument) {
+		if (code === Code.FailedPrecondition) {
 			this.message = await this.explainRefusedHold()
 			return
 		}
@@ -666,9 +674,24 @@ export class CheckoutRoute implements IRouteViewModel {
 	}
 
 	private explainAuthorizeCardFailure(err: unknown): void {
-		if (ConnectError.from(err).code === Code.FailedPrecondition) {
+		const code = ConnectError.from(err).code
+		if (code === Code.FailedPrecondition) {
 			// The hold ended: the fan starts again.
 			this.message = { key: 'checkout.payment.holdEnded' }
+			return
+		}
+		if (code === Code.InvalidArgument) {
+			// The name or phone number was refused; the hold goes on while the
+			// fan corrects them. Only the code is logged: the request carried
+			// them.
+			this.logger.warn('AuthorizeCard refused the personal details', {
+				code,
+			})
+			// From the card form, the card read for these details is dropped;
+			// the form opens again after the details are corrected.
+			if (this.step === 'payment') this.forgetCard()
+			this.message = { key: 'checkout.personalDetails.refused' }
+			this.step = 'personal-details'
 			return
 		}
 		this.logger.error('AuthorizeCard failed', { error: err })

@@ -365,6 +365,16 @@ export class NewResaleEntryRoute implements IRouteViewModel {
 	 */
 	public async toPayment(): Promise<void> {
 		if (!this.isPersonalDetailsValid || this.busy || !this.stock) return
+		if (!this.countOptions.includes(this.ticketCount)) {
+			// The server refuses a count over what the fan may still apply
+			// for; send nothing.
+			this.message = {
+				key: 'newResaleEntry.count.limit',
+				params: { limit: this.perAccountLimit },
+			}
+			this.step = 'count'
+			return
+		}
 		this.busy = true
 		this.message = null
 		try {
@@ -397,7 +407,18 @@ export class NewResaleEntryRoute implements IRouteViewModel {
 		} catch (err) {
 			if (this.signal?.aborted) return
 			const code = ConnectError.from(err).code
-			if (code === Code.FailedPrecondition || code === Code.InvalidArgument) {
+			if (code === Code.InvalidArgument) {
+				// The count was checked before sending, so the name or phone
+				// number was refused. Only the code is logged: the request
+				// carried them.
+				this.logger.warn('AuthorizeCard refused the personal details', {
+					code,
+				})
+				this.message = { key: 'newResaleEntry.personalDetails.refused' }
+				this.step = 'personal-details'
+				return
+			}
+			if (code === Code.FailedPrecondition) {
 				await this.explainRefusal(err)
 				return
 			}

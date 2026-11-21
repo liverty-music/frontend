@@ -952,7 +952,8 @@
 			"note": "Your name and phone number are saved on your account and shown on the face of your tickets.",
 			"name": "Full name",
 			"phone": "Phone number",
-			"continue": "Continue to card authorization"
+			"continue": "Continue to card authorization",
+			"refused": "We couldn't save this name or phone number. Check them and try again."
 		},
 		"payment": {
 			"title": "Card authorization",
@@ -982,6 +983,7 @@
 			"otherSeatType": "Your tickets for this date are {{seatType}}. One account holds tickets of one seat type per date.",
 			"limit": "One account can hold up to {{limit}} tickets for this event, counting the tickets it already holds and has applied for.",
 			"other": "Your card could not be used for this entry. You can try again with another card.",
+			"unavailable": "You can't enter this lottery right now.",
 			"tryAgain": "Try again"
 		},
 		"phoneInvalid": "Enter a valid phone number (e.g. 090-1234-5678 or +81 90 1234 5678)."
@@ -1020,7 +1022,8 @@
 			"note": "Your name and phone number are saved on your account and shown on your tickets.",
 			"name": "Full name",
 			"phone": "Phone number",
-			"continue": "Continue to the final confirmation"
+			"continue": "Continue to the final confirmation",
+			"refused": "We couldn't save this name or phone number. Check them and try again."
 		},
 		"confirm": {
 			"title": "Final confirmation",
@@ -1223,7 +1226,8 @@
 			"name": "Full name",
 			"phone": "Phone number",
 			"phoneInvalid": "Enter a valid phone number (e.g. 090-1234-5678 or +81 90 1234 5678).",
-			"continue": "Continue to payment"
+			"continue": "Continue to payment",
+			"refused": "We couldn't save this name or phone number. Check them and try again."
 		},
 		"payment": {
 			"title": "Payment",

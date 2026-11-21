@@ -495,14 +495,79 @@ describe('NewLotteryEntryRoute', () => {
 	})
 
 	describe('errors', () => {
-		it('says how many tickets one account may hold when AuthorizeCard is refused', async () => {
+		it('says the entry cannot be made now when AuthorizeCard is refused for a cause no count fixes', async () => {
+			// @spec components/infrastructure/fan/web/route/new-lottery-entry "Refused for another reason"
 			mockEntry.authorizeCard.mockRejectedValue(
-				new ConnectError('limit', Code.FailedPrecondition),
+				new ConnectError('event is not published', Code.FailedPrecondition),
 			)
 			const sut = await toPersonalDetails()
 
 			await sut.toPayment()
 
+			expect(sut.step).toBe('refused')
+			expect(sut.message).toEqual({
+				key: 'newLotteryEntry.refused.unavailable',
+			})
+		})
+
+		it('returns to the 本人確認 step when AuthorizeCard refuses the name or phone number', async () => {
+			// @spec components/infrastructure/fan/web/route/new-lottery-entry "Name or phone number refused"
+			mockEntry.authorizeCard.mockRejectedValue(
+				new ConnectError(
+					'full name must be 1 to 200 characters',
+					Code.InvalidArgument,
+				),
+			)
+			const sut = await toPersonalDetails()
+
+			await sut.toPayment()
+
+			expect(sut.step).toBe('personal-details')
+			expect(sut.message).toEqual({
+				key: 'newLotteryEntry.personalDetails.refused',
+			})
+			expect(sut.fullName).toBe('山田 花子')
+			expect(sut.phoneNumber).toBe('090-1234-5678')
+			expect(sut.ticketCount).toBe(2)
+		})
+
+		it('says the per-account limit when the held tickets and the count exceed it', async () => {
+			// @spec components/infrastructure/fan/web/route/new-lottery-entry "Over the limit with held tickets"
+			mockEntry.authorizeCard.mockRejectedValue(
+				new ConnectError('does not fit', Code.FailedPrecondition),
+			)
+			mockHeldSeatTypes.heldTickets.mockResolvedValue({
+				stock: S_SEAT,
+				count: 3,
+			})
+			const sut = await toPersonalDetails()
+
+			await sut.toPayment()
+
+			expect(mockEntry.authorizeCard).toHaveBeenCalledWith(
+				SALE_ID,
+				STOCK_ID,
+				2,
+				'山田 花子',
+				'+819012345678',
+				undefined,
+				expect.anything(),
+			)
+			expect(sut.step).toBe('count')
+			expect(sut.message).toEqual({
+				key: 'newLotteryEntry.count.limit',
+				params: { limit: 4 },
+			})
+		})
+
+		it('sends no count above the per-account limit', async () => {
+			// @spec components/infrastructure/fan/web/route/new-lottery-entry "Count above the limit is not sent"
+			const sut = await toPersonalDetails()
+			sut.ticketCount = 5
+
+			await sut.toPayment()
+
+			expect(mockEntry.authorizeCard).not.toHaveBeenCalled()
 			expect(sut.step).toBe('count')
 			expect(sut.message).toEqual({
 				key: 'newLotteryEntry.count.limit',
