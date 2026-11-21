@@ -4,6 +4,7 @@ import {
 	ORG_ID_STORAGE_KEY,
 	ORG_SHORT_NAME_STORAGE_KEY,
 	confirmPendingOrgPin,
+	type OrgPin,
 	PENDING_ORG_PIN_STORAGE_KEY,
 	primaryDomainOf,
 	readOrgPinFromSearch,
@@ -97,7 +98,7 @@ describe('resolveOrgPin', () => {
 		const opened = resolveOrgPin('?org=xx-records', local, '/', tab)
 		// The sign-in returns to the callback, and the guard admits the member.
 		const atCallback = resolveOrgPin('', local, CALLBACK, tab)
-		confirmPendingOrgPin(local, tab)
+		confirmPendingOrgPin(local, tab, atCallback as OrgPin)
 		// The next visit on the device, without the link.
 		const next = resolveOrgPin('', local, '/', createMockLocalStorage())
 
@@ -238,7 +239,7 @@ describe('confirmPendingOrgPin', () => {
 			[PENDING_ORG_PIN_STORAGE_KEY]: '{"orgId":"org-new"}',
 		})
 
-		confirmPendingOrgPin(local, tab)
+		confirmPendingOrgPin(local, tab, { kind: 'id', orgId: 'org-new' })
 
 		expect(local.getItem(ORG_ID_STORAGE_KEY)).toBe('org-new')
 		expect(local.getItem(ORG_SHORT_NAME_STORAGE_KEY)).toBeNull()
@@ -248,10 +249,29 @@ describe('confirmPendingOrgPin', () => {
 	it('writes nothing when no sign-in is pending in this tab', () => {
 		const local = createMockLocalStorage({ [ORG_ID_STORAGE_KEY]: 'org-b' })
 
-		confirmPendingOrgPin(local, createMockLocalStorage())
+		confirmPendingOrgPin(local, createMockLocalStorage(), {
+			kind: 'id',
+			orgId: 'org-a',
+		})
 
 		expect(local.setItem).not.toHaveBeenCalled()
 		expect(local.removeItem).not.toHaveBeenCalled()
+	})
+
+	// A page restored by Back after a sign-in to another Organizer failed in
+	// the same tab: that sign-in's pin is pending, but this document enforces
+	// its own Organization.
+	it('drops, never remembers, a pending pin that is not the enforced one', () => {
+		const local = createMockLocalStorage({ [ORG_ID_STORAGE_KEY]: 'org-r' })
+		const tab = createMockLocalStorage({
+			[PENDING_ORG_PIN_STORAGE_KEY]: '{"shortName":"gone-records"}',
+		})
+
+		confirmPendingOrgPin(local, tab, { kind: 'id', orgId: 'org-r' })
+
+		expect(local.getItem(ORG_ID_STORAGE_KEY)).toBe('org-r')
+		expect(local.getItem(ORG_SHORT_NAME_STORAGE_KEY)).toBeNull()
+		expect(tab.getItem(PENDING_ORG_PIN_STORAGE_KEY)).toBeNull()
 	})
 
 	it('does not throw when the store is unavailable', () => {
@@ -265,7 +285,9 @@ describe('confirmPendingOrgPin', () => {
 			},
 			removeItem: () => {},
 		}
-		expect(() => confirmPendingOrgPin(local, tab)).not.toThrow()
+		expect(() =>
+			confirmPendingOrgPin(local, tab, { kind: 'id', orgId: 'org-1' }),
+		).not.toThrow()
 	})
 })
 

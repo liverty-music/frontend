@@ -35,6 +35,7 @@
  * 0.3), the fallback resolves the short name to an Organization id instead and
  * only these two functions change.
  */
+import { DI } from 'aurelia'
 import type { AppConfig } from '../../shared/config/app-config'
 import { isOrganizerShortName } from '../../shared/utils/organizer-short-name'
 
@@ -179,20 +180,42 @@ export function resolveOrgPin(
 }
 
 /**
+ * DI token for the pin this document resolved at bootstrap (`null` when it has
+ * none): the Organization the route guard enforces.
+ */
+export const IOrgPin = DI.createInterface<OrgPin | null>('IOrgPin', (x) =>
+	x.instance(null),
+)
+
+function samePin(a: OrgPin, b: OrgPin): boolean {
+	if (a.kind === 'id') return b.kind === 'id' && a.orgId === b.orgId
+	return b.kind === 'shortName' && a.shortName === b.shortName
+}
+
+/**
  * Remembers this tab's pending pin on the device for later visits, replacing
  * any other remembered pin, and ends the pending sign-in. The route guard calls
- * it when it admits a member of the Organization this page load names; while a
- * pin is pending, that is the pending pin, so only an Organization someone
- * signed in to is ever remembered. Does nothing when no pin is pending, so a
- * tab loaded before another tab signed in elsewhere never writes its own pin
- * back.
+ * it with the pin this document enforced (`enforced`), once it admits a member
+ * of that Organization, so only an Organization someone signed in to is ever
+ * remembered.
+ *
+ * Writes nothing when no pin is pending, so a tab loaded before another tab
+ * signed in elsewhere never writes its own pin back. A pending pin that is not
+ * the enforced one belongs to a sign-in this document did not start (e.g. a
+ * page restored by Back after that sign-in failed); it is dropped, never
+ * remembered.
  */
 export function confirmPendingOrgPin(
 	storage: OrgHandleStorage,
 	pendingStorage: OrgHandleStorage,
+	enforced: OrgPin,
 ): void {
 	const pin = recallPending(pendingStorage)
 	if (!pin) return
+	if (!samePin(pin, enforced)) {
+		clearPending(pendingStorage)
+		return
+	}
 	try {
 		if (pin.kind === 'id') {
 			storage.setItem(ORG_ID_STORAGE_KEY, pin.orgId)

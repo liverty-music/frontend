@@ -13,7 +13,7 @@ import {
 } from '../adapter/storage/pending-return-storage'
 import { IConsoleLanguage } from '../i18n/console-language'
 import { ILoginHint } from '../services/login-hint'
-import { confirmPendingOrgPin } from '../services/org-handle'
+import { confirmPendingOrgPin, IOrgPin } from '../services/org-handle'
 import { enforceIntendedOrg } from './org-enforcement'
 import { hasOwnerRole, tokenOrgIds } from './roles'
 
@@ -46,6 +46,7 @@ export class OrganizerAuthHook
 	private readonly authService = resolve(IAuthService)
 	private readonly config = resolve(IAppConfig)
 	private readonly loginHint = resolve(ILoginHint)
+	private readonly orgPin = resolve(IOrgPin)
 	private readonly language = resolve(IConsoleLanguage)
 	private readonly logger = resolve(ILogger).scopeTo('OrganizerAuthHook')
 
@@ -124,12 +125,16 @@ export class OrganizerAuthHook
 		const profile = this.authService.user?.profile
 		if (hasOwnerRole(profile)) {
 			// A token with an Organization grant passed the gate above only in
-			// the Organization this page load names, which is the pending pin
-			// when one is pending: remember it for later visits. A pin no
+			// the Organization this document enforces: remember it for later
+			// visits when this tab's sign-in was started for it. A pin no
 			// sign-in admitted (a link to an Organizer that does not exist) is
 			// never remembered.
-			if (tokenOrgIds(profile).length > 0) {
-				confirmPendingOrgPin(window.localStorage, window.sessionStorage)
+			if (this.orgPin && tokenOrgIds(profile).length > 0) {
+				confirmPendingOrgPin(
+					window.localStorage,
+					window.sessionStorage,
+					this.orgPin,
+				)
 			}
 			return true
 		}

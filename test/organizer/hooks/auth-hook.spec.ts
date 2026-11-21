@@ -30,11 +30,13 @@ const { savePendingReturn } = await import(
 	'../../../organizer/adapter/storage/pending-return-storage'
 )
 const {
+	IOrgPin,
 	ORG_ID_STORAGE_KEY,
 	ORG_SHORT_NAME_STORAGE_KEY,
 	PENDING_ORG_PIN_STORAGE_KEY,
 	resolveOrgPin,
 } = await import('../../../organizer/services/org-handle')
+type OrgPin = import('../../../organizer/services/org-handle').OrgPin
 
 const ROLES_CLAIM = 'urn:zitadel:iam:org:project:roles'
 
@@ -264,6 +266,7 @@ describe('OrganizerAuthHook', () => {
 		function buildPinned(
 			pin: Pick<AppConfig, 'zitadelOrgId' | 'zitadelOrgPrimaryDomain'>,
 			authOverrides: Parameters<typeof createMockAuth>[0],
+			orgPin: OrgPin | null = null,
 		) {
 			mockAuth = createMockAuth(authOverrides)
 			const container = DI.createContainer()
@@ -276,6 +279,7 @@ describe('OrganizerAuthHook', () => {
 				Registration.instance(mockIAuthService, mockAuth),
 				Registration.instance(mockILoginHint, null),
 				Registration.instance(IConsoleLanguage, language),
+				Registration.instance(IOrgPin, orgPin),
 				OrganizerAuthHook,
 			)
 			sut = container.get(OrganizerAuthHook)
@@ -382,6 +386,7 @@ describe('OrganizerAuthHook', () => {
 					isAuthenticated: true,
 					user: userWithRoles({ owner: { '394': PRIMARY_DOMAIN } }),
 				},
+				pin,
 			)
 			const result = await sut.canLoad({} as never, {}, makeRouteNode({}), null)
 
@@ -407,6 +412,7 @@ describe('OrganizerAuthHook', () => {
 						owner: { '777': 'other-label.auth.liverty-music.app' },
 					}),
 				},
+				{ kind: 'shortName', shortName: 'xx-records' },
 			)
 
 			await sut.canLoad({} as never, {}, makeRouteNode({}), null)
@@ -421,12 +427,36 @@ describe('OrganizerAuthHook', () => {
 			buildPinned(
 				{ zitadelOrgId: 'org-a' },
 				{ isAuthenticated: true, user: userOwnerInOrg('org-a') },
+				{ kind: 'id', orgId: 'org-a' },
 			)
 
 			const result = await sut.canLoad({} as never, {}, makeRouteNode({}), null)
 
 			expect(result).toBe(true)
 			expect(window.localStorage.getItem(ORG_ID_STORAGE_KEY)).toBe('org-b')
+		})
+
+		it('does not remember the pending pin of a failed sign-in when Back restores an earlier page', async () => {
+			// The tab showed org-a's console; a link to a missing Organizer was
+			// opened in it and its sign-in failed; Back restored org-a's page.
+			window.localStorage.setItem(ORG_ID_STORAGE_KEY, 'org-a')
+			resolveOrgPin(
+				'?org=gone-records',
+				window.localStorage,
+				'/',
+				window.sessionStorage,
+			)
+			buildPinned(
+				{ zitadelOrgId: 'org-a' },
+				{ isAuthenticated: true, user: userOwnerInOrg('org-a') },
+				{ kind: 'id', orgId: 'org-a' },
+			)
+
+			const result = await sut.canLoad({} as never, {}, makeRouteNode({}), null)
+
+			expect(result).toBe(true)
+			expect(window.localStorage.getItem(ORG_ID_STORAGE_KEY)).toBe('org-a')
+			expect(window.localStorage.getItem(ORG_SHORT_NAME_STORAGE_KEY)).toBeNull()
 		})
 
 		it('re-authenticates a session of another Organization than the short name names', async () => {
