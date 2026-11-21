@@ -364,7 +364,9 @@
 			"methodDriverLicence": "運転免許証",
 			"dedupeStrong": "1人1アカウントを確実に確認済み",
 			"dedupeWeak": "1人1アカウントを簡易的に確認済み",
-			"verifyCta": "本人確認する"
+			"verifyCta": "本人確認する",
+			"loadFailed": "確認状況を読み込めませんでした",
+			"reload": "再読み込み"
 		},
 		"signIn": "ログイン",
 		"signUp": "新規登録",

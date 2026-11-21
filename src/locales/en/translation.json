@@ -364,7 +364,9 @@
 			"methodDriverLicence": "Driver's licence",
 			"dedupeStrong": "One account per person, firmly confirmed",
 			"dedupeWeak": "One account per person, lightly confirmed",
-			"verifyCta": "Verify identity"
+			"verifyCta": "Verify identity",
+			"loadFailed": "Couldn't load the status",
+			"reload": "Retry"
 		},
 		"signIn": "Sign in",
 		"signUp": "Sign up",
