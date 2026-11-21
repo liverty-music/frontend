@@ -8,6 +8,7 @@ import {
 	type RpcCall,
 } from '../support/fan-auth'
 import { openConcertsFilters } from '../support/fan-shell'
+import { flowShot } from '../support/flow-shot'
 import { expect, type Page, test } from '../support/test'
 
 /**
@@ -99,6 +100,8 @@ interface Seed {
 	home?: string | null
 	/** A guest's follows on the device. */
 	guestFollows?: (keyof typeof ARTISTS)[]
+	/** A signed-in fan who already follows the Tokyo artist. */
+	followsTokyo?: boolean
 }
 
 async function openApp(page: Page, seed: Seed = {}): Promise<RpcCall[]> {
@@ -162,6 +165,14 @@ async function openApp(page: Page, seed: Seed = {}): Promise<RpcCall[]> {
 				...(home && { home: { countryCode: 'JP', level1: home } }),
 			},
 		},
+		// The bubbles of Discovery.
+		'ArtistService/ListTop': {
+			artists: Array.from({ length: 20 }, (_, i) => ({
+				id: { value: fakeId(`top-${i}`) },
+				name: { value: `Artist ${i}` },
+				mbid: { value: '' },
+			})),
+		},
 		// A guest's follows' concerts, for the guest timetable.
 		'ConcertService/ListByArtists': concertWire({
 			groups: [
@@ -179,7 +190,23 @@ async function openApp(page: Page, seed: Seed = {}): Promise<RpcCall[]> {
 			return { body: {} }
 		},
 		'FollowService/List': () => ({
-			body: { artists: followed ? [kumamoto] : [] },
+			body: {
+				artists: [
+					...(seed.followsTokyo
+						? [
+								{
+									artist: {
+										id: { value: ARTISTS.tokyo.id },
+										name: { value: ARTISTS.tokyo.name },
+										mbid: { value: '' },
+									},
+									hype: 3,
+								},
+							]
+						: []),
+					...(followed ? [kumamoto] : []),
+				],
+			},
 		}),
 		// The followed artist's concerts, for the timetable.
 		'ConcertService/ListFollowed': () => ({
@@ -214,11 +241,25 @@ async function openNearby(page: Page): Promise<void> {
 	await expect(view(page)).toBeVisible({ timeout: 30_000 })
 }
 
-test(`@spec ${STORY} "A weekend near home"`, async ({ page }) => {
-	const calls = await openApp(page)
-	await openNearby(page)
+test(`@spec ${STORY} "A weekend near home"`, {
+	tag: '@flow',
+}, async ({ page }) => {
+	// A fan who follows an artist: the swap tile's moment is theirs.
+	const calls = await openApp(page, { followsTokyo: true })
+	await page.goto('/discovery')
+	const line = page.locator('guide-line .guide-line')
+	await expect(line).toContainText('すぐに行けるライブも見てみよう！', {
+		timeout: 30_000,
+	})
+	await flowShot(page, 'Discovery: the swap tile guide moment')
+	await page.getByTestId('discovery-swap').click()
+	await expect(view(page)).toBeVisible({ timeout: 30_000 })
+	await expect(line).toContainText('遠征するときはココを変更！')
+	await flowShot(page, 'The Concerts view: the filter guide moment')
 
-	await (await openConcertsFilters(page)).period.click()
+	const rows = await openConcertsFilters(page)
+	await flowShot(page, 'The filter sheet')
+	await rows.period.click()
 	await page.getByRole('button', { name: '今週末' }).click()
 
 	// Asked for this weekend around the fan's home area.
@@ -249,6 +290,7 @@ test(`@spec ${STORY} "A weekend near home"`, async ({ page }) => {
 	expect(h && n && h.x < n.x).toBe(true)
 	// Neither artist is followed; Tokyo is not listed.
 	await expect(cardOf(page, ARTISTS.tokyo.name)).toHaveCount(0)
+	await flowShot(page, 'This weekend near Fukuoka')
 	await expect(view(page).locator('[data-hide-away="true"]')).toHaveCount(1)
 })
 
@@ -269,17 +311,20 @@ test(`@spec ${STORY} "No home area yet"`, async ({ page }) => {
 	await expect(view(page).locator('[data-live-card]')).toHaveCount(0)
 })
 
-test(`@spec ${STORY} "Signed-in fan follows from a nearby concert"`, async ({
-	page,
-}) => {
+test(`@spec ${STORY} "Signed-in fan follows from a nearby concert"`, {
+	tag: '@flow',
+}, async ({ page }) => {
 	const calls = await openApp(page, { signedIn: true })
 	await openNearby(page)
 
 	await cardOf(page, ARTISTS.kumamoto.name).click({ timeout: 15_000 })
 	// 「Follow」 on the right of the artist name, at the top of the sheet.
 	const follow = page.getByRole('button', { name: 'Follow', exact: true })
+	await expect(follow).toBeVisible()
+	await flowShot(page, 'A nearby concert: Follow beside the artist name')
 	await follow.click()
 	await expect(page.getByTestId('discovery-concerts-following')).toBeVisible()
+	await flowShot(page, 'Following')
 	expect(callsOf(calls, 'FollowService/Follow').map((c) => c.body)).toEqual([
 		{ artistId: { value: ARTISTS.kumamoto.id } },
 	])
@@ -293,6 +338,7 @@ test(`@spec ${STORY} "Signed-in fan follows from a nearby concert"`, async ({
 		'data-level',
 		'nearby',
 	)
+	await flowShot(page, 'My Artists: the new artist at Nearby')
 
 	// …and its concerts on the timetable.
 	await page.goto('/timetable')
@@ -301,9 +347,10 @@ test(`@spec ${STORY} "Signed-in fan follows from a nearby concert"`, async ({
 			hasText: ARTISTS.kumamoto.name,
 		}),
 	).toBeVisible({ timeout: 30_000 })
+	await flowShot(page, 'The Timetable: its concert')
 })
 
-test(`@spec ${STORY} "A guest"`, async ({ page }) => {
+test(`@spec ${STORY} "A guest"`, { tag: '@flow' }, async ({ page }) => {
 	const calls = await openApp(page, { signedIn: false })
 	await page.goto('/discovery?view=concerts')
 
@@ -313,6 +360,11 @@ test(`@spec ${STORY} "A guest"`, async ({ page }) => {
 	await expect(page.getByTestId('discovery-swap')).toHaveCount(0)
 	await expect(view(page)).toHaveCount(0)
 	expect(callsOf(calls, 'ConcertService/ListByLocation')).toEqual([])
+	await expect(page.locator('guide-line .guide-line')).toContainText(
+		'気になるアーティストをタップしてフォローしよう！',
+		{ timeout: 30_000 },
+	)
+	await flowShot(page, 'A guest on Discovery: bubbles, no swap tile')
 })
 
 test(`@spec ${STORY} "Guest taps follow"`, async ({ page }) => {

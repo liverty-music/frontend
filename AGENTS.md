@@ -6,6 +6,7 @@
     npx playwright test    # E2E tests (functional/smoke/onboarding/pwa — no visual project)
     E2E_PORT=<p> npx playwright test # runs a worktree in isolation on its own dev server (default port 9000)
     NODE_ENV=development npx vite build && E2E_SERVER=preview npx playwright test # the same against the built app (what CI runs); NODE_ENV=development keeps import.meta.env.DEV code
+    npm run e2e:flows && npx playwright show-report # the user stories' screens, step by step at a phone size (tests tagged @flow; screenshots via e2e/support/flow-shot.ts)
   </essential-commands>
 </poly-repo-context>
 

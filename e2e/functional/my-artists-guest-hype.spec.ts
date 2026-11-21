@@ -1,4 +1,5 @@
 import { fakeId } from '../support/fake-id'
+import { flowShot } from '../support/flow-shot'
 import { expect, type Page, test } from '../support/test'
 
 // The first page load compiles the app on the dev server; allow for it.
@@ -25,6 +26,7 @@ async function open(page: Page, onboardingComplete: 'true' | 'false') {
 			localStorage.setItem('onboarding.celebrationShown', '1')
 			localStorage.setItem('onboarding.helpSeen:my-artists', '1')
 			localStorage.setItem('guest.home', 'JP-13')
+			localStorage.setItem('language', 'ja')
 			localStorage.setItem('guest.followedArtists', JSON.stringify(entries))
 		},
 		{
@@ -113,4 +115,24 @@ test(`@spec ${CAPABILITY} "Guest user changes hype after onboarding completion"`
 	// No modal dialog; the signup banner stays.
 	await expect(page.locator('dialog[open]')).toHaveCount(0)
 	await expect(page.locator('signup-prompt-banner aside')).toBeVisible()
+})
+
+test(`@spec ${CAPABILITY} "A guest opens My Artists"`, {
+	tag: '@flow',
+}, async ({ page }) => {
+	await open(page, 'true')
+	const line = page.locator('guide-line .guide-line')
+	await expect(line).toContainText('に合わせて 🔥 を変えてみよう！')
+	await expect(
+		page.locator('[data-artist-rows] .artist-row').first(),
+	).toHaveAttribute('data-guide-active', 'dots')
+	await flowShot(page, 'My Artists: the 🔥 guide moment')
+
+	await setHype(page, 0, 'away')
+
+	await expect(line).toBeHidden()
+	await expect(page.locator('.snack-item').first()).toContainText(
+		'Artist Aの全ての新着ライブをプッシュ通知で受け取ろう🔔',
+	)
+	await flowShot(page, 'Away picked: the hype snack offers Sign Up')
 })

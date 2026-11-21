@@ -112,7 +112,8 @@
 		"test:smoke": "playwright test --config=playwright.smoke.config.mjs",
 		"auth:capture:password": "npx tsx scripts/capture-auth-state-password.ts",
 		"auth:capture:password:prod": "E2E_ENV=prod npx tsx scripts/capture-auth-state-password.ts",
-		"test:e2e:prod": "playwright test --config=playwright.prod.config.mjs"
+		"test:e2e:prod": "playwright test --config=playwright.prod.config.mjs",
+		"e2e:flows": "NODE_ENV=development vite build && E2E_SERVER=preview playwright test --project=flows"
 	},
 	"type": "module",
 	"overrides": {

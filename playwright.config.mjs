@@ -71,6 +71,20 @@ export default defineConfig({
 				baseURL: APP_ORIGIN,
 			},
 		},
+		// The user stories' screens, for people to page through: the tests tagged
+		// `@flow`, at a phone size, each step's screenshot in the HTML report
+		// (`npm run e2e:flows`, then `npx playwright show-report`). Not run in CI:
+		// the same tests run there in `functional`.
+		{
+			name: 'flows',
+			testMatch: 'e2e/functional/**/*.spec.ts',
+			grep: /@flow/,
+			use: {
+				...devices['Desktop Chrome'],
+				viewport: { width: 412, height: 915 },
+				baseURL: APP_ORIGIN,
+			},
+		},
 		// WebKit regression guard: real WebKit engine, iPhone 14 viewport.
 		// RED before the bottom-sheet dismiss fix, GREEN after.
 		// Requires the WebKit browser to be installed:
