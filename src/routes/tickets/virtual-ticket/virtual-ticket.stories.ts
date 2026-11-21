@@ -1,3 +1,4 @@
+import { tasksSettled } from '@aurelia/runtime'
 import {
 	defineAureliaStory,
 	type Meta,
@@ -199,6 +200,9 @@ export const Back = {
 		canvasElement
 			.querySelector<HTMLButtonElement>('[data-testid="virtual-ticket-flip"]')
 			?.click()
+		// Aurelia writes the element properties (`inert`) on its task queue,
+		// which a slow flush moves to a timer: wait for it to drain.
+		await tasksSettled()
 		const back = backOf(canvasElement)
 		const text = back.textContent ?? ''
 		for (const item of [
