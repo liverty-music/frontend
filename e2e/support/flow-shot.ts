@@ -12,6 +12,18 @@ export async function flowShot(
 	name: string,
 ): Promise<void> {
 	await test.step(`screen: ${name}`, async () => {
+		// A screen as it settles: wait for the motions that end (a dialog's
+		// fade-in, a sheet sliding up); the looping ones (a guide moment's
+		// glow) never end and are shot as they are.
+		await page.waitForFunction(() =>
+			document
+				.getAnimations()
+				.every(
+					(a) =>
+						a.playState !== 'running' ||
+						a.effect?.getTiming().iterations === Number.POSITIVE_INFINITY,
+				),
+		)
 		await test.info().attach(name, {
 			body: await page.screenshot(),
 			contentType: 'image/png',
