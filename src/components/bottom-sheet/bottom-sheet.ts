@@ -237,6 +237,13 @@ export class BottomSheet {
 			this.clearScrollWatch()
 			if (this.dismissing) this.finalizeClose()
 		}
+		// A `scrollend` counts only when the sheet stands at the closed stop.
+		// Chromium can deliver the opening snap's `scrollend` after the close
+		// has begun (a tap soon after the sheet opened), before this scroll
+		// has moved: finishing on it hid the sheet while fully on screen.
+		const ended = (): void => {
+			if ((this.scrollArea?.scrollTop ?? 0) < 1) finish()
+		}
 		const quiet = (): void => {
 			clearTimeout(this.scrollFallbackTimer)
 			this.scrollFallbackTimer = setTimeout(
@@ -246,9 +253,9 @@ export class BottomSheet {
 					: SCROLL_QUIET_MS,
 			)
 		}
-		this.scrollEndHandler = finish
+		this.scrollEndHandler = ended
 		this.scrollMovedHandler = quiet
-		this.scrollArea.addEventListener('scrollend', finish, { once: true })
+		this.scrollArea.addEventListener('scrollend', ended)
 		this.scrollArea.addEventListener('scroll', quiet)
 		quiet()
 		try {
