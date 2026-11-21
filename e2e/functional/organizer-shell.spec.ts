@@ -102,6 +102,35 @@ test.describe('who enters and where they land', () => {
 		expect(signInStarted).toBe(false)
 	})
 
+	// liverty-music/frontend#1076: a link naming an Organizer that does not
+	// exist starts a sign-in that never comes back. It must not stick to the
+	// device: the next visit without the link asks for the email again.
+	test('a link whose sign-in never completes is not remembered', async ({
+		page,
+	}) => {
+		await installConsole(page, { rpc: RPC, remembersOrganization: false })
+		await page.addInitScript(() => {
+			for (const key of Object.keys(localStorage)) {
+				if (key.startsWith('oidc.user:')) localStorage.removeItem(key)
+			}
+		})
+		await page.route(`${OIDC_AUTHORITY}/oauth/v2/authorize**`, (route) =>
+			route.fulfill({
+				status: 200,
+				contentType: 'text/html',
+				body: 'organization not found',
+			}),
+		)
+		await page.goto('/?org=gone-records')
+		await expect(page.locator('body')).toHaveText('organization not found')
+
+		await page.goto('/')
+
+		await expect(page).toHaveURL(/\/find-organizer/)
+		const storage = await consoleStorage(page)
+		expect(storage['organizer.orgShortName']).toBeUndefined()
+	})
+
 	test(`@spec ${SPEC} "Unauthenticated visitor goes to sign-in"`, async ({
 		page,
 	}) => {

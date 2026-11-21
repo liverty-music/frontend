@@ -3,12 +3,18 @@ import {
 	applyOrgPin,
 	ORG_ID_STORAGE_KEY,
 	ORG_SHORT_NAME_STORAGE_KEY,
+	confirmPendingOrgPin,
+	type OrgPin,
+	PENDING_ORG_PIN_STORAGE_KEY,
 	primaryDomainOf,
 	readOrgPinFromSearch,
 	resolveOrgPin,
 } from '../../../organizer/services/org-handle'
 import { createMockAppConfig } from '../../helpers/mock-app-config'
 import { createMockLocalStorage } from '../../helpers/mock-local-storage'
+
+/** The address the identity provider returns to after a sign-in. */
+const CALLBACK = '/auth/callback'
 
 describe('readOrgPinFromSearch', () => {
 	it('reads an Organization id from org_id', () => {
@@ -62,35 +68,89 @@ describe('readOrgPinFromSearch', () => {
 })
 
 describe('resolveOrgPin', () => {
+	/** The device's store (localStorage) and the tab's (sessionStorage). */
+	function stores(remembered: Record<string, string> = {}) {
+		return {
+			local: createMockLocalStorage(remembered),
+			tab: createMockLocalStorage(),
+		}
+	}
+
 	// The invite's default redirect returns to /?org_id=<id>; the console pins
 	// sign-in to that Organization's login policy.
 	// @spec stories/sign-in-as-organizer "Invited owner lands on the console after accepting the invite"
-	it('returns an id from the address and remembers it', () => {
-		const storage = createMockLocalStorage({
-			[ORG_SHORT_NAME_STORAGE_KEY]: 'old-label',
-		})
-		const result = resolveOrgPin('?org_id=org-abc', storage)
+	it('returns an id from the address and keeps it for the callback, not as remembered', () => {
+		const { local, tab } = stores({ [ORG_SHORT_NAME_STORAGE_KEY]: 'old-label' })
+		const result = resolveOrgPin('?org_id=org-abc', local, '/', tab)
 
 		expect(result).toEqual({ kind: 'id', orgId: 'org-abc' })
-		expect(storage.setItem).toHaveBeenCalledWith(ORG_ID_STORAGE_KEY, 'org-abc')
-		expect(storage.getItem(ORG_SHORT_NAME_STORAGE_KEY)).toBeNull()
+		expect(local.getItem(ORG_ID_STORAGE_KEY)).toBeNull()
+		expect(local.getItem(ORG_SHORT_NAME_STORAGE_KEY)).toBe('old-label')
+		// The callback of the sign-in it starts names the same Organization.
+		expect(resolveOrgPin('', local, CALLBACK, tab)).toEqual(result)
 	})
 
 	// @spec components/infrastructure/organizer/web/route/find-organizer "Link opened"
-	it('remembers the Organizer of an opened sign-in link for the next visit', () => {
-		const storage = createMockLocalStorage({
-			[ORG_ID_STORAGE_KEY]: 'org-old',
-		})
+	it('remembers the Organizer of an opened sign-in link once the sign-in admits the member', () => {
+		const { local, tab } = stores({ [ORG_ID_STORAGE_KEY]: 'org-old' })
 
 		// The link from the email: /?org=<short name>.
-		const opened = resolveOrgPin('?org=xx-records', storage)
+		const opened = resolveOrgPin('?org=xx-records', local, '/', tab)
+		// The sign-in returns to the callback, and the guard admits the member.
+		const atCallback = resolveOrgPin('', local, CALLBACK, tab)
+		confirmPendingOrgPin(local, tab, atCallback as OrgPin)
 		// The next visit on the device, without the link.
-		const next = resolveOrgPin('', storage)
+		const next = resolveOrgPin('', local, '/', createMockLocalStorage())
 
 		const pin = { kind: 'shortName', shortName: 'xx-records' }
 		expect(opened).toEqual(pin)
+		expect(atCallback).toEqual(pin)
 		expect(next).toEqual(pin)
-		expect(storage.getItem(ORG_ID_STORAGE_KEY)).toBeNull()
+		expect(local.getItem(ORG_ID_STORAGE_KEY)).toBeNull()
+		expect(tab.getItem(PENDING_ORG_PIN_STORAGE_KEY)).toBeNull()
+	})
+
+	// liverty-music/frontend#1076: a link to an Organizer that does not exist
+	// (or was deactivated) fails at sign-in. It must not stick to the device.
+	it('does not remember a pin from the address that no sign-in admitted', () => {
+		const { local, tab } = stores()
+
+		resolveOrgPin('?org=gone-records', local, '/', tab)
+		// The sign-in failed; the next visit opens the console without the link.
+		const next = resolveOrgPin('', local, '/', tab)
+
+		expect(next).toBeNull()
+		expect(local.getItem(ORG_SHORT_NAME_STORAGE_KEY)).toBeNull()
+		expect(tab.getItem(PENDING_ORG_PIN_STORAGE_KEY)).toBeNull()
+	})
+
+	it('keeps the remembered pin when a link to another Organizer fails at sign-in', () => {
+		const { local, tab } = stores({
+			[ORG_SHORT_NAME_STORAGE_KEY]: 'xx-records',
+		})
+		const remembered = { kind: 'shortName', shortName: 'xx-records' }
+
+		expect(resolveOrgPin('?org=gone-records', local, '/', tab)).toEqual({
+			kind: 'shortName',
+			shortName: 'gone-records',
+		})
+		expect(resolveOrgPin('', local, '/', tab)).toEqual(remembered)
+		// A later sign-in started from the remembered pin returns to a callback
+		// that names the remembered Organization, not the failed one.
+		expect(resolveOrgPin('', local, CALLBACK, tab)).toEqual(remembered)
+	})
+
+	it("keeps a tab's pending pin when another tab loads the console", () => {
+		const { local, tab } = stores({ [ORG_ID_STORAGE_KEY]: 'org-a' })
+		resolveOrgPin('?org=xx-records', local, '/', tab)
+
+		// Another tab, with its own sessionStorage, opens the console.
+		resolveOrgPin('', local, '/', createMockLocalStorage())
+
+		expect(resolveOrgPin('', local, CALLBACK, tab)).toEqual({
+			kind: 'shortName',
+			shortName: 'xx-records',
+		})
 	})
 
 	it('falls back to the pin remembered on the device', () => {
@@ -98,37 +158,49 @@ describe('resolveOrgPin', () => {
 			resolveOrgPin(
 				'',
 				createMockLocalStorage({ [ORG_ID_STORAGE_KEY]: 'org-remembered' }),
+				'/',
+				createMockLocalStorage(),
 			),
 		).toEqual({ kind: 'id', orgId: 'org-remembered' })
 		expect(
 			resolveOrgPin(
 				'',
 				createMockLocalStorage({ [ORG_SHORT_NAME_STORAGE_KEY]: 'xx-records' }),
+				CALLBACK,
+				createMockLocalStorage(),
 			),
 		).toEqual({ kind: 'shortName', shortName: 'xx-records' })
 	})
 
 	it('does not persist anything when reading from storage', () => {
-		const storage = createMockLocalStorage({
-			[ORG_ID_STORAGE_KEY]: 'org-remembered',
-		})
-		resolveOrgPin('', storage)
-		expect(storage.setItem).not.toHaveBeenCalled()
+		const { local, tab } = stores({ [ORG_ID_STORAGE_KEY]: 'org-remembered' })
+		resolveOrgPin('', local, '/', tab)
+		expect(local.setItem).not.toHaveBeenCalled()
+		expect(tab.setItem).not.toHaveBeenCalled()
 	})
 
-	it('prefers the address over a remembered pin and overwrites it', () => {
-		const storage = createMockLocalStorage({
-			[ORG_ID_STORAGE_KEY]: 'org-old',
-		})
-		expect(resolveOrgPin('?org_id=org-new', storage)).toEqual({
+	it('prefers the address over a remembered pin without overwriting it', () => {
+		const { local, tab } = stores({ [ORG_ID_STORAGE_KEY]: 'org-old' })
+		expect(resolveOrgPin('?org_id=org-new', local, '/', tab)).toEqual({
 			kind: 'id',
 			orgId: 'org-new',
 		})
-		expect(storage.setItem).toHaveBeenCalledWith(ORG_ID_STORAGE_KEY, 'org-new')
+		expect(local.getItem(ORG_ID_STORAGE_KEY)).toBe('org-old')
 	})
 
 	it('returns null on a device that remembers nothing and an address that names nothing', () => {
-		expect(resolveOrgPin('', createMockLocalStorage())).toBeNull()
+		const { local, tab } = stores()
+		expect(resolveOrgPin('', local, '/', tab)).toBeNull()
+		expect(resolveOrgPin('', local, CALLBACK, tab)).toBeNull()
+	})
+
+	it('ignores a malformed pending pin at the callback', () => {
+		const { local, tab } = stores({ [ORG_ID_STORAGE_KEY]: 'org-remembered' })
+		tab.setItem(PENDING_ORG_PIN_STORAGE_KEY, '{not json')
+		expect(resolveOrgPin('', local, CALLBACK, tab)).toEqual({
+			kind: 'id',
+			orgId: 'org-remembered',
+		})
 	})
 
 	it('degrades to no pin when reading storage throws', () => {
@@ -139,7 +211,8 @@ describe('resolveOrgPin', () => {
 			setItem: () => {},
 			removeItem: () => {},
 		}
-		expect(resolveOrgPin('', storage)).toBeNull()
+		expect(resolveOrgPin('', storage, '/', storage)).toBeNull()
+		expect(resolveOrgPin('', storage, CALLBACK, storage)).toBeNull()
 	})
 
 	it('still returns the pin from the address when persisting it throws', () => {
@@ -150,10 +223,71 @@ describe('resolveOrgPin', () => {
 			},
 			removeItem: () => {},
 		}
-		expect(resolveOrgPin('?org=xx-records', storage)).toEqual({
+		expect(resolveOrgPin('?org=xx-records', storage, '/', storage)).toEqual({
 			kind: 'shortName',
 			shortName: 'xx-records',
 		})
+	})
+})
+
+describe('confirmPendingOrgPin', () => {
+	it('remembers the pending pin in place of one of the other kind and ends the pending sign-in', () => {
+		const local = createMockLocalStorage({
+			[ORG_SHORT_NAME_STORAGE_KEY]: 'old-label',
+		})
+		const tab = createMockLocalStorage({
+			[PENDING_ORG_PIN_STORAGE_KEY]: '{"orgId":"org-new"}',
+		})
+
+		confirmPendingOrgPin(local, tab, { kind: 'id', orgId: 'org-new' })
+
+		expect(local.getItem(ORG_ID_STORAGE_KEY)).toBe('org-new')
+		expect(local.getItem(ORG_SHORT_NAME_STORAGE_KEY)).toBeNull()
+		expect(tab.getItem(PENDING_ORG_PIN_STORAGE_KEY)).toBeNull()
+	})
+
+	it('writes nothing when no sign-in is pending in this tab', () => {
+		const local = createMockLocalStorage({ [ORG_ID_STORAGE_KEY]: 'org-b' })
+
+		confirmPendingOrgPin(local, createMockLocalStorage(), {
+			kind: 'id',
+			orgId: 'org-a',
+		})
+
+		expect(local.setItem).not.toHaveBeenCalled()
+		expect(local.removeItem).not.toHaveBeenCalled()
+	})
+
+	// A page restored by Back after a sign-in to another Organizer failed in
+	// the same tab: that sign-in's pin is pending, but this document enforces
+	// its own Organization.
+	it('drops, never remembers, a pending pin that is not the enforced one', () => {
+		const local = createMockLocalStorage({ [ORG_ID_STORAGE_KEY]: 'org-r' })
+		const tab = createMockLocalStorage({
+			[PENDING_ORG_PIN_STORAGE_KEY]: '{"shortName":"gone-records"}',
+		})
+
+		confirmPendingOrgPin(local, tab, { kind: 'id', orgId: 'org-r' })
+
+		expect(local.getItem(ORG_ID_STORAGE_KEY)).toBe('org-r')
+		expect(local.getItem(ORG_SHORT_NAME_STORAGE_KEY)).toBeNull()
+		expect(tab.getItem(PENDING_ORG_PIN_STORAGE_KEY)).toBeNull()
+	})
+
+	it('does not throw when the store is unavailable', () => {
+		const tab = createMockLocalStorage({
+			[PENDING_ORG_PIN_STORAGE_KEY]: '{"orgId":"org-1"}',
+		})
+		const local = {
+			getItem: () => null,
+			setItem: () => {
+				throw new Error('storage disabled')
+			},
+			removeItem: () => {},
+		}
+		expect(() =>
+			confirmPendingOrgPin(local, tab, { kind: 'id', orgId: 'org-1' }),
+		).not.toThrow()
 	})
 })
 

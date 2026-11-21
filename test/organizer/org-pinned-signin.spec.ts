@@ -74,7 +74,12 @@ describe('AuthService org-pinned sign-in (organizer)', () => {
 			zitadelIssuer: 'https://auth.liverty-music.app',
 			zitadelOrgId: undefined,
 		})
-		return buildWithConfig(applyOrgPin(config, resolveOrgPin(search, storage)))
+		return buildWithConfig(
+			applyOrgPin(
+				config,
+				resolveOrgPin(search, storage, '/', createMockLocalStorage()),
+			),
+		)
 	}
 
 	it('pins the resolved org handle into the OIDC scope', () => {
