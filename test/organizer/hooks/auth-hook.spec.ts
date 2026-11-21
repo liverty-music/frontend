@@ -30,12 +30,11 @@ const { savePendingReturn } = await import(
 	'../../../organizer/adapter/storage/pending-return-storage'
 )
 const {
-	IOrgPin,
+	ORG_ID_STORAGE_KEY,
 	ORG_SHORT_NAME_STORAGE_KEY,
 	PENDING_ORG_PIN_STORAGE_KEY,
 	resolveOrgPin,
 } = await import('../../../organizer/services/org-handle')
-type OrgPin = import('../../../organizer/services/org-handle').OrgPin
 
 const ROLES_CLAIM = 'urn:zitadel:iam:org:project:roles'
 
@@ -265,7 +264,6 @@ describe('OrganizerAuthHook', () => {
 		function buildPinned(
 			pin: Pick<AppConfig, 'zitadelOrgId' | 'zitadelOrgPrimaryDomain'>,
 			authOverrides: Parameters<typeof createMockAuth>[0],
-			orgPin: OrgPin | null = null,
 		) {
 			mockAuth = createMockAuth(authOverrides)
 			const container = DI.createContainer()
@@ -278,7 +276,6 @@ describe('OrganizerAuthHook', () => {
 				Registration.instance(mockIAuthService, mockAuth),
 				Registration.instance(mockILoginHint, null),
 				Registration.instance(IConsoleLanguage, language),
-				Registration.instance(IOrgPin, orgPin),
 				OrganizerAuthHook,
 			)
 			sut = container.get(OrganizerAuthHook)
@@ -372,11 +369,12 @@ describe('OrganizerAuthHook', () => {
 		// liverty-music/frontend#1076: the pin of a link is remembered only once
 		// a sign-in to its Organization admits the member.
 		it('remembers the pinned Organization once its session is admitted', async () => {
-			const storage = window.localStorage
+			const local = window.localStorage
+			const tab = window.sessionStorage
 			// The link opens /?org=xx-records; its sign-in returns to the callback.
-			resolveOrgPin('?org=xx-records', storage, '/')
-			const pin = resolveOrgPin('', storage, '/auth/callback')
-			expect(storage.getItem(ORG_SHORT_NAME_STORAGE_KEY)).toBeNull()
+			resolveOrgPin('?org=xx-records', local, '/', tab)
+			const pin = resolveOrgPin('', local, '/auth/callback', tab)
+			expect(local.getItem(ORG_SHORT_NAME_STORAGE_KEY)).toBeNull()
 
 			buildPinned(
 				{ zitadelOrgPrimaryDomain: PRIMARY_DOMAIN },
@@ -384,18 +382,23 @@ describe('OrganizerAuthHook', () => {
 					isAuthenticated: true,
 					user: userWithRoles({ owner: { '394': PRIMARY_DOMAIN } }),
 				},
-				pin,
 			)
 			const result = await sut.canLoad({} as never, {}, makeRouteNode({}), null)
 
 			expect(result).toBe(true)
-			expect(storage.getItem(ORG_SHORT_NAME_STORAGE_KEY)).toBe('xx-records')
-			expect(storage.getItem(PENDING_ORG_PIN_STORAGE_KEY)).toBeNull()
+			expect(local.getItem(ORG_SHORT_NAME_STORAGE_KEY)).toBe('xx-records')
+			expect(tab.getItem(PENDING_ORG_PIN_STORAGE_KEY)).toBeNull()
 			// The next visit without the link names the same Organization.
-			expect(resolveOrgPin('', storage, '/')).toEqual(pin)
+			expect(resolveOrgPin('', local, '/', tab)).toEqual(pin)
 		})
 
 		it('does not remember a pin whose sign-in returned a session of another Organization', async () => {
+			resolveOrgPin(
+				'?org=xx-records',
+				window.localStorage,
+				'/',
+				window.sessionStorage,
+			)
 			buildPinned(
 				{ zitadelOrgPrimaryDomain: PRIMARY_DOMAIN },
 				{
@@ -404,12 +407,26 @@ describe('OrganizerAuthHook', () => {
 						owner: { '777': 'other-label.auth.liverty-music.app' },
 					}),
 				},
-				{ kind: 'shortName', shortName: 'xx-records' },
 			)
 
 			await sut.canLoad({} as never, {}, makeRouteNode({}), null)
 
 			expect(window.localStorage.getItem(ORG_SHORT_NAME_STORAGE_KEY)).toBeNull()
+		})
+
+		it('does not write its own pin back when no sign-in is pending in the tab', async () => {
+			// This tab was loaded pinned to org-a; another tab has since signed
+			// in to org-b and remembered it.
+			window.localStorage.setItem(ORG_ID_STORAGE_KEY, 'org-b')
+			buildPinned(
+				{ zitadelOrgId: 'org-a' },
+				{ isAuthenticated: true, user: userOwnerInOrg('org-a') },
+			)
+
+			const result = await sut.canLoad({} as never, {}, makeRouteNode({}), null)
+
+			expect(result).toBe(true)
+			expect(window.localStorage.getItem(ORG_ID_STORAGE_KEY)).toBe('org-b')
 		})
 
 		it('re-authenticates a session of another Organization than the short name names', async () => {

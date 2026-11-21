@@ -75,7 +75,10 @@ describe('AuthService org-pinned sign-in (organizer)', () => {
 			zitadelOrgId: undefined,
 		})
 		return buildWithConfig(
-			applyOrgPin(config, resolveOrgPin(search, storage, '/')),
+			applyOrgPin(
+				config,
+				resolveOrgPin(search, storage, '/', createMockLocalStorage()),
+			),
 		)
 	}
 

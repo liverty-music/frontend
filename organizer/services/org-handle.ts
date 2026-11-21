@@ -21,12 +21,13 @@
  * the find-organizer screen instead of signing in.
  *
  * A pin from the address is remembered for later visits only after a sign-in
- * to its Organization admits the member ({@link rememberOrgPin}, called by the
- * route guard), and only then replaces any other remembered pin. Until then it
- * is kept as the pending pin of this sign-in, which only the OIDC callback page
- * reads: a link naming an Organizer that does not exist, or no longer does,
- * therefore never sticks to the device, and the next visit without a link uses
- * the remembered pin or shows find-organizer.
+ * to its Organization admits the member ({@link confirmPendingOrgPin}, called
+ * by the route guard), and only then replaces any other remembered pin. Until
+ * then it is kept, in this tab only, as the pending pin of the sign-in it
+ * starts, which only the OIDC callback page reads: a link naming an Organizer
+ * that does not exist, or no longer does, therefore never sticks to the device,
+ * and the next visit without a link uses the remembered pin or shows
+ * find-organizer.
  *
  * The short-name form is isolated in {@link primaryDomainOf} and
  * {@link applyOrgPin}: if the primary-domain scope does not pin the
@@ -34,7 +35,6 @@
  * 0.3), the fallback resolves the short name to an Organization id instead and
  * only these two functions change.
  */
-import { DI } from 'aurelia'
 import type { AppConfig } from '../../shared/config/app-config'
 import { isOrganizerShortName } from '../../shared/utils/organizer-short-name'
 
@@ -45,10 +45,10 @@ export const ORG_ID_STORAGE_KEY = 'organizer.orgId'
 export const ORG_SHORT_NAME_STORAGE_KEY = 'organizer.orgShortName'
 
 /**
- * localStorage key under which the pin of a sign-in in progress is kept: the
+ * sessionStorage key under which the pin of a sign-in in progress is kept: the
  * pin an address named, until the sign-in it started returns to the OIDC
- * callback. localStorage, not sessionStorage, so a callback that lands in
- * another tab of the same browser still names the same Organization.
+ * callback in the same tab and the guard admits the member. Tab-scoped, so a
+ * page load or sign-in in another tab can neither drop nor replace it.
  */
 export const PENDING_ORG_PIN_STORAGE_KEY = 'organizer.pendingOrgPin'
 
@@ -59,15 +59,6 @@ const CALLBACK_PATH = '/auth/callback'
 export type OrgPin =
 	| { readonly kind: 'id'; readonly orgId: string }
 	| { readonly kind: 'shortName'; readonly shortName: string }
-
-/**
- * DI token for the pin this page load resolved (`null` when it has none). The
- * route guard reads it to remember the pin once a sign-in to it admits the
- * member.
- */
-export const IOrgPin = DI.createInterface<OrgPin | null>('IOrgPin', (x) =>
-	x.instance(null),
-)
 
 /**
  * Reads the pin from a URL query string (e.g. `window.location.search`).
@@ -156,19 +147,14 @@ function clearPending(storage: OrgHandleStorage): void {
 	}
 }
 
-function samePin(a: OrgPin | null, b: OrgPin): boolean {
-	if (!a) return false
-	if (a.kind === 'id') return b.kind === 'id' && a.orgId === b.orgId
-	return b.kind === 'shortName' && a.shortName === b.shortName
-}
-
 /**
  * Resolves the Organization to name for this page load from the entry URL's
- * query string, a persistent store and the entry URL's path (`search` and
- * `pathname` of `window.location`). Returns `null` when nothing names one.
+ * query string, the device's store (`storage`, localStorage), the entry URL's
+ * path and the tab's store (`pendingStorage`, sessionStorage). Returns `null`
+ * when nothing names one.
  *
- *   - A pin in the address wins. It is kept as the pending pin of the sign-in
- *     it starts, not remembered.
+ *   - A pin in the address wins. It is kept as this tab's pending pin, not
+ *     remembered.
  *   - On the OIDC callback page, the pending pin names the Organization the
  *     sign-in was started for; without one, the remembered pin does.
  *   - Anywhere else the remembered pin is used, and a pending pin left by a
@@ -178,34 +164,36 @@ export function resolveOrgPin(
 	search: string,
 	storage: OrgHandleStorage,
 	pathname: string,
+	pendingStorage: OrgHandleStorage,
 ): OrgPin | null {
 	const fromUrl = readOrgPinFromSearch(search)
 	if (fromUrl) {
-		savePending(storage, fromUrl)
+		savePending(pendingStorage, fromUrl)
 		return fromUrl
 	}
 	if (pathname === CALLBACK_PATH) {
-		return recallPending(storage) ?? recall(storage)
+		return recallPending(pendingStorage) ?? recall(storage)
 	}
-	clearPending(storage)
+	clearPending(pendingStorage)
 	return recall(storage)
 }
 
 /**
- * Remembers `pin` on the device for later visits, replacing any other
- * remembered pin, and ends the pending sign-in. The route guard calls it once a
- * sign-in to the pinned Organization admits the member, so only an Organization
- * someone signed in to is ever remembered. Writes nothing when `pin` is
- * already the remembered one and no sign-in is pending.
+ * Remembers this tab's pending pin on the device for later visits, replacing
+ * any other remembered pin, and ends the pending sign-in. The route guard calls
+ * it when it admits a member of the Organization this page load names; while a
+ * pin is pending, that is the pending pin, so only an Organization someone
+ * signed in to is ever remembered. Does nothing when no pin is pending, so a
+ * tab loaded before another tab signed in elsewhere never writes its own pin
+ * back.
  */
-export function rememberOrgPin(storage: OrgHandleStorage, pin: OrgPin): void {
+export function confirmPendingOrgPin(
+	storage: OrgHandleStorage,
+	pendingStorage: OrgHandleStorage,
+): void {
+	const pin = recallPending(pendingStorage)
+	if (!pin) return
 	try {
-		if (
-			samePin(recall(storage), pin) &&
-			storage.getItem(PENDING_ORG_PIN_STORAGE_KEY) === null
-		) {
-			return
-		}
 		if (pin.kind === 'id') {
 			storage.setItem(ORG_ID_STORAGE_KEY, pin.orgId)
 			storage.removeItem(ORG_SHORT_NAME_STORAGE_KEY)
@@ -213,10 +201,10 @@ export function rememberOrgPin(storage: OrgHandleStorage, pin: OrgPin): void {
 			storage.setItem(ORG_SHORT_NAME_STORAGE_KEY, pin.shortName)
 			storage.removeItem(ORG_ID_STORAGE_KEY)
 		}
-		storage.removeItem(PENDING_ORG_PIN_STORAGE_KEY)
 	} catch {
 		// Persisting is best-effort; an unavailable store must not abort entry.
 	}
+	clearPending(pendingStorage)
 }
 
 /**

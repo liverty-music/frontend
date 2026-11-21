@@ -18,7 +18,7 @@ import { ConsoleI18nConfiguration } from './i18n/console-language'
 import { ConsoleFormatters } from './i18n/converters'
 import { OrganizerShell } from './organizer-shell/organizer-shell'
 import { ILoginHint, readLoginHintFromSearch } from './services/login-hint'
-import { applyOrgPin, IOrgPin, resolveOrgPin } from './services/org-handle'
+import { applyOrgPin, resolveOrgPin } from './services/org-handle'
 import { ConsoleContextHook } from './shell/console-context-hook'
 import { ConsoleUi } from './ui'
 import { ConsoleShadowStyles } from './ui/shadow-styles'
@@ -105,12 +105,15 @@ async function bootstrap(): Promise<void> {
 	// and fold it into the config the shared AuthService reads. Without one the
 	// Organization stays unset and the route guard opens find-organizer. The
 	// guard remembers the pin once a sign-in to it admits the member.
-	const orgPin = resolveOrgPin(
-		window.location.search,
-		window.localStorage,
-		window.location.pathname,
+	const effectiveConfig: AppConfig = applyOrgPin(
+		config,
+		resolveOrgPin(
+			window.location.search,
+			window.localStorage,
+			window.location.pathname,
+			window.sessionStorage,
+		),
 	)
-	const effectiveConfig: AppConfig = applyOrgPin(config, orgPin)
 
 	// login_hint pre-fill (design D5): present on first sign-in only, embedded
 	// in the invitation link as ?login_hint=<email> by the provisioning backend.
@@ -123,7 +126,6 @@ async function bootstrap(): Promise<void> {
 	// AppConfig first so AuthService (constructed during start) can resolve it.
 	au.register(Registration.instance(IAppConfig, effectiveConfig))
 	au.register(Registration.instance(ILoginHint, loginHint))
-	au.register(Registration.instance(IOrgPin, orgPin))
 	au.register(
 		ConsoleI18nConfiguration,
 		ConsoleShadowStyles,
