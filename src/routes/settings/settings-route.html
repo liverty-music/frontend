@@ -65,7 +65,9 @@
            IdentityVerificationService.Start and redirects the browser to the
            PocketSign app; the fan returns via the /verify/callback route. It is
            hidden once the fan is verified, and when the card already verified
-           another account (only support can help then). -->
+           another account (only support can help then). When the fan's
+           IdentityVerification cannot be loaded, the badge says so instead of
+           未確認 and the action reloads it. -->
       <li class="settings-list-item">
         <settings-status-row
           icon="shield-check"
@@ -74,11 +76,11 @@
           status-id="identity-verification-status"
           verified.bind="isVerified"
           verified-text.bind="'settings.identityVerification.verified' | t"
-          unverified-text.bind="'settings.identityVerification.unverified' | t"
-          show-action.bind="canStartIdentityVerification"
-          action-label.bind="'settings.identityVerification.verifyCta' | t"
+          unverified-text.bind="identityUnverifiedKey | t"
+          show-action.bind="identityLoadFailed || canStartIdentityVerification"
+          action-label.bind="identityActionKey | t"
           action-described-by.bind="identityFailureKey ? 'identity-verification-failure' : ''"
-          action.bind="() => startIdentityVerification()"
+          action.bind="() => identityAction()"
         >
           <!-- Why the last return from the PocketSign app did not verify the
                fan, kept next to the button until the fan starts again. -->

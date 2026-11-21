@@ -145,9 +145,15 @@ export class SettingsRoute {
 	// and detail rows re-evaluate in place when verification completes — no
 	// component-local mirror (mirrors the UserStore-derived getters above).
 
-	/** Whether the fan has an Active IdentityVerification. */
+	/**
+	 * Whether the fan has an Active IdentityVerification. False while the
+	 * status is not known (not loaded yet, or the last load failed), so a
+	 * stale snapshot is never shown as current.
+	 */
 	public get isVerified(): boolean {
-		return isVerified(this.identityVerifications.current)
+		return (
+			!this.identityLoadFailed && isVerified(this.identityVerifications.current)
+		)
 	}
 
 	/** The fan's IdentityVerification, present only when it is Active. */
@@ -168,12 +174,40 @@ export class SettingsRoute {
 	}
 
 	/**
-	 * Whether the fan's IdentityVerification has loaded. Until it has, Settings
-	 * cannot tell a verified fan from an unverified one, so it shows neither a
-	 * failure nor 本人確認する; if the load fails, they stay hidden.
+	 * Whether the last load of the fan's IdentityVerification failed. The row
+	 * then says the status could not be loaded and offers a reload, instead of
+	 * claiming 未確認. A successful reload clears it.
+	 */
+	public identityLoadFailed = false
+
+	/**
+	 * Whether the fan's IdentityVerification has loaded and its last load did
+	 * not fail. Until then, Settings cannot tell a verified fan from an
+	 * unverified one, so it shows neither a failure nor 本人確認する.
 	 */
 	private get identityVerificationKnown(): boolean {
-		return this.identityVerifications.loaded
+		return this.identityVerifications.loaded && !this.identityLoadFailed
+	}
+
+	/** i18n key of the badge text when the fan is not shown as verified. */
+	public get identityUnverifiedKey(): string {
+		return this.identityLoadFailed
+			? 'settings.identityVerification.loadFailed'
+			: 'settings.identityVerification.unverified'
+	}
+
+	/** i18n key of the row's action: reload after a failed load, else 本人確認する. */
+	public get identityActionKey(): string {
+		return this.identityLoadFailed
+			? 'settings.identityVerification.reload'
+			: 'settings.identityVerification.verifyCta'
+	}
+
+	/** The row's action: reload after a failed load, else start verification. */
+	public identityAction(): Promise<void> {
+		return this.identityLoadFailed
+			? this.loadIdentityVerification()
+			: this.startIdentityVerification()
 	}
 
 	/**
@@ -402,19 +436,23 @@ export class SettingsRoute {
 	}
 
 	/**
-	 * Load the caller's IdentityVerification for the ACCOUNT-section badge.
-	 * Only `IdentityVerificationService.Get` reaches the backend (Start / Create
-	 * are backend-stubbed → UNAVAILABLE today); a failure here is non-fatal —
-	 * the rest of Settings must still render — so it is logged, not surfaced.
+	 * Load the caller's IdentityVerification for the ACCOUNT-section badge; also
+	 * the row's reload after a failed load. A failure is non-fatal (the rest of
+	 * Settings still renders): it is logged and the row shows it with a reload.
+	 * The client already maps NotFound to "never verified", so any ConnectError
+	 * here is unexpected; anything else is a bug and is rethrown.
 	 */
 	private async loadIdentityVerification(): Promise<void> {
 		if (!this.auth.isAuthenticated) return
 		try {
 			await this.identityVerifications.get()
+			this.identityLoadFailed = false
 		} catch (err) {
+			if (!(err instanceof ConnectError)) throw err
 			this.logger.warn('Failed to load the identity verification', {
-				error: err,
+				code: err.code,
 			})
+			this.identityLoadFailed = true
 		}
 	}
 

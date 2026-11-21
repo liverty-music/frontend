@@ -2,6 +2,7 @@ import { I18nConfiguration } from '@aurelia/i18n'
 import { IRouter } from '@aurelia/router'
 import { tasksSettled } from '@aurelia/runtime'
 import { createFixture } from '@aurelia/testing'
+import { Code, ConnectError } from '@connectrpc/connect'
 import { CustomElement, Registration } from 'aurelia'
 import { describe, expect, it, vi } from 'vitest'
 import { IAppConfig } from '../../src/config/app-config'
@@ -820,12 +821,18 @@ describe('SettingsRoute identity verification result (fixture)', () => {
 		await fixture.stop(true)
 	})
 
+	// liverty-music/frontend#1083: a failed load is an unknown status, not
+	// 未確認. The row says so and offers a reload that calls Get again.
 	// @spec components/infrastructure/fan/web/route/settings "Verification cannot be loaded"
-	it('shows no reason and no 本人確認する when the verification cannot be loaded', async () => {
+	it('says the status could not be loaded and reloads it, instead of claiming 未確認', async () => {
+		const pending = vi
+			.fn<() => Promise<IdentityVerification | undefined>>()
+			.mockRejectedValueOnce(new ConnectError('unavailable', Code.Unavailable))
+			.mockResolvedValueOnce(undefined)
 		const identityVerifications = makeIdentityVerifications(
 			'sessionMismatch',
 			undefined,
-			() => Promise.reject(new Error('unavailable')),
+			pending,
 		)
 		const { fixture, host, vm } = await render(
 			makeUserStore({ id: 'user-1' }),
@@ -838,8 +845,30 @@ describe('SettingsRoute identity verification result (fixture)', () => {
 		)
 		await tasksSettled()
 
+		const badge = host.querySelector('#identity-verification-status')
+		expect(badge?.textContent?.trim()).toBe(
+			ja.settings.identityVerification.loadFailed,
+		)
 		expect(row(host)).toBeNull()
 		expect(verifyButton(host)).toBeUndefined()
+		const reload = [...host.querySelectorAll('button')].find(
+			(b) => b.textContent?.trim() === ja.settings.identityVerification.reload,
+		)
+		expect(reload).toBeDefined()
+
+		// @spec components/infrastructure/fan/web/route/settings "Verification loads on reload"
+		reload?.click()
+		await vi.waitFor(() => expect(identityVerifications.loaded).toBe(true))
+		await tasksSettled()
+
+		expect(identityVerifications.get).toHaveBeenCalledTimes(2)
+		expect(badge?.textContent?.trim()).toBe(
+			ja.settings.identityVerification.unverified,
+		)
+		expect(row(host)?.textContent).toContain(
+			ja.identityVerificationCallback.error.sessionMismatch,
+		)
+		expect(verifyButton(host)).toBeDefined()
 
 		await fixture.stop(true)
 	})

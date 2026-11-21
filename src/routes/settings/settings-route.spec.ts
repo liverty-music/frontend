@@ -1,3 +1,4 @@
+import { Code, ConnectError } from '@connectrpc/connect'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Snack } from '../../../shared/ui/snack-bar/snack'
 import type { IdentityVerification } from '../../entities/identity-verification'
@@ -131,16 +132,36 @@ describe('SettingsRoute — identity verification', () => {
 			expect(sut.loading()).toBeUndefined()
 		})
 
-		it('is non-fatal — a get failure is swallowed', async () => {
+		it('is non-fatal — a failed Get is shown on the row, not thrown', async () => {
 			mockAuth.isAuthenticated = true
+			mockIdentityVerifications.loaded = false
 			mockIdentityVerifications.get.mockRejectedValueOnce(
-				new Error('UNAVAILABLE'),
+				new ConnectError('unavailable', Code.Unavailable),
 			)
 
 			expect(() => sut.loading()).not.toThrow()
 			// The rejection is handled inside the load routine, so nothing escapes to
 			// become an unhandled rejection once it settles.
 			await flush()
+			expect(sut.identityLoadFailed).toBe(true)
+			expect(sut.identityUnverifiedKey).toBe(
+				'settings.identityVerification.loadFailed',
+			)
+			expect(sut.identityActionKey).toBe('settings.identityVerification.reload')
+		})
+
+		it('does not show a stale verified snapshot once a reload fails', async () => {
+			mockAuth.isAuthenticated = true
+			mockIdentityVerifications.current = activeIdentityVerification
+			mockIdentityVerifications.get.mockRejectedValueOnce(
+				new ConnectError('unavailable', Code.Unavailable),
+			)
+
+			sut.loading()
+			await flush()
+
+			expect(sut.isVerified).toBe(false)
+			expect(sut.verificationMethodKey).toBeNull()
 		})
 	})
 

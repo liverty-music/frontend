@@ -126,6 +126,39 @@ export const LongAddress = {
 	},
 } satisfies Story
 
+/**
+ * The status could not be loaded (本人確認): the badge says so instead of
+ * 未確認, and the action reloads it. Its text is longer than 未確認, so at a
+ * phone's width the action wraps under the badge, still inside the card.
+ */
+export const LoadFailed = {
+	args: {
+		icon: 'shield-check',
+		label: '本人確認',
+		unverifiedText: '確認状況を読み込めませんでした',
+		actionLabel: '再読み込み',
+		action: fn(),
+	},
+	render,
+	play: async ({ canvasElement, args }) => {
+		await expect(
+			canvasElement.querySelector('#status-row-status'),
+		).toHaveTextContent('確認状況を読み込めませんでした')
+		const reload = within(canvasElement).getByRole('button', {
+			name: '再読み込み',
+		})
+		const card = canvasElement.querySelector<HTMLElement>('.settings-card')
+		if (!card) throw new Error('no card')
+		await expect(reload.getBoundingClientRect().right).toBeLessThanOrEqual(
+			card.getBoundingClientRect().right,
+		)
+		await userEvent.click(reload)
+		await expect(args.action).toHaveBeenCalledOnce()
+		await atRest(userEvent, canvasElement)
+		await expectScreenshot(canvasElement, 'settings-status-row-load-failed')
+	},
+} satisfies Story
+
 /** Verified with a detail line projected below the status (本人確認). */
 export const VerifiedWithDetail = {
 	args: {
