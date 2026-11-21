@@ -34,6 +34,8 @@ const mockIdentityVerifications = {
 	// The callback's hand-off (design "The verification result is shown on
 	// Settings"): the reason kept in the row, and a success to announce once.
 	failure: null as VerificationFailure | null,
+	// Whether the verification has loaded; the result is shown only then.
+	loaded: true,
 	takeVerifiedNotice: vi.fn(() => false),
 }
 
@@ -79,6 +81,7 @@ describe('SettingsRoute — identity verification', () => {
 		vi.clearAllMocks()
 		mockIdentityVerifications.current = undefined
 		mockIdentityVerifications.failure = null
+		mockIdentityVerifications.loaded = true
 		mockIdentityVerifications.takeVerifiedNotice.mockReturnValue(false)
 		mockAuth.isAuthenticated = true
 		mockIdentityVerifications.start.mockResolvedValue({ kind: 'redirecting' })
@@ -248,6 +251,17 @@ describe('SettingsRoute — identity verification', () => {
 			expect(sut.isVerified).toBe(true)
 			expect(sut.identityFailureKey).toBeNull()
 			expect(published()).toEqual([])
+		})
+
+		// liverty-music/frontend#1078: until Settings has loaded the fan's
+		// verification it cannot tell a verified fan from an unverified one.
+		// @spec components/infrastructure/fan/web/route/settings "Callback opened again after success"
+		it('shows no reason and no 本人確認する before the verification loads', () => {
+			mockIdentityVerifications.failure = 'sessionMismatch'
+			mockIdentityVerifications.loaded = false
+
+			expect(sut.identityFailureKey).toBeNull()
+			expect(sut.canStartIdentityVerification).toBe(false)
 		})
 
 		it(`@spec ${SPEC} "No verification on this device"`, () => {

@@ -168,13 +168,26 @@ export class SettingsRoute {
 	}
 
 	/**
+	 * Whether the fan's IdentityVerification has loaded. Until it has, Settings
+	 * cannot tell a verified fan from an unverified one, so it shows neither a
+	 * failure nor 本人確認する; if the load fails, they stay hidden.
+	 */
+	private get identityVerificationKnown(): boolean {
+		return this.identityVerifications.loaded
+	}
+
+	/**
 	 * Why the last return from the PocketSign app did not verify the fan, as an
 	 * i18n key, kept until the fan starts again. None once the fan is verified:
 	 * reopening the callback after a success finds no session but is no failure.
+	 * None either until the verification has loaded, so a verified fan never
+	 * sees one while it loads.
 	 */
 	public get identityFailureKey(): string | null {
 		const failure = this.identityVerifications.failure
-		if (this.isVerified || !failure) return null
+		if (!this.identityVerificationKnown || this.isVerified || !failure) {
+			return null
+		}
 		return `identityVerificationCallback.error.${failure}`
 	}
 
@@ -186,9 +199,13 @@ export class SettingsRoute {
 		)
 	}
 
-	/** Whether 本人確認する is offered. */
+	/** Whether 本人確認する is offered: only to a fan known to be unverified. */
 	public get canStartIdentityVerification(): boolean {
-		return !this.isVerified && !this.identityFailureNeedsSupport
+		return (
+			this.identityVerificationKnown &&
+			!this.isVerified &&
+			!this.identityFailureNeedsSupport
+		)
 	}
 
 	public readonly supportEmail = REPORT_EMAIL_ADDRESS
