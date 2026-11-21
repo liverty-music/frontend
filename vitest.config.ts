@@ -68,8 +68,14 @@ const unitProjectFor = ({
 				// scripts/ tests run in the `scripts` project because they import
 				// `node:fs` / `node:os` directly and need to bypass the SPA build's
 				// `nodePolyfills` plugin.
+				// `.claude/**`: Claude Code worktrees live under .claude/worktrees/ in
+				// the main checkout (gitignored), each a full copy of the repo. The
+				// default include matched their specs too, so a run from the main
+				// checkout ran every spec once per worktree (28 copies; a full run
+				// did not finish in 51 minutes on 2026-11-21).
 				exclude: [
 					...configDefaults.exclude,
+					'.claude/**',
 					'e2e/**',
 					'scripts/**',
 					'test/**/*.node.spec.ts',
