@@ -100,8 +100,11 @@ export class IdentityVerificationService {
 	 */
 	@observable public current: IdentityVerification | undefined = undefined
 
-	/** True once `get` has resolved at least once. */
-	public loaded = false
+	/**
+	 * True once the caller's IdentityVerification is known: `get` or `create`
+	 * has resolved. Observable so Settings can hold back what depends on it.
+	 */
+	@observable public loaded = false
 
 	/**
 	 * The callback's outcome, handed to Settings in app state rather than the

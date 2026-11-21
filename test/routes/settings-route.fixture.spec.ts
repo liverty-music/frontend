@@ -81,17 +81,30 @@ function makeAuth(emailVerified = true, isAuthenticated = true) {
 	}
 }
 
-/** A stand-in for the IdentityVerificationService: unverified, no result. */
+/**
+ * A stand-in for the IdentityVerificationService. By default it is in the state
+ * after Settings loaded the fan's verification: unverified and no result unless
+ * told otherwise. With `pending`, the verification has not loaded yet, and
+ * `get` (called by `loading()`) loads it from `pending`.
+ */
 function makeIdentityVerifications(
 	failure: VerificationFailure | null = null,
 	current: IdentityVerification | undefined = undefined,
+	pending?: () => Promise<IdentityVerification | undefined>,
 ) {
-	return {
-		current,
+	const service = {
+		current: pending ? undefined : current,
+		loaded: !pending,
 		failure,
 		takeVerifiedNotice: () => false,
-		get: vi.fn(async () => current),
+		get: vi.fn(async () => {
+			const loaded = pending ? await pending() : current
+			service.current = loaded
+			service.loaded = true
+			return loaded
+		}),
 	}
+	return service
 }
 
 async function render(
@@ -716,6 +729,14 @@ describe('SettingsRoute Delete account group (fixture)', () => {
 })
 
 describe('SettingsRoute identity verification result (fixture)', () => {
+	const ACTIVE_IDENTITY_VERIFICATION: IdentityVerification = {
+		id: 'iv-1',
+		userId: 'user-1',
+		method: 'jpki',
+		providerUserId: 'provider-1',
+		dedupeStrength: 'strong',
+		status: 'active',
+	}
 	const row = (host: HTMLElement) =>
 		host.querySelector('[data-testid="identity-verification-failure"]')
 	const verifyButton = (host: HTMLElement) =>
@@ -756,6 +777,90 @@ describe('SettingsRoute identity verification result (fixture)', () => {
 			'mailto:pannpers@pannpers.dev',
 		)
 		expect(verifyButton(host)).toBeUndefined()
+
+		await fixture.stop(true)
+	})
+
+	// liverty-music/frontend#1078: a verified fan who reopens the callback
+	// address arrives with "no verification on this device" handed over.
+	// Settings must not show that reason or 本人確認する while it still loads
+	// the fan's verification, nor when the load fails.
+	it('shows no reason and no 本人確認する until the verification has loaded', async () => {
+		let answer: (iv: IdentityVerification) => void = () => {}
+		const identityVerifications = makeIdentityVerifications(
+			'sessionMismatch',
+			undefined,
+			() =>
+				new Promise((resolve) => {
+					answer = resolve
+				}),
+		)
+		const { fixture, host, vm } = await render(
+			makeUserStore({ id: 'user-1' }),
+			makeAuth(),
+			identityVerifications,
+		)
+		vm.loading()
+		await tasksSettled()
+
+		expect(row(host)).toBeNull()
+		expect(verifyButton(host)).toBeUndefined()
+
+		answer(ACTIVE_IDENTITY_VERIFICATION)
+		await vi.waitFor(() => expect(identityVerifications.loaded).toBe(true))
+		await tasksSettled()
+
+		expect(row(host)).toBeNull()
+		expect(verifyButton(host)).toBeUndefined()
+		expect(host.textContent).toContain(
+			ja.settings.identityVerification.verified,
+		)
+
+		await fixture.stop(true)
+	})
+
+	it('shows no reason and no 本人確認する when the verification cannot be loaded', async () => {
+		const identityVerifications = makeIdentityVerifications(
+			'sessionMismatch',
+			undefined,
+			() => Promise.reject(new Error('unavailable')),
+		)
+		const { fixture, host, vm } = await render(
+			makeUserStore({ id: 'user-1' }),
+			makeAuth(),
+			identityVerifications,
+		)
+		vm.loading()
+		await vi.waitFor(() =>
+			expect(identityVerifications.get).toHaveBeenCalledOnce(),
+		)
+		await tasksSettled()
+
+		expect(row(host)).toBeNull()
+		expect(verifyButton(host)).toBeUndefined()
+
+		await fixture.stop(true)
+	})
+
+	it('shows the reason and 本人確認する once the verification loads as unverified', async () => {
+		const identityVerifications = makeIdentityVerifications(
+			'sessionMismatch',
+			undefined,
+			async () => undefined,
+		)
+		const { fixture, host, vm } = await render(
+			makeUserStore({ id: 'user-1' }),
+			makeAuth(),
+			identityVerifications,
+		)
+		vm.loading()
+		await vi.waitFor(() => expect(identityVerifications.loaded).toBe(true))
+		await tasksSettled()
+
+		expect(row(host)?.textContent).toContain(
+			ja.identityVerificationCallback.error.sessionMismatch,
+		)
+		expect(verifyButton(host)).toBeDefined()
 
 		await fixture.stop(true)
 	})
