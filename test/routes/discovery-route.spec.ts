@@ -125,7 +125,11 @@ describe('DiscoveryRoute', () => {
 	let mockEa: ReturnType<typeof createMockEventAggregator>
 	let mockRouter: ReturnType<typeof createMockRouter>
 	let mockHistory: ReturnType<typeof createMockHistory>
-	let mockAuth: { isAuthenticated: boolean; signUp: ReturnType<typeof vi.fn> }
+	let mockAuth: {
+		isAuthenticated: boolean
+		signUp: ReturnType<typeof vi.fn>
+		ready: Promise<void>
+	}
 	let mockOnboarding: {
 		isOnboarding: boolean
 		isCompleted: boolean
@@ -187,7 +191,11 @@ describe('DiscoveryRoute', () => {
 		localStorage.clear()
 		mockHistory = createMockHistory()
 		// Signed in by default: the Concerts view is a signed-in fan's.
-		mockAuth = { isAuthenticated: true, signUp: vi.fn() }
+		mockAuth = {
+			isAuthenticated: true,
+			signUp: vi.fn(),
+			ready: Promise.resolve(),
+		}
 		mockGuide = { request: vi.fn(), acted: vi.fn(), dismiss: vi.fn() }
 		mockFab = {
 			actions: [],
@@ -1659,8 +1667,8 @@ describe('DiscoveryRoute', () => {
 		afterEach(() => setHidden(false))
 
 		// @spec components/infrastructure/fan/web/route/discovery "Link to the Concerts view"
-		it('opens on the Concerts view from /discovery?view=concerts, at any onboarding state', () => {
-			expect(sut.canLoad(undefined, routeTo('view=concerts'))).toBe(true)
+		it('opens on the Concerts view from /discovery?view=concerts, at any onboarding state', async () => {
+			expect(await sut.canLoad(undefined, routeTo('view=concerts'))).toBe(true)
 			sut.loading(undefined, routeTo('view=concerts'))
 			expect(sut.view).toBe('concerts')
 
@@ -1844,14 +1852,14 @@ describe('DiscoveryRoute', () => {
 		// @spec components/infrastructure/fan/web/route/discovery "A guest follows a link to the Concerts view"
 		// @spec components/infrastructure/fan/web/route/discovery "Guest with no follows"
 		// @spec components/infrastructure/fan/web/route/discovery "Area override for unauthenticated user"
-		it('opens a guest on the bubbles, whatever the address says, and rewrites it to /discovery', () => {
+		it('opens a guest on the bubbles, whatever the address says, and rewrites it to /discovery', async () => {
 			mockAuth.isAuthenticated = false
 			const guest = buildSut()
 			// The link is sent to /discovery before the route loads.
-			expect(guest.canLoad(undefined, routeTo('view=concerts'))).toBe(
+			expect(await guest.canLoad(undefined, routeTo('view=concerts'))).toBe(
 				'discovery',
 			)
-			expect(guest.canLoad(undefined, routeTo())).toBe(true)
+			expect(await guest.canLoad(undefined, routeTo())).toBe(true)
 			// And should it load with the query anyway, the bubbles show.
 			guest.loading(undefined, routeTo('view=concerts'))
 			guest.attached()
@@ -1862,6 +1870,22 @@ describe('DiscoveryRoute', () => {
 			expect(ids()).toEqual(['help'])
 			expect(localStorage.getItem('discovery.concertsFilter')).toBeNull()
 			guest.detaching()
+		})
+
+		it('waits for the session before taking the fan for a guest', async () => {
+			let restore: () => void = () => {}
+			mockAuth.isAuthenticated = false
+			mockAuth.ready = new Promise<void>((r) => {
+				restore = r
+			})
+			const route = buildSut()
+			const decided = route.canLoad(undefined, routeTo('view=concerts'))
+			// The session restores: the fan is signed in.
+			mockAuth.isAuthenticated = true
+			restore()
+			expect(await decided).toBe(true)
+			route.loading(undefined, routeTo('view=concerts'))
+			expect(route.view).toBe('concerts')
 		})
 
 		// @spec components/infrastructure/fan/web/route/discovery "A guest sees no swap tile"

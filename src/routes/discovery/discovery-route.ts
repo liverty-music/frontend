@@ -212,9 +212,16 @@ export class DiscoveryRoute {
 	/**
 	 * A guest gets the artist bubbles whatever the address says: a link to the
 	 * Concerts view (`/discovery?view=concerts`) is sent to `/discovery`, so
-	 * the address never names a view the guest is not shown.
+	 * the address never names a view the guest is not shown. Discovery is open
+	 * to guests, so the auth hook does not wait for the session: this waits for
+	 * it, so that a signed-in fan who reopens the app here is not taken for a
+	 * guest, and `loading()` reads a settled sign-in state.
 	 */
-	public canLoad(_params?: Params, next?: RouteNode): boolean | string {
+	public async canLoad(
+		_params?: Params,
+		next?: RouteNode,
+	): Promise<boolean | string> {
+		await this.authService.ready
 		if (!this.isAuthenticated && next?.queryParams.get('view') === 'concerts') {
 			return 'discovery'
 		}
