@@ -215,6 +215,27 @@ describe('BottomSheet', () => {
 			)
 		})
 
+		it('ignores a scrollend that leaves the sheet short of the closed stop', () => {
+			// @spec components/infrastructure/fan/web/global/bottom-sheet "Close animation completes within 160ms"
+			openAndSettle()
+			sut.openChanged(false)
+			const scrollend = (): void => {
+				for (const [type, listener] of scrollArea.addEventListener.mock.calls) {
+					if (type === 'scrollend') listener()
+				}
+			}
+
+			// The opening snap's scrollend, delivered after the close began:
+			// the sheet has not moved yet.
+			scrollend()
+			expect(popover.hidePopover).not.toHaveBeenCalled()
+
+			// The dismiss scroll's own scrollend, at the closed stop.
+			scrollArea.scrollTop = 0
+			scrollend()
+			expect(popover.hidePopover).toHaveBeenCalledOnce()
+		})
+
 		it('does not emit sheet-closed for a programmatic close, only sheet-hidden', () => {
 			openAndSettle()
 			sut.open = true
