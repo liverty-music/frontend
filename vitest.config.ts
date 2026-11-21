@@ -264,6 +264,12 @@ const storybookMoreContrastProject = storybookProjectFor({
 	moreContrast: true,
 })
 
+// The local worker cap; see the comment on `maxWorkers` below.
+function localMaxWorkers(exclusive: boolean): number {
+	const cpus = availableParallelism()
+	return Math.max(1, exclusive ? cpus - 1 : Math.floor(cpus / 2))
+}
+
 export default defineConfig({
 	test: {
 		watch: false,
@@ -272,9 +278,14 @@ export default defineConfig({
 		// the 5 s timeout and a run was killed for memory. Set on the root, the
 		// cap bounds every project in the run together. CI runs one suite per
 		// runner and keeps Vitest's default.
+		//
+		// GATE_EXCLUSIVE=1 is set by the user-level commit/push hook on the one
+		// gate it lets run at a time across worktrees. No other test run
+		// competes then, so the gate takes every CPU but one (left for the
+		// editor): a lone unit run took 66 s at 8 workers and 80-102 s at 4.
 		...(process.env.CI
 			? {}
-			: { maxWorkers: Math.max(1, Math.floor(availableParallelism() / 2)) }),
+			: { maxWorkers: localMaxWorkers(process.env.GATE_EXCLUSIVE === '1') }),
 		projects: [
 			unitProject,
 			unitNodeProject,

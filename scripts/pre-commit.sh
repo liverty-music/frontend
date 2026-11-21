@@ -29,9 +29,10 @@ npm run --silent lint:css
 node ./node_modules/typescript/bin/tsc --noEmit
 node ./node_modules/typescript/bin/tsc --noEmit -p e2e
 
-# Tests: a change to the test setup or the dependencies can break any spec,
-# so it runs the whole suite.
-vitest=(npx vitest run --project=unit --project=scripts --passWithNoTests)
+# Tests: the projects of `make test` (`unit`, `unit-node`, `scripts`). A
+# change to the test setup or the dependencies can break any spec, so it runs
+# the whole suite.
+vitest=(npx vitest run --project=unit --project=unit-node --project=scripts --passWithNoTests)
 if grep -qE '^(vitest\.config\.ts|test/setup[^/]*\.ts|package(-lock)?\.json|tsconfig[^/]*\.json)$' <<<"$changed"; then
 	exec "${vitest[@]}"
 fi
