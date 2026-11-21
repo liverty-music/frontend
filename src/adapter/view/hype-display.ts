@@ -21,7 +21,7 @@ type Translate = (key: string, options?: Record<string, unknown>) => string
  * The place words that say which new concerts of an artist reach the fan by
  * push at `hype`: 「全て」 for Away, the short name of the home prefecture
  * (「東京」) for Home, and that name with 「周辺」 (「東京周辺」) for Nearby.
- * Without a home, 「居住エリア」 takes the prefecture's place. Watch pushes
+ * Without a home, 「HOMEエリア」 takes the prefecture's place. Watch pushes
  * nothing, so it has no place words (`null`).
  *
  * `home` is the ISO 3166-2 code of the home prefecture (`User.home.level_1`,

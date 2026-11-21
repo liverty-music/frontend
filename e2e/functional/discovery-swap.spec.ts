@@ -1,5 +1,6 @@
 import { concertWire } from '../support/concert-wire'
 import { fakeId } from '../support/fake-id'
+import { FAN_EMAIL, FAN_SUB } from '../support/fan-auth'
 import {
 	type Box,
 	box,
@@ -79,20 +80,28 @@ async function openDiscovery(
 	path = '/discovery',
 	seed: Seed = {},
 ): Promise<void> {
+	// A signed-in fan: the swap tile and the Concerts view are a signed-in
+	// fan's (a guest gets the artist bubbles only).
 	await page.addInitScript(
-		({ followed, handed }) => {
+		({ handed, sub, email }) => {
 			localStorage.setItem('onboardingComplete', 'true')
 			localStorage.setItem('onboarding.celebrationShown', '1')
 			localStorage.setItem('pwa.installed', 'true')
-			localStorage.setItem('guest.home', 'JP-40')
 			localStorage.setItem('language', 'ja')
-			localStorage.setItem(
-				'guest.followedArtists',
-				JSON.stringify(followed.map((artist) => ({ artist, hype: 'home' }))),
-			)
 			if (handed) localStorage.setItem('fab.handed', handed)
+			localStorage.setItem(
+				'oidc.user:https://auth.dev.liverty-music.app:371355407710421859',
+				JSON.stringify({
+					id_token: 'fake-id-token',
+					access_token: 'fake-access-token',
+					token_type: 'Bearer',
+					scope: 'openid profile email',
+					profile: { sub, email },
+					expires_at: 9999999999,
+				}),
+			)
 		},
-		{ followed: FOLLOWED, handed: seed.handed },
+		{ handed: seed.handed, sub: FAN_SUB, email: FAN_EMAIL },
 	)
 	await page.route('**/liverty_music.rpc.**', (route) => {
 		const url = route.request().url()
@@ -101,6 +110,22 @@ async function openDiscovery(
 				status: 200,
 				contentType: 'application/json',
 				body: JSON.stringify(body),
+			})
+		if (url.includes('UserService/Get'))
+			return json({
+				user: {
+					id: { value: FAN_SUB },
+					email: { value: FAN_EMAIL },
+					preferredLanguage: 'ja',
+					home: { countryCode: 'JP', level1: 'JP-40' },
+				},
+			})
+		if (url.includes('FollowService/List'))
+			return json({
+				artists: FOLLOWED.map((a) => ({
+					artist: { id: { value: a.id }, name: { value: a.name } },
+					hype: 'HYPE_TYPE_HOME',
+				})),
 			})
 		if (url.includes('ListTop')) return json(bubbleArtists('top'))
 		if (url.includes('ListSimilar')) return json(bubbleArtists('similar'))

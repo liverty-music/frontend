@@ -26,7 +26,7 @@ describe('Discovery layout', () => {
 		expect(css).toMatch(/\.progress-row \{\s*grid-area: progress;/)
 
 		const progress = html.indexOf('<onboarding-progress')
-		const bubbles = html.indexOf('<div class="bubble-area">')
+		const bubbles = html.indexOf('<div class="bubble-area"')
 		const bubblesEnd = html.indexOf('</artist-bubbles>')
 		expect(progress).toBeGreaterThan(-1)
 		// A sibling before the bubble area, never inside it with the canvas.

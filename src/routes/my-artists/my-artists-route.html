@@ -5,10 +5,10 @@
      driven from the route's data.titleKey; it stays mounted across this route's
      loading / empty / populated states. -->
 
-<!-- Help sheet + edit toggle both live in the FAB launcher now; page-help
-     renders sheet-only and is opened via its ref. -->
-<!-- The help waits for the home sheet: two sheets never open at once. -->
-<page-help component.ref="pageHelp" page="my-artists" auto-open.bind="!needsHome"></page-help>
+<!-- Help sheet + edit toggle both live in the FAB launcher; page-help is
+     opened via its ref. Its 「チュートリアル」 replays the hype dots' moment
+     while a followed artist is listed. -->
+<page-help component.ref="pageHelp" page="my-artists" has-artists.bind="artists.length > 0"></page-help>
 
 <main>
   <!-- Loading state: content-shaped skeleton rows (replaces the centered

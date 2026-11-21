@@ -95,6 +95,15 @@ export class TimetableRoute {
 	public loadError: unknown = null
 	public showSignupBanner = false
 	public showPostSignupDialog = false
+	/** The post-signup dialog's variant: `track` after a sign-up from 🔔. */
+	public postSignupVariant: 'default' | 'track' = 'default'
+	/**
+	 * A sign-up from a concert sheet's notification button returned here: the
+	 * post-signup dialog opens once that concert's sheet closes.
+	 */
+	private postSignupAfterSheet = false
+	/** The deep-linked concert's sheet is queued to open. */
+	private deepLinkSheetQueued = false
 
 	// Celebration overlay state (two tiers, gated on timetable readiness).
 	public showCelebration = false
@@ -527,7 +536,11 @@ export class TimetableRoute {
 		this.pendingConcertId = null
 
 		const concert = this.findConcertById(id)
-		if (!concert?.artistId) return
+		if (!concert?.artistId) {
+			// No sheet to wait for.
+			this.openPostSignupAfterSheet()
+			return
+		}
 
 		// A first-party concert has its own concert page and never opens the
 		// sheet; a `/timetable?concert=:id` link to one is forwarded there.
@@ -537,6 +550,7 @@ export class TimetableRoute {
 		}
 
 		this.filteredArtistIds = [concert.artistId]
+		this.deepLinkSheetQueued = true
 		// Open the sheet as a queued task rather than after a synchronous flush.
 		// The filter's URL write (`syncFilterUrl`) is queued by its @watch when
 		// the filter is assigned, and the queue runs in order, so the sheet's
@@ -545,7 +559,10 @@ export class TimetableRoute {
 		// timetable's render, and on a slow device that exceeds Aurelia's
 		// 100 ms synchronous budget: the flush throws "Potential deadlock"
 		// and drops every queued task — the render included.
-		queueTask(() => this.detailSheet?.open(concert))
+		queueTask(() => {
+			this.deepLinkSheetQueued = false
+			this.detailSheet?.open(concert)
+		})
 	}
 
 	/** Find a concert by id across all lanes of the loaded date groups. */
@@ -831,9 +848,25 @@ export class TimetableRoute {
 		if (this.showCelebration || this.needsRegion) return
 
 		if (this.authService.isAuthenticated) {
-			if (this.storage.getItem(StorageKeys.postSignupShown) !== 'pending') {
+			const scheduled = this.storage.getItem(StorageKeys.postSignupShown)
+			if (scheduled === 'pending-track') {
+				// A sign-up from a concert sheet's notification button: no
+				// celebration; the dialog follows the deep-linked sheet. Checked
+				// once the sheet had its turn to open.
+				this.storage.removeItem(StorageKeys.postSignupShown)
+				this.postSignupAfterSheet = true
+				queueTask(() => {
+					if (
+						this.pendingConcertId === null &&
+						!this.deepLinkSheetQueued &&
+						!this.detailSheet?.isOpen
+					) {
+						this.openPostSignupAfterSheet()
+					}
+				})
 				return
 			}
+			if (scheduled !== 'pending') return
 			this.storage.removeItem(StorageKeys.postSignupShown)
 			this.celebrationConfetti = true
 			this.celebrationMessage = this.i18n.tr('timetable.celebration.welcome')
@@ -921,6 +954,22 @@ export class TimetableRoute {
 			this.celebrationLeadsToDialog = false
 			this.showPostSignupDialog = true
 		}
+	}
+
+	/**
+	 * The concert sheet closed. After a sign-up from its notification button
+	 * the post-signup dialog opens now, on the notification step that only asks
+	 * to turn push on.
+	 */
+	public onDetailSheetClosed(): void {
+		this.openPostSignupAfterSheet()
+	}
+
+	private openPostSignupAfterSheet(): void {
+		if (!this.postSignupAfterSheet) return
+		this.postSignupAfterSheet = false
+		this.postSignupVariant = 'track'
+		this.showPostSignupDialog = true
 	}
 
 	public onEventSelected(event: CustomEvent<{ event: Concert }>): void {

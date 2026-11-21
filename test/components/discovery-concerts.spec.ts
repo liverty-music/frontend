@@ -10,6 +10,7 @@ const mockIPurchasedTicketStore = DI.createInterface('IPurchasedTicketStore')
 const mockIUserStore = DI.createInterface('IUserStore')
 const mockIFollowStore = DI.createInterface('IFollowStore')
 const mockITicketJourneyStore = DI.createInterface('ITicketJourneyStore')
+const mockIGuideService = DI.createInterface('IGuideService')
 
 vi.mock('../../src/services/auth-service', () => ({
 	IAuthService: mockIAuthService,
@@ -28,6 +29,9 @@ vi.mock('../../src/services/follow-store', () => ({
 }))
 vi.mock('../../src/services/ticket-journey-store', () => ({
 	ITicketJourneyStore: mockITicketJourneyStore,
+}))
+vi.mock('../../src/services/guide-service', () => ({
+	IGuideService: mockIGuideService,
 }))
 
 const { DiscoveryConcerts, DiscoveryConcertsVisit } = await import(
@@ -105,6 +109,10 @@ describe('DiscoveryConcerts', () => {
 		journeyMap: Map<string, string>
 		load: ReturnType<typeof vi.fn>
 	}
+	let mockGuide: {
+		request: ReturnType<typeof vi.fn>
+		dismiss: ReturnType<typeof vi.fn>
+	}
 
 	function build(visit = new DiscoveryConcertsVisit()) {
 		const container = createTestContainer(
@@ -116,6 +124,7 @@ describe('DiscoveryConcerts', () => {
 			Registration.instance(mockIFollowStore, mockFollow),
 			Registration.instance(mockITicketJourneyStore, mockJourney),
 			Registration.instance(IUserHydration, mockHydration),
+			Registration.instance(mockIGuideService, mockGuide),
 		)
 		container.register(DiscoveryConcerts)
 		const sut = container.get(DiscoveryConcerts)
@@ -129,6 +138,7 @@ describe('DiscoveryConcerts', () => {
 
 	beforeEach(() => {
 		mockAuth = { isAuthenticated: true, signUp: vi.fn() }
+		mockGuide = { request: vi.fn(), dismiss: vi.fn() }
 		mockConcert = {
 			listByLocation: vi.fn().mockResolvedValue([{ key: 'proximity' }]),
 			toDateGroupsForLocation: vi.fn(() => [{ dateKey: '2026-10-31' }]),
@@ -318,35 +328,6 @@ describe('DiscoveryConcerts', () => {
 				'JP-14',
 			)
 		})
-
-		// @spec components/infrastructure/fan/web/route/discovery "Area override for unauthenticated user"
-		it('asks a guest without a home area to choose one before listing anything', async () => {
-			mockAuth.isAuthenticated = false
-			mockUserStore.currentHome = null
-			mockUserStore.needsHome = true
-			const sut = build()
-
-			expect(sut.selectedAreaName).toBe('')
-			sut.onRangeChanged(rangeEvent(WEEK, '7日以内'))
-			await vi.waitFor(() =>
-				expect(sut.areaSelector?.open).toHaveBeenCalledOnce(),
-			)
-			expect(mockConcert.listByLocation).not.toHaveBeenCalled()
-
-			sut.onAreaSelected('JP-40')
-			await vi.waitFor(() =>
-				expect(mockConcert.listByLocation).toHaveBeenCalledWith(
-					expect.objectContaining({ adminArea: 'JP-40' }),
-					WEEK.from,
-					WEEK.to,
-					expect.any(AbortSignal),
-				),
-			)
-			expect(mockUserStore.setGuestHome).not.toHaveBeenCalled()
-			expect(localStorage.getItem('guest.home')).toBeNull()
-			// Kept on the device as the override, not as the guest home.
-			expect(loadConcertsFilter().areaCode).toBe('JP-40')
-		})
 	})
 
 	describe("before the fan's account has arrived", () => {
@@ -460,7 +441,8 @@ describe('DiscoveryConcerts', () => {
 			)
 		})
 
-		it('asks a fan whose account has no home area for one', async () => {
+		// @spec components/infrastructure/fan/web/route/discovery "Signed-in fan without a home area"
+		it('asks a fan whose account has no home area for one, and keeps the choice as the override', async () => {
 			const settle = pendingHydration()
 			mockUserStore.currentHome = null
 			mockUserStore.needsHome = true
@@ -471,6 +453,19 @@ describe('DiscoveryConcerts', () => {
 				expect(sut.areaSelector?.open).toHaveBeenCalledOnce(),
 			)
 			expect(mockConcert.listByLocation).not.toHaveBeenCalled()
+
+			sut.onAreaSelected('JP-40')
+			await vi.waitFor(() =>
+				expect(mockConcert.listByLocation).toHaveBeenCalledWith(
+					expect.objectContaining({ adminArea: 'JP-40' }),
+					WEEK.from,
+					WEEK.to,
+					expect.any(AbortSignal),
+				),
+			)
+			// Kept on the device as the override, not as the fan's home area.
+			expect(mockUserStore.updateHome).not.toHaveBeenCalled()
+			expect(loadConcertsFilter().areaCode).toBe('JP-40')
 		})
 	})
 
@@ -699,23 +694,51 @@ describe('DiscoveryConcerts', () => {
 		})
 	})
 
-	describe('follow from the detail sheet', () => {
-		// @spec components/infrastructure/fan/web/global/bottom-sheet "Follow prompt for unauthenticated user"
-		it('asks the host to offer sign-up when a guest taps follow', () => {
-			mockAuth.isAuthenticated = false
+	describe("the Concerts view's guide moment", () => {
+		const SPEC = 'components/infrastructure/fan/web/route/discovery'
+
+		it(`@spec ${SPEC} "First visit to the Concerts view"`, async () => {
 			const sut = build()
-			const offer = vi.fn()
-			sut.onSignupRequested = offer
-			sut.onFollowSignupRequested()
-			expect(offer).toHaveBeenCalledOnce()
+			sut.onRangeChanged(rangeEvent(WEEK, '7日以内'))
+			await vi.waitFor(() =>
+				expect(mockGuide.request).toHaveBeenCalledWith('concerts.filter'),
+			)
+			expect(sut.dateGroups).not.toEqual([])
+			sut.detaching()
+			expect(mockGuide.dismiss).toHaveBeenCalledWith(
+				'concerts.filter',
+				'route_leave',
+			)
 		})
 
-		it('asks nothing for a signed-in fan', () => {
+		it(`@spec ${SPEC} "Empty list"`, async () => {
+			mockConcert.listByLocation.mockResolvedValue([])
+			mockConcert.toDateGroupsForLocation.mockReturnValue([])
 			const sut = build()
-			const offer = vi.fn()
-			sut.onSignupRequested = offer
-			sut.onFollowSignupRequested()
-			expect(offer).not.toHaveBeenCalled()
+			sut.onRangeChanged(rangeEvent(WEEK, '7日以内'))
+			await vi.waitFor(() =>
+				expect(mockGuide.request).toHaveBeenCalledWith('concerts.filter'),
+			)
+			expect(sut.dateGroups).toEqual([])
+		})
+
+		it('waits while the area is being asked for', async () => {
+			mockUserStore.currentHome = null
+			mockUserStore.needsHome = true
+			const sut = build()
+			sut.onRangeChanged(rangeEvent(WEEK, '7日以内'))
+			await vi.waitFor(() =>
+				expect(sut.areaSelector?.open).toHaveBeenCalledOnce(),
+			)
+			expect(mockGuide.request).not.toHaveBeenCalled()
+		})
+
+		it('is not requested when the list fails to load', async () => {
+			mockConcert.listByLocation.mockRejectedValue(new Error('boom'))
+			const sut = build()
+			sut.onRangeChanged(rangeEvent(WEEK, '7日以内'))
+			await vi.waitFor(() => expect(sut.loadError).not.toBeNull())
+			expect(mockGuide.request).not.toHaveBeenCalled()
 		})
 	})
 })

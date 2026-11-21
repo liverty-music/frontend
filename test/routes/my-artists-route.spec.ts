@@ -7,6 +7,7 @@ const mockIFollowStore = DI.createInterface('IFollowStore')
 const mockIRouter = DI.createInterface('IRouter')
 const mockIOnboardingService = DI.createInterface('IOnboardingService')
 const mockIAuthService = DI.createInterface('IAuthService')
+const mockIGuideService = DI.createInterface('IGuideService')
 vi.mock('../../src/services/follow-store', () => ({
 	IFollowStore: mockIFollowStore,
 }))
@@ -27,6 +28,17 @@ vi.mock('../../src/services/onboarding-service', () => ({
 vi.mock('../../src/services/auth-service', () => ({
 	IAuthService: mockIAuthService,
 }))
+
+vi.mock('../../src/services/guide-service', () => ({
+	IGuideService: mockIGuideService,
+}))
+
+/** The guide moments, shared by every container of this file. */
+const mockGuide = {
+	request: vi.fn(),
+	acted: vi.fn(),
+	dismiss: vi.fn(),
+}
 
 // The home decision and save belong to the user store; every container of
 // this file resolves this stand-in by default.
@@ -109,6 +121,7 @@ describe('MyArtistsRoute', () => {
 			Registration.instance(mockIRouter, mockRouter),
 			Registration.instance(mockIOnboardingService, mockOnboarding),
 			Registration.instance(mockIAuthService, mockAuth),
+			Registration.instance(mockIGuideService, mockGuide),
 			Registration.instance(INotificationPromptService, notificationPrompt),
 		)
 		container.register(MyArtistsRoute)
@@ -226,6 +239,7 @@ describe('MyArtistsRoute', () => {
 					finish: vi.fn(),
 				}),
 				Registration.instance(mockIAuthService, mockAuth),
+				Registration.instance(mockIGuideService, mockGuide),
 				Registration.instance(INotificationPromptService, notificationPrompt),
 			)
 			container.register(MyArtistsRoute)
@@ -248,18 +262,10 @@ describe('MyArtistsRoute', () => {
 			expect(open).toHaveBeenCalledOnce()
 			expect(route.homeRequired).toBe(true)
 
-			const openIfFirstVisit = vi.fn()
-			route.pageHelp = { openIfFirstVisit } as never
-
 			await route.onHomeSelected('JP-13')
 
 			expect(mockUserStore.saveHome).toHaveBeenCalledWith('JP-13')
 			expect(route.needsHome).toBe(false)
-			// The first-visit help waits until the home sheet has finished
-			// closing, so the two sheets are never open together.
-			expect(openIfFirstVisit).not.toHaveBeenCalled()
-			route.onHomeSheetHidden()
-			expect(openIfFirstVisit).toHaveBeenCalledOnce()
 		})
 
 		// @spec components/infrastructure/fan/web/global/home-area-selector "Guest after onboarding closes the sheet"
@@ -311,6 +317,65 @@ describe('MyArtistsRoute', () => {
 		})
 	})
 
+	describe("the hype dots' guide moment", () => {
+		const SPEC = 'components/infrastructure/fan/web/route/my-artists'
+
+		beforeEach(() => {
+			mockGuide.request.mockClear()
+			mockGuide.acted.mockClear()
+			mockGuide.dismiss.mockClear()
+		})
+
+		it(`@spec ${SPEC} "A guest opens My Artists"`, async () => {
+			mockAuth.isAuthenticated = false
+			await sut.loading()
+			await vi.waitFor(() => expect(sut.isLoading).toBe(false))
+
+			expect(mockGuide.request).toHaveBeenCalledWith('myArtists.hype')
+
+			sut.onHypeInput(sut.artists[0], 'away')
+			expect(mockGuide.acted).toHaveBeenCalledWith('myArtists.hype')
+		})
+
+		it(`@spec ${SPEC} "After the home-area sheet"`, async () => {
+			mockAuth.isAuthenticated = false
+			mockUserStore.needsHome = true
+			await sut.loading()
+			await vi.waitFor(() => expect(sut.isLoading).toBe(false))
+			expect(mockGuide.request).not.toHaveBeenCalled()
+
+			await sut.onHomeSelected('JP-13')
+			expect(mockGuide.request).not.toHaveBeenCalled()
+			sut.onHomeSheetHidden()
+			expect(mockGuide.request).toHaveBeenCalledWith('myArtists.hype')
+		})
+
+		it(`@spec ${SPEC} "A fan who set a level before"`, async () => {
+			mockAuth.isAuthenticated = true
+			mockFollowService.listFollowed.mockResolvedValue([
+				makeFollowedArtist('id-1', 'RADWIMPS'),
+				makeFollowedArtist('id-2', 'ヨルシカ', 'away'),
+			])
+			await sut.loading()
+			await vi.waitFor(() => expect(sut.isLoading).toBe(false))
+
+			expect(mockGuide.request).not.toHaveBeenCalled()
+		})
+
+		it('asks nothing with no followed artist, and ends on leaving', async () => {
+			mockFollowService.listFollowed.mockResolvedValue([])
+			await sut.loading()
+			await vi.waitFor(() => expect(sut.isLoading).toBe(false))
+			expect(mockGuide.request).not.toHaveBeenCalled()
+
+			sut.detaching()
+			expect(mockGuide.dismiss).toHaveBeenCalledWith(
+				'myArtists.hype',
+				'route_leave',
+			)
+		})
+	})
+
 	describe('remove button (edit mode)', () => {
 		beforeEach(async () => {
 			await sut.loadArtists()
@@ -338,6 +403,7 @@ describe('MyArtistsRoute', () => {
 				Registration.instance(mockIRouter, mockRouter),
 				Registration.instance(mockIOnboardingService, mockOnboarding),
 				Registration.instance(mockIAuthService, mockAuth),
+				Registration.instance(mockIGuideService, mockGuide),
 			)
 			container.register(MyArtistsRoute)
 			const onboardingSut = container.get(MyArtistsRoute)
@@ -509,6 +575,7 @@ describe('MyArtistsRoute', () => {
 					Registration.instance(mockIRouter, mockRouter),
 					Registration.instance(mockIOnboardingService, onboardingOnboarding),
 					Registration.instance(mockIAuthService, mockAuth),
+					Registration.instance(mockIGuideService, mockGuide),
 					Registration.instance(IEventAggregator, { publish: vi.fn() }),
 					Registration.instance(INotificationPromptService, notificationPrompt),
 				)
@@ -663,6 +730,7 @@ describe('MyArtistsRoute', () => {
 					finish: vi.fn(),
 				}),
 				Registration.instance(mockIAuthService, mockAuth),
+				Registration.instance(mockIGuideService, mockGuide),
 				Registration.instance(INotificationPromptService, notificationPrompt),
 			)
 			// The words the fan reads, from the real catalog.
@@ -796,7 +864,7 @@ describe('MyArtistsRoute', () => {
 			expect(texts()).toEqual([
 				'ヨルシカの大阪の新着ライブをプッシュ通知で受け取ろう🔔',
 			])
-			expect(snacks[0].action?.label).toBe('登録する')
+			expect(snacks[0].action?.label).toBe('Sign Up')
 			expect(notificationPrompt.pushState).not.toHaveBeenCalled()
 			snacks[0].action?.callback()
 			expect(mockAuth.signUp).toHaveBeenCalledTimes(1)
@@ -852,7 +920,7 @@ describe('MyArtistsRoute', () => {
 			)
 		})
 
-		it('names 居住エリア without a home', async () => {
+		it('names HOMEエリア without a home', async () => {
 			notificationPrompt.pushState.mockResolvedValue('on')
 			mockUserStore.currentHome = null
 
@@ -860,8 +928,21 @@ describe('MyArtistsRoute', () => {
 			await vi.waitFor(() => expect(snacks).toHaveLength(1))
 
 			expect(texts()).toEqual([
-				'ヨルシカの居住エリア周辺の新着ライブをプッシュ通知します🔔',
+				'ヨルシカのHOMEエリア周辺の新着ライブをプッシュ通知します🔔',
 			])
+		})
+
+		// @spec components/infrastructure/fan/web/route/my-artists "No home area"
+		it('invites a guest without a home with HOMEエリア and 「Sign Up」', async () => {
+			mockAuth.isAuthenticated = false
+			mockUserStore.currentHome = null
+
+			route.onHypeInput(artist('ヨルシカ'), 'home')
+
+			expect(texts()).toEqual([
+				'ヨルシカのHOMEエリアの新着ライブをプッシュ通知で受け取ろう🔔',
+			])
+			expect(snacks[0].action?.label).toBe('Sign Up')
 		})
 	})
 
@@ -894,6 +975,7 @@ describe('MyArtistsRoute', () => {
 					finish: vi.fn(),
 				}),
 				Registration.instance(mockIAuthService, mockAuth),
+				Registration.instance(mockIGuideService, mockGuide),
 				Registration.instance(INotificationPromptService, notificationPrompt),
 				Registration.instance(IActionMenuService, fab),
 			)

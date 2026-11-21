@@ -1,10 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import {
 	clearOnboardingSeenFlags,
-	loadHelpSeen,
 	loadHypeSnackSeen,
 	loadOnboardingComplete,
-	saveHelpSeen,
 	saveHypeSnackSeen,
 	saveOnboardingComplete,
 } from '../../../src/adapter/storage/onboarding-storage'
@@ -31,43 +29,6 @@ describe('onboarding-storage', () => {
 		})
 	})
 
-	describe('help-seen helpers', () => {
-		it('records and reads per-page help-seen flags', () => {
-			expect(loadHelpSeen('timetable')).toBe(false)
-			saveHelpSeen('timetable')
-			expect(loadHelpSeen('timetable')).toBe(true)
-		})
-
-		it('clears every onboarding.helpSeen:* key and nothing else', () => {
-			localStorage.setItem('onboarding.helpSeen:tickets', '1')
-			localStorage.setItem('onboarding.celebrationShown', '1')
-			saveHelpSeen('discovery')
-
-			clearOnboardingSeenFlags()
-
-			expect(localStorage.getItem('onboarding.helpSeen:tickets')).toBeNull()
-			expect(localStorage.getItem('onboarding.helpSeen:discovery')).toBeNull()
-			expect(localStorage.getItem('onboarding.celebrationShown')).toBe('1')
-		})
-
-		it('keeps each flag under onboarding.helpSeen:<page>', () => {
-			saveHelpSeen('discovery')
-			expect(localStorage.getItem('onboarding.helpSeen:discovery')).toBe('1')
-		})
-
-		it('clears all known per-page help-seen flags', () => {
-			saveHelpSeen('discovery')
-			saveHelpSeen('timetable')
-			saveHelpSeen('my-artists')
-
-			clearOnboardingSeenFlags()
-
-			expect(loadHelpSeen('discovery')).toBe(false)
-			expect(loadHelpSeen('timetable')).toBe(false)
-			expect(loadHelpSeen('my-artists')).toBe(false)
-		})
-	})
-
 	describe('hype snack flags', () => {
 		it('records and reads a flag per level', () => {
 			expect(loadHypeSnackSeen('away')).toBe(false)
@@ -77,18 +38,20 @@ describe('onboarding-storage', () => {
 			expect(localStorage.getItem('onboarding.hypeSnackSeen:away')).toBe('1')
 		})
 
-		it('clears the hype snack flags with the help-seen flags', () => {
+		// @spec components/infrastructure/fan/web/global/page-help "Help-seen flags cleared on fresh onboarding"
+		it('clears the hype snack flags and nothing else', () => {
 			saveHypeSnackSeen('away')
 			saveHypeSnackSeen('watch')
-			saveHelpSeen('my-artists')
 			localStorage.setItem('onboarding.celebrationShown', '1')
+			localStorage.setItem('guide.seen:discovery.follow', '1')
 
 			clearOnboardingSeenFlags()
 
 			expect(loadHypeSnackSeen('away')).toBe(false)
 			expect(loadHypeSnackSeen('watch')).toBe(false)
-			expect(loadHelpSeen('my-artists')).toBe(false)
 			expect(localStorage.getItem('onboarding.celebrationShown')).toBe('1')
+			// The seen guide moments survive sign-up and sign-in.
+			expect(localStorage.getItem('guide.seen:discovery.follow')).toBe('1')
 		})
 	})
 })

@@ -15,6 +15,7 @@ export interface IBottomSheetTracker extends BottomSheetTracker {}
  */
 export class BottomSheetTracker {
 	private readonly sheets = new Set<object>()
+	private readonly listeners = new Set<() => void>()
 
 	/** Number of open sheets; observable, so bindings re-evaluate. */
 	public openCount = 0
@@ -25,12 +26,27 @@ export class BottomSheetTracker {
 
 	public opened(sheet: object): void {
 		this.sheets.add(sheet)
-		this.openCount = this.sheets.size
+		this.update()
 	}
 
 	/** Idempotent: a sheet may report closing more than once. */
 	public closed(sheet: object): void {
 		this.sheets.delete(sheet)
+		this.update()
+	}
+
+	/**
+	 * Call `listener` whenever the number of open sheets changes (the guide
+	 * moments wait while any sheet is open). Returns the unsubscribe function.
+	 */
+	public onChange(listener: () => void): () => void {
+		this.listeners.add(listener)
+		return () => this.listeners.delete(listener)
+	}
+
+	private update(): void {
+		if (this.openCount === this.sheets.size) return
 		this.openCount = this.sheets.size
+		for (const listener of this.listeners) listener()
 	}
 }

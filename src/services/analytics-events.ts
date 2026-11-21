@@ -346,6 +346,35 @@ export type DiscoveryFramesProps = {
 	names_off_main_thread: boolean
 }
 
+/** The guide moments (guide-moment surface). */
+export type GuideMoment =
+	| 'discovery.follow'
+	| 'discovery.swap'
+	| 'concerts.filter'
+	| 'sheet.notify'
+	| 'myArtists.hype'
+
+type GuideMomentProps = {
+	moment: GuideMoment
+	is_guest: boolean
+	is_onboarding: boolean
+}
+
+/** A guide moment appeared. */
+export type GuideShownProps = GuideMomentProps
+
+/** The fan used the target of a shown guide moment. */
+export type GuideActedProps = GuideMomentProps
+
+/** A shown guide moment ended without the fan using its target. */
+export type GuideDismissedProps = GuideMomentProps & {
+	/**
+	 * `other_tap`: a tap outside the target; `route_leave`: the fan left the
+	 * screen; `blocked`: a sheet, dialog or celebration opened over it.
+	 */
+	reason: 'other_tap' | 'route_leave' | 'blocked'
+}
+
 // -- Name catalogue and type-level wiring --------------------------------------
 
 /**
@@ -387,6 +416,9 @@ export const Events = {
 	RpcCallTelemetry: 'perf.rpc_call_telemetry',
 	DiscoveryReveal: 'perf.discovery_reveal',
 	DiscoveryFrames: 'perf.discovery_frames',
+	GuideShown: 'guide.shown',
+	GuideActed: 'guide.acted',
+	GuideDismissed: 'guide.dismissed',
 } as const satisfies Record<string, string>
 
 /** The union of every valid event-name literal. */
@@ -424,6 +456,9 @@ export type EventPropsMap = {
 	'perf.rpc_call_telemetry': RpcCallTelemetryProps
 	'perf.discovery_reveal': DiscoveryRevealProps
 	'perf.discovery_frames': DiscoveryFramesProps
+	'guide.shown': GuideShownProps
+	'guide.acted': GuideActedProps
+	'guide.dismissed': GuideDismissedProps
 }
 
 /**

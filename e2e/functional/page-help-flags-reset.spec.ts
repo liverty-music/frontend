@@ -9,14 +9,20 @@ import {
 import { expect, test } from '../support/test'
 
 /**
- * When the per-page help-seen flags are cleared: when the guest's local data
- * is reset at sign-in and when sign-up completes, never on [Get Started].
+ * When the per-level hype snack flags are cleared: when the guest's local
+ * data is reset at sign-in and when sign-up completes, never on [Get Started].
+ * The seen guide moments are kept through all three.
  */
 
 // The first page load compiles the app on the dev server; allow for it.
 test.describe.configure({ timeout: 90_000 })
 
-const PAGES = ['discovery', 'timetable', 'my-artists'] as const
+/** The flags cleared at the reset, and the guide marks kept through it. */
+const SNACK_FLAGS = [
+	'onboarding.hypeSnackSeen:away',
+	'onboarding.hypeSnackSeen:home',
+]
+const GUIDE_MARKS = ['guide.seen:discovery.follow', 'guide.seen:myArtists.hype']
 
 const USER = {
 	user: {
@@ -27,30 +33,37 @@ const USER = {
 	},
 }
 
-/** A fresh guest device whose help sheets were all seen once. */
+/** A fresh guest device that saw two hype snacks and two guide moments. */
 async function freshGuest(browser: Browser): Promise<Page> {
 	const context = await browser.newContext({ baseURL: APP_ORIGIN })
 	const page = await context.newPage()
 	await installAuthMocks(page)
-	await context.addInitScript((pages) => {
-		if (localStorage.getItem('__e2e_seeded')) return
-		localStorage.setItem('__e2e_seeded', '1')
-		localStorage.setItem('onboarding.celebrationShown', '1')
-		localStorage.setItem('onboardingComplete', 'true')
-		localStorage.setItem('guest.home', 'JP-13')
-		for (const p of pages) localStorage.setItem(`onboarding.helpSeen:${p}`, '1')
-	}, PAGES)
+	await context.addInitScript(
+		(keys) => {
+			if (localStorage.getItem('__e2e_seeded')) return
+			localStorage.setItem('__e2e_seeded', '1')
+			localStorage.setItem('onboarding.celebrationShown', '1')
+			localStorage.setItem('onboardingComplete', 'true')
+			localStorage.setItem('guest.home', 'JP-13')
+			for (const key of keys) localStorage.setItem(key, '1')
+		},
+		[...SNACK_FLAGS, ...GUIDE_MARKS],
+	)
 	await mockFanRpc(page, { 'UserService/Get': USER })
 	await mockIdentityProvider(page)
 	return page
 }
 
-function helpSeen(page: Page): Promise<(string | null)[]> {
-	return page.evaluate(
-		(pages) =>
-			pages.map((p) => localStorage.getItem(`onboarding.helpSeen:${p}`)),
-		PAGES,
+function stored(page: Page, keys: string[]): Promise<(string | null)[]> {
+	return page.evaluate((keys) => keys.map((k) => localStorage.getItem(k)), keys)
+}
+
+async function expectReset(page: Page, cleared: boolean): Promise<void> {
+	expect(await stored(page, SNACK_FLAGS)).toEqual(
+		cleared ? [null, null] : ['1', '1'],
 	)
+	// @spec components/infrastructure/fan/web/global/guide-moment "Sign-up keeps seen moments"
+	expect(await stored(page, GUIDE_MARKS)).toEqual(['1', '1'])
 }
 
 test('@spec components/infrastructure/fan/web/global/page-help "Help-seen flags cleared on fresh onboarding"', async ({
@@ -64,15 +77,16 @@ test('@spec components/infrastructure/fan/web/global/page-help "Help-seen flags 
 		.first()
 		.click({ timeout: 30_000 })
 	await expect(getStarted).toHaveURL(/\/discovery/, { timeout: 20_000 })
-	expect(await helpSeen(getStarted)).toEqual(['1', '1', '1'])
+	await expectReset(getStarted, false)
 	await getStarted.context().close()
 
-	// Sign-in from Welcome resets the guest's local data, flags included.
+	// Sign-in from Welcome resets the guest's local data, the snack flags
+	// included.
 	const signIn = await freshGuest(browser)
 	await signIn.goto('/')
 	await signIn.getByTestId('welcome-login').first().click({ timeout: 30_000 })
 	await expect(signIn).toHaveURL(/\/timetable/, { timeout: 30_000 })
-	expect(await helpSeen(signIn)).toEqual([null, null, null])
+	await expectReset(signIn, true)
 	await signIn.context().close()
 
 	// Completing sign-up clears them.
@@ -82,6 +96,6 @@ test('@spec components/infrastructure/fan/web/global/page-help "Help-seen flags 
 		.locator('signup-prompt-banner .bottom-banner-action')
 		.click({ timeout: 30_000 })
 	await expect(signUp).toHaveURL(/\/timetable/, { timeout: 30_000 })
-	expect(await helpSeen(signUp)).toEqual([null, null, null])
+	await expectReset(signUp, true)
 	await signUp.context().close()
 })

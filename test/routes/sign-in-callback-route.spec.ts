@@ -307,6 +307,20 @@ describe('SignInCallbackRoute', () => {
 				expect(sut.failed).toBe(false)
 			})
 
+			// @spec components/infrastructure/fan/web/global/post-signup-dialog "Dialog shown after first signup"
+			// @spec components/infrastructure/fan/web/global/celebration-overlay "Sign-up from the notification button"
+			it('schedules the dialog after the sheet, with no celebration', async () => {
+				storage.removeItem('postSignup.shown')
+				mockUserService.ensureLoaded = vi
+					.fn()
+					.mockResolvedValue({ user: mockUserService.current, created: true })
+				mockAuth.handleCallback = vi.fn().mockResolvedValue(notifyUser('ev-9'))
+
+				await sut.canLoad({}, {} as RouteNode)
+
+				expect(storage.getItem('postSignup.shown')).toBe('pending-track')
+			})
+
 			it('tracks nothing on a sign-up that did not ask for it', async () => {
 				mockAuth.handleCallback = vi.fn().mockResolvedValue({
 					profile: { email: 'new@example.com' },

@@ -2,9 +2,9 @@
 <import from="../stage-lane-legend/stage-lane-legend"></import>
 <import from="../hype-tier-legend/hype-tier-legend"></import>
 
-<!-- The `?` trigger moved to the FAB action launcher; this component now renders
-     only its per-page help sheet, opened via open() (auto-open on first visit is
-     unchanged). See onboarding-page-help capability spec. -->
+<!-- Opened only from the action launcher's help item (open()); it never opens
+     on its own. A section with a guide moment ends with 「チュートリアル」 while
+     the moment's target is on the screen. -->
 
 <!-- Each per-page <template case="…"> contains one or more <section> sub-blocks.
      Each sub-section carries its own .help-section-title heading; there is no
@@ -34,14 +34,34 @@
           <li t="pageHelp.discovery.genreTip"></li>
           <li t="pageHelp.discovery.searchTip"></li>
         </ul>
+
+        <button
+          if.bind="findingReplay"
+          type="button"
+          class="[ button page-help-replay ] [ state-layer ]"
+          data-variant="outlined"
+          data-testid="help-replay-finding"
+          click.trigger="replay(findingReplay)"
+          t="guide.replay"
+        ></button>
       </section>
 
-      <section class="[ page-help-content ] [ flow ]">
+      <!-- A signed-in fan's only: a guest has no Concerts view. -->
+      <section if.bind="isAuthenticated" class="[ page-help-content ] [ flow ]">
         <header class="page-help-header">
           <svg-icon name="info" size="md" class="page-help-icon"></svg-icon>
           <h3 class="[ help-section-title ] [ md-typescale-headline-small ]" t="pageHelp.discovery.concertsSectionTitle"></h3>
         </header>
         <p class="page-help-desc" t="pageHelp.discovery.concertsDesc"></p>
+
+        <button
+          type="button"
+          class="[ button page-help-replay ] [ state-layer ]"
+          data-variant="outlined"
+          data-testid="help-replay-concerts"
+          click.trigger="replay(concertsReplay)"
+          t="guide.replay"
+        ></button>
       </section>
 
       <section class="[ page-help-content ] [ flow ]">
@@ -85,6 +105,16 @@
         <ul as-element="hype-tier-legend" class="help-hype-grid"></ul>
 
         <p class="[ page-help-note ] [ md-typescale-body-medium ]" t="pageHelp.myArtists.tip"></p>
+
+        <button
+          if.bind="hypeReplay"
+          type="button"
+          class="[ button page-help-replay ] [ state-layer ]"
+          data-variant="outlined"
+          data-testid="help-replay-hype"
+          click.trigger="replay(hypeReplay)"
+          t="guide.replay"
+        ></button>
       </section>
 
       <!-- Unfollow section: Edit-mode guidance, shown to all users on all devices. -->

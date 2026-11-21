@@ -27,6 +27,13 @@ const mockJourneyStore = {
 	}),
 }
 
+const mockGuide = {
+	current: null,
+	request: () => {},
+	acted: () => {},
+	dismiss: () => {},
+}
+
 vi.mock('aurelia', async (importOriginal) => {
 	const actual = await importOriginal<typeof import('aurelia')>()
 	return {
@@ -41,6 +48,7 @@ vi.mock('aurelia', async (importOriginal) => {
 				IHistory: mockHistory,
 				IAnalyticsService: mockAnalytics,
 				INotificationPromptService: mockNotificationPrompt,
+				IGuideService: mockGuide,
 			}
 			const tokenAny = token as { friendlyName?: string }
 			return map[tokenAny.friendlyName ?? ''] ?? {}

@@ -23,6 +23,12 @@ export type NotifyProblem = 'blocked' | 'failed' | null
  */
 export class PostSignupDialog {
 	@bindable public active = false
+	/**
+	 * `track` after a sign-up started from a concert sheet's ticket sale
+	 * notification button: the fan already said what to be notified of, so the
+	 * notification step only asks to turn push on, with no body.
+	 */
+	@bindable public variant: 'default' | 'track' = 'default'
 
 	public isOpen = false
 	public steps: PostSignupStep[] = []
@@ -46,6 +52,15 @@ export class PostSignupDialog {
 
 	public get step(): PostSignupStep | null {
 		return this.steps[this.stepIndex] ?? null
+	}
+
+	/** The sheet's heading, the current step's question. */
+	public get headingKey(): string {
+		if (this.step === 'install') return 'postSignup.install.title'
+		if (this.step === 'notify' && this.variant === 'track') {
+			return 'postSignup.notify.titleTrack'
+		}
+		return 'postSignup.notify.title'
 	}
 
 	/** Followed artists, read after the guest merge, for the notification step. */

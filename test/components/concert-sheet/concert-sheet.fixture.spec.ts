@@ -3,10 +3,11 @@ import { IRouter } from '@aurelia/router'
 import { tasksSettled } from '@aurelia/runtime'
 import { createFixture } from '@aurelia/testing'
 import { CustomElement, Registration } from 'aurelia'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { IHistory } from '../../../src/adapter/browser/history'
 import { ConcertSheet } from '../../../src/components/concert-sheet/concert-sheet'
 import { SvgIcon } from '../../../src/components/svg-icon/svg-icon'
+import { GuideTargetCustomAttribute } from '../../../src/custom-attributes/guide-target'
 import type { Concert, JourneyStatus } from '../../../src/entities/concert'
 import { IAnalyticsService } from '../../../src/lib/analytics/analytics-service'
 import ja from '../../../src/locales/ja/translation.json'
@@ -63,6 +64,8 @@ const analytics = { capture: vi.fn() }
 interface RenderOptions {
 	signedIn?: boolean
 	status?: JourneyStatus
+	/** Journeys of other events the fan has. */
+	otherJourneys?: number
 	push?: PushState
 	/** The fan's hype level for the artist; absent means not followed. */
 	hype?: 'watch' | 'home' | 'nearby' | 'away'
@@ -88,6 +91,9 @@ async function render(ev: Concert, opts: RenderOptions = {}) {
 	analytics.capture.mockClear()
 	const journey = new Map<string, JourneyStatus>()
 	if (opts.status) journey.set(ev.id, opts.status)
+	for (let i = 0; i < (opts.otherJourneys ?? 0); i++) {
+		journey.set(`other-${i}`, 'tracking')
+	}
 	const hypeByArtist = new Map<string, string>()
 	if (opts.hype) hypeByArtist.set(ev.artistId, opts.hype)
 	const auth = createMockAuth({ isAuthenticated: opts.signedIn ?? false })
@@ -126,6 +132,7 @@ async function render(ev: Concert, opts: RenderOptions = {}) {
 			BottomSheetStub,
 			SvgIcon,
 			DateValueConverter,
+			GuideTargetCustomAttribute,
 			Registration.instance(IAuthService, auth),
 			Registration.instance(IErrorBoundaryService, createMockErrorBoundary()),
 			Registration.instance(IHistory, createMockHistory()),
@@ -138,6 +145,7 @@ async function render(ev: Concert, opts: RenderOptions = {}) {
 			}),
 			Registration.instance(ITicketJourneyStore, {
 				journeyMap: journey,
+				known: true,
 				// Read through `this`, as the real store does, so the sheet
 				// observes the map.
 				statusFor(
@@ -244,6 +252,14 @@ async function press(root: Element, selector: string): Promise<void> {
 }
 
 const notify = '[data-testid="journey-notify-btn"]'
+
+function signUpDialog(root: Element): HTMLDialogElement {
+	const dialog = root.querySelector<HTMLDialogElement>(
+		'dialog[data-testid="sign-up-dialog"]',
+	)
+	if (!dialog) throw new Error('no sign-up dialog')
+	return dialog
+}
 const statusButton = (status: JourneyStatus) =>
 	`.journey-row [data-journey-status="${status}"]`
 
@@ -460,19 +476,49 @@ describe('ConcertSheet ticket section (fixture)', () => {
 	})
 
 	// @spec components/infrastructure/fan/web/global/concert-sheet "Unauthenticated user sees no status row"
-	// @spec components/infrastructure/fan/web/global/concert-sheet "Guest presses the button"
-	it('shows a guest the notification button that starts sign-up, and no status row', async () => {
+	// @spec components/infrastructure/fan/web/global/concert-sheet "No guest line in the ticket section"
+	it('shows a guest the notification button, no status row and no line about an account', async () => {
 		const fixture = await render(event(), { signedIn: false, japanese: true })
 		const root = fixture.appHost
 		expect(root.querySelector('.journey-row')).toBeNull()
 		expect(textOf(root, notify)).toBe('🔔 チケット販売の通知を受け取る')
-		expect(textOf(root, '[data-testid="push-line"]')).toBe(
-			'アカウントを作ると、販売開始をプッシュ通知で受け取れます',
-		)
+		expect(root.querySelector('[data-testid="push-line"]')).toBeNull()
+		await fixture.stop(true)
+	})
+
+	// @spec components/infrastructure/fan/web/global/concert-sheet "Guest presses the button"
+	it("opens the sign-up dialog over the sheet on a guest's press, starting nothing", async () => {
+		const fixture = await render(event(), { signedIn: false, japanese: true })
+		const root = fixture.appHost
 
 		await press(root, notify)
 
+		const dialog = signUpDialog(root)
+		expect(dialog.hasAttribute('open')).toBe(true)
+		expect(dialog.textContent).toContain(
+			'おっと、まだアカウントを持っていないね？',
+		)
+		expect(dialog.textContent).toContain(
+			'通知に必要なアカウントは無料ですぐに作成できるよ！',
+		)
+		expect(textOf(root, '[data-testid="sign-up-dialog-cancel"]')).toBe('あとで')
+		expect(textOf(root, '[data-testid="sign-up-dialog-confirm"]')).toBe(
+			'Sign Up',
+		)
+		expect(harness.signUp).not.toHaveBeenCalled()
 		expect(harness.setStatus).not.toHaveBeenCalled()
+		await fixture.stop(true)
+	})
+
+	// @spec components/infrastructure/fan/web/global/concert-sheet "Guest chooses Sign Up"
+	it('starts sign-up that tracks the event on 「Sign Up」', async () => {
+		const fixture = await render(event(), { signedIn: false, japanese: true })
+		const root = fixture.appHost
+		await press(root, notify)
+
+		await press(root, '[data-testid="sign-up-dialog-confirm"]')
+		await new Promise((r) => setTimeout(r))
+
 		expect(harness.signUp).toHaveBeenCalledWith(
 			expect.objectContaining({
 				source: 'ticket_notify',
@@ -480,6 +526,99 @@ describe('ConcertSheet ticket section (fixture)', () => {
 				trackEventId: 'ev-1',
 			}),
 		)
+		await fixture.stop(true)
+	})
+
+	// @spec components/infrastructure/fan/web/global/concert-sheet "Guest chooses later"
+	it('closes the dialog on 「あとで」 and leaves the sheet as it was', async () => {
+		const fixture = await render(event(), { signedIn: false, japanese: true })
+		const root = fixture.appHost
+		fixture.component.sheet.open(event(), 'timetable')
+		await tasksSettled()
+		await press(root, notify)
+
+		await press(root, '[data-testid="sign-up-dialog-cancel"]')
+		await new Promise((r) => setTimeout(r))
+
+		expect(signUpDialog(root).hasAttribute('open')).toBe(false)
+		expect(fixture.component.sheet.isOpen).toBe(true)
+		expect(harness.signUp).not.toHaveBeenCalled()
+		await fixture.stop(true)
+	})
+})
+
+describe("ConcertSheet notification button's guide moment (fixture)", () => {
+	const SPEC = 'components/infrastructure/fan/web/global/concert-sheet'
+	const line = '[data-testid="sheet-notify-guide"]'
+
+	beforeEach(() => localStorage.clear())
+
+	async function openSheet(opts: RenderOptions) {
+		const fixture = await render(event(), { japanese: true, ...opts })
+		fixture.component.sheet.open(event(), 'timetable')
+		await tasksSettled()
+		return fixture
+	}
+
+	it(`@spec ${SPEC} "First concert a guest opens"`, async () => {
+		const fixture = await openSheet({ signedIn: false })
+		const root = fixture.appHost
+
+		expect(textOf(root, line)).toBe('気になるライブは見逃しNG！')
+		expect(root.querySelector(line)?.getAttribute('role')).toBe('status')
+		expect(root.querySelector(notify)?.getAttribute('data-guide-active')).toBe(
+			'bell',
+		)
+		// The line sits directly above the ticket section.
+		expect(root.querySelector(line)?.nextElementSibling).toBe(
+			root.querySelector('[data-testid="sheet-journey"]'),
+		)
+
+		// Pressing the button uses it: it ends and is not shown again.
+		await press(root, notify)
+		expect(root.querySelector(line)).toBeNull()
+		expect(root.querySelector(notify)?.hasAttribute('data-guide-active')).toBe(
+			false,
+		)
+		expect(localStorage.getItem('guide.seen:sheet.notify')).toBe('1')
+		await fixture.stop(true)
+	})
+
+	it(`@spec ${SPEC} "Concert already tracked"`, async () => {
+		const fixture = await openSheet({ signedIn: true, status: 'tracking' })
+		expect(fixture.appHost.querySelector(line)).toBeNull()
+		await fixture.stop(true)
+	})
+
+	it(`@spec ${SPEC} "Fan who tracks other concerts"`, async () => {
+		const fixture = await openSheet({ signedIn: true, otherJourneys: 1 })
+		expect(fixture.appHost.querySelector(line)).toBeNull()
+		await fixture.stop(true)
+	})
+
+	it('ends when the sheet closes', async () => {
+		const fixture = await openSheet({ signedIn: false })
+		fixture.component.sheet.close()
+		await tasksSettled()
+		expect(fixture.appHost.querySelector(line)).toBeNull()
+		await fixture.stop(true)
+	})
+
+	// @spec components/infrastructure/fan/web/route/welcome "Card opens the real detail view"
+	it("shows no notification button, push line or guide moment on Welcome's demo sheet", async () => {
+		const fixture = await render(event(), { signedIn: false, japanese: true })
+		fixture.component.sheet.demo = true
+		fixture.component.sheet.open(event(), 'timetable')
+		await tasksSettled()
+		const root = fixture.appHost
+		expect(root.querySelector(line)).toBeNull()
+		expect(root.querySelector(notify)).toBeNull()
+		expect(root.querySelector('[data-testid="push-line"]')).toBeNull()
+		expect(root.querySelector('.journey-row')).toBeNull()
+		// Official information, venue and calendar stay.
+		expect(root.querySelector('a.official-site')).not.toBeNull()
+		expect(root.querySelector('[data-testid="add-to-calendar"]')).not.toBeNull()
+		expect(root.textContent).toContain('Zepp Haneda')
 		await fixture.stop(true)
 	})
 })
@@ -696,15 +835,16 @@ describe('ConcertSheet out-of-range notice (fixture)', () => {
 		await fixture.stop(true)
 	})
 
-	it("lets a host with its own sign-up prompt show it for a guest's 登録する", async () => {
-		const fixture = await render(event(), { signedIn: false })
-		const prompt = vi.fn()
-		fixture.component.sheet.onSignupRequested = prompt
+	it("starts sign-up from a guest's 「Sign Up」", async () => {
+		const fixture = await render(event(), { signedIn: false, japanese: true })
+		const action = fixture.component.sheet.pushAction
+		expect(action?.label).toBe('Sign Up')
 
-		fixture.component.sheet.pushAction?.callback()
+		action?.callback()
 
-		expect(prompt).toHaveBeenCalledOnce()
-		expect(harness.signUp).not.toHaveBeenCalled()
+		expect(harness.signUp).toHaveBeenCalledWith(
+			expect.objectContaining({ source: 'ticket_notify' }),
+		)
 		await fixture.stop(true)
 	})
 

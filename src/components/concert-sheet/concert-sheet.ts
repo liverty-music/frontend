@@ -27,6 +27,7 @@ import type { EventSource } from '../../services/analytics-events'
 import { IAuthService } from '../../services/auth-service'
 import { IErrorBoundaryService } from '../../services/error-boundary-service'
 import { IFollowStore } from '../../services/follow-store'
+import { IGuideService } from '../../services/guide-service'
 import {
 	INotificationPromptService,
 	type PushState,
@@ -38,6 +39,7 @@ import {
 	CONCERT_QUERY_PARAM,
 	withoutConcertParam,
 } from '../../util/concert-sheet-link'
+import type { ConfirmDialog } from '../confirm-dialog/confirm-dialog'
 import {
 	eventBackgroundUrl,
 	eventCalendarUrl,
@@ -106,11 +108,13 @@ export class ConcertSheet {
 	@bindable public isConcertsView = false
 
 	/**
-	 * Invoked when an unauthenticated visitor taps the follow CTA. The host route
-	 * owns the sign-up prompt banner; a callback (not a DOM event) keeps this
-	 * component free of element injection and testable via plain DI construction.
+	 * Welcome's demo: the sheet shows no control that needs an account or
+	 * starts sign-up (no notification button, push line or guide moment).
 	 */
-	@bindable public onSignupRequested?: () => void
+	@bindable public demo = false
+
+	/** Invoked each time the sheet closes (the Timetable's post-signup step follows it). */
+	@bindable public onClosed?: () => void
 
 	/**
 	 * Whether the sheet manages browser history on open/close. On the timetable
@@ -131,6 +135,8 @@ export class ConcertSheet {
 	@bindable public actionsHint?: string
 
 	public isOpen = false
+	/** The guest's sign-up dialog of the notification button. */
+	public signUpDialog?: ConfirmDialog
 	public journeyUpdating = false
 	public followUpdating = false
 	public hypeUpdating = false
@@ -152,6 +158,7 @@ export class ConcertSheet {
 	private readonly followStore = resolve(IFollowStore)
 	private readonly notificationPrompt = resolve(INotificationPromptService)
 	private readonly userStore = resolve(IUserStore)
+	private readonly guide = resolve(IGuideService)
 	private readonly router = resolve(IRouter)
 	private readonly history = resolve(IHistory)
 	/** Where a programmatic close returns to; recorded when the sheet opens. */
@@ -171,8 +178,10 @@ export class ConcertSheet {
 	// Arrow function to allow `removeEventListener` with the same reference
 	private readonly onPopstate = (): void => {
 		if (this.isOpen) {
+			this.guide.dismiss('sheet.notify', 'route_leave')
 			this.isOpen = false
 			window.removeEventListener('popstate', this.onPopstate)
+			this.onClosed?.()
 		}
 	}
 
@@ -196,34 +205,35 @@ export class ConcertSheet {
 	}
 
 	/**
-	 * Show the follow CTA only in the Concerts view context, only for an event whose
-	 * artist is resolved (a resolvable performer identity) and not already
-	 * followed. My Timetable events implicitly belong to a followed artist, so the
-	 * CTA never shows there.
+	 * The follow action beside the artist name: a signed-in fan's, in the
+	 * Concerts view context only, for an event whose artist is resolved (a
+	 * resolvable performer identity). It stays after the follow, reading
+	 * 「Following」. My Timetable events implicitly belong to a followed artist,
+	 * and a guest is offered no Concerts view, so it never shows there.
 	 */
-	public get showFollowCta(): boolean {
-		return this.isConcertsView && !!this.event?.artist && !this.isFollowed
+	public get showFollowAction(): boolean {
+		return (
+			this.isConcertsView &&
+			this.isAuthenticated &&
+			!!this.event?.artist &&
+			(!this.isFollowed || this.followedHere)
+		)
 	}
 
+	/** The artist was followed from this sheet: the action stays as 「Following」. */
+	private followedHere = false
+
 	/**
-	 * Follow the event's artist from the Concerts view CTA. Unauthenticated visitors
-	 * are routed to the sign-up prompt instead of a guest follow — the discovery
-	 * follow is the conversion moment. A missing/unresolved artist is guarded
-	 * (logged, no-op) so a performer-less card can never crash the sheet.
+	 * Follow the event's artist from the Concerts view. A missing/unresolved
+	 * artist is guarded (logged, no-op) so a performer-less card can never crash
+	 * the sheet.
 	 */
 	public async follow(): Promise<void> {
-		if (this.followUpdating || this.isFollowed) return
-
-		if (!this.isAuthenticated) {
-			// Guest: surface the sign-up prompt rather than a guest follow. The
-			// banner is owned by the host route via the onSignupRequested callback.
-			this.onSignupRequested?.()
-			return
-		}
+		if (this.followUpdating || this.isFollowed || !this.isAuthenticated) return
 
 		const artist = this.event?.artist
 		if (!artist) {
-			// Unresolved performer: the button is already hidden by showFollowCta,
+			// Unresolved performer: the button is already hidden by showFollowAction,
 			// but guard the write path so a stale invocation cannot throw.
 			this.logger.warn(
 				'Follow requested for an event with no resolved artist',
@@ -235,6 +245,7 @@ export class ConcertSheet {
 		}
 
 		this.followUpdating = true
+		this.followedHere = true
 		try {
 			await this.followStore.follow(artist)
 			this.logger.info('Artist followed from the Concerts view', {
@@ -396,6 +407,7 @@ export class ConcertSheet {
 	): void {
 		this.event = event
 		this.isConcertsView = isConcertsView
+		this.followedHere = false
 		if (this.widened?.eventId !== event.id) this.widened = null
 		const alreadyOpen = this.isOpen
 		this.isOpen = true
@@ -424,6 +436,8 @@ export class ConcertSheet {
 			window.addEventListener('popstate', this.onPopstate)
 		}
 
+		this.requestNotifyMoment()
+
 		this.errorBoundary.addBreadcrumb('action', 'open_event_detail')
 		// Fire after the sheet state flips — listeners observe consistent state.
 		this.analytics.capture(Events.ConcertDetailViewed, {
@@ -441,11 +455,13 @@ export class ConcertSheet {
 	 */
 	public close(): void {
 		if (!this.isOpen) return
+		this.guide.dismiss('sheet.notify', 'route_leave')
 		this.isOpen = false
 		if (this.manageHistory) {
 			window.removeEventListener('popstate', this.onPopstate)
 			this.history.replaceState(null, '', this.returnUrl)
 		}
+		this.onClosed?.()
 	}
 
 	/** Handles the sheet-closed event dispatched by <bottom-sheet> on light-dismiss or swipe */
@@ -453,9 +469,31 @@ export class ConcertSheet {
 		this.close()
 	}
 
-	/** The notification button is hidden once tickets are paid. */
+	/**
+	 * The notification button's guide moment: a concert the fan has no status
+	 * for, from a fan with no journey at all (a guest never has one), never on
+	 * Welcome (concert-sheet "The ticket sale notification button's guide
+	 * moment").
+	 */
+	private requestNotifyMoment(): void {
+		if (this.demo || this.status !== undefined) return
+		if (!this.journeyStore.known || this.journeyStore.journeyMap.size > 0) {
+			return
+		}
+		this.guide.request('sheet.notify')
+	}
+
+	/** Whether the notification button's guide moment is on, inside this sheet. */
+	public get notifyMomentShown(): boolean {
+		return this.isOpen && this.guide.current === 'sheet.notify'
+	}
+
+	/**
+	 * The notification button is hidden once tickets are paid, and on
+	 * Welcome's demo.
+	 */
 	public get showNotifyButton(): boolean {
-		return this.status !== 'paid'
+		return !this.demo && this.status !== 'paid'
 	}
 
 	public get notifyLabelKey(): string {
@@ -481,12 +519,15 @@ export class ConcertSheet {
 	}
 
 	/**
-	 * A guest's press starts sign-up and tracks the event once the account
-	 * exists; a fan's press starts tracking, or stops it while tracking.
+	 * A guest's press asks, in a dialog over the sheet, whether to sign up;
+	 * 「Sign Up」 starts sign-up and tracks the event once the account exists.
+	 * A fan's press starts tracking, or stops it while tracking. Either uses the
+	 * button's guide moment.
 	 */
 	public onNotifyPressed(): void {
+		this.guide.acted('sheet.notify')
 		if (!this.isAuthenticated) {
-			this.startTrackingSignUp()
+			void this.askToSignUp()
 			return
 		}
 		if (this.status === 'tracking') void this.removeJourney()
@@ -497,6 +538,11 @@ export class ConcertSheet {
 	public onStatusPressed(status: JourneyStatus): void {
 		if (this.status === status) void this.removeJourney()
 		else void this.setJourneyStatus(status)
+	}
+
+	private async askToSignUp(): Promise<void> {
+		const signUp = await this.signUpDialog?.ask()
+		if (signUp) this.startTrackingSignUp()
 	}
 
 	private startTrackingSignUp(): void {
@@ -513,9 +559,9 @@ export class ConcertSheet {
 
 	/** The line saying what the current status brings by push. */
 	public get pushLine(): PushLine | null {
-		if (!this.isAuthenticated) {
-			return { key: 'concertSheet.pushLine.guest', offer: false }
-		}
+		// A guest gets no line: the notification button's dialog says why an
+		// account is needed. Welcome's demo shows none either.
+		if (!this.isAuthenticated || this.demo) return null
 		const on = this.pushState === 'on'
 		switch (this.status) {
 			case undefined:
@@ -539,21 +585,14 @@ export class ConcertSheet {
 
 	/**
 	 * The action that turns push on where it is off: the push offer, 「設定」
-	 * where the browser blocked or cannot receive push, or 「登録する」 for a
+	 * where the browser blocked or cannot receive push, or 「Sign Up」 for a
 	 * guest. None while push is on.
 	 */
 	public get pushAction(): SnackAction | null {
 		if (!this.isAuthenticated) {
 			return {
 				label: this.i18n.tr('hypeReach.signUp'),
-				callback: () => {
-					// A host with its own sign-up prompt (the Concerts view) shows it.
-					if (this.onSignupRequested) {
-						this.onSignupRequested()
-						return
-					}
-					this.startSignUp()
-				},
+				callback: () => this.startSignUp(),
 			}
 		}
 		if (this.pushState === 'offerable') {

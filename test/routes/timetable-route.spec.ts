@@ -594,12 +594,13 @@ describe('TimetableRoute', () => {
 				links: [...p.querySelectorAll('a')].map((a) => [
 					a.getAttribute('href'),
 					a.getAttribute('t'),
+					a.getAttribute('if.bind'),
 				]),
 			}))
 		}
 
 		// @spec components/infrastructure/fan/web/route/timetable "Guest with no follows"
-		it('offers Discovery and the concerts nearby to a guest who follows no artist', async () => {
+		it('offers a guest who follows no artist only the link to Discovery', async () => {
 			mockAuth.isAuthenticated = false
 			mockFollow.followedCount = 0
 			expect(sut.showGuestEmptyState).toBe(true)
@@ -608,8 +609,30 @@ describe('TimetableRoute', () => {
 				p.gate.includes('&& showGuestEmptyState'),
 			)
 			expect(guest?.links).toEqual([
-				['/discovery', 'timetable.guestEmpty.cta'],
-				['/discovery?view=concerts', 'timetable.concertsCta'],
+				['/discovery', 'timetable.guestEmpty.cta', null],
+			])
+		})
+
+		// @spec components/infrastructure/fan/web/route/timetable "Signed-in fan with no follows"
+		it('offers a signed-in fan who follows no artist both links', async () => {
+			mockAuth.isAuthenticated = true
+			mockFollow.followedCount = 0
+			await sut.loadData()
+			expect(sut.showGuestEmptyState).toBe(false)
+			expect(sut.isAuthenticated).toBe(true)
+
+			const empty = (await emptyStates()).find((p) =>
+				p.gate.includes(
+					'!showGuestEmptyState && filteredDateGroups.length === 0',
+				),
+			)
+			expect(empty?.links).toEqual([
+				['/discovery', 'timetable.empty.discoverLink', null],
+				[
+					'/discovery?view=concerts',
+					'timetable.concertsCta',
+					'isAuthenticated',
+				],
 			])
 		})
 
@@ -628,9 +651,16 @@ describe('TimetableRoute', () => {
 				),
 			)
 			expect(empty?.links).toEqual([
-				['/discovery', 'timetable.empty.discoverLink'],
-				['/discovery?view=concerts', 'timetable.concertsCta'],
+				['/discovery', 'timetable.empty.discoverLink', null],
+				[
+					'/discovery?view=concerts',
+					'timetable.concertsCta',
+					'isAuthenticated',
+				],
 			])
+			// A guest in the same state gets the link to Discovery only.
+			mockAuth.isAuthenticated = false
+			expect(sut.isAuthenticated).toBe(false)
 		})
 
 		// @spec components/infrastructure/fan/web/route/timetable "Timetable with concerts"
@@ -660,7 +690,7 @@ describe('TimetableRoute', () => {
 			const nearby = [
 				...doc.querySelectorAll('a[href="/discovery?view=concerts"]'),
 			]
-			expect(nearby).toHaveLength(2)
+			expect(nearby).toHaveLength(1)
 			for (const link of nearby) {
 				expect(link.closest('state-placeholder')).not.toBeNull()
 			}

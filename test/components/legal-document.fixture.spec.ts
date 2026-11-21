@@ -61,7 +61,7 @@ const PRIVACY_COLLECTED = {
 	ja: {
 		categories: [
 			'アカウント情報',
-			'ホームエリア',
+			'HOMEエリア',
 			'フォロー中のアーティスト',
 			'言語設定',
 			'プッシュ通知の購読情報',

@@ -1,0 +1,54 @@
+@layer block {
+	@scope (.guide-line) {
+		/* The line next to the glowing target. Above the target, flipped below
+		   when there is no room; it takes no taps, so the page beneath stays
+		   usable. */
+		:scope {
+			pointer-events: none;
+
+			position: fixed;
+			inset-block-end: var(--space-xs);
+			position-anchor: --guide-target;
+			position-area: block-start;
+			position-try-fallbacks: flip-block;
+
+			max-inline-size: min(320px, calc(100dvi - 2 * var(--space-s)));
+			padding: var(--space-xs) var(--space-s);
+			border: 1px solid var(--md-sys-color-tertiary);
+			border-radius: var(--md-sys-shape-corner-large);
+
+			color: var(--md-sys-color-on-surface);
+
+			background: var(--md-sys-color-surface-container-high);
+			box-shadow: var(--md-sys-elevation-level2);
+		}
+
+		/* No anchor positioning: the line sits above the bottom navigation and
+		   the glow still marks the target. */
+		@supports not (position-anchor: --guide-target) {
+			:scope {
+				inset-block: auto calc(var(--bottom-nav-height) + var(--space-s));
+				inset-inline: var(--space-s);
+			}
+		}
+
+		.guide-line-text {
+			display: block;
+			text-wrap: balance;
+			word-break: auto-phrase;
+		}
+	}
+}
+
+@layer exception {
+	@scope (.guide-line) {
+		/* The bubble field fills the screen: the line sits inside it, along its
+		   top edge. */
+		:scope[data-variant="inside"] {
+			inset-block: var(--space-s) auto;
+			position-area: center;
+			position-try-fallbacks: none;
+			place-self: start center;
+		}
+	}
+}

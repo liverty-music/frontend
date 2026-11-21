@@ -5,8 +5,7 @@
 			--_border-light: oklch(100% 0 0deg / 20%);
 		}
 
-		/* The sections follow one another in the content's flow; each sets
-		   the step above it. */
+		/* The sections follow in the content's flow; each sets its step. */
 		.sheet-content {
 			padding-block-end: var(--space-l);
 			padding-inline: var(--space-m);
@@ -20,6 +19,7 @@
 
 		.sheet-artist-name {
 			color: var(--color-white);
+			overflow-wrap: anywhere;
 		}
 
 		.sheet-event-title {
@@ -28,7 +28,6 @@
 			color: var(--_event-title-color);
 		}
 
-		/* Event details list */
 		.sheet-details {
 			--flow-space: var(--space-s);
 			--stack-gap: var(--space-xs);

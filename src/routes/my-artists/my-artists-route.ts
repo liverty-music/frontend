@@ -10,7 +10,11 @@ import { artistColor } from '../../adapter/view/artist-color'
 import { HYPE_TIERS, hypeReachWords } from '../../adapter/view/hype-display'
 import type { HomeAreaSelector } from '../../components/home-area-selector/home-area-selector'
 import type { PageHelp } from '../../components/page-help/page-help'
-import type { FollowedArtist, Hype } from '../../entities/follow'
+import {
+	DEFAULT_HYPE,
+	type FollowedArtist,
+	type Hype,
+} from '../../entities/follow'
 import {
 	helpAction,
 	IActionMenuService,
@@ -19,6 +23,7 @@ import {
 import { IAuthService } from '../../services/auth-service'
 import { IErrorBoundaryService } from '../../services/error-boundary-service'
 import { IFollowStore } from '../../services/follow-store'
+import { IGuideService } from '../../services/guide-service'
 import { INotificationPromptService } from '../../services/notification-prompt-service'
 import { IOnboardingService } from '../../services/onboarding-service'
 import { IUserStore } from '../../services/user-store'
@@ -60,6 +65,7 @@ export class MyArtistsRoute {
 	private readonly authService = resolve(IAuthService)
 
 	private readonly followStore = resolve(IFollowStore)
+	private readonly guide = resolve(IGuideService)
 	private readonly onboarding = resolve(IOnboardingService)
 	private readonly ea = resolve(IEventAggregator)
 	private readonly actionMenu = resolve(IActionMenuService)
@@ -147,6 +153,8 @@ export class MyArtistsRoute {
 			this.logger.info('Followed artists loaded', {
 				count: this.artists.length,
 			})
+			// With the home-area sheet up, the moment waits until it has closed.
+			if (!this.needsHome) this.requestHypeMoment()
 		} catch (err) {
 			if ((err as Error).name !== 'AbortError') {
 				this.logger.error('Failed to load followed artists', { error: err })
@@ -183,12 +191,22 @@ export class MyArtistsRoute {
 	}
 
 	/**
-	 * The home sheet has finished closing. The first-visit help, held back
-	 * while it was open, opens only now, so the two sheets are never open
-	 * together.
+	 * The home sheet has finished closing: the hype dots' guide moment, held
+	 * back while it was open, may show now.
 	 */
 	public onHomeSheetHidden(): void {
-		this.pageHelp?.openIfFirstVisit()
+		if (!this.isLoading) this.requestHypeMoment()
+	}
+
+	/**
+	 * The hype dots' guide moment, for a guest and a signed-in fan alike: at
+	 * least one followed artist, and none moved off the default Nearby (my-artists
+	 * "The hype dots' guide moment").
+	 */
+	private requestHypeMoment(): void {
+		if (this.artists.length === 0) return
+		if (this.artists.some((a) => a.hype !== DEFAULT_HYPE)) return
+		this.guide.request('myArtists.hype')
 	}
 
 	/** Edit is available only once there are followed artists to edit. */
@@ -249,6 +267,7 @@ export class MyArtistsRoute {
 	}
 
 	public detaching(): void {
+		this.guide.dismiss('myArtists.hype', 'route_leave')
 		this.fabDisposer?.()
 		this.fabDisposer = null
 		this.abortController?.abort()
@@ -407,6 +426,7 @@ export class MyArtistsRoute {
 		const artistId = artist.artist.id
 		const prev = this.prevHypes.get(artistId) ?? 'watch'
 		if (prev === newHype) return
+		this.guide.acted('myArtists.hype')
 
 		// Update the artist object so Aurelia re-renders the dot selection
 		artist.hype = newHype

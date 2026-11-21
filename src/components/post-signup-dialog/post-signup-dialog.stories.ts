@@ -21,13 +21,14 @@ interface Setup {
 	ios: boolean
 	installed: boolean
 	followed: number
+	variant?: 'default' | 'track'
 }
 
 /** The sheet on a phone, with the services that decide its steps. */
 function story(setup: Setup) {
 	return defineAureliaStory({
 		template: `
-			<post-signup-dialog active.bind="true"></post-signup-dialog>
+			<post-signup-dialog active.bind="true" variant="${setup.variant ?? 'default'}"></post-signup-dialog>
 		`,
 		register: [PostSignupDialog, BusyOnClickCustomAttribute],
 		items: [
@@ -115,6 +116,34 @@ export const Notify = {
 				'フォロー中の5組のライブを探し始めました。見つかったら通知で届けます。',
 			),
 		).toBeVisible()
+		const [primary, ...rest] = primaries(canvasElement)
+		await expect(rest).toHaveLength(0)
+		await expect(primary).toHaveTextContent(t.notify.enable)
+		await expect(body.getByRole('button', { name: t.defer })).toBeVisible()
+		closeSheetsAfterTest()
+	},
+} satisfies Story
+
+/**
+ * Step 1 after a sign-up from a concert sheet's notification button: the fan
+ * already chose what to be notified of, so it only asks to turn push on, with
+ * no body.
+ */
+export const NotifyAfterNotificationButton = {
+	render: () =>
+		story({
+			permission: 'default',
+			ios: false,
+			installed: false,
+			followed: 5,
+			variant: 'track',
+		}),
+	play: async ({ canvasElement }) => {
+		// @spec components/infrastructure/fan/web/global/post-signup-dialog "Closing the sheet"
+		const body = await expectTitle(canvasElement, t.notify.titleTrack)
+		await expect(
+			canvasElement.ownerDocument.querySelector('.post-signup-body'),
+		).toBeNull()
 		const [primary, ...rest] = primaries(canvasElement)
 		await expect(rest).toHaveLength(0)
 		await expect(primary).toHaveTextContent(t.notify.enable)

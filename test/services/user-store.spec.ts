@@ -332,6 +332,21 @@ describe('UserStore', () => {
 			expect(localStorage.getItem(DETECTOR_LANGUAGE_KEY)).toBe('en')
 		})
 
+		// @spec components/infrastructure/fan/web/global/page-help "Help-seen flags cleared on fresh onboarding"
+		// @spec components/infrastructure/fan/web/global/page-help "Seen guide moments are kept at sign-up"
+		it('clearGuest() clears the hype snack flags and keeps the seen guide moments', () => {
+			localStorage.setItem('onboarding.hypeSnackSeen:away', '1')
+			localStorage.setItem('guide.seen:myArtists.hype', '1')
+			localStorage.setItem('guide.discoveryViewSwapped', '1')
+			const { store } = build({ auth: makeAuth(false) })
+
+			store.clearGuest()
+
+			expect(localStorage.getItem('onboarding.hypeSnackSeen:away')).toBeNull()
+			expect(localStorage.getItem('guide.seen:myArtists.hype')).toBe('1')
+			expect(localStorage.getItem('guide.discoveryViewSwapped')).toBe('1')
+		})
+
 		// @spec components/infrastructure/fan/web/route/discovery "Signing in, signing up or signing out clears the kept filter"
 		it('clearGuest() (before sign-in, after sign-up) forgets the Concerts view filter', () => {
 			localStorage.setItem(

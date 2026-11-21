@@ -2,7 +2,7 @@
 
 <bottom-sheet
   open.bind="isOpen"
-  heading.bind="(step === 'install' ? 'postSignup.install.title' : 'postSignup.notify.title') | t"
+  heading.bind="headingKey | t"
   sheet-closed.trigger="close()"
 >
   <section class="[ post-signup-step ] [ stack ]" data-step.bind="step">
@@ -10,8 +10,11 @@
     <!-- Step 1: notifications -->
     <template if.bind="step === 'notify'">
       <div class="[ post-signup-text ] [ stack ]">
-        <p if.bind="followedCount > 0" class="[ post-signup-body ] [ md-typescale-body-medium ]" t="postSignup.notify.body" t-params.bind="{ count: followedCount }"></p>
-        <p else class="[ post-signup-body ] [ md-typescale-body-medium ]" t="postSignup.notify.bodyNoFollows"></p>
+        <!-- No body after a sign-up from the notification button. -->
+        <template if.bind="variant !== 'track'">
+          <p if.bind="followedCount > 0" class="[ post-signup-body ] [ md-typescale-body-medium ]" t="postSignup.notify.body" t-params.bind="{ count: followedCount }"></p>
+          <p else class="[ post-signup-body ] [ md-typescale-body-medium ]" t="postSignup.notify.bodyNoFollows"></p>
+        </template>
         <p if.bind="notifyProblem" class="[ post-signup-problem ] [ md-typescale-body-medium ]" role="status" t.bind="notifyProblem === 'blocked' ? 'postSignup.notify.blocked' : 'postSignup.notify.failed'"></p>
       </div>
       <div class="[ post-signup-actions ] [ stack ]">

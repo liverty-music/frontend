@@ -57,6 +57,7 @@ import { AmbientGlowCustomAttribute } from './custom-attributes/ambient-glow'
 import { BeamVarsCustomAttribute } from './custom-attributes/beam-vars'
 import { BusyOnClickCustomAttribute } from './custom-attributes/busy-on-click'
 import { DotColorCustomAttribute } from './custom-attributes/dot-color'
+import { GuideTargetCustomAttribute } from './custom-attributes/guide-target'
 import { TileColorCustomAttribute } from './custom-attributes/tile-color'
 import { AuthHook } from './hooks/auth-hook'
 import {
@@ -295,6 +296,7 @@ async function bootstrap(): Promise<void> {
 	au.register(BusyOnClickCustomAttribute)
 	au.register(BeamVarsCustomAttribute)
 	au.register(DotColorCustomAttribute)
+	au.register(GuideTargetCustomAttribute)
 	au.register(TileColorCustomAttribute)
 	au.register(DateValueConverter)
 	au.app(AppShell)

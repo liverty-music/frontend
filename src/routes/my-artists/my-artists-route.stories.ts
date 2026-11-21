@@ -8,6 +8,7 @@ import { CustomElement, Registration } from 'aurelia'
 import { expect, userEvent, waitFor } from 'storybook/test'
 import { expectAriaTree } from '../../../.storybook/aria'
 import { resolveColor } from '../../../.storybook/contrast'
+import { noGuide } from '../../../.storybook/guide'
 import { capturePixels, expectScreenshot } from '../../../.storybook/screenshot'
 import { expectTargets } from '../../../.storybook/target-size'
 import { artistColor } from '../../adapter/view/artist-color'
@@ -87,6 +88,7 @@ function items(
 		}),
 		Registration.instance(IErrorBoundaryService, {}),
 		Registration.instance(IRouter, { load: async () => true }),
+		noGuide,
 	]
 }
 

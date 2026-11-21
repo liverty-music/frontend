@@ -1,0 +1,46 @@
+/* The hype dots' guide moment on the first artist row (my-artists "The hype
+   dots' guide moment"): while the row carries `data-guide-active`, its four
+   dots light up from left to right, again and again, without changing the
+   level; under reduced motion they glow steadily. */
+@layer block {
+	@scope (.artist-row[data-guide-active]) {
+		.hype-label {
+			animation: guide-dot-light 1.6s ease-in-out var(--_guide-delay, 0s)
+				infinite;
+		}
+
+		.hype-col:nth-child(3) {
+			--_guide-delay: 0.25s;
+		}
+
+		.hype-col:nth-child(4) {
+			--_guide-delay: 0.5s;
+		}
+
+		.hype-col:nth-child(5) {
+			--_guide-delay: 0.75s;
+		}
+
+		@keyframes guide-dot-light {
+			0%,
+			40%,
+			100% {
+				filter: none;
+			}
+
+			15% {
+				filter: brightness(1.8)
+					drop-shadow(0 0 6px oklch(from var(--color-brand-accent) l c h / 90%));
+			}
+		}
+
+		@media (prefers-reduced-motion: reduce) {
+			.hype-label {
+				filter: drop-shadow(
+					0 0 4px oklch(from var(--color-brand-accent) l c h / 80%)
+				);
+				animation: none;
+			}
+		}
+	}
+}

@@ -55,7 +55,6 @@
     <p t="timetable.guestEmpty.subtitle" class="[ timetable-empty-subtitle ] [ md-typescale-body-medium ]"></p>
     <div class="[ timetable-empty-actions ] [ cluster ]">
       <a href="/discovery" t="timetable.guestEmpty.cta" class="[ button ] [ state-layer ]" data-testid="discover-link"></a>
-      <a href="/discovery?view=concerts" t="timetable.concertsCta" class="[ button ] [ state-layer ]" data-variant="outlined" data-testid="concerts-link"></a>
     </div>
   </div>
 </state-placeholder>
@@ -69,13 +68,14 @@
     <p t="timetable.empty.subtitle" class="[ timetable-empty-subtitle ] [ md-typescale-body-medium ]"></p>
     <div class="[ timetable-empty-actions ] [ cluster ]">
       <a href="/discovery" t="timetable.empty.discoverLink" class="[ button ] [ state-layer ]" data-testid="discover-link"></a>
-      <a href="/discovery?view=concerts" t="timetable.concertsCta" class="[ button ] [ state-layer ]" data-variant="outlined" data-testid="concerts-link"></a>
+      <!-- The Concerts view is a signed-in fan's. -->
+      <a if.bind="isAuthenticated" href="/discovery?view=concerts" t="timetable.concertsCta" class="[ button ] [ state-layer ]" data-variant="outlined" data-testid="concerts-link"></a>
     </div>
   </div>
 </state-placeholder>
 
 <!-- Bottom sheet for event details (top-layer dialog). -->
-<concert-sheet component.ref="detailSheet"></concert-sheet>
+<concert-sheet component.ref="detailSheet" on-closed.bind="() => onDetailSheetClosed()"></concert-sheet>
 
 <!-- Signup prompt banner for unauthenticated users (non-dismissable) -->
 <signup-prompt-banner
@@ -105,4 +105,4 @@
 ></celebration-overlay>
 
 <!-- PostSignupDialog — shown once after first-time signup -->
-<post-signup-dialog active.bind="showPostSignupDialog"></post-signup-dialog>
+<post-signup-dialog active.bind="showPostSignupDialog" variant.bind="postSignupVariant"></post-signup-dialog>

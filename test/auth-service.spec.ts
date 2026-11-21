@@ -223,6 +223,15 @@ describe('AuthService', () => {
 		return container.get(IAuthService)
 	}
 
+	it('settles ready as signed out when the stored session cannot be read', async () => {
+		userManagerMock.getUser.mockRejectedValue(new SyntaxError('bad JSON'))
+
+		const freshSut = buildSut()
+		await freshSut.ready
+
+		expect(freshSut.isAuthenticated).toBe(false)
+	})
+
 	it('restores the session via signinSilent when the stored access token is expired', async () => {
 		const renewedUser = {
 			expired: false,

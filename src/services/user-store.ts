@@ -337,8 +337,8 @@ export class UserStore {
 	}
 
 	/**
-	 * Reset the guest home slice, the per-page help-seen flags, the per-level
-	 * hype snack flags and the kept the Concerts view filter. Used by the
+	 * Reset the guest home slice, the per-level hype snack flags and the kept
+	 * Concerts view filter; the seen guide moments stay. Used by the
 	 * welcome route's guest reset before sign-in and by the auth callback's
 	 * onboarding hand-off once sign-up (or sign-in) completes. Tapping
 	 * [Get Started] does not call it.

@@ -258,12 +258,21 @@ export class AuthService {
 
 		this.userManager.events.addUserLoaded((user) => this.updateState(user))
 		this.userManager.events.addUserUnloaded(() => this.updateState(null))
-		this.restoreSession().then((user) => {
-			this.updateState(user)
-			// Resolve the ready promise only after the boot-time renewal attempt
-			// (if any) has settled, so route guards observe a stable auth state.
-			this.readyResolve?.()
-		})
+		this.restoreSession()
+			.catch((err: unknown) => {
+				// An unreadable stored session (corrupt JSON, a storage that
+				// throws) leaves the visitor signed out; `ready` must still
+				// settle, or every route that waits for it never loads.
+				this.logger.warn('Could not restore the session', { error: err })
+				return null
+			})
+			.then((user) => {
+				this.updateState(user)
+				// Resolve the ready promise only after the boot-time renewal
+				// attempt (if any) has settled, so route guards observe a stable
+				// auth state.
+				this.readyResolve?.()
+			})
 
 		// Resume-time refresh: the background renewal timer is disabled, so a token
 		// that goes cold while the tab is idle would 401 the first foreground RPC.

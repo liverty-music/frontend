@@ -19,9 +19,10 @@ test.use({ locale: 'ja-JP' })
 
 /**
  * A guest's event detail sheet offers only the ticket sale notification
- * button, which starts sign-up; the request survives sign-up and tracks the
- * event once the account exists. The backend and the identity provider are
- * mocked; journeys are kept by a stateful mock of TicketJourneyService.
+ * button, which asks in a dialog whether to sign up; the request survives
+ * sign-up and tracks the event once the account exists. The backend and the
+ * identity provider are mocked; journeys are kept by a stateful mock of
+ * TicketJourneyService.
  */
 
 const TRACK = 'stories/track-ticket-journey'
@@ -129,6 +130,35 @@ const notifyButton = (page: Page) =>
 	sheet(page).getByTestId('journey-notify-btn')
 const card = (page: Page) =>
 	page.locator('[data-live-card]').filter({ hasText: ARTIST.name })
+const signUpDialog = (page: Page) =>
+	page.getByRole('dialog', { name: 'おっと、まだアカウントを持っていないね？' })
+const celebration = (page: Page) =>
+	page.locator('.celebration-overlay[data-state="active"]')
+const TRACK_STEP_TITLE = 'あとはプッシュ通知をオンにするだけ！'
+
+/** The browser has not been asked for notifications yet. */
+async function undecidedNotifications(page: Page): Promise<void> {
+	await page.addInitScript(() => {
+		Object.defineProperty(Notification, 'permission', {
+			configurable: true,
+			get: () => 'default',
+		})
+	})
+}
+
+/** A guest presses the notification button and chooses `choice` in the dialog. */
+async function pressNotifyAndChoose(
+	page: Page,
+	choice: 'Sign Up' | 'あとで',
+): Promise<void> {
+	await notifyButton(page).click()
+	const dialog = signUpDialog(page)
+	await expect(dialog).toBeVisible()
+	await expect(dialog).toContainText(
+		'通知に必要なアカウントは無料ですぐに作成できるよ！',
+	)
+	await dialog.getByRole('button', { name: choice, exact: true }).click()
+}
 
 async function openSheet(page: Page): Promise<void> {
 	await card(page).first().click({ timeout: 30_000 })
@@ -242,13 +272,16 @@ test.describe('a guest request for ticket sale notifications survives sign-up', 
 		page,
 	}) => {
 		await seedGuest(page)
+		await undecidedNotifications(page)
 		const journeys = new Map<string, string>()
 		const calls = await mockBackend(page, journeys)
 		await mockIdentityProvider(page)
 		await page.goto('/timetable')
 		await openSheet(page)
 
-		await notifyButton(page).click()
+		// @spec components/infrastructure/fan/web/global/concert-sheet "Guest presses the button"
+		// @spec stories/sign-up-or-sign-in "Sign-up from the notification button"
+		await pressNotifyAndChoose(page, 'Sign Up')
 
 		// Back from sign-up on the same concert's sheet, tracking it.
 		await expect(page).toHaveURL(
@@ -274,6 +307,11 @@ test.describe('a guest request for ticket sale notifications survives sign-up', 
 			calls.findIndex((c) => c.method === 'TicketJourneyService/SetStatus'),
 		)
 
+		// @spec components/infrastructure/fan/web/global/post-signup-dialog "Back from sign-up"
+		// No celebration over or behind the sheet, and no post-signup dialog yet.
+		await expect(celebration(page)).toHaveCount(0)
+		await expect(page.getByText(TRACK_STEP_TITLE)).toHaveCount(0)
+
 		// The Timetable card shows the bell.
 		await page.keyboard.press('Escape')
 		await expect(card(page).getByTestId('journey-badge')).toHaveAttribute(
@@ -282,6 +320,14 @@ test.describe('a guest request for ticket sale notifications survives sign-up', 
 			{ timeout: 30_000 },
 		)
 		await expect(card(page).getByTestId('journey-badge')).toHaveText('🔔')
+
+		// @spec components/infrastructure/fan/web/global/post-signup-dialog "Closing the sheet"
+		// Closing the sheet opens the notification step, and still no celebration.
+		await expect(page.getByText(TRACK_STEP_TITLE)).toBeVisible()
+		await expect(
+			page.getByText('フォロー中の1組のライブを探し始めました'),
+		).toHaveCount(0)
+		await expect(celebration(page)).toHaveCount(0)
 	})
 
 	test(`@spec ${TRACK} "Sign-up abandoned"`, async ({ page }) => {
@@ -293,7 +339,7 @@ test.describe('a guest request for ticket sale notifications survives sign-up', 
 		)
 		await page.goto('/timetable')
 		await openSheet(page)
-		await notifyButton(page).click()
+		await pressNotifyAndChoose(page, 'Sign Up')
 		await page.waitForURL((url) => url.hostname.startsWith('auth.'))
 
 		// Later, a sign-up from the Timetable banner completes.
@@ -312,6 +358,33 @@ test.describe('a guest request for ticket sale notifications survives sign-up', 
 			})
 			.toBe(1)
 
+		expect(callsOf(calls, 'TicketJourneyService/SetStatus')).toHaveLength(0)
+	})
+
+	// @spec components/infrastructure/fan/web/global/concert-sheet "Guest chooses later"
+	test(`@spec ${TRACK} "Guest chooses later"`, async ({ page }) => {
+		await seedGuest(page)
+		const calls = await mockBackend(page, new Map())
+		await mockIdentityProvider(page)
+		await page.goto('/timetable')
+		await openSheet(page)
+
+		await pressNotifyAndChoose(page, 'あとで')
+
+		await expect(signUpDialog(page)).toHaveCount(0)
+		await expect(notifyButton(page)).toBeVisible()
+		expect(new URL(page.url()).pathname).toBe('/timetable')
+
+		// Later, a sign-up from the Timetable banner tracks nothing.
+		await page.keyboard.press('Escape')
+		await page
+			.locator('signup-prompt-banner .bottom-banner-action')
+			.click({ timeout: 30_000 })
+		await expect
+			.poll(() => callsOf(calls, 'UserService/Create').length, {
+				timeout: 30_000,
+			})
+			.toBe(1)
 		expect(callsOf(calls, 'TicketJourneyService/SetStatus')).toHaveLength(0)
 	})
 })

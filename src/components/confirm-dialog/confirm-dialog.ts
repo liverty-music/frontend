@@ -18,6 +18,8 @@ export class ConfirmDialog {
 	@bindable public heading = ''
 	@bindable public body = ''
 	@bindable public confirmLabel = ''
+	/** The safe choice's label; empty reads 「キャンセル」. */
+	@bindable public cancelLabel = ''
 	/** `danger` colours the confirm control for an action that cannot be undone. */
 	@bindable public tone: ConfirmTone = 'default'
 	/** `data-testid` of the dialog; Cancel gets `<testId>-cancel`. */
