@@ -785,6 +785,7 @@ describe('SettingsRoute identity verification result (fixture)', () => {
 	// address arrives with "no verification on this device" handed over.
 	// Settings must not show that reason or 本人確認する while it still loads
 	// the fan's verification, nor when the load fails.
+	// @spec components/infrastructure/fan/web/route/settings "Verified fan on a slow connection"
 	it('shows no reason and no 本人確認する until the verification has loaded', async () => {
 		let answer: (iv: IdentityVerification) => void = () => {}
 		const identityVerifications = makeIdentityVerifications(
@@ -819,6 +820,7 @@ describe('SettingsRoute identity verification result (fixture)', () => {
 		await fixture.stop(true)
 	})
 
+	// @spec components/infrastructure/fan/web/route/settings "Verification cannot be loaded"
 	it('shows no reason and no 本人確認する when the verification cannot be loaded', async () => {
 		const identityVerifications = makeIdentityVerifications(
 			'sessionMismatch',
