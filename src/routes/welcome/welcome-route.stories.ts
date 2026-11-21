@@ -156,7 +156,12 @@ export const CardOpensTheDetailView = {
 				DateValueConverter,
 			],
 			items: [
-				...items.filter((r) => r !== items[0] && r !== items[3]),
+				...items.filter(
+					(r) => r !== items[0] && r !== items[3] && r !== items[5],
+				),
+				Registration.instance(IErrorBoundaryService, {
+					addBreadcrumb() {},
+				}),
 				Registration.instance(IAuthService, {
 					ready: Promise.resolve(),
 					isAuthenticated: false,

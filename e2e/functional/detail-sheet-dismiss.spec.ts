@@ -215,6 +215,9 @@ function seedPostTimetableState() {
 	return () => {
 		localStorage.setItem('onboardingComplete', 'false')
 		localStorage.setItem('onboarding.celebrationShown', '1')
+		// The sheet's own dismiss is under test: the 🔔 guide moment's line
+		// would make the sheet taller than the screen, so it is marked seen.
+		localStorage.setItem('guide.seen:sheet.notify', '1')
 		localStorage.setItem('guest.home', 'JP-13')
 		localStorage.setItem(
 			'guest.followedArtists',

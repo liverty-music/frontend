@@ -514,7 +514,7 @@
 		},
 		{
 			"name": "i18next-browser-languagedetector",
-			"version": "8.3.0",
+			"version": "8.3.1",
 			"license": "MIT",
 			"publisher": "Jan Mühlemann <jan.muehlemann@gmail.com> (https://github.com/jamuhl)",
 			"repository": "https://github.com/i18next/i18next-browser-languageDetector",
@@ -722,7 +722,7 @@
 		},
 		{
 			"name": "zxing-wasm",
-			"version": "3.1.6",
+			"version": "3.1.7",
 			"license": "MIT",
 			"publisher": "Ze-Zheng Wu",
 			"repository": "https://github.com/Sec-ant/zxing-wasm",
