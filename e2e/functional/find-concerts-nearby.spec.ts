@@ -20,7 +20,10 @@ import { expect, type Page, test } from '../support/test'
 
 // The first page load compiles the app on the dev server; allow for it.
 test.describe.configure({ timeout: 90_000 })
-test.use({ viewport: { width: 390, height: 844 } })
+// The service worker would take over the page a moment after it loads and
+// send the RPCs past the mocks below, to the real backend: a step taken a
+// few seconds in (a follow) then fails. Block it, as virtual-ticket does.
+test.use({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' })
 
 const STORY = 'stories/find-concerts-nearby'
 
@@ -325,9 +328,10 @@ test(`@spec ${STORY} "Signed-in fan follows from a nearby concert"`, {
 	await follow.click()
 	await expect(page.getByTestId('discovery-concerts-following')).toBeVisible()
 	await flowShot(page, 'Following')
-	expect(callsOf(calls, 'FollowService/Follow').map((c) => c.body)).toEqual([
-		{ artistId: { value: ARTISTS.kumamoto.id } },
-	])
+	// 「Following」 shows at once (an optimistic update); the request follows.
+	await expect
+		.poll(() => callsOf(calls, 'FollowService/Follow').map((c) => c.body))
+		.toEqual([{ artistId: { value: ARTISTS.kumamoto.id } }])
 
 	// In My Artists at hype level Nearby…
 	await page.keyboard.press('Escape')
