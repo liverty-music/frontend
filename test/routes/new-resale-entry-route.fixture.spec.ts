@@ -371,6 +371,45 @@ describe('NewResaleEntryRoute 特商法 final confirmation (fixture)', () => {
 	})
 })
 
+describe('NewResaleEntryRoute refused card authorization (fixture)', () => {
+	it('returns to the personal details with what the fan typed when the name or phone number is refused', async () => {
+		// @spec components/infrastructure/fan/web/route/new-resale-entry "Name or phone number refused"
+		const { fixture, vm, client } = await render()
+		client.authorizeCard.mockRejectedValue(
+			new ConnectError(
+				'phone number must be in E.164 form',
+				Code.InvalidArgument,
+			),
+		)
+
+		await toConfirmation(vm)
+
+		expect(vm.step).toBe('personal-details')
+		expect(vm.fullName).toBe('山田 花子')
+		expect(vm.phoneNumber).toBe('090-1234-5678')
+		expect(byTestId(fixture.appHost, 'resale-entry-message')?.textContent).toBe(
+			ja.newResaleEntry.personalDetails.refused,
+		)
+		await fixture.stop(true)
+	})
+
+	it('sends no count over what the fan may still apply for', async () => {
+		// @spec components/infrastructure/fan/web/route/new-resale-entry "Count above the limit is not sent"
+		const { fixture, vm, client } = await render({
+			held: { stock: S_SEAT, count: 3 },
+		})
+
+		await toConfirmation(vm)
+
+		expect(client.authorizeCard).not.toHaveBeenCalled()
+		expect(vm.step).toBe('count')
+		expect(
+			byTestId(fixture.appHost, 'resale-entry-message')?.textContent,
+		).toContain('4枚まで')
+		await fixture.stop(true)
+	})
+})
+
 describe('NewResaleEntryRoute read failure (fixture)', () => {
 	it('offers a retry when the read fails for a reason other than NotFound', async () => {
 		const get = vi

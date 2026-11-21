@@ -388,6 +388,11 @@ export class NewLotteryEntryRoute implements IRouteViewModel {
 			this.step = 'payment'
 			return
 		}
+		if (!this.countOptions.includes(this.ticketCount)) {
+			// The server refuses any other count; send nothing.
+			this.showCountLimit()
+			return
+		}
 		this.busy = true
 		this.message = null
 		try {
@@ -433,9 +438,26 @@ export class NewLotteryEntryRoute implements IRouteViewModel {
 		}
 	}
 
+	/**
+	 * AuthorizeCard refused the card authorization. The count was checked
+	 * before sending, so InvalidArgument is the name or phone number. A
+	 * FailedPrecondition is told apart by re-reading what the fan can act on:
+	 * the window, an entry made already, another seat type, or the held
+	 * tickets plus the count over the per-account limit; any other cause
+	 * leaves the entry not made.
+	 */
 	private async explainAuthorizeCardFailure(err: unknown): Promise<void> {
 		const code = ConnectError.from(err).code
-		if (code === Code.FailedPrecondition || code === Code.InvalidArgument) {
+		if (code === Code.InvalidArgument) {
+			// Only the code: the request carried the name and phone number.
+			this.logger.warn('AuthorizeCard refused the personal details', {
+				code,
+			})
+			this.message = { key: 'newLotteryEntry.personalDetails.refused' }
+			this.step = 'personal-details'
+			return
+		}
+		if (code === Code.FailedPrecondition) {
 			if (this.sale && !isWindowOpen(this.sale, new Date())) {
 				this.message = { key: 'newLotteryEntry.closed' }
 				return
@@ -446,27 +468,43 @@ export class NewLotteryEntryRoute implements IRouteViewModel {
 				this.step = 'refused'
 				return
 			}
-			const other = await this.otherSeatType()
+			const held = await this.heldSeatTypes.heldTickets(
+				this.eventId,
+				this.tickets,
+				this.signal,
+			)
 			if (this.signal?.aborted) return
-			if (other) {
+			if (held && held.stock.id !== this.stockId) {
 				this.message = {
 					key: 'newLotteryEntry.refused.otherSeatType',
-					params: { seatType: other },
+					params: { seatType: held.stock.seatTypeName },
 				}
 				this.step = 'refused'
 				return
 			}
-			// Otherwise the fan would hold more than the per-account limit:
-			// the count is what they change.
-			this.message = {
-				key: 'newLotteryEntry.count.limit',
-				params: { limit: this.perAccountLimit },
+			if (held && held.count + this.ticketCount > this.perAccountLimit) {
+				// The fan would hold more than the per-account limit: the count
+				// is what they change.
+				this.showCountLimit()
+				return
 			}
-			this.step = 'count'
+			// Another cause no count fixes, such as a cancelled concert.
+			this.logger.warn('AuthorizeCard refused the entry', { error: err })
+			this.message = { key: 'newLotteryEntry.refused.unavailable' }
+			this.step = 'refused'
 			return
 		}
 		this.logger.error('AuthorizeCard failed', { error: err })
 		this.message = { key: 'newLotteryEntry.error.retry' }
+	}
+
+	/** Back to the count step, saying the per-account limit. */
+	private showCountLimit(): void {
+		this.message = {
+			key: 'newLotteryEntry.count.limit',
+			params: { limit: this.perAccountLimit },
+		}
+		this.step = 'count'
 	}
 
 	private mountPaymentElement(): void {
@@ -582,21 +620,6 @@ export class NewLotteryEntryRoute implements IRouteViewModel {
 			}
 		}
 		return { key: 'newLotteryEntry.refused.other' }
-	}
-
-	/**
-	 * The seat type's name when the fan holds or applied for another seat type
-	 * of the event, else null.
-	 */
-	private async otherSeatType(): Promise<string | null> {
-		const held = await this.heldSeatTypes.heldTickets(
-			this.eventId,
-			this.tickets,
-			this.signal,
-		)
-		return held && held.stock.id !== this.stockId
-			? held.stock.seatTypeName
-			: null
 	}
 
 	/**

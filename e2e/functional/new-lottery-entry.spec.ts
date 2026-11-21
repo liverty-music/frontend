@@ -87,6 +87,17 @@ const cardAuthorizationId = (count: number) => `pi_e2e_${count}`
 async function openEntry(
 	page: Page,
 	confirm: Parameters<typeof mockFanRpc>[1][string],
+	authorizeCard: Parameters<typeof mockFanRpc>[1][string] = (body) => {
+		const count = Number(body.ticketCount)
+		return {
+			body: {
+				cardAuthorizationId: { value: cardAuthorizationId(count) },
+				cardAuthorizationSecret: {
+					value: `${cardAuthorizationId(count)}_secret_e2e`,
+				},
+			},
+		}
+	},
 ) {
 	await seedSignedInFan(page, { language: 'en' })
 	await stubStripe(page)
@@ -102,17 +113,7 @@ async function openEntry(
 		},
 		'ConcertService/Get': concertWire({ concert: concert() }),
 		'TicketSaleService/ListByEvent': sales(),
-		'LotteryEntryService/AuthorizeCard': (body) => {
-			const count = Number(body.ticketCount)
-			return {
-				body: {
-					cardAuthorizationId: { value: cardAuthorizationId(count) },
-					cardAuthorizationSecret: {
-						value: `${cardAuthorizationId(count)}_secret_e2e`,
-					},
-				},
-			}
-		},
+		'LotteryEntryService/AuthorizeCard': authorizeCard,
 		'LotteryEntryService/Confirm': confirm,
 	})
 	await page.goto(
@@ -209,4 +210,21 @@ test(`@spec ${SPEC} "Window closed while confirming"`, async ({ page }) => {
 		'Nothing will be charged to your card for this entry.',
 	)
 	await expect(page.getByTestId('lottery-entry-done')).toHaveCount(0)
+})
+
+test(`@spec ${SPEC} "Name or phone number refused"`, async ({ page }) => {
+	await openEntry(page, confirmEntered, () =>
+		connectError('invalid_argument', 400),
+	)
+	await page.getByTestId('lottery-entry-count-select').selectOption('2')
+	await page.getByTestId('lottery-entry-to-personal-details').click()
+	await page.getByTestId('lottery-entry-to-payment').click()
+
+	const details = page.getByTestId('lottery-entry-personal-details')
+	await expect(details).toBeVisible()
+	await expect(page.getByTestId('lottery-entry-name')).toHaveValue('山田 花子')
+	await expect(details.getByTestId('lottery-entry-message')).toHaveText(
+		"We couldn't save this name or phone number. Check them and try again.",
+	)
+	await expect(page.getByTestId('lottery-entry-count')).toHaveCount(0)
 })
