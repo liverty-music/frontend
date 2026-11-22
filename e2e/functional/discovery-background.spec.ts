@@ -23,16 +23,42 @@ test(`@spec ${DISCOVERY} "Background visual depth"`, async ({ page }) => {
 	const look = await starfield.evaluate((el) => {
 		const style = getComputedStyle(el)
 		const rect = el.getBoundingClientRect()
-		const centre = document.elementFromPoint(
-			rect.left + rect.width / 2,
-			rect.top + rect.height / 2,
-		)
+		// Paint order: let the starfield be hit-tested for a moment, then ask
+		// what lies at the centre of each visible element after it in the
+		// layout, topmost first. Each must be painted above the starfield.
+		const pointerEvents = style.pointerEvents
+		;(el as HTMLElement).style.pointerEvents = 'auto'
+		const covered: string[] = []
+		let checked = 0
+		for (const sibling of [...(el.parentElement?.children ?? [])]) {
+			if (
+				!(
+					el.compareDocumentPosition(sibling) & Node.DOCUMENT_POSITION_FOLLOWING
+				)
+			)
+				continue
+			const box = sibling.getBoundingClientRect()
+			// Skip what paints nothing: hidden rows and visually-hidden live regions
+			// (a clipped 1 px box).
+			if (box.width < 2 || box.height < 2) continue
+			const stack = document.elementsFromPoint(
+				box.left + box.width / 2,
+				box.top + box.height / 2,
+			)
+			const content = stack.findIndex((n) => sibling.contains(n))
+			const stars = stack.indexOf(el)
+			checked++
+			if (stars !== -1 && (content === -1 || stars < content)) {
+				covered.push(sibling.tagName.toLowerCase())
+			}
+		}
+		;(el as HTMLElement).style.pointerEvents = ''
 		return {
 			image: style.backgroundImage,
-			pointerEvents: style.pointerEvents,
+			pointerEvents,
 			coversWidth: rect.width >= window.innerWidth - 1,
-			// Whatever sits at the centre of the screen, it is not the starfield.
-			onTop: centre === el,
+			checked,
+			covered,
 		}
 	})
 
@@ -52,7 +78,8 @@ test(`@spec ${DISCOVERY} "Background visual depth"`, async ({ page }) => {
 	expect(alphas.length).toBeGreaterThanOrEqual(5)
 	expect(Math.max(...sizes)).toBeLessThanOrEqual(1.5)
 	expect(Math.max(...alphas)).toBeLessThanOrEqual(0.5)
-	// It never takes a tap and is never drawn over the content.
+	// It never takes a tap and is drawn under every element after it.
 	expect(look.pointerEvents).toBe('none')
-	expect(look.onTop).toBe(false)
+	expect(look.checked).toBeGreaterThanOrEqual(2)
+	expect(look.covered).toEqual([])
 })
