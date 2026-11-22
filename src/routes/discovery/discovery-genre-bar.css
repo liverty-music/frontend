@@ -5,7 +5,11 @@
 			display: contents;
 		}
 
+		/* Positioned so it paints above the absolutely positioned starfield
+		   before it in the Discovery layout, as the search bar does. */
 		.genre-bar {
+			position: relative;
+
 			display: flex;
 			grid-area: genre;
 			gap: var(--space-2xs);

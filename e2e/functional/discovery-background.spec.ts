@@ -29,27 +29,32 @@ test(`@spec ${DISCOVERY} "Background visual depth"`, async ({ page }) => {
 		const pointerEvents = style.pointerEvents
 		;(el as HTMLElement).style.pointerEvents = 'auto'
 		const covered: string[] = []
-		let checked = 0
-		for (const sibling of [...(el.parentElement?.children ?? [])]) {
-			if (
-				!(
-					el.compareDocumentPosition(sibling) & Node.DOCUMENT_POSITION_FOLLOWING
-				)
-			)
-				continue
-			const box = sibling.getBoundingClientRect()
+		const checked: string[] = []
+		const name = (n: Element) =>
+			n.classList[0] ? `.${n.classList[0]}` : n.tagName.toLowerCase()
+		// The boxes that render: a `display: contents` host has none of its own,
+		// so its children stand in for it.
+		const rendered = (n: Element): Element[] =>
+			getComputedStyle(n).display === 'contents'
+				? [...n.children].flatMap(rendered)
+				: [n]
+		const after = [...(el.parentElement?.children ?? [])].filter(
+			(n) => el.compareDocumentPosition(n) & Node.DOCUMENT_POSITION_FOLLOWING,
+		)
+		for (const box of after.flatMap(rendered)) {
+			const rect = box.getBoundingClientRect()
 			// Skip what paints nothing: hidden rows and visually-hidden live regions
 			// (a clipped 1 px box).
-			if (box.width < 2 || box.height < 2) continue
+			if (rect.width < 2 || rect.height < 2) continue
 			const stack = document.elementsFromPoint(
-				box.left + box.width / 2,
-				box.top + box.height / 2,
+				rect.left + rect.width / 2,
+				rect.top + rect.height / 2,
 			)
-			const content = stack.findIndex((n) => sibling.contains(n))
+			const content = stack.findIndex((n) => box.contains(n))
 			const stars = stack.indexOf(el)
-			checked++
+			checked.push(name(box))
 			if (stars !== -1 && (content === -1 || stars < content)) {
-				covered.push(sibling.tagName.toLowerCase())
+				covered.push(name(box))
 			}
 		}
 		;(el as HTMLElement).style.pointerEvents = ''
@@ -80,6 +85,8 @@ test(`@spec ${DISCOVERY} "Background visual depth"`, async ({ page }) => {
 	expect(Math.max(...alphas)).toBeLessThanOrEqual(0.5)
 	// It never takes a tap and is drawn under every element after it.
 	expect(look.pointerEvents).toBe('none')
-	expect(look.checked).toBeGreaterThanOrEqual(2)
+	expect(look.checked).toEqual(
+		expect.arrayContaining(['.search-bar', '.genre-bar', '.bubble-area']),
+	)
 	expect(look.covered).toEqual([])
 })
