@@ -92,9 +92,11 @@ describe(CAPABILITY, () => {
 		})
 
 		it('ends a shown moment when a sheet opens over it', () => {
+			// @spec components/infrastructure/fan/web/global/guide-moment "A sheet opens over a shown moment"
 			const { sut, sheets, analytics } = setup()
 			sut.request('discovery.swap')
-			sheets.opened({})
+			const sheet = {}
+			sheets.opened(sheet)
 
 			expect(sut.current).toBeNull()
 			expect(analytics.capture).toHaveBeenCalledWith('guide.dismissed', {
@@ -103,6 +105,33 @@ describe(CAPABILITY, () => {
 				is_onboarding: true,
 				reason: 'blocked',
 			})
+
+			// Shown for less than 3 seconds: not seen, so it comes back once.
+			sheets.closed(sheet)
+			expect(sut.current).toBe('discovery.swap')
+		})
+
+		it('does not bring back a moment that was seen before a sheet opened over it', () => {
+			const { sut, sheets } = setup()
+			sut.request('discovery.swap')
+			vi.advanceTimersByTime(GUIDE_SEEN_AFTER_MS)
+			// Forget the stored seen mark, so only the time on screen decides
+			// whether the moment comes back after the sheet.
+			localStorage.clear()
+			const sheet = {}
+			sheets.opened(sheet)
+			sheets.closed(sheet)
+			expect(sut.current).toBeNull()
+		})
+
+		it('drops a moment a sheet ended when the fan leaves the screen', () => {
+			const { sut, sheets } = setup()
+			sut.request('discovery.swap')
+			const sheet = {}
+			sheets.opened(sheet)
+			sut.dismiss('discovery.swap', 'route_leave')
+			sheets.closed(sheet)
+			expect(sut.current).toBeNull()
 		})
 
 		it('keeps the shown moment when another screen requests one', () => {
