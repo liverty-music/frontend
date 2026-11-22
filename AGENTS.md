@@ -100,8 +100,10 @@ a controller to every element it sits on.
 
 ## Designing HTML and CSS: Material Design 3
 
-The fan app follows Material Design 3; its tokens are in `shared/styles/m3-sys.css`. When you design or
-change markup, styling or motion, look the guideline up before you choose a value. Do not recall a size,
+The fan app follows Material Design 3. The tokens it shares with the organizer console (state layers,
+motion, type, elevation, focus ring, touch target) are in `shared/styles/m3-sys.css`; its own colour roles
+and shape are in `src/styles/tokens.css`. Do not add a fan-only colour or shape token to the shared file.
+When you design or change markup, styling or motion, look the guideline up before you choose a value. Do not recall a size,
 color role or timing from memory: M1, M2 and M3 differ, and M3 Expressive replaced easing and duration
 with springs for components (transitions still use easing and duration).
 
