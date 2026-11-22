@@ -15,8 +15,8 @@ import en from '../../src/locales/en/translation.json'
 const BottomSheetStub = CustomElement.define(
 	{
 		name: 'bottom-sheet',
-		template: '<au-slot></au-slot>',
-		bindables: ['open', 'dismissable', 'ariaLabel'],
+		template: '<h2>${heading}</h2><au-slot></au-slot>',
+		bindables: ['open', 'dismissable', 'ariaLabel', 'heading'],
 	},
 	class {},
 )
@@ -79,6 +79,35 @@ describe('HomeAreaSelector (fixture)', () => {
 			'Shikoku',
 			'Kyushu',
 		])
+		await fixture.stop(true)
+	})
+
+	// @spec components/infrastructure/fan/web/global/home-area-selector "i18n key structure"
+	it('renders every text from the homeAreaSelector keys', async () => {
+		const { fixture, host, button } = await render()
+		const t = en.homeAreaSelector
+		const text = () => host.textContent ?? ''
+
+		for (const shown of [
+			t.title,
+			t.description,
+			t.quickSelect,
+			t.selectByRegion,
+			t.cities.tokyo,
+			t.regions.kanto,
+		]) {
+			expect(text()).toContain(shown)
+		}
+
+		button(t.regions.kanto)?.click()
+		await tasksSettled()
+		for (const shown of [
+			t.selectPrefecture,
+			t.backToRegions,
+			t.prefectures.kanagawa,
+		]) {
+			expect(text()).toContain(shown)
+		}
 		await fixture.stop(true)
 	})
 

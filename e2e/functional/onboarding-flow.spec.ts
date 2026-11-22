@@ -361,12 +361,20 @@ test.describe('Onboarding flow (single-flag model)', () => {
 		}
 	})
 
+	// @spec components/infrastructure/fan/web/route/welcome "Timetable shown as a composed frame"
 	test('Timetable preview renders when concert data is available', async ({
 		page,
 	}) => {
 		// mockRpcRoutes (via beforeEach) returns concerts, so the guided demo renders;
 		// the timetable preview lives in the demo's interactive second phase.
 		await page.goto('/')
+
+		// The demo says where the timetable comes from before showing it:
+		// following artists is enough, and a new concert arrives as a notification.
+		await page.locator('[data-testid="welcome-demo"]').scrollIntoViewIfNeeded()
+		await expect(page.locator('.welcome-demo-lead')).toBeVisible({
+			timeout: 10_000,
+		})
 
 		await advanceDemoToTimetable(page)
 
@@ -375,9 +383,27 @@ test.describe('Onboarding flow (single-flag model)', () => {
 		await expect(preview).toBeAttached({ timeout: 10_000 })
 		const cards = preview.locator('concert-card')
 		await expect(cards.first()).toBeVisible({ timeout: 15_000 })
+
+		// It is captioned as the visitor's own timetable, and shown whole: the
+		// preview is not cropped sideways and lies inside the viewport's width.
+		await expect(
+			page.locator(
+				'[data-testid="welcome-timetable"] .welcome-section-tagline',
+			),
+		).toBeVisible()
+		const frame = await preview.evaluate((el) => ({
+			cropped: el.scrollWidth > el.clientWidth + 1,
+			left: el.getBoundingClientRect().left,
+			right: el.getBoundingClientRect().right,
+			viewport: window.innerWidth,
+		}))
+		expect(frame.cropped).toBe(false)
+		expect(frame.left).toBeGreaterThanOrEqual(0)
+		expect(frame.right).toBeLessThanOrEqual(frame.viewport)
 	})
 
 	// @spec components/infrastructure/fan/web/global/coach-mark "Target tap performs the target's own action"
+	// @spec components/infrastructure/fan/web/route/welcome "Guidance to open a concert"
 	test('Welcome coach mark: tapping the highlighted card opens its detail sheet and closes the coach mark', async ({
 		page,
 	}) => {
@@ -421,6 +447,7 @@ test.describe('Onboarding flow (single-flag model)', () => {
 		await expect(page.locator('coach-mark .coach-mark-overlay')).toHaveCount(0)
 	})
 
+	// @spec components/infrastructure/fan/web/route/welcome "Timetable absent without preview data"
 	test('Timetable preview is hidden when no concert data; hero CTAs fall back inline', async ({
 		page,
 	}) => {

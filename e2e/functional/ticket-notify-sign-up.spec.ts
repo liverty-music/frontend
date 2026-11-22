@@ -369,6 +369,7 @@ test.describe('a guest request for ticket sale notifications survives sign-up', 
 	})
 
 	// @spec components/infrastructure/fan/web/global/concert-sheet "Guest chooses later"
+	// @spec stories/sign-up-or-sign-in "Sign-up from the ticket sale notification button"
 	test(`@spec ${TRACK} "Guest chooses later"`, {
 		tag: '@flow',
 	}, async ({ page }) => {

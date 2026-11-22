@@ -299,7 +299,9 @@ describe('ConcertStore', () => {
 			expect(nearby.matched).toBe(false)
 		})
 
-		it(`@spec ${SPEC} "Guest with no follows"`, () => {
+		it(`@spec ${SPEC} "Fan with no follows"`, () => {
+			// A signed-in fan who follows nobody: an empty follow map. A guest
+			// never reaches the Concerts view (discovery-route.spec.ts).
 			const { home, nearby } = lanes('a1', new Map())
 			expect(home.matched).toBe(false)
 			expect(nearby.matched).toBe(false)
