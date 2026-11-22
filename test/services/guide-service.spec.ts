@@ -115,6 +115,9 @@ describe(CAPABILITY, () => {
 			const { sut, sheets } = setup()
 			sut.request('discovery.swap')
 			vi.advanceTimersByTime(GUIDE_SEEN_AFTER_MS)
+			// Forget the stored seen mark, so only the time on screen decides
+			// whether the moment comes back after the sheet.
+			localStorage.clear()
 			const sheet = {}
 			sheets.opened(sheet)
 			sheets.closed(sheet)
