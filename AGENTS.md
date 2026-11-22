@@ -98,6 +98,24 @@ when the data is built (e.g. `Concert.artistHue`), not in a custom attribute tha
 element — a custom attribute whose only job is to copy a value into a custom property adds
 a controller to every element it sits on.
 
+## Designing HTML and CSS: Material Design 3
+
+The fan app follows Material Design 3; its tokens are in `shared/styles/m3-sys.css`. When you design or
+change markup, styling or motion, look the guideline up before you choose a value. Do not recall a size,
+color role or timing from memory: M1, M2 and M3 differ, and M3 Expressive replaced easing and duration
+with springs for components (transitions still use easing and duration).
+
+- **Local sessions: use the `m3-design` skill.** It holds the m3.material.io pages, the measurements
+  printed in their images, the motion timings read from the sample videos, and the Web token values.
+  In the PR description, name the page and the token or measurement behind each dimension, color role
+  or motion value you set.
+- **The skill is private, not part of this repository.** Google publishes the guideline text with no
+  redistribution licence, and this repository is public, so the snapshot cannot live here. Cloud threads
+  do not have the skill: read the component's or style's page on https://m3.material.io/ and say in the PR
+  that the value comes from the site.
+- Where the guideline and a page of this app differ on purpose, record the reason in a comment next to
+  the rule, so a later reader does not "fix" it back.
+
 ## Component Stories & Testing (Storybook + Vitest)
 
 - `make test` runs `unit`, `unit-node` and `scripts` only. `unit-node` runs the specs listed in `test/node-environment-specs.json` in Node instead of jsdom (a spec not listed runs in jsdom; `node scripts/classify-node-specs.mjs` regenerates the list); the three storybook projects (`storybook`, `storybook-reduced-motion`, `storybook-more-contrast`; see `vitest.config.ts`) run in a separate CI job (`storybook-test`).
