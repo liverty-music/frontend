@@ -10,7 +10,10 @@
 			display: contents;
 		}
 
+		/* Positioned, like every row after the starfield (discovery-starfield.css). */
 		.search-results {
+			position: relative;
+
 			container-name: search-results;
 			container-type: inline-size;
 			overflow-block: auto;

@@ -1,7 +1,10 @@
 @layer block {
 	@scope (discovery-starfield) {
 		/* Covers the Discovery layout (its positioned parent) behind the
-		   rows, in tree order. */
+		   rows, in tree order. Its twinkle animates opacity, which paints it
+		   with the positioned elements, above any non-positioned row after it;
+		   so every row of the layout is positioned (position: relative), and
+		   e2e/functional/discovery-background.spec.ts checks each one. */
 		:scope {
 			--_star-img:
 				radial-gradient(
