@@ -23,7 +23,7 @@ describe('Discovery layout', () => {
 	// @spec components/infrastructure/fan/web/route/discovery "The row never overlaps the bubble field"
 	it('gives the progress row its own grid row above the bubble area, outside it', () => {
 		expect(layoutRows()).toEqual(['search', 'genre', 'progress', 'bubbles'])
-		expect(css).toMatch(/\.progress-row \{\s*grid-area: progress;/)
+		expect(css).toMatch(/\.progress-row \{[^}]*grid-area: progress;/)
 
 		const progress = html.indexOf('<onboarding-progress')
 		const bubbles = html.indexOf('<div class="bubble-area"')

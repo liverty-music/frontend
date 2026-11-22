@@ -51,7 +51,9 @@
 			);
 		}
 
+		/* Positioned, like every row after the starfield (discovery-starfield.css). */
 		.progress-row {
+			position: relative;
 			grid-area: progress;
 		}
 
