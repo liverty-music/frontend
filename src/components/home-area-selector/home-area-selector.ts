@@ -31,6 +31,8 @@ export class HomeAreaSelector {
 	/** The element holding the step, set by the template. */
 	public stepContent: HTMLElement | null = null
 
+	private stepToken = 0
+
 	private readonly logger = resolve(ILogger).scopeTo('HomeAreaSelector')
 
 	/** A choice is being handed to the caller (saving the home). */
@@ -70,6 +72,7 @@ export class HomeAreaSelector {
 		const root = document.documentElement
 		root.classList.add('vt-suppress-root')
 		content.dataset.stepping = ''
+		const mine = ++this.stepToken
 		runTasks()
 		const transition = document.startViewTransition(() => {
 			this.selectedRegion = region
@@ -77,6 +80,8 @@ export class HomeAreaSelector {
 		})
 		void transition.ready.catch(() => {})
 		void transition.finished.finally(() => {
+			// A later step change skips this transition and owns the marks by now.
+			if (mine !== this.stepToken) return
 			root.classList.remove('vt-suppress-root')
 			delete content.dataset.stepping
 		})

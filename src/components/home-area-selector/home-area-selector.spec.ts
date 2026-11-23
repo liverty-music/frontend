@@ -65,4 +65,27 @@ describe('HomeAreaSelector steps', () => {
 		sut.selectRegion(REGION_GROUPS[0])
 		expect(sut.selectedRegion).toBe(REGION_GROUPS[0])
 	})
+
+	it('keeps the marks while a later step change replaces the transition', async () => {
+		const finishers: Array<() => void> = []
+		Object.assign(document, {
+			startViewTransition: (update: () => void) => {
+				update()
+				return {
+					ready: Promise.resolve(),
+					finished: new Promise<void>((resolve) => finishers.push(resolve)),
+				}
+			},
+		})
+		sut.selectRegion(REGION_GROUPS[0])
+		sut.backToRegions()
+		finishers[0]()
+		await Promise.resolve()
+		await Promise.resolve()
+		expect('stepping' in content.dataset).toBe(true)
+		finishers[1]()
+		await Promise.resolve()
+		await Promise.resolve()
+		expect('stepping' in content.dataset).toBe(false)
+	})
 })
