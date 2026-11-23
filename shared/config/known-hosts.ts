@@ -15,6 +15,10 @@ export type KnownEnvironment = 'dev' | 'staging' | 'prod'
 
 export const KNOWN_HOSTS: Readonly<Record<string, KnownEnvironment>> = {
 	'liverty-music.app': 'prod',
+	// Production's preview address: a release waiting for promotion is served
+	// here before fans receive it. It must stay after `liverty-music.app`, so
+	// `fanOriginOf('prod')` keeps returning the fans' origin.
+	'preview.liverty-music.app': 'prod',
 	'dev.liverty-music.app': 'dev',
 	'staging.liverty-music.app': 'staging',
 }
@@ -30,3 +34,13 @@ export function fanOriginOf(environment: KnownEnvironment): string | undefined {
 	)
 	return host ? `https://${host}` : undefined
 }
+
+/** The host that serves a release waiting for promotion (production only). */
+export const PREVIEW_HOST = 'preview.liverty-music.app'
+
+/**
+ * The API address a page loaded from {@link PREVIEW_HOST} calls. The same
+ * files serve the production address after promotion, so the choice is made
+ * from the page's host, not from a value fixed in `/config.json`.
+ */
+export const PREVIEW_API_BASE_URL = 'https://api.preview.liverty-music.app'

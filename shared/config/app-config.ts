@@ -1,5 +1,5 @@
 import { DI } from 'aurelia'
-import { KNOWN_HOSTS } from './known-hosts'
+import { KNOWN_HOSTS, PREVIEW_API_BASE_URL, PREVIEW_HOST } from './known-hosts'
 
 export { KNOWN_HOSTS } from './known-hosts'
 
@@ -207,7 +207,7 @@ async function doLoadAppConfig(
 			`config.json parse failed: ${err instanceof Error ? err.message : String(err)}`,
 		)
 	}
-	const config = validateAppConfig(parsed, options)
+	const config = withPreviewApi(validateAppConfig(parsed, options))
 	// Opt-in only: the local override is attempted solely when a developer has
 	// set `VITE_DEV_API_TARGET` in a gitignored `.env.local` (the local-backend
 	// signal). This keeps the extra fetch out of every normal dev/CI bootstrap.
@@ -217,6 +217,17 @@ async function doLoadAppConfig(
 			: config
 	_config = final
 	return final
+}
+
+/**
+ * Points the config at the preview API when the page was loaded from the
+ * preview host, so a new web app is checked together with the new API. Any
+ * other host keeps `apiBaseUrl` from `/config.json`.
+ */
+function withPreviewApi(config: AppConfig): AppConfig {
+	if (typeof window === 'undefined') return config
+	if (window.location.hostname !== PREVIEW_HOST) return config
+	return { ...config, apiBaseUrl: PREVIEW_API_BASE_URL }
 }
 
 /**
