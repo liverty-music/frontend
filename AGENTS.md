@@ -156,6 +156,15 @@ it runs, such as `reduced-motion`.
 - Add `play` functions (`storybook/test`: `expect`/`within`/`userEvent`) for interaction assertions.
 - a11y (axe) runs on every story and **fails** on violations (`.storybook/preview.ts` sets
   `a11y.test: 'error'`).
+- A fits-the-screen check runs after every story under Vitest (`.storybook/fits-screen.ts`, wired
+  in `preview.ts`) and **fails** when text is cut off or runs past the screen's edge, or a box lies
+  outside it. It measures the story at its own width (its `viewport` global, else the browser's) with
+  animations cancelled; text in an `overflow-x: auto | scroll` ancestor and text with
+  `text-overflow: ellipsis` is allowed. A story that frames its content wider than its screen, or
+  shows overflow on purpose, opts out with `parameters: { fitsScreen: { disable: '<reason>' } }`.
+  Most stories run at the Vitest default width, so a component's layout on a phone is checked only by
+  a story that sets a narrow viewport (`globals: { viewport: { value: 'mobile1' } }`, 320 px); give
+  a component that holds text one (cf. `celebration-overlay.stories.ts`).
 - Shared config (i18n, global `svg-icon`/`bottom-sheet` registration, a11y param) lives in
   `definePreview(...)` in `.storybook/preview.ts`. `@storybook/addon-vitest` applies that file, with the
   framework's and the addons' previews, to every story it runs. `.storybook/vitest.setup.ts` must not apply
