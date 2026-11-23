@@ -45,12 +45,18 @@
 		   console's token of the same name). */
 		--field-block-size: 56px;
 
-		/* Toggle / switch control geometry (the settings list's switch). */
-		--toggle-track-inline: 2.75rem;
-		--toggle-track-block: 1.5rem;
-		--toggle-thumb-size: 1.25rem;
-		--toggle-thumb-inset: 0.125rem;
-		--toggle-thumb-translate: 1.25rem;
+		/* Toggle / switch control geometry (the settings list's switch; M3
+		   switch tokens, m3.material.io Components > Switch > Specs: track
+		   52 x 32, handle 16 off, 24 on, 28 pressed). Each handle size is
+		   centred on its end of the track: 16 px and 36 px from the start
+		   edge. */
+		--toggle-track-inline: 3.25rem;
+		--toggle-track-block: 2rem;
+		--toggle-thumb-size-off: 1rem;
+		--toggle-thumb-size-on: 1.5rem;
+		--toggle-thumb-size-pressed: 1.75rem;
+		--toggle-thumb-centre-off: 1rem;
+		--toggle-thumb-centre-on: 2.25rem;
 
 		/* Glows: light in a brand colour. A glow is not elevation (depth comes
 		   from the shared --md-sys-elevation-level* shadows and the surface
