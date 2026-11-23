@@ -26,8 +26,11 @@
 			word-break: auto-phrase;
 
 			/* The copy breaks the headline where it means to (after 「ようこそ！」);
-			   longer lines balance and break Japanese at phrase boundaries,
-			   never mid-word (graceful no-op where unsupported). */
+			   a zero-width space (U+200B) in it marks where a line may break
+			   when it does not fit, which a phrase `auto-phrase` keeps whole
+			   (「タイムテーブル完成！」) cannot do by itself. Longer lines balance
+			   and break Japanese at phrase boundaries, never mid-word
+			   (graceful no-op where unsupported). */
 			white-space: pre-line;
 
 			animation: headline-enter var(--md-sys-motion-duration-extra-long1)
