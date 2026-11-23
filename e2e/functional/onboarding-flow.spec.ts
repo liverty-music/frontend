@@ -662,6 +662,71 @@ test.describe('Onboarding flow (single-flag model)', () => {
 			.toBe('true')
 	})
 
+	// @spec components/infrastructure/fan/web/global/celebration-overlay "Celebration plays after the home-area sheet closes"
+	test('The celebration opens only once the home-area sheet has closed', async ({
+		page,
+	}) => {
+		await page.addInitScript(() => {
+			localStorage.setItem('onboarding.helpSeen:timetable', '1')
+			localStorage.setItem(
+				'guest.followedArtists',
+				JSON.stringify(
+					[
+						'019c8655-7a05-71ef-82b4-a4ac2494e29f',
+						'019c8655-7a05-721d-b0a8-4c11724d5c90',
+						'019c8655-7a05-71e9-9af5-e1cd4fbfd367',
+					].map((id, i) => ({
+						artist: { id, name: `Artist ${i + 1}` },
+						home: null,
+					})),
+				),
+			)
+		})
+		await page.goto('/timetable')
+		const tokyo = page.getByRole('button', { name: 'Tokyo' }).first()
+		await expect(tokyo).toBeVisible({ timeout: 30_000 })
+
+		// Look at every frame from the choice on: the celebration must never be
+		// active while the sheet is still on screen (it would play under it and
+		// be over when the sheet is gone).
+		await page.evaluate(() => {
+			const seen = { sheetOpen: 0, overlayActive: 0, both: 0, frames: 0 }
+			;(window as unknown as { __seen: typeof seen }).__seen = seen
+			const tick = () => {
+				const sheet = document.querySelector('home-area-selector [popover]')
+				const open = sheet?.matches(':popover-open') ?? false
+				const active =
+					document
+						.querySelector('.celebration-overlay')
+						?.getAttribute('data-state') === 'active'
+				seen.frames++
+				if (open) seen.sheetOpen++
+				if (active) seen.overlayActive++
+				if (open && active) seen.both++
+				requestAnimationFrame(tick)
+			}
+			requestAnimationFrame(tick)
+		})
+		await tokyo.click()
+
+		await expect(
+			page.locator('.celebration-overlay[data-state="active"]'),
+		).toBeVisible({ timeout: 10_000 })
+		const seen = await page.evaluate(
+			() =>
+				(
+					window as unknown as {
+						__seen: { sheetOpen: number; overlayActive: number; both: number }
+					}
+				).__seen,
+		)
+		// The check can fail: the sheet was on screen for frames, and the
+		// overlay for frames after, and no frame had both.
+		expect(seen.sheetOpen).toBeGreaterThan(0)
+		expect(seen.overlayActive).toBeGreaterThan(0)
+		expect(seen.both).toBe(0)
+	})
+
 	test('Celebration does not replay after page reload', async ({ page }) => {
 		await page.addInitScript(() => {
 			localStorage.setItem('onboardingComplete', 'true')
