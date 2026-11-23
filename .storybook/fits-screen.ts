@@ -40,31 +40,35 @@ function describe(el: Element): string {
 	return [el.tagName.toLowerCase(), ...classes].join('.')
 }
 
-/** The nearest ancestor that scrolls or clips sideways, if any. */
-function holderOf(el: Element): { el: Element; scrolls: boolean } | null {
+/**
+ * What holds `el` sideways: the nearest element (`el` itself first when
+ * `includeSelf`) whose `overflow-x` is not `visible`. It scrolls (what lies
+ * beyond can be reached) or clips (what lies beyond is cut off, whatever
+ * scrolls further out).
+ *
+ * `overflow-x: auto` alone does not say a row scrolls on purpose: the computed
+ * style of a vertical-only scroller (`overflow-y: auto`, as a route's page
+ * has) is the same `auto` on both axes, so it cannot be told from a sideways
+ * one. A box as wide as the screen that scrolls sideways is the page scrolling
+ * sideways, which is the fault this check looks for, so only a box narrower
+ * than the screen counts as a row that scrolls on purpose.
+ */
+function holderOf(
+	el: Element,
+	includeSelf: boolean,
+): { el: Element; scrolls: boolean } | null {
+	const screenWidth = document.documentElement.clientWidth
 	for (
-		let p = el.parentElement;
+		let p: Element | null = includeSelf ? el : el.parentElement;
 		p && p !== document.body;
 		p = p.parentElement
 	) {
 		const ox = getComputedStyle(p).overflowX
-		if (ox !== 'visible')
-			return { el: p, scrolls: ox === 'auto' || ox === 'scroll' }
+		if (ox === 'visible') continue
+		const inset = p.getBoundingClientRect().width < screenWidth - 1
+		return { el: p, scrolls: (ox === 'auto' || ox === 'scroll') && inset }
 	}
 	return null
-}
-
-/** Whether any ancestor scrolls sideways: what lies beyond it can be reached. */
-function scrollsAbove(el: Element): boolean {
-	for (
-		let p = el.parentElement;
-		p && p !== document.body;
-		p = p.parentElement
-	) {
-		const ox = getComputedStyle(p).overflowX
-		if (ox === 'auto' || ox === 'scroll') return true
-	}
-	return false
 }
 
 /** The left and right edges of the text `el` draws itself. */
@@ -89,8 +93,11 @@ function ownTextEdges(el: Element): { left: number; right: number } | null {
 
 /**
  * What is cut off or past the screen's edge, one line each. Empty when the
- * story fits. Text that scrolls on purpose (inside an `overflow-x: auto` or
- * `scroll` ancestor) and text shortened with an ellipsis is not reported.
+ * story fits. Text that scrolls on purpose (its nearest `overflow-x` holder,
+ * itself or above, is `auto` or `scroll`) and text shortened with an ellipsis
+ * is not reported; text a holder that clips (`hidden`, `clip`) cuts off is, and
+ * so is text that runs free past the screen. A box is reported when it lies
+ * outside the screen with no holder around it.
  */
 export function findOverflow(): string[] {
 	const screenWidth = document.documentElement.clientWidth
@@ -101,14 +108,14 @@ export function findOverflow(): string[] {
 		const cs = getComputedStyle(el)
 
 		const text = ownTextEdges(el)
-		if (text && !scrollsAbove(el)) {
-			const holder = holderOf(el)
+		const holder = text ? holderOf(el, true) : null
+		if (text && !holder?.scrolls) {
 			const holderBox = holder?.el.getBoundingClientRect()
-			const pastScreen = text.right > screenWidth + 1 || text.left < -1
+			const pastScreen =
+				!holder && (text.right > screenWidth + 1 || text.left < -1)
 			const cutByHolder =
 				holder &&
 				holderBox &&
-				!holder.scrolls &&
 				(text.right > holderBox.right + 1 || text.left < holderBox.left - 1) &&
 				cs.textOverflow !== 'ellipsis' &&
 				getComputedStyle(holder.el).textOverflow !== 'ellipsis'
@@ -125,7 +132,7 @@ export function findOverflow(): string[] {
 		const box = el.getBoundingClientRect()
 		if (
 			(box.right > screenWidth + 1 || box.left < -1) &&
-			!scrollsAbove(el) &&
+			!holderOf(el, false) &&
 			cs.position !== 'fixed' &&
 			el.closest('[aria-hidden="true"]') === null
 		) {

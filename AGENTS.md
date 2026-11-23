@@ -159,8 +159,10 @@ it runs, such as `reduced-motion`.
 - A fits-the-screen check runs after every story under Vitest (`.storybook/fits-screen.ts`, wired
   in `preview.ts`) and **fails** when text is cut off or runs past the screen's edge, or a box lies
   outside it. It measures the story at its own width (its `viewport` global, else the browser's) with
-  animations cancelled; text in an `overflow-x: auto | scroll` ancestor and text with
-  `text-overflow: ellipsis` is allowed. A story that frames its content wider than its screen, or
+  animations cancelled; text in a row that scrolls on purpose (an `overflow-x: auto | scroll`
+  element narrower than the screen) and text with `text-overflow: ellipsis` is allowed. An element
+  as wide as the screen that scrolls sideways counts as the page scrolling sideways, not as such a
+  row, because a vertical-only scroller computes to the same `auto` on both axes. A story that frames its content wider than its screen, or
   shows overflow on purpose, opts out with `parameters: { fitsScreen: { disable: '<reason>' } }`.
   Most stories run at the Vitest default width, so a component's layout on a phone is checked only by
   a story that sets a narrow viewport (`globals: { viewport: { value: 'mobile1' } }`, 320 px); give
