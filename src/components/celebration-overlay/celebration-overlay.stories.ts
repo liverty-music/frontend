@@ -154,6 +154,29 @@ async function expectLines(canvasElement: HTMLElement, lines: string[]) {
 	return overlay
 }
 
+/**
+ * Every line is whole inside the screen: no line is wider than its box and the
+ * column is no wider than the screen. (This story's viewport is a 320 px
+ * phone, the narrowest the app supports.)
+ */
+async function expectFits(overlay: HTMLElement) {
+	const problems: string[] = []
+	if (overlay.scrollWidth > overlay.clientWidth) {
+		problems.push(
+			`the column is ${overlay.scrollWidth}px in a ${overlay.clientWidth}px screen`,
+		)
+	}
+	for (const line of overlay.querySelectorAll<HTMLElement>('p')) {
+		const box = line.getBoundingClientRect().width
+		if (line.scrollWidth > line.clientWidth || box > overlay.clientWidth) {
+			problems.push(
+				`"${line.textContent?.replace(/\u200b/g, '|')}" scrolls ${line.scrollWidth}px in a ${line.clientWidth}px box (${box}px on a ${overlay.clientWidth}px screen)`,
+			)
+		}
+	}
+	await expect(problems).toEqual([])
+}
+
 /** The motion that matches the viewer's preference. */
 async function expectMotion(canvasElement: HTMLElement, confetti: boolean) {
 	const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -178,6 +201,7 @@ export const PostSignupOverEmptyState = {
 	args: { tier: 'postSignup', backdrop: 'empty' },
 	play: async ({ canvasElement }) => {
 		const overlay = await expectLines(canvasElement, [t.welcome, t.chasing])
+		await expectFits(overlay)
 		const style = getComputedStyle(overlay)
 		await expect(style.backdropFilter).toContain('blur')
 		await expectMotion(canvasElement, true)
@@ -189,7 +213,8 @@ export const PostSignupOverTimetable = {
 	render,
 	args: { tier: 'postSignup', backdrop: 'timetable' },
 	play: async ({ canvasElement }) => {
-		await expectLines(canvasElement, [t.welcome, t.chasing])
+		const overlay = await expectLines(canvasElement, [t.welcome, t.chasing])
+		await expectFits(overlay)
 	},
 } satisfies Story
 
@@ -199,11 +224,12 @@ export const LightOverTimetable = {
 	render,
 	args: { tier: 'light', backdrop: 'timetable' },
 	play: async ({ canvasElement }) => {
-		await expectLines(canvasElement, [
+		const overlay = await expectLines(canvasElement, [
 			t.complete,
 			'5組のアーティストの12公演が見つかりました',
 			t.tapToView,
 		])
+		await expectFits(overlay)
 		await expectMotion(canvasElement, false)
 	},
 } satisfies Story

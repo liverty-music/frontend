@@ -12,6 +12,11 @@
 			inset: 0;
 
 			display: grid;
+
+			/* One column as wide as the screen. An `auto` column grows to its
+			   widest line, and a headline that cannot break (a Japanese phrase)
+			   then runs past the screen's edge. */
+			grid-template-columns: minmax(0, 1fr);
 			row-gap: var(--space-s);
 			place-items: center;
 

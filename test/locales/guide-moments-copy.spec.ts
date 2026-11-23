@@ -78,6 +78,15 @@ describe('guide moments copy', () => {
 		expect(en.timetable.celebration.chasing.split('\n')).toHaveLength(2)
 	})
 
+	it('lets the light celebration headline break between its two phrases', () => {
+		// 「タイムテーブル完成！」 is one phrase to the browser, so on a phone
+		// narrower than the headline it needs a marked place to break (U+200B).
+		expect(ja.timetable.celebration.complete).toBe('タイムテーブル\u200b完成！')
+		expect(ja.timetable.celebration.complete.replace('\u200b', '')).toBe(
+			'タイムテーブル完成！',
+		)
+	})
+
 	it('titles the notification step after a sign-up from the notification button', () => {
 		expect(ja.postSignup.notify.titleTrack).toBe(
 			'あとはプッシュ通知をオンにするだけ！',

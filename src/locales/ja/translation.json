@@ -190,7 +190,7 @@
 			"viewArtists": "アーティスト一覧も見てみよう！"
 		},
 		"celebration": {
-			"complete": "タイムテーブル完成！",
+			"complete": "タイムテーブル\u200b完成！",
 			"welcome": "ようこそ！\nもうライブは見逃さない",
 			"found": "{{artists}}組のアーティストの{{concerts}}公演が見つかりました",
 			"tapToView": "タップして見てみよう",
