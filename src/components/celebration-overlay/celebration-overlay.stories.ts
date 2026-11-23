@@ -160,17 +160,21 @@ async function expectLines(canvasElement: HTMLElement, lines: string[]) {
  * phone, the narrowest the app supports.)
  */
 async function expectFits(overlay: HTMLElement) {
-	await expect(overlay.scrollWidth).toBeLessThanOrEqual(overlay.clientWidth)
-	for (const line of overlay.querySelectorAll<HTMLElement>('p')) {
-		await expect(
-			line.scrollWidth,
-			`"${line.textContent}" runs past its box`,
-		).toBeLessThanOrEqual(line.clientWidth)
-		await expect(
-			line.getBoundingClientRect().width,
-			`"${line.textContent}" is wider than the screen`,
-		).toBeLessThanOrEqual(overlay.clientWidth)
+	const problems: string[] = []
+	if (overlay.scrollWidth > overlay.clientWidth) {
+		problems.push(
+			`the column is ${overlay.scrollWidth}px in a ${overlay.clientWidth}px screen`,
+		)
 	}
+	for (const line of overlay.querySelectorAll<HTMLElement>('p')) {
+		const box = line.getBoundingClientRect().width
+		if (line.scrollWidth > line.clientWidth || box > overlay.clientWidth) {
+			problems.push(
+				`"${line.textContent?.replace(/\u200b/g, '|')}" scrolls ${line.scrollWidth}px in a ${line.clientWidth}px box (${box}px on a ${overlay.clientWidth}px screen)`,
+			)
+		}
+	}
+	await expect(problems).toEqual([])
 }
 
 /** The motion that matches the viewer's preference. */

@@ -13,7 +13,9 @@
 			isolation: isolate;
 			position: relative;
 
-			padding-inline: var(--space-l);
+			/* Less than the other lines: 「タイムテーブル」 and the wider
+			   padding overflow a 320 px screen in some fonts. */
+			padding-inline: var(--space-m);
 
 			color: var(--color-white);
 			text-align: center;
@@ -25,12 +27,10 @@
 			text-wrap: balance;
 			word-break: auto-phrase;
 
-			/* The copy breaks the headline where it means to (after 「ようこそ！」);
-			   a zero-width space (U+200B) in it marks where a line may break
-			   when it does not fit, which a phrase `auto-phrase` keeps whole
-			   (「タイムテーブル完成！」) cannot do by itself. Longer lines balance
-			   and break Japanese at phrase boundaries, never mid-word
-			   (graceful no-op where unsupported). */
+			/* The copy breaks the headline where it means to: after 「ようこそ！」,
+			   or at a zero-width space (U+200B) where a phrase `auto-phrase`
+			   keeps whole may break if it must. Longer lines balance and break
+			   Japanese at phrase boundaries, never mid-word. */
 			white-space: pre-line;
 
 			animation: headline-enter var(--md-sys-motion-duration-extra-long1)
