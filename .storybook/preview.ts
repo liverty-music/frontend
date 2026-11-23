@@ -13,6 +13,7 @@ import { BottomSheet } from '../src/components/bottom-sheet/bottom-sheet'
 import { SvgIcon } from '../src/components/svg-icon/svg-icon'
 import en from '../src/locales/en/translation.json'
 import ja from '../src/locales/ja/translation.json'
+import { expectFitsScreen } from './fits-screen'
 
 // Project annotations for the Storybook UI and for the Vitest storybook
 // projects alike: `@storybook/addon-vitest` applies this file (with the
@@ -36,6 +37,9 @@ export default definePreview({
 			;(popover as HTMLElement).hidePopover()
 		}
 	},
+	// Every story, once it has run: nothing of it is cut off or past the
+	// screen's edge (`.storybook/fits-screen.ts`). Only while Vitest runs it.
+	afterEach: ({ parameters }) => expectFitsScreen(parameters),
 	parameters: {
 		// Fail the run on any axe violation (design D3 / spec: "Accessibility checks
 		// run on component stories").
