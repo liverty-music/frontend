@@ -162,7 +162,10 @@ it runs, such as `reduced-motion`.
   animations cancelled; text in a row that scrolls on purpose (an `overflow-x: auto | scroll`
   element narrower than the screen) and text with `text-overflow: ellipsis` is allowed. An element
   as wide as the screen that scrolls sideways counts as the page scrolling sideways, not as such a
-  row, because a vertical-only scroller computes to the same `auto` on both axes. A story that frames its content wider than its screen, or
+  row, because a vertical-only scroller computes to the same `auto` on both axes. The limit: a
+  vertical-only scroller narrower than the screen (a bottom sheet's body, a list with
+  `max-inline-size`) reads as a row that scrolls on purpose, so text overflowing inside it is not
+  reported; the check is a net for text that runs free, not a proof. A story that frames its content wider than its screen, or
   shows overflow on purpose, opts out with `parameters: { fitsScreen: { disable: '<reason>' } }`.
   Most stories run at the Vitest default width, so a component's layout on a phone is checked only by
   a story that sets a narrow viewport (`globals: { viewport: { value: 'mobile1' } }`, 320 px); give

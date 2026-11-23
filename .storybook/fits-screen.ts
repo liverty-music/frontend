@@ -97,7 +97,7 @@ function ownTextEdges(el: Element): { left: number; right: number } | null {
  * itself or above, is `auto` or `scroll`) and text shortened with an ellipsis
  * is not reported; text a holder that clips (`hidden`, `clip`) cuts off is, and
  * so is text that runs free past the screen. A box is reported when it lies
- * outside the screen with no holder around it.
+ * outside the screen unless a row that scrolls on purpose holds it.
  */
 export function findOverflow(): string[] {
 	const screenWidth = document.documentElement.clientWidth
@@ -132,7 +132,7 @@ export function findOverflow(): string[] {
 		const box = el.getBoundingClientRect()
 		if (
 			(box.right > screenWidth + 1 || box.left < -1) &&
-			!holderOf(el, false) &&
+			!holderOf(el, false)?.scrolls &&
 			cs.position !== 'fixed' &&
 			el.closest('[aria-hidden="true"]') === null
 		) {
