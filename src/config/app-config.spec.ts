@@ -177,6 +177,46 @@ describe('app-config', () => {
 		)
 	})
 
+	describe('API address by page host', () => {
+		const originalLocation = window.location
+
+		afterEach(() => {
+			Object.defineProperty(window, 'location', {
+				configurable: true,
+				value: originalLocation,
+			})
+		})
+
+		function setHostname(hostname: string): void {
+			Object.defineProperty(window, 'location', {
+				configurable: true,
+				value: { ...originalLocation, hostname },
+			})
+		}
+
+		const prodConfig = {
+			...validConfig,
+			environment: 'prod',
+			apiBaseUrl: 'https://api.liverty-music.app',
+		}
+
+		// @spec components/infrastructure/fan/web/global/app-shell "Loaded from the preview address"
+		it('uses the preview API when loaded from the preview host', async () => {
+			setHostname('preview.liverty-music.app')
+			mockFetchJson(prodConfig)
+			const result = await loadAppConfig()
+			expect(result.apiBaseUrl).toBe('https://api.preview.liverty-music.app')
+		})
+
+		// @spec components/infrastructure/fan/web/global/app-shell "Loaded from the production address"
+		it('keeps apiBaseUrl from config.json when loaded from the production host', async () => {
+			setHostname('liverty-music.app')
+			mockFetchJson(prodConfig)
+			const result = await loadAppConfig()
+			expect(result.apiBaseUrl).toBe('https://api.liverty-music.app')
+		})
+	})
+
 	describe('getAppConfig', () => {
 		it('throws before loadAppConfig completes', () => {
 			expect(() => getAppConfig()).toThrow(
@@ -221,6 +261,22 @@ describe('app-config', () => {
 			expect(() =>
 				validateEnvironmentMatchesHost({ ...validConfig, environment: 'dev' }),
 			).toThrow(/host 'liverty-music.app' expects environment 'prod'/)
+		})
+
+		// @spec components/infrastructure/fan/web/global/app-shell "Production configuration on the preview address"
+		it('passes when the preview host serves prod config', () => {
+			setHostname('preview.liverty-music.app')
+			expect(() =>
+				validateEnvironmentMatchesHost({ ...validConfig, environment: 'prod' }),
+			).not.toThrow()
+		})
+
+		// @spec components/infrastructure/fan/web/global/app-shell "Other environment's configuration on the preview address"
+		it('throws when the preview host serves dev config', () => {
+			setHostname('preview.liverty-music.app')
+			expect(() =>
+				validateEnvironmentMatchesHost({ ...validConfig, environment: 'dev' }),
+			).toThrow(/host 'preview.liverty-music.app' expects environment 'prod'/)
 		})
 
 		it('skips check for unknown host (localhost)', () => {
