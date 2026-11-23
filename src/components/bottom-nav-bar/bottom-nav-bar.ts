@@ -7,6 +7,7 @@ import {
 import { type IDisposable, ILogger, resolve, runTasks } from 'aurelia'
 import type { ShellRouteData } from '../../app-shell'
 import { IActionMenuService } from '../../services/action-menu-service'
+import { IScreenTransition } from '../../services/screen-transition'
 
 /**
  * The bottom navigation bar. Its tabs are the shell routes marked `nav: true`,
@@ -28,6 +29,7 @@ export class BottomNavBar {
 
 	private readonly router = resolve(IRouter)
 	private readonly routerEvents = resolve(IRouterEvents)
+	private readonly screenTransition = resolve(IScreenTransition)
 	public readonly actionMenu = resolve(IActionMenuService)
 	private readonly logger = resolve(ILogger).scopeTo('BottomNavBar')
 	private subscription: IDisposable | null = null
@@ -65,9 +67,10 @@ export class BottomNavBar {
 	}
 
 	/**
-	 * A tab was tapped. The route change runs inside a View Transition, so the
-	 * route area cross-fades while the bar and the page header, which carry
-	 * their own transition names, stay put (global.css). Bound in the capture
+	 * A tab was tapped. The route change runs inside a View Transition of the
+	 * tab kind (`IScreenTransition`), so the old route fades out and then the
+	 * new one fades in while the bar and the page header, which carry their own
+	 * transition names, stay put (global.css). Bound in the capture
 	 * phase, so it runs before the router's own `href` click handler on the
 	 * same link, which it then stops; the link keeps the router's URL for a
 	 * modified or non-primary click, which is left to the router and the
@@ -76,9 +79,8 @@ export class BottomNavBar {
 	 * The update callback settles once the router has swapped the route and
 	 * Aurelia's queue is flushed; it never waits for a frame, which the
 	 * browser does not produce while it captures the old view. It catches a
-	 * failed route load, so only `ready` can reject: the browser rejects it
-	 * when it skips the transition, and the route still changes without the
-	 * cross-fade.
+	 * failed route load; when the browser skips the transition, the route still
+	 * changes without the fades.
 	 */
 	public switchTab(event: MouseEvent, tab: INavigationRoute): boolean {
 		if (
@@ -97,7 +99,7 @@ export class BottomNavBar {
 			void this.router.load(path)
 			return false
 		}
-		const transition = document.startViewTransition(async () => {
+		this.screenTransition.switchTab(async () => {
 			try {
 				await this.router.load(path)
 			} catch (error) {
@@ -105,7 +107,6 @@ export class BottomNavBar {
 			}
 			runTasks()
 		})
-		void transition.ready.catch(() => {})
 		return false
 	}
 

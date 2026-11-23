@@ -79,20 +79,59 @@
 		fill: currentcolor;
 	}
 
-	/* View Transitions. A tab switch (bottom-nav-bar) cross-fades the route
-	   area: the `root` snapshot. The navigation bar, the page header and the
-	   FAB carry their own names, so they are not part of it: their old
+	/* View Transitions. Every screen change fades the route area: the `root`
+	   snapshot. `ScreenTransition` marks the kind on `:root`. A tab switch is
+	   Material 3's "top level" change (Styles > Motion > Transitions): the
+	   old route fades out quickly and only then the new one fades in, so the
+	   two are never both at full strength; two short2 steps, 200 ms in all.
+	   Any other change (a page opened from inside a page, going back) fades
+	   out (short3, 150 ms), then in (medium2, 300 ms): 450 ms, within the 500 ms
+	   the app-shell spec allows. The navigation bar, the page header
+	   and the FAB carry their own names, so they are not part of it: their old
 	   snapshot is hidden and the new one shows at once, without a fade (the
 	   header's background is partly transparent, so a visible old snapshot
 	   would show the old title through it). Pseudo-elements cannot be
 	   wrapped in :where(). */
 	/* stylelint-disable cube/prefer-where-in-reset -- view transition pseudo-elements cannot be wrapped in :where() */
-	::view-transition-old(root) {
-		animation: var(--md-sys-motion-duration-medium2) ease-out both fade-out;
+	:root[data-screen-change="tab"]::view-transition-old(root) {
+		animation: var(--md-sys-motion-duration-short2)
+			var(--md-sys-motion-easing-standard-accelerate) both fade-out;
 	}
 
-	::view-transition-new(root) {
-		animation: var(--md-sys-motion-duration-medium2) ease-out both fade-in;
+	:root[data-screen-change="tab"]::view-transition-new(root) {
+		animation: var(--md-sys-motion-duration-short2)
+			var(--md-sys-motion-easing-standard-decelerate)
+			var(--md-sys-motion-duration-short2) both fade-in;
+	}
+
+	:root[data-screen-change="page"]::view-transition-old(root) {
+		animation: var(--md-sys-motion-duration-short3)
+			var(--md-sys-motion-easing-standard-accelerate) both fade-out;
+	}
+
+	:root[data-screen-change="page"]::view-transition-new(root) {
+		animation: var(--md-sys-motion-duration-medium2)
+			var(--md-sys-motion-easing-standard-decelerate)
+			var(--md-sys-motion-duration-short3) both fade-in;
+	}
+
+	/* The area sheet's next level (regions to a region's prefectures, and
+	   back): the step fades out, then the next fades in, as a page change
+	   does. The step keeps no group animation, so the sheet does not morph
+	   between the two sizes. */
+	::view-transition-group(area-step) {
+		animation: none;
+	}
+
+	::view-transition-old(area-step) {
+		animation: var(--md-sys-motion-duration-short3)
+			var(--md-sys-motion-easing-standard-accelerate) both fade-out;
+	}
+
+	::view-transition-new(area-step) {
+		animation: var(--md-sys-motion-duration-medium2)
+			var(--md-sys-motion-easing-standard-decelerate)
+			var(--md-sys-motion-duration-short3) both fade-in;
 	}
 
 	::view-transition-old(bottom-nav),
@@ -204,10 +243,10 @@
 		--bottom-banner-height: var(--bottom-banner-block-size);
 	}
 
-	/* Reduced motion stops every View Transition: with no animation running,
-	   the transition ends and the new view shows in the next frame, with no
-	   fade, slide or turn. One rule here, so no call site checks the
-	   preference itself. A `*` argument adds no specificity, so `:root`
+	/* Reduced motion stops every View Transition except the route area's fade
+	   (below): with no animation running, the transition ends and the new view
+	   shows in the next frame, with no fade, slide or turn. One rule here, so
+	   no call site checks the preference itself. A `*` argument adds no specificity, so `:root`
 	   lifts the rule above the named ones (root, discovery-view). */
 	/* stylelint-disable cube/prefer-where-in-reset -- view transition pseudo-elements cannot be wrapped in :where() */
 	@media (prefers-reduced-motion: reduce) {
@@ -215,6 +254,20 @@
 		:root::view-transition-old(*),
 		:root::view-transition-new(*) {
 			animation: none;
+		}
+
+		/* A screen change keeps a fade, 100 ms in all and with no movement: an
+		   instant swap is a jump cut. The duration is written out because the
+		   duration tokens are 0 ms under reduced motion. Written after the
+		   rule above, which the named pseudo-elements equal in specificity. */
+		:root[data-screen-change]::view-transition-old(root),
+		:root::view-transition-old(area-step) {
+			animation: 50ms linear both fade-out;
+		}
+
+		:root[data-screen-change]::view-transition-new(root),
+		:root::view-transition-new(area-step) {
+			animation: 50ms linear 50ms both fade-in;
 		}
 	}
 	/* stylelint-enable cube/prefer-where-in-reset */

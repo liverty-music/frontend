@@ -13,6 +13,7 @@ import { INotificationStore } from './services/notification-store'
 import { IOnboardingService } from './services/onboarding-service'
 import { IPromptCoordinator } from './services/prompt-coordinator'
 import { IPwaInstallService } from './services/pwa-install-service'
+import { IScreenTransition } from './services/screen-transition'
 import {
 	NOTIFICATION_OPENED_MESSAGE,
 	NOTIFICATION_QUERY_PARAM,
@@ -346,6 +347,7 @@ export const routes = withNavDefault(routeTable)
 export class AppShell {
 	private readonly router = resolve(IRouter)
 	private readonly routerEvents = resolve(IRouterEvents)
+	private readonly screenTransition = resolve(IScreenTransition)
 	public readonly auth = resolve(IAuthService)
 	public readonly onboarding = resolve(IOnboardingService)
 	public readonly notifications = resolve(INotificationStore)
@@ -479,6 +481,7 @@ export class AppShell {
 			'message',
 			this.onServiceWorkerMessage,
 		)
+		this.subscriptions.push(this.screenTransition.watch())
 		this.subscriptions.push(
 			this.routerEvents.subscribe('au:router:navigation-error', (event) => {
 				this.logger.error('Navigation error', { event })

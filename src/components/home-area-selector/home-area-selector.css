@@ -3,6 +3,12 @@
 		.selector-content {
 			padding-block-end: var(--space-l);
 			padding-inline: var(--space-m);
+
+			/* Named while one step replaces the other (showStep), so the two
+			   steps pair up and fade (global.css, area-step). */
+			&[data-stepping] {
+				view-transition-name: area-step;
+			}
 		}
 
 		/* Steps follow one another in the content's flow, and the label and
