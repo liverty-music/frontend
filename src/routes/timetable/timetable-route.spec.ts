@@ -42,6 +42,14 @@ const mockPurchasedTickets = {
 	load: vi.fn(async () => new Map<string, number>()),
 }
 const mockRouter = { load: vi.fn(async () => true) }
+const sheetListeners = new Set<() => void>()
+const mockSheets = {
+	openCount: 0,
+	onChange: vi.fn((listener: () => void) => {
+		sheetListeners.add(listener)
+		return () => sheetListeners.delete(listener)
+	}),
+}
 const mockResumeRevalidator = { register: vi.fn(), unregister: vi.fn() }
 const mockActionMenu = { register: vi.fn(() => vi.fn()) }
 const mockOnboarding = {
@@ -96,6 +104,7 @@ vi.mock('aurelia', async (importOriginal) => {
 				ITicketJourneyStore: mockJourneyStore,
 				IPurchasedTicketStore: mockPurchasedTickets,
 				IRouter: mockRouter,
+				IBottomSheetTracker: mockSheets,
 				IResumeRevalidator: mockResumeRevalidator,
 				IActionMenuService: mockActionMenu,
 				IOnboardingService: mockOnboarding,
@@ -255,6 +264,8 @@ describe('TimetableRoute', () => {
 		mockAuth.isAuthenticated = false
 		mockFollowStore.followedArtists = []
 		mockFollowStore.followedCount = 0
+		mockSheets.openCount = 0
+		sheetListeners.clear()
 		mockStorage.getItem.mockReturnValue(null)
 		mockConcertService.listFollowed.mockResolvedValue([])
 		mockConcertService.toDateGroups.mockReturnValue([])
@@ -1128,6 +1139,47 @@ describe('TimetableRoute', () => {
 	})
 
 	describe('maybeCelebrate (via observed data arrival / onHomeSelected)', () => {
+		// @spec components/infrastructure/fan/web/global/celebration-overlay "Celebration plays after the home-area sheet closes"
+		it('waits for the open sheet to close before it celebrates and latches', async () => {
+			mockAuth.isAuthenticated = false
+			mockOnboarding.isOnboarding = true
+			mockFollowStore.followedCount = 5
+			primeTimetable(12)
+			sut = new TimetableRoute()
+			sut.needsRegion = false
+			mockSheets.openCount = 1 // the home-area sheet, closing after its choice
+
+			await sut.loadData()
+			expect(sut.showCelebration).toBe(false)
+			expect(mockOnboarding.finish).not.toHaveBeenCalled()
+			expect(sheetListeners.size).toBe(1)
+
+			// Still open: a change that leaves a sheet open decides nothing.
+			for (const listener of sheetListeners) listener()
+			expect(sut.showCelebration).toBe(false)
+
+			mockSheets.openCount = 0
+			for (const listener of [...sheetListeners]) listener()
+			expect(sut.showCelebration).toBe(true)
+			expect(mockOnboarding.finish).toHaveBeenCalledTimes(1)
+			expect(sheetListeners.size).toBe(0)
+		})
+
+		it('stops waiting for the sheet when the route is left', async () => {
+			mockAuth.isAuthenticated = false
+			mockOnboarding.isOnboarding = true
+			mockFollowStore.followedCount = 5
+			primeTimetable(12)
+			sut = new TimetableRoute()
+			sut.needsRegion = false
+			mockSheets.openCount = 1
+			await sut.loadData()
+			expect(sheetListeners.size).toBe(1)
+
+			sut.detaching()
+			expect(sheetListeners.size).toBe(0)
+		})
+
 		// @spec components/infrastructure/fan/web/global/celebration-overlay "Guest light celebration on first timetable"
 		it('shows the guest light celebration (no confetti) with the follow and concert counts', async () => {
 			mockAuth.isAuthenticated = false

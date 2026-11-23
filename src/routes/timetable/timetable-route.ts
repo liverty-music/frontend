@@ -38,6 +38,7 @@ import {
 	type MenuAction,
 } from '../../services/action-menu-service'
 import { IAuthService } from '../../services/auth-service'
+import { IBottomSheetTracker } from '../../services/bottom-sheet-tracker'
 import { IConcertStore } from '../../services/concert-store'
 import { IErrorBoundaryService } from '../../services/error-boundary-service'
 import { IFollowStore } from '../../services/follow-store'
@@ -148,6 +149,9 @@ export class TimetableRoute {
 	private readonly purchasedTickets = resolve(IPurchasedTicketStore)
 	private readonly onboarding = resolve(IOnboardingService)
 	private readonly promptCoordinator = resolve(IPromptCoordinator)
+	private readonly sheets = resolve(IBottomSheetTracker)
+	/** Stops waiting for the open sheets to close, while onTimetableReady waits. */
+	private stopWaitingForSheets: (() => void) | null = null
 	private readonly userStore = resolve(IUserStore)
 	private readonly ea = resolve(IEventAggregator)
 	private readonly storage = resolve(ILocalStorage)
@@ -833,6 +837,21 @@ export class TimetableRoute {
 	 * overlay actually rendered (see maybeCelebrate / onCelebrationDismissed).
 	 */
 	private onTimetableReady(): void {
+		// A sheet is still open: the home-area sheet closes only after its choice
+		// resolves, and the timetable loads behind it. A celebration that opened
+		// now would play under the sheet and be over when the fan sees the screen,
+		// so both decisions wait for the last sheet to close (they stay together:
+		// the latch must still come after the celebration decision).
+		if (this.sheets.openCount > 0) {
+			this.stopWaitingForSheets ??= this.sheets.onChange(() => {
+				if (this.sheets.openCount > 0) return
+				this.stopWaitingForSheets?.()
+				this.stopWaitingForSheets = null
+				if (!this.timetableLoaded || this.needsRegion || this.isLoading) return
+				this.onTimetableReady()
+			})
+			return
+		}
 		this.maybeCelebrate()
 		this.maybeFinishOnboarding()
 	}
@@ -1028,6 +1047,8 @@ export class TimetableRoute {
 		this.fabDisposer = null
 		this.abortController?.abort()
 		this.abortController = null
+		this.stopWaitingForSheets?.()
+		this.stopWaitingForSheets = null
 		// Release the post-signup banner suppression if the user navigates away
 		// mid-celebration (before the PostSignupDialog takes over the flag).
 		this.promptCoordinator.isPostSignupSurfaceOpen = false
