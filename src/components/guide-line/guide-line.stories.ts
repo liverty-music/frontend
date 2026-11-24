@@ -130,6 +130,31 @@ export const ButtonTarget: Story = {
 	},
 }
 
+/**
+ * The line fades in and out over 200 ms (0 ms with motion reduced), then is
+ * no longer rendered once its moment ends.
+ */
+export const FadesInAndOut: Story = {
+	tags: ['reduced-motion'],
+	render: render(BUTTON_TARGET, 'discovery.swap'),
+	play: async ({ canvasElement }) => {
+		const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches
+		const canvas = within(canvasElement)
+		const line = await shownLine(canvasElement)
+
+		// @spec components/infrastructure/fan/web/global/guide-moment "The guide line closes with a fade"
+		const style = getComputedStyle(line)
+		expect(style.transitionProperty).toContain('opacity')
+		expect(style.transitionDuration.split(', ')[0]).toBe(reduce ? '0s' : '0.2s')
+
+		await userEvent.click(canvas.getByTestId('elsewhere'))
+		await waitFor(() => expect(line.matches(':popover-open')).toBe(false))
+		await waitFor(() => expect(getComputedStyle(line).display).toBe('none'), {
+			timeout: 1000,
+		})
+	},
+}
+
 /** A tap elsewhere reaches the page and ends the moment. */
 export const TapElsewhere: Story = {
 	render: render(BUTTON_TARGET, 'discovery.swap'),

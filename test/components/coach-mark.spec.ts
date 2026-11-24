@@ -62,14 +62,17 @@ describe('CoachMark', () => {
 	})
 
 	describe('deactivate', () => {
-		it('clears anchor-name and visibility', () => {
+		it('hides at once and clears anchor-name once the overlay has faded out', () => {
 			sut.active = true
 			sut.activeChanged()
 
 			sut.deactivate()
 
-			expect(targetEl.style.getPropertyValue('anchor-name')).toBe('')
 			expect(sut.visible).toBe(false)
+			// The spotlight keeps its cut-out while it fades out.
+			expect(targetEl.style.getPropertyValue('anchor-name')).not.toBe('')
+			vi.advanceTimersByTime(200)
+			expect(targetEl.style.getPropertyValue('anchor-name')).toBe('')
 		})
 	})
 
@@ -312,11 +315,16 @@ describe('CoachMark rendered by a screen', () => {
 
 	const q = (sel: string) => document.querySelector<HTMLElement>(sel)
 	const target = () => q(TARGET) as HTMLElement
-	/** Every part of the coach mark that paints: dim layer, cutout, message. */
+	/**
+	 * Every part of the coach mark that paints: dim layer, cutout, message. A
+	 * hidden overlay (fading out, then `display: none`) paints nothing.
+	 */
 	const coachParts = () =>
-		document.querySelectorAll(
-			'.coach-mark-overlay, .visual-spotlight, .target-interceptor, [role="tooltip"]',
-		).length
+		[
+			...document.querySelectorAll(
+				'.coach-mark-overlay, .visual-spotlight, .target-interceptor, [role="tooltip"]',
+			),
+		].filter((el) => !el.closest('[hidden]')).length
 
 	async function shown() {
 		fixture = await render()
@@ -360,7 +368,10 @@ describe('CoachMark rendered by a screen', () => {
 
 			expect(f.component.targetTaps).toBe(1)
 			expect(coachParts()).toBe(0)
-			expect(target().style.getPropertyValue('anchor-name')).toBe('')
+			// The anchor goes once the overlay has faded out.
+			await vi.waitFor(() =>
+				expect(target().style.getPropertyValue('anchor-name')).toBe(''),
+			)
 		})
 
 		it('a tap outside the target removes the coach mark', async () => {
@@ -372,7 +383,10 @@ describe('CoachMark rendered by a screen', () => {
 
 			expect(f.component.dismissals).toBe(1)
 			expect(coachParts()).toBe(0)
-			expect(target().style.getPropertyValue('anchor-name')).toBe('')
+			// The anchor goes once the overlay has faded out.
+			await vi.waitFor(() =>
+				expect(target().style.getPropertyValue('anchor-name')).toBe(''),
+			)
 		})
 
 		it('leaving the screen removes the coach mark', async () => {

@@ -21,6 +21,27 @@
 
 			background: var(--md-sys-color-surface-container-high);
 			box-shadow: var(--md-sys-elevation-level2);
+
+			/* Enter and exit: the line fades in and out (M3 motion >
+			   transitions > enter and exit; the tooltip fades, and an opacity
+			   change takes the effects spring). A popover leaves the top layer
+			   and `display` flips only after the exit, so both are transitioned
+			   discretely. The duration is 0 ms under reduced motion. */
+			transition:
+				opacity var(--md-sys-motion-spring-effects-duration)
+				var(--md-sys-motion-spring-effects),
+				display var(--md-sys-motion-spring-effects-duration) allow-discrete,
+				overlay var(--md-sys-motion-spring-effects-duration) allow-discrete;
+
+			&:not(:popover-open) {
+				opacity: 0;
+			}
+		}
+
+		@starting-style {
+			:scope:popover-open {
+				opacity: 0;
+			}
 		}
 
 		/* No anchor positioning: the line sits above the bottom navigation and
