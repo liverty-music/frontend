@@ -10,12 +10,10 @@
 		.sheet-popover {
 			--_backdrop-bg: oklch(0% 0 0deg / 60%);
 
-			/* Entry fade duration. The CLOSE is the dismiss scroll (see
-			   .scroll-area), so there is deliberately NO fixed-duration exit
-			   fade here — a decoupled opacity/overlay fade is what caused the
-			   bounce-back and the during-close operation lock. */
-			--_duration: 160ms;
-			--_duration-reduced: 0.01ms;
+			/* The sheet rises from the bottom edge on entry. The CLOSE is the
+			   dismiss scroll (see .scroll-area), so there is deliberately NO
+			   fixed-duration exit here: a decoupled opacity/overlay fade is what
+			   caused the bounce-back and the during-close operation lock. */
 
 			/* Top-Layer host: full-viewport, transparent. Resets the UA popover
 			   defaults (centred, auto-sized, bordered, margin). */
@@ -34,23 +32,28 @@
 
 			background: transparent;
 
-			/* Opacity-only entry transition. `overlay` is intentionally NOT
-			   transitioned: the popover leaves the Top Layer immediately on
-			   close, so its ::backdrop stops intercepting pointer events at
-			   once — the background is interactive during the dismiss scroll. */
-			transition: opacity var(--_duration) ease-out;
+			/* Entry slide: a bottom sheet moves on and off the screen rather than
+			   fading ("Don't fade a bottom sheet as it enters and exits", M3
+			   motion > transitions > enter and exit), 400 ms with emphasized
+			   decelerate (motion > easing and duration). `overlay` is
+			   intentionally NOT transitioned: the popover leaves the Top Layer
+			   immediately on close, so its ::backdrop stops intercepting pointer
+			   events at once — the background is interactive during the dismiss
+			   scroll. */
+			transition: transform var(--md-sys-motion-duration-medium4)
+				var(--md-sys-motion-easing-emphasized-decelerate);
 
 			&::backdrop {
 				background: var(--_backdrop-bg);
 				backdrop-filter: blur(4px);
 
 				/* Fallback fade for engines without scroll-driven animations. */
-				transition: opacity var(--_duration) ease-out;
+				transition: opacity var(--md-sys-motion-duration-medium4)
+					var(--md-sys-motion-easing-standard);
 			}
 
 			&:not(:popover-open) {
 				display: none;
-				opacity: 0;
 			}
 
 			&:not(:popover-open)::backdrop {
@@ -60,7 +63,7 @@
 
 		@starting-style {
 			.sheet-popover:popover-open {
-				opacity: 0;
+				transform: translateY(100%);
 			}
 
 			.sheet-popover:popover-open::backdrop {
@@ -170,13 +173,6 @@
 		@media (prefers-reduced-motion: no-preference) {
 			.scroll-area {
 				scroll-behavior: smooth;
-			}
-		}
-
-		@media (prefers-reduced-motion: reduce) {
-			.sheet-popover,
-			.sheet-popover::backdrop {
-				transition-duration: var(--_duration-reduced);
 			}
 		}
 	}

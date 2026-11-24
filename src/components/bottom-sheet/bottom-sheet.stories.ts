@@ -893,8 +893,37 @@ export const NoBounceBack = {
 	},
 } satisfies Story
 
+// The sheet enters by moving up from below the bottom edge, not by fading
+// (M3 "Don't fade a bottom sheet as it enters and exits"): its transition is
+// on `transform`, from one sheet-height down, and its opacity never changes.
+export const RisesFromTheBottom = {
+	render: behaviour,
+	args: { open: true },
+	play: async ({ canvasElement }) => {
+		// @spec components/infrastructure/fan/web/global/bottom-sheet "The sheet enters by moving, not by fading"
+		const dialog = await ready(canvasElement)
+		const style = getComputedStyle(dialog)
+		await expect(style.transitionProperty).toBe('transform')
+		await expect(style.transitionDuration).toBe('0.4s')
+		await expect(style.opacity).toBe('1')
+		// The slide's start is a `@starting-style` rule: one sheet-height down.
+		const starts = [...document.styleSheets]
+			.flatMap((sheet) => [...sheet.cssRules])
+			.flatMap(function walk(rule: CSSRule): CSSRule[] {
+				const inner = (rule as CSSGroupingRule).cssRules
+				return inner ? [rule, ...[...inner].flatMap(walk)] : [rule]
+			})
+			.filter(
+				(rule) =>
+					rule.cssText.includes('.sheet-popover:popover-open') &&
+					rule.cssText.includes('translateY(100%)'),
+			)
+		await expect(starts.length).toBeGreaterThan(0)
+	},
+} satisfies Story
+
 // A dismiss is the scroll: the popover is hidden when the body has left the
-// viewport, and its own transition is an opacity fade only (no `overlay`
+// viewport, and its own transition is the entry slide only (no `overlay`
 // discrete transition) while the backdrop is tied to the scroll position.
 export const CloseIsTheScroll = {
 	render: behaviour,
@@ -912,7 +941,7 @@ export const CloseIsTheScroll = {
 		await expect(hides[0].visible).toBeLessThanOrEqual(0.1)
 
 		const style = getComputedStyle(dialog)
-		await expect(style.transitionProperty).toBe('opacity')
+		await expect(style.transitionProperty).toBe('transform')
 		await expect(style.transitionBehavior).toBe('normal')
 		await expect(style.transitionProperty).not.toContain('overlay')
 		if (CSS.supports('animation-timeline: scroll()')) {
@@ -1159,7 +1188,7 @@ export const MotionPreference = {
 			await waitFor(() => expect(closed.n).toBe(1), { timeout: 3000 })
 			await expect(
 				seconds(getComputedStyle(dialog).transitionDuration),
-			).toBeCloseTo(0.16, 2)
+			).toBeCloseTo(0.4, 2)
 		}
 	},
 } satisfies Story
