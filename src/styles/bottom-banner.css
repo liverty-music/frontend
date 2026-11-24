@@ -17,39 +17,12 @@
               for the fallback font before the web font loads. No ellipsis: a
               copy that no longer fits shows as clipped text, which the fit
               check catches
-   - motion   the banner slides in when it appears; a light runs along the
+   - motion   the banner slides in when it appears and out when it goes; a light runs along the
               brand line and then across the action every 12s, five times
               (the install banner restarts it after each navigation). Neither
               plays with reduced motion.
    A component's own stylesheet adds only what is its own (the install
    banner's guide sheet). */
-
-/* The banner's keyframes, named once for both banners. */
-@layer utility {
-	/* The light crosses in the first ~9% of each 12s cycle, then rests. */
-	@keyframes banner-cue {
-		0% {
-			background-position-x: -100%;
-		}
-
-		9%,
-		100% {
-			background-position-x: 200%;
-		}
-	}
-
-	@keyframes bottom-banner-enter {
-		from {
-			transform: translateY(100%);
-			opacity: 0;
-		}
-
-		to {
-			transform: translateY(0);
-			opacity: 1;
-		}
-	}
-}
 
 @layer block {
 	@scope (.bottom-banner) {
@@ -80,6 +53,40 @@
 
 			background: oklch(from var(--md-sys-color-surface) l c h / 85%);
 			backdrop-filter: blur(12px);
+
+			/* Enter and exit: the banner slides up into place and back down
+			   out of the window (M3 motion > transitions > enter and exit:
+			   what crosses the screen edge slides). It stays in the DOM with
+			   `hidden`; `display` flips after the exit ends. Enter is
+			   emphasized-decelerate, exit emphasized-accelerate (motion >
+			   easing and duration). The duration tokens are 0 ms under
+			   reduced motion, so the banner then appears and goes at once. */
+			transition:
+				transform var(--md-sys-motion-duration-medium3)
+				var(--md-sys-motion-easing-emphasized-decelerate),
+				opacity var(--md-sys-motion-duration-medium3)
+				var(--md-sys-motion-easing-emphasized-decelerate),
+				display var(--md-sys-motion-duration-short4) allow-discrete;
+
+			&[hidden] {
+				transform: translateY(100%);
+
+				display: none;
+
+				opacity: 0;
+
+				transition-timing-function: var(
+					--md-sys-motion-easing-emphasized-accelerate
+				);
+				transition-duration: var(--md-sys-motion-duration-short4);
+			}
+		}
+
+		@starting-style {
+			:scope:not([hidden]) {
+				transform: translateY(100%);
+				opacity: 0;
+			}
 		}
 
 		.bottom-banner-message {
@@ -101,51 +108,6 @@
 
 		.bottom-banner-action {
 			white-space: nowrap;
-		}
-
-		@media (prefers-reduced-motion: no-preference) {
-			/* On the banner, not the host: the host stays mounted while the
-			   banner is hidden, and the entrance plays when the banner appears. */
-			:scope {
-				animation: bottom-banner-enter var(--md-sys-motion-duration-medium3)
-					var(--md-sys-motion-easing-emphasized-decelerate);
-			}
-
-			/* The cue only paints a moving background over its own box, so
-			   nothing moves or resizes: the banner's ::before on the line, and a
-			   background image over the action's fill (its ::before is the
-			   state layer, its ::after the tap target or the busy spinner).
-			   `:scope` lifts it above the button's closer `background`. A busy
-			   action shows its spinner instead of the cue. */
-			:scope::before {
-				pointer-events: none;
-				content: "";
-
-				position: absolute;
-				inset-block-start: -2px;
-				inset-inline: 0;
-
-				block-size: 2px;
-			}
-
-			:scope::before,
-			:scope .bottom-banner-action:not([data-busy]) {
-				background-image: linear-gradient(
-					to right,
-					transparent,
-					color-mix(in oklch, var(--color-white) 70%, transparent),
-					transparent
-				);
-				background-repeat: no-repeat;
-				background-position: -100% 0;
-				background-size: 50% 100%;
-
-				animation: banner-cue 12s ease-in-out 5;
-			}
-
-			:scope .bottom-banner-action:not([data-busy]) {
-				animation-delay: 1s;
-			}
 		}
 	}
 }

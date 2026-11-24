@@ -46,7 +46,9 @@ const noAnalytics = { capture: () => {} }
 type Story = StoryObj<typeof meta>
 
 /**
- * The app is installed: the banner leaves the DOM and the tab order. Kept
+ * The app is installed: the banner is hidden (out of the page, the tab order
+ * and the accessibility tree), though it stays in the DOM so it can slide
+ * out when it goes. Kept
  * before Visible, which ends with the guide sheet's modal <dialog> open:
  * Chromium intermittently crashes when another story renders after it.
  */
@@ -61,13 +63,13 @@ export const Hidden = {
 			],
 		}),
 	play: async ({ canvasElement }) => {
-		// @spec components/infrastructure/fan/web/global/pwa-install-banner "Banner is removed from DOM when hidden"
-		await expect(canvasElement.querySelector('pwa-install-banner')).not.toBe(
-			null,
+		// @spec components/infrastructure/fan/web/global/pwa-install-banner "Banner is hidden, not rendered, when it is not visible"
+		const banner = canvasElement.querySelector<HTMLElement>(
+			'pwa-install-banner .bottom-banner',
 		)
-		await expect(
-			canvasElement.querySelector('pwa-install-banner .bottom-banner'),
-		).toBe(null)
+		await expect(banner?.hidden).toBe(true)
+		await expect(banner?.inert).toBe(true)
+		await expect(getComputedStyle(banner as HTMLElement).display).toBe('none')
 		await expect(within(canvasElement).queryAllByRole('button')).toHaveLength(0)
 	},
 } satisfies Story

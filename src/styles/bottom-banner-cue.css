@@ -1,0 +1,60 @@
+/* The light that runs along the shared bottom banner's brand line and then
+   across its action (see the `motion` note in bottom-banner.css). It is a
+   block of its own because the banner's block would pass the line limit. */
+
+/* The banner's keyframes, named once for both banners. */
+@layer utility {
+	/* The light crosses in the first ~9% of each 12s cycle, then rests. */
+	@keyframes banner-cue {
+		0% {
+			background-position-x: -100%;
+		}
+
+		9%,
+		100% {
+			background-position-x: 200%;
+		}
+	}
+}
+
+@layer block {
+	@scope (.bottom-banner) {
+		@media (prefers-reduced-motion: no-preference) {
+			/* The cue only paints a moving background over its own box, so
+			   nothing moves or resizes: the banner's ::before on the line, and a
+			   background image over the action's fill (its ::before is the
+			   state layer, its ::after the tap target or the busy spinner).
+			   `:scope` lifts it above the button's closer `background`. A busy
+			   action shows its spinner instead of the cue. */
+			:scope::before {
+				pointer-events: none;
+				content: "";
+
+				position: absolute;
+				inset-block-start: -2px;
+				inset-inline: 0;
+
+				block-size: 2px;
+			}
+
+			:scope::before,
+			:scope .bottom-banner-action:not([data-busy]) {
+				background-image: linear-gradient(
+					to right,
+					transparent,
+					color-mix(in oklch, var(--color-white) 70%, transparent),
+					transparent
+				);
+				background-repeat: no-repeat;
+				background-position: -100% 0;
+				background-size: 50% 100%;
+
+				animation: banner-cue 12s ease-in-out 5;
+			}
+
+			:scope .bottom-banner-action:not([data-busy]) {
+				animation-delay: 1s;
+			}
+		}
+	}
+}

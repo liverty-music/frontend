@@ -148,13 +148,12 @@ export async function expectBannerMotion(
 		await expect(surface.getAnimations({ subtree: true })).toHaveLength(0)
 		return
 	}
-	await expect(surfaceStyle.animationDuration).toBe('0.35s')
-	const entrance = surface
-		.getAnimations()
-		.find((a) => a instanceof CSSAnimation && a.animationName !== CUE)
-	if (!entrance) throw new Error('no entrance animation')
-	const [from] = (entrance.effect as KeyframeEffect).getKeyframes()
-	await expect(from.opacity).toBe('0')
+	// The banner slides in with a transition on `transform` and `opacity`
+	// (medium3, 350 ms), not an animation; the cue below is the only animation.
+	const properties = surfaceStyle.transitionProperty.split(', ')
+	const durations = surfaceStyle.transitionDuration.split(', ')
+	await expect(durations[properties.indexOf('transform')]).toBe('0.35s')
+	await expect(durations[properties.indexOf('opacity')]).toBe('0.35s')
 
 	const cue = cueAnimations(surface)
 	const targets = cue.map((a) => {

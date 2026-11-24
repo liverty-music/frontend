@@ -200,7 +200,7 @@
 	   so the snack or the banner can sit directly above the bar. Both banners
 	   render their surface only while visible (if.bind). A flag on :root,
 	   because a rule inside @scope (action-menu) cannot match :root. */
-	:where(:root:has(.snack-item:popover-open, .bottom-banner)) {
+	:where(:root:has(.snack-item:popover-open, .bottom-banner:not([hidden]))) {
 		--fab-sunk: 1;
 	}
 
@@ -239,7 +239,7 @@
 	/* While a bottom banner shows, its height is published for the route area
 	   (app-shell) and the snack bar. The banners are exactly this tall, so
 	   layout knows it in the frame the banner appears. */
-	:where(:root:has(.bottom-banner)) {
+	:where(:root:has(.bottom-banner:not([hidden]))) {
 		--bottom-banner-height: var(--bottom-banner-block-size);
 	}
 

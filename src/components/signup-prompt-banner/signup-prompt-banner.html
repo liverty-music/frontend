@@ -7,7 +7,7 @@
      message when the banner appears (the banner itself is created with its
      content, which is not announced). -->
 <p class="[ visually-hidden ]" role="status">${visible ? message : ''}</p>
-<aside if.bind="visible" aria-label="Signup prompt" class="[ bottom-banner ]">
+<aside hidden.bind="!visible" inert.bind="!visible" aria-label="Signup prompt" class="[ bottom-banner ]">
   <span class="[ bottom-banner-message ]">${message}</span>
   <button class="[ button bottom-banner-action ] [ state-layer ]" data-size="compact" click.trigger="onSignup()" t="signupBanner.cta"></button>
 </aside>
