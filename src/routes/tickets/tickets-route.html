@@ -23,8 +23,9 @@
 		move-cancel.trigger="cancelMove()"
 	></ticket-device-notices>
 
-	<!-- Loading -->
-	<state-placeholder class="wrapper" if.bind="step === 'loading'" loading.bind="true" variant="card" rows="2" label.bind="'tickets.loading' | t"></state-placeholder>
+	<!-- Loading: an event with one ticket, 717 px at a phone's width
+	     (`--skeleton-row-block-size` in tickets-route.css). -->
+	<state-placeholder class="wrapper" if.bind="step === 'loading'" loading.bind="true" variant="card" rows="1" label.bind="'tickets.loading' | t"></state-placeholder>
 
 	<!-- Empty: no issued tickets yet -->
 	<section class="[ tickets-panel card ] [ flow wrapper ]" if.bind="step === 'empty'">

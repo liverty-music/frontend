@@ -17,6 +17,12 @@
 			inline-size: 100%;
 		}
 
+		/* The page is the 16:9 cover, the title and the details, about 640 px
+		   at a phone's width, so the four placeholder rows take that room. */
+		state-placeholder {
+			--skeleton-row-block-size: 8.75rem;
+		}
+
 		.event-status {
 			color: var(--md-sys-color-on-surface-variant);
 			text-align: center;

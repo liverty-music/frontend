@@ -2,6 +2,7 @@
 	@scope (tickets-route) {
 		:scope {
 			--flow-space: var(--space-m);
+			--skeleton-row-block-size: 44.8rem;
 
 			overflow-y: auto;
 			display: flex;
