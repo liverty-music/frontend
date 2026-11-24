@@ -44,7 +44,9 @@
 				translate var(--md-sys-motion-spring-spatial-duration)
 				var(--md-sys-motion-spring-spatial),
 				scale var(--md-sys-motion-spring-spatial-duration)
-				var(--md-sys-motion-spring-spatial);
+				var(--md-sys-motion-spring-spatial),
+				display var(--md-sys-motion-spring-spatial-duration) allow-discrete,
+				overlay var(--md-sys-motion-spring-spatial-duration) allow-discrete;
 
 			/* Its own View Transition snapshot. A named snapshot paints above
 			   the root one, and the FAB overlaps the navigation bar and the
@@ -53,6 +55,19 @@
 			   place on top, since snapshots paint in the order of their
 			   elements and the FAB is in the top layer (global.css). */
 			view-transition-name: action-menu-toggle;
+
+			/* Enter and exit: the FAB grows from nothing when it first shows
+			   (the launcher appears, or edit mode ends) and shrinks away when
+			   it goes, on the same spatial spring as its sink. */
+			&:not(:popover-open) {
+				scale: 0;
+			}
+		}
+
+		@starting-style {
+			.action-menu-toggle:popover-open {
+				scale: 0;
+			}
 		}
 
 		/* The 48 px touch target, also while the FAB is sunk and scaled down:
