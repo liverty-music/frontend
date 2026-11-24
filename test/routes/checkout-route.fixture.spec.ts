@@ -228,9 +228,15 @@ describe('CheckoutRoute verified sale (fixture)', () => {
 		expect(byTestId(host, 'checkout-verify-note')?.textContent).toContain(
 			'マイナンバーカードで本人確認を済ませた方のみ',
 		)
+		// Nothing is marked required on the count step, so no note explains a mark.
+		expect(host.textContent).not.toContain(ja.common.requiredNote)
 
 		byTestId(host, 'checkout-hold')?.click()
 		await vi.waitFor(() => expect(vm.step).toBe('personal-details'))
+		// The note is where the marked fields are.
+		const details = byTestId(host, 'checkout-personal-details')
+		expect(details?.textContent).toContain(ja.common.requiredNote)
+		expect(details?.querySelectorAll('[data-required]')).toHaveLength(2)
 
 		expect(checkoutClient.start).toHaveBeenCalledWith(
 			'stock-s',

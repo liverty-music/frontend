@@ -38,7 +38,6 @@
     <h2 class="[ checkout-step-title ] [ md-typescale-title-large-emphasized ]" t="checkout.count.title"></h2>
     <p if.bind="verificationNoteKey" class="[ checkout-note ] [ md-typescale-body-medium ]" data-testid="checkout-verify-note" t.bind="verificationNoteKey"></p>
     <p class="[ checkout-seat-type ] [ md-typescale-title-large-emphasized ]" data-testid="checkout-seat-type">${seatTypeName}</p>
-    <p class="[ md-typescale-body-small ]" t="common.requiredNote"></p>
     <label class="[ checkout-field ] [ stack ]">
       <span class="[ checkout-label ] [ md-typescale-label-large ]" t="checkout.count.label" t-params.bind="{ limit: perAccountLimit }"></span>
       <select value.bind="ticketCount" class="[ text-field ] [ md-typescale-body-large ]" data-testid="checkout-count-select">
@@ -55,6 +54,7 @@
   <section if.bind="step === 'personal-details'" class="[ checkout-panel card ] [ flow ]" data-testid="checkout-personal-details">
     <h2 class="[ checkout-step-title ] [ md-typescale-title-large-emphasized ]" t="checkout.personalDetails.title"></h2>
     <p class="[ checkout-note ] [ md-typescale-body-medium ]" t="checkout.personalDetails.note"></p>
+    <p class="[ md-typescale-body-small ]" t="common.requiredNote"></p>
     <label class="[ checkout-field ] [ stack ]">
       <span class="[ checkout-label ] [ md-typescale-label-large ]" data-required t="checkout.personalDetails.name"></span>
       <input type="text" autocomplete="name" aria-required="true" value.bind="fullName" class="[ text-field ] [ md-typescale-body-large ]" data-testid="checkout-name" />

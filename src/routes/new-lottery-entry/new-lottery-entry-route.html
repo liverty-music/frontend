@@ -41,7 +41,6 @@
 	<!-- Step 1: ticket count -->
 	<section class="[ lottery-entry-panel card ] [ flow wrapper ]" if.bind="step === 'count'" data-testid="lottery-entry-count">
 		<h2 class="[ lottery-entry-step-title ] [ md-typescale-title-large-emphasized ]" t="newLotteryEntry.count.title"></h2>
-		<p class="[ md-typescale-body-small ]" t="common.requiredNote"></p>
 		<label class="[ lottery-entry-field ] [ stack ]">
 			<span class="[ lottery-entry-label ] [ md-typescale-label-large ]" t="newLotteryEntry.count.label" t-params.bind="{ limit: perAccountLimit }"></span>
 			<select value.bind="ticketCount" class="[ text-field ] [ md-typescale-body-large ]" data-testid="lottery-entry-count-select">
@@ -57,6 +56,7 @@
 	<section class="[ lottery-entry-panel card ] [ flow wrapper ]" if.bind="step === 'personal-details'" data-testid="lottery-entry-personal-details">
 		<h2 class="[ lottery-entry-step-title ] [ md-typescale-title-large-emphasized ]" t="newLotteryEntry.personalDetails.title"></h2>
 		<p class="[ lottery-entry-lead ] [ md-typescale-body-medium ]" t="newLotteryEntry.personalDetails.note"></p>
+		<p class="[ md-typescale-body-small ]" t="common.requiredNote"></p>
 		<label class="[ lottery-entry-field ] [ stack ]">
 			<span class="[ lottery-entry-label ] [ md-typescale-label-large ]" data-required t="newLotteryEntry.personalDetails.name"></span>
 			<input type="text" autocomplete="name" aria-required="true" value.bind="fullName" class="[ text-field ] [ md-typescale-body-large ]" data-testid="lottery-entry-name" />
