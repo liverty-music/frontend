@@ -132,7 +132,9 @@ const notifyButton = (page: Page) =>
 const card = (page: Page) =>
 	page.locator('[data-live-card]').filter({ hasText: ARTIST.name })
 const signUpDialog = (page: Page) =>
-	page.getByRole('dialog', { name: 'おっと、まだアカウントを持っていないね？' })
+	page.getByRole('alertdialog', {
+		name: 'おっと、まだアカウントを持っていないね？',
+	})
 const celebration = (page: Page) =>
 	page.locator('.celebration-overlay[data-state="active"]')
 const TRACK_STEP_TITLE = 'あとはプッシュ通知をオンにするだけ！'
