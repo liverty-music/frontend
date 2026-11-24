@@ -265,15 +265,16 @@ test.describe('name on your tickets', () => {
 	}) => {
 		await openAsFan(page, { fullName: '山田 花子' })
 		await row(page).click()
-		const name = page.getByTestId('settings-full-name')
 		const phone = page.getByTestId('settings-phone-number')
-		await name.focus()
+		// The sheet's handle is its first control, the close button.
+		const handle = page.locator('.handle-bar:visible')
+		await handle.focus()
 		// Save is disabled for an unchanged form, so the phone field is the
 		// last control; the closed dialog's buttons must not count.
 		await page.keyboard.press('Shift+Tab')
 		await expect(phone).toBeFocused()
 		await page.keyboard.press('Tab')
-		await expect(name).toBeFocused()
+		await expect(handle).toBeFocused()
 	})
 
 	// Cancel is a fixture test (settings-route.fixture.spec.ts); only a real

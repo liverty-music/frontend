@@ -106,8 +106,8 @@ test.describe('tab switches', () => {
 			expect(vt.ready).toBe('ok')
 			expect(vt.finished).toBe('ok')
 
-			// The route area (root) fades out and in within 250-350 ms; the
-			// navigation bar and the page header do not fade.
+			// The route area (root) fades out, then in, 100 ms each (200 ms in all);
+			// the navigation bar and the page header do not fade.
 			const root = vt.animations.filter((a) =>
 				/^::view-transition-(old|new)\(root\)$/.test(a.pseudo),
 			)
@@ -116,8 +116,7 @@ test.describe('tab switches', () => {
 				'::view-transition-old(root)',
 			])
 			for (const a of root) {
-				expect(a.duration).toBeGreaterThanOrEqual(250)
-				expect(a.duration).toBeLessThanOrEqual(350)
+				expect(a.duration).toBe(100)
 			}
 			const chrome = vt.animations.filter(
 				(a) =>
@@ -136,19 +135,35 @@ test.describe('tab switches', () => {
 		await expect(page).toHaveURL(/\/my-artists$/)
 		const vt = await lastFinished(page)
 		expect(vt.finished).toBe('ok')
-		// No View Transition animation runs: the new route shows at once.
-		expect(vt.animations).toEqual([])
+		// The route area still fades, 50 ms out and 50 ms in (100 ms in all), and
+		// nothing else animates: no movement, no chrome.
+		expect(vt.animations.map((a) => a.pseudo).sort()).toEqual([
+			'::view-transition-new(root)',
+			'::view-transition-old(root)',
+		])
+		for (const a of vt.animations) expect(a.duration).toBeLessThanOrEqual(50)
 	})
 })
 
 test(`@spec ${SHELL} "Route change from inside a page"`, async ({ page }) => {
-	// A route opened from inside a page changes without a page transition:
-	// only a tab tap starts one. Here a first-party concert on the timetable
-	// opens its concert page.
+	// A route opened from inside a page fades out then in, within 500 ms. Here a
+	// first-party concert on the timetable opens its concert page.
 	await recordTransitions(page)
 	await openTimetable(page, { firstParty: true })
 	await page.locator('[data-live-card]').first().click()
 	await expect(page).toHaveURL(/\/concerts\/[^/?]+$/)
 	await expect(page.locator('concert-route')).toBeVisible()
-	expect(await transitions(page)).toEqual([])
+
+	const vt = await lastFinished(page)
+	expect(vt.ready).toBe('ok')
+	expect(vt.finished).toBe('ok')
+	const root = vt.animations.filter((a) =>
+		/^::view-transition-(old|new)\(root\)$/.test(a.pseudo),
+	)
+	expect(root.map((a) => a.pseudo).sort()).toEqual([
+		'::view-transition-new(root)',
+		'::view-transition-old(root)',
+	])
+	// Out 150 ms, then in 300 ms: 450 ms in all.
+	expect(root.reduce((sum, a) => sum + a.duration, 0)).toBeLessThanOrEqual(500)
 })

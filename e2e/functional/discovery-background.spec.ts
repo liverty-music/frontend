@@ -36,8 +36,11 @@ function look(page: Page): Promise<Look> {
 		;(el as HTMLElement).style.pointerEvents = 'auto'
 		const checked: string[] = []
 		const covered: string[] = []
-		const name = (n: Element) =>
-			n.classList[0] ? `.${n.classList[0]}` : n.tagName.toLowerCase()
+		// The block's class: the first that is not a bracket of a CUBE group.
+		const name = (n: Element) => {
+			const block = [...n.classList].find((c) => /^[a-z]/i.test(c))
+			return block ? `.${block}` : n.tagName.toLowerCase()
+		}
 		// The boxes that render: a `display: contents` host has none of its own,
 		// so its children stand in for it.
 		const rendered = (n: Element): Element[] =>
