@@ -9,6 +9,9 @@
 		}
 
 		.passkeys-callback-loading {
+			--stack-gap: var(--space-s);
+
+			align-items: center;
 			color: var(--md-sys-color-on-surface-variant);
 		}
 

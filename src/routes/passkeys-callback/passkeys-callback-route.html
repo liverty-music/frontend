@@ -1,5 +1,8 @@
+<import from="../../../shared/ui/circular-progress/circular-progress"></import>
+
 <main class="[ passkeys-callback ] [ center ]">
-  <output if.bind="!failure" class="[ passkeys-callback-loading ] [ md-typescale-body-large ]" role="status" aria-busy="true">
+  <output if.bind="!failure" class="[ passkeys-callback-loading ] [ md-typescale-body-large ] [ stack ]" role="status" aria-busy="true">
+    <circular-progress></circular-progress>
     <p t="passkeys.callback.verifying"></p>
   </output>
   <section if.bind="failure" class="[ passkeys-callback-error ] [ stack ]" role="alert" data-testid="passkeys-callback-error">

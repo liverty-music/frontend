@@ -20,7 +20,7 @@
   <button
     if.bind="hasPreview"
     click.trigger="seePreview()"
-    class="[ button welcome-scroll-action ] [ state-layer ]"
+    class="[ button welcome-scroll-action ] [ state-layer ] [ content-arrive ]"
     data-variant="outlined"
     data-testid="welcome-see-preview"
   >
@@ -32,7 +32,7 @@
        unauthenticated users can still start onboarding or sign in. The
        guest-friendly note rides above the CTA group per the landing-page spec
        so the no-account-required message stays visible without scrolling. -->
-  <div else class="[ welcome-hero-fallback ] [ stack ]">
+  <div else class="[ welcome-hero-fallback ] [ stack ] [ content-arrive ]">
     <welcome-cta></welcome-cta>
   </div>
 </header>

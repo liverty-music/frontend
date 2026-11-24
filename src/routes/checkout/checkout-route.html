@@ -16,7 +16,7 @@
   <!-- Event summary, shown on every step of the checkout -->
   <section
     if.bind="event && (step === 'verify-required' || step === 'count' || step === 'personal-details' || step === 'payment' || step === 'confirm')"
-    class="checkout-summary"
+    class="[ checkout-summary ] [ content-arrive ]"
     data-testid="checkout-summary"
   >
     <p class="[ checkout-event-title ] [ md-typescale-title-medium ]">${event.title}</p>
