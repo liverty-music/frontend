@@ -1,6 +1,6 @@
 <template class="[ new-resale-entry-route ] [ flow ]">
 
-	<p if.bind="step === 'loading'" class="[ resale-entry-lead ] [ md-typescale-body-medium ]" role="status" t="newResaleEntry.loading"></p>
+	<state-placeholder class="wrapper" if.bind="step === 'loading'" loading.bind="true" variant="card" rows="2" label.bind="'newResaleEntry.loading' | t"></state-placeholder>
 
 	<!-- Stripe not configured for this environment: fail closed. -->
 	<section class="[ resale-entry-panel card ] [ wrapper ]" if.bind="step === 'unavailable'" data-testid="resale-entry-unavailable">

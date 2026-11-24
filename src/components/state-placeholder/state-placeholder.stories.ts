@@ -26,6 +26,16 @@ const meta = {
 			control: 'number',
 			description: 'Number of skeleton bars rendered in the loading variant.',
 		},
+		variant: {
+			control: 'inline-radio',
+			options: ['text', 'item', 'card'],
+			description:
+				'Shape of each skeleton row: text lines, a list item or a card.',
+		},
+		label: {
+			control: 'text',
+			description: 'What a screen reader reads for the pending region.',
+		},
 	},
 	args: { icon: 'bell' },
 } satisfies Meta<typeof StatePlaceholder>
@@ -206,5 +216,44 @@ export const Loading = {
 		// asserted instead; axe (via the shared annotations) covers contrast.
 		const bars = canvasElement.querySelectorAll('.skeleton.skeleton-row')
 		await expect(bars.length).toBe(3)
+	},
+} satisfies Story
+
+/** The height each shape of skeleton row takes, in px at the default text size. */
+const ROW_HEIGHT = { text: 16, item: 72, card: 128 } as const
+
+/**
+ * Each shape of row takes the room of what loads: a list item or a card is a
+ * full-width block of its own height, and the region is named for a screen
+ * reader by the screen's own loading text. Not screenshotted (the shimmer
+ * animates).
+ */
+export const LoadingShapes = {
+	render: () =>
+		defineAureliaStory({
+			template: `
+				<div style="inline-size: 343px; display: grid; gap: 24px">
+					<state-placeholder data-shape="item" loading.bind="true" variant="item" rows="2" label="通知を読み込んでいます"></state-placeholder>
+					<state-placeholder data-shape="card" loading.bind="true" variant="card" rows="2" label="チケットを読み込んでいます"></state-placeholder>
+				</div>
+			`,
+			register: [StatePlaceholder],
+		}),
+	play: async ({ canvasElement }) => {
+		for (const shape of ['item', 'card'] as const) {
+			const host = canvasElement.querySelector(
+				`[data-shape="${shape}"]`,
+			) as HTMLElement
+			const rows = [...host.querySelectorAll<HTMLElement>('.skeleton-row')]
+			await expect(rows).toHaveLength(2)
+			for (const row of rows) {
+				await expect(row.getBoundingClientRect().height).toBe(ROW_HEIGHT[shape])
+				// A full-width block, not a line of a text list.
+				await expect(row.getBoundingClientRect().width).toBeGreaterThan(300)
+			}
+		}
+		await expect(
+			within(canvasElement).getByText('通知を読み込んでいます'),
+		).toBeInTheDocument()
 	},
 } satisfies Story

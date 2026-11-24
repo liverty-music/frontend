@@ -59,14 +59,16 @@
 	/* ── Skeleton loading placeholder (M3) ──
 	   Layout-preserving block; consumers size it (inline-size/block-size) so the
 	   swap to real content is shift-free. Shimmer via a moving gradient using
-	   the effects/on-surface tokens; static under reduced motion (below). */
+	   the effects/on-surface tokens; static under reduced motion (below). The band
+	   travels diagonally, from the top-left corner to the bottom-right (M3
+	   skeleton loaders). */
 	@keyframes skeleton-shimmer {
 		from {
-			background-position: 200% 0;
+			background-position: 100% 100%;
 		}
 
 		to {
-			background-position: -200% 0;
+			background-position: 0% 0%;
 		}
 	}
 
@@ -76,12 +78,12 @@
 
 		background-color: var(--md-sys-color-surface-container-high);
 		background-image: linear-gradient(
-			100deg,
+			135deg,
 			transparent 30%,
 			color-mix(in oklab, var(--md-sys-color-on-surface) 8%, transparent) 50%,
 			transparent 70%
 		);
-		background-size: 200% 100%;
+		background-size: 300% 300%;
 
 		animation: skeleton-shimmer 1.6s ease-in-out infinite;
 	}
@@ -118,6 +120,19 @@
 		);
 	}
 
+	/* An image fades in when it has loaded, in place of the box that held its
+	   room (ui-primitives "Content that loads shows a skeleton and fades in").
+	   The template sets `data-loaded="true"` from the image's `load` event. */
+	.image-arrive {
+		opacity: 0;
+		transition: opacity var(--md-sys-motion-duration-medium1)
+			var(--md-sys-motion-easing-standard-decelerate);
+	}
+
+	.image-arrive[data-loaded="true"] {
+		opacity: 1;
+	}
+
 	/* ── Selection spring-morph (M3) ──
 	   Selected controls (nav tabs, filter chips) morph rounder with a spatial
 	   spring plus a persistent selected state layer, driven by a real
@@ -150,10 +165,15 @@
 			animation: none;
 		}
 
-		/* Arriving content still fades, in 100 ms at most and all rows at once
-		   (the duration is written out because the duration tokens are 0 ms
-		   under reduced motion). */
-		/* stylelint-disable-next-line cube/utility-single-property -- the shortened fade takes its duration and step together */
+		/* Arriving content and images still fade, in 100 ms at most and all rows
+		   at once (the duration is written out because the duration tokens are
+		   0 ms under reduced motion). */
+		.image-arrive {
+			/* stylelint-disable-next-line cube/require-token-variables -- the duration tokens are 0 ms under reduced motion, so the 100 ms limit is written out */
+			transition-duration: 100ms;
+		}
+
+		/* stylelint-disable-next-line cube/utility-single-property -- the shortened fade takes its duration, easing and step together */
 		.content-arrive,
 		.content-arrive-rows > * {
 			/* stylelint-disable-next-line cube/require-token-variables -- the duration tokens are 0 ms under reduced motion, so the 100 ms limit is written out */

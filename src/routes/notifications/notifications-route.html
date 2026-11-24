@@ -2,7 +2,7 @@
 
 <!-- The page title is owned by the shell-hosted <page-header> (data.titleKey). -->
 <template class="[ notifications-route ] [ flow ]">
-	<p if.bind="store.state === 'loading' && store.notifications.length === 0" class="notifications-lead" role="status" t="notifications.loading"></p>
+	<state-placeholder if.bind="store.state === 'loading' && store.notifications.length === 0" loading.bind="true" variant="item" rows="4" label.bind="'notifications.loading' | t"></state-placeholder>
 
 	<section if.bind="store.state === 'error' && store.notifications.length === 0" class="[ notifications-error ] [ flow ]" data-testid="notifications-error">
 		<p class="notifications-lead" t="notifications.error"></p>
@@ -11,7 +11,7 @@
 
 	<p if.bind="store.state === 'ready' && store.notifications.length === 0" class="notifications-lead" data-testid="notifications-empty" t="notifications.empty"></p>
 
-	<ul if.bind="store.notifications.length > 0" class="[ notifications-list ] [ wrapper ]" role="list">
+	<ul if.bind="store.notifications.length > 0" class="[ notifications-list ] [ wrapper ] [ content-arrive-rows ]" role="list">
 		<li repeat.for="notification of store.notifications; key.bind: notification.id">
 			<button
 				type="button"

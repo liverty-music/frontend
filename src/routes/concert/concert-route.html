@@ -6,7 +6,7 @@
 
 <article class="[ concert-page ] [ flow wrapper ]" data-state.bind="state">
   <!-- Loading -->
-  <p if.bind="state === 'loading'" class="event-status" role="status" t="concert.loading"></p>
+  <state-placeholder if.bind="state === 'loading'" loading.bind="true" variant="card" rows="3" label.bind="'concert.loading' | t"></state-placeholder>
 
   <!-- No concert page: identical for every reason (unknown, discovered, draft, unlisted). -->
   <section if.bind="state === 'not-found'" class="[ state-placeholder ]" data-testid="event-not-found">

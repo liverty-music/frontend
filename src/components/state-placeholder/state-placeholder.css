@@ -24,13 +24,23 @@
 			block-size: var(--space-m);
 		}
 
+		/* A list item (a notification, a passkey) and a card (a ticket, an
+		   entry) take the room of what loads, a full-width block each. */
+		.skeleton-row[data-variant="item"] {
+			block-size: 4.5rem;
+		}
+
+		.skeleton-row[data-variant="card"] {
+			block-size: 8rem;
+		}
+
 		/* Stagger the bar widths so the placeholder reads as text lines, not
 		   solid blocks; the last bar is short like a trailing line. */
-		.skeleton-row:nth-child(3n) {
+		.skeleton-row[data-variant="text"]:nth-child(3n) {
 			inline-size: 70%;
 		}
 
-		.skeleton-row:last-child {
+		.skeleton-row[data-variant="text"]:last-child {
 			inline-size: 45%;
 		}
 	}

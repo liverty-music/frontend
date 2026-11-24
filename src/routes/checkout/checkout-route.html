@@ -2,7 +2,7 @@
 
 <article class="[ checkout ] [ flow wrapper ]" data-step.bind="step">
 
-  <p if.bind="step === 'loading'" class="checkout-status" role="status" t="checkout.loading"></p>
+  <state-placeholder if.bind="step === 'loading'" loading.bind="true" variant="card" rows="2" label.bind="'checkout.loading' | t"></state-placeholder>
 
   <section if.bind="step === 'unavailable'" class="[ checkout-panel card ]" data-testid="checkout-unavailable">
     <p t="checkout.unavailable"></p>
