@@ -235,9 +235,33 @@ export class PasskeysRoute {
 		} finally {
 			this.removing = false
 		}
-		this.passkeys = this.passkeys.filter((p) => p.id !== passkey.id)
-		this.pendingRemoval = null
+		await this.leaveList(() => {
+			this.passkeys = this.passkeys.filter((p) => p.id !== passkey.id)
+			this.pendingRemoval = null
+		})
 		this.focusAfterRemoval()
+	}
+
+	/**
+	 * Takes a row out of the list inside a View Transition: each row is named
+	 * (`passkeys-route.css`), so the removed one fades out and the rows below
+	 * move up instead of jumping. The default `root` cross-fade is suppressed,
+	 * so the header and bottom nav do not dip in opacity (global.css). Where the
+	 * browser has no View Transitions, or under reduced motion (a global rule),
+	 * the row goes at once. Resolves once the list is updated.
+	 */
+	private async leaveList(change: () => void): Promise<void> {
+		if (typeof document.startViewTransition !== 'function') {
+			change()
+			return
+		}
+		document.documentElement.classList.add('vt-suppress-root')
+		const transition = document.startViewTransition(change)
+		void transition.ready.catch(() => {})
+		void transition.finished.finally(() => {
+			document.documentElement.classList.remove('vt-suppress-root')
+		})
+		await transition.updateCallbackDone
 	}
 
 	/**

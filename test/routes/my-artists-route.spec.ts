@@ -420,6 +420,55 @@ describe('MyArtistsRoute', () => {
 			await sut.loadArtists()
 		})
 
+		// @spec components/infrastructure/fan/web/route/my-artists "Edit mode and the list's edits are animated"
+		describe('where the browser has View Transitions', () => {
+			const original = document.startViewTransition
+			let started: number
+
+			beforeEach(() => {
+				started = 0
+				Object.assign(document, {
+					startViewTransition: (change: () => void) => {
+						started++
+						// The edit is not made until the old frame is captured.
+						expect(document.documentElement.classList).toContain(
+							'vt-suppress-root',
+						)
+						change()
+						return {
+							ready: Promise.resolve(),
+							finished: Promise.resolve(),
+							updateCallbackDone: Promise.resolve(),
+						}
+					},
+				})
+			})
+
+			afterEach(() => {
+				Object.assign(document, { startViewTransition: original })
+				document.documentElement.classList.remove('vt-suppress-root')
+			})
+
+			it('runs edit mode on and off, a removal and its undo each in one', () => {
+				sut.toggleEditing()
+				expect(sut.editing).toBe(true)
+				expect(started).toBe(1)
+
+				const artist = sut.artists[0]
+				sut.unfollowArtist(artist)
+				expect(started).toBe(2)
+				expect(sut.artists).not.toContain(artist)
+
+				publishedSnacks[0].action?.callback()
+				expect(started).toBe(3)
+				expect(sut.artists[0]).toBe(artist)
+
+				sut.toggleEditing()
+				expect(sut.editing).toBe(false)
+				expect(started).toBe(4)
+			})
+		})
+
 		it('toggleEditing enters and leaves edit mode', () => {
 			expect(sut.editing).toBe(false)
 

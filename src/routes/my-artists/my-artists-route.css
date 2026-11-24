@@ -63,6 +63,10 @@
 			border-block-start: 1px solid var(--md-sys-color-outline-variant);
 
 			background: var(--md-sys-color-surface-container);
+
+			/* Named so the bar fades in and out with edit mode (a View
+			   Transition run by the route), not at once. */
+			view-transition-name: edit-action-bar;
 		}
 	}
 }
