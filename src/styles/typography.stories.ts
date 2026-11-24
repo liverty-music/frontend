@@ -130,3 +130,85 @@ export const JapaneseText = {
 		await expect(getComputedStyle(heading).textWrap).toContain('balance')
 	},
 } satisfies Story
+
+/**
+ * Small and medium line heights of the 15 Material 3 type styles, in px at the
+ * default text size (the "Size / line height" and "Medium line height"
+ * columns of the design-tokens requirement "Material 3 type styles").
+ */
+const LINE_HEIGHTS: Record<string, [small: number, medium: number]> = {
+	'display-large': [64, 73],
+	'display-medium': [52, 56],
+	'display-small': [44, 47],
+	'headline-large': [40, 42],
+	'headline-medium': [36, 38],
+	'headline-small': [32, 35],
+	'title-large': [28, 31],
+	'title-medium': [24, 27],
+	'title-small': [20, 23],
+	'body-large': [24, 27],
+	'body-medium': [20, 23],
+	'body-small': [16, 18],
+	'label-large': [20, 23],
+	'label-medium': [16, 18],
+	'label-small': [16, 18],
+}
+
+/** Run `check` with the document in `lang`, then put the language back. */
+async function inLanguage(lang: string, check: () => Promise<void>) {
+	const root = document.documentElement
+	const before = root.lang
+	root.lang = lang
+	try {
+		await check()
+	} finally {
+		root.lang = before
+	}
+}
+
+// @spec components/infrastructure/fan/web/global/design-tokens "Japanese text takes the medium line height"
+// @spec components/infrastructure/organizer/web/global/design-tokens "Japanese text takes the medium line height"
+/**
+ * Japanese takes the medium language height and Latin text the small one, with
+ * the same size, weight and tracking.
+ */
+export const JapaneseLineHeight = {
+	render: () =>
+		defineAureliaStory({
+			template: `<div>${Object.keys(LINE_HEIGHTS)
+				.map(
+					(style) =>
+						`<p class="md-typescale-${style}" data-style="${style}">Aa あ</p>`,
+				)
+				.join('')}</div>`,
+		}),
+	play: async ({ canvasElement }) => {
+		const lineHeight = (style: string) => {
+			const el = canvasElement.querySelector<HTMLElement>(
+				`[data-style="${style}"]`,
+			)
+			if (!el) throw new Error(`no ${style}`)
+			const css = getComputedStyle(el)
+			return {
+				line: Number.parseFloat(css.lineHeight),
+				font: `${css.fontSize} ${css.fontWeight} ${css.letterSpacing}`,
+			}
+		}
+		let latin: Record<string, ReturnType<typeof lineHeight>> = {}
+		await inLanguage('en', async () => {
+			latin = Object.fromEntries(
+				Object.keys(LINE_HEIGHTS).map((s) => [s, lineHeight(s)]),
+			)
+			for (const [style, [small]] of Object.entries(LINE_HEIGHTS)) {
+				await expect(latin[style].line).toBe(small)
+			}
+		})
+		await inLanguage('ja', async () => {
+			for (const [style, [, medium]] of Object.entries(LINE_HEIGHTS)) {
+				const japanese = lineHeight(style)
+				await expect(japanese.line).toBe(medium)
+				await expect(japanese.font).toBe(latin[style].font)
+			}
+		})
+	},
+} satisfies Story

@@ -48,7 +48,10 @@ const buttonOf = (canvasElement: HTMLElement) =>
 const layer = (el: HTMLElement) =>
 	Number.parseFloat(getComputedStyle(el, '::before').opacity)
 
-async function expectShape(button: HTMLElement): Promise<void> {
+async function expectShape(
+	button: HTMLElement,
+	corner: (radius: number) => boolean = (r) => r > 20,
+): Promise<void> {
 	const box = button.getBoundingClientRect()
 	await expect(box.width).toBe(40)
 	await expect(box.height).toBe(40)
@@ -56,8 +59,8 @@ async function expectShape(button: HTMLElement): Promise<void> {
 	await expect(target.width).toBe('48px')
 	await expect(target.height).toBe('48px')
 	await expect(
-		Number.parseFloat(getComputedStyle(button).borderTopLeftRadius),
-	).toBeGreaterThan(20)
+		corner(Number.parseFloat(getComputedStyle(button).borderTopLeftRadius)),
+	).toBe(true)
 }
 
 export const Default = {
@@ -107,13 +110,17 @@ export const Focused = {
 	},
 } satisfies Story
 
-/** A toggle that is on: `aria-pressed="true"` and the icon in `primary`. */
+/**
+ * A toggle that is on: `aria-pressed="true"`, the icon in `primary` and a 12 px
+ * rounded square instead of the circle (the shared icon button, as in the fan
+ * app).
+ */
 export const Pressed = {
 	args: { pressed: true },
 	render,
 	play: async ({ canvasElement }) => {
 		const button = buttonOf(canvasElement)
-		await expectShape(button)
+		await expectShape(button, (radius) => radius === 12)
 		await expect(button).toHaveAttribute('aria-pressed', 'true')
 		await expect(getComputedStyle(button).color).toBe(
 			roleColor(canvasElement, '--md-sys-color-primary'),

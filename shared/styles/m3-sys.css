@@ -226,6 +226,31 @@
 		--md-sys-motion-spring-effects-fast-duration: 150ms;
 	}
 
+	/* Japanese takes the medium language height (Material 3 "Language height
+	   support"): its characters fill the full height of the line, so the small
+	   (Latin) value above would set them against the line above and below.
+	   The values are the `md.ref.typeface.<style>.line-height` tokens for the
+	   Medium language height. The document's language decides, as the app sets
+	   `lang` on <html> from the UI language, so every component that reads a
+	   line-height token follows it with no rule of its own. */
+	:root:lang(ja) {
+		--md-sys-typescale-display-large-line-height: 4.5625rem;
+		--md-sys-typescale-display-medium-line-height: 3.5rem;
+		--md-sys-typescale-display-small-line-height: 2.9375rem;
+		--md-sys-typescale-headline-large-line-height: 2.625rem;
+		--md-sys-typescale-headline-medium-line-height: 2.375rem;
+		--md-sys-typescale-headline-small-line-height: 2.1875rem;
+		--md-sys-typescale-title-large-line-height: 1.9375rem;
+		--md-sys-typescale-title-medium-line-height: 1.6875rem;
+		--md-sys-typescale-title-small-line-height: 1.4375rem;
+		--md-sys-typescale-body-large-line-height: 1.6875rem;
+		--md-sys-typescale-body-medium-line-height: 1.4375rem;
+		--md-sys-typescale-body-small-line-height: 1.125rem;
+		--md-sys-typescale-label-large-line-height: 1.4375rem;
+		--md-sys-typescale-label-medium-line-height: 1.125rem;
+		--md-sys-typescale-label-small-line-height: 1.125rem;
+	}
+
 	/* Reduced motion: every duration collapses to 0 ms, so a transition built
 	   from these tokens lands its end state at once. */
 	@media (prefers-reduced-motion: reduce) {
