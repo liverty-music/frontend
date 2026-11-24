@@ -78,11 +78,6 @@
 			}
 		}
 
-		/* The handle of a sheet that can be closed is a button. */
-		.handle-bar:is(button) {
-			cursor: pointer;
-		}
-
 		/* The heading, 24 px from both edges and 16 px above the content; a
 		   sheet-wide action (clear all) sits at its end. */
 		.sheet-heading-row {
