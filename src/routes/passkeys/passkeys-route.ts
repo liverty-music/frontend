@@ -37,6 +37,8 @@ export interface ListedPasskey extends Passkey {
 	readonly addedDate?: string
 	/** That day, written for the fan's language. */
 	readonly addedLabel?: string
+	/** The row's View Transition name, so a removed row animates on its own. */
+	readonly rowName?: string
 }
 
 /** Passkey dates are the day in Japan, where the product runs. */
@@ -183,11 +185,11 @@ export class PasskeysRoute {
 		const locale = this.i18n.getLocale()
 		return passkeys.map((passkey) => {
 			const record = byId.get(passkey.id)
-			if (!record) return passkey
-			const created = record.createTime
+			const created = record?.createTime
 			return {
 				...passkey,
-				...(record.providerName ? { providerName: record.providerName } : {}),
+				rowName: `passkey-${passkey.id}`,
+				...(record?.providerName ? { providerName: record.providerName } : {}),
 				...(created
 					? {
 							// en-CA writes the ISO calendar date.
