@@ -89,7 +89,7 @@ test.describe('the language survives leaving the session', () => {
 		await signOut.click()
 		// Sign out asks first; confirming signs the fan out.
 		await page
-			.getByRole('dialog', { name: 'サインアウトしますか？' })
+			.getByRole('alertdialog', { name: 'サインアウトしますか？' })
 			.getByRole('button', { name: 'サインアウト' })
 			.click()
 

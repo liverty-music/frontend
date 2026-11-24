@@ -65,7 +65,7 @@ export const Default = {
 	render,
 	play: async ({ canvasElement }) => {
 		const answer = ask(canvasElement)
-		const dialog = within(canvasElement).getByRole('dialog', {
+		const dialog = within(canvasElement).getByRole('alertdialog', {
 			name: 'サインアウトしますか？',
 		})
 		// It fades in from transparent (the open transition).
@@ -93,7 +93,7 @@ export const Danger = {
 	},
 	play: async ({ canvasElement }) => {
 		const answer = ask(canvasElement)
-		const dialog = within(canvasElement).getByRole('dialog')
+		const dialog = within(canvasElement).getByRole('alertdialog')
 		const confirm = within(dialog).getByRole('button', {
 			name: 'ログインして削除',
 		})
@@ -117,7 +117,7 @@ export const CustomCancelLabel = {
 	},
 	play: async ({ canvasElement }) => {
 		const answer = ask(canvasElement)
-		const dialog = within(canvasElement).getByRole('dialog', {
+		const dialog = within(canvasElement).getByRole('alertdialog', {
 			name: 'おっと、まだアカウントを持っていないね？',
 		})
 		await waitFor(() => expect(dialog).toBeVisible())
@@ -139,7 +139,7 @@ export const EscapeCancels = {
 	render,
 	play: async ({ canvasElement }) => {
 		const answer = ask(canvasElement)
-		const dialog = within(canvasElement).getByRole('dialog')
+		const dialog = within(canvasElement).getByRole('alertdialog')
 		await expect(
 			within(dialog).getByRole('button', { name: 'キャンセル' }),
 		).toHaveFocus()
@@ -174,7 +174,7 @@ export const OverAnOpenSheet = {
 		const sheet = canvasElement.querySelector<HTMLDialogElement>('.story-sheet')
 		sheet?.showPopover()
 		const answer = ask(canvasElement)
-		const dialog = within(canvasElement).getByRole('dialog', {
+		const dialog = within(canvasElement).getByRole('alertdialog', {
 			name: '名義を変更しますか？',
 		})
 		const box = dialog.getBoundingClientRect()
@@ -207,7 +207,7 @@ export const FadesOnClose = {
 			await expect(reduce).toBe(globals.reducedMotion)
 		}
 		const answer = ask(canvasElement)
-		const dialog = within(canvasElement).getByRole('dialog')
+		const dialog = within(canvasElement).getByRole('alertdialog')
 		await new Promise((r) => setTimeout(r, 300))
 		await expect(getComputedStyle(dialog).opacity).toBe('1')
 		const durations = getComputedStyle(dialog).transitionDuration

@@ -172,6 +172,30 @@ export const ChipSelectedState = {
 	},
 } satisfies Story
 
+/** A focused chip selects and deselects on Enter as on Space. */
+export const ChipSelectsWithEnter = {
+	render: render(),
+	play: async ({ canvasElement }) => {
+		await openFilter(canvasElement)
+		const chip = chipOf(canvasElement, 'YOASOBI')
+		const input = chip.querySelector('input') as HTMLInputElement
+		input.focus()
+		await expect(input.checked).toBe(false)
+
+		await userEvent.keyboard('{Enter}')
+		await expect(input.checked).toBe(true)
+		await expect(chip.querySelector('svg-icon.chip-icon')).not.toBeNull()
+
+		await userEvent.keyboard('{Enter}')
+		await expect(input.checked).toBe(false)
+
+		await userEvent.keyboard(' ')
+		await expect(input.checked).toBe(true)
+
+		await dismiss(canvasElement)
+	},
+} satisfies Story
+
 /**
  * 全て解除 is disabled while nothing is selected, enabled once a chip in any
  * facet is, and clears every facet without applying anything.

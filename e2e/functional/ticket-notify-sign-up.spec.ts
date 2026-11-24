@@ -245,7 +245,7 @@ test.describe('guests see no statuses', () => {
 		await page.goto('/settings')
 		await page.getByRole('button', { name: 'サインアウト' }).click()
 		await page
-			.getByRole('dialog', { name: 'サインアウトしますか？' })
+			.getByRole('alertdialog', { name: 'サインアウトしますか？' })
 			.getByRole('button', { name: 'サインアウト' })
 			.click()
 		await page.waitForURL((url) => url.pathname === '/welcome')

@@ -95,6 +95,12 @@ export class SnackItem {
 		this.resume()
 	}
 
+	/** Esc dismisses the snack the fan has moved focus into. */
+	public onKeydown(event: KeyboardEvent): void {
+		if (event.key !== 'Escape') return
+		this.snack.handle?.dismiss()
+	}
+
 	public onFocusIn(): void {
 		this.focused = true
 		this.pause()

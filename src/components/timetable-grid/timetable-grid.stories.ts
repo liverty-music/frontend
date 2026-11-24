@@ -1129,6 +1129,13 @@ export const MonthJumpBeforeScrolling = {
 		scroll.scrollTo({ top: 40, behavior: 'instant' })
 		await frames()
 		await expect(shownJumps(canvasElement)).toEqual(['next'])
+
+		// The icon-only button shows its name as a tooltip on hover and focus.
+		const [next] = [
+			...canvasElement.querySelectorAll<HTMLElement>('.month-jump-button'),
+		].filter((b) => b.dataset.direction === 'next')
+		await expect(next.title).not.toBe('')
+		await expect(next.title).toBe(next.getAttribute('aria-label'))
 	},
 } satisfies Story
 

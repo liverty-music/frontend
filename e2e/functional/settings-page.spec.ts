@@ -234,7 +234,7 @@ test.describe('consent wording', () => {
 test.describe('name on your tickets', () => {
 	const row = (page: Page) => page.getByTestId('settings-personal-details-row')
 	const dialog = (page: Page) =>
-		page.getByRole('dialog', { name: '名義を変更しますか？' })
+		page.getByRole('alertdialog', { name: '名義を変更しますか？' })
 
 	test(`@spec ${SETTINGS} "Saving asks first"`, async ({ page }) => {
 		const calls = await openAsFan(page, {
@@ -303,7 +303,7 @@ test.describe('sign out', () => {
 	const signOut = (page: Page) =>
 		page.getByRole('button', { name: 'サインアウト', exact: true }).first()
 	const dialog = (page: Page) =>
-		page.getByRole('dialog', { name: 'サインアウトしますか？' })
+		page.getByRole('alertdialog', { name: 'サインアウトしますか？' })
 
 	// Cancel is a fixture test (settings-route.fixture.spec.ts); only a real
 	// browser turns the Escape key into a close of the top-layer dialog.

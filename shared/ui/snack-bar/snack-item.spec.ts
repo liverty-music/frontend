@@ -183,6 +183,19 @@ describe('SnackItem', () => {
 		})
 	})
 
+	describe('Esc', () => {
+		it('dismisses on Esc while focus is inside the snack', () => {
+			show('通知をオンにしますか？', {
+				action: { label: 'オン', callback: vi.fn() },
+			})
+			sut.onFocusIn()
+			sut.onKeydown(new KeyboardEvent('keydown', { key: 'a' }))
+			expect(dismiss).not.toHaveBeenCalled()
+			sut.onKeydown(new KeyboardEvent('keydown', { key: 'Escape' }))
+			expect(dismiss).toHaveBeenCalledOnce()
+		})
+	})
+
 	describe('swipe', () => {
 		it('dismisses once a swipe has carried the snack out of its place', () => {
 			show('Saved')
