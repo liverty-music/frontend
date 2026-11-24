@@ -44,6 +44,9 @@ export const Closed = {
 	play: async ({ canvasElement }) => {
 		const button = await shown(canvasElement)
 		await expect(button.getAttribute('aria-expanded')).toBe('false')
+		// The icon-only button shows its name as a tooltip on hover and focus.
+		await expect(button.title).not.toBe('')
+		await expect(button.title).toBe(button.getAttribute('aria-label'))
 		await expect(button.getBoundingClientRect().width).toBe(56)
 		const close = button.querySelector('.fab-close') as Element
 		await expect(getComputedStyle(close).opacity).toBe('0')

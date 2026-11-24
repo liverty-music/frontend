@@ -13,6 +13,8 @@
 @import "../../shared/styles/m3-typescale.css";
 @import "./button.css";
 @import "./text-field.css";
+@import "./field-error.css";
+@import "./required-mark.css";
 @import "./chip.css";
 @import "../../shared/styles/card.css";
 @import "../../shared/styles/icon-button.css";

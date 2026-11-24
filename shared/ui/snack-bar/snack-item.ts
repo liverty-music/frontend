@@ -11,7 +11,9 @@ const SWIPED_OUT_RATIO = 0.1
 /**
  * One shown snack: the `Snack` the snack bar shows, as a top-layer popover.
  * It owns what exists only while it is shown, the display timer and the time
- * left on it, and the swipe that dismisses it.
+ * left on it, and the swipe that dismisses it. The timer waits while the fan
+ * holds, hovers over or focuses the snack, and goes on with the time that was
+ * left.
  *
  * Every dismiss (timer, action, close button, swipe, a caller's handle) goes
  * through `snack.handle.dismiss()`, which the snack bar owns; the bar then sets
@@ -38,6 +40,10 @@ export class SnackItem {
 	private remaining = 0
 	/** A finger or pointer is on the snack. */
 	private held = false
+	/** A pointer is over the snack. */
+	private hovered = false
+	/** Keyboard focus is inside the snack. */
+	private focused = false
 	/** The fan is scrolling the snack sideways. */
 	private scrolling = false
 	/** The fan touched or scrolled the snack, so a scroll is a swipe. */
@@ -77,7 +83,36 @@ export class SnackItem {
 		this.snack.handle?.dismiss()
 	}
 
-	// --- Hold to pause ---
+	// --- Hold, hover and focus pause ---
+
+	public onPointerEnter(): void {
+		this.hovered = true
+		this.pause()
+	}
+
+	public onPointerLeave(): void {
+		this.hovered = false
+		this.resume()
+	}
+
+	/** Esc dismisses the snack the fan has moved focus into. */
+	public onKeydown(event: KeyboardEvent): void {
+		if (event.key !== 'Escape') return
+		this.snack.handle?.dismiss()
+	}
+
+	public onFocusIn(): void {
+		this.focused = true
+		this.pause()
+	}
+
+	/** Focus moving between the snack's own buttons keeps the pause. */
+	public onFocusOut(event: FocusEvent): void {
+		const to = event.relatedTarget
+		if (to instanceof Node && this.surface.contains(to)) return
+		this.focused = false
+		this.resume()
+	}
 
 	public onPointerDown(): void {
 		this.interacted = true
@@ -173,7 +208,14 @@ export class SnackItem {
 	}
 
 	private resume(): void {
-		if (this.held || this.scrolling || this.leaving || this.timer !== null) {
+		if (
+			this.held ||
+			this.hovered ||
+			this.focused ||
+			this.scrolling ||
+			this.leaving ||
+			this.timer !== null
+		) {
 			return
 		}
 		// setTimeout(fn, Infinity) would fire at once (ToInt32 overflow).

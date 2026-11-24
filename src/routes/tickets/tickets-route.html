@@ -23,10 +23,9 @@
 		move-cancel.trigger="cancelMove()"
 	></ticket-device-notices>
 
-	<!-- Loading -->
-	<section class="[ tickets-panel card ] [ wrapper ]" if.bind="step === 'loading'">
-		<p class="[ tickets-lead ] [ md-typescale-body-medium ]" t="tickets.loading"></p>
-	</section>
+	<!-- Loading: an event with one ticket, 717 px at a phone's width
+	     (`--skeleton-row-block-size` in tickets-route.css). -->
+	<state-placeholder class="wrapper" if.bind="step === 'loading'" loading.bind="true" variant="card" rows="1" label.bind="'tickets.loading' | t"></state-placeholder>
 
 	<!-- Empty: no issued tickets yet -->
 	<section class="[ tickets-panel card ] [ flow wrapper ]" if.bind="step === 'empty'">
@@ -47,7 +46,7 @@
 	</section>
 
 	<!-- Loaded: tickets grouped by event, nearest first -->
-	<div class="[ tickets-list ] [ flow wrapper ]" if.bind="step === 'loaded'">
+	<div class="[ tickets-list ] [ flow wrapper ] [ content-arrive-rows ]" if.bind="step === 'loaded'">
 		<section
 			class="[ tickets-event card ] [ flow ]"
 			repeat.for="group of groups"

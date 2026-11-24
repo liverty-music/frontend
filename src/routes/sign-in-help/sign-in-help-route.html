@@ -15,12 +15,14 @@
     novalidate
     data-testid="sign-in-help-form"
   >
+    <p class="[ md-typescale-body-small ]" t="common.requiredNote"></p>
     <label class="[ sign-in-help-field ] [ stack ]">
-      <span t="signInHelp.emailLabel" class="[ sign-in-help-label ] [ md-typescale-label-large ]"></span>
+      <span t="signInHelp.emailLabel" data-required class="[ sign-in-help-label ] [ md-typescale-label-large ]"></span>
       <input
         type="email"
         inputmode="email"
         autocomplete="email"
+        aria-required="true"
         value.bind="email"
         aria-invalid.bind="emailInvalid"
         aria-describedby="sign-in-help-email-error"
@@ -28,7 +30,7 @@
         data-testid="sign-in-help-email"
       />
     </label>
-    <p id="sign-in-help-email-error" if.bind="emailInvalid" t="signInHelp.emailInvalid" class="[ sign-in-help-error ] [ md-typescale-body-medium ]"></p>
+    <p id="sign-in-help-email-error" if.bind="emailInvalid" class="[ field-error ] [ md-typescale-body-medium ]" role="alert"><svg-icon name="warning" size="sm" aria-hidden="true"></svg-icon><span t="signInHelp.emailInvalid"></span></p>
     <p if.bind="error === 'tooMany'" role="alert" t="signInHelp.tooMany" class="[ sign-in-help-error ] [ md-typescale-body-medium ]" data-testid="sign-in-help-too-many"></p>
     <p if.bind="error === 'failed'" role="alert" t="signInHelp.failed" class="[ sign-in-help-error ] [ md-typescale-body-medium ]" data-testid="sign-in-help-failed"></p>
     <button

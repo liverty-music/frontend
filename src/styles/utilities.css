@@ -59,14 +59,16 @@
 	/* ── Skeleton loading placeholder (M3) ──
 	   Layout-preserving block; consumers size it (inline-size/block-size) so the
 	   swap to real content is shift-free. Shimmer via a moving gradient using
-	   the effects/on-surface tokens; static under reduced motion (below). */
+	   the effects/on-surface tokens; static under reduced motion (below). The band
+	   travels diagonally, from the top-left corner to the bottom-right (M3
+	   skeleton loaders). */
 	@keyframes skeleton-shimmer {
 		from {
-			background-position: 200% 0;
+			background-position: 100% 100%;
 		}
 
 		to {
-			background-position: -200% 0;
+			background-position: 0% 0%;
 		}
 	}
 
@@ -76,14 +78,59 @@
 
 		background-color: var(--md-sys-color-surface-container-high);
 		background-image: linear-gradient(
-			100deg,
+			135deg,
 			transparent 30%,
 			color-mix(in oklab, var(--md-sys-color-on-surface) 8%, transparent) 50%,
 			transparent 70%
 		);
-		background-size: 200% 100%;
+		background-size: 300% 300%;
 
 		animation: skeleton-shimmer 1.6s ease-in-out infinite;
+	}
+
+	/* The content that replaces a skeleton fades in where the skeleton was
+	   (ui-primitives "Content that loads shows a skeleton and fades in"). One
+	   element takes `content-arrive`; a list or grid takes `content-arrive-rows`
+	   and its rows arrive one after another, a short step apart (capped, so a
+	   long list is not slow to finish), by their position among their siblings.
+	   Nothing moves: only the opacity changes, so the skeleton's space is the
+	   content's space and the layout stays put. Where `sibling-index()` is
+	   unknown the rows arrive together. */
+	@keyframes content-arrive {
+		from {
+			opacity: 0;
+		}
+
+		to {
+			opacity: 1;
+		}
+	}
+
+	.content-arrive {
+		animation: content-arrive var(--md-sys-motion-duration-medium1)
+			var(--md-sys-motion-easing-standard-decelerate) both;
+	}
+
+	.content-arrive-rows > * {
+		animation: content-arrive var(--md-sys-motion-duration-medium1)
+			var(--md-sys-motion-easing-standard-decelerate) both;
+		animation-delay: calc(
+			(min(sibling-index(), 8) - 1) *
+			var(--md-sys-motion-duration-short1)
+		);
+	}
+
+	/* An image fades in when it has loaded, in place of the box that held its
+	   room (ui-primitives "Content that loads shows a skeleton and fades in").
+	   The template sets `data-loaded="true"` from the image's `load` event. */
+	.image-arrive {
+		opacity: 0;
+		transition: opacity var(--md-sys-motion-duration-medium1)
+			var(--md-sys-motion-easing-standard-decelerate);
+	}
+
+	.image-arrive[data-loaded="true"] {
+		opacity: 1;
 	}
 
 	/* ── Selection spring-morph (M3) ──
@@ -116,6 +163,23 @@
 		   duration tokens are 0 ms under reduced motion. */
 		.skeleton {
 			animation: none;
+		}
+
+		/* Arriving content and images still fade, in 100 ms at most and all rows
+		   at once (the duration is written out because the duration tokens are
+		   0 ms under reduced motion). */
+		.image-arrive {
+			/* stylelint-disable-next-line cube/require-token-variables -- the duration tokens are 0 ms under reduced motion, so the 100 ms limit is written out */
+			transition-duration: 100ms;
+		}
+
+		/* stylelint-disable-next-line cube/utility-single-property -- the shortened fade takes its duration, easing and step together */
+		.content-arrive,
+		.content-arrive-rows > * {
+			/* stylelint-disable-next-line cube/require-token-variables -- the duration tokens are 0 ms under reduced motion, so the 100 ms limit is written out */
+			animation-duration: 100ms;
+			animation-timing-function: linear;
+			animation-delay: 0s;
 		}
 	}
 }
@@ -179,7 +243,8 @@
    through the spinner, and draws the spinner on ::after (the shared state layer keeps ::before). A
    block that puts its own ::after on a control that can be busy (a chip's
    touch target, a banner action's cue) leaves it while `[data-busy]` is set.
-   Centred with `translate`, so the turn (`rotate`) keeps it centred. */
+   The spinner is 24 px, the least a circular indicator is (Material 3
+   progress indicators). Centred with `translate`, so the turn (`rotate`) keeps it centred. */
 @layer utility {
 	/* stylelint-disable-next-line cube/utility-single-property -- a state, not a token: it sets several properties together */
 	[data-busy] {
@@ -204,9 +269,9 @@
 		inset-inline-start: 50%;
 		translate: -50% -50%;
 
-		inline-size: 1rem;
-		block-size: 1rem;
-		border: 1.5px solid oklch(from var(--color-brand-accent) l c h / 30%);
+		inline-size: 1.5rem;
+		block-size: 1.5rem;
+		border: 2px solid oklch(from var(--color-brand-accent) l c h / 30%);
 		border-block-start-color: var(--color-brand-accent);
 		border-radius: var(--md-sys-shape-corner-full);
 

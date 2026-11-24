@@ -4,7 +4,7 @@
   sheet-closed.trigger="onSheetClosed()"
   heading.bind="(selectedRegion ? 'homeAreaSelector.regions.' + selectedRegion.key : 'homeAreaSelector.title') | t"
 >
-  <div class="[ selector-content ] [ flow ]">
+  <div ref="stepContent" class="[ selector-content ] [ flow ]">
     <!-- Step 1: Quick-select cities + Region selection -->
     <template if.bind="!selectedRegion">
       <p t="homeAreaSelector.description" class="[ selector-desc ] [ md-typescale-body-medium ]"></p>

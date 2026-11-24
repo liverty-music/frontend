@@ -74,6 +74,27 @@ export class ArtistFilterBar {
 		)
 	}
 
+	/**
+	 * A chip is a label around a visually hidden checkbox, and a checkbox
+	 * toggles on Space only. A set of filter chips selects on Space or Enter
+	 * (Material 3 chips, "Keyboard"), so Enter on a focused chip toggles it.
+	 * Bound once on each list of chips.
+	 */
+	public toggleWithEnter(event: KeyboardEvent): boolean {
+		const target = event.target
+		if (
+			event.key === 'Enter' &&
+			!event.repeat &&
+			target instanceof HTMLInputElement &&
+			target.type === 'checkbox'
+		) {
+			event.preventDefault()
+			target.click()
+			return false
+		}
+		return true
+	}
+
 	public openSheet(): void {
 		this.pendingIds = [...this.selectedIds]
 		this.pendingStatuses = [...this.selectedStatuses]

@@ -115,7 +115,7 @@ export const FitsOneLineAtEveryPhoneWidth = {
  * preference.
  */
 export const Visible = {
-	tags: ['reduced-motion'],
+	tags: ['reduced-motion', 'latin-metrics'],
 	render: () =>
 		defineAureliaStory({
 			template: '<pwa-install-banner></pwa-install-banner>',

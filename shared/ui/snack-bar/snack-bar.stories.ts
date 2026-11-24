@@ -13,6 +13,7 @@ import {
 	WCAG_AA,
 } from '../../../.storybook/contrast'
 import {
+	parkPointerAway,
 	pressAndHold,
 	releasePointer,
 	swipeSideways,
@@ -221,7 +222,7 @@ export const ErrorSeverity = snackStory({
  * that matches the preference.
  */
 export const UpdateAction = {
-	tags: ['reduced-motion'],
+	tags: ['reduced-motion', 'latin-metrics'],
 	render: () =>
 		defineAureliaStory({
 			template: `<snack-demo message.bind="message" update.bind="true"></snack-demo>`,
@@ -519,6 +520,9 @@ export const HoldPausesTimer = {
 		await expect(item.matches(':popover-open')).toBe(true)
 		const released = performance.now()
 		await releasePointer()
+		// The pointer is still over the snack, which keeps it paused (a hovered
+		// snack waits); move it away so the time that was left runs out.
+		await parkPointerAway()
 
 		await waitFor(() => expect(item.matches(':popover-open')).toBe(false), {
 			timeout: 5000,

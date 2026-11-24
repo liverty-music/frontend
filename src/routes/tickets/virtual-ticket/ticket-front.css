@@ -45,6 +45,12 @@
 			block-size: 100%;
 
 			opacity: 0;
+
+			/* The art fades in over the flat cover once it is drawn (100 ms under
+			   reduced motion, written out because the duration tokens are 0 ms
+			   then). */
+			transition: opacity var(--md-sys-motion-duration-medium1)
+				var(--md-sys-motion-easing-standard-decelerate);
 		}
 
 		.ticket-front[data-drawn="true"] .ticket-front-canvas {
@@ -57,6 +63,12 @@
 			inset: var(--_tear) var(--_notch) auto;
 			border-block-start: 2px dotted var(--_ink-muted);
 			opacity: 0.7;
+		}
+
+		@media (prefers-reduced-motion: reduce) {
+			.ticket-front-canvas {
+				transition-duration: 100ms;
+			}
 		}
 	}
 }

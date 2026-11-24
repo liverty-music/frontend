@@ -1,7 +1,7 @@
 import { I18N } from '@aurelia/i18n'
 import type { NavigationInstruction } from '@aurelia/router'
 import { ConnectError } from '@connectrpc/connect'
-import { IEventAggregator, ILogger, resolve } from 'aurelia'
+import { IEventAggregator, ILogger, resolve, runTasks } from 'aurelia'
 import { Snack } from '../../../shared/ui/snack-bar/snack'
 import { IDocumentLocation } from '../../adapter/browser/document-location'
 import { IPasskeyRpcClient } from '../../adapter/rpc/client/passkey-client'
@@ -68,6 +68,9 @@ export class PasskeysRoute {
 	public listState: PasskeyListState = 'loading'
 	/** The passkey whose removal awaits confirmation; null when none. */
 	public pendingRemoval: ListedPasskey | null = null
+
+	/** The page's own element, set by the template. */
+	public page?: HTMLElement
 	public removalFailed = false
 	public removing = false
 
@@ -234,6 +237,20 @@ export class PasskeysRoute {
 		}
 		this.passkeys = this.passkeys.filter((p) => p.id !== passkey.id)
 		this.pendingRemoval = null
+		this.focusAfterRemoval()
+	}
+
+	/**
+	 * The removed passkey's button is gone and the sheet that asked has closed,
+	 * so focus would fall to the document. It goes to the next passkey's remove
+	 * button, or to the page when none can be removed.
+	 */
+	private focusAfterRemoval(): void {
+		runTasks()
+		const next = this.page?.querySelector<HTMLElement>(
+			'[data-testid="passkeys-remove"]:not(:disabled)',
+		)
+		;(next ?? this.page)?.focus()
 	}
 
 	/**

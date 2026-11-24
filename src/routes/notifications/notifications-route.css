@@ -11,6 +11,12 @@
 			padding-inline: var(--space-m);
 		}
 
+		/* A notification is its title, a two-line body and its time, 168 px
+		   at a phone's width, so the placeholder rows take that room. */
+		state-placeholder {
+			--skeleton-row-block-size: 10.5rem;
+		}
+
 		.notifications-list {
 			--wrapper-max: 36rem;
 			--gutter: 0;

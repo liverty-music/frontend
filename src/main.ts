@@ -58,6 +58,7 @@ import { BeamVarsCustomAttribute } from './custom-attributes/beam-vars'
 import { BusyOnClickCustomAttribute } from './custom-attributes/busy-on-click'
 import { DotColorCustomAttribute } from './custom-attributes/dot-color'
 import { GuideTargetCustomAttribute } from './custom-attributes/guide-target'
+import { RovingFocusCustomAttribute } from './custom-attributes/roving-focus'
 import { TileColorCustomAttribute } from './custom-attributes/tile-color'
 import { AuthHook } from './hooks/auth-hook'
 import {
@@ -294,6 +295,7 @@ async function bootstrap(): Promise<void> {
 	au.register(AuthHook)
 	au.register(AmbientGlowCustomAttribute)
 	au.register(BusyOnClickCustomAttribute)
+	au.register(RovingFocusCustomAttribute)
 	au.register(BeamVarsCustomAttribute)
 	au.register(DotColorCustomAttribute)
 	au.register(GuideTargetCustomAttribute)

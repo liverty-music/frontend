@@ -102,6 +102,7 @@ const LABEL_SMALL_UNTRACKED = { size: '11px', tracking: 'normal' }
 
 /** A phone without a bottom safe area. */
 export const BarHeight = {
+	tags: ['latin-metrics'],
 	render: render(),
 	play: async ({ canvasElement }) => {
 		const tabs = await tabsShown(canvasElement)
@@ -142,6 +143,7 @@ export const HomeIndicator = {
  * the FAB, is in src/app-shell.stories.ts.
  */
 export const NarrowWindow = {
+	tags: ['latin-metrics'],
 	render: render(),
 	play: async ({ canvasElement }) => {
 		await atWidth(320, async () => {

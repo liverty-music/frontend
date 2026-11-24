@@ -11,8 +11,15 @@ export class HypeDotRadio {
 	/** The radio group, one per artist. */
 	@bindable public group = ''
 	@bindable public level: Hype = 'watch'
-	/** The level's label, the radio's accessible name. */
+	/** The level's label, part of the radio's accessible name. */
 	@bindable public text = ''
+	/** The artist the radio sets the level of; named with the level. */
+	@bindable public artistName = ''
+
+	/** "Artist, level": the radio's accessible name says whose level it sets. */
+	public get accessibleName(): string {
+		return this.artistName ? `${this.artistName}, ${this.text}` : this.text
+	}
 	/** Whether this is the artist's current level. */
 	@bindable public active = false
 

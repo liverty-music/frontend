@@ -1,6 +1,6 @@
 <template class="[ new-lottery-entry-route ] [ flow ]">
 
-	<p if.bind="step === 'loading'" class="[ lottery-entry-lead ] [ md-typescale-body-medium ]" role="status" t="newLotteryEntry.loading"></p>
+	<state-placeholder class="wrapper" if.bind="step === 'loading'" loading.bind="true" variant="card" rows="2" label.bind="'newLotteryEntry.loading' | t"></state-placeholder>
 
 	<!-- Stripe not configured for this environment: fail closed. -->
 	<section class="[ lottery-entry-panel card ] [ wrapper ]" if.bind="step === 'unavailable'" data-testid="lottery-entry-unavailable">
@@ -56,16 +56,18 @@
 	<section class="[ lottery-entry-panel card ] [ flow wrapper ]" if.bind="step === 'personal-details'" data-testid="lottery-entry-personal-details">
 		<h2 class="[ lottery-entry-step-title ] [ md-typescale-title-large-emphasized ]" t="newLotteryEntry.personalDetails.title"></h2>
 		<p class="[ lottery-entry-lead ] [ md-typescale-body-medium ]" t="newLotteryEntry.personalDetails.note"></p>
+		<p class="[ md-typescale-body-small ]" t="common.requiredNote"></p>
 		<label class="[ lottery-entry-field ] [ stack ]">
-			<span class="[ lottery-entry-label ] [ md-typescale-label-large ]" t="newLotteryEntry.personalDetails.name"></span>
-			<input type="text" autocomplete="name" value.bind="fullName" class="[ text-field ] [ md-typescale-body-large ]" data-testid="lottery-entry-name" />
+			<span class="[ lottery-entry-label ] [ md-typescale-label-large ]" data-required t="newLotteryEntry.personalDetails.name"></span>
+			<input type="text" autocomplete="name" aria-required="true" value.bind="fullName" class="[ text-field ] [ md-typescale-body-large ]" data-testid="lottery-entry-name" />
 		</label>
 		<label class="[ lottery-entry-field ] [ stack ]">
-			<span class="[ lottery-entry-label ] [ md-typescale-label-large ]" t="newLotteryEntry.personalDetails.phone"></span>
+			<span class="[ lottery-entry-label ] [ md-typescale-label-large ]" data-required t="newLotteryEntry.personalDetails.phone"></span>
 			<input
 				type="tel"
 				autocomplete="tel"
 				inputmode="tel"
+				aria-required="true"
 				value.bind="phoneNumber"
 				aria-invalid.bind="isPhoneInvalid"
 				aria-describedby.bind="isPhoneInvalid ? 'lottery-entry-phone-error' : null"
@@ -73,7 +75,7 @@
 				data-testid="lottery-entry-phone"
 			/>
 		</label>
-		<p id="lottery-entry-phone-error" class="[ lottery-entry-error ] [ md-typescale-body-medium ]" if.bind="isPhoneInvalid" t="newLotteryEntry.phoneInvalid"></p>
+		<p id="lottery-entry-phone-error" class="[ field-error ] [ md-typescale-body-medium ]" if.bind="isPhoneInvalid" role="alert"><svg-icon name="warning" size="sm" aria-hidden="true"></svg-icon><span t="newLotteryEntry.phoneInvalid"></span></p>
 		<p class="[ lottery-entry-error ] [ md-typescale-body-medium ]" if.bind="message" role="alert" data-testid="lottery-entry-message" t.bind="message.key" t-params.bind="message.params"></p>
 		<div class="[ lottery-entry-actions ] [ cluster ]">
 			<button type="button" class="[ button ] [ state-layer ]" data-variant="outlined" click.trigger="backToCount()" t="newLotteryEntry.back"></button>

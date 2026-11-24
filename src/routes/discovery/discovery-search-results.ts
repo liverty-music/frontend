@@ -21,6 +21,20 @@ export class DiscoverySearchResults {
 	private readonly host = resolve(INode) as HTMLElement
 
 	/**
+	 * A row is a `li` with the button role, so a key is not a click: Enter or
+	 * Space on a focused row follows that artist, as a native button does.
+	 */
+	public pressWithKey(event: KeyboardEvent): boolean {
+		const row = (event.target as Element | null)?.closest('.result-item')
+		if (row && (event.key === 'Enter' || event.key === ' ') && !event.repeat) {
+			event.preventDefault()
+			;(row as HTMLElement).click()
+			return false
+		}
+		return true
+	}
+
+	/**
 	 * Asks the parent to follow an artist with a `follow` event. The row stays
 	 * busy until the promise the parent passes to `waitUntil` settles.
 	 */

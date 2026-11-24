@@ -3,7 +3,7 @@ import {
 	type Meta,
 	type StoryObj,
 } from '@aurelia/storybook'
-import { expect, within } from 'storybook/test'
+import { expect, waitFor, within } from 'storybook/test'
 import { ConcertCover } from './concert-cover'
 
 const meta = {
@@ -57,5 +57,27 @@ export const Placeholder = {
 		const canvas = within(canvasElement)
 		await expect(canvas.getByTestId('concert-cover-placeholder')).toBeVisible()
 		await expect(canvas.queryByTestId('concert-cover')).toBeNull()
+	},
+} satisfies Story
+
+/**
+ * The image fades in over the cover's box once it has loaded: it is
+ * transparent before its `load` event and opaque after it, and the box that
+ * held its room is the same size throughout, so nothing moves.
+ */
+export const ImageFadesIn = {
+	render,
+	args: { url: IMAGE },
+	play: async ({ canvasElement }) => {
+		const img = within(canvasElement).getByTestId('concert-cover')
+		const box = canvasElement.querySelector('.concert-cover') as HTMLElement
+		await waitFor(() => expect(img).toHaveAttribute('data-loaded', 'true'))
+		await waitFor(() => expect(getComputedStyle(img).opacity).toBe('1'))
+		const settled = box.getBoundingClientRect().height
+
+		// A different image starts transparent again and fades in on its load.
+		img.dispatchEvent(new Event('load'))
+		await expect(box.getBoundingClientRect().height).toBe(settled)
+		await expect(getComputedStyle(img).transitionProperty).toBe('opacity')
 	},
 } satisfies Story

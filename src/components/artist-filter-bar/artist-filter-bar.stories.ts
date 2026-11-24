@@ -172,6 +172,61 @@ export const ChipSelectedState = {
 	},
 } satisfies Story
 
+/** The chips of a facet are one Tab stop, and the arrow keys move between them. */
+export const ChipsMoveWithArrows = {
+	render: render(),
+	play: async ({ canvasElement }) => {
+		await openFilter(canvasElement)
+		const inputs = [
+			...canvasElement.querySelectorAll<HTMLInputElement>(
+				'.artists-list input[type="checkbox"]',
+			),
+		]
+		await expect(inputs.length).toBeGreaterThan(1)
+		// One Tab stop for the group: the first chip, the others skipped.
+		await expect(inputs.map((i) => i.getAttribute('tabindex'))).toEqual(
+			inputs.map((_, n) => (n === 0 ? '0' : '-1')),
+		)
+
+		inputs[0].focus()
+		await userEvent.keyboard('{ArrowRight}')
+		await expect(document.activeElement).toBe(inputs[1])
+		await expect(inputs[1].getAttribute('tabindex')).toBe('0')
+		await expect(inputs[0].getAttribute('tabindex')).toBe('-1')
+
+		await userEvent.keyboard('{End}')
+		await expect(document.activeElement).toBe(inputs[inputs.length - 1])
+		await userEvent.keyboard('{ArrowRight}')
+		await expect(document.activeElement).toBe(inputs[0])
+
+		await dismiss(canvasElement)
+	},
+} satisfies Story
+
+/** A focused chip selects and deselects on Enter as on Space. */
+export const ChipSelectsWithEnter = {
+	render: render(),
+	play: async ({ canvasElement }) => {
+		await openFilter(canvasElement)
+		const chip = chipOf(canvasElement, 'YOASOBI')
+		const input = chip.querySelector('input') as HTMLInputElement
+		input.focus()
+		await expect(input.checked).toBe(false)
+
+		await userEvent.keyboard('{Enter}')
+		await expect(input.checked).toBe(true)
+		await expect(chip.querySelector('svg-icon.chip-icon')).not.toBeNull()
+
+		await userEvent.keyboard('{Enter}')
+		await expect(input.checked).toBe(false)
+
+		await userEvent.keyboard(' ')
+		await expect(input.checked).toBe(true)
+
+		await dismiss(canvasElement)
+	},
+} satisfies Story
+
 /**
  * 全て解除 is disabled while nothing is selected, enabled once a chip in any
  * facet is, and clears every facet without applying anything.

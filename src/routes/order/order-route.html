@@ -3,12 +3,7 @@
 <template class="[ order-route ] [ flow ]">
 
 	<!-- Loading -->
-	<section
-		class="[ order-panel card ] [ wrapper ]"
-		if.bind="step === 'loading'"
-	>
-		<p class="[ order-lead ] [ md-typescale-body-medium ]" t="order.loading"></p>
-	</section>
+	<state-placeholder class="wrapper" if.bind="step === 'loading'" loading.bind="true" variant="card" rows="1" label.bind="'order.loading' | t"></state-placeholder>
 
 	<!-- Not found: non-revealing — order not the caller's or does not exist -->
 	<section
@@ -36,7 +31,7 @@
 
 	<!-- Loaded -->
 	<section
-		class="[ order-content ] [ flow wrapper ]"
+		class="[ order-content ] [ flow wrapper ] [ content-arrive ]"
 		if.bind="step === 'loaded'"
 	>
 		<!-- §5.2 Refund banner (shown prominently before payment details) -->

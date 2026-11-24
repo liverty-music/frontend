@@ -1,4 +1,4 @@
-import { bindable, ILogger, resolve } from 'aurelia'
+import { bindable, ILogger, resolve, runTasks } from 'aurelia'
 import {
 	QUICK_SELECT_CITIES,
 	REGION_GROUPS,
@@ -28,6 +28,11 @@ export class HomeAreaSelector {
 	public quickCities = QUICK_SELECT_CITIES
 	public selectedRegion: RegionGroup | null = null
 
+	/** The element holding the step, set by the template. */
+	public stepContent: HTMLElement | null = null
+
+	private stepToken = 0
+
 	private readonly logger = resolve(ILogger).scopeTo('HomeAreaSelector')
 
 	/** A choice is being handed to the caller (saving the home). */
@@ -44,11 +49,42 @@ export class HomeAreaSelector {
 	}
 
 	public selectRegion(region: RegionGroup): void {
-		this.selectedRegion = region
+		this.showStep(region)
 	}
 
 	public backToRegions(): void {
-		this.selectedRegion = null
+		this.showStep(null)
+	}
+
+	/**
+	 * Replace the regions with a region's prefectures, or the other way round,
+	 * inside a View Transition: the step fades out, then the next fades in,
+	 * the same motion both ways (`global.css`, `area-step`). The content is
+	 * named only for the transition, so the page behind the sheet is not part
+	 * of it, and the browser can skip the transition without losing the step.
+	 */
+	private showStep(region: RegionGroup | null): void {
+		const content = this.stepContent
+		if (!content || typeof document.startViewTransition !== 'function') {
+			this.selectedRegion = region
+			return
+		}
+		const root = document.documentElement
+		root.classList.add('vt-suppress-root')
+		content.dataset.stepping = ''
+		const mine = ++this.stepToken
+		runTasks()
+		const transition = document.startViewTransition(() => {
+			this.selectedRegion = region
+			runTasks()
+		})
+		void transition.ready.catch(() => {})
+		void transition.finished.finally(() => {
+			// A later step change skips this transition and owns the marks by now.
+			if (mine !== this.stepToken) return
+			root.classList.remove('vt-suppress-root')
+			delete content.dataset.stepping
+		})
 	}
 
 	public selectQuickCity(code: string): Promise<void> {

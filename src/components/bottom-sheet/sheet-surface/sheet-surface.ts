@@ -1,4 +1,4 @@
-import { bindable } from 'aurelia'
+import { bindable, INode, resolve } from 'aurelia'
 
 /**
  * The sheet the fan sees: the Material 3 bottom-sheet container with its drag
@@ -13,4 +13,15 @@ export class SheetSurface {
 	@bindable public headingId = ''
 	/** The container, handed to `bottom-sheet`. */
 	@bindable public body?: HTMLElement
+	/** Whether the fan may close the sheet: the handle is then a button. */
+	@bindable public dismissable = true
+
+	private readonly host = resolve(INode) as HTMLElement
+
+	/** The handle was activated: ask `bottom-sheet` around the surface to close. */
+	public requestDismiss(): void {
+		this.host.dispatchEvent(
+			new CustomEvent('sheet-dismiss-request', { bubbles: true }),
+		)
+	}
 }

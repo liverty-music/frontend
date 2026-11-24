@@ -35,8 +35,13 @@ export class ConcertCard {
 		})
 	}
 
+	/**
+	 * The card is a `div` with the button role, so the browser does not turn a
+	 * key into a click: Space and Enter open it, as they do a native button
+	 * (a held Enter opens it once).
+	 */
 	public handleKeydown(event: KeyboardEvent): void {
-		if (event.key === ' ') {
+		if (event.key === ' ' || (event.key === 'Enter' && !event.repeat)) {
 			this.onClick()
 			event.preventDefault()
 		}

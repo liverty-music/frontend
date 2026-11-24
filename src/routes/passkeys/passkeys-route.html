@@ -1,8 +1,8 @@
 <!-- The page title is owned by the shell-hosted <page-header> (data.titleKey). -->
-<main class="[ passkeys ] [ stack wrapper ]">
+<main ref="page" tabindex="-1" class="[ passkeys ] [ stack wrapper ]">
   <p t="passkeys.lead" class="[ passkeys-lead ] [ md-typescale-body-medium ]"></p>
 
-  <output if.bind="listState === 'loading'" class="[ passkeys-status ] [ md-typescale-body-large ]" aria-busy="true" t="passkeys.loading"></output>
+  <state-placeholder if.bind="listState === 'loading'" loading.bind="true" variant="item" rows="2" label.bind="'passkeys.loading' | t"></state-placeholder>
 
   <section if.bind="listState === 'error'" class="[ passkeys-error ] [ stack ]" role="alert" data-testid="passkeys-list-error">
     <p t="passkeys.listFailed"></p>
@@ -10,7 +10,7 @@
   </section>
 
   <template if.bind="listState === 'ready'">
-    <ul class="[ passkeys-card card ]" role="list" data-testid="passkeys-list">
+    <ul class="[ passkeys-card card ] [ content-arrive ]" role="list" data-testid="passkeys-list">
       <li repeat.for="passkey of passkeys" class="passkeys-item" data-testid="passkeys-item">
         <svg-icon name="lock" size="lg" class="passkeys-icon"></svg-icon>
         <span class="[ passkeys-label ] [ stack ]">

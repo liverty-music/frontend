@@ -9,6 +9,14 @@ export class StatePlaceholder {
 	 */
 	@bindable public loading = false
 	@bindable public rows: number | string = 3
+	/**
+	 * The shape of each placeholder row, which takes the room of what loads:
+	 * `text` lines (the default), a list `item` or a `card`. A screen picks the
+	 * shape of its content so the layout does not move when the content arrives.
+	 */
+	@bindable public variant: 'text' | 'item' | 'card' = 'text'
+	/** What the pending region is called to a screen reader (the screen's own loading text). */
+	@bindable public label = 'Loading…'
 
 	// Pure computed: Aurelia memoizes it against its only dependency (`rows`) and
 	// re-evaluates solely when `rows` changes, so there is no per-tick churn — a

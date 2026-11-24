@@ -2,7 +2,12 @@
 	"common": {
 		"dismiss": "Dismiss",
 		"loading": "Loading",
-		"retry": "Retry"
+		"retry": "Retry",
+		"requiredNote": "* Required"
+	},
+	"notFoundPage": {
+		"message": "Page not found",
+		"toTimetable": "Go to Timetable"
 	},
 	"entity": {
 		"concert": {

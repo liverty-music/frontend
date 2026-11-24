@@ -1129,6 +1129,13 @@ export const MonthJumpBeforeScrolling = {
 		scroll.scrollTo({ top: 40, behavior: 'instant' })
 		await frames()
 		await expect(shownJumps(canvasElement)).toEqual(['next'])
+
+		// The icon-only button shows its name as a tooltip on hover and focus.
+		const [next] = [
+			...canvasElement.querySelectorAll<HTMLElement>('.month-jump-button'),
+		].filter((b) => b.dataset.direction === 'next')
+		await expect(next.title).not.toBe('')
+		await expect(next.title).toBe(next.getAttribute('aria-label'))
 	},
 } satisfies Story
 
@@ -1382,8 +1389,14 @@ export const DealIn = {
 			await expect(inDepth).toBeLessThan(flat * 0.9)
 
 			// The rows in view were triggered: they settle, fully shown, in place.
+			// The row is brought to the top first: the motion starts once a row
+			// is well inside the list, and where the row sits depends on the row
+			// height (taller under the line height Japanese takes), which can
+			// leave it cut off at the bottom edge.
 			// Wait for the motion itself to end, not a fixed time: on a loaded
 			// runner the row is triggered, and its frames advance, late.
+			full.scrollIntoView({ block: 'start', behavior: 'instant' })
+			await frames()
 			await Promise.all(
 				full
 					.getAnimations({ subtree: true })

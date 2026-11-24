@@ -3,7 +3,7 @@ import {
 	type Meta,
 	type StoryObj,
 } from '@aurelia/storybook'
-import { expect, within } from 'storybook/test'
+import { expect, fn, userEvent, within } from 'storybook/test'
 import { BusyOnClickCustomAttribute } from '../../custom-attributes/busy-on-click'
 import { DiscoverySearchResults } from './discovery-search-results'
 
@@ -87,5 +87,66 @@ export const Results = {
 		await expect(rows).toHaveLength(2)
 		await expect(rows[0]).toHaveAttribute('data-followed', 'false')
 		await expect(rows[1]).toHaveAttribute('data-followed', 'true')
+	},
+} satisfies Story
+
+/**
+ * A row can take keyboard focus and follows its artist on Enter or Space; a
+ * row already followed is skipped, and the arrows move between the rows left.
+ */
+const keyFollow = fn(async () => {})
+
+export const ResultsFromTheKeyboard = {
+	parameters: Results.parameters,
+	render: () => {
+		return defineAureliaStory({
+			template: `<div style="display:grid; min-block-size:320px; background:oklch(13% 0.027 262deg)">
+				<discovery-search-results
+					search.bind="search"
+					followed-ids.bind="followedIds"
+					follow.trigger="$event.detail.waitUntil(follow())"
+				></discovery-search-results>
+			</div>`,
+			props: {
+				search: {
+					isSearching: false,
+					isSearchMode: true,
+					searchQuery: 'Y',
+					searchResults: [
+						artist('a1', 'Vaundy'),
+						artist('a2', 'YOASOBI'),
+						artist('a3', 'Yorushika'),
+					],
+				},
+				followedIds: new Set(['a2']),
+				follow: keyFollow,
+			},
+			register: [DiscoverySearchResults, BusyOnClickCustomAttribute],
+		})
+	},
+	play: async ({ canvasElement }) => {
+		const rows = [
+			...canvasElement.querySelectorAll<HTMLElement>('.result-item'),
+		]
+		// One Tab stop for the group; the followed row is not in it.
+		await expect(rows.map((r) => r.getAttribute('tabindex'))).toEqual([
+			'0',
+			null,
+			'-1',
+		])
+
+		rows[0].focus()
+		await userEvent.keyboard('{ArrowDown}')
+		// The followed row is skipped.
+		await expect(document.activeElement).toBe(rows[2])
+		await userEvent.keyboard('{ArrowDown}')
+		await expect(document.activeElement).toBe(rows[0])
+
+		// Enter follows the focused artist, and so does Space.
+		keyFollow.mockClear()
+		await userEvent.keyboard('{Enter}')
+		await expect(keyFollow).toHaveBeenCalledTimes(1)
+		await userEvent.keyboard(' ')
+		await expect(keyFollow).toHaveBeenCalledTimes(2)
 	},
 } satisfies Story

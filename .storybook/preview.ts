@@ -11,9 +11,11 @@ import { definePreview } from '@aurelia/storybook'
 import addonA11y from '@storybook/addon-a11y'
 import { BottomSheet } from '../src/components/bottom-sheet/bottom-sheet'
 import { SvgIcon } from '../src/components/svg-icon/svg-icon'
+import { RovingFocusCustomAttribute } from '../src/custom-attributes/roving-focus'
 import en from '../src/locales/en/translation.json'
 import ja from '../src/locales/ja/translation.json'
 import { expectFitsScreen } from './fits-screen'
+import { applyStoryLanguage } from './story-language'
 
 // Project annotations for the Storybook UI and for the Vitest storybook
 // projects alike: `@storybook/addon-vitest` applies this file (with the
@@ -29,12 +31,19 @@ export default definePreview({
 	// closed the browser connection mid-run. The callback `beforeEach` returns
 	// runs when the story is torn down (not when its play function ends, so
 	// stories shown in the Storybook UI keep what they opened).
-	beforeEach: () => () => {
-		for (const dialog of document.querySelectorAll('dialog[open]')) {
-			;(dialog as HTMLDialogElement).close()
-		}
-		for (const popover of document.querySelectorAll(':popover-open')) {
-			;(popover as HTMLElement).hidePopover()
+	//
+	// The `storybook-ja` project runs every story with the `language` global set
+	// to `ja` (`.storybook/story-language.ts`); the other projects leave it unset.
+	beforeEach: ({ globals, tags }) => {
+		const restoreLanguage = applyStoryLanguage(globals?.language, tags)
+		return () => {
+			restoreLanguage()
+			for (const dialog of document.querySelectorAll('dialog[open]')) {
+				;(dialog as HTMLDialogElement).close()
+			}
+			for (const popover of document.querySelectorAll(':popover-open')) {
+				;(popover as HTMLElement).hidePopover()
+			}
 		}
 	},
 	// Every story, once it has run: nothing of it is cut off or past the
@@ -57,7 +66,7 @@ export default definePreview({
 		// components' slots (svg-icon, bottom-sheet) and wire i18n so `t`-bound
 		// templates (e.g. page-header) resolve translations.
 		aurelia: {
-			register: [SvgIcon, BottomSheet],
+			register: [SvgIcon, BottomSheet, RovingFocusCustomAttribute],
 			configure: (au: { register: (...items: unknown[]) => unknown }) => {
 				au.register(
 					I18nConfiguration.customize((options) => {

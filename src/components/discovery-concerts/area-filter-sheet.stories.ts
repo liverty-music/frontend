@@ -120,6 +120,7 @@ export const NoArea = {
  * in full (a long area name would end in an ellipsis instead).
  */
 export const NarrowWindow = {
+	tags: ['latin-metrics'],
 	render,
 	args: { areaName: '鹿児島県', periodLabel: '8/12〜8/20' },
 	play: async (context) => {

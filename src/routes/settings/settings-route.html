@@ -394,11 +394,13 @@
     data-testid="settings-personal-details"
   >
     <p id="personal-details-note" t="settings.personalDetails.note" class="[ settings-personal-details-note ] [ md-typescale-body-medium ]"></p>
+    <p class="[ md-typescale-body-small ]" t="common.requiredNote"></p>
     <label class="[ settings-field ] [ stack ]">
-      <span t="settings.personalDetails.name" class="[ settings-field-label ] [ md-typescale-label-large ]"></span>
+      <span t="settings.personalDetails.name" data-required class="[ settings-field-label ] [ md-typescale-label-large ]"></span>
       <input
         type="text"
         autocomplete="name"
+        aria-required="true"
         value.bind="fullName"
         aria-invalid.bind="nameInvalid"
         aria-describedby="personal-details-note settings-name-error"
@@ -406,13 +408,14 @@
         data-testid="settings-full-name"
       />
     </label>
-    <p id="settings-name-error" if.bind="nameInvalid" t="settings.personalDetails.nameRequired" class="[ settings-field-error ] [ md-typescale-body-medium ]"></p>
+    <p id="settings-name-error" if.bind="nameInvalid" class="[ field-error ] [ md-typescale-body-medium ]" role="alert"><svg-icon name="warning" size="sm" aria-hidden="true"></svg-icon><span t="settings.personalDetails.nameRequired"></span></p>
     <label class="[ settings-field ] [ stack ]">
-      <span t="settings.personalDetails.phone" class="[ settings-field-label ] [ md-typescale-label-large ]"></span>
+      <span t="settings.personalDetails.phone" data-required class="[ settings-field-label ] [ md-typescale-label-large ]"></span>
       <input
         type="tel"
         inputmode="tel"
         autocomplete="tel-national"
+        aria-required="true"
         value.bind="phoneNumber"
         aria-invalid.bind="phoneInvalid"
         aria-describedby="personal-details-note settings-phone-error"
@@ -420,7 +423,7 @@
         data-testid="settings-phone-number"
       />
     </label>
-    <p id="settings-phone-error" if.bind="phoneInvalid" t="settings.personalDetails.phoneInvalid" class="[ settings-field-error ] [ md-typescale-body-medium ]"></p>
+    <p id="settings-phone-error" if.bind="phoneInvalid" class="[ field-error ] [ md-typescale-body-medium ]" role="alert"><svg-icon name="warning" size="sm" aria-hidden="true"></svg-icon><span t="settings.personalDetails.phoneInvalid"></span></p>
     <button
       type="submit"
       disabled.bind="!personalDetailsChanged"
@@ -450,7 +453,7 @@
      exactly one may be chosen (the check icon + data-selected are visual only). -->
 <bottom-sheet open.bind="languageSelectorOpen" sheet-closed.trigger="languageSelectorOpen = false" heading.bind="'settings.language' | t">
   <div class="selector-content">
-    <div class="[ language-list ] [ stack ]" role="radiogroup" aria-label.bind="'settings.language' | t">
+    <div class="[ language-list ] [ stack ]" role="radiogroup" aria-label.bind="'settings.language' | t" roving-focus="[role=radio]">
       <button
         repeat.for="lang of supportedLanguages"
         busy-on-click.bind="() => selectLanguage(lang)"

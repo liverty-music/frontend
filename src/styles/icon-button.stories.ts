@@ -49,12 +49,15 @@ function buttons(canvasElement: HTMLElement): HTMLElement[] {
 }
 
 /** The M3 small icon button every state shares. */
-async function expectShape(el: HTMLElement): Promise<void> {
+async function expectShape(
+	el: HTMLElement,
+	corner: (radius: number) => boolean = (r) => r > 20,
+): Promise<void> {
 	const box = el.getBoundingClientRect()
 	await expect(box.width).toBe(40)
 	await expect(box.height).toBe(40)
 	const style = getComputedStyle(el)
-	await expect(Number.parseFloat(style.borderTopLeftRadius)).toBeGreaterThan(20)
+	await expect(corner(Number.parseFloat(style.borderTopLeftRadius))).toBe(true)
 	await expect(style.backgroundColor).toBe('rgba(0, 0, 0, 0)')
 	const icon = el.querySelector('svg')?.getBoundingClientRect()
 	await expect(icon?.width).toBe(24)
@@ -126,7 +129,10 @@ export const Focused = {
 	},
 } satisfies Story
 
-/** A toggle that is on draws its icon in `primary`. */
+/**
+ * A toggle that is on draws its icon in `primary`, in a 12 px rounded square
+ * instead of the circle, so the selected state is not colour alone.
+ */
 export const Selected = {
 	render: () =>
 		defineAureliaStory({
@@ -134,7 +140,7 @@ export const Selected = {
 		}),
 	play: async ({ canvasElement }) => {
 		const [el] = buttons(canvasElement)
-		await expectShape(el)
+		await expectShape(el, (radius) => radius === 12)
 		await expect(getComputedStyle(el).color).toBe(
 			resolved(canvasElement, 'var(--md-sys-color-primary)'),
 		)

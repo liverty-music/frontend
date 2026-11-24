@@ -168,6 +168,7 @@ export const RoundedTopCorners = {
 // handle area, 24 px from both edges, 16 px above the content, and names the
 // dialog.
 export const WithHeading = {
+	tags: ['latin-metrics'],
 	render: (args) =>
 		defineAureliaStory({ template, props: args, register: [BottomSheet] }),
 	args: { open: true, heading: '会場アクセス' },
@@ -545,7 +546,8 @@ export const InertAndFocusTrap = {
 		outside.focus()
 		await expect(document.activeElement).not.toBe(outside)
 
-		const first = canvasElement.querySelector('#first') as HTMLElement
+		// The handle of a dismissable sheet is its first control.
+		const first = canvasElement.querySelector('.handle-bar') as HTMLElement
 		const last = canvasElement.querySelector('#toggle-extra') as HTMLElement
 		first.focus()
 		await userEvent.tab({ shift: true })

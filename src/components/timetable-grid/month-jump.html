@@ -6,7 +6,7 @@
       type="button"
       class="[ month-jump-button ] [ state-layer ]"
       data-direction="prev"
-      t="[aria-label]timetable.monthJump.prev"
+      t="[aria-label,title]timetable.monthJump.prev"
       t-params.bind="{ date: prevMonth }"
       click.trigger="jump(-1)"
     >
@@ -16,7 +16,7 @@
       type="button"
       class="[ month-jump-button ] [ state-layer ]"
       data-direction="next"
-      t="[aria-label]timetable.monthJump.next"
+      t="[aria-label,title]timetable.monthJump.next"
       t-params.bind="{ date: nextMonth }"
       click.trigger="jump(1)"
     >

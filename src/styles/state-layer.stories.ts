@@ -83,8 +83,8 @@ export const BusyButton = {
 		const spinner = getComputedStyle(button, '::after')
 		await expect(spinner.content).toBe('""')
 		await expect(spinner.position).toBe('absolute')
-		await expect(spinner.width).toBe('16px')
-		await expect(spinner.height).toBe('16px')
+		await expect(spinner.width).toBe('24px')
+		await expect(spinner.height).toBe('24px')
 		await expect(Number.parseFloat(spinner.borderTopWidth)).toBeGreaterThan(0)
 		// Centred on the button.
 		await expect(spinner.translate).toBe('-50% -50%')

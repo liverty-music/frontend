@@ -35,7 +35,7 @@ type Story = StoryObj<typeof meta>
  * motion reduced and asserts the motion that matches the preference.
  */
 export const Visible = {
-	tags: ['reduced-motion'],
+	tags: ['reduced-motion', 'latin-metrics'],
 	args: {
 		visible: true,
 		message: ja.myArtists.signupBanner.message,

@@ -370,6 +370,15 @@ describe('SettingsRoute name and phone number (fixture)', () => {
 			ja.settings.personalDetails.phoneInvalid,
 		)
 
+		// The error is not told by colour alone: an icon marks it, a screen
+		// reader is told when it appears, and the field says it is required.
+		const error = r.host.querySelector('#settings-phone-error')
+		expect(error?.getAttribute('role')).toBe('alert')
+		expect(error?.querySelector('svg-icon[name="warning"]')).not.toBeNull()
+		expect(r.phone.getAttribute('aria-required')).toBe('true')
+		expect(r.host.querySelector('[data-required]')).not.toBeNull()
+		expect(r.host.textContent).toContain(ja.common.requiredNote)
+
 		await r.fixture.stop(true)
 	})
 })

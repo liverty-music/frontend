@@ -3,7 +3,7 @@ import {
 	type Meta,
 	type StoryObj,
 } from '@aurelia/storybook'
-import { expect } from 'storybook/test'
+import { expect, fn, userEvent } from 'storybook/test'
 import { SheetSurface } from './sheet-surface'
 
 const meta = {
@@ -52,5 +52,49 @@ export const WithoutHeading = {
 	play: async ({ canvasElement }) => {
 		await expect(canvasElement.querySelector('.sheet-heading-row')).toBeNull()
 		await expect(canvasElement.querySelector('.sheet-body p')).not.toBeNull()
+	},
+} satisfies Story
+
+const handleRender =
+	(dismissable: boolean, onRequest: () => void): Story['render'] =>
+	() =>
+		defineAureliaStory({
+			template: `
+				<sheet-surface dismissable.bind="dismissable" sheet-dismiss-request.trigger="onRequest()">
+					<p>Sheet content</p>
+				</sheet-surface>
+			`,
+			props: { dismissable, onRequest },
+			register: [SheetSurface],
+		})
+
+const asked = fn()
+
+/**
+ * The handle of a sheet that can be closed is a button the keyboard and a
+ * screen reader reach; activating it asks the sheet around it to close.
+ */
+export const HandleCloses = {
+	render: handleRender(true, asked),
+	play: async ({ canvasElement }) => {
+		const handle = canvasElement.querySelector('.handle-bar') as HTMLElement
+		await expect(handle.tagName).toBe('BUTTON')
+		await expect(handle.getAttribute('aria-label')).toBe('閉じる')
+		await expect(handle.getBoundingClientRect().height).toBe(48)
+
+		asked.mockClear()
+		handle.focus()
+		await userEvent.keyboard('{Enter}')
+		await expect(asked).toHaveBeenCalledTimes(1)
+	},
+} satisfies Story
+
+/** A sheet that must be answered keeps its handle as a picture. */
+export const HandleIsAPicture = {
+	render: handleRender(false, fn()),
+	play: async ({ canvasElement }) => {
+		const handle = canvasElement.querySelector('.handle-bar') as HTMLElement
+		await expect(handle.tagName).toBe('DIV')
+		await expect(handle.getAttribute('aria-hidden')).toBe('true')
 	},
 } satisfies Story

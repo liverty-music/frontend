@@ -6,6 +6,9 @@
 			overflow: hidden;
 			/* stylelint-disable-next-line property-disallowed-list -- the hero bleeds through the content's inline padding to the sheet's edges; the padding stays for every other section, so only a negative margin widens this one */
 			margin-inline: calc(-1 * var(--space-m));
+
+			/* The box shows while the image loads, and the image fades in over it. */
+			background: var(--md-sys-color-surface-container-high);
 		}
 
 		img {

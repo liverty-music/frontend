@@ -1,6 +1,6 @@
 <template class="[ new-resale-entry-route ] [ flow ]">
 
-	<p if.bind="step === 'loading'" class="[ resale-entry-lead ] [ md-typescale-body-medium ]" role="status" t="newResaleEntry.loading"></p>
+	<state-placeholder class="wrapper" if.bind="step === 'loading'" loading.bind="true" variant="card" rows="2" label.bind="'newResaleEntry.loading' | t"></state-placeholder>
 
 	<!-- Stripe not configured for this environment: fail closed. -->
 	<section class="[ resale-entry-panel card ] [ wrapper ]" if.bind="step === 'unavailable'" data-testid="resale-entry-unavailable">
@@ -76,16 +76,18 @@
 	<section class="[ resale-entry-panel card ] [ flow wrapper ]" if.bind="step === 'personal-details'" data-testid="resale-entry-personal-details">
 		<h2 class="[ resale-entry-step-title ] [ md-typescale-title-large-emphasized ]" t="newResaleEntry.personalDetails.title"></h2>
 		<p class="[ resale-entry-lead ] [ md-typescale-body-medium ]" t="newResaleEntry.personalDetails.note"></p>
+		<p class="[ md-typescale-body-small ]" t="common.requiredNote"></p>
 		<label class="[ resale-entry-field ] [ stack ]">
-			<span class="[ resale-entry-label ] [ md-typescale-label-large ]" t="newResaleEntry.personalDetails.name"></span>
-			<input type="text" autocomplete="name" value.bind="fullName" class="[ text-field ] [ md-typescale-body-large ]" data-testid="resale-entry-name" />
+			<span class="[ resale-entry-label ] [ md-typescale-label-large ]" data-required t="newResaleEntry.personalDetails.name"></span>
+			<input type="text" autocomplete="name" aria-required="true" value.bind="fullName" class="[ text-field ] [ md-typescale-body-large ]" data-testid="resale-entry-name" />
 		</label>
 		<label class="[ resale-entry-field ] [ stack ]">
-			<span class="[ resale-entry-label ] [ md-typescale-label-large ]" t="newResaleEntry.personalDetails.phone"></span>
+			<span class="[ resale-entry-label ] [ md-typescale-label-large ]" data-required t="newResaleEntry.personalDetails.phone"></span>
 			<input
 				type="tel"
 				autocomplete="tel"
 				inputmode="tel"
+				aria-required="true"
 				value.bind="phoneNumber"
 				aria-invalid.bind="isPhoneInvalid"
 				aria-describedby.bind="isPhoneInvalid ? 'resale-entry-phone-error' : null"
@@ -93,7 +95,7 @@
 				data-testid="resale-entry-phone"
 			/>
 		</label>
-		<p id="resale-entry-phone-error" class="[ resale-entry-error ] [ md-typescale-body-medium ]" if.bind="isPhoneInvalid" t="newResaleEntry.phoneInvalid"></p>
+		<p id="resale-entry-phone-error" class="[ field-error ] [ md-typescale-body-medium ]" if.bind="isPhoneInvalid" role="alert"><svg-icon name="warning" size="sm" aria-hidden="true"></svg-icon><span t="newResaleEntry.phoneInvalid"></span></p>
 		<p class="[ resale-entry-error ] [ md-typescale-body-medium ]" if.bind="message" role="alert" data-testid="resale-entry-message" t.bind="message.key" t-params.bind="message.params"></p>
 		<div class="[ resale-entry-actions ] [ cluster ]">
 			<button type="button" class="[ button ] [ state-layer ]" data-variant="outlined" click.trigger="backToCount()" t="newResaleEntry.back"></button>

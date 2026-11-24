@@ -28,22 +28,40 @@
 			background: color-mix(in oklch, var(--color-white) 20%, transparent);
 		}
 
+		/* The handle is centred on its end of the track and changes size with
+		   the state: 16 px off, 24 px on, 28 px while the switch is pressed
+		   (the one control that grows when pressed, app-shell "Press is
+		   acknowledged"). It never leaves the 52 x 32 px track. Under reduced
+		   motion the duration tokens are 0, so it changes without moving. */
 		.settings-toggle-thumb {
-			position: absolute;
-			inset-block-start: var(--toggle-thumb-inset);
-			inset-inline-start: var(--toggle-thumb-inset);
+			--thumb-size: var(--toggle-thumb-size-off);
+			--thumb-centre: var(--toggle-thumb-centre-off);
 
-			inline-size: var(--toggle-thumb-size);
-			block-size: var(--toggle-thumb-size);
+			position: absolute;
+			inset-block-start: 50%;
+			inset-inline-start: calc(var(--thumb-centre) - var(--thumb-size) / 2);
+			transform: translateY(-50%);
+
+			inline-size: var(--thumb-size);
+			block-size: var(--thumb-size);
 			border-radius: var(--md-sys-shape-corner-full);
 
 			background: var(--color-white);
 
-			transition: transform var(--md-sys-motion-duration-short4);
+			transition:
+				inline-size var(--md-sys-motion-duration-short4),
+				block-size var(--md-sys-motion-duration-short4),
+				inset-inline-start var(--md-sys-motion-duration-short4);
 		}
 
 		.settings-toggle-thumb[data-on="true"] {
-			transform: translateX(var(--toggle-thumb-translate));
+			--thumb-size: var(--toggle-thumb-size-on);
+			--thumb-centre: var(--toggle-thumb-centre-on);
+		}
+
+		/* The switch is the button around the track. */
+		[role="switch"]:active :scope .settings-toggle-thumb {
+			--thumb-size: var(--toggle-thumb-size-pressed);
 		}
 	}
 }

@@ -52,6 +52,21 @@ export const TwelveUnread = {
 	},
 } satisfies Story
 
+/** From a thousand on the badge reads 999+, at most four characters; the name keeps the count. */
+export const ManyUnread = {
+	args: { unreadCount: 12345 },
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement)
+		await expect(
+			canvas.getByTestId('notification-bell-badge'),
+		).toHaveTextContent('999+')
+		await expect(canvas.getByTestId('notification-bell')).toHaveAttribute(
+			'aria-label',
+			expect.stringContaining('12345'),
+		)
+	},
+} satisfies Story
+
 export const TwoUnread = {
 	args: { unreadCount: 2 },
 	play: async ({ canvasElement }) => {

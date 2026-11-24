@@ -31,13 +31,14 @@ describe('IdentityVerificationCallbackRoute (fixture)', () => {
 
 		const waiting = fixture.appHost.querySelector('.verify-loading')
 		expect(waiting).not.toBeNull()
+		// The indicator says what is being waited for, not only that it is loading.
 		const indicator = waiting?.querySelector('circular-progress')
 		expect(indicator).not.toBeNull()
 		expect(
 			indicator
 				?.querySelector('[role="progressbar"]')
 				?.getAttribute('aria-label'),
-		).toBe(ja.common.loading)
+		).toBe(ja.identityVerificationCallback.loading)
 		expect(waiting?.textContent).toContain(
 			ja.identityVerificationCallback.loading,
 		)

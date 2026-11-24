@@ -3,7 +3,8 @@ import {
 	type Meta,
 	type StoryObj,
 } from '@aurelia/storybook'
-import { expect, userEvent, within } from 'storybook/test'
+import { expect, userEvent, waitFor, within } from 'storybook/test'
+import { hoverPointer } from '../../.storybook/gestures'
 import { expectScreenshot } from '../../.storybook/screenshot'
 
 /**
@@ -56,6 +57,21 @@ function control(canvasElement: HTMLElement): HTMLElement {
 	return el
 }
 
+/**
+ * Waits for the border to reach `color`: it eases between roles over a
+ * transition, so a read right after a state change can see a midway value.
+ * The retry throws a plain error because Storybook's instrumented `expect`
+ * does not retry inside `waitFor`; the story then asserts the final value.
+ */
+async function borderSettlesOn(el: HTMLElement, color: string): Promise<void> {
+	await waitFor(() => {
+		if (getComputedStyle(el).borderTopColor !== color) {
+			throw new Error(`border is still ${getComputedStyle(el).borderTopColor}`)
+		}
+	})
+	await expect(getComputedStyle(el).borderTopColor).toBe(color)
+}
+
 /** The M3 outlined shape every state shares. */
 /** 56 px tall, extra-small corners; the border is 2 px while focused. */
 async function expectShape(el: HTMLElement): Promise<void> {
@@ -79,6 +95,24 @@ export const Rest = {
 	},
 } satisfies Story
 
+/** Hovered: the border takes `on-surface`; it is back to `outline` at rest. */
+export const Hovered = {
+	render: () => defineAureliaStory({ template: input() }),
+	play: async ({ canvasElement }) => {
+		const el = control(canvasElement)
+		if (!(await hoverPointer(el))) return
+		await borderSettlesOn(
+			el,
+			resolved(
+				canvasElement,
+				'borderTopColor',
+				'var(--md-sys-color-on-surface)',
+			),
+		)
+		await expect(getComputedStyle(el).borderTopWidth).toBe('1px')
+	},
+} satisfies Story
+
 export const Focused = {
 	render: () => defineAureliaStory({ template: input() }),
 	play: async ({ canvasElement }) => {
@@ -92,10 +126,10 @@ export const Focused = {
 			'borderTopColor',
 			'var(--md-sys-color-primary)',
 		)
+		await borderSettlesOn(el, primary)
 		const style = getComputedStyle(el)
 		// A 2px primary border, its extra pixel taken from the padding, and
 		// the app's keyboard focus ring outside it.
-		await expect(style.borderTopColor).toBe(primary)
 		await expect(style.borderTopWidth).toBe('2px')
 		await expect(
 			Number.parseFloat(style.paddingLeft) +
@@ -127,11 +161,11 @@ export const Invalid = {
 			'borderTopColor',
 			'var(--md-sys-color-error)',
 		)
-		await expect(getComputedStyle(el).borderTopColor).toBe(error)
+		await borderSettlesOn(el, error)
 		// Still the error colour while focused.
 		await userEvent.tab()
 		await expect(el).toHaveFocus()
-		await expect(getComputedStyle(el).borderTopColor).toBe(error)
+		await borderSettlesOn(el, error)
 		await expectScreenshot(el, 'text-field-invalid')
 	},
 } satisfies Story

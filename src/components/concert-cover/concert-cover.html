@@ -7,7 +7,9 @@
     alt=""
     decoding="async"
     fetchpriority="high"
-    class="concert-cover-img"
+    class="[ concert-cover-img ] [ image-arrive ]"
+    data-loaded.bind="loaded"
+    load.trigger="loaded = true"
     data-testid="concert-cover"
   />
   <div else class="[ concert-cover-placeholder ] [ md-typescale-display-small ]" data-testid="concert-cover-placeholder" role="presentation">
