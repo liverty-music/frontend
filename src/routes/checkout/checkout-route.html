@@ -38,6 +38,7 @@
     <h2 class="[ checkout-step-title ] [ md-typescale-title-large-emphasized ]" t="checkout.count.title"></h2>
     <p if.bind="verificationNoteKey" class="[ checkout-note ] [ md-typescale-body-medium ]" data-testid="checkout-verify-note" t.bind="verificationNoteKey"></p>
     <p class="[ checkout-seat-type ] [ md-typescale-title-large-emphasized ]" data-testid="checkout-seat-type">${seatTypeName}</p>
+    <p class="[ md-typescale-body-small ]" t="common.requiredNote"></p>
     <label class="[ checkout-field ] [ stack ]">
       <span class="[ checkout-label ] [ md-typescale-label-large ]" t="checkout.count.label" t-params.bind="{ limit: perAccountLimit }"></span>
       <select value.bind="ticketCount" class="[ text-field ] [ md-typescale-body-large ]" data-testid="checkout-count-select">
@@ -55,15 +56,16 @@
     <h2 class="[ checkout-step-title ] [ md-typescale-title-large-emphasized ]" t="checkout.personalDetails.title"></h2>
     <p class="[ checkout-note ] [ md-typescale-body-medium ]" t="checkout.personalDetails.note"></p>
     <label class="[ checkout-field ] [ stack ]">
-      <span class="[ checkout-label ] [ md-typescale-label-large ]" t="checkout.personalDetails.name"></span>
-      <input type="text" autocomplete="name" value.bind="fullName" class="[ text-field ] [ md-typescale-body-large ]" data-testid="checkout-name" />
+      <span class="[ checkout-label ] [ md-typescale-label-large ]" data-required t="checkout.personalDetails.name"></span>
+      <input type="text" autocomplete="name" aria-required="true" value.bind="fullName" class="[ text-field ] [ md-typescale-body-large ]" data-testid="checkout-name" />
     </label>
     <label class="[ checkout-field ] [ stack ]">
-      <span class="[ checkout-label ] [ md-typescale-label-large ]" t="checkout.personalDetails.phone"></span>
+      <span class="[ checkout-label ] [ md-typescale-label-large ]" data-required t="checkout.personalDetails.phone"></span>
       <input
         type="tel"
         autocomplete="tel"
         inputmode="tel"
+        aria-required="true"
         value.bind="phoneNumber"
         aria-invalid.bind="isPhoneInvalid"
         aria-describedby.bind="isPhoneInvalid ? 'checkout-phone-error' : null"
@@ -71,7 +73,7 @@
         data-testid="checkout-phone"
       />
     </label>
-    <p id="checkout-phone-error" if.bind="isPhoneInvalid" class="[ checkout-error ] [ md-typescale-body-medium ]" t="checkout.personalDetails.phoneInvalid"></p>
+    <p id="checkout-phone-error" if.bind="isPhoneInvalid" class="[ field-error ] [ md-typescale-body-medium ]" role="alert"><svg-icon name="warning" size="sm" aria-hidden="true"></svg-icon><span t="checkout.personalDetails.phoneInvalid"></span></p>
     <p if.bind="message" class="[ checkout-error ] [ md-typescale-body-medium ]" role="alert" data-testid="checkout-message" t.bind="message.key" t-params.bind="message.params"></p>
     <div class="[ checkout-actions ] [ cluster ]">
       <button type="button" class="[ button ] [ state-layer ]" data-variant="outlined" click.trigger="backToCount()" t="checkout.back"></button>

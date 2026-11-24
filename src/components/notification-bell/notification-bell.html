@@ -9,6 +9,6 @@
 >
 	<span class="notification-bell-icon">
 		<svg-icon name.bind="iconName" size="lg" data-testid="notification-bell-icon"></svg-icon>
-		<small if.bind="unreadCount > 0" class="[ notification-bell-badge ] [ md-typescale-label-small ]" data-testid="notification-bell-badge" aria-hidden="true">${unreadCount}</small>
+		<small if.bind="unreadCount > 0" class="[ notification-bell-badge ] [ md-typescale-label-small ]" data-testid="notification-bell-badge" aria-hidden="true">${badgeText}</small>
 	</span>
 </button>
