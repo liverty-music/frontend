@@ -16,7 +16,10 @@
 
 			grid-column: 2;
 			align-items: flex-start;
+
+			interpolate-size: allow-keywords;
 			min-inline-size: 0;
+
 			text-align: start;
 		}
 
@@ -55,6 +58,34 @@
 
 		.settings-expand-caret[data-expanded="true"] {
 			transform: rotate(90deg);
+		}
+
+		/* The description opens and closes with a height and opacity
+		   transition where the browser can animate to `auto`
+		   (`interpolate-size`), at once elsewhere and under reduced motion
+		   (0 ms token). It stays in the DOM, hidden, so it can animate out;
+		   `display: none` takes it from the accessibility tree once it has. */
+		.settings-toggle-desc {
+			overflow: clip;
+			transition:
+				block-size var(--md-sys-motion-duration-medium2)
+				var(--md-sys-motion-easing-standard),
+				opacity var(--md-sys-motion-duration-medium2)
+				var(--md-sys-motion-easing-standard),
+				display var(--md-sys-motion-duration-medium2) allow-discrete;
+
+			&[hidden] {
+				display: none;
+				block-size: 0;
+				opacity: 0;
+			}
+		}
+
+		@starting-style {
+			.settings-toggle-desc:not([hidden]) {
+				block-size: 0;
+				opacity: 0;
+			}
 		}
 
 		/* Switch control: the trailing (col3) cell. A button wrapping just the
