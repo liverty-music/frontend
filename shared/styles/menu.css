@@ -14,6 +14,8 @@
                 of the menu.
    - disabled   `disabled` or `aria-disabled="true"`: `on-surface` at 38 %
                 (the state layer shows none); the item stays in the menu
+   - motion     fades in and out over the effects spring's 200 ms, 0 ms under
+                reduced motion
    Values: Material 3 menus, "Menu (baseline)" tokens and measurements
    (https://m3.material.io/components/menus/specs). The menu sets no display
    and no gap: the items are blocks that stack, and a group or divider inside
@@ -31,6 +33,26 @@
 
 			background: var(--md-sys-color-surface-container);
 			box-shadow: var(--md-sys-elevation-level2);
+
+			/* Enter and exit: the menu fades in and out (M3 transitions, enter
+			   and exit; an opacity change takes the effects spring). A popover
+			   leaves the top layer and `display` flips only after the exit, so
+			   both are transitioned discretely. 0 ms under reduced motion. */
+			transition:
+				opacity var(--md-sys-motion-spring-effects-duration)
+				var(--md-sys-motion-spring-effects),
+				display var(--md-sys-motion-spring-effects-duration) allow-discrete,
+				overlay var(--md-sys-motion-spring-effects-duration) allow-discrete;
+
+			&[popover]:not(:popover-open) {
+				opacity: 0;
+			}
+		}
+
+		@starting-style {
+			:scope:popover-open {
+				opacity: 0;
+			}
 		}
 
 		.menu-item {
