@@ -38,6 +38,8 @@ export class RovingFocusCustomAttribute {
 				'aria-checked',
 				'aria-pressed',
 				'data-selected',
+				'aria-disabled',
+				'disabled',
 			],
 		})
 		this.apply()
@@ -50,13 +52,21 @@ export class RovingFocusCustomAttribute {
 		this.observer = null
 	}
 
-	private items(): HTMLElement[] {
+	private all(): HTMLElement[] {
 		if (!this.value) return []
-		return [...this.element.querySelectorAll<HTMLElement>(this.value)].filter(
+		return [...this.element.querySelectorAll<HTMLElement>(this.value)]
+	}
+
+	private available(items: HTMLElement[]): HTMLElement[] {
+		return items.filter(
 			(item) =>
 				!item.hasAttribute('disabled') &&
 				item.getAttribute('aria-disabled') !== 'true',
 		)
+	}
+
+	private items(): HTMLElement[] {
+		return this.available(this.all())
 	}
 
 	/** Make `stop` the one Tab stop. Setting an unchanged value does nothing. */
@@ -71,6 +81,13 @@ export class RovingFocusCustomAttribute {
 
 	private apply(): void {
 		const items = this.items()
+		// An item that has become unavailable (disabled, or followed) is no
+		// longer a stop, whatever it was.
+		for (const item of this.all()) {
+			if (!items.includes(item) && item.getAttribute('tabindex') === '0') {
+				item.setAttribute('tabindex', '-1')
+			}
+		}
 		const focused = items.find((item) => item === document.activeElement)
 		const stop =
 			focused ??

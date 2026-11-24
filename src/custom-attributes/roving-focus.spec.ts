@@ -62,6 +62,17 @@ describe('roving-focus', () => {
 		expect(document.activeElement).toBe(items[2])
 	})
 
+	it('takes the stop off an item that becomes unavailable', async () => {
+		const items = await start(
+			'<nav roving-focus="a"><a href="#1">1</a><a href="#2">2</a></nav>',
+		)
+		expect(stops(items)).toEqual(['0', '-1'])
+		items[0].setAttribute('aria-disabled', 'true')
+		await new Promise((resolve) => setTimeout(resolve, 0))
+		// One Tab stop remains, and it is not the unavailable item.
+		expect(stops(items)).toEqual(['-1', '0'])
+	})
+
 	it('leaves other keys alone and skips unavailable items', async () => {
 		const items = await start(
 			'<nav roving-focus="a"><a href="#1">1</a><a href="#2" aria-disabled="true">2</a><a href="#3">3</a></nav>',
