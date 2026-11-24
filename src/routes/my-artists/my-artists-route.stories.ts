@@ -8,6 +8,7 @@ import { CustomElement, Registration } from 'aurelia'
 import { expect, userEvent, waitFor } from 'storybook/test'
 import { expectAriaTree } from '../../../.storybook/aria'
 import { resolveColor } from '../../../.storybook/contrast'
+import { hoverPointer } from '../../../.storybook/gestures'
 import { noGuide } from '../../../.storybook/guide'
 import { capturePixels, expectScreenshot } from '../../../.storybook/screenshot'
 import { expectTargets } from '../../../.storybook/target-size'
@@ -709,5 +710,34 @@ export const ActiveDotByLevel = {
 				resolveColor(dot, artistColor(name)),
 			)
 		}
+	},
+} satisfies Story
+
+/**
+ * Hovering or pressing a hype dot shows a 40 px halo around it (a state layer
+ * in the content colour at the shared hover opacity); at rest there is none.
+ * The first dot's `::before` stays the track line.
+ */
+export const HypeDotHalo = {
+	render: () =>
+		defineAureliaStory({
+			template: frame(375, 400),
+			register,
+			items: items(2, { hypes: ['home', 'watch'] }),
+		}),
+	play: async ({ canvasElement }) => {
+		await rendered(canvasElement, 2)
+		const label = canvasElement.querySelector<HTMLElement>('.hype-label')
+		if (!label) throw new Error('no hype dot')
+		const halo = () => getComputedStyle(label, '::after')
+		await expect(Number.parseFloat(halo().opacity)).toBe(0)
+		if (!(await hoverPointer(label))) return
+		await waitFor(() =>
+			expect(Number.parseFloat(halo().opacity)).toBeCloseTo(0.08, 2),
+		)
+		await expect(halo().width).toBe('40px')
+		await expect(halo().height).toBe('40px')
+		// The track line the first dot draws is untouched.
+		await expect(getComputedStyle(label, '::before').height).toBe('2px')
 	},
 } satisfies Story

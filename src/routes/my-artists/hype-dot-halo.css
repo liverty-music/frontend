@@ -1,0 +1,38 @@
+/* The halo a hype dot shows on hover and press. It renders on the same
+   `<label as-element="hype-dot-radio" class="hype-label">` as the dot's own
+   block (hype-dot-radio.css), which positions the label. The first dot's
+   `::before` is the track line (artist-hype-table.css), so the halo is the
+   `::after`. */
+@layer block {
+	@scope (.hype-label) {
+		/* The 40 px halo of hover and press around the dot (M3 states: a state
+		   layer at the shared opacities, in the content colour). */
+		:scope::after {
+			pointer-events: none;
+			content: "";
+
+			position: absolute;
+			inset-block-start: 50%;
+			inset-inline-start: 50%;
+			translate: -50% -50%;
+
+			inline-size: 40px;
+			block-size: 40px;
+			border-radius: var(--md-sys-shape-corner-full);
+
+			opacity: 0;
+			background: var(--md-sys-color-on-surface);
+
+			transition: opacity var(--md-sys-motion-duration-short2)
+				var(--md-sys-motion-easing-standard);
+		}
+
+		:scope:hover::after {
+			opacity: var(--md-sys-state-hover-opacity);
+		}
+
+		:scope:active::after {
+			opacity: var(--md-sys-state-pressed-opacity);
+		}
+	}
+}

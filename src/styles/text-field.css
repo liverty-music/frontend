@@ -9,7 +9,12 @@
    - focused   a 2px `primary` border, its extra pixel taken from the
                padding so the text does not move; keyboard focus also shows
                the app's global ring
+   - hovered   the border takes `on-surface` (not while focused, invalid or
+               disabled, which keep their own)
    - invalid   `aria-invalid="true"` turns the border `error`, focused or not
+   The border colour changes over short2 (M3 text field motion); its width
+   changes at once, with the padding that makes up for it, so the text does
+   not move.
    - disabled  on-surface at 38% for the text, at 12% for the border */
 @layer block {
 	@scope (.text-field) {
@@ -24,6 +29,13 @@
 			color: var(--md-sys-color-on-surface);
 
 			background: var(--md-sys-color-surface);
+
+			transition: border-color var(--md-sys-motion-duration-short2)
+				var(--md-sys-motion-easing-standard);
+		}
+
+		:scope:hover:not(:focus, :disabled, [aria-invalid="true"]) {
+			--_indicator: var(--md-sys-color-on-surface);
 		}
 
 		:scope:focus {

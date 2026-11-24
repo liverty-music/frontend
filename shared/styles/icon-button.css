@@ -13,7 +13,10 @@
    - target     48px (`--md-sys-target-size`), a transparent ::after centred
                 on the container, so the 40px button still takes a 48px tap
    - states     the shared `state-layer` (::before), in the icon colour
-   - toggle     `aria-pressed="true"`: a `primary` icon
+   - toggle     `aria-pressed="true"`: a `primary` icon in a 12px rounded
+                square (`corner-medium`) instead of the circle, so the
+                selected state shows by shape as well as by colour (M3 icon
+                buttons, "Toggle"); the state layer follows the shape
    - disabled   `disabled` or `aria-disabled="true"`: `on-surface` at 38 %
                 (the state layer shows none)
    The focus ring is the app's global one. Values: Material 3 icon buttons,
@@ -45,6 +48,9 @@
 			text-decoration: none;
 
 			background: transparent;
+
+			transition: border-radius var(--md-sys-motion-duration-short2)
+				var(--md-sys-motion-easing-standard);
 		}
 
 		:scope > svg {
@@ -65,6 +71,7 @@
 		}
 
 		:scope[aria-pressed="true"] {
+			border-radius: var(--md-sys-shape-corner-medium);
 			color: var(--md-sys-color-primary);
 		}
 

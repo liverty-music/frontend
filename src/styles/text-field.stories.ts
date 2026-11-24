@@ -3,7 +3,8 @@ import {
 	type Meta,
 	type StoryObj,
 } from '@aurelia/storybook'
-import { expect, userEvent, within } from 'storybook/test'
+import { expect, userEvent, waitFor, within } from 'storybook/test'
+import { hoverPointer } from '../../.storybook/gestures'
 import { expectScreenshot } from '../../.storybook/screenshot'
 
 /**
@@ -76,6 +77,25 @@ export const Rest = {
 		)
 		await expect(style.boxShadow).toBe('none')
 		await expectScreenshot(el, 'text-field-rest')
+	},
+} satisfies Story
+
+/** Hovered: the border takes `on-surface`; it is back to `outline` at rest. */
+export const Hovered = {
+	render: () => defineAureliaStory({ template: input() }),
+	play: async ({ canvasElement }) => {
+		const el = control(canvasElement)
+		if (!(await hoverPointer(el))) return
+		await waitFor(() =>
+			expect(getComputedStyle(el).borderTopColor).toBe(
+				resolved(
+					canvasElement,
+					'borderTopColor',
+					'var(--md-sys-color-on-surface)',
+				),
+			),
+		)
+		await expect(getComputedStyle(el).borderTopWidth).toBe('1px')
 	},
 } satisfies Story
 
