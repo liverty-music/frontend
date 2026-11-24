@@ -741,3 +741,28 @@ export const HypeDotHalo = {
 		await expect(getComputedStyle(label, '::before').height).toBe('2px')
 	},
 } satisfies Story
+
+/**
+ * Each hype radio is named for its artist and level ("Artist 1, Watch"), so a
+ * screen reader reaching a dot knows whose level it sets.
+ */
+export const HypeRadiosNameTheArtist = {
+	render: () =>
+		defineAureliaStory({
+			template: frame(375, 400),
+			register,
+			items: items(2, { hypes: ['home', 'watch'] }),
+		}),
+	play: async ({ canvasElement }) => {
+		await rendered(canvasElement, 2)
+		const names = [
+			...canvasElement.querySelectorAll<HTMLInputElement>(
+				'.artist-row:first-of-type input[type="radio"]',
+			),
+		].map((radio) =>
+			(radio.closest('label')?.textContent ?? '').replace(/\s+/g, ' ').trim(),
+		)
+		await expect(names).toHaveLength(4)
+		await expect(names.every((n) => n.startsWith('Artist 1,'))).toBe(true)
+	},
+} satisfies Story

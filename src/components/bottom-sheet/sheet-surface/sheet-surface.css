@@ -63,6 +63,8 @@
 			display: flex;
 			align-items: center;
 			justify-content: center;
+
+			inline-size: 100%;
 			block-size: 3rem;
 
 			&::after {
@@ -74,6 +76,11 @@
 
 				background: var(--md-sys-color-on-surface-variant);
 			}
+		}
+
+		/* The handle of a sheet that can be closed is a button. */
+		.handle-bar:is(button) {
+			cursor: pointer;
 		}
 
 		/* The heading, 24 px from both edges and 16 px above the content; a

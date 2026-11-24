@@ -546,7 +546,8 @@ export const InertAndFocusTrap = {
 		outside.focus()
 		await expect(document.activeElement).not.toBe(outside)
 
-		const first = canvasElement.querySelector('#first') as HTMLElement
+		// The handle of a dismissable sheet is its first control.
+		const first = canvasElement.querySelector('.handle-bar') as HTMLElement
 		const last = canvasElement.querySelector('#toggle-extra') as HTMLElement
 		first.focus()
 		await userEvent.tab({ shift: true })

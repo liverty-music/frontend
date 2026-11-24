@@ -3,7 +3,7 @@ import {
 	type Meta,
 	type StoryObj,
 } from '@aurelia/storybook'
-import { expect, within } from 'storybook/test'
+import { expect, userEvent, within } from 'storybook/test'
 import { expectScreenshot } from '../../../.storybook/screenshot'
 import { expectTargets } from '../../../.storybook/target-size'
 import { type ConcertDateTab, ConcertDateTabs } from './concert-date-tabs'
@@ -90,5 +90,36 @@ export const WithCancelledDate = {
 		expectTargets(canvasElement, 'a')
 		const frame = canvasElement.querySelector('.frame-360') as HTMLElement
 		await expect(frame.scrollWidth).toBeLessThanOrEqual(360)
+	},
+} satisfies Story
+
+/**
+ * The tabs are one Tab stop (the displayed date's), the arrow keys move between
+ * them, and Space follows the focused tab as Enter does.
+ */
+export const FromTheKeyboard = {
+	render: () => story(tabs(['11/20(金)', '11/21(土)', '11/22(日)'], 1)),
+	play: async ({ canvasElement }) => {
+		const links = within(canvasElement).getAllByRole('link')
+		await expect(links.map((l) => l.getAttribute('tabindex'))).toEqual([
+			'-1',
+			'0',
+			'-1',
+		])
+
+		links[1].focus()
+		await userEvent.keyboard('{ArrowRight}')
+		await expect(document.activeElement).toBe(links[2])
+		await userEvent.keyboard('{ArrowRight}')
+		await expect(document.activeElement).toBe(links[0])
+
+		// Space follows the focused tab's link: stop the navigation, count the click.
+		let clicks = 0
+		links[0].addEventListener('click', (e) => {
+			e.preventDefault()
+			clicks += 1
+		})
+		await userEvent.keyboard(' ')
+		await expect(clicks).toBe(1)
 	},
 } satisfies Story

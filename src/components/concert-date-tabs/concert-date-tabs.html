@@ -1,7 +1,7 @@
 <template>
   <import from="./concert-date-tabs.css"></import>
 
-  <nav class="[ date-tabs ]" aria-label.bind="label" roving-focus="a">
+  <nav class="[ date-tabs ]" aria-label.bind="label" roving-focus="a" keydown.trigger="activateWithSpace($event)">
     <a
       repeat.for="tab of tabs; key.bind: tab.id"
       href="/concerts/${tab.id}"

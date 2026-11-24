@@ -16,6 +16,7 @@
       group.bind="'hype-' + artist.artist.id"
       level.bind="level"
       text.bind="hypeTiers[level].label"
+      artist-name.bind="artist.artist.name"
       active.bind="level === artist.hype"
       change.trigger="hypeChanged(level)"
     ></label>

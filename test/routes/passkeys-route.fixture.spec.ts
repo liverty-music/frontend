@@ -454,6 +454,21 @@ describe('Passkey management lists, adds and removes passkeys (fixture)', () => 
 		expect(q('passkeys-confirm')).toBeNull()
 	})
 
+	it('puts focus on the page when no passkey is left to remove', async () => {
+		const { removeButtons, q, settle } = await renderManagement([
+			IPHONE,
+			WINDOWS,
+		])
+		removeButtons()[1]?.click()
+		await settle()
+		q<HTMLButtonElement>('passkeys-confirm-remove')?.click()
+		await settle()
+
+		// One passkey is left, which cannot be removed: the page takes focus,
+		// not the document.
+		expect(document.activeElement?.tagName).toBe('MAIN')
+	})
+
 	it('renders the removal in the danger variant and its cancel outlined', async () => {
 		// @spec components/infrastructure/fan/web/global/ui-primitives "Destructive action"
 		const { removeButtons, q, settle } = await renderManagement([

@@ -24,4 +24,17 @@ export class ConcertDateTabs {
 	@bindable public label = ''
 	/** The mark of a cancelled date in the display language, e.g. "中止". */
 	@bindable public cancelledLabel = ''
+
+	/**
+	 * A tab is a link, which a key activates with Enter only; Material 3 tabs
+	 * also take Space. Space on a focused tab follows its link.
+	 */
+	public activateWithSpace(event: KeyboardEvent): boolean {
+		const tab = (event.target as Element | null)?.closest('a.date-tab')
+		if (tab && event.key === ' ' && !event.repeat) {
+			;(tab as HTMLElement).click()
+			return false
+		}
+		return true
+	}
 }

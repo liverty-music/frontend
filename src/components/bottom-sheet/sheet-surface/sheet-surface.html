@@ -4,7 +4,17 @@
      initially visible. Focusable (tabindex="-1") so focus can be moved into
      it on open. -->
 <section ref="body" class="[ sheet-body ] [ wrapper ]" tabindex="-1">
-  <div class="handle-bar"></div>
+  <!-- The drag handle, which the keyboard and a screen reader reach as the
+       button that closes a dismissable sheet (a sheet that must be answered
+       keeps it as a picture). -->
+  <button
+    if.bind="dismissable"
+    type="button"
+    class="handle-bar"
+    t="[aria-label]common.dismiss"
+    click.trigger="requestDismiss()"
+  ></button>
+  <div else class="handle-bar" aria-hidden="true"></div>
   <!-- The heading names the dialog (aria-labelledby, set by bottom-sheet).
        A sheet's own action for the whole sheet (clear all) sits beside it. -->
   <div if.bind="heading" class="sheet-heading-row">

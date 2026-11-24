@@ -29,6 +29,8 @@
     <sheet-surface
       heading.bind="heading"
       heading-id.bind="headingId"
+      dismissable.bind="dismissable"
+      sheet-dismiss-request.trigger="onDismissZoneClick()"
       body.from-view="sheetBody"
     >
       <au-slot name="heading-action" au-slot="heading-action"></au-slot>
