@@ -57,6 +57,7 @@ function resolved(
 }
 
 export const Catalog = {
+	tags: ['latin-metrics'],
 	render: () =>
 		defineAureliaStory({
 			template: `<div style="display:flex; flex-direction:column; gap:0.5rem; padding:1rem; background:var(--md-sys-color-surface)">${VARIANTS.map(row).join('')}</div>`,
@@ -147,6 +148,7 @@ export const Catalog = {
  * variants its users (bottom banner, settings row, snack bar) draw.
  */
 export const Compact = {
+	tags: ['latin-metrics'],
 	render: () =>
 		defineAureliaStory({
 			template: `

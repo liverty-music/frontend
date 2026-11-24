@@ -32,6 +32,7 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const TypeStyles = {
+	tags: ['latin-metrics'],
 	render: () => defineAureliaStory({ template: TYPE_SAMPLES }),
 	play: async ({ canvasElement }) => {
 		// @spec components/infrastructure/fan/web/global/design-tokens "Title at any window width"

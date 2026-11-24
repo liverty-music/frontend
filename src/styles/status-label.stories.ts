@@ -74,6 +74,7 @@ async function expectTone(
 }
 
 export const Neutral = {
+	tags: ['latin-metrics'],
 	render: () =>
 		defineAureliaStory({
 			template: panel(
@@ -94,6 +95,7 @@ export const Neutral = {
 } satisfies Story
 
 export const Positive = {
+	tags: ['latin-metrics'],
 	render: () =>
 		defineAureliaStory({
 			template: panel(
@@ -114,6 +116,7 @@ export const Positive = {
 } satisfies Story
 
 export const ErrorTone = {
+	tags: ['latin-metrics'],
 	name: 'Error',
 	render: () =>
 		defineAureliaStory({
