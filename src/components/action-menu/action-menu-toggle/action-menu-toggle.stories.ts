@@ -51,11 +51,8 @@ export const Closed = {
 		await expect(button.title).not.toBe('')
 		await expect(button.title).toBe(button.getAttribute('aria-label'))
 		await expect(button.getBoundingClientRect().width).toBe(56)
-		// It grows from nothing as it shows and shrinks away as it goes.
+		// It grows from nothing as it shows, on the spatial spring.
 		await expect(getComputedStyle(button).transitionProperty).toContain('scale')
-		await expect(getComputedStyle(button).transitionProperty).toContain(
-			'display',
-		)
 		const close = button.querySelector('.fab-close') as Element
 		await expect(getComputedStyle(close).opacity).toBe('0')
 	},

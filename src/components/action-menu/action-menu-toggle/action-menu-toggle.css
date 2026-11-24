@@ -44,9 +44,7 @@
 				translate var(--md-sys-motion-spring-spatial-duration)
 				var(--md-sys-motion-spring-spatial),
 				scale var(--md-sys-motion-spring-spatial-duration)
-				var(--md-sys-motion-spring-spatial),
-				display var(--md-sys-motion-spring-spatial-duration) allow-discrete,
-				overlay var(--md-sys-motion-spring-spatial-duration) allow-discrete;
+				var(--md-sys-motion-spring-spatial);
 
 			/* Its own View Transition snapshot. A named snapshot paints above
 			   the root one, and the FAB overlaps the navigation bar and the
@@ -55,15 +53,13 @@
 			   place on top, since snapshots paint in the order of their
 			   elements and the FAB is in the top layer (global.css). */
 			view-transition-name: action-menu-toggle;
-
-			/* Enter and exit: the FAB grows from nothing when it first shows
-			   (the launcher appears, or edit mode ends) and shrinks away when
-			   it goes, on the same spatial spring as its sink. */
-			&:not(:popover-open) {
-				scale: 0;
-			}
 		}
 
+		/* Enter: the FAB grows from nothing when it first shows (a screen's
+		   launcher appears, or edit mode ends), on the same spatial spring as
+		   its sink. Only the entry: the arc hides and shows the FAB again in
+		   one task to lift it above the panel's scrim (action-menu.ts), which
+		   a transitioned exit would hold back for a frame. */
 		@starting-style {
 			.action-menu-toggle:popover-open {
 				scale: 0;
