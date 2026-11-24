@@ -11,6 +11,7 @@ import { definePreview } from '@aurelia/storybook'
 import addonA11y from '@storybook/addon-a11y'
 import { BottomSheet } from '../src/components/bottom-sheet/bottom-sheet'
 import { SvgIcon } from '../src/components/svg-icon/svg-icon'
+import { RovingFocusCustomAttribute } from '../src/custom-attributes/roving-focus'
 import en from '../src/locales/en/translation.json'
 import ja from '../src/locales/ja/translation.json'
 import { expectFitsScreen } from './fits-screen'
@@ -65,7 +66,7 @@ export default definePreview({
 		// components' slots (svg-icon, bottom-sheet) and wire i18n so `t`-bound
 		// templates (e.g. page-header) resolve translations.
 		aurelia: {
-			register: [SvgIcon, BottomSheet],
+			register: [SvgIcon, BottomSheet, RovingFocusCustomAttribute],
 			configure: (au: { register: (...items: unknown[]) => unknown }) => {
 				au.register(
 					I18nConfiguration.customize((options) => {

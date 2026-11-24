@@ -26,7 +26,7 @@
     <!-- Artist facet -->
     <section class="[ filter-facet ] [ stack ]" aria-labelledby="filter-artist-heading">
       <h3 class="[ facet-heading ] [ md-typescale-title-small ]" id="filter-artist-heading">アーティスト</h3>
-      <ul class="artists-list" aria-labelledby="filter-artist-heading" keydown.trigger="toggleWithEnter($event)">
+      <ul class="artists-list" aria-labelledby="filter-artist-heading" keydown.trigger="toggleWithEnter($event)" roving-focus="input[type=checkbox]">
         <li repeat.for="artist of countedArtists" key.bind="artist.id">
           <label class="[ chip artist-chip ] [ state-layer ] [ md-typescale-label-large ]">
             <input
@@ -50,7 +50,7 @@
       aria-labelledby="filter-journey-heading"
     >
       <h3 class="[ facet-heading ] [ md-typescale-title-small ]" id="filter-journey-heading" t="concertSheet.ticketStatus"></h3>
-      <ul class="journey-list" aria-labelledby="filter-journey-heading" keydown.trigger="toggleWithEnter($event)">
+      <ul class="journey-list" aria-labelledby="filter-journey-heading" keydown.trigger="toggleWithEnter($event)" roving-focus="input[type=checkbox]">
         <!-- Process phase: tracking -> applied -->
         <li repeat.for="config of processStatuses" key.bind="config.status">
           <label class="[ chip journey-chip ] [ state-layer ] [ md-typescale-label-large ]" data-journey-status.bind="config.status">

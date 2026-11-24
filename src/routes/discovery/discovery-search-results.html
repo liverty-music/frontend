@@ -7,7 +7,7 @@
   <p if.bind="!search.isSearching && search.isSearchMode && search.searchResults.length === 0 && search.searchQuery.trim().length > 0" class="[ search-status ] [ md-typescale-body-medium ]" t="discovery.noResults">
   </p>
 
-  <ul class="results-list" role="list">
+  <ul class="results-list" role="list" roving-focus=".result-item" keydown.trigger="pressWithKey($event)">
     <li
       repeat.for="artist of search.searchResults; key.bind: artist.id"
       class="[ result-item ] [ state-layer ]"

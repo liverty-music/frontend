@@ -450,7 +450,7 @@
      exactly one may be chosen (the check icon + data-selected are visual only). -->
 <bottom-sheet open.bind="languageSelectorOpen" sheet-closed.trigger="languageSelectorOpen = false" heading.bind="'settings.language' | t">
   <div class="selector-content">
-    <div class="[ language-list ] [ stack ]" role="radiogroup" aria-label.bind="'settings.language' | t">
+    <div class="[ language-list ] [ stack ]" role="radiogroup" aria-label.bind="'settings.language' | t" roving-focus="[role=radio]">
       <button
         repeat.for="lang of supportedLanguages"
         busy-on-click.bind="() => selectLanguage(lang)"
