@@ -27,6 +27,7 @@ export class DiscoverySearchResults {
 	public pressWithKey(event: KeyboardEvent): boolean {
 		const row = (event.target as Element | null)?.closest('.result-item')
 		if (row && (event.key === 'Enter' || event.key === ' ') && !event.repeat) {
+			event.preventDefault()
 			;(row as HTMLElement).click()
 			return false
 		}

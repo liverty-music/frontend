@@ -110,6 +110,22 @@ export class BottomNavBar {
 		return false
 	}
 
+	/**
+	 * A tab is a link, which a key activates with Enter only; Material 3 tabs
+	 * also take Space. Space on a focused tab follows it, through the same
+	 * click as a tap.
+	 */
+	public pressTabWithSpace(event: KeyboardEvent): boolean {
+		const tab = (event.target as Element | null)?.closest('a.nav-tab')
+		if (tab && event.key === ' ' && !event.repeat) {
+			// A bound handler does not cancel the key itself: Space would scroll.
+			event.preventDefault()
+			;(tab as HTMLElement).click()
+			return false
+		}
+		return true
+	}
+
 	private updateSection(): void {
 		const data = this.router.routeTree?.root.children[0]?.data as
 			| ShellRouteData

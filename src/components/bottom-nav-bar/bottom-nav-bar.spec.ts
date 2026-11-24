@@ -64,6 +64,28 @@ describe('BottomNavBar', () => {
 		await fixture.stop(true)
 	})
 
+	it('follows a tab on Space as on a tap', async () => {
+		const space = new KeyboardEvent('keydown', {
+			key: ' ',
+			bubbles: true,
+			cancelable: true,
+		})
+		tabs()[1].dispatchEvent(space)
+		await vi.waitFor(() =>
+			expect(fixture.appHost.querySelector('route-b')).not.toBeNull(),
+		)
+		expect(space.defaultPrevented).toBe(true)
+
+		// Other keys are left to the browser.
+		const other = new KeyboardEvent('keydown', {
+			key: 'a',
+			bubbles: true,
+			cancelable: true,
+		})
+		tabs()[0].dispatchEvent(other)
+		expect(other.defaultPrevented).toBe(false)
+	})
+
 	it('renders one tab per `nav: true` route, in route order, named by route id', () => {
 		expect(tabs().map((t) => t.getAttribute('data-nav'))).toEqual(['a', 'b'])
 	})

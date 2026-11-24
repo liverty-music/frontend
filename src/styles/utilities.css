@@ -243,7 +243,8 @@
    through the spinner, and draws the spinner on ::after (the shared state layer keeps ::before). A
    block that puts its own ::after on a control that can be busy (a chip's
    touch target, a banner action's cue) leaves it while `[data-busy]` is set.
-   Centred with `translate`, so the turn (`rotate`) keeps it centred. */
+   The spinner is 24 px, the least a circular indicator is (Material 3
+   progress indicators). Centred with `translate`, so the turn (`rotate`) keeps it centred. */
 @layer utility {
 	/* stylelint-disable-next-line cube/utility-single-property -- a state, not a token: it sets several properties together */
 	[data-busy] {
@@ -268,9 +269,9 @@
 		inset-inline-start: 50%;
 		translate: -50% -50%;
 
-		inline-size: 1rem;
-		block-size: 1rem;
-		border: 1.5px solid oklch(from var(--color-brand-accent) l c h / 30%);
+		inline-size: 1.5rem;
+		block-size: 1.5rem;
+		border: 2px solid oklch(from var(--color-brand-accent) l c h / 30%);
 		border-block-start-color: var(--color-brand-accent);
 		border-radius: var(--md-sys-shape-corner-full);
 

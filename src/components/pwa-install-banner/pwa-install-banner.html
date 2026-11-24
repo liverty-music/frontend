@@ -8,6 +8,10 @@
   [message 1fr] [install auto]. No icon and no close control; the banner
   stays until the app is installed.
 -->
+<!-- A live region that is always there, so a screen reader announces the
+     message when the banner appears. -->
+<p class="[ visually-hidden ]" role="status">${isVisible ? 'pwaInstallBanner.label' : '' | t}</p>
+
 <aside
   if.bind="isVisible"
   t="[aria-label]pwaInstallBanner.ariaLabel"

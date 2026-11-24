@@ -32,6 +32,7 @@ export class ConcertDateTabs {
 	public activateWithSpace(event: KeyboardEvent): boolean {
 		const tab = (event.target as Element | null)?.closest('a.date-tab')
 		if (tab && event.key === ' ' && !event.repeat) {
+			event.preventDefault()
 			;(tab as HTMLElement).click()
 			return false
 		}

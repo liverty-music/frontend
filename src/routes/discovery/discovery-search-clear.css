@@ -1,0 +1,40 @@
+/* The button that clears the search field, in the search bar. */
+@layer block {
+	@scope (discovery-search-bar) {
+		/* The white tints are set on the bar (discovery-search-bar.css). */
+		.clear-button {
+			display: flex;
+			flex-shrink: 0;
+			align-items: center;
+			justify-content: center;
+
+			inline-size: 1.5rem;
+			block-size: 1.5rem;
+			border-radius: var(--md-sys-shape-corner-full);
+
+			/* stylelint-disable-next-line no-unknown-custom-properties -- the bar sets its tints on its host (discovery-search-bar.css) */
+			color: var(--_white-70);
+
+			/* stylelint-disable-next-line no-unknown-custom-properties -- the bar sets its tints on its host (discovery-search-bar.css) */
+			background: var(--_white-15);
+
+			/* The 24 px circle takes a 48 px tap, as a trailing icon does. */
+			&::after {
+				content: "";
+
+				position: absolute;
+				inset-block-start: 50%;
+				inset-inline-start: 50%;
+				translate: -50% -50%;
+
+				inline-size: var(--md-sys-target-size);
+				block-size: var(--md-sys-target-size);
+			}
+
+			& svg {
+				inline-size: 0.875rem;
+				block-size: 0.875rem;
+			}
+		}
+	}
+}

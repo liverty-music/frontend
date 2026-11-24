@@ -88,6 +88,7 @@ export class ArtistFilterBar {
 			target instanceof HTMLInputElement &&
 			target.type === 'checkbox'
 		) {
+			event.preventDefault()
 			target.click()
 			return false
 		}

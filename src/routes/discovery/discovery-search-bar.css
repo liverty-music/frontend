@@ -72,26 +72,6 @@
 			}
 		}
 
-		.clear-button {
-			display: flex;
-			flex-shrink: 0;
-			align-items: center;
-			justify-content: center;
-
-			inline-size: 1.5rem;
-			block-size: 1.5rem;
-			border-radius: var(--md-sys-shape-corner-full);
-
-			color: var(--_white-70);
-
-			background: var(--_white-15);
-
-			& svg {
-				inline-size: 0.875rem;
-				block-size: 0.875rem;
-			}
-		}
-
 		/* stylelint-disable-next-line media-feature-name-disallowed-list -- viewport width needed alongside height to isolate SE-class devices (375px) from wider phones; container queries cannot combine with @media height */
 		@media (height <= 700px) and (width < 390px) {
 			.search-bar {
