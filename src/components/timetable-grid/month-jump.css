@@ -20,9 +20,32 @@
 
 		.month-jump-capsule {
 			display: flex;
+
 			border-radius: var(--md-sys-shape-corner-full);
+
 			background: var(--md-sys-color-menu-surface);
 			box-shadow: var(--md-sys-elevation-level2);
+
+			/* Enter and exit: the capsule fades in when the list is first
+			   scrolled and out when the FAB opens or the list is back at its
+			   top (M3 transitions, enter and exit; effects spring). `display`
+			   flips after the exit; 0 ms under reduced motion. */
+			transition:
+				opacity var(--md-sys-motion-spring-effects-duration)
+				var(--md-sys-motion-spring-effects),
+				display var(--md-sys-motion-spring-effects-duration) allow-discrete;
+		}
+
+		@starting-style {
+			.month-jump-capsule {
+				opacity: 0;
+			}
+		}
+
+		/* Not while the FAB's action list is open. */
+		:where(:root:has(.fab-panel:popover-open)) :scope .month-jump-capsule {
+			display: none;
+			opacity: 0;
 		}
 
 		.month-jump-button {
@@ -64,14 +87,10 @@
 		   without scroll-state queries never matches this, so it shows the
 		   capsule from the start. */
 		@container timetable not scroll-state(scrollable: top) {
-			:scope[data-moved="false"] {
+			:scope[data-moved="false"] .month-jump-capsule {
 				display: none;
+				opacity: 0;
 			}
-		}
-
-		/* Not while the FAB's action list is open. */
-		:where(:root:has(.fab-panel:popover-open)) :scope {
-			display: none;
 		}
 	}
 }
