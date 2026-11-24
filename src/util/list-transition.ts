@@ -11,6 +11,8 @@
  * under reduced motion a global rule stops the animation. Resolves once the
  * edit has been made.
  */
+import { runTasks } from 'aurelia'
+
 let latest: ViewTransition | null = null
 
 export async function inListTransition(change: () => void): Promise<void> {
@@ -19,7 +21,14 @@ export async function inListTransition(change: () => void): Promise<void> {
 		return
 	}
 	document.documentElement.classList.add('vt-suppress-root')
-	const transition = document.startViewTransition(change)
+	// The browser suspends rAF while it snapshots, so Aurelia's queued writes
+	// (attribute bindings such as `data-editing.bind`) are flushed here, inside
+	// the callback, and nothing is returned: a promise settled on a frame would
+	// time the transition out.
+	const transition = document.startViewTransition(() => {
+		change()
+		runTasks()
+	})
 	latest = transition
 	// The browser can skip the transition and reject `ready`; the edit is
 	// still made, without the animation.

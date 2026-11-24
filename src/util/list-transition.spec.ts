@@ -1,3 +1,4 @@
+import { queueTask } from 'aurelia'
 import { afterEach, describe, expect, it } from 'vitest'
 import { inListTransition } from './list-transition'
 
@@ -75,5 +76,22 @@ describe('inListTransition', () => {
 		await Promise.resolve()
 		await Promise.resolve()
 		expect(root.classList).not.toContain('vt-suppress-root')
+	})
+
+	it("flushes Aurelia's queued writes inside the transition's callback", async () => {
+		let flushed = false
+		Object.assign(document, {
+			startViewTransition: (change: () => void) => {
+				const { transition } = fakeTransition(change)
+				// The callback has returned: its queued writes must be done.
+				expect(flushed).toBe(true)
+				return transition
+			},
+		})
+		await inListTransition(() => {
+			queueTask(() => {
+				flushed = true
+			})
+		})
 	})
 })

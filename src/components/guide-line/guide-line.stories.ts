@@ -149,9 +149,17 @@ export const FadesInAndOut: Story = {
 
 		await userEvent.click(canvas.getByTestId('elsewhere'))
 		await waitFor(() => expect(line.matches(':popover-open')).toBe(false))
+		if (!reduce) {
+			// Still painted, with its words, while it fades out: not an empty
+			// capsule.
+			await expect(getComputedStyle(line).display).not.toBe('none')
+			await expect(line).toHaveTextContent('すぐに行けるライブも見てみよう！')
+		}
 		await waitFor(() => expect(getComputedStyle(line).display).toBe('none'), {
 			timeout: 1000,
 		})
+		// The words go once it has faded, so the next moment's are set afresh.
+		await waitFor(() => expect(line).toHaveTextContent(''))
 	},
 }
 
