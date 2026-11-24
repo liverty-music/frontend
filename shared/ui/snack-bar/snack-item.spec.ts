@@ -133,6 +133,56 @@ describe('SnackItem', () => {
 		})
 	})
 
+	describe('hover and focus', () => {
+		it(`@spec ${SPEC} "Pointer over a snack with an action"`, () => {
+			show('通知をオンにしますか？', {
+				action: { label: 'オン', callback: vi.fn() },
+			})
+			vi.advanceTimersByTime(6000)
+			sut.onPointerEnter()
+			vi.advanceTimersByTime(60_000)
+			expect(dismiss).not.toHaveBeenCalled()
+			sut.onPointerLeave()
+			// The 4 s that were left.
+			expect(dismissedAround(4000)).toEqual([false, true])
+		})
+
+		it(`@spec ${SPEC} "Focus inside a snack"`, () => {
+			show('通知をオンにしますか？', {
+				action: { label: 'オン', callback: vi.fn() },
+			})
+			sut.onFocusIn()
+			vi.advanceTimersByTime(60_000)
+			expect(dismiss).not.toHaveBeenCalled()
+			sut.onFocusOut(new FocusEvent('focusout', { relatedTarget: null }))
+			expect(dismissedAround(10_000)).toEqual([false, true])
+		})
+
+		it("keeps waiting while focus moves between the snack's own buttons", () => {
+			show('通知をオンにしますか？', {
+				action: { label: 'オン', callback: vi.fn() },
+			})
+			const button = document.createElement('button')
+			sut.surface = document.createElement('div')
+			sut.surface.append(button)
+			sut.onFocusIn()
+			sut.onFocusOut(new FocusEvent('focusout', { relatedTarget: button }))
+			vi.advanceTimersByTime(60_000)
+			expect(dismiss).not.toHaveBeenCalled()
+		})
+
+		it('keeps waiting while the pointer is released over the snack with focus still inside', () => {
+			show('通知をオンにしますか？', {
+				action: { label: 'オン', callback: vi.fn() },
+			})
+			sut.onFocusIn()
+			sut.onPointerEnter()
+			sut.onPointerLeave()
+			vi.advanceTimersByTime(60_000)
+			expect(dismiss).not.toHaveBeenCalled()
+		})
+	})
+
 	describe('swipe', () => {
 		it('dismisses once a swipe has carried the snack out of its place', () => {
 			show('Saved')

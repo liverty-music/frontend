@@ -15,6 +15,10 @@
     ref="surface"
     class="snack-surface"
     pointerdown.trigger="onPointerDown()"
+    pointerenter.trigger="onPointerEnter()"
+    pointerleave.trigger="onPointerLeave()"
+    focusin.trigger="onFocusIn()"
+    focusout.trigger="onFocusOut($event)"
   >
     <svg-icon if.bind="icons && snack.icon" name.bind="snack.icon" size="md" class="snack-icon" data-icon.bind="snack.icon"></svg-icon>
     <span class="[ snack-message ] [ md-typescale-body-medium ]"><au-slot name="message">${snack.message}</au-slot></span>
