@@ -55,6 +55,13 @@
 			view-transition-name: discovery-view;
 		}
 
+		/* The tile is the control, not part of the view it turns: named on its
+		   own it stays where it is while the view turns behind it, instead of
+		   turning with the body. */
+		.discovery-layout[data-revealing="true"] .swap-tile-slot {
+			view-transition-name: discovery-swap-tile;
+		}
+
 		@container discovery-layout (width < 390px) {
 			.swap-tile-slot {
 				--orb-max-r: 56px;

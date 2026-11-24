@@ -77,6 +77,7 @@
 
 		.discovery-layout:not([data-search-mode="true"]) .search-results {
 			display: none;
+			opacity: 0;
 		}
 
 		/* stylelint-disable-next-line media-feature-name-disallowed-list -- viewport width needed alongside height to isolate SE-class devices (375px) from wider phones; container queries cannot combine with @media height */

@@ -289,6 +289,22 @@ test.describe('Discovery swap tile', () => {
 		await expect(tile(page)).toHaveAccessibleName('ライブ')
 	})
 
+	test(`@spec ${CAPABILITY} "The swap tile stays put while the view turns"`, async ({
+		page,
+	}) => {
+		await openDiscovery(page)
+		const slot = page.locator('.swap-tile-slot')
+		const layout = page.locator('.discovery-layout')
+		// Named only while the view switches; then the tile has a group of its
+		// own, so the view's turn does not carry it along.
+		await expect(slot).toHaveCSS('view-transition-name', 'none')
+		await layout.evaluate((el) => el.setAttribute('data-revealing', 'true'))
+		await expect(layout).toHaveCSS('view-transition-name', 'discovery-view')
+		await expect(slot).toHaveCSS('view-transition-name', 'discovery-swap-tile')
+		await layout.evaluate((el) => el.removeAttribute('data-revealing'))
+		await expect(slot).toHaveCSS('view-transition-name', 'none')
+	})
+
 	test(`@spec ${CAPABILITY} "Left-handed mode"`, async ({ page }) => {
 		await openDiscovery(page, '/discovery', { handed: 'left' })
 		const c = centre(await tileBox(page))

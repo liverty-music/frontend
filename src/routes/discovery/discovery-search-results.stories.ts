@@ -87,6 +87,14 @@ export const Results = {
 		await expect(rows).toHaveLength(2)
 		await expect(rows[0]).toHaveAttribute('data-followed', 'false')
 		await expect(rows[1]).toHaveAttribute('data-followed', 'true')
+
+		// The list fades in and out with search (the route hides it outside
+		// search with `display: none`, flipped after the exit).
+		const style = getComputedStyle(
+			canvasElement.querySelector('.search-results') as Element,
+		)
+		await expect(style.transitionProperty).toContain('opacity')
+		await expect(style.transitionProperty).toContain('display')
 	},
 } satisfies Story
 
