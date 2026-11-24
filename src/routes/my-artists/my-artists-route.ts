@@ -28,6 +28,7 @@ import { INotificationPromptService } from '../../services/notification-prompt-s
 import { IOnboardingService } from '../../services/onboarding-service'
 import { IUserStore } from '../../services/user-store'
 import { currentLanguage } from '../../util/change-locale'
+import { inListTransition } from '../../util/list-transition'
 
 export interface MyArtist extends FollowedArtist {
 	color: string
@@ -279,35 +280,8 @@ export class MyArtistsRoute {
 	// --- Edit-mode toggle ---
 
 	public toggleEditing(): void {
-		this.editInPlace(() => {
+		void inListTransition(() => {
 			this.editing = !this.editing
-		})
-	}
-
-	/**
-	 * An in-place edit of the list (a row removed or restored, edit mode on or
-	 * off), run inside a View Transition. Each `.artist-row` and the Done bar
-	 * have their own `view-transition-name`, so only they animate (a row fades
-	 * out or in and the rest move to their new places; the dots and the remove
-	 * button cross-fade). The default `root` cross-fade, a route-level effect,
-	 * is suppressed for this edit: otherwise the header and bottom nav (unnamed,
-	 * captured in `root`) dip in opacity and read as disappearing. The class is
-	 * cleared when the transition ends. Under reduced motion a global rule
-	 * stops the animation (global.css). Where the browser has no View
-	 * Transitions, the edit is made at once.
-	 */
-	private editInPlace(change: () => void): void {
-		if (typeof document.startViewTransition !== 'function') {
-			change()
-			return
-		}
-		document.documentElement.classList.add('vt-suppress-root')
-		const transition = document.startViewTransition(change)
-		// The browser can skip the transition and reject `ready`; the edit is
-		// still made, without the animation.
-		void transition.ready.catch(() => {})
-		void transition.finished.finally(() => {
-			document.documentElement.classList.remove('vt-suppress-root')
 		})
 	}
 
@@ -337,7 +311,7 @@ export class MyArtistsRoute {
 			}
 		}
 
-		this.editInPlace(doRemove)
+		void inListTransition(doRemove)
 
 		this.logger.info('Artist unfollowed (pending)', { name: artistName })
 
@@ -370,7 +344,7 @@ export class MyArtistsRoute {
 		// so the rows below make room instead of jumping down.
 		const insertAt = Math.min(this.undoIndex, this.artists.length)
 		const restored = this.undoArtist
-		this.editInPlace(() => {
+		void inListTransition(() => {
 			this.artists.splice(insertAt, 0, restored)
 
 			// unfollowArtist() is only reachable via the edit-mode remove button,
