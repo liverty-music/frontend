@@ -256,7 +256,41 @@ test.describe('Discovery swap tile', () => {
 		page,
 	}) => {
 		await openDiscovery(page)
+		// Nothing is named at rest. The moment the browser takes the old frame,
+		// the swap tile must be named on its own, so it is not part of the view
+		// that turns and keeps its place while it does.
+		await expect(page.locator('.swap-tile-slot')).toHaveCSS(
+			'view-transition-name',
+			'none',
+		)
+		await page.evaluate(() => {
+			const names: { view: string; tile: string }[] = []
+			const start = document.startViewTransition.bind(document)
+			document.startViewTransition = (callback) => {
+				const name = (selector: string) =>
+					getComputedStyle(document.querySelector(selector) as Element)
+						.viewTransitionName
+				names.push({
+					view: name('.discovery-layout'),
+					tile: name('.swap-tile-slot'),
+				})
+				return start(callback)
+			}
+			;(window as unknown as { swapNames: typeof names }).swapNames = names
+		})
 		await tile(page).click()
+		await expect
+			.poll(() =>
+				page.evaluate(
+					() =>
+						(
+							window as unknown as {
+								swapNames: { view: string; tile: string }[]
+							}
+						).swapNames,
+				),
+			)
+			.toEqual([{ view: 'discovery-view', tile: 'discovery-swap-tile' }])
 
 		const view = page.locator('discovery-concerts')
 		await expect(view).toBeVisible()
@@ -287,22 +321,6 @@ test.describe('Discovery swap tile', () => {
 		await expect(page.locator('.search-bar')).toBeVisible()
 		await expect(page.locator('.genre-bar')).toBeVisible()
 		await expect(tile(page)).toHaveAccessibleName('ライブ')
-	})
-
-	test(`@spec ${CAPABILITY} "The swap tile stays put while the view turns"`, async ({
-		page,
-	}) => {
-		await openDiscovery(page)
-		const slot = page.locator('.swap-tile-slot')
-		const layout = page.locator('.discovery-layout')
-		// Named only while the view switches; then the tile has a group of its
-		// own, so the view's turn does not carry it along.
-		await expect(slot).toHaveCSS('view-transition-name', 'none')
-		await layout.evaluate((el) => el.setAttribute('data-revealing', 'true'))
-		await expect(layout).toHaveCSS('view-transition-name', 'discovery-view')
-		await expect(slot).toHaveCSS('view-transition-name', 'discovery-swap-tile')
-		await layout.evaluate((el) => el.removeAttribute('data-revealing'))
-		await expect(slot).toHaveCSS('view-transition-name', 'none')
 	})
 
 	test(`@spec ${CAPABILITY} "Left-handed mode"`, async ({ page }) => {

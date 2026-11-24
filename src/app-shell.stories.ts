@@ -238,6 +238,13 @@ const shellOf = (root: HTMLElement) => one(root, 'app-shell')
 const nav = (root: HTMLElement) => one(root, 'bottom-nav-bar nav')
 const fab = (root: HTMLElement) =>
 	one<HTMLButtonElement>(root, 'action-menu .action-menu-toggle')
+/**
+ * The banners on screen. A banner that has gone stays in the DOM, `hidden`
+ * and `inert`, until its exit ends and then is not rendered.
+ */
+const shownBanners = (root: HTMLElement, selector: string) =>
+	[...root.querySelectorAll<HTMLElement>(selector)].filter((el) => !el.hidden)
+
 const banner = (root: HTMLElement) =>
 	one(root, 'pwa-install-banner .bottom-banner')
 
@@ -591,7 +598,7 @@ export const BannerSinksTheFab = {
 			)
 			await waitFor(() =>
 				expect(
-					canvasElement.querySelectorAll('pwa-install-banner .bottom-banner'),
+					shownBanners(canvasElement, 'pwa-install-banner .bottom-banner'),
 				).toHaveLength(0),
 			)
 			await waitFor(() => fab(canvasElement))
@@ -621,9 +628,9 @@ export const HiddenBannersAddNoHeight = {
 			await expect(
 				canvasElement.querySelector('signup-prompt-banner'),
 			).not.toBeNull()
-			await expect(
-				canvasElement.querySelectorAll('.bottom-banner'),
-			).toHaveLength(0)
+			await expect(shownBanners(canvasElement, '.bottom-banner')).toHaveLength(
+				0,
+			)
 			await openSnack(canvasElement)
 			const gap =
 				box(nav(canvasElement)).top -
