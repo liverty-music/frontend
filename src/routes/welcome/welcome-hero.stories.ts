@@ -43,6 +43,7 @@ const render: Story['render'] = (args) =>
 
 /** With a demo below: the button that scrolls to it, and no commit actions. */
 export const WithPreview = {
+	tags: ['latin-metrics'],
 	render,
 	args: { hasPreview: true },
 	play: async ({ canvasElement }) => {

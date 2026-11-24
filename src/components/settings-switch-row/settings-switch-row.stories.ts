@@ -75,6 +75,7 @@ export const Off = {
 
 /** With a description, which the switch references. */
 export const WithDescription = {
+	tags: ['japanese'],
 	args: {
 		icon: 'swap',
 		label: '左利きモード',

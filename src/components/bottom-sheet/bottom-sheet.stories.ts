@@ -168,6 +168,7 @@ export const RoundedTopCorners = {
 // handle area, 24 px from both edges, 16 px above the content, and names the
 // dialog.
 export const WithHeading = {
+	tags: ['latin-metrics'],
 	render: (args) =>
 		defineAureliaStory({ template, props: args, register: [BottomSheet] }),
 	args: { open: true, heading: '会場アクセス' },

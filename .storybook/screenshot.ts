@@ -1,3 +1,5 @@
+import { storyLanguage } from './story-language'
+
 /**
  * Compares `element` with its committed baseline (`__screenshots__`).
  *
@@ -16,8 +18,15 @@ export async function expectScreenshot(
 	name: string,
 ): Promise<void> {
 	if (import.meta.env.MODE !== 'test') return
+	// Under another language (the `storybook-ja` project) a story has no
+	// screenshot unless it is tagged `japanese`, and then its own baseline.
+	if (storyLanguage.lang !== '' && !storyLanguage.baseline) return
 	const { expect } = await import('vitest')
-	await expect.element(element).toMatchScreenshot(name)
+	await expect
+		.element(element)
+		.toMatchScreenshot(
+			storyLanguage.lang ? `${name}-${storyLanguage.lang}` : name,
+		)
 }
 
 /**

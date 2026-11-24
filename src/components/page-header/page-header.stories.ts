@@ -25,6 +25,7 @@ type Story = StoryObj<typeof meta>
 
 // Title only — the H1 resolves the i18n key.
 export const Default = {
+	tags: ['latin-metrics'],
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement)
 		const h1 = canvas.getByRole('heading', { level: 1 })

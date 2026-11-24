@@ -59,6 +59,7 @@ const px = (value: string) => Number.parseFloat(value)
 
 /** A selector row: icon, label, current value and caret; a tap reaches the parent. */
 export const WithValue = {
+	tags: ['japanese'],
 	args: { tapped: fn() },
 	render,
 	play: async ({ canvasElement, args }) => {
@@ -129,6 +130,7 @@ export const Link = {
 
 /** A value too long for the row is cut off; the label keeps its width. */
 export const LongValue = {
+	tags: ['latin-metrics'],
 	args: {
 		icon: 'map-pin',
 		label: 'エリア',
@@ -174,6 +176,7 @@ export const LongLabel = {
 
 /** A row with a line of supporting text grows and stays one target. */
 export const TwoLines = {
+	tags: ['japanese'],
 	args: {
 		icon: 'chart',
 		label: '利用状況の送信',

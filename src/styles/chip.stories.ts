@@ -296,6 +296,7 @@ export const Focused = {
 const GENRES = ['Rock', 'Pop', 'Anime', 'Jazz', 'Electronic', 'Hip Hop', 'R&B']
 
 export const WrappingRow = {
+	tags: ['japanese'],
 	render: () =>
 		defineAureliaStory({
 			template: row(
@@ -344,8 +345,8 @@ export const WrappingRow = {
 } satisfies Story
 
 /**
- * Selecting a chip: the fill, a leading check and nothing else changes. The
- * corner radius is 8 px before and after and no transition touches it, and a
+ * Selecting a chip: the fill (which fades), a leading check and nothing else
+ * changes. The corner radius is 8 px before and after and no transition touches it, and a
  * pointer over an unselected chip selects nothing: the state is the checkbox.
  */
 export const SelectionWithoutShapeMorph = {
@@ -387,9 +388,11 @@ export const SelectionWithoutShapeMorph = {
 		await expect(input.checked).toBe(true)
 		await expect(chip.querySelector('svg-icon.chip-icon')).not.toBeNull()
 		await expect(radius()).toBe('8px')
-		// The chip declares no transition (the default has a zero duration), so
-		// none can tween the shape.
-		await expect(getComputedStyle(chip).transitionDuration).toBe('0s')
+		// The chip fades its fill, label and border (short2) and declares no
+		// transition on the shape, so nothing tweens the corners.
+		await expect(getComputedStyle(chip).transitionProperty).toBe(
+			'background-color, border-color, color',
+		)
 		await expect(
 			chip
 				.getAnimations()

@@ -66,6 +66,7 @@ export const Collapsed = {
 
 /** Expanded: opening the description does not change the switch. */
 export const Expanded = {
+	tags: ['japanese'],
 	args: { action: fn() },
 	render,
 	play: async ({ canvasElement, args }) => {

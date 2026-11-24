@@ -39,7 +39,9 @@ describe('Discovery layout', () => {
 		expect(layoutRows()[0]).toBe('search')
 		expect(html).toMatch(/<discovery-search-bar /)
 		expect(searchBarCss).toMatch(/\.search-bar \{[\s\S]*?grid-area: search;/)
-		expect(searchBarHtml).toMatch(/<search class="search-bar">/)
+		expect(searchBarHtml).toMatch(
+			/<search class="\[ search-bar \] \[ state-layer \]">/,
+		)
 	})
 
 	// @spec components/infrastructure/fan/web/route/discovery "Search mode"

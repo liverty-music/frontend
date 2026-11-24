@@ -95,6 +95,7 @@ export const ActionDone = {
 
 /** Verified: the success badge and no action. */
 export const Verified = {
+	tags: ['japanese'],
 	args: { verified: true, showAction: false },
 	render,
 	play: async ({ canvasElement }) => {
@@ -109,6 +110,7 @@ export const Verified = {
 
 /** A long address takes the row's full width and breaks only between words. */
 export const LongAddress = {
+	tags: ['japanese'],
 	args: { label: 'pannpers+email-verification-test2@liverty-music.example' },
 	render,
 	play: async ({ canvasElement }) => {

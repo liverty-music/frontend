@@ -1382,8 +1382,14 @@ export const DealIn = {
 			await expect(inDepth).toBeLessThan(flat * 0.9)
 
 			// The rows in view were triggered: they settle, fully shown, in place.
+			// The row is brought to the top first: the motion starts once a row
+			// is well inside the list, and where the row sits depends on the row
+			// height (taller under the line height Japanese takes), which can
+			// leave it cut off at the bottom edge.
 			// Wait for the motion itself to end, not a fixed time: on a loaded
 			// runner the row is triggered, and its frames advance, late.
+			full.scrollIntoView({ block: 'start', behavior: 'instant' })
+			await frames()
 			await Promise.all(
 				full
 					.getAnimations({ subtree: true })

@@ -48,6 +48,7 @@ function consoleShadowRoot(canvasElement: HTMLElement, markup: string) {
 }
 
 export const TypeStyles = {
+	tags: ['latin-metrics'],
 	render: () => defineAureliaStory({ template: '' }),
 	play: async ({ canvasElement }) => {
 		const root = consoleShadowRoot(canvasElement, TYPE_SAMPLES)

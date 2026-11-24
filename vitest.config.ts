@@ -145,17 +145,24 @@ const scriptsProject = defineProject({
 // `reducedMotion` global, so a context that silently fails to emulate it fails
 // the story instead of passing on the other branch. A third project,
 // `storybook-more-contrast`, does the same for stories tagged `more-contrast`
-// with `prefers-contrast: more` and the `moreContrast` global.
+// with `prefers-contrast: more` and the `moreContrast` global. A fourth,
+// `storybook-ja`, runs every story with the document in Japanese (the
+// `language` global, `.storybook/story-language.ts`), so each one is checked
+// for text cut off on the medium line height Japanese takes; it takes no
+// screenshots except for the stories tagged `japanese`, and skips the stories
+// tagged `latin-metrics`, which assert the pixel sizes of Latin text.
 const storybookProjectFor = ({
 	name,
 	tags,
 	reducedMotion,
 	moreContrast = false,
+	language,
 }: {
 	name: string
-	tags?: { include: string[] }
+	tags?: { include?: string[]; exclude?: string[] }
 	reducedMotion: boolean
 	moreContrast?: boolean
+	language?: string
 }) => ({
 	plugins: [
 		aurelia({
@@ -173,7 +180,11 @@ const storybookProjectFor = ({
 			...(tags ? { tags } : {}),
 			// Tells a story which motion preference this project means to emulate,
 			// so a story can fail when the browser context does not match it.
-			initialGlobals: { reducedMotion, moreContrast },
+			initialGlobals: {
+				reducedMotion,
+				moreContrast,
+				...(language ? { language } : {}),
+			},
 		}),
 	],
 	resolve: {
@@ -257,6 +268,12 @@ const storybookReducedMotionProject = storybookProjectFor({
 	tags: { include: ['reduced-motion'] },
 	reducedMotion: true,
 })
+const storybookJaProject = storybookProjectFor({
+	name: 'storybook-ja',
+	tags: { exclude: ['latin-metrics'] },
+	reducedMotion: false,
+	language: 'ja',
+})
 const storybookMoreContrastProject = storybookProjectFor({
 	name: 'storybook-more-contrast',
 	tags: { include: ['more-contrast'] },
@@ -293,6 +310,7 @@ export default defineConfig({
 			storybookProject,
 			storybookReducedMotionProject,
 			storybookMoreContrastProject,
+			storybookJaProject,
 		],
 		// Coverage is aggregated across projects at the root; the `unit` project is
 		// the only instrumented suite. Thresholds are preserved from the pre-Vitest-4

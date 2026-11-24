@@ -222,7 +222,7 @@ export const ErrorSeverity = snackStory({
  * that matches the preference.
  */
 export const UpdateAction = {
-	tags: ['reduced-motion'],
+	tags: ['reduced-motion', 'latin-metrics'],
 	render: () =>
 		defineAureliaStory({
 			template: `<snack-demo message.bind="message" update.bind="true"></snack-demo>`,

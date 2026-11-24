@@ -120,11 +120,14 @@ with springs for components (transitions still use easing and duration).
 
 ## Component Stories & Testing (Storybook + Vitest)
 
-- `make test` runs `unit`, `unit-node` and `scripts` only. `unit-node` runs the specs listed in `test/node-environment-specs.json` in Node instead of jsdom (a spec not listed runs in jsdom; `node scripts/classify-node-specs.mjs` regenerates the list); the three storybook projects (`storybook`, `storybook-reduced-motion`, `storybook-more-contrast`; see `vitest.config.ts`) run in a separate CI job (`storybook-test`).
+- `make test` runs `unit`, `unit-node` and `scripts` only. `unit-node` runs the specs listed in `test/node-environment-specs.json` in Node instead of jsdom (a spec not listed runs in jsdom; `node scripts/classify-node-specs.mjs` regenerates the list); the four storybook projects (`storybook`, `storybook-reduced-motion`, `storybook-more-contrast`, `storybook-ja`; see `vitest.config.ts`) run in a separate CI job (`storybook-test`).
 - A story tagged `reduced-motion` runs in both storybook projects. It reads
   `matchMedia('(prefers-reduced-motion: reduce)')` and asserts the motion that matches, so one story
   covers both presentations. A story tagged `more-contrast` does the same with
   `prefers-contrast: more` in `storybook-more-contrast` (cf. the Foundations `ContrastLevel` stories).
+- `storybook-ja` runs every story with `<html lang="ja">` (the `language` global), so Japanese text takes the medium
+  line height and the fits-screen check covers it. It takes no screenshots: a story tagged `japanese` is compared with a
+  baseline of its own (`<name>-ja`), and one tagged `latin-metrics` (it asserts the pixel size of Latin text) is skipped.
 - Coverage thresholds: statements/functions/lines 70, **branches 60** (Vitest 4's `ast-v8` branch
   remapping counts far more branches than v2 — recalibrated, not a real regression).
 - Node 25's broken Web Storage stub is replaced by a polyfill in `test/setup.ts` (Vitest 4 no longer

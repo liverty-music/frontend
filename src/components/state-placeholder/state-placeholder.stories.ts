@@ -93,6 +93,7 @@ export const Empty = {
  * the message `on-surface-variant` and the title `on-surface`, centred.
  */
 export const WithTitleAndAction = {
+	tags: ['japanese'],
 	render: (args) =>
 		defineAureliaStory({
 			template: `
