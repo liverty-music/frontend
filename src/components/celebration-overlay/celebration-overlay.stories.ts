@@ -204,6 +204,14 @@ export const PostSignupOverEmptyState = {
 		await expectFits(overlay)
 		const style = getComputedStyle(overlay)
 		await expect(style.backdropFilter).toContain('blur')
+		// The scrim fades in with its text, in step with its fade-out; with
+		// motion reduced it has no transition at all.
+		if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+			await expect(style.transitionProperty).toBe('none')
+		} else {
+			await expect(style.transitionProperty).toBe('opacity')
+			await expect(style.transitionDuration).toBe('0.4s')
+		}
 		await expectMotion(canvasElement, true)
 	},
 } satisfies Story
