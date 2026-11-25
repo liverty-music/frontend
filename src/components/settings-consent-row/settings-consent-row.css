@@ -8,16 +8,17 @@
 			display: contents;
 		}
 
-		/* Disclosure control (col2) wrapping the label + collapsible description.
-		   A sibling of `.settings-switch` — never a parent of it (a role="switch"
-		   must not nest another interactive control). */
+		/* Disclosure control (col2): the label and its caret. A sibling of
+		   `.settings-switch` — never a parent of it (a role="switch" must not
+		   nest another interactive control). The description it opens is the
+		   next row of the grid, outside the button. */
 		.settings-expand {
-			--stack-gap: var(--space-3xs);
-
+			display: flex;
 			grid-column: 2;
-			align-items: flex-start;
+			grid-row: 1;
+			gap: var(--space-2xs);
+			align-items: center;
 
-			interpolate-size: allow-keywords;
 			min-inline-size: 0;
 
 			text-align: start;
@@ -44,13 +45,6 @@
 			block-size: max(100%, var(--md-sys-target-size));
 		}
 
-		/* Label + expand caret on one line, above the collapsible description. */
-		.settings-expand-head {
-			display: flex;
-			gap: var(--space-2xs);
-			align-items: center;
-		}
-
 		.settings-expand-caret {
 			color: var(--md-sys-color-on-surface-variant);
 			transition: transform var(--md-sys-motion-duration-short4);
@@ -67,6 +61,12 @@
 		   `display: none` takes it from the accessibility tree once it has. */
 		.settings-toggle-desc {
 			overflow: clip;
+			grid-column: 2;
+			grid-row: 2;
+
+			interpolate-size: allow-keywords;
+			padding-block-start: var(--space-3xs);
+
 			transition:
 				block-size var(--md-sys-motion-duration-medium2)
 				var(--md-sys-motion-easing-standard),
@@ -97,6 +97,7 @@
 		.settings-switch {
 			display: flex;
 			grid-column: 3;
+			grid-row: 1;
 			align-items: center;
 			justify-self: end;
 		}

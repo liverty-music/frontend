@@ -1,13 +1,13 @@
 /**
  * Story frame for the settings-*-row components: the rows only lay out inside
  * a `.settings-card` list (they are subgrid items of its icon | content |
- * control tracks), at a phone's content width (375 px screen, 16 px gutters).
+ * control tracks), at a phone's content width (375 px screen, 16 px gutters; narrower on a narrower screen).
  */
 export function inSettingsCard(...rows: string[]): string {
 	const items = rows
 		.map((row) => `<li class="settings-list-item">${row}</li>`)
 		.join('')
-	return `<div style="inline-size: 343px; padding: 16px; background: var(--md-sys-color-surface)"><ul class="[ settings-card card ]" role="list">${items}</ul></div>`
+	return `<div style="inline-size: 343px; max-inline-size: calc(100% - 32px); padding: 16px; background: var(--md-sys-color-surface)"><ul class="[ settings-card card ]" role="list">${items}</ul></div>`
 }
 
 /** Centre line of an element's box, for alignment assertions. */

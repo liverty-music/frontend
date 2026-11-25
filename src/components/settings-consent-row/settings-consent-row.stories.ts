@@ -83,9 +83,19 @@ export const Expanded = {
 		await userEvent.click(
 			canvas.getByRole('button', { name: /アナリティクス/, expanded: false }),
 		)
-		await expect(
-			canvas.getByRole('button', { expanded: true }),
-		).toHaveTextContent('操作の記録')
+		// The description is not inside the button, so the hover and press layer
+		// covers the label row only; the button points to it (aria-controls).
+		const disclosure = canvas.getByRole('button', { expanded: true })
+		const description = canvasElement.querySelector<HTMLElement>(
+			'.settings-toggle-desc',
+		) as HTMLElement
+		await expect(description).toHaveTextContent('操作の記録')
+		await expect(disclosure.contains(description)).toBe(false)
+		await expect(disclosure.getAttribute('aria-controls')).toBe(description.id)
+		await atRest(userEvent, canvasElement)
+		await expect(disclosure.getBoundingClientRect().bottom).toBeLessThanOrEqual(
+			description.getBoundingClientRect().top + 1,
+		)
 		await expect(args.action).not.toHaveBeenCalled()
 		await expect(canvas.getByRole('switch')).toHaveAttribute(
 			'aria-checked',
