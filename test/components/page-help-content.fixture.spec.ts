@@ -171,7 +171,8 @@ describe('page help content', () => {
 
 	// @spec components/infrastructure/fan/web/global/page-help "Tier content per row"
 	// @spec components/infrastructure/fan/web/global/page-help "Semantic markup"
-	it('lists the four tiers in order, icons hidden from assistive technology', async () => {
+	// @spec components/infrastructure/fan/web/global/page-help "The flame count is read out"
+	it('lists the four tiers in order; the eyes are hidden, the flames named with their count', async () => {
 		for (const [lng, desc] of [
 			[
 				'ja',
@@ -207,9 +208,21 @@ describe('page help content', () => {
 				['🔥🔥', 'Nearby', desc[2]],
 				['🔥🔥🔥', 'Away', desc[3]],
 			])
-			for (const icon of host.querySelectorAll('.help-hype-icon')) {
-				expect(icon.getAttribute('aria-hidden')).toBe('true')
-			}
+			const icons = [...host.querySelectorAll('.help-hype-icon')]
+			expect(icons[0].getAttribute('aria-hidden')).toBe('true')
+			expect(
+				icons
+					.slice(1)
+					.map((icon) => [
+						icon.getAttribute('role'),
+						icon.getAttribute('aria-label'),
+					]),
+			).toEqual(
+				(lng === 'ja'
+					? ['炎 1 つ', '炎 2 つ', '炎 3 つ']
+					: ['1 flame', '2 flames', '3 flames']
+				).map((name) => ['img', name]),
+			)
 			expect(host.textContent).not.toContain('全国')
 		}
 	})
