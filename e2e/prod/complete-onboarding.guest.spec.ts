@@ -28,12 +28,11 @@ test.describe('complete onboarding (guest)', () => {
 		await page.getByTestId('welcome-get-started').first().click()
 		await expect(page).toHaveURL(/\/discovery/)
 
-		// A new guest gets the page help on first arrival; close it as a fan
-		// would before searching.
-		const help = page.getByRole('dialog', { name: 'ページのヘルプ' })
-		await expect(help).toBeVisible()
-		await page.keyboard.press('Escape')
-		await expect(help).toBeHidden()
+		// The page help never opens on its own (page-help "Help never opens on
+		// its own"); nothing covers the search field on arrival.
+		await expect(
+			page.getByRole('dialog', { name: 'ページのヘルプ' }),
+		).toBeHidden()
 
 		// Each follow fills the progress row; the row turns into the link to
 		// the timetable once the follows' concerts are found.
