@@ -22,6 +22,21 @@ import { expect, type Page, test } from '../support/test'
  *   applies/persists with no dialog, no step advance, no revert.
  */
 
+/**
+ * A date `offset` days after a month from now, in the shape of the wire's
+ * `LocalDate`. The guest timetable hides dates before today, so a mocked
+ * concert needs a date that stays ahead of the day the test runs.
+ */
+function upcomingDate(offset: number): {
+	year: number
+	month: number
+	day: number
+} {
+	const d = new Date()
+	d.setDate(d.getDate() + 30 + offset)
+	return { year: d.getFullYear(), month: d.getMonth() + 1, day: d.getDate() }
+}
+
 // ---------------------------------------------------------------------------
 // localStorage seeding helpers (single-flag model)
 // ---------------------------------------------------------------------------
@@ -74,7 +89,7 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 				body: JSON.stringify(
 					concertWire({
 						groups: artists.map((aid, i) => ({
-							date: { value: { year: 2026, month: 6, day: 15 + i } },
+							date: { value: upcomingDate(i) },
 							home: [],
 							nearby: [],
 							away: [
@@ -92,9 +107,7 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 										title: { value: `Concert ${i + 1}` },
 										sourceUrl: { value: '' },
 									},
-									localDate: {
-										value: { year: 2026, month: 6, day: 15 + i },
-									},
+									localDate: { value: upcomingDate(i) },
 									venue: {
 										name: { value: `Venue ${i + 1}` },
 										adminArea: { value: 'JP-13' },
