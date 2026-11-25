@@ -13,6 +13,7 @@ import {
 	WCAG_AA,
 } from '../../../.storybook/contrast'
 import { swipeVertically } from '../../../.storybook/gestures'
+import { transitionsEnded } from '../../../.storybook/transitions-ended'
 import { atWidth } from '../../../.storybook/viewport'
 import { BottomSheet } from './bottom-sheet'
 
@@ -423,6 +424,9 @@ async function finish(root: HTMLElement): Promise<void> {
  */
 async function ready(root: HTMLElement): Promise<HTMLElement> {
 	const dialog = await openSheet(root)
+	// The sheet rises into place (a 400 ms keyframe on the scroll area); a
+	// busy runner can still be partway through it after a fixed pause.
+	await transitionsEnded(dialog)
 	await pause(300)
 	return dialog
 }
