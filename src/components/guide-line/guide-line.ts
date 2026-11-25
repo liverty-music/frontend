@@ -86,9 +86,10 @@ export class GuideLine {
 		// The words stay while the line fades out; they go once it has, so the
 		// next moment's text is set afresh and announced. With motion reduced
 		// there is nothing to wait for.
-		const faded = el
-			? Promise.allSettled(el.getAnimations().map((a) => a.finished))
-			: Promise.resolve()
+		const faded =
+			el && typeof el.getAnimations === 'function'
+				? Promise.allSettled(el.getAnimations().map((a) => a.finished))
+				: Promise.resolve()
 		void faded.then(() => {
 			if (generation === this.hideGeneration) this.messageKey = ''
 		})
