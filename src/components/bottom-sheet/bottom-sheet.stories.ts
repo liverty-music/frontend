@@ -82,6 +82,8 @@ async function openSheet(canvasElement: HTMLElement): Promise<HTMLElement> {
 			),
 		).toBeLessThan(1),
 	)
+	// The entry slide has run out, so what follows measures the sheet at rest.
+	await transitionsEnded(canvasElement)
 	return dialog as HTMLElement
 }
 
