@@ -94,18 +94,19 @@ describe('ActionMenu', () => {
 	})
 
 	describe('onPanelToggle (disclosure state + focus)', () => {
-		it('reflects the open state and moves focus into the panel', () => {
+		it('reflects the open state and keeps focus on the FAB', () => {
 			sut.onPanelToggle({ newState: 'open' } as ToggleEvent)
 			expect(sut.isOpen).toBe(true)
-			expect(panel.querySelector).toHaveBeenCalledWith('.fab-item')
-			expect(firstItem.focus).toHaveBeenCalledOnce()
+			expect(firstItem.focus).not.toHaveBeenCalled()
+			expect(fabButton.focus).toHaveBeenCalledOnce()
 		})
 
 		it('returns focus to the FAB on close (Esc / light-dismiss)', () => {
 			sut.onPanelToggle({ newState: 'open' } as ToggleEvent)
 			sut.onPanelToggle({ newState: 'closed' } as ToggleEvent)
 			expect(sut.isOpen).toBe(false)
-			expect(fabButton.focus).toHaveBeenCalledOnce()
+			// Once on open, once on close.
+			expect(fabButton.focus).toHaveBeenCalledTimes(2)
 		})
 	})
 

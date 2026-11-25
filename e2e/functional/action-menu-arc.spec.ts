@@ -164,6 +164,25 @@ test.describe('the action arc', () => {
 		await expect(fab(page)).toHaveAttribute('aria-expanded', 'true')
 	})
 
+	test(`@spec ${CAPABILITY} "Focus stays on the action menu, and Tab reaches the panel"`, {
+		tag: '@webkit',
+	}, async ({ page }) => {
+		await openShell(page, '/timetable')
+		await settle(page, 'action-menu')
+		// Opened from the keyboard, focus stays on the FAB, now the close
+		// control, and the panel's first item comes next.
+		await fab(page).focus()
+		await page.keyboard.press('Enter')
+		await expect(fab(page)).toHaveAttribute('aria-expanded', 'true')
+		await expect(fab(page)).toBeFocused()
+		await page.keyboard.press('Tab')
+		await expect(fabItems(page).first()).toBeFocused()
+		// Escape closes the panel and focus is on the FAB again.
+		await page.keyboard.press('Escape')
+		await expect(fab(page)).toHaveAttribute('aria-expanded', 'false')
+		await expect(fab(page)).toBeFocused()
+	})
+
 	test(`@spec ${CAPABILITY} "Tapping again collapses the list"`, {
 		tag: '@webkit',
 	}, async ({ page }) => {
