@@ -455,6 +455,20 @@ export const SwipePastHalf = {
 			}
 		}
 		scroller?.addEventListener('scroll', track)
+		// The exit's transitions, recorded as each one starts: read later, the
+		// snack may have finished fading or left the document.
+		const exit: { property: string; duration: number }[] = []
+		const onRun = (e: TransitionEvent) => {
+			if (e.target !== item) return
+			const transition = item
+				.getAnimations()
+				.find((a) => (a as CSSTransition).transitionProperty === e.propertyName)
+			exit.push({
+				property: e.propertyName,
+				duration: Number(transition?.effect?.getTiming().duration),
+			})
+		}
+		item.addEventListener('transitionrun', onRun)
 
 		const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches
 		if (!(await swipeSideways('.snack-surface', -0.7 * before.width))) return
@@ -463,24 +477,21 @@ export const SwipePastHalf = {
 			// @spec components/infrastructure/fan/web/global/snack-bar "Swipe past the dismiss point"
 			// It leaves to the left, the way it was swiped.
 			await expect(leftmost).toBeLessThan(before.left - before.width / 2)
-		} else {
-			// @spec components/infrastructure/fan/web/global/snack-bar "Swipe under reduced motion"
-			// It fades out over at most 100 ms and does not move.
-			const exit = item.getAnimations()
-			await expect(
-				exit.map((a) => (a as CSSTransition).transitionProperty),
-			).not.toContain('transform')
-			for (const a of exit) {
-				await expect(
-					Number(a.effect?.getTiming().duration),
-				).toBeLessThanOrEqual(100)
-			}
 		}
 		await waitFor(() => expect(item.isConnected).toBe(false), {
 			timeout: 3000,
 		})
 		scroller?.removeEventListener('scroll', track)
+		item.removeEventListener('transitionrun', onRun)
 		await expect(record.dismissals).toBe(1)
+		if (reduced) {
+			// @spec components/infrastructure/fan/web/global/snack-bar "Swipe under reduced motion"
+			// It faded out over at most 100 ms and did not move.
+			const properties = exit.map((t) => t.property)
+			await expect(properties).toContain('opacity')
+			await expect(properties).not.toContain('transform')
+			for (const t of exit) await expect(t.duration).toBeLessThanOrEqual(100)
+		}
 	},
 } satisfies Story
 

@@ -112,7 +112,7 @@ describe('CelebrationOverlay', () => {
 			expect(sut.overlayState).toBe('exiting')
 		})
 
-		it('dismisses immediately with reduced motion', () => {
+		it('fades out with reduced motion too, the short fade', () => {
 			vi.spyOn(window, 'matchMedia').mockReturnValue({
 				matches: true,
 			} as MediaQueryList)
@@ -124,9 +124,10 @@ describe('CelebrationOverlay', () => {
 
 			sut.onTap()
 
-			expect(sut.visible).toBe(false)
-			expect(sut.fadingOut).toBe(false)
-			expect(dismissedSpy).toHaveBeenCalledOnce()
+			// It goes through the exit, as with motion allowed; the stylesheet
+			// makes that fade 100 ms.
+			expect(sut.fadingOut).toBe(true)
+			expect(dismissedSpy).not.toHaveBeenCalled()
 		})
 
 		it('ignores tap when not visible', () => {

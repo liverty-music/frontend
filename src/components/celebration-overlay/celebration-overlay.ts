@@ -138,12 +138,7 @@ export class CelebrationOverlay {
 	}
 
 	private startFadeOut(): void {
-		if (this.prefersReducedMotion()) {
-			this.visible = false
-			this.onDismissed?.()
-			return
-		}
-
+		// Under reduced motion too: the fade is then the short one (100 ms).
 		this.fadingOut = true
 		// The opacity transition's transitionend finishes the dismissal. A
 		// browser that skips the transition (a background tab, a page that is
