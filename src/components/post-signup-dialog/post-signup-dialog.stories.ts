@@ -193,6 +193,11 @@ export const IosGuide = {
 		await expect(
 			body.queryByRole('button', { name: t.notify.enable }),
 		).toBeNull()
+		// @spec components/infrastructure/fan/web/global/post-signup-dialog "iPhone without the app installed"
+		// The one action acknowledges the message (the steps are done in the
+		// browser); it does not put it off.
+		await expect(body.getByRole('button', { name: t.gotIt })).toBeVisible()
+		await expect(body.queryByRole('button', { name: t.defer })).toBeNull()
 		closeSheetsAfterTest()
 	},
 } satisfies Story
