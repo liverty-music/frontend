@@ -7,7 +7,6 @@ import { CustomElement } from 'aurelia'
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test'
 import {
 	finishMotion,
-	nextPaint,
 	pausableAnimations,
 	seekMotion,
 } from '../../../.storybook/motion'
@@ -82,7 +81,7 @@ export const OpensInTheTopLayer = {
 		)
 		await waitFor(() =>
 			expect(labels(canvasElement)).toContain(
-				ja.homeAreaSelector.prefectures.tokyo,
+				ja.homeAreaSelector.prefectures.kanagawa,
 			),
 		)
 	},
@@ -157,7 +156,6 @@ export const OpeningMotion = {
 		body.style.animation = 'none'
 		void body.offsetHeight
 		body.style.animation = ''
-		await nextPaint()
 		const motion = pausableAnimations(canvasElement).filter(
 			(a) =>
 				(a as CSSAnimation).animationName ===
