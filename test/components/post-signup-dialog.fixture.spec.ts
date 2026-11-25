@@ -158,6 +158,7 @@ describe('PostSignupDialog', () => {
 		})
 
 		// @spec components/infrastructure/fan/web/global/post-signup-dialog "Nothing left to ask"
+		// @spec components/infrastructure/fan/web/global/post-signup-dialog "Nothing left to ask after the celebration"
 		// @spec components/infrastructure/fan/web/global/post-signup-dialog "Celebration Precedes Post-Signup Dialog"
 		// @spec components/infrastructure/fan/web/global/post-signup-dialog "Notifications already allowed"
 		it('does not open when nothing is left to ask', async () => {

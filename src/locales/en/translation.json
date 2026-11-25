@@ -417,7 +417,7 @@
 	"onboarding": {
 		"consent": {
 			"title": "How we use analytics",
-			"intro": "Liverty Music uses anonymous product analytics, on by default, to understand how fans use the app and to build a better experience. You can turn it off any time in Settings.",
+			"intro": "To make the app better, usage analytics is on from the start. While you're signed in, it's linked to your account. You can turn it off any time in Settings.",
 			"processor": {
 				"label": "Processed by PostHog (EU)",
 				"description": "Usage data is sent to PostHog Cloud EU, operated by Klant Solutions B.V. in the Netherlands, for product analytics. This cross-border transfer relies on Japan’s EU adequacy designation."

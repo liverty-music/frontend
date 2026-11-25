@@ -1389,6 +1389,9 @@ describe('TimetableRoute', () => {
 		// @spec components/infrastructure/fan/web/global/celebration-overlay "Post-signup full celebration then dialog"
 		// @spec components/infrastructure/fan/web/global/celebration-overlay "Existing celebration behavior is preserved"
 		// @spec components/infrastructure/fan/web/global/post-signup-dialog "Dialog opens after celebration dismissal"
+		// @spec components/infrastructure/fan/web/global/post-signup-dialog "Nothing left to ask after the celebration"
+		// Two halves of that scenario: here the route spends the flag when it hands off to the dialog, whatever the dialog then shows;
+		// the dialog staying closed with no step to show is verified in post-signup-dialog.fixture.spec.ts 'does not open when nothing is left to ask'.
 		it('shows the post-signup full celebration (confetti) then the dialog', async () => {
 			mockAuth.isAuthenticated = true
 			mockStorage.getItem.mockImplementation((k: string) =>
@@ -1403,14 +1406,47 @@ describe('TimetableRoute', () => {
 			expect(sut.celebrationConfetti).toBe(true)
 			expect(sut.celebrationMessage).toBe('timetable.celebration.welcome')
 			expect(sut.celebrationSubMessage).toBe('timetable.celebration.chasing')
-			expect(mockStorage.removeItem).toHaveBeenCalledWith('postSignup.shown')
 			expect(sut.showPostSignupDialog).toBe(false)
 			expect(sut.postSignupVariant).toBe('default')
+			// The one-shot flag survives the celebration: the app may close here.
+			expect(mockStorage.removeItem).not.toHaveBeenCalled()
 
 			sut.onCelebrationDismissed()
 
 			expect(sut.showCelebration).toBe(false)
 			expect(sut.showPostSignupDialog).toBe(true)
+			expect(mockStorage.removeItem).toHaveBeenCalledWith('postSignup.shown')
+		})
+
+		// @spec components/infrastructure/fan/web/global/post-signup-dialog "App closed during the celebration"
+		it('keeps the post-signup flag when the app closes during the celebration, and shows the sheet next time', async () => {
+			const store = new Map<string, string>([['postSignup.shown', 'pending']])
+			mockAuth.isAuthenticated = true
+			mockStorage.getItem.mockImplementation(
+				(k: string) => store.get(k) ?? null,
+			)
+			mockStorage.removeItem.mockImplementation((k: string) => {
+				store.delete(k)
+			})
+			sut = new TimetableRoute()
+			sut.needsRegion = false
+			await sut.loadData()
+			expect(sut.showCelebration).toBe(true)
+
+			// The app closes mid-celebration: the route is torn down.
+			sut.detaching()
+			expect(store.get('postSignup.shown')).toBe('pending')
+
+			// Next launch: a fresh route still celebrates, then opens the sheet.
+			sut = new TimetableRoute()
+			sut.needsRegion = false
+			await sut.loadData()
+			// The store kept the first launch's groups, so binding() reflects them.
+			sut.binding()
+			expect(sut.showCelebration).toBe(true)
+			sut.onCelebrationDismissed()
+			expect(sut.showPostSignupDialog).toBe(true)
+			expect(store.has('postSignup.shown')).toBe(false)
 		})
 
 		// @spec components/infrastructure/fan/web/global/post-signup-dialog "Back from sign-up"
@@ -1429,11 +1465,13 @@ describe('TimetableRoute', () => {
 
 			expect(sut.showCelebration).toBe(false)
 			expect(sut.showPostSignupDialog).toBe(false)
-			expect(mockStorage.removeItem).toHaveBeenCalledWith('postSignup.shown')
+			// Spent only once the dialog opens, not while the sheet is still up.
+			expect(mockStorage.removeItem).not.toHaveBeenCalled()
 
 			// @spec components/infrastructure/fan/web/global/post-signup-dialog "Closing the sheet"
 			sut.onDetailSheetClosed()
 			expect(sut.showPostSignupDialog).toBe(true)
+			expect(mockStorage.removeItem).toHaveBeenCalledWith('postSignup.shown')
 			expect(sut.postSignupVariant).toBe('track')
 			expect(sut.showCelebration).toBe(false)
 
@@ -1441,6 +1479,40 @@ describe('TimetableRoute', () => {
 			sut.showPostSignupDialog = false
 			sut.onDetailSheetClosed()
 			expect(sut.showPostSignupDialog).toBe(false)
+		})
+
+		// @spec components/infrastructure/fan/web/global/post-signup-dialog "App closed before the concert sheet closes"
+		it('keeps the flag while the concert sheet is open, and opens the dialog on the next visit', async () => {
+			const store = new Map<string, string>([
+				['postSignup.shown', 'pending-track'],
+			])
+			mockAuth.isAuthenticated = true
+			mockStorage.getItem.mockImplementation(
+				(k: string) => store.get(k) ?? null,
+			)
+			mockStorage.removeItem.mockImplementation((k: string) => {
+				store.delete(k)
+			})
+			sut = new TimetableRoute()
+			sut.needsRegion = false
+			sut.detailSheet = { isOpen: true, open: vi.fn() } as never
+			await sut.loadData()
+			await new Promise((r) => setTimeout(r))
+
+			// The app closes with the sheet still open.
+			sut.detaching()
+			expect(store.get('postSignup.shown')).toBe('pending-track')
+
+			// Next launch: no sheet is open, so the dialog follows at once.
+			sut = new TimetableRoute()
+			sut.needsRegion = false
+			sut.detailSheet = { isOpen: false, open: vi.fn() } as never
+			await sut.loadData()
+			sut.binding()
+			await new Promise((r) => setTimeout(r))
+			expect(sut.showPostSignupDialog).toBe(true)
+			expect(sut.postSignupVariant).toBe('track')
+			expect(store.has('postSignup.shown')).toBe(false)
 		})
 
 		it('opens the dialog at once when the concert of the sign-up is not on the timetable', async () => {
@@ -1458,6 +1530,7 @@ describe('TimetableRoute', () => {
 			expect(sut.showCelebration).toBe(false)
 			expect(sut.showPostSignupDialog).toBe(true)
 			expect(sut.postSignupVariant).toBe('track')
+			expect(mockStorage.removeItem).toHaveBeenCalledWith('postSignup.shown')
 		})
 
 		// @spec components/infrastructure/fan/web/global/celebration-overlay "Follows but no concert yet"

@@ -511,6 +511,15 @@ describe('Consent wording', () => {
 		for (const text of descriptions(en)) expect(text).not.toMatch(/anonym/i)
 	})
 
+	it('@spec components/infrastructure/fan/web/route/settings "Consent notice makes no anonymity claim"', () => {
+		// A signed-in fan's analytics are tied to the account (identify(userId)),
+		// so the notice must be true for guests and signed-in fans alike.
+		expect(ja.onboarding.consent.intro).not.toContain('匿名')
+		expect(en.onboarding.consent.intro).not.toMatch(/anonym/i)
+		expect(ja.onboarding.consent.intro).toContain('アカウント')
+		expect(en.onboarding.consent.intro).toMatch(/account/i)
+	})
+
 	it('@spec components/infrastructure/fan/web/route/settings "Analytics toggle is labeled by its purpose"', async () => {
 		const r = await render(makeUserStore({ id: 'user-1' }))
 		const section = r.host.querySelector(
