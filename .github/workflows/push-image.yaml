@@ -1101,10 +1101,14 @@ jobs:
           OWNER: ${{ github.repository_owner }}
           TAG: ${{ github.event.release.tag_name }}
           SHA: ${{ github.sha }}
+          # A GitHub pre-release moves only the candidate pin (the preview
+          # address); the owner promotes it afterwards (cloud-provisioning
+          # bump-prod-pin.yml, OpenSpec change add-prod-preview-release).
+          PRERELEASE: ${{ github.event.release.prerelease }}
         run: |
           set -euo pipefail
-          payload=$(jq -nc --arg t "$TAG" --arg s "$SHA" \
-            '{event_type:"bump-prod-pin",client_payload:{component:"frontend",tag:$t,sha:$s}}')
+          payload=$(jq -nc --arg t "$TAG" --arg s "$SHA" --argjson p "${PRERELEASE:-false}" \
+            '{event_type:"bump-prod-pin",client_payload:{component:"frontend",tag:$t,sha:$s,prerelease:$p}}')
           echo "Dispatching: $payload"
           echo "$payload" | gh api "repos/${OWNER}/cloud-provisioning/dispatches" --input -
 
@@ -1136,11 +1140,13 @@ jobs:
     # always() is required because the needed jobs are
     # skipped on workflow_dispatch and a skipped dependency would otherwise
     # skip this job. On a release, smoke only when the pin was dispatched
-    # (a failed retag dispatches nothing, so nothing new would be served).
+    # (a failed retag dispatches nothing, so nothing new would be served). A
+    # pre-release moves only the candidate pin (the preview address), so the
+    # production URLs below keep serving the old release and would never match.
     if: |
       always() && (
         github.event_name == 'workflow_dispatch' ||
-        (github.event_name == 'release' && needs.dispatch-prod-pin.result == 'success')
+        (github.event_name == 'release' && !github.event.release.prerelease && needs.dispatch-prod-pin.result == 'success')
       )
     runs-on: ubuntu-latest
     timeout-minutes: 30
