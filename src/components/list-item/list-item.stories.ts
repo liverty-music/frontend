@@ -180,7 +180,7 @@ export const TwoLines = {
 	args: {
 		icon: 'chart',
 		label: '利用状況の送信',
-		supporting: 'どの画面がよく使われているかを匿名で送ります',
+		supporting: 'どの画面がよく使われているかを送ります',
 		value: '',
 	},
 	render,

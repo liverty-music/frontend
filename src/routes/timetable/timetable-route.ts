@@ -871,8 +871,10 @@ export class TimetableRoute {
 			if (scheduled === 'pending-track') {
 				// A sign-up from a concert sheet's notification button: no
 				// celebration; the dialog follows the deep-linked sheet. Checked
-				// once the sheet had its turn to open.
-				this.storage.removeItem(StorageKeys.postSignupShown)
+				// once the sheet had its turn to open. The flag stays in storage
+				// until the dialog has opened, so closing the app before then
+				// does not lose it.
+				if (this.postSignupAfterSheet || this.showPostSignupDialog) return
 				this.postSignupAfterSheet = true
 				queueTask(() => {
 					if (
@@ -886,7 +888,10 @@ export class TimetableRoute {
 				return
 			}
 			if (scheduled !== 'pending') return
-			this.storage.removeItem(StorageKeys.postSignupShown)
+			// The flag stays in storage until the dialog has opened (see
+			// openPostSignupDialog), so closing the app mid-celebration does not
+			// lose the sheet.
+			if (this.showPostSignupDialog) return
 			this.celebrationConfetti = true
 			this.celebrationMessage = this.i18n.tr('timetable.celebration.welcome')
 			this.celebrationSubMessage = this.i18n.tr('timetable.celebration.chasing')
@@ -971,8 +976,17 @@ export class TimetableRoute {
 		// PostSignupDialog (notifications / PWA install) on dismissal.
 		if (this.celebrationLeadsToDialog) {
 			this.celebrationLeadsToDialog = false
-			this.showPostSignupDialog = true
+			this.openPostSignupDialog()
 		}
+	}
+
+	/**
+	 * Open the post-signup dialog and only now spend its one-shot flag, so a
+	 * fan who closes the app before the dialog opens still gets it next time.
+	 */
+	private openPostSignupDialog(): void {
+		this.storage.removeItem(StorageKeys.postSignupShown)
+		this.showPostSignupDialog = true
 	}
 
 	/**
@@ -988,7 +1002,7 @@ export class TimetableRoute {
 		if (!this.postSignupAfterSheet) return
 		this.postSignupAfterSheet = false
 		this.postSignupVariant = 'track'
-		this.showPostSignupDialog = true
+		this.openPostSignupDialog()
 	}
 
 	public onEventSelected(event: CustomEvent<{ event: Concert }>): void {

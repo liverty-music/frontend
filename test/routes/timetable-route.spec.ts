@@ -330,14 +330,15 @@ describe('TimetableRoute', () => {
 			// Emotion first: confetti celebration; dialog deferred until dismissal.
 			expect(sut.showCelebration).toBe(true)
 			expect(sut.celebrationConfetti).toBe(true)
-			expect(mockStorage.removeItem).toHaveBeenCalledWith(
-				StorageKeys.postSignupShown,
-			)
+			expect(mockStorage.removeItem).not.toHaveBeenCalled()
 			expect(sut.showPostSignupDialog).toBe(false)
 
 			sut.onCelebrationDismissed()
 
 			expect(sut.showPostSignupDialog).toBe(true)
+			expect(mockStorage.removeItem).toHaveBeenCalledWith(
+				StorageKeys.postSignupShown,
+			)
 		})
 
 		it('does not show postSignupDialog when flag is absent', async () => {
