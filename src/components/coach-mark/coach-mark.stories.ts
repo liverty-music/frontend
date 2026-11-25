@@ -319,7 +319,7 @@ const edgeTarget = (side: 'left' | 'right') =>
 	render(
 		page({
 			target: `<button id="coach-target" type="button"
-				style="position: fixed; inset-block-start: 80px; inset-inline-${side === 'left' ? 'start' : 'end'}: 0;">
+				style="position: fixed; inset-block-start: 80px; inset-inline-${side === 'left' ? 'start' : 'end'}: 16px;">
 				TL
 			</button>`,
 		}),

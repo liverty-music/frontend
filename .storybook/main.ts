@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url'
 import { defineMain } from '@aurelia/storybook/node'
 
 export default defineMain({
@@ -40,6 +41,26 @@ export default defineMain({
 						: undefined
 				return !name?.startsWith('vite-plugin-pwa')
 			})
+		// `vitest/browser` exists only in a Vitest run; in the Storybook UI a
+		// stand-in lets the console stories that import it render.
+		if (!process.env.VITEST) {
+			config.resolve = {
+				...config.resolve,
+				alias: [
+					...(Array.isArray(config.resolve?.alias)
+						? config.resolve.alias
+						: Object.entries(config.resolve?.alias ?? {}).map(
+								([find, replacement]) => ({ find, replacement }),
+							)),
+					{
+						find: 'vitest/browser',
+						replacement: fileURLToPath(
+							new URL('./vitest-browser-shim.ts', import.meta.url),
+						),
+					},
+				],
+			}
+		}
 		if (config.build?.rollupOptions?.input) {
 			config.build.rollupOptions.input = undefined
 		}
