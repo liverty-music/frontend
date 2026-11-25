@@ -33,6 +33,7 @@ import { IAuthService } from '../../services/auth-service'
 import { IConcertStore } from '../../services/concert-store'
 import { IErrorBoundaryService } from '../../services/error-boundary-service'
 import { IFollowStore } from '../../services/follow-store'
+import { IOnboardingService } from '../../services/onboarding-service'
 import { IUserStore } from '../../services/user-store'
 import {
 	changeLocale,
@@ -65,6 +66,7 @@ export class WelcomeRoute implements IRouteViewModel {
 	private readonly userStore = resolve(IUserStore)
 	private readonly storage = resolve(ILocalStorage)
 	private readonly followStore = resolve(IFollowStore)
+	private readonly onboarding = resolve(IOnboardingService)
 	private readonly router = resolve(IRouter)
 	private readonly logger = resolve(ILogger).scopeTo('WelcomeRoute')
 	private readonly errorBoundary = resolve(IErrorBoundaryService)
@@ -425,6 +427,20 @@ export class WelcomeRoute implements IRouteViewModel {
 
 		// A guest never keeps a marker.
 		takePasskeyReturn()
+
+		// A returning guest (onboarding finished, still following an artist) opens
+		// on their timetable, like a signed-in fan, so an installed PWA whose
+		// `start_url` is `/` does not land on the landing page every time. The
+		// follow requirement keeps a signed-out fan and a guest who tapped
+		// [Log In] and came back (handleLogin discarded the follows) on Welcome,
+		// where the Log In button is. Nothing is discarded here.
+		if (
+			this.onboarding.isCompleted &&
+			this.followStore.guestFollows.length >= 1
+		) {
+			this.logger.info('Returning guest, redirecting to timetable')
+			return 'timetable'
+		}
 
 		// Welcome is intentionally reachable during onboarding so users can
 		// re-read the value proposition. Merely viewing it must not reset

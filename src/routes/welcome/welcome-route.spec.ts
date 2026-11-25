@@ -12,6 +12,10 @@ const mockLogger = {
 	}),
 }
 
+const mockFollowStore = { clearGuest: vi.fn(), guestFollows: [] as unknown[] }
+const mockOnboarding = { isCompleted: false, finish: vi.fn() }
+const mockAuthService = { isAuthenticated: false, ready: Promise.resolve() }
+
 vi.mock('aurelia', async (importOriginal) => {
 	const actual = await importOriginal<typeof import('aurelia')>()
 	return {
@@ -21,9 +25,10 @@ vi.mock('aurelia', async (importOriginal) => {
 		resolve: vi.fn((token: unknown) => {
 			const map: Record<string, unknown> = {
 				ILogger: mockLogger,
-				IAuthService: { isAuthenticated: false, ready: Promise.resolve() },
+				IAuthService: mockAuthService,
 				IUserStore: { currentLanguage: 'ja', clearGuest: vi.fn() },
-				IFollowStore: { clearGuest: vi.fn() },
+				IFollowStore: mockFollowStore,
+				IOnboardingService: mockOnboarding,
 				IRouter: { load: vi.fn() },
 				IEventAggregator: { publish: vi.fn() },
 				I18N: { getLocale: () => 'ja', tr: (k: string) => k },
@@ -182,9 +187,10 @@ describe('WelcomeRoute — guided demo state machine', () => {
 			// It never comes back on this visit.
 			await vi.advanceTimersByTimeAsync(10_000)
 			expect(sut.coachActive).toBe(false)
-			// Welcome never reaches for onboarding state, and the stored flag is untouched.
+			// Welcome only reads onboarding state (canLoad); it never latches it, and
+			// the stored flag is untouched.
 			expect(resolved()).toContain('IUserStore')
-			expect(resolved()).not.toContain('IOnboardingService')
+			expect(mockOnboarding.finish).not.toHaveBeenCalled()
 			expect(localStorage.getItem('onboardingComplete')).toBe('false')
 		})
 	})
@@ -209,5 +215,44 @@ describe('WelcomeRoute — no-preview fallback + detach', () => {
 		const spy = vi.spyOn(ac, 'abort')
 		sut.detaching()
 		expect(spy).toHaveBeenCalled()
+	})
+})
+
+describe('WelcomeRoute — canLoad for a guest', () => {
+	let sut: WelcomeRoute
+
+	beforeEach(() => {
+		vi.clearAllMocks()
+		mockAuthService.isAuthenticated = false
+		mockFollowStore.guestFollows = []
+		mockOnboarding.isCompleted = false
+		sut = new WelcomeRoute()
+	})
+
+	// @spec components/infrastructure/fan/web/route/welcome "Returning guest opens the app"
+	it('sends a returning guest (onboarding complete, follows an artist) to the timetable', async () => {
+		mockOnboarding.isCompleted = true
+		mockFollowStore.guestFollows = [{}, {}]
+
+		expect(await sut.canLoad()).toBe('timetable')
+		expect(mockFollowStore.clearGuest).not.toHaveBeenCalled()
+	})
+
+	// @spec components/infrastructure/fan/web/route/welcome "Guest in onboarding opens Welcome"
+	// @spec components/infrastructure/fan/web/route/welcome "The page's address"
+	it('lets a guest still in onboarding load Welcome, with or without follows', async () => {
+		mockFollowStore.guestFollows = []
+		expect(await sut.canLoad()).toBe(true)
+
+		mockFollowStore.guestFollows = [{}]
+		expect(await sut.canLoad()).toBe(true)
+	})
+
+	// @spec components/infrastructure/fan/web/route/welcome "Guest with no follows opens Welcome"
+	it('lets a completed guest with no follows load Welcome', async () => {
+		mockOnboarding.isCompleted = true
+		mockFollowStore.guestFollows = []
+
+		expect(await sut.canLoad()).toBe(true)
 	})
 })

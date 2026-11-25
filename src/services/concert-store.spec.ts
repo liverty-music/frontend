@@ -67,6 +67,15 @@ function makeGroups(count: number): ProximityGroup[] {
 	})) as unknown as ProximityGroup[]
 }
 
+function groupOn(year: number, month: number, day: number): ProximityGroup {
+	return {
+		date: { value: { year, month, day } },
+		home: [],
+		nearby: [],
+		away: [],
+	} as unknown as ProximityGroup
+}
+
 describe('ConcertStore', () => {
 	let sut: ConcertStore
 
@@ -194,6 +203,53 @@ describe('ConcertStore', () => {
 
 			expect(mockRpcClient.listByArtists).toHaveBeenCalledTimes(2)
 			expect(fresh).toEqual(makeGroups(2))
+		})
+
+		// @spec components/infrastructure/fan/web/route/timetable "Guest timetable hides past concerts"
+		// @spec components/infrastructure/fan/web/route/timetable "Guest looks back"
+		it('drops guest concert dates before `from`, like the signed-in list', async () => {
+			mockAuth.isAuthenticated = false
+			mockRpcClient.listByArtists.mockResolvedValue([
+				groupOn(2026, 3, 1),
+				groupOn(2026, 11, 24),
+				groupOn(2026, 11, 25),
+				groupOn(2027, 1, 2),
+			])
+
+			const result = await sut.listFollowed({ year: 2026, month: 11, day: 25 })
+
+			expect(result.map((g) => g.date?.value?.day)).toEqual([25, 2])
+			// The cached RPC result is untouched, so a look-back `from` sees it all.
+			const all = await sut.listFollowed({ year: 2026, month: 1, day: 1 })
+			expect(all).toHaveLength(4)
+			expect(mockRpcClient.listByArtists).toHaveBeenCalledTimes(1)
+		})
+
+		it('keeps every guest date when no `from` is given', async () => {
+			mockAuth.isAuthenticated = false
+			mockRpcClient.listByArtists.mockResolvedValue([
+				groupOn(2026, 3, 1),
+				groupOn(2027, 1, 2),
+			])
+
+			expect(await sut.listFollowed()).toHaveLength(2)
+		})
+
+		// @spec components/infrastructure/fan/web/route/timetable "Guest resume refresh keeps the cut"
+		it('applies `from` to the guest list on resume revalidation too', async () => {
+			mockAuth.isAuthenticated = false
+			mockRpcClient.listByArtists.mockResolvedValue([
+				groupOn(2026, 3, 1),
+				groupOn(2027, 1, 2),
+			])
+
+			const fresh = await sut.revalidateFollower({
+				year: 2026,
+				month: 11,
+				day: 25,
+			})
+
+			expect(fresh).toHaveLength(1)
 		})
 
 		it('revalidateFollower returns [] for a guest with no follows/home', async () => {
