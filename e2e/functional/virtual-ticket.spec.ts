@@ -206,3 +206,20 @@ test('a fan opens a ticket, is admitted while showing the code, sees the stamp p
 	await page.getByTestId('tickets-open-virtual').first().click()
 	await expect(card).toHaveAttribute('data-preset', 'rock')
 })
+
+// @spec components/infrastructure/fan/web/route/tickets "A ticket card answers a pointer"
+test('a ticket card shows the state layer under a pointer', async ({
+	page,
+}) => {
+	await mockBackend(page)
+	await page.goto('/tickets')
+	const card = page.getByTestId('tickets-card').first()
+	await expect(card).toBeVisible({ timeout: 30_000 })
+	// A tap on the card opens the ticket, so a pointer over it shows the
+	// state layer, as on any control.
+	const layer = () =>
+		card.evaluate((el) => Number(getComputedStyle(el, '::before').opacity))
+	expect(await layer()).toBe(0)
+	await card.locator('.tickets-card-head').hover()
+	await expect.poll(layer).toBeGreaterThan(0)
+})
