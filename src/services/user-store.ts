@@ -232,7 +232,7 @@ export class UserStore {
 	public async create(
 		email: string,
 		preferredLanguage: string,
-		home?: { countryCode: string; level1: string; level2?: string },
+		home?: { countryCode: string; level1: string },
 	): Promise<ProvisionResult> {
 		// NOTE: the guest-follow migration trigger (GuestMigrationRequested) is
 		// published by SignInCallbackRoute on every successful authenticated
@@ -242,7 +242,7 @@ export class UserStore {
 
 	private async getOrCreate(
 		preferredLanguage: string,
-		home?: { countryCode: string; level1: string; level2?: string },
+		home?: { countryCode: string; level1: string },
 		email: string | undefined = this.auth.user?.profile.email,
 	): Promise<ProvisionResult> {
 		try {
@@ -272,7 +272,6 @@ export class UserStore {
 	public async updateHome(home: {
 		countryCode: string
 		level1: string
-		level2?: string
 	}): Promise<User | undefined> {
 		const updated = await this.rpcClient.setHome(home)
 		// Same write-through pattern as updatePreferredLanguage: on a

@@ -9,7 +9,6 @@ export function userFrom(proto: ProtoUser): User {
 			? {
 					countryCode: home.countryCode,
 					level1: home.level1,
-					level2: home.level2 || undefined,
 				}
 			: undefined,
 		// Pass through whatever the backend stored. The settings UI handles "current locale not in SUPPORTED_LANGUAGES" by not

@@ -19,7 +19,6 @@ import {
 	type TimetableAnchor,
 } from '../entities/concert'
 import { DEFAULT_HYPE, type Hype } from '../entities/follow'
-import type { GeoLocationInit } from '../entities/user'
 import { IAuthService } from './auth-service'
 import { CachedResource } from './cache/cached-resource'
 import { HomeChanged } from './events/home-changed'
@@ -212,18 +211,18 @@ export class ConcertStore {
 	}
 
 	/**
-	 * The "the Concerts view" concert list: every catalog concert HOME/NEARBY to a
-	 * geographic reference point within a date range. Unlike the follower/artist
+	 * The "the Concerts view" concert list: every catalog concert HOME/NEARBY to
+	 * an area (its first-level Area code) within a date range. Unlike the follower/artist
 	 * paths this is not cached here — the Timetable route owns a route-local cache
 	 * keyed by (area, date range) so it stays separate from the My Timetable cache.
 	 */
 	public async listByLocation(
-		location: GeoLocationInit,
+		adminArea: string,
 		from: CalendarDate,
 		to: CalendarDate,
 		signal?: AbortSignal,
 	): Promise<ProximityGroup[]> {
-		return this.rpcClient.listByLocation(location, from, to, signal)
+		return this.rpcClient.listByLocation(adminArea, from, to, signal)
 	}
 
 	/**

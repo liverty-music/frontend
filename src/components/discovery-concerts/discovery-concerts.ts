@@ -7,11 +7,7 @@ import {
 	saveConcertsFilter,
 } from '../../adapter/storage/concerts-filter-storage'
 import type { Concert, DateGroup } from '../../entities/concert'
-import {
-	displayName,
-	type GeoLocationInit,
-	geoLocationFromLevel1,
-} from '../../entities/user'
+import { displayName } from '../../entities/user'
 import {
 	IConcertStore,
 	type ProximityGroup,
@@ -191,12 +187,12 @@ export class DiscoveryConcerts {
 	}
 
 	/**
-	 * The reference point for ListByLocation: the override's centroid, else the
-	 * fan's home area's. Null when neither is set.
+	 * The area code for ListByLocation: the override, else the fan's home
+	 * area. Null when neither is set. The server finds the area's reference
+	 * point.
 	 */
-	private resolveGeoLocation(): GeoLocationInit | null {
-		const code = this.effectiveAreaCode
-		return code ? (geoLocationFromLevel1(code) ?? null) : null
+	private resolveArea(): string | null {
+		return this.effectiveAreaCode || null
 	}
 
 	/**
@@ -215,8 +211,8 @@ export class DiscoveryConcerts {
 		this.abortController = new AbortController()
 		const signal = this.abortController.signal
 
-		let geo = this.resolveGeoLocation()
-		if (!geo) {
+		let area = this.resolveArea()
+		if (!area) {
 			// The app opens Discovery without waiting for the signed-in fan's
 			// account, so the home area may not be known yet: wait for it
 			// rather than ask a fan who has one for an area. Settled at once
@@ -225,9 +221,9 @@ export class DiscoveryConcerts {
 			this.loadError = null
 			await this.userHydration.ready
 			if (signal.aborted) return
-			geo = this.resolveGeoLocation()
+			area = this.resolveArea()
 		}
-		if (!geo && !this.userStore.needsHome) {
+		if (!area && !this.userStore.needsHome) {
 			// Signed in, but the account did not load (the boot hydration
 			// failed): a missing account is not a missing home, so load it
 			// again, and show a retryable error if that fails too.
@@ -244,9 +240,9 @@ export class DiscoveryConcerts {
 				return
 			}
 			if (signal.aborted) return
-			geo = this.resolveGeoLocation()
+			area = this.resolveArea()
 		}
-		if (!geo) {
+		if (!area) {
 			// No area at all (a guest or fan without a home): ask for one
 			// before any location-less request.
 			this.isLoading = false
@@ -256,7 +252,7 @@ export class DiscoveryConcerts {
 			return
 		}
 
-		const key = rangeCacheKey(geo.adminArea, range.from, range.to)
+		const key = rangeCacheKey(area, range.from, range.to)
 		const cached = this.visit.cache.get(key)
 		if (cached) {
 			this.isLoading = false
@@ -271,7 +267,7 @@ export class DiscoveryConcerts {
 		this.loadError = null
 		try {
 			const groups = await this.concertStore.listByLocation(
-				geo,
+				area,
 				range.from,
 				range.to,
 				signal,
@@ -282,7 +278,7 @@ export class DiscoveryConcerts {
 			this.derive()
 			this.requestFilterMoment()
 			this.logger.info('the Concerts view loaded', {
-				adminArea: geo.adminArea,
+				adminArea: area,
 				groups: groups.length,
 			})
 		} catch (err) {
