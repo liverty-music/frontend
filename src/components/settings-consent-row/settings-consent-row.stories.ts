@@ -4,6 +4,7 @@ import {
 	type StoryObj,
 } from '@aurelia/storybook'
 import { expect, fn, userEvent, within } from 'storybook/test'
+import { transitionsEnded } from '../../../.storybook/transitions-ended'
 import { expectScreenshot } from '../../../.storybook/screenshot'
 import { BusyOnClickCustomAttribute } from '../../custom-attributes/busy-on-click'
 import { atRest, inSettingsCard } from '../settings-list/settings-card-frame'
@@ -92,6 +93,15 @@ export const Expanded = {
 		await expect(description).toHaveTextContent('操作の記録')
 		await expect(disclosure.contains(description)).toBe(false)
 		await expect(disclosure.getAttribute('aria-controls')).toBe(description.id)
+		// The disclosure's touch target reaches below its label row, but not over
+		// the text: a tap on the first line is the text's, not a collapse.
+		await transitionsEnded(canvasElement)
+		const first = description.getBoundingClientRect()
+		await expect(
+			description.contains(
+				document.elementFromPoint(first.left + 8, first.top + 6),
+			),
+		).toBe(true)
 		await atRest(userEvent, canvasElement)
 		await expect(disclosure.getBoundingClientRect().bottom).toBeLessThanOrEqual(
 			description.getBoundingClientRect().top + 1,

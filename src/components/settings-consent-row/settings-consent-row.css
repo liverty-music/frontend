@@ -54,40 +54,6 @@
 			transform: rotate(90deg);
 		}
 
-		/* The description opens and closes with a height and opacity
-		   transition where the browser can animate to `auto`
-		   (`interpolate-size`), at once elsewhere and under reduced motion
-		   (0 ms token). It stays in the DOM, hidden, so it can animate out;
-		   `display: none` takes it from the accessibility tree once it has. */
-		.settings-toggle-desc {
-			overflow: clip;
-			grid-column: 2;
-			grid-row: 2;
-
-			interpolate-size: allow-keywords;
-			padding-block-start: var(--space-3xs);
-
-			transition:
-				block-size var(--md-sys-motion-duration-medium2)
-				var(--md-sys-motion-easing-standard),
-				opacity var(--md-sys-motion-duration-medium2)
-				var(--md-sys-motion-easing-standard),
-				display var(--md-sys-motion-duration-medium2) allow-discrete;
-
-			&[hidden] {
-				display: none;
-				block-size: 0;
-				opacity: 0;
-			}
-		}
-
-		@starting-style {
-			.settings-toggle-desc:not([hidden]) {
-				block-size: 0;
-				opacity: 0;
-			}
-		}
-
 		/* Switch control: the trailing (col3) cell. A button wrapping just the
 		   track, with no padding, so the track sits flush at col3's end edge,
 		   pixel-aligned with every other row's trailing control. The track
