@@ -165,6 +165,19 @@ export const FadesInAndOut: Story = {
 	},
 }
 
+/** A target at the end of a 320 px phone's row: the line stays 8 px inside. */
+export const AtTheScreenEdge: Story = {
+	globals: { viewport: { value: 'mobile1' } },
+	render: render(BUTTON_TARGET, 'discovery.swap'),
+	play: async ({ canvasElement }) => {
+		const line = await shownLine(canvasElement)
+		// @spec components/infrastructure/fan/web/global/guide-moment "The line stays on screen at an edge"
+		const box = line.getBoundingClientRect()
+		expect(box.left).toBeGreaterThanOrEqual(8 - 0.5)
+		expect(box.right).toBeLessThanOrEqual(innerWidth - 8 + 0.5)
+	},
+}
+
 /** A tap elsewhere reaches the page and ends the moment. */
 export const TapElsewhere: Story = {
 	render: render(BUTTON_TARGET, 'discovery.swap'),
