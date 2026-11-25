@@ -235,6 +235,7 @@ describe('ConcertStore', () => {
 			expect(await sut.listFollowed()).toHaveLength(2)
 		})
 
+		// @spec components/infrastructure/fan/web/route/timetable "Guest resume refresh keeps the cut"
 		it('applies `from` to the guest list on resume revalidation too', async () => {
 			mockAuth.isAuthenticated = false
 			mockRpcClient.listByArtists.mockResolvedValue([
