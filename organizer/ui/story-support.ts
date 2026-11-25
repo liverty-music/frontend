@@ -79,6 +79,8 @@ export function deepQuery<T extends Element = HTMLElement>(
 }
 
 /** The element that has focus, inside open shadow roots too. */
+export { transitionsEnded } from '../../.storybook/transitions-ended'
+
 export function focusedElement(): Element | null {
 	let active = document.activeElement
 	while (active?.shadowRoot?.activeElement) {

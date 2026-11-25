@@ -4,6 +4,7 @@ import {
 	type StoryObj,
 } from '@aurelia/storybook'
 import { expect } from 'storybook/test'
+import { transitionsEnded } from '../../../../.storybook/transitions-ended'
 import { ActionMenuGlyph } from '../action-menu-glyph/action-menu-glyph'
 import { ActionMenuToggle } from './action-menu-toggle'
 
@@ -35,6 +36,8 @@ async function shown(root: HTMLElement): Promise<HTMLButtonElement> {
 	const button = root.querySelector<HTMLButtonElement>('.action-menu-toggle')
 	if (!button) throw new Error('no FAB')
 	button.showPopover()
+	// It grows from nothing as it shows; measure it once it has.
+	await transitionsEnded(button)
 	return button
 }
 
@@ -48,6 +51,8 @@ export const Closed = {
 		await expect(button.title).not.toBe('')
 		await expect(button.title).toBe(button.getAttribute('aria-label'))
 		await expect(button.getBoundingClientRect().width).toBe(56)
+		// It grows from nothing as it shows, on the spatial spring.
+		await expect(getComputedStyle(button).transitionProperty).toContain('scale')
 		const close = button.querySelector('.fab-close') as Element
 		await expect(getComputedStyle(close).opacity).toBe('0')
 	},

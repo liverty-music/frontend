@@ -28,6 +28,7 @@ import { INotificationPromptService } from '../../services/notification-prompt-s
 import { IOnboardingService } from '../../services/onboarding-service'
 import { IUserStore } from '../../services/user-store'
 import { currentLanguage } from '../../util/change-locale'
+import { inListTransition } from '../../util/list-transition'
 
 export interface MyArtist extends FollowedArtist {
 	color: string
@@ -279,7 +280,9 @@ export class MyArtistsRoute {
 	// --- Edit-mode toggle ---
 
 	public toggleEditing(): void {
-		this.editing = !this.editing
+		void inListTransition(() => {
+			this.editing = !this.editing
+		})
 	}
 
 	// --- Unfollow with undo ---
@@ -308,21 +311,7 @@ export class MyArtistsRoute {
 			}
 		}
 
-		// Each `.artist-row` has its own `view-transition-name`, so only the
-		// removed row animates out and the rest reflow. Suppress the default
-		// `root` cross-fade (a route-level effect) for this in-place list edit
-		// — otherwise the header / bottom-nav (unnamed, captured in `root`)
-		// dip in opacity and read as the header "disappearing" while the
-		// unfollow snack appears. The class is cleared when the transition ends.
-		// Under reduced motion a global rule stops the animation (global.css).
-		document.documentElement.classList.add('vt-suppress-root')
-		const transition = document.startViewTransition(doRemove)
-		// The browser can skip the transition and reject `ready`; the row is
-		// still removed, without the animation.
-		void transition.ready.catch(() => {})
-		void transition.finished.finally(() => {
-			document.documentElement.classList.remove('vt-suppress-root')
-		})
+		void inListTransition(doRemove)
 
 		this.logger.info('Artist unfollowed (pending)', { name: artistName })
 
@@ -351,14 +340,18 @@ export class MyArtistsRoute {
 	private undo(): void {
 		if (!this.undoArtist) return
 
-		// Re-insert at original position
+		// Re-insert at original position, in the same transition as the removal
+		// so the rows below make room instead of jumping down.
 		const insertAt = Math.min(this.undoIndex, this.artists.length)
-		this.artists.splice(insertAt, 0, this.undoArtist)
+		const restored = this.undoArtist
+		void inListTransition(() => {
+			this.artists.splice(insertAt, 0, restored)
 
-		// unfollowArtist() is only reachable via the edit-mode remove button, so
-		// edit mode was active when this artist was removed. Restore it so the user
-		// can continue removing without having to re-enter edit mode.
-		this.editing = true
+			// unfollowArtist() is only reachable via the edit-mode remove button,
+			// so edit mode was active when this artist was removed. Restore it so
+			// the user can continue removing without having to re-enter edit mode.
+			this.editing = true
+		})
 
 		this.logger.info('Undo unfollow', {
 			name: this.artistName(this.undoArtist),

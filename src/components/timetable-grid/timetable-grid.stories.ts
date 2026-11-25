@@ -1162,6 +1162,13 @@ export const MonthJumpBoth = {
 			scroll.getBoundingClientRect().bottom -
 			capsule.getBoundingClientRect().bottom
 		await expect(gap).toBeGreaterThanOrEqual(32)
+
+		// It fades in and out rather than appearing and vanishing at once: an
+		// opacity transition with `display` flipped after the exit.
+		const style = getComputedStyle(capsule)
+		await expect(style.transitionProperty).toContain('opacity')
+		await expect(style.transitionProperty).toContain('display')
+		await expect(style.transitionBehavior).toContain('allow-discrete')
 	},
 } satisfies Story
 

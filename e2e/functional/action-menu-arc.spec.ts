@@ -121,6 +121,49 @@ test.describe('the action arc', () => {
 		expect(await opacity(page, 'action-menu .fab-equalizer')).toBe(0)
 	})
 
+	test(`@spec ${CAPABILITY} "The launcher stays whole and on top while the arc opens"`, async ({
+		page,
+	}) => {
+		await openShell(page, '/timetable')
+		await expect(fab(page)).toBeVisible()
+		// Let it finish growing in before the arc opens.
+		await settle(page, 'action-menu')
+		// Frame by frame through the first 700 ms after the tap: the FAB is
+		// hidden and shown again so it sits above the panel's scrim; it must
+		// not shrink or grow again, and from the second frame it must be the
+		// topmost element at its own centre (the first is before the arc's
+		// layout).
+		const frames = await page.evaluate(
+			() =>
+				new Promise<{ width: number; onTop: boolean }[]>((resolve) => {
+					const toggle = document.querySelector<HTMLElement>(
+						'.action-menu-toggle',
+					) as HTMLElement
+					const rect = toggle.getBoundingClientRect()
+					const x = rect.left + rect.width / 2
+					const y = rect.top + rect.height / 2
+					const out: { width: number; onTop: boolean }[] = []
+					const start = performance.now()
+					toggle.click()
+					const tick = () => {
+						out.push({
+							width: toggle.getBoundingClientRect().width,
+							onTop: !!document
+								.elementFromPoint(x, y)
+								?.closest('.action-menu-toggle'),
+						})
+						if (performance.now() - start < 700) requestAnimationFrame(tick)
+						else resolve(out)
+					}
+					tick()
+				}),
+		)
+		expect(frames.length).toBeGreaterThan(10)
+		expect(Math.min(...frames.map((f) => f.width))).toBeGreaterThanOrEqual(55)
+		expect(frames.slice(2).every((f) => f.onTop)).toBe(true)
+		await expect(fab(page)).toHaveAttribute('aria-expanded', 'true')
+	})
+
 	test(`@spec ${CAPABILITY} "Tapping again collapses the list"`, {
 		tag: '@webkit',
 	}, async ({ page }) => {
@@ -233,7 +276,9 @@ test.describe('the action arc', () => {
 			// Staggered, closest to the FAB first.
 			if (i > 0) expect(m.delay).toBeGreaterThan(motion[i - 1].delay)
 		}
-		// The equalizer bars bounce once as the launcher opens.
+		// The equalizer bars bounce once as the launcher opens. The glyph's
+		// `data-open` is bound after the click, so wait for it before reading.
+		await expect(glyph(page)).toHaveAttribute('data-open', 'true')
 		const bars = await page
 			.locator('action-menu .fab-bar')
 			.evaluateAll((els) => els.map((el) => getComputedStyle(el).animationName))

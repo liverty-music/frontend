@@ -24,6 +24,7 @@ import {
 	PASSKEY_MANAGEMENT_PATH,
 } from '../../services/fresh-sign-in-service'
 import { currentLanguage } from '../../util/change-locale'
+import { inListTransition } from '../../util/list-transition'
 
 /**
  * A passkey as listed: the identity provider's passkey joined by id with the
@@ -36,6 +37,8 @@ export interface ListedPasskey extends Passkey {
 	readonly addedDate?: string
 	/** That day, written for the fan's language. */
 	readonly addedLabel?: string
+	/** The row's View Transition name, so a removed row animates on its own. */
+	readonly rowName?: string
 }
 
 /** Passkey dates are the day in Japan, where the product runs. */
@@ -182,11 +185,11 @@ export class PasskeysRoute {
 		const locale = this.i18n.getLocale()
 		return passkeys.map((passkey) => {
 			const record = byId.get(passkey.id)
-			if (!record) return passkey
-			const created = record.createTime
+			const created = record?.createTime
 			return {
 				...passkey,
-				...(record.providerName ? { providerName: record.providerName } : {}),
+				rowName: `passkey-${passkey.id}`,
+				...(record?.providerName ? { providerName: record.providerName } : {}),
 				...(created
 					? {
 							// en-CA writes the ISO calendar date.
@@ -223,6 +226,7 @@ export class PasskeysRoute {
 		try {
 			await this.client.remove(passkey.id)
 		} catch (err) {
+			this.removing = false
 			if (!(err instanceof PasskeyRequestError)) throw err
 			this.logger.warn('Failed to remove a passkey', { failure: err.failure })
 			if (err.failure === 'unauthenticated') {
@@ -232,11 +236,19 @@ export class PasskeysRoute {
 			// The list stays as it was; the sheet offers to try again.
 			this.removalFailed = true
 			return
+		}
+		try {
+			// The fan still counts as removing while the row leaves: until the
+			// sheet has closed, a second tap on the confirm button would remove
+			// the passkey again. Each row is named (`passkeys-route.css`), so the
+			// removed one fades out and the rows below move up, not jump.
+			await inListTransition(() => {
+				this.passkeys = this.passkeys.filter((p) => p.id !== passkey.id)
+				this.pendingRemoval = null
+			})
 		} finally {
 			this.removing = false
 		}
-		this.passkeys = this.passkeys.filter((p) => p.id !== passkey.id)
-		this.pendingRemoval = null
 		this.focusAfterRemoval()
 	}
 

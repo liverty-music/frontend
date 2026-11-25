@@ -17,6 +17,23 @@
 		pointer-events: none;
 		position: fixed;
 		inset: 0;
+
+		/* Enter and exit: all three fade together (M3 transitions, enter and
+		   exit; effects spring); `display` flips after the exit. */
+		transition:
+			opacity var(--md-sys-motion-spring-effects-duration)
+				var(--md-sys-motion-spring-effects),
+			display var(--md-sys-motion-spring-effects-duration) allow-discrete;
+
+		&[hidden] {
+			opacity: 0;
+		}
+
+		@starting-style {
+			&:not([hidden]) {
+				opacity: 0;
+			}
+		}
 	}
 
 	/* Both cover the target, their default anchor: scroll compensation
@@ -51,36 +68,6 @@
 	.target-interceptor {
 		pointer-events: auto;
 		background-color: transparent;
-	}
-
-	/* Tooltip below the target, flipped above when there is no room. */
-	.coach-mark-tooltip {
-		pointer-events: none;
-
-		position: fixed;
-
-		/* The gap from the target; flip-block mirrors it when the tooltip
-		   moves above the target. */
-		inset-block-start: var(--space-s);
-		position-anchor: --coach-target;
-		position-area: block-end;
-		position-try-fallbacks: flip-block;
-
-		display: flex;
-		flex-direction: column;
-		align-items: start;
-
-		max-inline-size: min(320px, calc(100dvi - 2 * var(--space-s)));
-		padding: var(--space-s);
-
-		color: var(--color-white);
-	}
-
-	.coach-tooltip-message {
-		/* Break CJK at phrase boundaries + balance line lengths so a token
-		   like「グッズ」never splits mid-word. */
-		text-wrap: balance;
-		word-break: auto-phrase;
 	}
 
 	@keyframes coach-pulse {

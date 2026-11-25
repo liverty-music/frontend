@@ -54,9 +54,18 @@ export const Collapsed = {
 		})
 		const sw = canvas.getByRole('switch', { name: 'アナリティクス' })
 		await expect(disclosure.contains(sw)).toBe(false)
-		await expect(
-			canvasElement.querySelector('.settings-toggle-desc'),
-		).toBeNull()
+		// Hidden, not removed, so it can animate out; not rendered meanwhile.
+		const description = canvasElement.querySelector<HTMLElement>(
+			'.settings-toggle-desc',
+		)
+		await expect(description?.hidden).toBe(true)
+		await expect(getComputedStyle(description as HTMLElement).display).toBe(
+			'none',
+		)
+		// It opens and closes with a height and opacity transition.
+		const transition = getComputedStyle(description as HTMLElement)
+		await expect(transition.transitionProperty).toContain('block-size')
+		await expect(transition.transitionProperty).toContain('opacity')
 		await userEvent.click(sw)
 		await expect(args.action).toHaveBeenCalledOnce()
 		await atRest(userEvent, canvasElement)

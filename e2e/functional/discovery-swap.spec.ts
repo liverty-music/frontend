@@ -256,7 +256,41 @@ test.describe('Discovery swap tile', () => {
 		page,
 	}) => {
 		await openDiscovery(page)
+		// Nothing is named at rest. The moment the browser takes the old frame,
+		// the swap tile must be named on its own, so it is not part of the view
+		// that turns and keeps its place while it does.
+		await expect(page.locator('.swap-tile-slot')).toHaveCSS(
+			'view-transition-name',
+			'none',
+		)
+		await page.evaluate(() => {
+			const names: { view: string; tile: string }[] = []
+			const start = document.startViewTransition.bind(document)
+			document.startViewTransition = (callback) => {
+				const name = (selector: string) =>
+					getComputedStyle(document.querySelector(selector) as Element)
+						.viewTransitionName
+				names.push({
+					view: name('.discovery-layout'),
+					tile: name('.swap-tile-slot'),
+				})
+				return start(callback)
+			}
+			;(window as unknown as { swapNames: typeof names }).swapNames = names
+		})
 		await tile(page).click()
+		await expect
+			.poll(() =>
+				page.evaluate(
+					() =>
+						(
+							window as unknown as {
+								swapNames: { view: string; tile: string }[]
+							}
+						).swapNames,
+				),
+			)
+			.toEqual([{ view: 'discovery-view', tile: 'discovery-swap-tile' }])
 
 		const view = page.locator('discovery-concerts')
 		await expect(view).toBeVisible()

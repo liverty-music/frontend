@@ -10,7 +10,11 @@
 			display: contents;
 		}
 
-		/* Positioned, like every row after the starfield (discovery-starfield.css). */
+		/* Positioned, like every row after the starfield (discovery-starfield.css).
+		   The results fade in when search starts and out when it ends (M3 search
+		   motion; effects spring): the route hides them with `display: none` and
+		   `opacity: 0` outside search, and `display` flips after the exit. 0 ms
+		   under reduced motion. */
 		.search-results {
 			position: relative;
 
@@ -22,6 +26,17 @@
 			min-block-size: 0;
 			padding: var(--space-xs) var(--space-s);
 			padding-block-end: calc(var(--space-2xl) + env(safe-area-inset-bottom));
+
+			transition:
+				opacity var(--md-sys-motion-spring-effects-duration)
+				var(--md-sys-motion-spring-effects),
+				display var(--md-sys-motion-spring-effects-duration) allow-discrete;
+		}
+
+		@starting-style {
+			.search-results {
+				opacity: 0;
+			}
 		}
 
 		.search-status {

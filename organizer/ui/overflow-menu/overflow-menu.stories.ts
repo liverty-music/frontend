@@ -11,6 +11,7 @@ import {
 	consoleStoryParameters,
 	deepQuery,
 	focusedElement,
+	transitionsEnded,
 } from '../story-support'
 import { type MenuItem, OverflowMenu } from './overflow-menu'
 
@@ -100,6 +101,9 @@ export const OpenAndClose = {
 		await expect(style.paddingBottom).toBe('8px')
 		await expect(style.minWidth).toBe('112px')
 		await expect(style.boxShadow).not.toBe('none')
+		// It fades in and out (display flips after the exit).
+		await expect(style.transitionProperty).toContain('opacity')
+		await expect(style.transitionProperty).toContain('display')
 		for (const item of items) {
 			await expect(item.getBoundingClientRect().height).toBe(48)
 			await expect(getComputedStyle(item).paddingInlineStart).toBe('12px')
@@ -116,6 +120,7 @@ export const OpenAndClose = {
 			expect(menuOf(canvasElement).matches(':popover-open')).toBe(false),
 		)
 		await expect(focusedElement()).toBe(button)
+		await transitionsEnded(menuOf(canvasElement))
 	},
 } satisfies Story
 
@@ -136,6 +141,7 @@ export const ChooseAnAction = {
 		)
 		await expect(menuOf(canvasElement).matches(':popover-open')).toBe(false)
 		await expect(focusedElement()).toBe(button)
+		await transitionsEnded(menuOf(canvasElement))
 	},
 } satisfies Story
 
@@ -165,5 +171,6 @@ export const DisabledItem = {
 		)
 		await expect(menuOf(canvasElement).matches(':popover-open')).toBe(true)
 		await userEvent.keyboard('{Escape}')
+		await transitionsEnded(menuOf(canvasElement))
 	},
 } satisfies Story

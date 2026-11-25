@@ -1,7 +1,11 @@
 <import from="./coach-mark.css"></import>
+<import from="./coach-mark-tooltip.css"></import>
 
+<!-- `hidden` and `inert`, not if.bind: the overlay stays in the DOM so it can
+     fade out; `display: none` takes it away once the fade ends. -->
 <div
-  if.bind="visible"
+  hidden.bind="!visible"
+  inert.bind="!visible"
   ref="overlayEl"
   class="[ coach-mark-overlay ]"
   keydown.trigger="onKeydown($event)"

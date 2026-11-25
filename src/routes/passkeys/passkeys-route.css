@@ -35,6 +35,11 @@
 			min-block-size: 56px;
 			padding: var(--space-2xs) var(--space-s);
 
+			/* One name per row, set from the passkey's id, so a removed row
+			   animates out on its own (a View Transition run by the route). */
+			/* stylelint-disable-next-line no-unknown-custom-properties -- set inline by the template, per passkey */
+			view-transition-name: var(--passkey-vt-name);
+
 			& + & {
 				border-block-start: 1px solid var(--md-sys-color-outline-variant);
 			}

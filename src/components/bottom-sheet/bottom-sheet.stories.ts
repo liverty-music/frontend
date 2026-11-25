@@ -653,9 +653,10 @@ export const InitialSnap = {
 
 		// @spec components/infrastructure/fan/web/global/bottom-sheet "Initial snap animation"
 		const style = getComputedStyle(area)
-		await expect(style.animationName).toBe('initial-snap')
-		await expect(style.animationDuration).toBe('0.01s')
-		await expect(style.animationFillMode).toBe('backwards')
+		// The entry slide is the second animation of the same element.
+		await expect(style.animationName).toBe('initial-snap, sheet-rise')
+		await expect(style.animationDuration.split(', ')[0]).toBe('0.01s')
+		await expect(style.animationFillMode.split(', ')[0]).toBe('backwards')
 		await expect(scrolls).toHaveLength(0)
 		await expect(frames).toHaveLength(0)
 
@@ -893,8 +894,38 @@ export const NoBounceBack = {
 	},
 } satisfies Story
 
+// The sheet enters by moving up from below the bottom edge, not by fading
+// (M3 "Don't fade a bottom sheet as it enters and exits"): its scroll area
+// plays a 400 ms keyframe from one sheet-height down, and the sheet's opacity
+// never changes.
+export const RisesFromTheBottom = {
+	render: behaviour,
+	args: { open: true },
+	play: async ({ canvasElement }) => {
+		// @spec components/infrastructure/fan/web/global/bottom-sheet "The sheet enters by moving, not by fading"
+		const dialog = await ready(canvasElement)
+		const area = scrollAreaOf(canvasElement)
+		const style = getComputedStyle(area)
+		await expect(style.animationName).toContain('sheet-rise')
+		await expect(style.animationDuration).toContain('0.4s')
+		await expect(getComputedStyle(dialog).opacity).toBe('1')
+		// The keyframe starts one sheet-height down.
+		const rise = [...document.styleSheets]
+			.flatMap((sheet) => [...sheet.cssRules])
+			.flatMap(function walk(rule: CSSRule): CSSRule[] {
+				const inner = (rule as CSSGroupingRule).cssRules
+				return inner ? [rule, ...[...inner].flatMap(walk)] : [rule]
+			})
+			.find(
+				(rule) =>
+					rule instanceof CSSKeyframesRule && rule.name === 'sheet-rise',
+			) as CSSKeyframesRule | undefined
+		await expect(rise?.cssText).toContain('translateY(100%)')
+	},
+} satisfies Story
+
 // A dismiss is the scroll: the popover is hidden when the body has left the
-// viewport, and its own transition is an opacity fade only (no `overlay`
+// viewport, and the popover has no transition of its own (no `overlay`
 // discrete transition) while the backdrop is tied to the scroll position.
 export const CloseIsTheScroll = {
 	render: behaviour,
@@ -912,7 +943,6 @@ export const CloseIsTheScroll = {
 		await expect(hides[0].visible).toBeLessThanOrEqual(0.1)
 
 		const style = getComputedStyle(dialog)
-		await expect(style.transitionProperty).toBe('opacity')
 		await expect(style.transitionBehavior).toBe('normal')
 		await expect(style.transitionProperty).not.toContain('overlay')
 		if (CSS.supports('animation-timeline: scroll()')) {
@@ -1147,8 +1177,10 @@ export const MotionPreference = {
 			await expect(getComputedStyle(area).scrollBehavior).toBe('auto')
 			await expect(dialog.matches(':popover-open')).toBe(false)
 			await expect(closed.n).toBe(1)
+			// The entry slide (the scroll area's second animation, after
+			// initial-snap) has no duration, and nor does the backdrop's fade.
 			await expect(
-				seconds(getComputedStyle(dialog).transitionDuration),
+				seconds(getComputedStyle(area).animationDuration.split(', ')[1]),
 			).toBeLessThan(0.001)
 			await expect(
 				seconds(getComputedStyle(dialog, '::backdrop').transitionDuration),
@@ -1158,8 +1190,11 @@ export const MotionPreference = {
 			await expect(dialog.matches(':popover-open')).toBe(true)
 			await waitFor(() => expect(closed.n).toBe(1), { timeout: 3000 })
 			await expect(
-				seconds(getComputedStyle(dialog).transitionDuration),
-			).toBeCloseTo(0.16, 2)
+				seconds(getComputedStyle(area).animationDuration.split(', ')[1]),
+			).toBeCloseTo(0.4, 2)
+			await expect(
+				seconds(getComputedStyle(dialog, '::backdrop').transitionDuration),
+			).toBeCloseTo(0.4, 2)
 		}
 	},
 } satisfies Story

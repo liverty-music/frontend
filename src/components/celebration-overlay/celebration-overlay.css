@@ -28,13 +28,22 @@
 			background: var(--_scrim);
 			backdrop-filter: blur(var(--_scrim-blur));
 
-			transition: opacity var(--md-sys-motion-duration-medium4) ease;
+			/* The scrim fades in and out with its text (M3 transitions, enter
+			   and exit), 0 ms under reduced motion. */
+			transition: opacity var(--md-sys-motion-duration-medium4)
+				var(--md-sys-motion-easing-standard);
 
 			&[data-state="hidden"] {
 				display: none;
 			}
 
 			&[data-state="exiting"] {
+				opacity: 0;
+			}
+		}
+
+		@starting-style {
+			.celebration-overlay:not([data-state="hidden"]) {
 				opacity: 0;
 			}
 		}

@@ -56,7 +56,11 @@ export class GuideLine {
 		this.messageKey = GUIDE_LINE_KEYS[id]
 	}
 
+	/** Counts shows and hides, so a late clear of the text knows it is stale. */
+	private hideGeneration = 0
+
 	private show(): void {
+		this.hideGeneration++
 		const el = this.popoverEl
 		if (!el) return
 		try {
@@ -70,13 +74,24 @@ export class GuideLine {
 	}
 
 	private hide(): void {
-		this.messageKey = ''
+		const generation = ++this.hideGeneration
 		const el = this.popoverEl
-		if (!el) return
-		try {
-			if (el.matches(':popover-open')) el.hidePopover()
-		} catch {
-			// Not shown.
+		if (el) {
+			try {
+				if (el.matches(':popover-open')) el.hidePopover()
+			} catch {
+				// Not shown.
+			}
 		}
+		// The words stay while the line fades out; they go once it has, so the
+		// next moment's text is set afresh and announced. With motion reduced
+		// there is nothing to wait for.
+		const faded =
+			el && typeof el.getAnimations === 'function'
+				? Promise.allSettled(el.getAnimations().map((a) => a.finished))
+				: Promise.resolve()
+		void faded.then(() => {
+			if (generation === this.hideGeneration) this.messageKey = ''
+		})
 	}
 }

@@ -3,7 +3,7 @@ import {
 	type Meta,
 	type StoryObj,
 } from '@aurelia/storybook'
-import { expect, within } from 'storybook/test'
+import { expect, userEvent, waitFor, within } from 'storybook/test'
 import {
 	atEveryPhoneWidthAndLanguage,
 	expectBannerMessage,
@@ -81,6 +81,51 @@ export const Visible = {
 		// @spec components/infrastructure/fan/web/global/signup-prompt-banner "Banner slides in on appearance"
 		// @spec components/infrastructure/fan/web/global/signup-prompt-banner "Banner appears instantly for reduced motion"
 		await expectBannerMotion(surface, action)
+	},
+} satisfies Story
+
+/**
+ * The banner goes the way it came: it slides down and fades over 200 ms, and
+ * is not rendered until that ends; its action cannot be pressed meanwhile.
+ * With motion reduced it is gone in the next frame.
+ */
+export const SlidesOut = {
+	tags: ['reduced-motion', 'latin-metrics'],
+	render: () =>
+		defineAureliaStory({
+			template: `<button type="button" click.trigger="visible = false">Hide</button>
+				<signup-prompt-banner visible.bind="visible" message.bind="message"></signup-prompt-banner>`,
+			props: { visible: true, message: ja.myArtists.signupBanner.message },
+			register: [SignupPromptBanner],
+		}),
+	play: async ({ canvasElement }) => {
+		const surface = canvasElement.querySelector<HTMLElement>(
+			'signup-prompt-banner .bottom-banner',
+		)
+		if (!surface) throw new Error('no banner')
+		const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches
+		await waitFor(() => expect(getComputedStyle(surface).opacity).toBe('1'))
+
+		// @spec components/infrastructure/fan/web/global/signup-prompt-banner "A banner is hidden after signup"
+		// @spec components/infrastructure/fan/web/global/signup-prompt-banner "A banner goes under reduced motion"
+		await userEvent.click(
+			within(canvasElement).getByRole('button', { name: 'Hide' }),
+		)
+		await expect(surface.hidden).toBe(true)
+		await expect(surface.inert).toBe(true)
+		if (!reduced) {
+			// Still painted while it slides out.
+			await expect(getComputedStyle(surface).display).not.toBe('none')
+			await expect(getComputedStyle(surface).transitionDuration).toContain(
+				'0.2s',
+			)
+		}
+		await waitFor(
+			() => expect(getComputedStyle(surface).display).toBe('none'),
+			{
+				timeout: 1000,
+			},
+		)
 	},
 } satisfies Story
 

@@ -108,12 +108,26 @@ export const Active = {
 	},
 } satisfies Story
 
+/**
+ * The overlay is hidden and no longer rendered. It stays in the DOM so it can
+ * fade out, then `display: none` takes it away, so nothing of it is reachable.
+ */
+function overlayIsGone(canvasElement: HTMLElement): boolean {
+	const overlay = canvasElement.querySelector<HTMLElement>(
+		'.coach-mark-overlay',
+	)
+	return (
+		!overlay || (overlay.hidden && getComputedStyle(overlay).display === 'none')
+	)
+}
+
 // Inactive: no overlay is rendered.
 export const Inactive = {
 	render: render(),
 	args: { active: false },
 	play: async ({ canvasElement }) => {
-		await expect(canvasElement.querySelector('[role="tooltip"]')).toBeNull()
+		await expect(overlayIsGone(canvasElement)).toBe(true)
+		await expect(within(canvasElement).queryByRole('tooltip')).toBeNull()
 	},
 } satisfies Story
 
@@ -197,9 +211,7 @@ export const LinkTarget = {
 		await expect(clicks.filter((c) => c.target === link)).toEqual([
 			{ target: link, navigates: true },
 		])
-		await waitFor(() =>
-			expect(canvasElement.querySelector('.coach-mark-overlay')).toBeNull(),
-		)
+		await waitFor(() => expect(overlayIsGone(canvasElement)).toBe(true))
 	},
 } satisfies Story
 
@@ -219,9 +231,17 @@ export const OutsideTap = {
 		await expect(hitAt(under)).toBe(under)
 		await userEvent.click(under)
 		await expect(pageTaps).toBe(1)
-		await waitFor(() =>
-			expect(canvasElement.querySelector('.coach-mark-overlay')).toBeNull(),
+		// It goes by fading out (hidden and inert at once, then not rendered),
+		// not by being removed.
+		const overlay = canvasElement.querySelector<HTMLElement>(
+			'.coach-mark-overlay',
 		)
+		await waitFor(() => expect(overlay?.hidden).toBe(true))
+		await expect(overlay?.inert).toBe(true)
+		await expect(
+			getComputedStyle(overlay as HTMLElement).transitionProperty,
+		).toContain('opacity')
+		await waitFor(() => expect(overlayIsGone(canvasElement)).toBe(true))
 		// The coach mark never touched page scrolling.
 		await expect(getComputedStyle(document.documentElement).overflow).toBe(
 			rootOverflow,

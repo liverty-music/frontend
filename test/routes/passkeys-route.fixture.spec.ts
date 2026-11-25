@@ -500,6 +500,49 @@ describe('Passkey management lists, adds and removes passkeys (fixture)', () => 
 		expect(client.remove).not.toHaveBeenCalled()
 	})
 
+	it('removes a passkey once while its row is still leaving the list', async () => {
+		const original = document.startViewTransition
+		let applyEdit: (() => void) | null = null
+		Object.assign(document, {
+			// The browser captures the old frame first: the edit comes later.
+			startViewTransition: (change: () => void) => {
+				const updated = new Promise<void>((resolve) => {
+					applyEdit = () => {
+						change()
+						resolve()
+					}
+				})
+				return {
+					ready: Promise.resolve(),
+					finished: updated,
+					updateCallbackDone: updated,
+				}
+			},
+		})
+		try {
+			const { client, removeButtons, q, vm, settle } = await renderManagement([
+				IPHONE,
+				WINDOWS,
+			])
+			removeButtons()[1]?.click()
+			await settle()
+
+			const first = vm.confirmRemoval()
+			await vi.waitFor(() => expect(applyEdit).not.toBeNull())
+			// A second tap before the sheet has closed does nothing.
+			await vm.confirmRemoval()
+			expect(client.remove).toHaveBeenCalledTimes(1)
+			expect(q('passkeys-confirm-remove')).not.toBeNull()
+
+			;(applyEdit as unknown as () => void)()
+			await first
+			expect(client.remove).toHaveBeenCalledTimes(1)
+		} finally {
+			Object.assign(document, { startViewTransition: original })
+			document.documentElement.classList.remove('vt-suppress-root')
+		}
+	})
+
 	it('says a failed removal failed, offers to try again and keeps the passkey listed', async () => {
 		// @spec components/infrastructure/fan/web/route/settings "Removal fails"
 		const { client, names, removeButtons, q, settle } = await renderManagement([

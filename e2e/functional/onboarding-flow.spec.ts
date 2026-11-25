@@ -444,7 +444,9 @@ test.describe('Onboarding flow (single-flag model)', () => {
 		// …and does what a direct tap on the card does: its detail sheet opens.
 		await expect(sheet).toBeVisible({ timeout: 5000 })
 		// The coach mark has closed.
-		await expect(page.locator('coach-mark .coach-mark-overlay')).toHaveCount(0)
+		await expect(
+			page.locator('coach-mark .coach-mark-overlay'),
+		).not.toBeVisible()
 	})
 
 	// @spec components/infrastructure/fan/web/route/welcome "Timetable absent without preview data"

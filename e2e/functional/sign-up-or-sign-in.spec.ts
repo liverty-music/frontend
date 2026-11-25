@@ -357,9 +357,11 @@ test.describe('sign-up and sign-in start only where the person chooses', () => {
 		await page.waitForURL((url) => url.pathname === '/timetable', {
 			timeout: 30_000,
 		})
+		// The banner is hidden once the sign-up is done (it stays in the DOM
+		// while it slides out, then is not rendered).
 		await expect(
 			page.locator('signup-prompt-banner .bottom-banner-action'),
-		).toHaveCount(0)
+		).not.toBeVisible()
 	})
 
 	test(`@spec ${STORY} "Sign-up from a concert page returns to it"`, async ({

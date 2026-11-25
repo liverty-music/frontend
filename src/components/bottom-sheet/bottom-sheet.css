@@ -10,12 +10,10 @@
 		.sheet-popover {
 			--_backdrop-bg: oklch(0% 0 0deg / 60%);
 
-			/* Entry fade duration. The CLOSE is the dismiss scroll (see
-			   .scroll-area), so there is deliberately NO fixed-duration exit
-			   fade here — a decoupled opacity/overlay fade is what caused the
-			   bounce-back and the during-close operation lock. */
-			--_duration: 160ms;
-			--_duration-reduced: 0.01ms;
+			/* The sheet rises from the bottom edge on entry. The CLOSE is the
+			   dismiss scroll (see .scroll-area), so there is deliberately NO
+			   fixed-duration exit here: a decoupled opacity/overlay fade is what
+			   caused the bounce-back and the during-close operation lock. */
 
 			/* Top-Layer host: full-viewport, transparent. Resets the UA popover
 			   defaults (centred, auto-sized, bordered, margin). */
@@ -34,23 +32,17 @@
 
 			background: transparent;
 
-			/* Opacity-only entry transition. `overlay` is intentionally NOT
-			   transitioned: the popover leaves the Top Layer immediately on
-			   close, so its ::backdrop stops intercepting pointer events at
-			   once — the background is interactive during the dismiss scroll. */
-			transition: opacity var(--_duration) ease-out;
-
 			&::backdrop {
 				background: var(--_backdrop-bg);
 				backdrop-filter: blur(4px);
 
 				/* Fallback fade for engines without scroll-driven animations. */
-				transition: opacity var(--_duration) ease-out;
+				transition: opacity var(--md-sys-motion-duration-medium4)
+					var(--md-sys-motion-easing-standard);
 			}
 
 			&:not(:popover-open) {
 				display: none;
-				opacity: 0;
 			}
 
 			&:not(:popover-open)::backdrop {
@@ -59,10 +51,6 @@
 		}
 
 		@starting-style {
-			.sheet-popover:popover-open {
-				opacity: 0;
-			}
-
 			.sheet-popover:popover-open::backdrop {
 				opacity: 0;
 			}
@@ -117,6 +105,12 @@
 		  (unsupported in Safari and Firefox as of 2026-08) and not Baseline;
 		  replace this keyframe hack with it only once it reaches Baseline.
 		*/
+		@keyframes sheet-rise {
+			from {
+				transform: translateY(100%);
+			}
+		}
+
 		@keyframes initial-snap {
 			from,
 			to {
@@ -139,7 +133,16 @@
 			   iOS Safari address bar resizes mid-swipe. */
 			block-size: 100svh;
 
-			animation: initial-snap 0.01s backwards;
+			/* Entry slide: a bottom sheet moves on and off the screen rather
+			   than fading (M3 transitions: "Don't fade a bottom sheet as it
+			   enters and exits"), 400 ms with emphasized decelerate (easing and
+			   duration). The scroller moves, not the popover: a transform on the
+			   popover crashed Chromium in the area filter's story. The close is
+			   the dismiss scroll, so there is no exit here. */
+			animation:
+				initial-snap 0.01s backwards,
+				sheet-rise var(--md-sys-motion-duration-medium4)
+				var(--md-sys-motion-easing-emphasized-decelerate);
 		}
 
 		/* Safari: re-run initial-snap animation each time display toggles */
@@ -170,13 +173,6 @@
 		@media (prefers-reduced-motion: no-preference) {
 			.scroll-area {
 				scroll-behavior: smooth;
-			}
-		}
-
-		@media (prefers-reduced-motion: reduce) {
-			.sheet-popover,
-			.sheet-popover::backdrop {
-				transition-duration: var(--_duration-reduced);
 			}
 		}
 	}

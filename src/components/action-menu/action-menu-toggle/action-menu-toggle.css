@@ -55,6 +55,17 @@
 			view-transition-name: action-menu-toggle;
 		}
 
+		/* Enter: the FAB grows from nothing when it first shows (a screen's
+		   launcher appears, or edit mode ends), on the same spatial spring as
+		   its sink. Only the entry: the arc hides and shows the FAB again in
+		   one task to lift it above the panel's scrim (action-menu.ts), which
+		   a transitioned exit would hold back for a frame. */
+		@starting-style {
+			.action-menu-toggle:popover-open {
+				scale: 0;
+			}
+		}
+
 		/* The 48 px touch target, also while the FAB is sunk and scaled down:
 		   the scale applies to it too, so it is divided back out. */
 		.action-menu-toggle::after {

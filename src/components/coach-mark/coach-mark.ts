@@ -1,6 +1,8 @@
 import { bindable, ILogger, resolve } from 'aurelia'
 
 const MAX_RETRY_MS = 5000
+/** The overlay's fade-out: `--md-sys-motion-spring-effects-duration` in coach-mark.css. */
+const EXIT_MS = 200
 const INITIAL_RETRY_MS = 100
 
 /**
@@ -29,6 +31,9 @@ export class CoachMark {
 
 	public visible = false
 
+	/** Takes the anchor off the target once the overlay has faded out. */
+	private exitTimer: ReturnType<typeof setTimeout> | null = null
+
 	private retryTimer: ReturnType<typeof setTimeout> | null = null
 	private currentTarget: HTMLElement | null = null
 
@@ -50,6 +55,7 @@ export class CoachMark {
 
 	public detaching(): void {
 		this.deactivate()
+		this.releaseAnchor()
 	}
 
 	public targetSelectorChanged(): void {
@@ -65,7 +71,7 @@ export class CoachMark {
 	 */
 	private findAndHighlight(elapsed = 0, attempt = 0): void {
 		this.cancelRetry()
-		this.clearAnchor()
+		this.releaseAnchor()
 		if (!this.targetSelector) return
 
 		const target = document.querySelector(this.targetSelector)
@@ -106,6 +112,16 @@ export class CoachMark {
 		this.cancelRetry()
 		document.removeEventListener('pointerdown', this.onOutsidePointerDown, true)
 		this.visible = false
+		// The spotlight and tip follow the anchor while they fade out; without
+		// it the spotlight loses its cut-out and the screen goes dark.
+		if (this.currentTarget) {
+			this.exitTimer ??= setTimeout(() => this.releaseAnchor(), EXIT_MS)
+		}
+	}
+
+	private releaseAnchor(): void {
+		if (this.exitTimer) clearTimeout(this.exitTimer)
+		this.exitTimer = null
 		this.clearAnchor()
 	}
 
