@@ -63,7 +63,9 @@
             <th scope="col">Start time</th>
             <th scope="col">Open time</th>
             <th scope="col">Listed venue</th>
-            <th scope="col">Resolved venue</th>
+            <th scope="col">Area</th>
+            <th scope="col">Time zone</th>
+            <th scope="col">Resolved place</th>
             <th scope="col">Source</th>
             <th scope="col">Discovered</th>
             <th scope="col">Actions</th>
@@ -75,11 +77,49 @@
             <td>${row.startTime}</td>
             <td>${row.openTime}</td>
             <td>${row.listedVenueName}</td>
+            <td class="[ approval-queue-venue-cell ] [ flow ]" data-field="area">
+              <span if.bind="row.adminArea" class="approval-queue-admin-area">${row.adminArea}</span>
+              <span else class="approval-queue-unresolved" data-state="unknown">${areaUnknown}</span>
+              <input
+                type="text"
+                class="approval-queue-venue-input"
+                value.bind="row.areaInput"
+                change.trigger="areaChanged(row)"
+                placeholder="US-CA, California, 東京都"
+                required.bind="!row.adminArea"
+                disabled.bind="row.busy"
+                aria-label="Area"
+              />
+              <small if.bind="row.areaState === 'notFound'" class="approval-queue-row-error" role="alert">
+                ${areaNotFound}
+              </small>
+            </td>
+            <td class="[ approval-queue-venue-cell ] [ flow ]" data-field="time-zone">
+              <span if.bind="row.timeZone">${row.timeZone}</span>
+              <span else class="approval-queue-unresolved" data-state="unknown">${timeZoneUnknown}</span>
+              <select
+                class="approval-queue-venue-input"
+                change.trigger="zoneChanged(row, $event.target.value)"
+                required.bind="!row.timeZone"
+                disabled.bind="row.busy"
+                aria-label="Time zone"
+              >
+                <option value="" selected.bind="row.zoneChoice === ''">—</option>
+                <option repeat.for="zone of row.zoneOptions" value.bind="zone.value" selected.bind="zone.value === row.zoneChoice">
+                  ${zone.label} (${zone.value})
+                </option>
+              </select>
+            </td>
             <td>
-              <span if.bind="row.hasResolvedVenue">
-                ${row.resolvedVenueName}
-                <small class="approval-queue-admin-area">${row.resolvedAdminArea}</small>
-              </span>
+              <a
+                if.bind="row.hasResolvedPlace"
+                href.bind="row.resolvedPlaceUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="[ approval-queue-source-link ] [ approval-queue-place-link ]"
+              >
+                Open in Google Maps
+              </a>
               <span else class="approval-queue-unresolved" data-state="unresolved">
                 Unresolved venue — review
               </span>
@@ -103,7 +143,7 @@
                   type="button"
                   class="approval-queue-btn"
                   data-variant="approve"
-                  disabled.bind="row.busy"
+                  disabled.bind="!row.approvable"
                   click.trigger="approve(group, series, row)"
                 >
                   Approve

@@ -3,7 +3,6 @@ import type {
 	ConcertCandidate,
 	DuplicateConflict,
 	ExistingEvent,
-	ResolvedVenue,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/admin/concert_candidate/v1/concert_candidate_service_pb.js'
 import {
 	ConcertCandidateService,
@@ -20,7 +19,6 @@ export type {
 	ConcertCandidate,
 	DuplicateConflict,
 	ExistingEvent,
-	ResolvedVenue,
 }
 export { Resolution }
 
@@ -68,16 +66,24 @@ export class ConcertCandidateClient {
 	 * event and `resolution` is `UNSPECIFIED` — returns a response carrying a
 	 * `conflict` without mutating state, so the caller can prompt the reviewer and
 	 * re-call with `KEEP_EXISTING` or `ADOPT_CANDIDATE`. Idempotent server-side.
+	 * `venue` carries the area text and the time zone the reviewer gave, each
+	 * only when given.
 	 */
 	public async approve(
 		concertCandidateId: string,
 		resolution: Resolution = Resolution.UNSPECIFIED,
+		venue: { adminArea?: string; timeZone?: string } = {},
 		signal?: AbortSignal,
 	): Promise<ApproveResponse> {
 		this.logger.info('Approving concert', { concertCandidateId, resolution })
 		try {
 			return await this.client.approve(
-				{ concertCandidateId: { value: concertCandidateId }, resolution },
+				{
+					concertCandidateId: { value: concertCandidateId },
+					resolution,
+					adminArea: venue.adminArea ? { value: venue.adminArea } : undefined,
+					timeZone: venue.timeZone ? { value: venue.timeZone } : undefined,
+				},
 				{ signal },
 			)
 		} catch (err) {

@@ -7,11 +7,35 @@ import type {
 // mocked.
 import { Resolution } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/admin/concert_candidate/v1/concert_candidate_service_pb.js'
 import { type Timestamp, timestampDate } from '@bufbuild/protobuf/wkt'
+import { Code } from '@connectrpc/connect'
 import { ILogger, resolve } from 'aurelia'
 import { sanitizeUrl } from '../../shared/utils/sanitize-url'
 import { EMPTY, formatDateValue } from '../lib/local-date'
+import { IAreaClient } from '../services/area-client'
 import { IConcertCandidateClient } from '../services/concert-candidate-client'
 import { toUserMessage } from '../services/error-message'
+
+/** Shown for a row whose concert has no admin area. */
+export const AREA_UNKNOWN = '地域不明'
+/** Shown for a row whose concert has no time zone. */
+export const TIME_ZONE_UNKNOWN = 'タイムゾーン不明'
+/** Shown when the area the reviewer entered stands for no Area. */
+export const AREA_NOT_FOUND = '地域が見つかりません'
+/** Shown when Approve refuses the area or the time zone. */
+export const VENUE_NOT_ACCEPTED =
+	'地域またはタイムゾーンが受け付けられませんでした'
+
+/** One entry of a row's time zone select. */
+export interface ZoneOption {
+	readonly value: string
+	readonly label: string
+}
+
+/**
+ * Where the reviewer's area input stands: empty, being resolved, resolved to a
+ * first-level Area, or standing for none.
+ */
+export type AreaInputState = 'empty' | 'resolving' | 'resolved' | 'notFound'
 
 /** Coarse lifecycle phase for the initial list fetch. */
 type LoadPhase = 'loading' | 'ready' | 'error'
@@ -33,11 +57,24 @@ export interface QueueRow {
 	readonly startTime: string
 	readonly openTime: string
 	readonly listedVenueName: string
-	readonly resolvedVenueName: string
-	readonly resolvedAdminArea: string
-	readonly hasResolvedVenue: boolean
+	/** The concert's admin area code; empty when it has none. */
+	readonly adminArea: string
+	/** The concert's IANA time zone; empty when it has none. */
+	readonly timeZone: string
+	/** Google Maps link to the resolved place; empty when there is none. */
+	readonly resolvedPlaceUrl: string
+	readonly hasResolvedPlace: boolean
 	readonly sourceUrl: string
 	readonly findTime: string
+	/** The area the reviewer entered: a code or a name. */
+	areaInput: string
+	areaState: AreaInputState
+	/** The time zones of the entered area's country, else the row's. */
+	zoneOptions: ZoneOption[]
+	/** The selected time zone; empty when none is selected. */
+	zoneChoice: string
+	/** Whether Approve may be pressed; recomputed on every change. */
+	approvable: boolean
 	busy: boolean
 	rejecting: boolean
 	rejectReason: string
@@ -123,9 +160,14 @@ function toConflictView(row: QueueRow, existing: ExistingEvent): ConflictView {
 	}
 }
 
+/** Google Maps link that opens a place by its place id. */
+function placeUrl(placeId: string): string {
+	return `https://www.google.com/maps/search/?api=1&query=Google&query_place_id=${encodeURIComponent(placeId)}`
+}
+
 function toRow(concert: ConcertCandidate): QueueRow {
-	const resolved = concert.resolvedVenue
-	return {
+	const placeId = concert.resolvedPlaceId?.value ?? ''
+	const row: QueueRow = {
 		concert,
 		concertCandidateId: concert.id?.value ?? '',
 		performerName: concert.performer?.name?.value ?? EMPTY,
@@ -134,23 +176,43 @@ function toRow(concert: ConcertCandidate): QueueRow {
 		startTime: formatStartTime(concert),
 		openTime: formatTimeOfDay(concert.openTime?.value),
 		listedVenueName: concert.listedVenueName?.value ?? EMPTY,
-		resolvedVenueName: resolved?.name?.value ?? EMPTY,
-		resolvedAdminArea: resolved?.adminArea?.value ?? EMPTY,
-		hasResolvedVenue: resolved !== undefined,
+		adminArea: concert.adminArea?.value ?? '',
+		timeZone: concert.timeZone?.value ?? '',
+		resolvedPlaceUrl: placeId ? placeUrl(placeId) : '',
+		hasResolvedPlace: placeId !== '',
 		sourceUrl: concert.sourceUrl?.value ?? '',
 		findTime: formatTimestamp(concert.findTime),
+		areaInput: '',
+		areaState: 'empty',
+		zoneOptions: [],
+		zoneChoice: '',
+		approvable: false,
 		busy: false,
 		rejecting: false,
 		rejectReason: '',
 		actionError: '',
 	}
+	refreshApprovable(row)
+	return row
+}
+
+/**
+ * Approve needs an area (the row's, or an entered one that resolved) and a
+ * time zone (the row's, or a selected one), and nothing in flight.
+ */
+function refreshApprovable(row: QueueRow): void {
+	const hasArea =
+		row.areaState === 'resolved' ||
+		(row.areaState === 'empty' && row.adminArea !== '')
+	const hasZone = row.timeZone !== '' || row.zoneChoice !== ''
+	row.approvable = !row.busy && hasArea && hasZone
 }
 
 /**
  * Groups a flat pending-concert list into Artist → Series. Uses
  * `performer.name` as the artist key and `title.value` as the series proxy
  * (no `series.id` exists on `ConcertCandidate` until approval). First-seen order
- * is preserved; `unresolvedCount` tracks rows lacking a resolved venue so the
+ * is preserved; `unresolvedCount` tracks rows lacking a resolved place so the
  * collapsed summary can surface triage priority.
  */
 function groupQueueByArtistAndSeries(
@@ -181,7 +243,7 @@ function groupQueueByArtistAndSeries(
 
 		const row = toRow(concert)
 		series.rows.push(row)
-		if (!row.hasResolvedVenue) series.unresolvedCount++
+		if (!row.hasResolvedPlace) series.unresolvedCount++
 	}
 
 	return groups
@@ -219,6 +281,7 @@ export class ApprovalQueueRoute {
 	} | null = null
 
 	private readonly client = resolve(IConcertCandidateClient)
+	private readonly areaClient = resolve(IAreaClient)
 	private readonly logger = resolve(ILogger).scopeTo('ApprovalQueueRoute')
 
 	/**
@@ -228,6 +291,10 @@ export class ApprovalQueueRoute {
 	 * the template binding `href.bind="sanitizeUrl(row.sourceUrl)"`.
 	 */
 	public readonly sanitizeUrl = sanitizeUrl
+
+	public readonly areaUnknown = AREA_UNKNOWN
+	public readonly timeZoneUnknown = TIME_ZONE_UNKNOWN
+	public readonly areaNotFound = AREA_NOT_FOUND
 
 	public async attached(): Promise<void> {
 		await this.load()
@@ -240,6 +307,11 @@ export class ApprovalQueueRoute {
 			const pending = await this.client.list()
 			this.groups = groupQueueByArtistAndSeries(pending)
 			this.phase = 'ready'
+			for (const group of this.groups) {
+				for (const series of group.series) {
+					for (const row of series.rows) void this.showRowZones(row)
+				}
+			}
 		} catch (err) {
 			this.loadError = toUserMessage(err, 'Failed to load the approval queue.')
 			this.phase = 'error'
@@ -252,13 +324,15 @@ export class ApprovalQueueRoute {
 		series: PendingSeriesGroup,
 		row: QueueRow,
 	): Promise<void> {
-		if (row.busy) return
+		if (row.busy || !row.approvable) return
 		row.busy = true
+		refreshApprovable(row)
 		row.actionError = ''
 		try {
 			const response = await this.client.approve(
 				row.concertCandidateId,
 				Resolution.UNSPECIFIED,
+				venueOf(row),
 			)
 			// A duplicate existing event was detected: the server mutated nothing and
 			// returned both records. Prompt the reviewer to reconcile instead of
@@ -268,6 +342,7 @@ export class ApprovalQueueRoute {
 				this.conflictView = toConflictView(row, response.conflict.existing)
 				this.conflictError = ''
 				row.busy = false
+				refreshApprovable(row)
 				// Optional-call guards the jsdom test environment, which does not
 				// implement HTMLDialogElement.showModal.
 				this.conflictDialog?.showModal?.()
@@ -275,8 +350,11 @@ export class ApprovalQueueRoute {
 			}
 			this.removeRow(group, series, row)
 		} catch (err) {
-			row.actionError = toUserMessage(err, 'Approval failed. Try again.')
+			row.actionError = toUserMessage(err, 'Approval failed. Try again.', {
+				[Code.InvalidArgument]: VENUE_NOT_ACCEPTED,
+			})
 			row.busy = false
+			refreshApprovable(row)
 			this.logger.error('Approve failed', {
 				concertCandidateId: row.concertCandidateId,
 				err,
@@ -310,7 +388,11 @@ export class ApprovalQueueRoute {
 		try {
 			// The second phase re-calls Approve with the chosen resolution; the
 			// server re-reads the concert candidate and is idempotent if it is already gone.
-			await this.client.approve(active.row.concertCandidateId, resolution)
+			await this.client.approve(
+				active.row.concertCandidateId,
+				resolution,
+				venueOf(active.row),
+			)
 			this.removeRow(active.group, active.series, active.row)
 			this.closeConflict()
 		} catch (err) {
@@ -333,6 +415,105 @@ export class ApprovalQueueRoute {
 		this.activeConflict = null
 		this.conflictView = null
 		this.conflictError = ''
+	}
+
+	/**
+	 * The reviewer changed a row's area input: resolve it through the admin
+	 * AreaService and list its country's time zones, or say it was not found.
+	 * An emptied input goes back to the row's own area.
+	 */
+	public async areaChanged(row: QueueRow): Promise<void> {
+		const text = row.areaInput.trim()
+		row.actionError = ''
+		if (text === '') {
+			row.areaState = 'empty'
+			await this.showRowZones(row)
+			return
+		}
+		row.areaState = 'resolving'
+		refreshApprovable(row)
+		try {
+			const area = await this.areaClient.resolve(text)
+			// A newer input replaced this one while it was resolving.
+			if (row.areaInput.trim() !== text) return
+			if (!area) {
+				row.areaState = 'notFound'
+				row.zoneOptions = []
+				row.zoneChoice = ''
+				refreshApprovable(row)
+				return
+			}
+			row.areaState = 'resolved'
+			await this.showZones(
+				row,
+				area.countryCode?.value ?? '',
+				area.code?.value ?? '',
+			)
+		} catch (err) {
+			row.areaState = 'empty'
+			row.actionError = toUserMessage(
+				err,
+				'Could not check the area. Try again.',
+			)
+			refreshApprovable(row)
+			this.logger.error('Area resolve failed', { text, err })
+		}
+	}
+
+	/**
+	 * The reviewer chose a time zone. Each option binds its own `selected`
+	 * instead of the select's value: a select bound to a value that its
+	 * options do not list yet shows nothing, and a two-way one writes that
+	 * empty value back, dropping the zone this screen preselected.
+	 */
+	public zoneChanged(row: QueueRow, zone: string): void {
+		row.zoneChoice = zone
+		refreshApprovable(row)
+	}
+
+	/** Lists the time zones of the row's own area's country, if it has one. */
+	private async showRowZones(row: QueueRow): Promise<void> {
+		if (row.adminArea === '') {
+			row.zoneOptions = []
+			row.zoneChoice = ''
+			refreshApprovable(row)
+			return
+		}
+		await this.showZones(row, row.adminArea.slice(0, 2), row.adminArea)
+	}
+
+	/**
+	 * Lists a country's time zones in the row's select. The area's own zone is
+	 * selected when it has one; otherwise a choice still in the list is kept,
+	 * else the row's zone when listed, else none.
+	 */
+	private async showZones(
+		row: QueueRow,
+		countryCode: string,
+		areaCode: string,
+	): Promise<void> {
+		try {
+			const country = await this.areaClient.listByCountry(countryCode)
+			row.zoneOptions = country.timeZones.map((z) => ({
+				value: z.timeZone?.value ?? '',
+				label: z.nameJa ?? z.nameEn,
+			}))
+			const listed = (zone: string) =>
+				zone !== '' && row.zoneOptions.some((o) => o.value === zone)
+			const own = country.areas.find((a) => a.code?.value === areaCode)
+				?.timeZone?.value
+			if (own && listed(own)) row.zoneChoice = own
+			else if (!listed(row.zoneChoice))
+				row.zoneChoice = listed(row.timeZone) ? row.timeZone : ''
+		} catch (err) {
+			row.zoneOptions = []
+			row.actionError = toUserMessage(
+				err,
+				'Could not load the time zones. Try again.',
+			)
+			this.logger.error('Time zone list failed', { countryCode, err })
+		}
+		refreshApprovable(row)
 	}
 
 	/** Opens the inline reject form for a row. */
@@ -382,7 +563,7 @@ export class ApprovalQueueRoute {
 		series: PendingSeriesGroup,
 		row: QueueRow,
 	): void {
-		if (!row.hasResolvedVenue) series.unresolvedCount--
+		if (!row.hasResolvedPlace) series.unresolvedCount--
 		const rowIdx = series.rows.indexOf(row)
 		if (rowIdx !== -1) series.rows.splice(rowIdx, 1)
 		// Drop the series heading once its last concert is gone...
@@ -395,5 +576,14 @@ export class ApprovalQueueRoute {
 			const gIdx = this.groups.indexOf(group)
 			if (gIdx !== -1) this.groups.splice(gIdx, 1)
 		}
+	}
+}
+
+/** The area text and time zone a row's Approve sends, each when given. */
+function venueOf(row: QueueRow): { adminArea?: string; timeZone?: string } {
+	const adminArea = row.areaInput.trim()
+	return {
+		adminArea: adminArea === '' ? undefined : adminArea,
+		timeZone: row.zoneChoice === '' ? undefined : row.zoneChoice,
 	}
 }
