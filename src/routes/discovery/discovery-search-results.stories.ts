@@ -4,6 +4,13 @@ import {
 	type StoryObj,
 } from '@aurelia/storybook'
 import { expect, fn, userEvent, within } from 'storybook/test'
+import {
+	finishMotion,
+	nextPaint,
+	pausableAnimations,
+	seekMotion,
+} from '../../../.storybook/motion'
+import { transitionsEnded } from '../../../.storybook/transitions-ended'
 import { BusyOnClickCustomAttribute } from '../../custom-attributes/busy-on-click'
 import { DiscoverySearchResults } from './discovery-search-results'
 
@@ -44,6 +51,23 @@ function render(search: Record<string, unknown>): Story['render'] {
 		})
 }
 
+/**
+ * Each result is an `<li role="button">`, as on the Discovery screen before this
+ * component existed; axe rejects the role on a list item, and then the list
+ * that holds buttons. Changing the markup changes what a screen reader
+ * announces, which that refactor must not do.
+ */
+const roleOnListItem = {
+	a11y: {
+		config: {
+			rules: [
+				{ id: 'aria-allowed-role', enabled: false },
+				{ id: 'aria-required-children', enabled: false },
+			],
+		},
+	},
+}
+
 /** A search in flight: the searching status. */
 export const Searching = {
 	render: render({ isSearching: true, searchQuery: 'YOA' }),
@@ -67,21 +91,7 @@ export const Results = {
 		searchQuery: 'Y',
 		searchResults: [artist('a1', 'Vaundy'), artist('a2', 'YOASOBI')],
 	}),
-	parameters: {
-		a11y: {
-			config: {
-				// Each result is an `<li role="button">`, as on the Discovery
-				// screen before this component existed; axe rejects the role on a
-				// list item. Changing the markup changes what a screen reader
-				// announces, which this refactor must not do. The list then holds
-				// buttons rather than list items, which axe also reports.
-				rules: [
-					{ id: 'aria-allowed-role', enabled: false },
-					{ id: 'aria-required-children', enabled: false },
-				],
-			},
-		},
-	},
+	parameters: roleOnListItem,
 	play: async ({ canvasElement }) => {
 		const rows = within(canvasElement).getAllByRole('button')
 		await expect(rows).toHaveLength(2)
@@ -95,6 +105,48 @@ export const Results = {
 		)
 		await expect(style.transitionProperty).toContain('opacity')
 		await expect(style.transitionProperty).toContain('display')
+	},
+} satisfies Story
+
+/**
+ * The results fade in when search starts and out when it ends. The route hides
+ * them outside search with `display: none` and `opacity: 0`; the story does
+ * the same and shows them again, and steps through the fade.
+ */
+export const FadesWithSearch = {
+	render: render({
+		searchQuery: 'Y',
+		searchResults: [artist('a1', 'Vaundy'), artist('a2', 'YOASOBI')],
+	}),
+	parameters: roleOnListItem,
+	play: async ({ canvasElement }) => {
+		const results = canvasElement.querySelector(
+			'.search-results',
+		) as HTMLElement
+		await transitionsEnded(results)
+		// Search ends: the results fade out, then leave rendering.
+		results.style.display = 'none'
+		results.style.opacity = '0'
+		await nextPaint()
+		await transitionsEnded(results)
+		await expect(getComputedStyle(results).display).toBe('none')
+		// Search starts: they fade in from nothing.
+		results.style.display = ''
+		results.style.opacity = ''
+		await nextPaint()
+		const fade = pausableAnimations(results).filter(
+			(a) => (a as CSSTransition).transitionProperty === 'opacity',
+		)
+		await expect(fade).toHaveLength(1)
+		const opacity = () => Number.parseFloat(getComputedStyle(results).opacity)
+		await seekMotion(fade, 0)
+		await expect(opacity()).toBeLessThan(0.2)
+		await seekMotion(fade, 0.5)
+		await expect(opacity()).toBeGreaterThan(0.2)
+		await expect(opacity()).toBeLessThan(1)
+		finishMotion(fade)
+		await transitionsEnded(results)
+		await expect(opacity()).toBe(1)
 	},
 } satisfies Story
 

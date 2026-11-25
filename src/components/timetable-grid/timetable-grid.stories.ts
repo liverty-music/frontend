@@ -1046,7 +1046,7 @@ const THREE_MONTHS: DateGroup[] = [
 function monthJumpStory(dateKey: string | null) {
 	return defineAureliaStory({
 		template: `
-			<div style="block-size: 560px; display: grid;">
+			<div style="block-size: min(560px, 100dvh); display: grid;">
 				<timetable-grid date-groups.bind="dateGroups" initial-anchor.bind="anchor" show-beams.bind="false" readonly.bind="true"></timetable-grid>
 			</div>
 		`,
