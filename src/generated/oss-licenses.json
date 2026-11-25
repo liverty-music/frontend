@@ -122,7 +122,7 @@
 		},
 		{
 			"name": "@buf/liverty-music_schema.bufbuild_es",
-			"version": "2.17.0-20261119060856-97ba652ab4e7.1",
+			"version": "2.17.0-20261124095917-40bdcaf649a6.1",
 			"license": "UNKNOWN",
 			"publisher": null,
 			"repository": null,
@@ -314,7 +314,7 @@
 		},
 		{
 			"name": "@posthog/browser-common",
-			"version": "0.12.0",
+			"version": "0.12.1",
 			"license": "MIT",
 			"publisher": null,
 			"repository": "https://github.com/PostHog/posthog-js",
@@ -322,7 +322,7 @@
 		},
 		{
 			"name": "@posthog/core",
-			"version": "1.68.0",
+			"version": "1.69.2",
 			"license": "MIT",
 			"publisher": null,
 			"repository": "https://github.com/PostHog/posthog-js",
@@ -330,7 +330,7 @@
 		},
 		{
 			"name": "@posthog/types",
-			"version": "1.425.1",
+			"version": "1.427.0",
 			"license": "MIT",
 			"publisher": null,
 			"repository": "https://github.com/PostHog/posthog-js",
@@ -618,7 +618,7 @@
 		},
 		{
 			"name": "posthog-js",
-			"version": "1.450.0",
+			"version": "1.453.0",
 			"license": "(Apache-2.0 AND MIT)",
 			"publisher": "engineering@posthog.com",
 			"repository": "https://github.com/PostHog/posthog-js",
