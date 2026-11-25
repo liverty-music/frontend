@@ -1140,11 +1140,13 @@ jobs:
     # always() is required because the needed jobs are
     # skipped on workflow_dispatch and a skipped dependency would otherwise
     # skip this job. On a release, smoke only when the pin was dispatched
-    # (a failed retag dispatches nothing, so nothing new would be served).
+    # (a failed retag dispatches nothing, so nothing new would be served). A
+    # pre-release moves only the candidate pin (the preview address), so the
+    # production URLs below keep serving the old release and would never match.
     if: |
       always() && (
         github.event_name == 'workflow_dispatch' ||
-        (github.event_name == 'release' && needs.dispatch-prod-pin.result == 'success')
+        (github.event_name == 'release' && !github.event.release.prerelease && needs.dispatch-prod-pin.result == 'success')
       )
     runs-on: ubuntu-latest
     timeout-minutes: 30
