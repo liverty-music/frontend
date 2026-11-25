@@ -75,6 +75,8 @@ export interface QueueRow {
 	zoneChoice: string
 	/** Whether Approve may be pressed; recomputed on every change. */
 	approvable: boolean
+	/** Bumped by every area change; an answer for an older one is dropped. */
+	areaSeq: number
 	busy: boolean
 	rejecting: boolean
 	rejectReason: string
@@ -187,6 +189,7 @@ function toRow(concert: ConcertCandidate): QueueRow {
 		zoneOptions: [],
 		zoneChoice: '',
 		approvable: false,
+		areaSeq: 0,
 		busy: false,
 		rejecting: false,
 		rejectReason: '',
@@ -204,7 +207,10 @@ function refreshApprovable(row: QueueRow): void {
 	const hasArea =
 		row.areaState === 'resolved' ||
 		(row.areaState === 'empty' && row.adminArea !== '')
-	const hasZone = row.timeZone !== '' || row.zoneChoice !== ''
+	// An entered area may be in another country than the row's zone, so it
+	// needs a zone chosen from its own country's list.
+	const hasZone =
+		row.zoneChoice !== '' || (row.areaState === 'empty' && row.timeZone !== '')
 	row.approvable = !row.busy && hasArea && hasZone
 }
 
@@ -424,10 +430,11 @@ export class ApprovalQueueRoute {
 	 */
 	public async areaChanged(row: QueueRow): Promise<void> {
 		const text = row.areaInput.trim()
+		const seq = ++row.areaSeq
 		row.actionError = ''
 		if (text === '') {
 			row.areaState = 'empty'
-			await this.showRowZones(row)
+			await this.showRowZones(row, seq)
 			return
 		}
 		row.areaState = 'resolving'
@@ -435,7 +442,7 @@ export class ApprovalQueueRoute {
 		try {
 			const area = await this.areaClient.resolve(text)
 			// A newer input replaced this one while it was resolving.
-			if (row.areaInput.trim() !== text) return
+			if (seq !== row.areaSeq) return
 			if (!area) {
 				row.areaState = 'notFound'
 				row.zoneOptions = []
@@ -448,8 +455,10 @@ export class ApprovalQueueRoute {
 				row,
 				area.countryCode?.value ?? '',
 				area.code?.value ?? '',
+				seq,
 			)
 		} catch (err) {
+			if (seq !== row.areaSeq) return
 			row.areaState = 'empty'
 			row.actionError = toUserMessage(
 				err,
@@ -472,14 +481,14 @@ export class ApprovalQueueRoute {
 	}
 
 	/** Lists the time zones of the row's own area's country, if it has one. */
-	private async showRowZones(row: QueueRow): Promise<void> {
+	private async showRowZones(row: QueueRow, seq = row.areaSeq): Promise<void> {
 		if (row.adminArea === '') {
 			row.zoneOptions = []
 			row.zoneChoice = ''
 			refreshApprovable(row)
 			return
 		}
-		await this.showZones(row, row.adminArea.slice(0, 2), row.adminArea)
+		await this.showZones(row, row.adminArea.slice(0, 2), row.adminArea, seq)
 	}
 
 	/**
@@ -491,9 +500,12 @@ export class ApprovalQueueRoute {
 		row: QueueRow,
 		countryCode: string,
 		areaCode: string,
+		seq: number,
 	): Promise<void> {
 		try {
 			const country = await this.areaClient.listByCountry(countryCode)
+			// A newer area replaced this one while its zones were read.
+			if (seq !== row.areaSeq) return
 			row.zoneOptions = country.timeZones.map((z) => ({
 				value: z.timeZone?.value ?? '',
 				label: z.nameJa ?? z.nameEn,
@@ -506,6 +518,7 @@ export class ApprovalQueueRoute {
 			else if (!listed(row.zoneChoice))
 				row.zoneChoice = listed(row.timeZone) ? row.timeZone : ''
 		} catch (err) {
+			if (seq !== row.areaSeq) return
 			row.zoneOptions = []
 			row.actionError = toUserMessage(
 				err,

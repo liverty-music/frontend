@@ -88,6 +88,12 @@
           search.bind="search"
           error.bind="error(errors.rows[$index].venueName === 'concertEditor.error.venueNotPicked' ? errors.rows[$index].venueName : '', submitted)"
         ></venue-field>
+        <div else class="fixed-venue">
+          <span class="[ label ] [ md-typescale-label-large ]">${'concertEditor.venue' & t}</span>
+          <span>${row.venue ? row.venue.name : ''}</span>
+          <p if.bind="error(errors.rows[$index].venueName, submitted)" class="[ error ] [ md-typescale-body-small ]"><console-icon name="error"></console-icon><span>${error(errors.rows[$index].venueName, submitted) & t}</span></p>
+        </div>
+        <!-- After the fixed venue, so that block's else stays paired with the venue field's if. -->
         <venue-confirm
           if.bind="row.publishState === PublishState.DRAFT && row.venue"
           pick.bind="row.venue"
@@ -96,11 +102,6 @@
           area-error.bind="error(errors.rows[$index].venueArea, submitted)"
           zone-error.bind="error(errors.rows[$index].venueTimeZone, submitted)"
         ></venue-confirm>
-        <div else class="fixed-venue">
-          <span class="[ label ] [ md-typescale-label-large ]">${'concertEditor.venue' & t}</span>
-          <span>${row.venue ? row.venue.name : ''}</span>
-          <p if.bind="error(errors.rows[$index].venueName, submitted)" class="[ error ] [ md-typescale-body-small ]"><console-icon name="error"></console-icon><span>${error(errors.rows[$index].venueName, submitted) & t}</span></p>
-        </div>
 
         <div class="row">
           <console-field

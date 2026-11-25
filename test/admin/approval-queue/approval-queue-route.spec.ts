@@ -1031,5 +1031,48 @@ describe('ApprovalQueueRoute', () => {
 				'地域またはタイムゾーンが受け付けられませんでした',
 			)
 		})
+
+		it("needs a zone of the entered area's country even when the row has a zone of its own", async () => {
+			const { vm, row } = await firstRow(resolvedConcert())
+			expect(row.approvable).toBe(true)
+
+			await enterArea(vm, row, 'Texas')
+
+			// Asia/Tokyo is not a US zone: the select empties and Approve waits for a choice.
+			expect(row.zoneChoice).toBe('')
+			expect(row.approvable).toBe(false)
+			vm.zoneChanged(row, 'America/Chicago')
+			expect(row.approvable).toBe(true)
+		})
+
+		it('drops the zones of an area replaced while they were read', async () => {
+			let releaseUs: (v: unknown) => void = () => {}
+			const areaClient = createMockAreaClient()
+			areaClient.listByCountry.mockImplementation(async (code: string) =>
+				code === 'US'
+					? new Promise((resolve) => {
+							releaseUs = () => resolve(countries.US)
+						})
+					: countries[code],
+			)
+			const fixture = await build(
+				createMockClient({ list: vi.fn().mockResolvedValue([unknownVenue()]) }),
+				areaClient,
+			)
+			const vm = routeOf(fixture)
+			const row = vm.groups[0].series[0].rows[0]
+
+			row.areaInput = 'Texas'
+			const slow = vm.areaChanged(row)
+			await vi.waitFor(() =>
+				expect(areaClient.listByCountry).toHaveBeenCalledWith('US'),
+			)
+			await enterArea(vm, row, '東京都')
+			releaseUs(undefined)
+			await slow
+
+			expect(row.zoneOptions.map((o) => o.value)).toEqual(['Asia/Tokyo'])
+			expect(row.zoneChoice).toBe('Asia/Tokyo')
+		})
 	})
 })

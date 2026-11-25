@@ -339,9 +339,12 @@ export function toSeriesDraftInput(model: ConcertFormModel): SeriesDraftInput {
 		const open = composeInstant(date, row.openTime)
 		return {
 			...(row.eventId ? { eventId: row.eventId } : {}),
-			// The name the member confirmed; a fixed (published) date resends
-			// the listed name it was loaded with.
-			venueName: row.place?.name || row.venue?.name || '',
+			// A fixed (published or cancelled) date resends the listed name it
+			// was loaded with, which Update compares to keep its venue; a new
+			// or draft date sends the name the member confirmed.
+			venueName: hasFixedVenueAndDate(row)
+				? (row.venue?.name ?? '')
+				: row.place?.name || row.venue?.name || '',
 			...(row.venue?.placeId ? { placeId: row.venue.placeId } : {}),
 			// A new Venue is created from what the member confirmed; the
 			// server ignores both for a place a Venue already holds.

@@ -39,6 +39,7 @@ function validModel(): ConcertFormModel {
 					placeId: 'ChIJ-zepp-tokyo',
 					kind: 'venue',
 					name: 'Zepp Tokyo',
+					countryCode: 'JP',
 					adminArea: 'JP-13',
 					timeZone: 'Asia/Tokyo',
 				},
@@ -79,6 +80,7 @@ describe('a new concert and an added date (design D19)', () => {
 				placeId: 'ChIJ-haneda',
 				kind: 'venue' as const,
 				name: 'Zepp Haneda (TOKYO)',
+				countryCode: 'JP',
 				adminArea: 'JP-13',
 				timeZone: 'Asia/Tokyo',
 			},
@@ -374,6 +376,7 @@ describe('the venue of a new or draft date', () => {
 		placeId: 'ChIJ-zepp-tokyo',
 		kind: 'draft' as const,
 		name: 'Zepp Haneda',
+		countryCode: 'JP',
 		adminArea: 'JP-14',
 		timeZone: 'Asia/Tokyo',
 	}
@@ -427,5 +430,23 @@ describe('the venue of a new or draft date', () => {
 		expect(errors.rows[0].venueName).toBe(
 			'concertEditor.error.venueNotConfirmed',
 		)
+	})
+
+	it("resends the listed name of a published date, not its Venue's name", () => {
+		const model = validModel()
+		model.events[0].publishState = PublishState.PUBLISHED
+		model.events[0].venue = {
+			placeId: 'ChIJ-zepp-tokyo',
+			name: 'Zepp Haneda',
+			address: '',
+		}
+		model.events[0].place = {
+			...NEW_PLACE,
+			kind: 'venue',
+			name: 'Zepp Haneda (TOKYO)',
+		}
+		const input = toSeriesDraftInput(model)
+		expect(input.events[0].venueName).toBe('Zepp Haneda')
+		expect(input.events[0].adminArea).toBeUndefined()
 	})
 })

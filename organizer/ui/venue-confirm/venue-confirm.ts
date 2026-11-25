@@ -178,6 +178,7 @@ export class VenueConfirm {
 						placeId: pick.placeId,
 						kind: 'venue',
 						name: place.name,
+						countryCode: place.adminArea.slice(0, 2),
 						adminArea: place.adminArea,
 						timeZone: place.timeZone,
 					},
@@ -223,7 +224,7 @@ export class VenueConfirm {
 		this.name = known.name
 		this.area = known.adminArea
 		this.zone = known.timeZone
-		this.countryCode = known.adminArea.slice(0, 2)
+		this.countryCode = known.countryCode || known.adminArea.slice(0, 2)
 		if (known.kind === 'draft') await this.readCountries(generation)
 		if (this.countryCode) await this.readCountry(this.countryCode, generation)
 		if (generation !== this.generation) return
@@ -256,6 +257,7 @@ export class VenueConfirm {
 					placeId,
 					kind: this.kind,
 					name: this.name.trim(),
+					countryCode: this.countryCode,
 					adminArea: this.area,
 					timeZone: this.zone,
 				}

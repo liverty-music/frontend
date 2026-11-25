@@ -113,7 +113,10 @@ function draft(
 	}
 }
 
-async function mount(resolvePlace: () => Promise<ResolvedPlace>) {
+async function mount(
+	resolvePlace: () => Promise<ResolvedPlace>,
+	place: VenueConfirmation | null = null,
+) {
 	const venues = {
 		resolvePlace: vi.fn(resolvePlace),
 		listCountries: vi.fn(async () => [
@@ -138,7 +141,7 @@ async function mount(resolvePlace: () => Promise<ResolvedPlace>) {
 	}
 	const host = {
 		pick: PICK as VenuePick | null,
-		place: null as VenueConfirmation | null,
+		place,
 	}
 	const fixture = createFixture(
 		'<venue-confirm pick.bind="pick" confirmation.bind="place"></venue-confirm>',
@@ -196,6 +199,7 @@ describe('venue confirmation', () => {
 			placeId: 'ChIJ-pick',
 			kind: 'draft',
 			name: 'Zepp Haneda (TOKYO)',
+			countryCode: 'JP',
 			adminArea: 'JP-13',
 			timeZone: 'Asia/Tokyo',
 		})
@@ -249,6 +253,7 @@ describe('venue confirmation', () => {
 			placeId: 'ChIJ-pick',
 			kind: 'draft',
 			name: 'Zepp Haneda',
+			countryCode: 'JP',
 			adminArea: 'JP-14',
 			timeZone: 'Asia/Tokyo',
 		})
@@ -300,6 +305,22 @@ describe('venue confirmation', () => {
 		m.vm.areaChanged('US-CA')
 
 		expect(m.host.place?.timeZone).toBe('America/Los_Angeles')
+	})
+
+	it('shows a copied draft whose area is not chosen yet in its own country', async () => {
+		const m = await mount(async () => draft())
+		await m.vm.countryChanged('US')
+		const copied = m.host.place
+		expect(copied).toMatchObject({ countryCode: 'US', adminArea: '' })
+
+		// 公演日を追加 copies the confirmation into the next date's field.
+		const next = await mount(async () => {
+			throw new Error('a copied confirmation is not read again')
+		}, copied)
+
+		expect(next.vm.phase).toBe('ready')
+		expect(select(next.el, '国')?.value).toBe('US')
+		expect(optionTexts(select(next.el, '地域'))).toContain('テキサス州')
 	})
 
 	it(`@spec ${SPEC} "Place already a Venue"`, async () => {

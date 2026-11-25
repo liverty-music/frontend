@@ -300,6 +300,7 @@ export class ConcertEditorRoute {
 								placeId,
 								kind: 'venue' as const,
 								name: e.venue?.name?.value ?? '',
+								countryCode: (e.venue?.adminArea?.value ?? '').slice(0, 2),
 								adminArea: e.venue?.adminArea?.value ?? '',
 								timeZone: e.venue?.timeZone?.value ?? '',
 							}

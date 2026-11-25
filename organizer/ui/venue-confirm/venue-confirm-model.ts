@@ -15,6 +15,8 @@ export interface VenueConfirmation {
 	readonly placeId: string
 	readonly kind: 'venue' | 'draft'
 	readonly name: string
+	/** The country the area is chosen from; '' only before it is known. */
+	readonly countryCode: string
 	/** The first-level Area code; '' when none is chosen. */
 	readonly adminArea: string
 	/** The IANA time zone; '' when none is chosen. */

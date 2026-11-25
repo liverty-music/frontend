@@ -333,6 +333,15 @@ describe('concert editor', () => {
 	})
 
 	describe('venue search', () => {
+		it('shows a draft date without a pick only the venue search', async () => {
+			const m = await mount()
+			const first = row(m, 0)
+			expect(first.querySelector('venue-field')).not.toBeNull()
+			expect(first.querySelector('venue-confirm')).toBeNull()
+			expect(first.querySelector('.fixed-venue')).toBeNull()
+			await m.fixture.tearDown()
+		})
+
 		it(`@spec ${SPEC} "Pick a venue"`, async () => {
 			const m = await mount()
 			const first = row(m, 0)
