@@ -184,7 +184,10 @@ async function expectMotion(canvasElement: HTMLElement, confetti: boolean) {
 	if (!headline) throw new Error('no headline')
 	const pieces = canvasElement.querySelectorAll('.confetti')
 	if (reduced) {
-		await expect(getComputedStyle(headline).animationName).toBe('none')
+		// The headline fades in without scaling; no confetti.
+		await expect(getComputedStyle(headline).animationName).toBe(
+			'celebration-fade',
+		)
 		await expect(pieces).toHaveLength(0)
 	} else {
 		await expect(getComputedStyle(headline).animationName).toBe(
@@ -205,9 +208,10 @@ export const PostSignupOverEmptyState = {
 		const style = getComputedStyle(overlay)
 		await expect(style.backdropFilter).toContain('blur')
 		// The scrim fades in with its text, in step with its fade-out; with
-		// motion reduced it has no transition at all.
+		// motion reduced the fade is 100 ms.
 		if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
-			await expect(style.transitionProperty).toBe('none')
+			await expect(style.transitionProperty).toBe('opacity')
+			await expect(style.transitionDuration).toBe('0.1s')
 		} else {
 			await expect(style.transitionProperty).toBe('opacity')
 			await expect(style.transitionDuration).toBe('0.4s')

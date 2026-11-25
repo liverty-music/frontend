@@ -1,0 +1,21 @@
+/* The celebration lines' reduced-motion fade, in a block of its own because
+   celebration-message.css is at its line limit. */
+@layer block {
+	@scope (celebration-message) {
+		/* Reduced motion: the lines fade in without scaling or rising. */
+		@keyframes celebration-fade {
+			from {
+				opacity: 0;
+			}
+		}
+
+		@media (prefers-reduced-motion: reduce) {
+			.celebration-text,
+			.celebration-sub-text,
+			.celebration-hint {
+				animation: celebration-fade var(--md-sys-motion-duration-reduced-fade)
+					linear both;
+			}
+		}
+	}
+}

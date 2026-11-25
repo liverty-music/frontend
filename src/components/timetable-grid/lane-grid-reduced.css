@@ -1,0 +1,23 @@
+/* Under reduced motion the cards are not dealt in (no flying, turning or
+   delay); each fades in as it enters the view (M3: subtle fades instead of
+   sliding). The fade follows the scroll, so it needs no trigger from the date
+   row, which is not set up under reduced motion; where a browser has no view
+   timelines the card has no animation length and is simply shown. A block of
+   its own because lane-grid.css is at its line limit. */
+@layer block {
+	@scope (.lane-grid) {
+		@media (prefers-reduced-motion: reduce) {
+			.lane > concert-card {
+				animation: card-fade linear both;
+				animation-timeline: view();
+				animation-range: entry 0% entry 40%;
+			}
+		}
+
+		@keyframes card-fade {
+			from {
+				opacity: 0;
+			}
+		}
+	}
+}

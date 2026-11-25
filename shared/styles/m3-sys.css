@@ -23,6 +23,7 @@
 	@font-face {
 		font-family: "Local Noto Sans JP";
 		font-weight: 100 900;
+
 		src: local("Noto Sans JP"), local("Noto Sans CJK JP Regular");
 	}
 
@@ -224,12 +225,16 @@
 		--md-sys-motion-spring-effects-duration: 200ms;
 		--md-sys-motion-spring-effects-fast: cubic-bezier(0.31, 0.94, 0.34, 1);
 		--md-sys-motion-spring-effects-fast-duration: 150ms;
+
+		/* The fade that stands in for a movement under reduced motion; unlike
+		   the duration tokens it is not collapsed there. */
+		--md-sys-motion-duration-reduced-fade: 100ms;
 	}
 
 	/* Japanese takes the medium language height (Material 3 "Language height
 	   support"): its characters fill the full height of the line, so the small
 	   (Latin) value above would set them against the line above and below.
-	   The values are the `md.ref.typeface.<style>.line-height` tokens for the
+	   The values are the `md.ref.typeface.\3c style>.line-height` tokens for the
 	   Medium language height. The document's language decides, as the app sets
 	   `lang` on <html> from the UI language, so every component that reads a
 	   line-height token follows it with no rule of its own. */
@@ -251,8 +256,13 @@
 		--md-sys-typescale-label-small-line-height: 1.125rem;
 	}
 
-	/* Reduced motion: every duration collapses to 0 ms, so a transition built
-	   from these tokens lands its end state at once. */
+	/* Reduced motion: every duration that drives movement collapses to 0 ms, so
+	   a transition built from these tokens lands its end state at once. The
+	   effects springs drive opacity and colour only, never movement, so they
+	   keep a fade of 100 ms (M3: "subtle fades instead of intense sliding"). A
+	   surface that fades while it would otherwise move sets its own fade from
+	   `--md-sys-motion-duration-reduced-fade`, which reduced motion leaves
+	   alone. */
 	@media (prefers-reduced-motion: reduce) {
 		:root {
 			--md-sys-motion-duration-short1: 0ms;
@@ -274,8 +284,8 @@
 			--md-sys-motion-spring-spatial-duration: 0ms;
 			--md-sys-motion-spring-spatial-fast-duration: 0ms;
 			--md-sys-motion-spring-spatial-slow-duration: 0ms;
-			--md-sys-motion-spring-effects-duration: 0ms;
-			--md-sys-motion-spring-effects-fast-duration: 0ms;
+			--md-sys-motion-spring-effects-duration: 100ms;
+			--md-sys-motion-spring-effects-fast-duration: 100ms;
 		}
 	}
 }

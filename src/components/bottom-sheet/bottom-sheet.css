@@ -111,6 +111,14 @@
 			}
 		}
 
+		/* Reduced motion: the sheet fades in where it would rise (M3: subtle
+		   fades instead of sliding). The duration tokens are 0 ms there. */
+		@keyframes sheet-fade {
+			from {
+				opacity: 0;
+			}
+		}
+
 		@keyframes initial-snap {
 			from,
 			to {
@@ -173,6 +181,18 @@
 		@media (prefers-reduced-motion: no-preference) {
 			.scroll-area {
 				scroll-behavior: smooth;
+			}
+		}
+
+		@media (prefers-reduced-motion: reduce) {
+			.scroll-area {
+				animation:
+					initial-snap 0.01s backwards,
+					sheet-fade var(--md-sys-motion-duration-reduced-fade) linear;
+			}
+
+			.sheet-popover::backdrop {
+				transition-duration: var(--md-sys-motion-duration-reduced-fade);
 			}
 		}
 	}

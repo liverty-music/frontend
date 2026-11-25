@@ -29,7 +29,7 @@
 			backdrop-filter: blur(var(--_scrim-blur));
 
 			/* The scrim fades in and out with its text (M3 transitions, enter
-			   and exit), 0 ms under reduced motion. */
+			   and exit). */
 			transition: opacity var(--md-sys-motion-duration-medium4)
 				var(--md-sys-motion-easing-standard);
 
@@ -48,9 +48,10 @@
 			}
 		}
 
+		/* Reduced motion: a short fade, not the 400 ms one. */
 		@media (prefers-reduced-motion: reduce) {
 			.celebration-overlay {
-				transition: none;
+				transition-duration: var(--md-sys-motion-duration-reduced-fade);
 			}
 		}
 	}

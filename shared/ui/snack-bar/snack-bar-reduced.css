@@ -1,0 +1,26 @@
+/* The snack's reduced-motion fade, in a block of its own because snack-bar.css
+   is at its line limit. An app that renders the bar in a shadow root imports
+   it with the other two. */
+@layer block {
+	@scope (snack-bar) {
+		/* Reduced motion: the snack fades in and out without moving (M3: subtle
+		   fades instead of sliding). */
+		@media (prefers-reduced-motion: reduce) {
+			.snack-item {
+				transform: none;
+				transition:
+					opacity var(--md-sys-motion-duration-reduced-fade) linear,
+					display var(--md-sys-motion-duration-reduced-fade) allow-discrete,
+					overlay var(--md-sys-motion-duration-reduced-fade) allow-discrete;
+			}
+
+			.snack-item:popover-open {
+				transform: none;
+
+				@starting-style {
+					transform: none;
+				}
+			}
+		}
+	}
+}

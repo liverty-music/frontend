@@ -46,9 +46,8 @@
 
 			opacity: 0;
 
-			/* The art fades in over the flat cover once it is drawn (100 ms under
-			   reduced motion, written out because the duration tokens are 0 ms
-			   then). */
+			/* The art fades in over the flat cover once it is drawn (the reduced
+			   fade under reduced motion, since the duration tokens are 0 ms then). */
 			transition: opacity var(--md-sys-motion-duration-medium1)
 				var(--md-sys-motion-easing-standard-decelerate);
 		}
@@ -67,7 +66,7 @@
 
 		@media (prefers-reduced-motion: reduce) {
 			.ticket-front-canvas {
-				transition-duration: 100ms;
+				transition-duration: var(--md-sys-motion-duration-reduced-fade);
 			}
 		}
 	}

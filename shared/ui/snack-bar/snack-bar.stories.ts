@@ -251,10 +251,14 @@ export const UpdateAction = {
 			// @spec components/infrastructure/fan/web/global/snack-bar "Reduced motion preference"
 			const snackItem = canvasElement.querySelector('.snack-item')
 			if (!snackItem) throw new Error('no snack')
+			// A fade of at most 100 ms, and no movement.
+			const snackStyle = getComputedStyle(snackItem)
+			await expect(snackStyle.transitionProperty).toContain('opacity')
+			await expect(snackStyle.transitionProperty).not.toContain('transform')
 			await expect(
-				getComputedStyle(snackItem)
-					.transitionDuration.split(',')
-					.every((d) => Number.parseFloat(d) === 0),
+				snackStyle.transitionDuration
+					.split(',')
+					.every((d) => Number.parseFloat(d) <= 0.1),
 			).toBe(true)
 			// @spec components/infrastructure/fan/web/global/snack-bar "Animation is suppressed under reduced motion"
 			await expect(style.animationName).toBe('none')
@@ -390,7 +394,17 @@ export const ExitMotion = {
 
 		if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
 			// @spec components/infrastructure/fan/web/global/snack-bar "Reduced motion preference"
-			await expect(exit).toHaveLength(0)
+			// It fades out over at most 100 ms and does not move.
+			const properties = exit.map(
+				(a) => (a as CSSTransition).transitionProperty,
+			)
+			await expect(properties).toContain('opacity')
+			await expect(properties).not.toContain('transform')
+			for (const a of exit) {
+				await expect(
+					Number(a.effect?.getTiming().duration),
+				).toBeLessThanOrEqual(100)
+			}
 			await waitFor(() => expect(item.isConnected).toBe(false))
 			return
 		}
@@ -451,7 +465,11 @@ export const SwipePastHalf = {
 			await expect(leftmost).toBeLessThan(before.left - before.width / 2)
 		} else {
 			// @spec components/infrastructure/fan/web/global/snack-bar "Swipe under reduced motion"
-			await expect(item.getAnimations()).toHaveLength(0)
+			await expect(
+				item
+					.getAnimations()
+					.map((a) => (a as CSSTransition).transitionProperty),
+			).not.toContain('transform')
 		}
 		await waitFor(() => expect(item.isConnected).toBe(false), {
 			timeout: 3000,

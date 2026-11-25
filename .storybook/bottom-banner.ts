@@ -144,8 +144,11 @@ export async function expectBannerMotion(
 ): Promise<void> {
 	const surfaceStyle = getComputedStyle(surface)
 	if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+		// No cue and no slide: a fade of 100 ms.
 		await expect(surfaceStyle.animationName).toBe('none')
-		await expect(surface.getAnimations({ subtree: true })).toHaveLength(0)
+		await expect(surfaceStyle.transitionProperty).not.toContain('transform')
+		await expect(surfaceStyle.transitionProperty).toContain('opacity')
+		await expect(surfaceStyle.transitionDuration.split(', ')[0]).toBe('0.1s')
 		return
 	}
 	// The banner slides in with a transition on `transform` and `opacity`

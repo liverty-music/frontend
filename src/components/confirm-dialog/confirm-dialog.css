@@ -13,7 +13,8 @@
 			/* Fades in on open and out on close. `display` and `overlay` change
 			   at the end of the fade-out (`allow-discrete`), so the closing
 			   dialog stays in the top layer, above the page, until it is fully
-			   transparent. The duration token is 0 ms under reduced motion. */
+			   transparent. Under reduced motion the fade is 100 ms, from its own
+			   token, since the duration tokens are 0 ms there. */
 			opacity: 0;
 			background: var(--md-sys-color-surface-container);
 
@@ -63,6 +64,13 @@
 
 		.confirm-dialog-actions {
 			justify-content: flex-end;
+		}
+
+		@media (prefers-reduced-motion: reduce) {
+			.confirm-dialog,
+			.confirm-dialog::backdrop {
+				transition-duration: var(--md-sys-motion-duration-reduced-fade);
+			}
 		}
 	}
 }

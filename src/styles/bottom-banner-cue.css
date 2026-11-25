@@ -1,4 +1,4 @@
-/* The light that runs along the shared bottom banner's brand line and then
+/* The banner's motion extras: the reduced-motion fade, and the light that runs along the shared bottom banner's brand line and then
    across its action (see the `motion` note in bottom-banner.css). It is a
    block of its own because the banner's block would pass the line limit. */
 
@@ -19,6 +19,27 @@
 
 @layer block {
 	@scope (.bottom-banner) {
+		/* Reduced motion: the banner fades in and out without sliding (M3:
+		   subtle fades instead of sliding). */
+		@media (prefers-reduced-motion: reduce) {
+			:scope {
+				transition:
+					opacity var(--md-sys-motion-duration-reduced-fade) linear,
+					display var(--md-sys-motion-duration-reduced-fade) allow-discrete;
+			}
+
+			:scope[hidden] {
+				transform: none;
+				transition-duration: var(--md-sys-motion-duration-reduced-fade);
+			}
+
+			@starting-style {
+				:scope:not([hidden]) {
+					transform: none;
+				}
+			}
+		}
+
 		@media (prefers-reduced-motion: no-preference) {
 			/* The cue only paints a moving background over its own box, so
 			   nothing moves or resizes: the banner's ::before on the line, and a

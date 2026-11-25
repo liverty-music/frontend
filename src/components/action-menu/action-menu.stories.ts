@@ -330,8 +330,10 @@ export const MotionFollowsSystemPreference = {
 		})
 		if (reduce) {
 			// @spec components/infrastructure/fan/web/global/action-menu "Reduced motion lands the end state without bounce"
+			// No travel and no stagger: at most the 100 ms fade of the
+			// effects spring.
 			for (const t of timing) {
-				await expect(t.duration).toBeLessThanOrEqual(0.001)
+				await expect(t.duration).toBeLessThanOrEqual(0.1)
 				await expect(t.delay).toBe(0)
 			}
 			await expect(bars).toEqual(['none', 'none', 'none'])
