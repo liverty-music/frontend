@@ -83,8 +83,7 @@
 		/* stylelint-disable-next-line media-feature-name-disallowed-list -- viewport width needed alongside height to isolate SE-class devices (375px) from wider phones; container queries cannot combine with @media height */
 		@media (height <= 700px) and (width < 390px) {
 			/* Symmetric 8px whitespace: the room above the search bar matches
-			   the genre bar's top padding below (discovery-genre-bar.css), and
-			   the bar is shorter (discovery-search-bar.css). */
+			   the genre bar's top padding below (discovery-genre-bar.css). */
 			.discovery-layout {
 				--_search-gap: var(--space-2xs);
 			}

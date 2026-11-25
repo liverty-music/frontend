@@ -40,6 +40,10 @@ export const Empty = {
 		const canvas = within(canvasElement)
 		await expect(canvas.getByRole('textbox')).toBeVisible()
 		await expect(canvas.queryByRole('button')).toBeNull()
+		// @spec components/infrastructure/fan/web/route/discovery "The search bar is 56 px tall"
+		// The M3 search bar's height on a 320 px phone too.
+		const bar = canvasElement.querySelector('.search-bar') as HTMLElement
+		await expect(bar.getBoundingClientRect().height).toBe(56)
 	},
 } satisfies Story
 
