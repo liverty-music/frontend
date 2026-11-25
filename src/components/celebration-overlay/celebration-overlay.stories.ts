@@ -4,6 +4,19 @@ import {
 	type StoryObj,
 } from '@aurelia/storybook'
 import { expect, userEvent, waitFor, within } from 'storybook/test'
+import {
+	composite,
+	contrast,
+	luminance,
+	type Rgb,
+	WCAG_AA,
+} from '../../../.storybook/contrast'
+import {
+	finishMotion,
+	nextPaint,
+	pausableAnimations,
+	seekMotion,
+} from '../../../.storybook/motion'
 import ja from '../../locales/ja/translation.json'
 import { CelebrationOverlay } from './celebration-overlay'
 
@@ -177,6 +190,47 @@ async function expectFits(overlay: HTMLElement) {
 	await expect(problems).toEqual([])
 }
 
+/** The scrim the overlay paints, as a colour the canvas can composite. */
+const scrimOf = (overlay: HTMLElement) =>
+	getComputedStyle(overlay).backgroundColor
+
+/**
+ * What a reader can make of the page behind the scrim: the ratio between a
+ * text pixel and the pixel next to it, both seen through the scrim. The blur,
+ * which only makes it worse, is left out. Below 3:1, WCAG's lowest ratio for
+ * any text, the text cannot be read.
+ */
+const UNREADABLE = 3
+
+function seenThrough(overlay: HTMLElement, text: Element, ground: Element) {
+	const scrim = scrimOf(overlay)
+	const paint = (el: Element, key: 'color' | 'backgroundColor') =>
+		getComputedStyle(el)[key]
+	const pixel = composite(paint(ground, 'backgroundColor'), scrim)
+	const letter = composite(
+		paint(ground, 'backgroundColor'),
+		paint(text, 'color'),
+		scrim,
+	)
+	return { pixel, letter, ratio: contrast(letter, pixel) }
+}
+
+/** Each celebration line is read against the brightest thing behind it. */
+function expectLinesLegible(overlay: HTMLElement, ground: Rgb[]) {
+	const brightest = ground.reduce((a, b) =>
+		luminance(a) > luminance(b) ? a : b,
+	)
+	const scrim = scrimOf(overlay)
+	return [...overlay.querySelectorAll('p')].map((line) => {
+		const behind = composite(`rgb(${brightest.join(',')})`, scrim)
+		const ink = composite(
+			`rgb(${behind.join(',')})`,
+			getComputedStyle(line).color,
+		)
+		return contrast(ink, behind)
+	})
+}
+
 /** The motion that matches the viewer's preference. */
 async function expectMotion(canvasElement: HTMLElement, confetti: boolean) {
 	const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -217,8 +271,49 @@ export const PostSignupOverEmptyState = {
 			await expect(style.transitionDuration).toBe('0.4s')
 		}
 		await expectMotion(canvasElement, true)
+
+		// @spec components/infrastructure/fan/web/global/celebration-overlay "Empty-state text behind the post-signup celebration cannot be read"
+		const page = composite(getComputedStyle(document.body).backgroundColor)
+		const emptyText = canvasElement.querySelector('[aria-hidden="true"] p')
+		if (!emptyText) throw new Error('no empty-state text')
+		await expect(
+			seenThrough(overlay, emptyText, document.body).ratio,
+		).toBeLessThan(UNREADABLE)
+		for (const ratio of expectLinesLegible(overlay, [page])) {
+			await expect(ratio).toBeGreaterThanOrEqual(WCAG_AA)
+		}
 	},
 } satisfies Story
+
+/**
+ * What the overlay lets through of a loaded timetable: its colours faintly, its
+ * text not at all, on a scrim that is one flat colour so the edges are no
+ * different from the middle.
+ */
+async function expectTimetableSeenThroughScrim(
+	canvasElement: HTMLElement,
+	overlay: HTMLElement,
+) {
+	const cards = [...canvasElement.querySelectorAll<HTMLElement>('.story-card')]
+	await expect(cards.length).toBeGreaterThan(1)
+	const page = composite(getComputedStyle(document.body).backgroundColor)
+	const bare = composite(`rgb(${page.join(',')})`, scrimOf(overlay))
+	const grounds: Rgb[] = []
+	for (const card of cards) {
+		const { pixel, ratio } = seenThrough(overlay, card, card)
+		// No card text can be read through the scrim (and it is blurred) ...
+		await expect(ratio).toBeLessThan(UNREADABLE)
+		// ... while the card's colour is still told from the bare scrim.
+		await expect(contrast(pixel, bare)).toBeGreaterThan(1.05)
+		grounds.push(composite(getComputedStyle(card).backgroundColor))
+	}
+	// One flat colour from edge to edge: no gradient or vignette.
+	await expect(getComputedStyle(overlay).backgroundImage).toBe('none')
+	await expect(getComputedStyle(overlay).backdropFilter).toContain('blur')
+	for (const ratio of expectLinesLegible(overlay, grounds)) {
+		await expect(ratio).toBeGreaterThanOrEqual(WCAG_AA)
+	}
+}
 
 /** Post-signup over a full timetable. */
 export const PostSignupOverTimetable = {
@@ -227,6 +322,8 @@ export const PostSignupOverTimetable = {
 	play: async ({ canvasElement }) => {
 		const overlay = await expectLines(canvasElement, [t.welcome, t.chasing])
 		await expectFits(overlay)
+		// @spec components/infrastructure/fan/web/global/celebration-overlay "Timetable colors remain visible at the screen edges"
+		await expectTimetableSeenThroughScrim(canvasElement, overlay)
 	},
 } satisfies Story
 
@@ -243,6 +340,68 @@ export const LightOverTimetable = {
 		])
 		await expectFits(overlay)
 		await expectMotion(canvasElement, false)
+		// @spec components/infrastructure/fan/web/global/celebration-overlay "Heading and sub-text stay legible over bright cards"
+		await expectTimetableSeenThroughScrim(canvasElement, overlay)
+	},
+} satisfies Story
+
+/**
+ * The celebration opens: the scrim starts transparent and reaches full strength
+ * over 400 ms while the headline scales up past its size and settles. The story
+ * plays it again and steps through both.
+ */
+export const Opens = {
+	render,
+	args: { tier: 'postSignup', backdrop: 'empty' },
+	play: async ({ canvasElement }) => {
+		await expectLines(canvasElement, [t.welcome, t.chasing])
+		within(canvasElement).getByRole('button', { name: 'Play again' }).click()
+		const overlay = await waitFor(() => {
+			const el = canvasElement.querySelector<HTMLElement>(
+				'.celebration-overlay',
+			)
+			if (!el || !pausableAnimations(el).length)
+				throw new Error('not opening yet')
+			return el
+		})
+		const headline = canvasElement.querySelector(
+			'.celebration-text',
+		) as HTMLElement
+		const all = pausableAnimations(overlay)
+		const scrim = all.filter(
+			(a) =>
+				a instanceof CSSTransition &&
+				a.transitionProperty === 'opacity' &&
+				a.effect?.target === overlay,
+		)
+		const enter = all.filter(
+			(a) =>
+				a instanceof CSSAnimation &&
+				a.animationName === 'headline-enter' &&
+				a.effect?.target === headline,
+		)
+		await expect(scrim).toHaveLength(1)
+		await expect(enter).toHaveLength(1)
+		// @spec components/infrastructure/fan/web/global/celebration-overlay "The celebration opens"
+		await expect(Number(scrim[0].effect?.getComputedTiming().duration)).toBe(
+			400,
+		)
+		const opacity = () => Number.parseFloat(getComputedStyle(overlay).opacity)
+		await seekMotion(scrim, 0)
+		await expect(opacity()).toBeLessThan(0.05)
+		await seekMotion(scrim, 0.1)
+		await expect(opacity()).toBeGreaterThan(0.05)
+		await expect(opacity()).toBeLessThan(1)
+		// @spec components/infrastructure/fan/web/global/celebration-overlay "Post-signup confetti, sound and vibration"
+		const scale = () => new DOMMatrix(getComputedStyle(headline).transform).a
+		await seekMotion(enter, 0)
+		await expect(scale()).toBeLessThan(1)
+		await seekMotion(enter, 0.6)
+		await expect(scale()).toBeGreaterThan(1.05)
+		finishMotion([...scrim, ...enter])
+		await nextPaint()
+		await expect(scale()).toBe(1)
+		await expect(opacity()).toBe(1)
 	},
 } satisfies Story
 

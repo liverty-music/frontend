@@ -92,7 +92,7 @@ export const GrowsWhenShown = {
 		await nextPaint()
 		button.style.display = ''
 		button.showPopover()
-		await nextPaint()
+		// @spec components/infrastructure/fan/web/global/action-menu "Edit mode ends"
 		const growth = pausableAnimations(button).filter(
 			(a) => (a as CSSTransition).transitionProperty === 'scale',
 		)

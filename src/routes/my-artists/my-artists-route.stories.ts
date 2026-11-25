@@ -766,3 +766,104 @@ export const HypeRadiosNameTheArtist = {
 		await expect(names.every((n) => n.startsWith('Artist 1,'))).toBe(true)
 	},
 } satisfies Story
+
+/** The keyframes of every animation on a view-transition pseudo-element. */
+function transitionKeyframes(pseudo: string): ComputedKeyframe[][] {
+	return document
+		.getAnimations()
+		.map((a) => a.effect as KeyframeEffect | null)
+		.filter((e): e is KeyframeEffect => e?.pseudoElement === pseudo)
+		.map((e) => e.getKeyframes())
+}
+
+/** Whether the pseudo-element fades: an opacity animation on it. */
+const fades = (pseudo: string) =>
+	transitionKeyframes(pseudo).some((frames) =>
+		frames.some((k) => 'opacity' in k),
+	)
+
+/** Two frames, so the transition's pseudo-elements and animations exist. */
+const transitionStarted = () =>
+	new Promise<void>((resolve) =>
+		requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+	)
+
+/** Lets the running transition end, so the next edit starts clean. */
+async function transitionEnded(): Promise<void> {
+	await waitFor(
+		() => {
+			if (document.getAnimations().some((a) => a.playState === 'running'))
+				throw new Error('still running')
+		},
+		{ timeout: 5000 },
+	)
+}
+
+/**
+ * Edit mode and undo are View Transitions: entering edit mode cross-fades each
+ * row's dots into its remove button and fades the Done bar in; undo fades the
+ * restored row in at its old place while the rows below move down to make
+ * room, with edit mode back on.
+ */
+export const EditModeAndUndoMotion = {
+	render: () =>
+		defineAureliaStory({
+			template: frame(375, 600),
+			register,
+			items: items(6),
+		}),
+	play: async ({ canvasElement }) => {
+		await rendered(canvasElement, 6)
+		const edit = fab.actions.find((a) => a.id === 'edit')
+		if (edit?.kind !== 'command') throw new Error('no edit action')
+
+		// @spec components/infrastructure/fan/web/route/my-artists "Entering edit mode"
+		edit.invoke()
+		await transitionStarted()
+		const row = (n: number) => `artist-artist-${n}`
+		for (const n of [1, 2, 3]) {
+			// Old and new snapshots of the row both fade: a cross-fade.
+			await expect(fades(`::view-transition-old(${row(n)})`)).toBe(true)
+			await expect(fades(`::view-transition-new(${row(n)})`)).toBe(true)
+		}
+		await expect(fades('::view-transition-new(edit-action-bar)')).toBe(true)
+		await waitFor(() =>
+			expect(canvasElement.querySelector('.artist-remove-btn')).not.toBeNull(),
+		)
+		await transitionEnded()
+
+		// Remove the second artist, then undo it.
+		await userEvent.click(
+			canvasElement.querySelectorAll<HTMLElement>('.artist-remove-btn')[1],
+		)
+		await waitFor(() =>
+			expect(canvasElement.querySelectorAll('.artist-row')).toHaveLength(5),
+		)
+		await transitionEnded()
+		const host = canvasElement.querySelector('my-artists-route') as Element
+		const route = CustomElement.for<MyArtistsRoute>(host)
+			.viewModel as unknown as { undo(): void }
+
+		// @spec components/infrastructure/fan/web/route/my-artists "Undo restores a row without a jump"
+		route.undo()
+		await transitionStarted()
+		// The restored row fades in (it has no old snapshot to fade out) ...
+		await expect(fades(`::view-transition-new(${row(2)})`)).toBe(true)
+		await expect(
+			transitionKeyframes(`::view-transition-old(${row(2)})`),
+		).toEqual([])
+		// ... while the row below it moves down to make room.
+		const below = transitionKeyframes(`::view-transition-group(${row(3)})`)
+		const moves = below.some((frames) => {
+			const transforms = frames.map((k) => String(k.transform))
+			return new Set(transforms).size > 1
+		})
+		await expect(moves).toBe(true)
+		// Edit mode is back on.
+		await waitFor(() =>
+			expect(canvasElement.querySelector('.artist-remove-btn')).not.toBeNull(),
+		)
+		await expect(canvasElement.querySelectorAll('.artist-row')).toHaveLength(6)
+		await transitionEnded()
+	},
+} satisfies Story

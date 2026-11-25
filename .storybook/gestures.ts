@@ -68,3 +68,14 @@ export async function parkPointerAway(): Promise<boolean> {
 	await commands.parkPointer()
 	return true
 }
+
+/**
+ * A real key press, which the browser treats as the person's: Escape closes a
+ * popover and a dialog only for such a key, not for one a script dispatches.
+ */
+export async function pressKey(key: string): Promise<boolean> {
+	if (import.meta.env.MODE !== 'test') return false
+	const { userEvent } = await import('vitest/browser')
+	await userEvent.keyboard(key)
+	return true
+}
