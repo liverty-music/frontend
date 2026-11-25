@@ -5,6 +5,7 @@ import {
 } from '@aurelia/storybook'
 import { expect, userEvent, waitFor, within } from 'storybook/test'
 import { expectScreenshot } from '../../../.storybook/screenshot'
+import { transitionsEnded } from '../../../.storybook/transitions-ended'
 import { atWidth } from '../../../.storybook/viewport'
 import { AreaFilterSheet } from './area-filter-sheet'
 
@@ -59,6 +60,8 @@ function play(area: string, period: string): Story['play'] {
 			expect(areaRow).toBeVisible()
 			expect(periodRow).toBeVisible()
 		})
+		// The sheet rises into place; measure and tap it once it has.
+		await transitionsEnded(host)
 		// @spec components/infrastructure/fan/web/global/bottom-sheet "Sheet with a heading"
 		// The sheet's own heading, below the handle bar in the title-large
 		// style, names the dialog; the rows start 16 px below it.
