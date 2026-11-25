@@ -434,7 +434,10 @@ export class WelcomeRoute implements IRouteViewModel {
 		// follow requirement keeps a signed-out fan and a guest who tapped
 		// [Log In] and came back (handleLogin discarded the follows) on Welcome,
 		// where the Log In button is. Nothing is discarded here.
-		if (this.onboarding.isCompleted && this.followStore.followedCount >= 1) {
+		if (
+			this.onboarding.isCompleted &&
+			this.followStore.guestFollows.length >= 1
+		) {
 			this.logger.info('Returning guest, redirecting to timetable')
 			return 'timetable'
 		}

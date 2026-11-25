@@ -12,7 +12,7 @@ const mockLogger = {
 	}),
 }
 
-const mockFollowStore = { clearGuest: vi.fn(), followedCount: 0 }
+const mockFollowStore = { clearGuest: vi.fn(), guestFollows: [] as unknown[] }
 const mockOnboarding = { isCompleted: false, finish: vi.fn() }
 const mockAuthService = { isAuthenticated: false, ready: Promise.resolve() }
 
@@ -224,7 +224,7 @@ describe('WelcomeRoute — canLoad for a guest', () => {
 	beforeEach(() => {
 		vi.clearAllMocks()
 		mockAuthService.isAuthenticated = false
-		mockFollowStore.followedCount = 0
+		mockFollowStore.guestFollows = []
 		mockOnboarding.isCompleted = false
 		sut = new WelcomeRoute()
 	})
@@ -232,7 +232,7 @@ describe('WelcomeRoute — canLoad for a guest', () => {
 	// @spec components/infrastructure/fan/web/route/welcome "Returning guest opens the app"
 	it('sends a returning guest (onboarding complete, follows an artist) to the timetable', async () => {
 		mockOnboarding.isCompleted = true
-		mockFollowStore.followedCount = 2
+		mockFollowStore.guestFollows = [{}, {}]
 
 		expect(await sut.canLoad()).toBe('timetable')
 		expect(mockFollowStore.clearGuest).not.toHaveBeenCalled()
@@ -241,17 +241,17 @@ describe('WelcomeRoute — canLoad for a guest', () => {
 	// @spec components/infrastructure/fan/web/route/welcome "Guest in onboarding opens Welcome"
 	// @spec components/infrastructure/fan/web/route/welcome "The page's address"
 	it('lets a guest still in onboarding load Welcome, with or without follows', async () => {
-		mockFollowStore.followedCount = 0
+		mockFollowStore.guestFollows = []
 		expect(await sut.canLoad()).toBe(true)
 
-		mockFollowStore.followedCount = 3
+		mockFollowStore.guestFollows = [{}]
 		expect(await sut.canLoad()).toBe(true)
 	})
 
 	// @spec components/infrastructure/fan/web/route/welcome "Guest with no follows opens Welcome"
 	it('lets a completed guest with no follows load Welcome', async () => {
 		mockOnboarding.isCompleted = true
-		mockFollowStore.followedCount = 0
+		mockFollowStore.guestFollows = []
 
 		expect(await sut.canLoad()).toBe(true)
 	})
