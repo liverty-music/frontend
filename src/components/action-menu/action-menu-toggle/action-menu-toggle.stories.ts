@@ -4,6 +4,12 @@ import {
 	type StoryObj,
 } from '@aurelia/storybook'
 import { expect } from 'storybook/test'
+import {
+	finishMotion,
+	nextPaint,
+	pausableAnimations,
+	seekMotion,
+} from '../../../../.storybook/motion'
 import { transitionsEnded } from '../../../../.storybook/transitions-ended'
 import { ActionMenuGlyph } from '../action-menu-glyph/action-menu-glyph'
 import { ActionMenuToggle } from './action-menu-toggle'
@@ -67,5 +73,37 @@ export const Open = {
 		await expect(
 			button.querySelector('.action-menu-glyph')?.getAttribute('data-open'),
 		).toBe('true')
+	},
+} satisfies Story
+
+/**
+ * Replays the entry: the FAB is hidden and shown again, and the story steps
+ * through the growth. A still story cannot show a motion, so the steps stand
+ * for it: the FAB starts small, grows, and ends at its full size.
+ */
+export const GrowsWhenShown = {
+	render: render(false),
+	play: async ({ canvasElement }) => {
+		const button = await shown(canvasElement)
+		// Taken out of rendering for a frame (the app creates the FAB and shows
+		// it in one task), so showing it again starts from the entry style.
+		button.hidePopover()
+		button.style.display = 'none'
+		await nextPaint()
+		button.style.display = ''
+		button.showPopover()
+		await nextPaint()
+		const growth = pausableAnimations(button).filter(
+			(a) => (a as CSSTransition).transitionProperty === 'scale',
+		)
+		await expect(growth).toHaveLength(1)
+		const scale = () => Number.parseFloat(getComputedStyle(button).scale)
+		await seekMotion(growth, 0)
+		await expect(scale()).toBeLessThan(0.3)
+		await seekMotion(growth, 0.5)
+		await expect(scale()).toBeGreaterThan(0.3)
+		finishMotion(growth)
+		await transitionsEnded(button)
+		await expect(scale()).toBe(1)
 	},
 } satisfies Story
