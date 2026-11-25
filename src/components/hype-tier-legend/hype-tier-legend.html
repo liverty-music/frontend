@@ -9,24 +9,26 @@
 
      Markup uses <ul> + <li> rather than <dl> so the decorative emoji
      icon is not promoted to a <dt> "description term". Each <li> is a
-     subgrid row, so the columns size across all rows. -->
+     subgrid row, so the columns size across all rows. The flames are an
+     image named with their count, which ranks the tier; the eyes of Watch
+     add nothing to its label and stay hidden. -->
 <li class="help-hype-row">
   <span class="[ help-hype-icon ] [ md-typescale-body-large ]" aria-hidden="true">👀</span>
   <span class="[ help-hype-label ] [ md-typescale-label-large ]">Watch</span>
   <span class="help-hype-desc" t="pageHelp.myArtists.watchDesc"></span>
 </li>
 <li class="help-hype-row">
-  <span class="[ help-hype-icon ] [ md-typescale-body-large ]" aria-hidden="true">🔥</span>
+  <span class="[ help-hype-icon ] [ md-typescale-body-large ]" role="img" t="[aria-label]pageHelp.myArtists.flames" t-params.bind="{ count: 1 }">🔥</span>
   <span class="[ help-hype-label ] [ md-typescale-label-large ]">Home</span>
   <span class="help-hype-desc" t="pageHelp.myArtists.homeDesc"></span>
 </li>
 <li class="help-hype-row">
-  <span class="[ help-hype-icon ] [ md-typescale-body-large ]" aria-hidden="true">🔥🔥</span>
+  <span class="[ help-hype-icon ] [ md-typescale-body-large ]" role="img" t="[aria-label]pageHelp.myArtists.flames" t-params.bind="{ count: 2 }">🔥🔥</span>
   <span class="[ help-hype-label ] [ md-typescale-label-large ]">Nearby</span>
   <span class="help-hype-desc" t="pageHelp.myArtists.nearbyDesc"></span>
 </li>
 <li class="help-hype-row">
-  <span class="[ help-hype-icon ] [ md-typescale-body-large ]" aria-hidden="true">🔥🔥🔥</span>
+  <span class="[ help-hype-icon ] [ md-typescale-body-large ]" role="img" t="[aria-label]pageHelp.myArtists.flames" t-params.bind="{ count: 3 }">🔥🔥🔥</span>
   <span class="[ help-hype-label ] [ md-typescale-label-large ]">Away</span>
   <span class="help-hype-desc" t="pageHelp.myArtists.awayDesc"></span>
 </li>

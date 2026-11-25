@@ -12,7 +12,8 @@
    - states     the shared `state-layer` (::before), in `on-surface`. The
                 focus ring is drawn inside the item, which reaches both edges
                 of the menu.
-   - disabled   `disabled` or `aria-disabled="true"`: `on-surface` at 38 %
+   - disabled   `aria-disabled="true"` (never the native `disabled`, so the item
+                stays focusable, as M3 menus require): `on-surface` at 38 %
                 (the state layer shows none); the item stays in the menu
    - motion     fades in and out over the effects spring's 200 ms, 0 ms under
                 reduced motion
@@ -83,7 +84,7 @@
 			outline-offset: calc(-1 * var(--md-sys-state-focus-indicator-thickness));
 		}
 
-		.menu-item:is(:disabled, [aria-disabled="true"]) {
+		.menu-item[aria-disabled="true"] {
 			cursor: not-allowed;
 			color: color-mix(
 				in oklch,

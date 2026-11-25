@@ -43,6 +43,10 @@
 			padding-block: var(--space-2xs);
 		}
 
+		.artists-list > li {
+			max-inline-size: 100%;
+		}
+
 		/* Upcoming-concert count prefix on each artist chip. */
 		.artist-count {
 			font-variant-numeric: tabular-nums;

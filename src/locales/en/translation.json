@@ -677,6 +677,8 @@
 			"homeDesc": "Notify for home-area concerts",
 			"nearbyDesc": "Notify for nearby concerts too",
 			"awayDesc": "Notify for every concert",
+			"flames_one": "{{count}} flame",
+			"flames_other": "{{count}} flames",
 			"tip": "Set artists you'd travel for to Away to never miss them!",
 			"unfollowSectionTitle": "Unfollowing",
 			"editModeTip": "Choose Edit in the action menu at the bottom centre to show a remove button on each row and unfollow artists."

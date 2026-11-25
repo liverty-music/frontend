@@ -103,14 +103,25 @@ export class CoachMark {
 		target.style.setProperty('anchor-name', '--coach-target')
 		this.currentTarget = target
 		this.visible = true
-		// Re-arm (idempotent) the outside-tap light-dismiss listener.
+		// Re-arm (idempotent) the outside-tap light-dismiss listener, and Escape
+		// for a keyboard or switch user, who has no tap outside.
 		document.removeEventListener('pointerdown', this.onOutsidePointerDown, true)
 		document.addEventListener('pointerdown', this.onOutsidePointerDown, true)
+		document.removeEventListener('keydown', this.onEscape, true)
+		document.addEventListener('keydown', this.onEscape, true)
+	}
+
+	/** Escape closes the coach mark, as a tap outside it does. */
+	private readonly onEscape = (e: KeyboardEvent): void => {
+		if (e.key !== 'Escape') return
+		this.onDismiss?.()
+		this.deactivate()
 	}
 
 	public deactivate(): void {
 		this.cancelRetry()
 		document.removeEventListener('pointerdown', this.onOutsidePointerDown, true)
+		document.removeEventListener('keydown', this.onEscape, true)
 		this.visible = false
 		// The spotlight and tip follow the anchor while they fade out; without
 		// it the spotlight loses its cut-out and the screen goes dark.
