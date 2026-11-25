@@ -465,11 +465,16 @@ export const SwipePastHalf = {
 			await expect(leftmost).toBeLessThan(before.left - before.width / 2)
 		} else {
 			// @spec components/infrastructure/fan/web/global/snack-bar "Swipe under reduced motion"
+			// It fades out over at most 100 ms and does not move.
+			const exit = item.getAnimations()
 			await expect(
-				item
-					.getAnimations()
-					.map((a) => (a as CSSTransition).transitionProperty),
+				exit.map((a) => (a as CSSTransition).transitionProperty),
 			).not.toContain('transform')
+			for (const a of exit) {
+				await expect(
+					Number(a.effect?.getTiming().duration),
+				).toBeLessThanOrEqual(100)
+			}
 		}
 		await waitFor(() => expect(item.isConnected).toBe(false), {
 			timeout: 3000,
