@@ -136,6 +136,25 @@ describe('CoachMark', () => {
 			expect(sut.visible).toBe(false)
 		})
 
+		// @spec components/infrastructure/fan/web/global/coach-mark "A screen reader reads the tip at the target"
+		it('describes the target with the tip while shown, and stops once it has gone', () => {
+			vi.useFakeTimers()
+			try {
+				target.setAttribute('aria-describedby', 'own-hint')
+				sut.active = true
+				sut.activeChanged()
+				expect(target.getAttribute('aria-describedby')).toBe(
+					`own-hint ${sut.messageId}`,
+				)
+
+				sut.deactivate()
+				vi.advanceTimersByTime(200)
+				expect(target.getAttribute('aria-describedby')).toBe('own-hint')
+			} finally {
+				vi.useRealTimers()
+			}
+		})
+
 		it('ignores other keys, and Escape once it has gone', () => {
 			const dismissSpy = vi.fn()
 			sut.onDismiss = dismissSpy

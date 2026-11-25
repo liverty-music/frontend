@@ -4,6 +4,7 @@ import {
 	type StoryObj,
 } from '@aurelia/storybook'
 import { expect, userEvent, waitFor, within } from 'storybook/test'
+import { composite, contrast } from '../../.storybook/contrast'
 import { hoverPointer } from '../../.storybook/gestures'
 import { expectScreenshot } from '../../.storybook/screenshot'
 
@@ -90,6 +91,14 @@ export const Rest = {
 		await expect(style.borderTopColor).toBe(
 			resolved(canvasElement, 'borderTopColor', 'var(--md-sys-color-outline)'),
 		)
+		// @spec components/infrastructure/fan/web/global/design-tokens "Control boundaries reach 3:1"
+		// The border is the field's only edge: 3:1 against what is behind it.
+		const behind = getComputedStyle(
+			el.closest('div') as HTMLElement,
+		).backgroundColor
+		await expect(
+			contrast(composite(behind, style.borderTopColor), composite(behind)),
+		).toBeGreaterThanOrEqual(3)
 		await expect(style.boxShadow).toBe('none')
 		await expectScreenshot(el, 'text-field-rest')
 	},

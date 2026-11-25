@@ -166,7 +166,11 @@
 		--md-sys-color-surface: oklch(18% 0.04 275deg);
 		--md-sys-color-on-surface: oklch(98.5% 0 0deg);
 		--md-sys-color-on-surface-variant: oklch(82% 0.02 275deg);
-		--md-sys-color-outline: oklch(98.5% 0 0deg / 22%);
+
+		/* Opaque, at 3:1 or more on every surface tier (3.7:1 on the highest):
+		   the outline is a text field's only edge, a control boundary (M3 dark
+		   outline is about this lightness). */
+		--md-sys-color-outline: oklch(62% 0.02 275deg);
 		--md-sys-color-outline-variant: oklch(98.5% 0 0deg / 12%);
 
 		/* ── Tonal surface-container tiers (M3: five tiers, lowest → highest) ──
