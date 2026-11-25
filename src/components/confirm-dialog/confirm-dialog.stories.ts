@@ -219,9 +219,9 @@ export const FadesOnClose = {
 
 		if (reduce) {
 			// @spec components/infrastructure/fan/web/global/ui-primitives "Reduced motion"
-			await expect(durations).toBe('0s, 0s, 0s')
-			await new Promise((r) => requestAnimationFrame(() => r(null)))
-			await expect(getComputedStyle(dialog).display).toBe('none')
+			// A fade of 100 ms, then it is gone.
+			await expect(durations).toBe('0.1s')
+			await waitFor(() => expect(getComputedStyle(dialog).display).toBe('none'))
 			return
 		}
 

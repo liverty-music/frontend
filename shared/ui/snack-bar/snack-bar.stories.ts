@@ -251,10 +251,14 @@ export const UpdateAction = {
 			// @spec components/infrastructure/fan/web/global/snack-bar "Reduced motion preference"
 			const snackItem = canvasElement.querySelector('.snack-item')
 			if (!snackItem) throw new Error('no snack')
+			// A fade of at most 100 ms, and no movement.
+			const snackStyle = getComputedStyle(snackItem)
+			await expect(snackStyle.transitionProperty).toContain('opacity')
+			await expect(snackStyle.transitionProperty).not.toContain('transform')
 			await expect(
-				getComputedStyle(snackItem)
-					.transitionDuration.split(',')
-					.every((d) => Number.parseFloat(d) === 0),
+				snackStyle.transitionDuration
+					.split(',')
+					.every((d) => Number.parseFloat(d) <= 0.1),
 			).toBe(true)
 			// @spec components/infrastructure/fan/web/global/snack-bar "Animation is suppressed under reduced motion"
 			await expect(style.animationName).toBe('none')
@@ -390,7 +394,17 @@ export const ExitMotion = {
 
 		if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
 			// @spec components/infrastructure/fan/web/global/snack-bar "Reduced motion preference"
-			await expect(exit).toHaveLength(0)
+			// It fades out over at most 100 ms and does not move.
+			const properties = exit.map(
+				(a) => (a as CSSTransition).transitionProperty,
+			)
+			await expect(properties).toContain('opacity')
+			await expect(properties).not.toContain('transform')
+			for (const a of exit) {
+				await expect(
+					Number(a.effect?.getTiming().duration),
+				).toBeLessThanOrEqual(100)
+			}
 			await waitFor(() => expect(item.isConnected).toBe(false))
 			return
 		}
@@ -441,6 +455,20 @@ export const SwipePastHalf = {
 			}
 		}
 		scroller?.addEventListener('scroll', track)
+		// The exit's transitions, recorded as each one starts: read later, the
+		// snack may have finished fading or left the document.
+		const exit: { property: string; duration: number }[] = []
+		const onRun = (e: TransitionEvent) => {
+			if (e.target !== item) return
+			const transition = item
+				.getAnimations()
+				.find((a) => (a as CSSTransition).transitionProperty === e.propertyName)
+			exit.push({
+				property: e.propertyName,
+				duration: Number(transition?.effect?.getTiming().duration),
+			})
+		}
+		item.addEventListener('transitionrun', onRun)
 
 		const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches
 		if (!(await swipeSideways('.snack-surface', -0.7 * before.width))) return
@@ -449,15 +477,21 @@ export const SwipePastHalf = {
 			// @spec components/infrastructure/fan/web/global/snack-bar "Swipe past the dismiss point"
 			// It leaves to the left, the way it was swiped.
 			await expect(leftmost).toBeLessThan(before.left - before.width / 2)
-		} else {
-			// @spec components/infrastructure/fan/web/global/snack-bar "Swipe under reduced motion"
-			await expect(item.getAnimations()).toHaveLength(0)
 		}
 		await waitFor(() => expect(item.isConnected).toBe(false), {
 			timeout: 3000,
 		})
 		scroller?.removeEventListener('scroll', track)
+		item.removeEventListener('transitionrun', onRun)
 		await expect(record.dismissals).toBe(1)
+		if (reduced) {
+			// @spec components/infrastructure/fan/web/global/snack-bar "Swipe under reduced motion"
+			// It faded out over at most 100 ms and did not move.
+			const properties = exit.map((t) => t.property)
+			await expect(properties).toContain('opacity')
+			await expect(properties).not.toContain('transform')
+			for (const t of exit) await expect(t.duration).toBeLessThanOrEqual(100)
+		}
 	},
 } satisfies Story
 

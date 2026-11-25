@@ -25,13 +25,16 @@
 			background: radial-gradient(circle, var(--_spark), transparent 70%);
 		}
 
-		/* Two identical keyframes: switching between them restarts the flare. */
-		.onboarding-progress-spark[data-rise="0"] {
-			animation: spark-flare-a 700ms var(--md-sys-motion-spring-effects);
-		}
+		/* Two identical keyframes: switching between them restarts the flare.
+		   Decorative, so not under reduced motion. */
+		@media (prefers-reduced-motion: no-preference) {
+			.onboarding-progress-spark[data-rise="0"] {
+				animation: spark-flare-a 700ms var(--md-sys-motion-spring-effects);
+			}
 
-		.onboarding-progress-spark[data-rise="1"] {
-			animation: spark-flare-b 700ms var(--md-sys-motion-spring-effects);
+			.onboarding-progress-spark[data-rise="1"] {
+				animation: spark-flare-b 700ms var(--md-sys-motion-spring-effects);
+			}
 		}
 
 		@keyframes spark-flare-a {

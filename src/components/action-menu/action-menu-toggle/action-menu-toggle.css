@@ -82,5 +82,20 @@
 			block-size: var(--_target);
 			border-radius: inherit;
 		}
+
+		/* Reduced motion: it fades in where it would grow (M3: subtle fades
+		   instead of scaling). */
+		@media (prefers-reduced-motion: reduce) {
+			.action-menu-toggle {
+				transition: opacity var(--md-sys-motion-duration-reduced-fade) linear;
+			}
+
+			@starting-style {
+				.action-menu-toggle:popover-open {
+					scale: var(--_scale);
+					opacity: 0;
+				}
+			}
+		}
 	}
 }

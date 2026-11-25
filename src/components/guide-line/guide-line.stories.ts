@@ -145,7 +145,9 @@ export const FadesInAndOut: Story = {
 		// @spec components/infrastructure/fan/web/global/guide-moment "The guide line closes with a fade"
 		const style = getComputedStyle(line)
 		expect(style.transitionProperty).toContain('opacity')
-		expect(style.transitionDuration.split(', ')[0]).toBe(reduce ? '0s' : '0.2s')
+		expect(style.transitionDuration.split(', ')[0]).toBe(
+			reduce ? '0.1s' : '0.2s',
+		)
 
 		await userEvent.click(canvas.getByTestId('elsewhere'))
 		await waitFor(() => expect(line.matches(':popover-open')).toBe(false))

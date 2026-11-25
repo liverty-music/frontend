@@ -79,7 +79,7 @@ export const Visible = {
 		// @spec components/infrastructure/fan/web/global/signup-prompt-banner "CTA attention cue"
 		// @spec components/infrastructure/fan/web/global/signup-prompt-banner "CTA button has no animation for reduced motion"
 		// @spec components/infrastructure/fan/web/global/signup-prompt-banner "Banner slides in on appearance"
-		// @spec components/infrastructure/fan/web/global/signup-prompt-banner "Banner appears instantly for reduced motion"
+		// @spec components/infrastructure/fan/web/global/signup-prompt-banner "Banner fades in for reduced motion"
 		await expectBannerMotion(surface, action)
 	},
 } satisfies Story

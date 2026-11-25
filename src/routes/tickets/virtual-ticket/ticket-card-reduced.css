@@ -1,0 +1,19 @@
+/* The ticket's reduced-motion turn, in a block of its own because
+   ticket-card.css is at its line limit. */
+@layer block {
+	@scope (virtual-ticket) {
+		/* Reduced motion: the ticket turns over at once and the side that comes
+		   round fades in, instead of the 3D turn. */
+		@media (prefers-reduced-motion: reduce) {
+			.ticket-front,
+			.ticket-back {
+				transition: opacity var(--md-sys-motion-duration-reduced-fade) linear;
+			}
+
+			.virtual-ticket-card[data-side="back"] .ticket-front,
+			.virtual-ticket-card:not([data-side="back"]) .ticket-back {
+				opacity: 0;
+			}
+		}
+	}
+}

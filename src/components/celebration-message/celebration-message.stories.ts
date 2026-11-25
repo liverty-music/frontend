@@ -43,7 +43,7 @@ export const HeadlineOnly = {
 		await expect(lines).toHaveLength(1)
 		const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches
 		await expect(getComputedStyle(lines[0]).animationName).toBe(
-			reduced ? 'none' : 'headline-enter',
+			reduced ? 'celebration-fade' : 'headline-enter',
 		)
 	},
 } satisfies Story

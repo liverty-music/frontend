@@ -147,6 +147,7 @@ export class VirtualTicket {
 	 */
 	private readonly onDeviceTilt = (event: DeviceOrientationEvent): void => {
 		if (event.beta === null || event.gamma === null) return
+		if (reducedMotion()) return
 		const x = event.gamma / 30
 		const y = (event.beta - 45) / 30
 		this.renderer?.tiltTo(x, y)
@@ -379,6 +380,9 @@ export class VirtualTicket {
 
 	/** Tilt the ticket towards the pointer. */
 	public onPointerMove(event: PointerEvent): void {
+		// A ticket that leans towards the pointer is a parallax: still under
+		// reduced motion.
+		if (reducedMotion()) return
 		const rect = this.card?.getBoundingClientRect()
 		if (!rect?.width || !rect.height) return
 		const x = ((event.clientX - rect.left) / rect.width) * 2 - 1

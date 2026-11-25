@@ -69,13 +69,14 @@
 				);
 
 			pointer-events: none;
-
 			position: absolute;
 			inset: 0;
-
 			background-image: var(--_star-img);
 
-			animation: starfield-twinkle 8s ease-in-out infinite alternate;
+			/* A decorative loop: not under reduced motion. */
+			@media (prefers-reduced-motion: no-preference) {
+				animation: starfield-twinkle 8s ease-in-out infinite alternate;
+			}
 		}
 	}
 }

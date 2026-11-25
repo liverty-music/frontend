@@ -167,7 +167,7 @@ export const Visible = {
 		await expectBannerMessage(label, surface)
 
 		// @spec components/infrastructure/fan/web/global/pwa-install-banner "CTA attention cue"
-		// @spec components/infrastructure/fan/web/global/pwa-install-banner "Reduced motion — no animation"
+		// @spec components/infrastructure/fan/web/global/pwa-install-banner "Reduced motion — a short fade, no cue"
 		// @spec components/infrastructure/fan/web/global/pwa-install-banner "Banner slides in on appearance"
 		await expectBannerMotion(surface, action)
 

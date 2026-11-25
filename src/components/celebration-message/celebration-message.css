@@ -90,13 +90,5 @@
 				opacity: 1;
 			}
 		}
-
-		@media (prefers-reduced-motion: reduce) {
-			.celebration-text,
-			.celebration-sub-text,
-			.celebration-hint {
-				animation: none;
-			}
-		}
 	}
 }

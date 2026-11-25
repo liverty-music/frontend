@@ -13,6 +13,7 @@ import {
 	WCAG_AA,
 } from '../../../.storybook/contrast'
 import { swipeVertically } from '../../../.storybook/gestures'
+import { transitionsEnded } from '../../../.storybook/transitions-ended'
 import { atWidth } from '../../../.storybook/viewport'
 import { BottomSheet } from './bottom-sheet'
 
@@ -423,6 +424,9 @@ async function finish(root: HTMLElement): Promise<void> {
  */
 async function ready(root: HTMLElement): Promise<HTMLElement> {
 	const dialog = await openSheet(root)
+	// The sheet rises into place (a 400 ms keyframe on the scroll area); a
+	// busy runner can still be partway through it after a fixed pause.
+	await transitionsEnded(dialog)
 	await pause(300)
 	return dialog
 }
@@ -1177,14 +1181,17 @@ export const MotionPreference = {
 			await expect(getComputedStyle(area).scrollBehavior).toBe('auto')
 			await expect(dialog.matches(':popover-open')).toBe(false)
 			await expect(closed.n).toBe(1)
-			// The entry slide (the scroll area's second animation, after
-			// initial-snap) has no duration, and nor does the backdrop's fade.
+			// The sheet fades in where it would rise (the scroll area's second
+			// animation, after initial-snap), over 100 ms, as the backdrop does.
+			await expect(getComputedStyle(area).animationName).toBe(
+				'initial-snap, sheet-fade',
+			)
 			await expect(
 				seconds(getComputedStyle(area).animationDuration.split(', ')[1]),
-			).toBeLessThan(0.001)
+			).toBeCloseTo(0.1, 2)
 			await expect(
 				seconds(getComputedStyle(dialog, '::backdrop').transitionDuration),
-			).toBeLessThan(0.001)
+			).toBeCloseTo(0.1, 2)
 		} else {
 			await expect(getComputedStyle(area).scrollBehavior).toBe('smooth')
 			await expect(dialog.matches(':popover-open')).toBe(true)

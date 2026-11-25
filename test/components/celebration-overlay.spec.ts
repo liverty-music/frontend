@@ -165,7 +165,7 @@ describe('CelebrationOverlay', () => {
 	})
 
 	describe('prefers-reduced-motion', () => {
-		it('should skip CSS transition and immediately dismiss on tap', () => {
+		it('fades out on tap through the exit, as with motion allowed', () => {
 			vi.spyOn(window, 'matchMedia').mockReturnValue({
 				matches: true,
 			} as MediaQueryList)
@@ -176,10 +176,10 @@ describe('CelebrationOverlay', () => {
 
 			sut.onTap()
 
-			// Should immediately clean up without waiting for transitionend
-			expect(sut.visible).toBe(false)
-			expect(sut.fadingOut).toBe(false)
-			expect(onDismissed).toHaveBeenCalledOnce()
+			// It goes through the exit; the stylesheet makes that fade 100 ms,
+			// and the opacity's transitionend finishes the dismissal.
+			expect(sut.fadingOut).toBe(true)
+			expect(onDismissed).not.toHaveBeenCalled()
 		})
 	})
 
@@ -372,9 +372,9 @@ describe('CelebrationOverlay', () => {
 			expect(vibrate).not.toHaveBeenCalled()
 			expect(oscillators).toBeGreaterThan(0)
 
-			// Disappears without a transition.
+			// Fades out (the short fade under reduced motion), not at once.
 			overlay.onTap()
-			expect(overlay.visible).toBe(false)
+			expect(overlay.fadingOut).toBe(true)
 			expect(onDismissed).not.toHaveBeenCalled()
 		})
 
