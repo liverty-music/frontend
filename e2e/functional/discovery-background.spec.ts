@@ -134,6 +134,8 @@ test(`@spec ${DISCOVERY} "Background visual depth" (onboarding and search)`, asy
 
 	await page.locator('.search-input').fill('a')
 	await expect(page.locator('.search-results')).toBeVisible()
+	// The results fade in; the look counts only what is painted (opacity > 0).
+	await expect(page.locator('.search-results')).toHaveCSS('opacity', '1')
 	await expectUnderRows(page, ['.search-bar', '.search-results'])
 })
 
