@@ -276,7 +276,9 @@ test.describe('the action arc', () => {
 			// Staggered, closest to the FAB first.
 			if (i > 0) expect(m.delay).toBeGreaterThan(motion[i - 1].delay)
 		}
-		// The equalizer bars bounce once as the launcher opens.
+		// The equalizer bars bounce once as the launcher opens. The glyph's
+		// `data-open` is bound after the click, so wait for it before reading.
+		await expect(glyph(page)).toHaveAttribute('data-open', 'true')
 		const bars = await page
 			.locator('action-menu .fab-bar')
 			.evaluateAll((els) => els.map((el) => getComputedStyle(el).animationName))
