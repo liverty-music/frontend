@@ -11,6 +11,7 @@
                the app's global ring
    - hovered   the border takes `on-surface` (not while focused, invalid or
                disabled, which keep their own)
+   - caret     `primary`, `error` while invalid (M3 text field caret tokens)
    - invalid   `aria-invalid="true"` turns the border `error`, focused or not
    The border colour changes over short2 (M3 text field motion); its width
    changes at once, with the padding that makes up for it, so the text does
@@ -29,6 +30,7 @@
 			color: var(--md-sys-color-on-surface);
 
 			background: var(--md-sys-color-surface);
+			caret-color: var(--md-sys-color-primary);
 
 			transition: border-color var(--md-sys-motion-duration-short2)
 				var(--md-sys-motion-easing-standard);
@@ -47,6 +49,8 @@
 
 		:scope[aria-invalid="true"] {
 			--_indicator: var(--md-sys-color-error);
+
+			caret-color: var(--md-sys-color-error);
 		}
 
 		:scope:disabled {

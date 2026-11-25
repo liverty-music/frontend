@@ -675,6 +675,7 @@
 			"homeDesc": "HOMEエリアのライブを通知",
 			"nearbyDesc": "近くのライブも通知",
 			"awayDesc": "全てのライブを通知",
+			"flames": "炎 {{count}} つ",
 			"tip": "遠征してでも見たいアーティストは Away に設定してみましょう！",
 			"unfollowSectionTitle": "フォロー解除",
 			"editModeTip": "画面下中央のアクションメニューで「編集」を選ぶと、各行に削除ボタンが表示され、フォローを解除できます。"

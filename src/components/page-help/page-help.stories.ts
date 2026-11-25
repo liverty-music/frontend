@@ -97,6 +97,17 @@ export const MyArtists = {
 		for (const li of rows) {
 			await expect(getComputedStyle(li).display).not.toBe('contents')
 		}
+		// @spec components/infrastructure/fan/web/global/page-help "The flame count is read out"
+		// The flames rank the tier, so each set is an image named with its
+		// count; the eyes of Watch add nothing to its label and stay hidden.
+		await expect(
+			rows.map(
+				(li) =>
+					li
+						.querySelector('.help-hype-icon[role="img"]')
+						?.getAttribute('aria-label') ?? null,
+			),
+		).toEqual([null, '炎 1 つ', '炎 2 つ', '炎 3 つ'])
 
 		const replay = doc.querySelector<HTMLElement>(
 			'[data-testid="help-replay-hype"]',

@@ -102,6 +102,55 @@ describe('CoachMark', () => {
 		})
 	})
 
+	// @spec components/infrastructure/fan/web/global/coach-mark "Escape closes the coach mark"
+	describe('Escape (a keyboard or switch user has no tap outside)', () => {
+		let target: HTMLElement
+
+		beforeEach(() => {
+			target = document.createElement('a')
+			target.id = 'cm-escape-target'
+			document.body.append(target)
+			// jsdom lays nothing out; give the target a box so it counts as shown.
+			vi.spyOn(target, 'getBoundingClientRect').mockReturnValue({
+				width: 40,
+				height: 40,
+			} as DOMRect)
+			sut.targetSelector = '#cm-escape-target'
+		})
+
+		afterEach(() => {
+			sut.deactivate()
+			target.remove()
+		})
+
+		it('invokes onDismiss and deactivates on Escape while shown', () => {
+			const dismissSpy = vi.fn()
+			sut.onDismiss = dismissSpy
+			sut.active = true
+			sut.activeChanged()
+			expect(sut.visible).toBe(true)
+
+			document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+
+			expect(dismissSpy).toHaveBeenCalledOnce()
+			expect(sut.visible).toBe(false)
+		})
+
+		it('ignores other keys, and Escape once it has gone', () => {
+			const dismissSpy = vi.fn()
+			sut.onDismiss = dismissSpy
+			sut.active = true
+			sut.activeChanged()
+
+			document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab' }))
+			expect(dismissSpy).not.toHaveBeenCalled()
+
+			sut.deactivate()
+			document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+			expect(dismissSpy).not.toHaveBeenCalled()
+		})
+	})
+
 	describe('light-dismiss (pointerdown outside the coach mark)', () => {
 		type Handler = { onOutsidePointerDown: (e: PointerEvent) => void }
 		const fire = (target: Node) =>

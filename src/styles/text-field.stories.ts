@@ -139,6 +139,11 @@ export const Focused = {
 		await expect(style.outlineStyle).toBe('solid')
 		await expect(style.outlineWidth).toBe('3px')
 		await expect(style.outlineOffset).toBe('2px')
+		// @spec components/infrastructure/fan/web/global/ui-primitives "Text field caret"
+		// The caret takes the primary colour (M3 outlined text field caret).
+		await expect(style.caretColor).toBe(
+			resolved(canvasElement, 'color', 'var(--md-sys-color-primary)'),
+		)
 		await expectScreenshot(el, 'text-field-focused')
 	},
 } satisfies Story
