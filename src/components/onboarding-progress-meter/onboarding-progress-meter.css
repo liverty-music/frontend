@@ -17,7 +17,9 @@
 				var(--color-brand-accent)
 			);
 			--_track: oklch(100% 0 0deg / 10%);
-			--_track-edge: oklch(100% 0 0deg / 14%);
+
+			/* The track's edge marks its full length: 3:1 against the surface. */
+			--_track-edge: oklch(100% 0 0deg / 35%);
 
 			display: block;
 		}

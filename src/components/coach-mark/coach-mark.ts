@@ -5,6 +5,19 @@ const MAX_RETRY_MS = 5000
 const EXIT_MS = 200
 const INITIAL_RETRY_MS = 100
 
+/** Numbers the tips, so each coach mark's id is its own. */
+let tips = 0
+
+/** Adds `id` to, or takes it from, `el`'s `aria-describedby`, keeping the rest. */
+function describedBy(el: HTMLElement, id: string, on: boolean): void {
+	const ids = (el.getAttribute('aria-describedby') ?? '')
+		.split(/\s+/)
+		.filter((token) => token && token !== id)
+	if (on) ids.push(id)
+	if (ids.length > 0) el.setAttribute('aria-describedby', ids.join(' '))
+	else el.removeAttribute('aria-describedby')
+}
+
 /**
  * Single, transient coach mark. The screen that uses it renders it within its
  * own template and drives it through its bindables; today that is only the
@@ -30,6 +43,9 @@ export class CoachMark {
 	public overlayEl: HTMLElement | null = null
 
 	public visible = false
+
+	/** The tip's id, which the target names as its description. */
+	public readonly messageId = `coach-mark-tip-${++tips}`
 
 	/** Takes the anchor off the target once the overlay has faded out. */
 	private exitTimer: ReturnType<typeof setTimeout> | null = null
@@ -101,6 +117,7 @@ export class CoachMark {
 
 	private highlight(target: HTMLElement): void {
 		target.style.setProperty('anchor-name', '--coach-target')
+		describedBy(target, this.messageId, true)
 		this.currentTarget = target
 		this.visible = true
 		// Re-arm (idempotent) the outside-tap light-dismiss listener, and Escape
@@ -168,6 +185,7 @@ export class CoachMark {
 	private clearAnchor(): void {
 		if (this.currentTarget) {
 			this.currentTarget.style.removeProperty('anchor-name')
+			describedBy(this.currentTarget, this.messageId, false)
 			this.currentTarget = null
 		}
 	}

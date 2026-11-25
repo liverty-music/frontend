@@ -105,6 +105,12 @@ export const Active = {
 		await expect(
 			canvas.getByRole('tooltip', { name: 'Onboarding tip' }),
 		).toBeInTheDocument()
+		// @spec components/infrastructure/fan/web/global/coach-mark "A screen reader reads the tip at the target"
+		// The target is described by the tip, so a screen reader reads it
+		// when it reaches the target.
+		await expect(
+			byId(canvasElement, 'coach-target'),
+		).toHaveAccessibleDescription(MESSAGE)
 	},
 } satisfies Story
 

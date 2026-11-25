@@ -4,6 +4,7 @@ import {
 	type StoryObj,
 } from '@aurelia/storybook'
 import { expect, within } from 'storybook/test'
+import { composite, contrast } from '../../../.storybook/contrast'
 import { OnboardingProgressMeter } from './onboarding-progress-meter'
 
 const meta = {
@@ -51,6 +52,21 @@ export const Empty = {
 			name: 'Progress',
 		})
 		await expect(bar).toHaveAttribute('aria-valuenow', '0')
+		// @spec components/infrastructure/fan/web/global/design-tokens "Control boundaries reach 3:1"
+		// The empty track's edge shows its full length: 3:1 on the surface.
+		// What is painted behind the bar: the nearest ancestor with a fill.
+		let painted: Element | null = bar.parentElement
+		while (
+			painted &&
+			getComputedStyle(painted).backgroundColor === 'rgba(0, 0, 0, 0)'
+		) {
+			painted = painted.parentElement
+		}
+		const behind = getComputedStyle(painted ?? document.body).backgroundColor
+		const edge = getComputedStyle(bar).borderTopColor
+		await expect(
+			contrast(composite(behind, edge), composite(behind)),
+		).toBeGreaterThanOrEqual(3)
 	},
 } satisfies Story
 
