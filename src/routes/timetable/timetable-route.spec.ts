@@ -1389,6 +1389,8 @@ describe('TimetableRoute', () => {
 		// @spec components/infrastructure/fan/web/global/celebration-overlay "Post-signup full celebration then dialog"
 		// @spec components/infrastructure/fan/web/global/celebration-overlay "Existing celebration behavior is preserved"
 		// @spec components/infrastructure/fan/web/global/post-signup-dialog "Dialog opens after celebration dismissal"
+		// @spec components/infrastructure/fan/web/global/post-signup-dialog "Nothing left to ask after the celebration"
+		// The route spends the flag on hand-off; a dialog with no step to show opens nothing but the flag is already gone.
 		it('shows the post-signup full celebration (confetti) then the dialog', async () => {
 			mockAuth.isAuthenticated = true
 			mockStorage.getItem.mockImplementation((k: string) =>
