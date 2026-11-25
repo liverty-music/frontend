@@ -239,6 +239,7 @@ describe('WelcomeRoute — canLoad for a guest', () => {
 	})
 
 	// @spec components/infrastructure/fan/web/route/welcome "Guest in onboarding opens Welcome"
+	// @spec components/infrastructure/fan/web/route/welcome "The page's address"
 	it('lets a guest still in onboarding load Welcome, with or without follows', async () => {
 		mockFollowStore.followedCount = 0
 		expect(await sut.canLoad()).toBe(true)
