@@ -13,6 +13,11 @@ import {
 	WCAG_AA,
 } from '../../../.storybook/contrast'
 import { swipeVertically } from '../../../.storybook/gestures'
+import {
+	finishMotion,
+	pausableAnimations,
+	seekMotion,
+} from '../../../.storybook/motion'
 import { transitionsEnded } from '../../../.storybook/transitions-ended'
 import { atWidth } from '../../../.storybook/viewport'
 import { BottomSheet } from './bottom-sheet'
@@ -45,7 +50,7 @@ type Story = StoryObj<typeof meta>
 
 const template = `
 	<bottom-sheet open.bind="open" dismissable.bind="dismissable" aria-label.bind="ariaLabel" heading.bind="heading">
-		<div class="story-content">
+		<div class="story-content" style="padding: 16px;">
 			<p>東京ドーム — 水道橋駅から徒歩5分</p>
 			<button type="button">カレンダーに追加</button>
 		</div>
@@ -320,7 +325,7 @@ const behaviourTemplate = `
 	<button type="button" id="outside" click.trigger="pressed = pressed + 1">背景のボタン</button>
 	<output id="pressed">\${pressed}</output>
 	<bottom-sheet open.bind="open" dismissable.bind="dismissable" aria-label.bind="ariaLabel" heading.bind="heading">
-		<div class="story-content">
+		<div class="story-content" style="padding: 16px;">
 			<p>東京ドーム — 水道橋駅から徒歩5分</p>
 			<button type="button" id="first">カレンダーに追加</button>
 			<button type="button" id="second">地図を開く</button>
@@ -510,7 +515,7 @@ export const Structure = {
 		const surface = body.parentElement as HTMLElement
 		await expect([...area.children]).toEqual([zoneOf(canvasElement), surface])
 		await expect(surface.tagName).toBe('SHEET-SURFACE')
-		await expect(getComputedStyle(surface).display).toBe('contents')
+		await expect(getComputedStyle(surface).display).toBe('block')
 		await expect([...surface.children]).toEqual([body])
 		await expect(body.tagName).toBe('SECTION')
 
@@ -657,8 +662,8 @@ export const InitialSnap = {
 
 		// @spec components/infrastructure/fan/web/global/bottom-sheet "Initial snap animation"
 		const style = getComputedStyle(area)
-		// The entry slide is the second animation of the same element.
-		await expect(style.animationName).toBe('initial-snap, sheet-rise')
+		// The entry slide is the sheet body's, not the scroll area's.
+		await expect(style.animationName).toBe('initial-snap')
 		await expect(style.animationDuration.split(', ')[0]).toBe('0.01s')
 		await expect(style.animationFillMode.split(', ')[0]).toBe('backwards')
 		await expect(scrolls).toHaveLength(0)
@@ -909,22 +914,42 @@ export const RisesFromTheBottom = {
 		// @spec components/infrastructure/fan/web/global/bottom-sheet "The sheet enters by moving, not by fading"
 		const dialog = await ready(canvasElement)
 		const area = scrollAreaOf(canvasElement)
-		const style = getComputedStyle(area)
-		await expect(style.animationName).toContain('sheet-rise')
-		await expect(style.animationDuration).toContain('0.4s')
+		const body = bodyOf(canvasElement)
 		await expect(getComputedStyle(dialog).opacity).toBe('1')
-		// The keyframe starts one sheet-height down.
-		const rise = [...document.styleSheets]
-			.flatMap((sheet) => [...sheet.cssRules])
-			.flatMap(function walk(rule: CSSRule): CSSRule[] {
-				const inner = (rule as CSSGroupingRule).cssRules
-				return inner ? [rule, ...[...inner].flatMap(walk)] : [rule]
-			})
-			.find(
-				(rule) =>
-					rule instanceof CSSKeyframesRule && rule.name === 'sheet-rise',
-			) as CSSKeyframesRule | undefined
-		await expect(rise?.cssText).toContain('translateY(100%)')
+
+		// Replay the entry and step through it. The sheet's rest position is
+		// the one the slide ends at; at no point of the slide may it lie above
+		// that position, and the scroll range must not change (a slide that
+		// widens it makes the snap land too high, so the sheet jumps up and
+		// sinks back as the slide ends).
+		await transitionsEnded(canvasElement)
+		const rest = body.getBoundingClientRect().top
+		const restScrollHeight = area.scrollHeight
+		const restScrollTop = area.scrollTop
+		body.style.animation = 'none'
+		void body.offsetHeight
+		body.style.animation = ''
+		const slides = pausableAnimations(canvasElement).filter(
+			(a) => (a as CSSAnimation).animationName === 'sheet-rise',
+		)
+		await expect(slides).toHaveLength(1)
+		let previous = Number.POSITIVE_INFINITY
+		for (const progress of [0, 0.25, 0.5, 0.75, 1]) {
+			await seekMotion(slides, progress)
+			const top = body.getBoundingClientRect().top
+			await expect(top).toBeGreaterThanOrEqual(rest - 1)
+			await expect(top).toBeLessThanOrEqual(previous + 1)
+			await expect(area.scrollHeight).toBe(restScrollHeight)
+			await expect(area.scrollTop).toBe(restScrollTop)
+			previous = top
+		}
+		await expect(previous).toBeLessThanOrEqual(rest + 1)
+		// It starts below the screen's bottom edge, out of sight.
+		await seekMotion(slides, 0)
+		await expect(body.getBoundingClientRect().top).toBeGreaterThanOrEqual(
+			innerHeight - 1,
+		)
+		finishMotion(slides)
 	},
 } satisfies Story
 
@@ -1181,13 +1206,12 @@ export const MotionPreference = {
 			await expect(getComputedStyle(area).scrollBehavior).toBe('auto')
 			await expect(dialog.matches(':popover-open')).toBe(false)
 			await expect(closed.n).toBe(1)
-			// The sheet fades in where it would rise (the scroll area's second
-			// animation, after initial-snap), over 100 ms, as the backdrop does.
-			await expect(getComputedStyle(area).animationName).toBe(
-				'initial-snap, sheet-fade',
+			// The sheet fades in where it would rise (the sheet body's animation), over 100 ms, as the backdrop does.
+			await expect(getComputedStyle(bodyOf(canvasElement)).animationName).toBe(
+				'sheet-fade',
 			)
 			await expect(
-				seconds(getComputedStyle(area).animationDuration.split(', ')[1]),
+				seconds(getComputedStyle(bodyOf(canvasElement)).animationDuration),
 			).toBeCloseTo(0.1, 2)
 			await expect(
 				seconds(getComputedStyle(dialog, '::backdrop').transitionDuration),
@@ -1197,7 +1221,7 @@ export const MotionPreference = {
 			await expect(dialog.matches(':popover-open')).toBe(true)
 			await waitFor(() => expect(closed.n).toBe(1), { timeout: 3000 })
 			await expect(
-				seconds(getComputedStyle(area).animationDuration.split(', ')[1]),
+				seconds(getComputedStyle(bodyOf(canvasElement)).animationDuration),
 			).toBeCloseTo(0.4, 2)
 			await expect(
 				seconds(getComputedStyle(dialog, '::backdrop').transitionDuration),

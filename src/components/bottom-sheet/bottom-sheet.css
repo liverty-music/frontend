@@ -144,12 +144,29 @@
 			/* Entry slide: a bottom sheet moves on and off the screen rather
 			   than fading (M3 transitions: "Don't fade a bottom sheet as it
 			   enters and exits"), 400 ms with emphasized decelerate (easing and
-			   duration). The scroller moves, not the popover: a transform on the
+			   duration). The sheet body moves, not the popover: a transform on the
 			   popover crashed Chromium in the area filter's story. The close is
 			   the dismiss scroll, so there is no exit here. */
-			animation:
-				initial-snap 0.01s backwards,
-				sheet-rise var(--md-sys-motion-duration-medium4)
+			animation: initial-snap 0.01s backwards;
+		}
+
+		/* The sheet's colour: a consumer may set --sheet-bg on the sheet. */
+		sheet-surface > .sheet-body {
+			/* stylelint-disable-next-line declaration-property-custom-property-allowed-list -- the sheet's public colour hook, set by a consumer (page-help) and falling back to the role token */
+			background: var(--sheet-bg, var(--md-sys-color-surface-container));
+		}
+
+		/* The slide stays inside a clipping box of the sheet's own size. A
+		   transform on a child of the scroller adds its travel to the scroll
+		   range, so the snap to the sheet lands that far too high and the sheet
+		   sinks as the slide ends. Clipping keeps the scroll range as it is. */
+		.scroll-area > sheet-surface {
+			overflow: clip;
+			display: block;
+		}
+
+		.scroll-area > sheet-surface > .sheet-body {
+			animation: sheet-rise var(--md-sys-motion-duration-medium4)
 				var(--md-sys-motion-easing-emphasized-decelerate);
 		}
 
@@ -170,12 +187,6 @@
 			scroll-snap-align: none;
 		}
 
-		/* The sheet's colour: a consumer may set --sheet-bg on the sheet. */
-		sheet-surface > .sheet-body {
-			/* stylelint-disable-next-line declaration-property-custom-property-allowed-list -- the sheet's public colour hook, set by a consumer (page-help) and falling back to the role token */
-			background: var(--sheet-bg, var(--md-sys-color-surface-container));
-		}
-
 		/* The dismiss close is a scroll to the top snap stop; make it smooth
 		   unless the user prefers reduced motion (then it jump-scrolls). */
 		@media (prefers-reduced-motion: no-preference) {
@@ -185,10 +196,8 @@
 		}
 
 		@media (prefers-reduced-motion: reduce) {
-			.scroll-area {
-				animation:
-					initial-snap 0.01s backwards,
-					sheet-fade var(--md-sys-motion-duration-reduced-fade) linear;
+			.scroll-area > sheet-surface > .sheet-body {
+				animation: sheet-fade var(--md-sys-motion-duration-reduced-fade) linear;
 			}
 
 			.sheet-popover::backdrop {
