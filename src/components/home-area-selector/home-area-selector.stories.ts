@@ -142,7 +142,8 @@ export const ChoosingACityClosesTheSheet = {
 /**
  * The sheet slides up from the bottom of the viewport as every bottom sheet
  * does (its own story steps through it); under reduced motion it stays in
- * place and fades in over at most 100 ms. Closing is the dismiss scroll.
+ * place and fades in over at most 100 ms. Closing is the dismiss scroll, which
+ * the story then performs.
  */
 export const OpeningMotion = {
 	tags: ['reduced-motion'],
@@ -179,5 +180,14 @@ export const OpeningMotion = {
 		}
 		finishMotion(motion)
 		await expect(body.getBoundingClientRect().top).toBeCloseTo(rest, 0)
+
+		// Closing is the dismiss scroll, as for every bottom sheet: nothing
+		// slides back by a timed animation, and the sheet is gone.
+		canvasElement.querySelector<HTMLElement>('.dismiss-zone')?.click()
+		await waitFor(
+			() =>
+				expect(popoverOf(canvasElement).matches(':popover-open')).toBe(false),
+			{ timeout: 3000 },
+		)
 	},
 } satisfies Story
