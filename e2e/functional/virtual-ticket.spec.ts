@@ -222,4 +222,8 @@ test('a ticket card shows the state layer under a pointer', async ({
 	expect(await layer()).toBe(0)
 	await card.locator('.tickets-card-head').hover()
 	await expect.poll(layer).toBeGreaterThan(0)
+	// Over one of its own controls, which the card ignores, only the control
+	// answers.
+	await card.getByTestId('tickets-open-virtual').hover()
+	await expect.poll(layer).toBe(0)
 })

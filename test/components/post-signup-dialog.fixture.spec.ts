@@ -321,7 +321,9 @@ describe('PostSignupDialog', () => {
 				(li) => li.textContent,
 			)
 			expect(steps).toEqual([t.ios.step1, t.ios.step2, t.ios.step3])
-			expect(d.buttons()).toEqual([t.defer])
+			// The steps are done in the browser, not here, so the one action
+			// acknowledges the message instead of putting it off.
+			expect(d.buttons()).toEqual([t.gotIt])
 		})
 
 		// @spec components/infrastructure/fan/web/global/post-signup-dialog "iPhone with the app installed"

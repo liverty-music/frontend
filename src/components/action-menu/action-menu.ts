@@ -96,11 +96,15 @@ export class ActionMenu {
 			} catch {
 				// Not shown (detached).
 			}
+			// Focus stays on the FAB, now the close control (M3 FAB menu; the
+			// disclosure pattern). Showing the panel, a dialog, moved focus into
+			// it, and re-showing the FAB took it off the FAB; the panel's items
+			// come next in the focus order, since a popover follows the button
+			// that opened it.
+			this.fabButton.focus()
 			// Re-read every item's isOn() (e.g. the filter's active state may have
 			// changed while the panel was closed).
 			this.signaler.dispatchSignal(ACTION_MENU_SIGNAL)
-			// Move focus into the panel (first action item) on open.
-			this.panel.querySelector<HTMLElement>('.fab-item')?.focus()
 		} else if (this.suppressRefocus) {
 			this.suppressRefocus = false
 		} else {
