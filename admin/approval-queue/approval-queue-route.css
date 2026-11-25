@@ -137,6 +137,10 @@
 			color: var(--color-error);
 		}
 
+		.approval-queue-table-scroll {
+			overflow-x: auto;
+		}
+
 		.approval-queue-table {
 			border-collapse: collapse;
 			inline-size: 100%;
