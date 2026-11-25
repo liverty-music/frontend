@@ -137,7 +137,7 @@ export class ConcertStore {
 		signal?: AbortSignal,
 	): Promise<ProximityGroup[]> {
 		if (!this.authService.isAuthenticated) {
-			return this.listFollowedGuest(signal)
+			return onOrAfter(await this.listFollowedGuest(signal), from)
 		}
 		return this.followerConcerts.read(from, signal)
 	}
@@ -156,7 +156,9 @@ export class ConcertStore {
 			// Guests read via proximity; force-refresh that same key so resume
 			// actually refreshes instead of serving the still-fresh cached value.
 			const input = this.guestProximityInput()
-			return input ? this.proximityConcerts.revalidate(input) : []
+			return input
+				? onOrAfter(await this.proximityConcerts.revalidate(input), from)
+				: []
 		}
 		return this.followerConcerts.revalidate(from)
 	}
@@ -509,6 +511,26 @@ export class ConcertStore {
 			level1,
 		}
 	}
+}
+
+/**
+ * Keep the groups whose date is on or after `from`, the lower bound the
+ * authenticated `ListFollowed` applies on the server. `ListByArtists`, which the
+ * guest timetable reads, returns every date and has no `from`, so the guest
+ * result is cut here, after the cache, to follow the same rule. Without `from`
+ * the groups pass through untouched, as does a group with no date.
+ */
+function onOrAfter(
+	groups: ProximityGroup[],
+	from?: CalendarDate,
+): ProximityGroup[] {
+	if (!from) return groups
+	const bound = from.year * 10000 + from.month * 100 + from.day
+	return groups.filter((g) => {
+		const d = g.date?.value
+		if (!d) return true
+		return d.year * 10000 + d.month * 100 + d.day >= bound
+	})
 }
 
 /**
