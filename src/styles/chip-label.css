@@ -1,0 +1,19 @@
+/* A chip whose label may run long, an artist's name: the chip is never wider
+   than its row, and the label (`chip-label`) ends in an ellipsis instead of
+   running past it (M3 chips: avoid labels longer than 20 characters; the app
+   cannot shorten a name, so it truncates). The full text stays the
+   checkbox's accessible name. A block of its own because chip.css is at its
+   line limit. */
+@layer block {
+	@scope (.chip) {
+		:scope {
+			max-inline-size: 100%;
+		}
+
+		.chip-label {
+			overflow: hidden;
+			min-inline-size: 0;
+			text-overflow: ellipsis;
+		}
+	}
+}

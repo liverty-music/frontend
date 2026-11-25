@@ -29,7 +29,7 @@ const ARTISTS = [
  * committed selection, which only the confirm button may change.
  */
 const render =
-	(selectedIds: string[] = []): Story['render'] =>
+	(selectedIds: string[] = [], artists = ARTISTS): Story['render'] =>
 	(args) =>
 		defineAureliaStory({
 			template: `
@@ -42,7 +42,7 @@ const render =
 					is-authenticated.bind="isAuthenticated"
 				></artist-filter-bar>
 			`,
-			props: { ...args, artists: ARTISTS, selectedIds, selectedStatuses: [] },
+			props: { ...args, artists, selectedIds, selectedStatuses: [] },
 			register: [ArtistFilterBar],
 		})
 
@@ -109,6 +109,39 @@ export const ChipsWithCounts = {
 				`${artist.count}${artist.name}`,
 			)
 		}
+
+		await dismiss(canvasElement)
+	},
+} satisfies Story
+
+/** An artist whose name is longer than the chip's row on a 320 px phone. */
+const LONG_NAME = 'ずっと真夜中でいいのに。と東京スカパラダイスオーケストラ'
+
+/**
+ * A long artist name: the chip stays inside its row and the name ends in an
+ * ellipsis (M3: keep chip labels short; a name cannot be shortened, so it is
+ * truncated), while the checkbox is still named with the whole name.
+ */
+export const LongArtistName = {
+	globals: { viewport: { value: 'mobile1' } },
+	render: render([], [{ id: 'a9', name: LONG_NAME, count: 2 }, ...ARTISTS]),
+	play: async ({ canvasElement }) => {
+		await openFilter(canvasElement)
+		const list = canvasElement.querySelector('.artists-list') as HTMLElement
+		const chip = chipOf(canvasElement, LONG_NAME)
+		const label = chip.querySelector('.chip-label') as HTMLElement
+
+		// @spec components/infrastructure/fan/web/global/bottom-sheet "A long artist name is truncated"
+		await expect(chip.getBoundingClientRect().right).toBeLessThanOrEqual(
+			list.getBoundingClientRect().right + 0.5,
+		)
+		await expect(getComputedStyle(label).textOverflow).toBe('ellipsis')
+		await expect(label.scrollWidth).toBeGreaterThan(label.clientWidth)
+		await expect(
+			within(canvasElement).getByRole('checkbox', {
+				name: new RegExp(LONG_NAME),
+			}),
+		).toBeInTheDocument()
 
 		await dismiss(canvasElement)
 	},

@@ -16,6 +16,7 @@
 @import "./field-error.css";
 @import "./required-mark.css";
 @import "./chip.css";
+@import "./chip-label.css";
 @import "../../shared/styles/card.css";
 @import "../../shared/styles/icon-button.css";
 @import "../../shared/styles/menu.css";
