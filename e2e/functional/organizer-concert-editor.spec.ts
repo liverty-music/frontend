@@ -410,3 +410,181 @@ test.describe('unsaved changes', () => {
 		).toHaveCount(0)
 	})
 })
+
+test.describe('confirming a new venue', () => {
+	const place = (id: string, name: string, address: string) => ({
+		placeId: { value: id },
+		name: { value: name },
+		address,
+	})
+	const area = (
+		code: string,
+		nameEn: string,
+		nameJa: string,
+		opts: { zone?: string; region?: string } = {},
+	) => ({
+		code: { value: code },
+		kind: 'AREA_KIND_SUBDIVISION',
+		countryCode: { value: code.slice(0, 2) },
+		nameEn,
+		nameJa,
+		...(opts.zone ? { timeZone: { value: opts.zone } } : {}),
+		regionCodes: opts.region ? [{ value: opts.region }] : [],
+	})
+	const zone = (name: string, nameEn: string, nameJa: string) => ({
+		timeZone: { value: name },
+		nameEn,
+		nameJa,
+	})
+	const COUNTRIES: Record<string, Record<string, unknown>> = {
+		JP: {
+			areas: [
+				area('JP-13', 'Tokyo', '東京都', {
+					zone: 'Asia/Tokyo',
+					region: 'JP-KANTO',
+				}),
+				area('JP-27', 'Osaka', '大阪府', {
+					zone: 'Asia/Tokyo',
+					region: 'JP-KINKI',
+				}),
+			],
+			regions: [
+				{ ...area('JP-KANTO', 'Kanto', '関東'), kind: 'AREA_KIND_REGION' },
+				{ ...area('JP-KINKI', 'Kinki', '近畿'), kind: 'AREA_KIND_REGION' },
+			],
+			timeZones: [zone('Asia/Tokyo', 'Japan', '日本')],
+		},
+		KR: {
+			areas: [area('KR-11', 'Seoul', 'ソウル特別市', { zone: 'Asia/Seoul' })],
+			timeZones: [zone('Asia/Seoul', 'Seoul', 'ソウル')],
+		},
+		US: {
+			areas: [
+				area('US-CA', 'California', 'カリフォルニア州', {
+					zone: 'America/Los_Angeles',
+				}),
+				area('US-TX', 'Texas', 'テキサス州'),
+			],
+			timeZones: [
+				zone('America/Chicago', 'Chicago', 'シカゴ'),
+				zone('America/Los_Angeles', 'Los Angeles', 'ロサンゼルス'),
+			],
+		},
+	}
+	const VENUE_RPC: RpcMocks = {
+		'VenueService/Search': (req) => ({
+			body: {
+				candidates: String(req.text).startsWith('Zepp Haneda')
+					? [place('ChIJ-haneda', 'Zepp Haneda (TOKYO)', '大田区羽田空港')]
+					: String(req.text).startsWith('Gocheok')
+						? [place('ChIJ-gocheok', 'Gocheok Sky Dome', 'ソウル特別市九老区')]
+						: [place('ChIJ-namba', 'Zepp Namba (OSAKA)', '大阪市浪速区')],
+			},
+		}),
+		'VenueService/ResolvePlace': (req) => {
+			const id = (req.placeId as { value: string }).value
+			if (id === 'ChIJ-namba') {
+				return {
+					body: {
+						venue: {
+							id: { value: 'v-namba' },
+							name: { value: 'Zepp Namba (OSAKA)' },
+							adminArea: { value: 'JP-27' },
+							timeZone: { value: 'Asia/Tokyo' },
+							placeId: { value: id },
+						},
+					},
+				}
+			}
+			const seoul = id === 'ChIJ-gocheok'
+			return {
+				body: {
+					draft: {
+						name: { value: seoul ? 'Gocheok Sky Dome' : 'Zepp Haneda (TOKYO)' },
+						countryCode: { value: seoul ? 'KR' : 'JP' },
+						suggestedAdminArea: { value: seoul ? 'KR-11' : 'JP-13' },
+						timeZone: { value: seoul ? 'Asia/Seoul' : 'Asia/Tokyo' },
+					},
+				},
+			}
+		},
+		'AreaService/ListCountries': {
+			countries: [
+				{ code: { value: 'JP' }, nameEn: 'Japan', nameJa: '日本' },
+				{ code: { value: 'KR' }, nameEn: 'South Korea', nameJa: '韓国' },
+				{ code: { value: 'US' }, nameEn: 'United States', nameJa: '米国' },
+			],
+		},
+		'AreaService/ListByCountry': (req) => ({
+			body: COUNTRIES[(req.countryCode as { value: string }).value] ?? {},
+		}),
+		'SeriesService/Create': oneSeries(XX_SOLO),
+	}
+
+	async function pickPlace(page: Page, text: string, option: string) {
+		const search = row(page, 0).getByRole('combobox', { name: /^会場/ })
+		await search.fill(text)
+		await page.getByRole('option', { name: new RegExp(option) }).click()
+	}
+
+	test('a new place is confirmed, changed to the United States and saved with its area and zone', async ({
+		page,
+	}) => {
+		const log = await openEditor(page, `${SERIES}/new`, VENUE_RPC)
+		const field = row(page, 0).locator('venue-confirm')
+
+		// A new place in Tokyo: its name, 東京都 under 関東, and 日本 as text.
+		await pickPlace(page, 'Zepp Haneda', 'Zepp Haneda')
+		await expect(field.getByLabel('会場名')).toHaveValue('Zepp Haneda (TOKYO)')
+		const areas = field.getByLabel('地域')
+		await expect(areas.locator('option:checked')).toHaveText('東京都')
+		await expect(
+			areas.locator('optgroup[label="関東"] option', { hasText: '東京都' }),
+		).toHaveCount(1)
+		await expect(field.locator('[data-role="zone-text"]')).toHaveText('日本')
+
+		// A place in Seoul: ソウル特別市 and ソウル.
+		await row(page, 0).getByRole('button', { name: '変更' }).click()
+		await pickPlace(page, 'Gocheok', 'Gocheok')
+		await expect(field.getByLabel('地域').locator('option:checked')).toHaveText(
+			'ソウル特別市',
+		)
+		await expect(field.locator('[data-role="zone-text"]')).toHaveText('ソウル')
+
+		// 国 → 米国: the zones become a select; a state with one zone selects it.
+		await field.getByLabel('国').selectOption('US')
+		await field.getByLabel('地域').selectOption('US-CA')
+		await expect(
+			field.getByLabel('タイムゾーン').locator('option:checked'),
+		).toHaveText(/ロサンゼルス \(UTC[−+]\d+\)/)
+		await field.getByLabel('会場名').fill('Gocheok Sky Dome LA')
+
+		await titleField(page).fill('XX 冬の単独公演')
+		await row(page, 0).getByLabel('日付').fill('2026-12-01')
+		await page.getByRole('button', { name: '公演をつくる' }).click()
+		await expect.poll(() => calls(log, 'SeriesService/Create').length).toBe(1)
+		const body = calls(log, 'SeriesService/Create')[0].body as {
+			draft: { events: Array<Record<string, { value: string }>> }
+		}
+		expect(body.draft.events[0]).toMatchObject({
+			placeId: { value: 'ChIJ-gocheok' },
+			venueName: { value: 'Gocheok Sky Dome LA' },
+			adminArea: { value: 'US-CA' },
+			timeZone: { value: 'America/Los_Angeles' },
+		})
+	})
+
+	test('a place already a Venue shows its name, area and zone as text', async ({
+		page,
+	}) => {
+		await openEditor(page, `${SERIES}/new`, VENUE_RPC)
+		await pickPlace(page, 'Zepp Namba', 'Zepp Namba')
+		const known = row(page, 0).locator('venue-confirm [data-role="venue"]')
+		await expect(known).toContainText('Zepp Namba (OSAKA)')
+		await expect(known).toContainText('大阪府')
+		await expect(known).toContainText('日本')
+		await expect(
+			row(page, 0).locator('venue-confirm select, venue-confirm input'),
+		).toHaveCount(0)
+	})
+})

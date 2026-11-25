@@ -294,6 +294,17 @@ export class ConcertEditorRoute {
 					// A published or cancelled date resends its listed venue name,
 					// which Update compares to keep its venue fixed, even when no
 					// place was matched; a draft needs a pick.
+					// A date loaded from its concert is at a stored Venue.
+					place: placeId
+						? {
+								placeId,
+								kind: 'venue' as const,
+								name: e.venue?.name?.value ?? '',
+								countryCode: (e.venue?.adminArea?.value ?? '').slice(0, 2),
+								adminArea: e.venue?.adminArea?.value ?? '',
+								timeZone: e.venue?.timeZone?.value ?? '',
+							}
+						: null,
 					venue:
 						e.publishState !== PublishState.DRAFT
 							? {

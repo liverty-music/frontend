@@ -14,7 +14,6 @@ import {
 	resolveConcerts,
 } from '../../../../shared/lib/concert/resolve-concert'
 import { IAppConfig } from '../../../config/app-config'
-import type { GeoLocationInit } from '../../../entities/user'
 import { IAuthService } from '../../../services/auth-service'
 import { createTransport } from '../../../services/grpc-transport'
 
@@ -180,18 +179,18 @@ export class ConcertRpcClient {
 	}
 
 	public async listByLocation(
-		location: GeoLocationInit,
+		adminArea: string,
 		from: CalendarDate,
 		to: CalendarDate,
 		signal?: AbortSignal,
 	): Promise<ProximityGroup[]> {
 		this.logger.info('Listing concerts by location', {
-			adminArea: location.adminArea,
+			adminArea,
 		})
 		try {
 			const response = await this.client.listByLocation(
 				{
-					location: location,
+					reference: { case: 'adminArea', value: { value: adminArea } },
 					from: { value: from },
 					to: { value: to },
 				},
@@ -200,7 +199,7 @@ export class ConcertRpcClient {
 			return resolveGroups(response)
 		} catch (err) {
 			this.logger.warn('Concert listByLocation failed', {
-				adminArea: location.adminArea,
+				adminArea,
 				error: err,
 			})
 			throw err

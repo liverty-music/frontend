@@ -20,6 +20,7 @@ import { PrerequisiteCallout } from './prerequisite-callout/prerequisite-callout
 import { StatTile } from './stat-tile/stat-tile'
 import { StatusBadge } from './status-badge/status-badge'
 import { UnsavedChanges } from './unsaved-changes/unsaved-changes'
+import { VenueConfirm } from './venue-confirm/venue-confirm'
 import { VenueField } from './venue-field/venue-field'
 
 /** The console's components, registered once for every screen. */
@@ -46,5 +47,6 @@ export const ConsoleUi = [
 	StatTile,
 	StatusBadge,
 	UnsavedChanges,
+	VenueConfirm,
 	VenueField,
 ]

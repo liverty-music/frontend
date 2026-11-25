@@ -14,6 +14,7 @@ import type {
 	EventDraftInput,
 	SeriesDraftInput,
 } from '../services/series-client'
+import type { VenueConfirmation } from '../ui/venue-confirm/venue-confirm'
 import type { VenuePick } from '../ui/venue-field/venue-field'
 
 /**
@@ -32,6 +33,12 @@ export interface EventFormRow {
 	publishState: PublishState
 	/** The place picked from the map catalog; null until one is picked. */
 	venue: VenuePick | null
+	/**
+	 * What the picked place will be, as the member confirmed it: the Venue
+	 * that holds it, or the name, area and time zone of a new Venue. Null
+	 * until the place is read.
+	 */
+	place: VenueConfirmation | null
 	/** ISO `YYYY-MM-DD` from `<input type="date">`; empty when unset. */
 	localDate: string
 	/** `HH:mm` from the console time field; empty when unset. */
@@ -76,6 +83,8 @@ export interface ConcertFormErrors {
 
 export interface EventRowErrors {
 	venueName?: string
+	venueArea?: string
+	venueTimeZone?: string
 	localDate?: string
 	time?: string
 	perAccountLimit?: string
@@ -87,6 +96,7 @@ export function emptyEventRow(): EventFormRow {
 		eventId: '',
 		publishState: PublishState.DRAFT,
 		venue: null,
+		place: null,
 		localDate: '',
 		startTime: '',
 		openTime: '',
@@ -120,6 +130,7 @@ export function nextEventRow(previous: EventFormRow | undefined): EventFormRow {
 	return {
 		...emptyEventRow(),
 		venue: previous.venue?.placeId ? { ...previous.venue } : null,
+		place: previous.venue?.placeId ? previous.place : null,
 		localDate: previous.localDate,
 		openTime: previous.openTime,
 		startTime: previous.startTime,
@@ -230,9 +241,7 @@ export function validateConcertForm(
 		const rowErrors: EventRowErrors = {}
 		// A venue is a place picked from the map catalog, never a typed name.
 		// A published or cancelled date keeps its venue, which is not sent.
-		if (!hasFixedVenueAndDate(row) && !row.venue?.placeId) {
-			rowErrors.venueName = 'concertEditor.error.venueNotPicked'
-		}
+		if (!hasFixedVenueAndDate(row)) Object.assign(rowErrors, venueErrors(row))
 		const date = parseIsoDate(row.localDate)
 		if (date === null) {
 			rowErrors.localDate = 'concertEditor.error.date'
@@ -255,6 +264,27 @@ export function validateConcertForm(
 		errors.rows.push(rowErrors)
 	}
 
+	return errors
+}
+
+/**
+ * A new or DRAFT date needs a picked place that has been read; a new Venue
+ * also needs the name, area and time zone the member confirmed.
+ */
+function venueErrors(row: EventFormRow): EventRowErrors {
+	if (!row.venue?.placeId) {
+		return { venueName: 'concertEditor.error.venueNotPicked' }
+	}
+	const place = row.place
+	if (!place || place.placeId !== row.venue.placeId) {
+		return { venueName: 'concertEditor.error.venueNotConfirmed' }
+	}
+	if (place.kind === 'venue') return {}
+	const errors: EventRowErrors = {}
+	if (place.name === '') errors.venueName = 'concertEditor.error.venueName'
+	if (place.adminArea === '') errors.venueArea = 'concertEditor.error.venueArea'
+	if (place.timeZone === '')
+		errors.venueTimeZone = 'concertEditor.error.venueTimeZone'
 	return errors
 }
 
@@ -286,7 +316,13 @@ export function isFormValid(errors: ConcertFormErrors): boolean {
 		return false
 	}
 	return errors.rows.every(
-		(r) => !r.venueName && !r.localDate && !r.time && !r.perAccountLimit,
+		(r) =>
+			!r.venueName &&
+			!r.venueArea &&
+			!r.venueTimeZone &&
+			!r.localDate &&
+			!r.time &&
+			!r.perAccountLimit,
 	)
 }
 
@@ -303,8 +339,18 @@ export function toSeriesDraftInput(model: ConcertFormModel): SeriesDraftInput {
 		const open = composeInstant(date, row.openTime)
 		return {
 			...(row.eventId ? { eventId: row.eventId } : {}),
-			venueName: row.venue?.name ?? '',
+			// A fixed (published or cancelled) date resends the listed name it
+			// was loaded with, which Update compares to keep its venue; a new
+			// or draft date sends the name the member confirmed.
+			venueName: hasFixedVenueAndDate(row)
+				? (row.venue?.name ?? '')
+				: row.place?.name || row.venue?.name || '',
 			...(row.venue?.placeId ? { placeId: row.venue.placeId } : {}),
+			// A new Venue is created from what the member confirmed; the
+			// server ignores both for a place a Venue already holds.
+			...(row.place?.kind === 'draft' && !hasFixedVenueAndDate(row)
+				? { adminArea: row.place.adminArea, timeZone: row.place.timeZone }
+				: {}),
 			localDate: date,
 			...(start ? { startTime: start } : {}),
 			...(open ? { openTime: open } : {}),

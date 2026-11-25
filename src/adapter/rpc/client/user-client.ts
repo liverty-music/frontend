@@ -35,7 +35,7 @@ export class UserRpcClient {
 	public async create(
 		email: string,
 		preferredLanguage: string,
-		home?: { countryCode: string; level1: string; level2?: string },
+		home?: { countryCode: string; level1: string },
 	): Promise<User | undefined> {
 		const resp = await this.userClient.create({
 			email: { value: email },
@@ -68,7 +68,6 @@ export class UserRpcClient {
 	public async setHome(home: {
 		countryCode: string
 		level1: string
-		level2?: string
 	}): Promise<User | undefined> {
 		const resp = await this.userClient.setHome({ home })
 		return resp.user ? userFrom(resp.user) : undefined

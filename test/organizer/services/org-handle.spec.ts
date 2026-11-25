@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
 	applyOrgPin,
+	confirmPendingOrgPin,
 	ORG_ID_STORAGE_KEY,
 	ORG_SHORT_NAME_STORAGE_KEY,
-	confirmPendingOrgPin,
 	type OrgPin,
 	PENDING_ORG_PIN_STORAGE_KEY,
 	primaryDomainOf,

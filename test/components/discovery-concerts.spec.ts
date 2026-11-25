@@ -206,7 +206,7 @@ describe('DiscoveryConcerts', () => {
 				expect(mockConcert.listByLocation).toHaveBeenCalledTimes(2),
 			)
 			expect(mockConcert.listByLocation).toHaveBeenLastCalledWith(
-				expect.objectContaining({ adminArea: 'JP-43' }),
+				'JP-43',
 				WEEK.from,
 				WEEK.to,
 				expect.any(AbortSignal),
@@ -217,7 +217,7 @@ describe('DiscoveryConcerts', () => {
 				expect(mockConcert.listByLocation).toHaveBeenCalledTimes(3),
 			)
 			expect(mockConcert.listByLocation).toHaveBeenLastCalledWith(
-				expect.objectContaining({ adminArea: 'JP-43' }),
+				'JP-43',
 				WEEKEND.from,
 				WEEKEND.to,
 				expect.any(AbortSignal),
@@ -263,14 +263,9 @@ describe('DiscoveryConcerts', () => {
 			await vi.waitFor(() =>
 				expect(mockConcert.listByLocation).toHaveBeenCalled(),
 			)
-			const [geo] = mockConcert.listByLocation.mock.calls[0]
-			expect(geo).toEqual(
-				expect.objectContaining({
-					adminArea: 'JP-40',
-					latitude: expect.any(Number),
-					longitude: expect.any(Number),
-				}),
-			)
+			// Only the area code: the server finds its reference point.
+			const [area] = mockConcert.listByLocation.mock.calls[0]
+			expect(area).toBe('JP-40')
 		})
 
 		// @spec components/infrastructure/fan/web/route/discovery "Area override via HomeAreaSelector"
@@ -289,7 +284,7 @@ describe('DiscoveryConcerts', () => {
 			expect(sut.selectedAreaName).toBe('大阪府')
 			await vi.waitFor(() =>
 				expect(mockConcert.listByLocation).toHaveBeenLastCalledWith(
-					expect.objectContaining({ adminArea: 'JP-27' }),
+					'JP-27',
 					WEEK.from,
 					WEEK.to,
 					expect.any(AbortSignal),
@@ -355,7 +350,7 @@ describe('DiscoveryConcerts', () => {
 			settle()
 			await vi.waitFor(() =>
 				expect(mockConcert.listByLocation).toHaveBeenCalledWith(
-					expect.objectContaining({ adminArea: 'JP-13' }),
+					'JP-13',
 					WEEK.from,
 					WEEK.to,
 					expect.any(AbortSignal),
@@ -373,7 +368,7 @@ describe('DiscoveryConcerts', () => {
 			sut.onRangeChanged(rangeEvent(WEEK, '7日以内'))
 			await vi.waitFor(() =>
 				expect(mockConcert.listByLocation).toHaveBeenCalledWith(
-					expect.objectContaining({ adminArea: 'JP-13' }),
+					'JP-13',
 					WEEK.from,
 					WEEK.to,
 					expect.any(AbortSignal),
@@ -397,7 +392,7 @@ describe('DiscoveryConcerts', () => {
 			})
 			await sut.load()
 			expect(mockConcert.listByLocation).toHaveBeenCalledWith(
-				expect.objectContaining({ adminArea: 'JP-13' }),
+				'JP-13',
 				WEEK.from,
 				WEEK.to,
 				expect.any(AbortSignal),
@@ -433,7 +428,7 @@ describe('DiscoveryConcerts', () => {
 			sut.onRangeChanged(rangeEvent(WEEK, '7日以内'))
 			await vi.waitFor(() =>
 				expect(mockConcert.listByLocation).toHaveBeenCalledWith(
-					expect.objectContaining({ adminArea: 'JP-27' }),
+					'JP-27',
 					WEEK.from,
 					WEEK.to,
 					expect.any(AbortSignal),
@@ -457,7 +452,7 @@ describe('DiscoveryConcerts', () => {
 			sut.onAreaSelected('JP-40')
 			await vi.waitFor(() =>
 				expect(mockConcert.listByLocation).toHaveBeenCalledWith(
-					expect.objectContaining({ adminArea: 'JP-40' }),
+					'JP-40',
 					WEEK.from,
 					WEEK.to,
 					expect.any(AbortSignal),

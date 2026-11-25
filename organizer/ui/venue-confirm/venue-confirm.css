@@ -1,0 +1,32 @@
+/*
+ * The label, the field frame, the select and the error text come from
+ * `../console-field/console-field.css` and `console-field-controls.css`
+ * (imported first by the template); these rules lay out the confirmation
+ * under the picked place.
+ */
+@layer block {
+	.draft,
+	.known {
+		display: grid;
+		gap: var(--space-s);
+	}
+
+	.known dd {
+		color: var(--md-sys-color-on-surface);
+	}
+
+	.status {
+		display: inline-flex;
+		gap: var(--space-2xs);
+		align-items: center;
+		color: var(--md-sys-color-on-surface-variant);
+	}
+
+	.unavailable {
+		color: var(--md-sys-color-error);
+	}
+
+	.zone-text {
+		color: var(--md-sys-color-on-surface);
+	}
+}

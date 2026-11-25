@@ -21,6 +21,9 @@ vi.mock('../../../admin/services/concert-candidate-client', () => ({
 	IConcertCandidateClient,
 }))
 
+const IAreaClient = DI.createInterface('IAreaClient')
+vi.mock('../../../admin/services/area-client', () => ({ IAreaClient }))
+
 const { ApprovalQueueRoute } = await import(
 	'../../../admin/approval-queue/approval-queue-route'
 )
@@ -65,7 +68,12 @@ function makeConcert(opts: {
 	year: number
 	month: number
 	day: number
-	resolvedVenue?: { name: string; adminArea: string }
+	/** The resolved place id; none when absent. */
+	placeId?: string
+	/** The admin area; JP-13 when absent, none when null. */
+	adminArea?: string | null
+	/** The time zone; Asia/Tokyo when absent, none when null. */
+	timeZone?: string | null
 	sourceUrl?: string
 	openTime?: Timestamp
 	startTime?: Timestamp
@@ -84,12 +92,15 @@ function makeConcert(opts: {
 			},
 		},
 		listedVenueName: { value: 'listed venue' },
-		resolvedVenue: opts.resolvedVenue
-			? {
-					name: { value: opts.resolvedVenue.name },
-					adminArea: { value: opts.resolvedVenue.adminArea },
-				}
-			: undefined,
+		adminArea:
+			opts.adminArea === null
+				? undefined
+				: { value: opts.adminArea ?? 'JP-13' },
+		timeZone:
+			opts.timeZone === null
+				? undefined
+				: { value: opts.timeZone ?? 'Asia/Tokyo' },
+		resolvedPlaceId: opts.placeId ? { value: opts.placeId } : undefined,
 		sourceUrl: opts.sourceUrl ? { value: opts.sourceUrl } : undefined,
 		openTime: opts.openTime ? { value: opts.openTime } : undefined,
 		startTime: opts.startTime ? { value: opts.startTime } : undefined,
@@ -105,7 +116,8 @@ function resolvedConcert(): ConcertCandidate {
 		year: 2026,
 		month: 7,
 		day: 4,
-		resolvedVenue: { name: 'Nippon Budokan', adminArea: 'JP-13' },
+		placeId: 'ChIJNipponBudokan',
+		adminArea: 'JP-13',
 		sourceUrl: 'https://example.com/show/1',
 	})
 }
@@ -125,12 +137,67 @@ function unresolvedConcert(): ConcertCandidate {
 const ERROR_MESSAGES_SPEC =
 	'components/infrastructure/admin/web/global/error-messages'
 
-async function build(client: MockClient) {
+interface MockAreaClient {
+	resolve: ReturnType<typeof vi.fn>
+	listByCountry: ReturnType<typeof vi.fn>
+}
+
+const tokyo = {
+	code: { value: 'JP-13' },
+	countryCode: { value: 'JP' },
+	timeZone: { value: 'Asia/Tokyo' },
+}
+const osaka = {
+	code: { value: 'JP-27' },
+	countryCode: { value: 'JP' },
+	timeZone: { value: 'Asia/Tokyo' },
+}
+const texas = { code: { value: 'US-TX' }, countryCode: { value: 'US' } }
+const countries: Record<string, unknown> = {
+	JP: {
+		areas: [tokyo, osaka],
+		timeZones: [
+			{ timeZone: { value: 'Asia/Tokyo' }, nameEn: 'Japan', nameJa: '日本' },
+		],
+	},
+	US: {
+		areas: [texas],
+		timeZones: [
+			{
+				timeZone: { value: 'America/Chicago' },
+				nameEn: 'Chicago',
+				nameJa: 'シカゴ',
+			},
+			{
+				timeZone: { value: 'America/Denver' },
+				nameEn: 'Denver',
+				nameJa: 'デンバー',
+			},
+		],
+	},
+}
+
+/** An AreaService double that knows Tokyo, Osaka and Texas by code or name. */
+function createMockAreaClient(): MockAreaClient {
+	const byText: Record<string, unknown> = {
+		東京都: tokyo,
+		'JP-13': tokyo,
+		'JP-27': osaka,
+		Texas: texas,
+	}
+	return {
+		resolve: vi.fn(async (text: string) => byText[text] ?? null),
+		listByCountry: vi.fn(async (code: string) => countries[code]),
+	}
+}
+
+async function build(client: MockClient, areaClient = createMockAreaClient()) {
 	const fixture = createFixture
 		.html('<approval-queue-route component.ref="route"></approval-queue-route>')
 		.deps(
 			ApprovalQueueRoute,
 			Registration.instance(IConcertCandidateClient, client),
+			Registration.instance(IAreaClient, areaClient),
 		)
 		.build()
 	await fixture.started
@@ -162,7 +229,8 @@ describe('ApprovalQueueRoute', () => {
 						year: 2026,
 						month: 7,
 						day: 1,
-						resolvedVenue: { name: 'Venue 1', adminArea: 'JP-13' },
+						placeId: 'ChIJVenue1',
+						adminArea: 'JP-13',
 					}),
 					makeConcert({
 						concertCandidateId: 's2',
@@ -171,7 +239,8 @@ describe('ApprovalQueueRoute', () => {
 						year: 2026,
 						month: 7,
 						day: 2,
-						resolvedVenue: { name: 'Venue 2', adminArea: 'JP-14' },
+						placeId: 'ChIJVenue2',
+						adminArea: 'JP-14',
 					}),
 					makeConcert({
 						concertCandidateId: 's3',
@@ -188,7 +257,8 @@ describe('ApprovalQueueRoute', () => {
 						year: 2026,
 						month: 9,
 						day: 1,
-						resolvedVenue: { name: 'Venue 3', adminArea: 'JP-27' },
+						placeId: 'ChIJVenue3',
+						adminArea: 'JP-27',
 					}),
 				]),
 			})
@@ -221,7 +291,8 @@ describe('ApprovalQueueRoute', () => {
 						year: 2026,
 						month: 7,
 						day: 1,
-						resolvedVenue: { name: 'Venue 1', adminArea: 'JP-13' },
+						placeId: 'ChIJVenue1',
+						adminArea: 'JP-13',
 					}),
 					makeConcert({
 						concertCandidateId: 's2',
@@ -267,8 +338,14 @@ describe('ApprovalQueueRoute', () => {
 			// Per-row fields are still shown in expanded rows.
 			expect(text).toContain('2026-07-04')
 			expect(text).toContain('listed venue')
-			expect(text).toContain('Nippon Budokan')
 			expect(text).toContain('JP-13')
+			expect(text).toContain('Asia/Tokyo')
+			// The resolved place opens in Google Maps by its place id; no
+			// catalog name is shown.
+			const place = fixture.appHost.querySelector<HTMLAnchorElement>(
+				'a.approval-queue-place-link',
+			)
+			expect(place?.href).toContain('query_place_id=ChIJNipponBudokan')
 			// Unresolved row is clearly flagged for review.
 			expect(text).toContain('Unresolved venue — review')
 			// Source link renders with the raw URL.
@@ -382,6 +459,7 @@ describe('ApprovalQueueRoute', () => {
 			expect(client.approve).toHaveBeenCalledWith(
 				'candidate-1',
 				Resolution.UNSPECIFIED,
+				expect.anything(),
 			)
 			// Row removed → series pruned → artist group pruned.
 			expect(vm.groups).toHaveLength(0)
@@ -482,7 +560,8 @@ describe('ApprovalQueueRoute', () => {
 						year: 2026,
 						month: 7,
 						day: 1,
-						resolvedVenue: { name: 'Venue', adminArea: 'JP-13' },
+						placeId: 'ChIJVenue',
+						adminArea: 'JP-13',
 					}),
 					makeConcert({
 						concertCandidateId: 's2',
@@ -491,7 +570,8 @@ describe('ApprovalQueueRoute', () => {
 						year: 2026,
 						month: 8,
 						day: 1,
-						resolvedVenue: { name: 'Venue', adminArea: 'JP-14' },
+						placeId: 'ChIJVenue',
+						adminArea: 'JP-14',
 					}),
 				]),
 			})
@@ -528,6 +608,7 @@ describe('ApprovalQueueRoute', () => {
 			expect(client.approve).toHaveBeenCalledWith(
 				'candidate-1',
 				Resolution.UNSPECIFIED,
+				expect.anything(),
 			)
 			expect(vm.conflictView).not.toBeNull()
 			expect(vm.conflictView?.existingTitle).toBe('Existing Title')
@@ -558,6 +639,7 @@ describe('ApprovalQueueRoute', () => {
 				2,
 				'candidate-1',
 				Resolution.KEEP_EXISTING,
+				expect.anything(),
 			)
 			expect(vm.conflictView).toBeNull()
 			expect(vm.groups).toHaveLength(0)
@@ -584,6 +666,7 @@ describe('ApprovalQueueRoute', () => {
 				2,
 				'candidate-1',
 				Resolution.ADOPT_CANDIDATE,
+				expect.anything(),
 			)
 			expect(vm.conflictView).toBeNull()
 			expect(vm.groups).toHaveLength(0)
@@ -682,7 +765,8 @@ describe('ApprovalQueueRoute', () => {
 				year: 2026,
 				month: 7,
 				day: 4,
-				resolvedVenue: { name: 'Nippon Budokan', adminArea: 'JP-13' },
+				placeId: 'ChIJNipponBudokan',
+				adminArea: 'JP-13',
 				openTime: openTs,
 			})
 			const client = createMockClient({
@@ -720,7 +804,8 @@ describe('ApprovalQueueRoute', () => {
 				year: 2026,
 				month: 7,
 				day: 4,
-				resolvedVenue: { name: 'Nippon Budokan', adminArea: 'JP-13' },
+				placeId: 'ChIJNipponBudokan',
+				adminArea: 'JP-13',
 				openTime: openTs,
 			})
 			const client = createMockClient({
@@ -759,6 +844,235 @@ describe('ApprovalQueueRoute', () => {
 			expect(vm.conflictView!.candidateOpenTime).toBe('—')
 			// The existing event in conflictResponse() has no open time either.
 			expect(vm.conflictView!.existingOpenTime).toBe('—')
+		})
+	})
+
+	describe('area and time zone', () => {
+		const SPEC = 'components/infrastructure/admin/web/route/approval-queue'
+
+		/** A row whose concert has no admin area and no time zone. */
+		function unknownVenue(): ConcertCandidate {
+			return makeConcert({
+				concertCandidateId: 'candidate-unknown',
+				artist: 'Touring Act',
+				title: 'World Tour',
+				year: 2026,
+				month: 10,
+				day: 1,
+				adminArea: null,
+				timeZone: null,
+			})
+		}
+
+		async function firstRow(
+			concert: ConcertCandidate,
+			client = createMockClient({ list: vi.fn().mockResolvedValue([concert]) }),
+		) {
+			const fixture = await build(client)
+			const vm = routeOf(fixture)
+			const group = vm.groups[0]
+			const series = group.series[0]
+			return { fixture, vm, client, group, series, row: series.rows[0] }
+		}
+
+		async function enterArea(
+			vm: InstanceType<typeof ApprovalQueueRoute>,
+			row: { areaInput: string },
+			text: string,
+		) {
+			row.areaInput = text
+			await vm.areaChanged(row as never)
+		}
+
+		it(`@spec ${SPEC} "Area and time zone unknown"`, async () => {
+			const { fixture, row } = await firstRow(unknownVenue())
+
+			const text = fixture.appHost.textContent ?? ''
+			expect(text).toContain('地域不明')
+			expect(text).toContain('タイムゾーン不明')
+			expect(
+				fixture.appHost.querySelector('input[aria-label="Area"]'),
+			).not.toBeNull()
+			expect(
+				fixture.appHost.querySelector('select[aria-label="Time zone"]'),
+			).not.toBeNull()
+			expect(row.approvable).toBe(false)
+			const approve = fixture.appHost.querySelector<HTMLButtonElement>(
+				'button[data-variant="approve"]',
+			)
+			expect(approve?.disabled).toBe(true)
+		})
+
+		it(`@spec ${SPEC} "Area given by name"`, async () => {
+			const { vm, row } = await firstRow(unknownVenue())
+
+			await enterArea(vm, row, 'Texas')
+
+			expect(row.areaState).toBe('resolved')
+			expect(row.zoneOptions).toEqual([
+				{ value: 'America/Chicago', label: 'シカゴ' },
+				{ value: 'America/Denver', label: 'デンバー' },
+			])
+			expect(row.zoneChoice).toBe('')
+			expect(row.approvable).toBe(false)
+		})
+
+		it(`@spec ${SPEC} "Area and time zone given"`, async () => {
+			const { vm, client, group, series, row } = await firstRow(unknownVenue())
+
+			await enterArea(vm, row, 'Texas')
+			vm.zoneChanged(row, 'America/Chicago')
+			expect(row.approvable).toBe(true)
+			await vm.approve(group, series, row)
+
+			expect(client.approve).toHaveBeenCalledWith(
+				'candidate-unknown',
+				Resolution.UNSPECIFIED,
+				{
+					adminArea: 'Texas',
+					timeZone: 'America/Chicago',
+				},
+			)
+			expect(vm.groups).toHaveLength(0)
+		})
+
+		it(`@spec ${SPEC} "Area with a time zone of its own"`, async () => {
+			const { vm, row } = await firstRow(unknownVenue())
+
+			await enterArea(vm, row, '東京都')
+
+			expect(row.zoneChoice).toBe('Asia/Tokyo')
+			expect(row.zoneOptions).toEqual([{ value: 'Asia/Tokyo', label: '日本' }])
+			expect(row.approvable).toBe(true)
+		})
+
+		it(`@spec ${SPEC} "Discovered area until one is entered"`, async () => {
+			const { row } = await firstRow(
+				makeConcert({
+					concertCandidateId: 'candidate-tx',
+					artist: 'Touring Act',
+					title: 'World Tour',
+					year: 2026,
+					month: 10,
+					day: 2,
+					adminArea: 'US-TX',
+					timeZone: null,
+				}),
+			)
+
+			await vi.waitFor(() =>
+				expect(row.zoneOptions.map((o) => o.value)).toEqual([
+					'America/Chicago',
+					'America/Denver',
+				]),
+			)
+			expect(row.zoneChoice).toBe('')
+			expect(row.approvable).toBe(false)
+		})
+
+		it(`@spec ${SPEC} "Area present but wrong"`, async () => {
+			const { vm, client, group, series, row } = await firstRow(
+				resolvedConcert(),
+			)
+			expect(row.adminArea).toBe('JP-13')
+
+			await enterArea(vm, row, 'JP-27')
+			await vm.approve(group, series, row)
+
+			expect(client.approve).toHaveBeenCalledWith(
+				'candidate-1',
+				Resolution.UNSPECIFIED,
+				{
+					adminArea: 'JP-27',
+					timeZone: 'Asia/Tokyo',
+				},
+			)
+		})
+
+		it(`@spec ${SPEC} "Area not found"`, async () => {
+			const { fixture, vm, row } = await firstRow(unknownVenue())
+
+			await enterArea(vm, row, 'JP-99')
+
+			expect(row.areaState).toBe('notFound')
+			expect(row.zoneOptions).toEqual([])
+			expect(row.approvable).toBe(false)
+			await vi.waitFor(() =>
+				expect(fixture.appHost.textContent).toContain('地域が見つかりません'),
+			)
+		})
+
+		it('does not let a row with an unresolved entry be approved even when it has its own area', async () => {
+			const { vm, row } = await firstRow(resolvedConcert())
+
+			await enterArea(vm, row, 'JP-99')
+
+			expect(row.approvable).toBe(false)
+		})
+
+		it(`@spec ${SPEC} "Approval refused"`, async () => {
+			const client = createMockClient({
+				list: vi.fn().mockResolvedValue([resolvedConcert()]),
+				approve: vi
+					.fn()
+					.mockRejectedValue(
+						new ConnectError('bad zone', Code.InvalidArgument),
+					),
+			})
+			const { vm, group, series, row } = await firstRow(
+				resolvedConcert(),
+				client,
+			)
+
+			await vm.approve(group, series, row)
+
+			expect(series.rows).toContain(row)
+			expect(row.actionError).toBe(
+				'地域またはタイムゾーンが受け付けられませんでした',
+			)
+		})
+
+		it("needs a zone of the entered area's country even when the row has a zone of its own", async () => {
+			const { vm, row } = await firstRow(resolvedConcert())
+			expect(row.approvable).toBe(true)
+
+			await enterArea(vm, row, 'Texas')
+
+			// Asia/Tokyo is not a US zone: the select empties and Approve waits for a choice.
+			expect(row.zoneChoice).toBe('')
+			expect(row.approvable).toBe(false)
+			vm.zoneChanged(row, 'America/Chicago')
+			expect(row.approvable).toBe(true)
+		})
+
+		it('drops the zones of an area replaced while they were read', async () => {
+			let releaseUs: (v: unknown) => void = () => {}
+			const areaClient = createMockAreaClient()
+			areaClient.listByCountry.mockImplementation(async (code: string) =>
+				code === 'US'
+					? new Promise((resolve) => {
+							releaseUs = () => resolve(countries.US)
+						})
+					: countries[code],
+			)
+			const fixture = await build(
+				createMockClient({ list: vi.fn().mockResolvedValue([unknownVenue()]) }),
+				areaClient,
+			)
+			const vm = routeOf(fixture)
+			const row = vm.groups[0].series[0].rows[0]
+
+			row.areaInput = 'Texas'
+			const slow = vm.areaChanged(row)
+			await vi.waitFor(() =>
+				expect(areaClient.listByCountry).toHaveBeenCalledWith('US'),
+			)
+			await enterArea(vm, row, '東京都')
+			releaseUs(undefined)
+			await slow
+
+			expect(row.zoneOptions.map((o) => o.value)).toEqual(['Asia/Tokyo'])
+			expect(row.zoneChoice).toBe('Asia/Tokyo')
 		})
 	})
 })

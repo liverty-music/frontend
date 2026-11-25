@@ -137,6 +137,10 @@
 			color: var(--color-error);
 		}
 
+		.approval-queue-table-scroll {
+			overflow-x: auto;
+		}
+
 		.approval-queue-table {
 			border-collapse: collapse;
 			inline-size: 100%;
@@ -162,8 +166,13 @@
 		}
 
 		.approval-queue-admin-area {
-			display: block;
 			color: var(--color-text-secondary);
+		}
+
+		.approval-queue-venue-cell {
+			--flow-space: 0.25rem;
+
+			min-inline-size: 10rem;
 		}
 
 		.approval-queue-unresolved {
@@ -191,7 +200,8 @@
 			color: var(--color-text-secondary);
 		}
 
-		.approval-queue-reject-input {
+		.approval-queue-reject-input,
+		.approval-queue-venue-input {
 			padding: var(--_pad-input);
 			border: 1px solid var(--_border);
 			border-radius: var(--_radius);

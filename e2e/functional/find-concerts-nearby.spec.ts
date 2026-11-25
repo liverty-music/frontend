@@ -273,7 +273,8 @@ test(`@spec ${STORY} "A weekend near home"`, {
 		)
 		.toContainEqual(
 			expect.objectContaining({
-				location: expect.objectContaining({ adminArea: 'JP-40' }),
+				// Only the area code: the server finds its reference point.
+				adminArea: { value: 'JP-40' },
 				from: { value: weekend.from },
 				to: { value: weekend.to },
 			}),
