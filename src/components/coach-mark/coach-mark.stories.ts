@@ -305,6 +305,40 @@ export const MessageBelowTarget = {
 	},
 } satisfies Story
 
+/**
+ * A target at the left and at the right edge of a 320 px phone: the tip stays
+ * inside the screen, at least 8 px from either edge, instead of being cut.
+ */
+const edgeTarget = (side: 'left' | 'right') =>
+	render(
+		page({
+			target: `<button id="coach-target" type="button"
+				style="position: fixed; inset-block-start: 80px; inset-inline-${side === 'left' ? 'start' : 'end'}: 0;">
+				TL
+			</button>`,
+		}),
+	)
+
+const expectTipInside = async (canvasElement: HTMLElement) => {
+	// @spec components/infrastructure/fan/web/global/coach-mark "The tip stays on screen at an edge"
+	await shownSpotlight(canvasElement)
+	const tip = within(canvasElement).getByRole('tooltip').getBoundingClientRect()
+	await expect(tip.left).toBeGreaterThanOrEqual(8 - 0.5)
+	await expect(tip.right).toBeLessThanOrEqual(innerWidth - 8 + 0.5)
+}
+
+export const MessageAtLeftEdge = {
+	globals: { viewport: { value: 'mobile1' } },
+	render: edgeTarget('left'),
+	play: async ({ canvasElement }) => expectTipInside(canvasElement),
+} satisfies Story
+
+export const MessageAtRightEdge = {
+	globals: { viewport: { value: 'mobile1' } },
+	render: edgeTarget('right'),
+	play: async ({ canvasElement }) => expectTipInside(canvasElement),
+} satisfies Story
+
 // A target at the bottom of the viewport leaves no room below it.
 export const MessageAboveTarget = {
 	render: render(

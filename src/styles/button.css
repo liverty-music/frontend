@@ -53,6 +53,10 @@
 			text-decoration: none;
 			letter-spacing: var(--md-sys-typescale-label-large-tracking);
 
+			/* One line, never wrapped or cut (M3 buttons: "Don't truncate or wrap
+			   label text"); the button grows to its label. */
+			white-space: nowrap;
+
 			background: var(--md-sys-color-primary);
 
 			transition: border-radius

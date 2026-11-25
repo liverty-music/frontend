@@ -80,9 +80,10 @@
 			<ul class="[ tickets-cards ] [ flow ]" role="list">
 				<!-- A tap anywhere on the card except its buttons and links opens the
 				     virtual ticket; the ticket number is the button that does so for
-				     the keyboard and screen readers. -->
+				     the keyboard and screen readers. The state layer shows the card
+				     answers a pointer (hover and press). -->
 				<li
-					class="[ tickets-card ] [ flow ]"
+					class="[ tickets-card ] [ flow ] [ state-layer ]"
 					repeat.for="ticket of group.tickets"
 					data-state.bind="shownState(ticket)"
 					data-testid="tickets-card"

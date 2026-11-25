@@ -22,6 +22,11 @@
 			justify-self: center;
 
 			inline-size: calc(100% - 2 * var(--space-s));
+
+			/* 56 px on every phone: the M3 search bar
+			   (md.comp.search-bar.container.height), the input's 48 px target
+			   inside it. */
+			block-size: 3.5rem;
 			padding: var(--space-3xs) var(--space-s);
 			border: 1px solid var(--_white-12);
 			border-radius: var(--md-sys-shape-corner-full);
@@ -69,13 +74,6 @@
 
 			&::placeholder {
 				color: var(--_white-40);
-			}
-		}
-
-		/* stylelint-disable-next-line media-feature-name-disallowed-list -- viewport width needed alongside height to isolate SE-class devices (375px) from wider phones; container queries cannot combine with @media height */
-		@media (height <= 700px) and (width < 390px) {
-			.search-bar {
-				block-size: 2.5rem;
 			}
 		}
 	}

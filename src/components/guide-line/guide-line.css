@@ -13,6 +13,8 @@
 			position-try-fallbacks: flip-block;
 
 			max-inline-size: min(320px, calc(100dvi - 2 * var(--space-s)));
+			/* stylelint-disable-next-line property-disallowed-list -- keeps the line 8 px from the screen's edges when its target is at an edge (M3 tooltips): an anchored box is held inside the screen by its margin box */
+			margin-inline: var(--space-2xs);
 			padding: var(--space-xs) var(--space-s);
 			border: 1px solid var(--md-sys-color-tertiary);
 			border-radius: var(--md-sys-shape-corner-large);
