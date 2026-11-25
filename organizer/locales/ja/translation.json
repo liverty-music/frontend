@@ -380,7 +380,11 @@
 			"date": "日付を入力してください",
 			"pastDate": "過去の日付は選べません",
 			"openAfterStart": "開場は開演より前にしてください",
-			"perAccountLimit": "1アカウントの上限は1〜10枚の整数で入力してください"
+			"perAccountLimit": "1アカウントの上限は1〜10枚の整数で入力してください",
+			"venueName": "会場名を入力してください",
+			"venueArea": "地域を選択してください",
+			"venueTimeZone": "タイムゾーンを選択してください",
+			"venueNotConfirmed": "会場を読み込めていません。再試行してください"
 		},
 		"cover": {
 			"title": "カバー画像",
@@ -555,5 +559,14 @@
 		"noStockBody": "販売を始めるには、公演日の販売タブで、売る席種と枚数を先に追加してください。",
 		"sellsEveryStock": "この販売は、公演日のすべての席種を売ります。1アカウント{{limit, number}}枚まで（この公演日のすべての販売を合わせて）。",
 		"drawsEveryStock": "この抽選は、公演日のすべての席種を抽選します。1アカウント{{limit, number}}枚まで（この公演日のすべての販売を合わせて）。"
+	},
+	"venueConfirm": {
+		"loading": "会場を確認しています…",
+		"unavailable": "会場を読み込めません。",
+		"name": "会場名",
+		"country": "国",
+		"area": "地域",
+		"timeZone": "タイムゾーン",
+		"choose": "選択してください"
 	}
 }

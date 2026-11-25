@@ -380,7 +380,11 @@
 			"date": "Enter a date",
 			"pastDate": "The date cannot be in the past",
 			"openAfterStart": "Doors must open before the start",
-			"perAccountLimit": "Enter a whole number from 1 to 10"
+			"perAccountLimit": "Enter a whole number from 1 to 10",
+			"venueName": "Enter the venue name",
+			"venueArea": "Choose an area",
+			"venueTimeZone": "Choose a time zone",
+			"venueNotConfirmed": "The venue has not been read. Try again"
 		},
 		"cover": {
 			"title": "Cover image",
@@ -555,5 +559,14 @@
 		"noStockBody": "To start a sale, first add the seat types and quantities to sell on the date’s Sales tab.",
 		"sellsEveryStock": "This sale sells every seat type of the date. Up to {{limit, number}} tickets per account, across all sales of this date.",
 		"drawsEveryStock": "This lottery draws for every seat type of the date. Up to {{limit, number}} tickets per account, across all sales of this date."
+	},
+	"venueConfirm": {
+		"loading": "Checking the venue…",
+		"unavailable": "The venue cannot be read.",
+		"name": "Venue name",
+		"country": "Country",
+		"area": "Area",
+		"timeZone": "Time zone",
+		"choose": "Choose"
 	}
 }

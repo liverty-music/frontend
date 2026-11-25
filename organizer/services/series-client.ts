@@ -99,6 +99,10 @@ export interface EventDraftInput {
 	readonly eventId?: string
 	readonly venueName: string
 	readonly placeId?: string
+	/** The first-level Area the member confirmed for a new Venue. */
+	readonly adminArea?: string
+	/** The IANA time zone the member confirmed for a new Venue. */
+	readonly timeZone?: string
 	readonly localDate: CalendarDate
 	readonly startTime?: Date
 	readonly openTime?: Date
@@ -123,6 +127,8 @@ function toEventDraft(input: EventDraftInput): ProtoEventDraft {
 		...(input.eventId ? { eventId: { value: input.eventId } } : {}),
 		venueName: { value: input.venueName },
 		...(input.placeId ? { placeId: { value: input.placeId } } : {}),
+		...(input.adminArea ? { adminArea: { value: input.adminArea } } : {}),
+		...(input.timeZone ? { timeZone: { value: input.timeZone } } : {}),
 		// LocalDate wraps a google.type.Date (a plain Y/M/D triple). Pass the
 		// calendar triple directly as a message init rather than constructing
 		// the googleapis Date message shell.

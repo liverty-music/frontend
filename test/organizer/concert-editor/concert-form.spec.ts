@@ -35,6 +35,13 @@ function validModel(): ConcertFormModel {
 					name: 'Zepp Tokyo',
 					address: '東京都江東区青海1-3-11',
 				},
+				place: {
+					placeId: 'ChIJ-zepp-tokyo',
+					kind: 'venue',
+					name: 'Zepp Tokyo',
+					adminArea: 'JP-13',
+					timeZone: 'Asia/Tokyo',
+				},
 				localDate: '2026-06-16',
 				startTime: '19:00',
 				openTime: '18:00',
@@ -68,6 +75,13 @@ describe('a new concert and an added date (design D19)', () => {
 				name: 'Zepp Haneda (TOKYO)',
 				address: '大田区羽田空港',
 			},
+			place: {
+				placeId: 'ChIJ-haneda',
+				kind: 'venue' as const,
+				name: 'Zepp Haneda (TOKYO)',
+				adminArea: 'JP-13',
+				timeZone: 'Asia/Tokyo',
+			},
 			localDate: '2026-11-03',
 			openTime: '17:00',
 			startTime: '18:00',
@@ -78,6 +92,7 @@ describe('a new concert and an added date (design D19)', () => {
 			eventId: '',
 			publishState: PublishState.DRAFT,
 			venue: previous.venue,
+			place: previous.place,
 			localDate: '2026-11-03',
 			openTime: '17:00',
 			startTime: '18:00',
@@ -93,6 +108,7 @@ describe('a new concert and an added date (design D19)', () => {
 			eventId: 'e-old',
 			publishState: PublishState.PUBLISHED,
 			venue: { placeId: '', name: '渋谷のライブハウス', address: '' },
+			place: null,
 			localDate: '2026-11-03',
 			openTime: '',
 			startTime: '18:00',
@@ -350,5 +366,66 @@ describe("each date's per-account limit", () => {
 		const errors = validateConcertForm(model, { today: TODAY })
 		expect(errors.rows[0].perAccountLimit).toBeUndefined()
 		expect(toSeriesDraftInput(model).events[0].perAccountLimit).toBe(6)
+	})
+})
+
+describe('the venue of a new or draft date', () => {
+	const NEW_PLACE = {
+		placeId: 'ChIJ-zepp-tokyo',
+		kind: 'draft' as const,
+		name: 'Zepp Haneda',
+		adminArea: 'JP-14',
+		timeZone: 'Asia/Tokyo',
+	}
+
+	function withPlace(place: Partial<typeof NEW_PLACE> | null) {
+		const model = validModel()
+		model.events[0].place = place ? { ...NEW_PLACE, ...place } : null
+		return model
+	}
+
+	it('sends the name, area and time zone the member confirmed for a new Venue', () => {
+		// @spec components/infrastructure/organizer/web/route/concert-editor "Member renames the venue and changes the area"
+		const input = toSeriesDraftInput(withPlace({}))
+		expect(input.events[0]).toMatchObject({
+			placeId: 'ChIJ-zepp-tokyo',
+			venueName: 'Zepp Haneda',
+			adminArea: 'JP-14',
+			timeZone: 'Asia/Tokyo',
+		})
+	})
+
+	it('sends no area or time zone for a place a Venue already holds', () => {
+		const input = toSeriesDraftInput(validModel())
+		expect(input.events[0].adminArea).toBeUndefined()
+		expect(input.events[0].timeZone).toBeUndefined()
+		expect(input.events[0].venueName).toBe('Zepp Tokyo')
+	})
+
+	it('does not save a new Venue without a name, an area or a time zone', () => {
+		// @spec components/infrastructure/organizer/web/route/concert-editor "No suggested area"
+		// @spec components/infrastructure/organizer/web/route/concert-editor "Several zones and none suggested"
+		const errors = validateConcertForm(
+			withPlace({ name: '', adminArea: '', timeZone: '' }),
+			{
+				today: { year: 2026, month: 1, day: 1 },
+			},
+		)
+		expect(errors.rows[0]).toMatchObject({
+			venueName: 'concertEditor.error.venueName',
+			venueArea: 'concertEditor.error.venueArea',
+			venueTimeZone: 'concertEditor.error.venueTimeZone',
+		})
+		expect(isFormValid(errors)).toBe(false)
+	})
+
+	it('does not save a picked place that has not been read', () => {
+		// @spec components/infrastructure/organizer/web/route/concert-editor "Place cannot be read"
+		const errors = validateConcertForm(withPlace(null), {
+			today: { year: 2026, month: 1, day: 1 },
+		})
+		expect(errors.rows[0].venueName).toBe(
+			'concertEditor.error.venueNotConfirmed',
+		)
 	})
 })

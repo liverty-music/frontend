@@ -1,6 +1,11 @@
 import { IRouter } from '@aurelia/router'
 import { tasksSettled } from '@aurelia/runtime'
 import { createFixture } from '@aurelia/testing'
+import {
+	AreaSchema,
+	CountrySchema,
+	TimeZoneOptionSchema,
+} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/area_pb.js'
 import { OrganizerSchema } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/organizer_pb.js'
 import { Visibility } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
 import { create } from '@bufbuild/protobuf'
@@ -97,6 +102,56 @@ interface Options {
 	list?: ReturnType<typeof vi.fn>
 	seriesImages?: Record<string, ReturnType<typeof vi.fn>>
 	setCoverImage?: ReturnType<typeof vi.fn>
+	resolvePlace?: ReturnType<typeof vi.fn>
+}
+
+/** The countries and Japan's Areas the venue confirmation reads. */
+const JAPAN_COUNTRIES = [
+	create(CountrySchema, {
+		code: { value: 'JP' },
+		nameEn: 'Japan',
+		nameJa: '日本',
+	}),
+	create(CountrySchema, {
+		code: { value: 'KR' },
+		nameEn: 'South Korea',
+		nameJa: '韓国',
+	}),
+]
+const JAPAN_AREAS = {
+	areas: [
+		create(AreaSchema, {
+			code: { value: 'JP-13' },
+			countryCode: { value: 'JP' },
+			nameEn: 'Tokyo',
+			nameJa: '東京都',
+			timeZone: { value: 'Asia/Tokyo' },
+			regionCodes: [{ value: 'JP-KANTO' }],
+		}),
+		create(AreaSchema, {
+			code: { value: 'JP-14' },
+			countryCode: { value: 'JP' },
+			nameEn: 'Kanagawa',
+			nameJa: '神奈川県',
+			timeZone: { value: 'Asia/Tokyo' },
+			regionCodes: [{ value: 'JP-KANTO' }],
+		}),
+	],
+	regions: [
+		create(AreaSchema, {
+			code: { value: 'JP-KANTO' },
+			countryCode: { value: 'JP' },
+			nameEn: 'Kanto',
+			nameJa: '関東',
+		}),
+	],
+	timeZones: [
+		create(TimeZoneOptionSchema, {
+			timeZone: { value: 'Asia/Tokyo' },
+			nameEn: 'Japan',
+			nameJa: '日本',
+		}),
+	],
 }
 
 async function mount(opts: Options = {}) {
@@ -112,6 +167,15 @@ async function mount(opts: Options = {}) {
 	const update = opts.update ?? vi.fn(async () => undefined)
 	const setCoverImage = opts.setCoverImage ?? vi.fn(async () => undefined)
 	const search = vi.fn(async () => [HANEDA])
+	const resolvePlace =
+		opts.resolvePlace ??
+		vi.fn(async () => ({
+			kind: 'draft' as const,
+			name: HANEDA.name,
+			countryCode: 'JP',
+			suggestedAdminArea: 'JP-13',
+			timeZone: 'Asia/Tokyo',
+		}))
 	const load = vi.fn()
 	const fixture = createFixture(
 		'<console-snackbar></console-snackbar><concert-editor-route></concert-editor-route>',
@@ -128,7 +192,12 @@ async function mount(opts: Options = {}) {
 				setCoverImage,
 			}),
 			Registration.instance(ISeriesImageClient, opts.seriesImages ?? {}),
-			Registration.instance(IVenueClient, { search }),
+			Registration.instance(IVenueClient, {
+				search,
+				resolvePlace,
+				listCountries: vi.fn(async () => JAPAN_COUNTRIES),
+				listByCountry: vi.fn(async () => JAPAN_AREAS),
+			}),
 			Registration.instance(IArtistClient, {
 				list: vi.fn(async () => artistsNamed('Band A', 'Band B')),
 			}),
@@ -166,6 +235,7 @@ async function mount(opts: Options = {}) {
 		update,
 		setCoverImage,
 		search,
+		resolvePlace,
 		load,
 	}
 }
@@ -236,6 +306,14 @@ const snacks = (m: Mounted) =>
 	deepAll(m.fixture.appHost, '.snack-message').map((el) => deepText(el))
 
 async function save(m: Mounted, name = '保存する'): Promise<void> {
+	// Each picked place is read before the member can confirm it.
+	await vi.waitFor(() =>
+		expect(
+			m.vm.model.events.every(
+				(e) => !e.venue?.placeId || e.place?.placeId === e.venue.placeId,
+			),
+		).toBe(true),
+	)
 	controlNamed(m.host, name)?.click()
 	await tasksSettled()
 }
