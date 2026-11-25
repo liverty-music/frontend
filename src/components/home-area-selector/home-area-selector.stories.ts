@@ -10,6 +10,7 @@ import {
 	pausableAnimations,
 	seekMotion,
 } from '../../../.storybook/motion'
+import { composite } from '../../../.storybook/contrast'
 import { transitionsEnded } from '../../../.storybook/transitions-ended'
 import { BusyOnClickCustomAttribute } from '../../custom-attributes/busy-on-click'
 import ja from '../../locales/ja/translation.json'
@@ -98,12 +99,15 @@ export const BackdropAndDismiss = {
 		const popover = await opened(canvasElement)
 		const backdrop = getComputedStyle(popover, '::backdrop')
 		await expect(backdrop.backdropFilter).toContain('blur')
-		const [r, g, b, a = 1] = backdrop.backgroundColor
-			.match(/[\d.]+/g)
-			?.map(Number) ?? [255, 255, 255, 1]
+		// The colour as the page paints it (the computed value is `oklch(...)`,
+		// not sRGB channels): dark, and neither clear nor opaque.
+		const [r, g, b] = composite(backdrop.backgroundColor)
 		await expect(Math.max(r, g, b)).toBeLessThan(40)
-		await expect(a).toBeGreaterThan(0.3)
-		await expect(a).toBeLessThan(1)
+		const alpha = Number(
+			backdrop.backgroundColor.match(/\/\s*([\d.]+)\s*\)/)?.[1] ?? 1,
+		)
+		await expect(alpha).toBeGreaterThan(0.3)
+		await expect(alpha).toBeLessThan(1)
 
 		canvasElement.querySelector<HTMLElement>('.dismiss-zone')?.click()
 		await waitFor(() => expect(popover.matches(':popover-open')).toBe(false), {
@@ -148,8 +152,9 @@ export const ChoosingACityClosesTheSheet = {
 export const OpeningMotion = {
 	tags: ['reduced-motion'],
 	render,
-	play: async ({ canvasElement }) => {
+	play: async ({ canvasElement, globals }) => {
 		const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches
+		await expect(reduced).toBe(globals.reducedMotion)
 		// @spec components/infrastructure/fan/web/global/home-area-selector "Dialog open/close animation"
 		await opened(canvasElement)
 		const body = canvasElement.querySelector('.sheet-body') as HTMLElement
