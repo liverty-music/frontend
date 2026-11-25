@@ -1,0 +1,11 @@
+/* A ticket card's state layer answers only a press the card handles: over one
+   of its buttons or links (which the card ignores, tickets-route.ts
+   onCardClick), only that control shows its own. A block of its own because
+   tickets-route.css is at its line limit. */
+@layer block {
+	@scope (tickets-route) {
+		.tickets-card:has(:is(button, a):is(:hover, :active))::before {
+			opacity: 0;
+		}
+	}
+}
