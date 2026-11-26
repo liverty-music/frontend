@@ -143,8 +143,23 @@ export class CoachMark {
 		// The spotlight and tip follow the anchor while they fade out; without
 		// it the spotlight loses its cut-out and the screen goes dark.
 		if (this.currentTarget) {
-			this.exitTimer ??= setTimeout(() => this.releaseAnchor(), EXIT_MS)
+			this.exitTimer ??= setTimeout(() => this.releaseOnceFaded(), EXIT_MS)
 		}
+	}
+
+	/**
+	 * The timer alone can fire before a busy page has run the fade out, so the
+	 * anchor also waits for the overlay's own animations to end.
+	 */
+	private releaseOnceFaded(): void {
+		const timer = this.exitTimer
+		const release = () => {
+			// Shown again meanwhile: the anchor is in use.
+			if (this.exitTimer === timer) this.releaseAnchor()
+		}
+		const running = this.overlayEl?.getAnimations?.() ?? []
+		if (running.length === 0) release()
+		else void Promise.allSettled(running.map((a) => a.finished)).then(release)
 	}
 
 	private releaseAnchor(): void {
