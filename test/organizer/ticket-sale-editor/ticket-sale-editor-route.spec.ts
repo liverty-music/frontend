@@ -877,6 +877,12 @@ describe('the sale zone of the first-come editor', () => {
 			'Asia/Tokyo',
 			'Asia/Taipei',
 		])
+		const choices = [...(select?.shadowRoot?.querySelectorAll('option') ?? [])]
+		expect(choices.map((o) => o.textContent?.trim())).toEqual([
+			'選択してください',
+			'日本',
+			'台北',
+		])
 
 		// With none selected, saving says a zone must be chosen and sends nothing.
 		vm.model.timeZone = ''

@@ -301,13 +301,24 @@ export const EventUnknown = {
 } satisfies Story
 
 /**
- * A show in another zone than the fan's, on a phone: the zone and the fan's
- * own times stand under the headline, whole, and the facts keep their cells.
+ * A show in another zone than the fan's, on a phone, with a title and
+ * performers long enough to fill every line of the headline: the zone and the
+ * fan's own times still stand under it, whole.
  */
 export const Abroad = {
 	globals: { viewport: { value: 'mobile1' } },
 	render: () =>
-		ticketStory({ event: { ...EVENT, timeZone: 'America/New_York' } }),
+		ticketStory({
+			event: {
+				...EVENT,
+				timeZone: 'America/New_York',
+				title: 'The Very Long Autumn World Tour 2026 Grand Final Edition',
+				performers: [
+					{ id: 'a-1', name: 'The Extraordinarily Long Band', mbid: '' },
+					{ id: 'a-2', name: 'A Special Guest Orchestra', mbid: '' },
+				],
+			},
+		}),
 	play: async ({ canvasElement }) => {
 		const face = faceOf(canvasElement)
 		const zone = face.querySelector('[data-testid="event-zone"]')
