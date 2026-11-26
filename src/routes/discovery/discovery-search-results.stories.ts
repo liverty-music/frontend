@@ -133,15 +133,16 @@ export const FadesWithSearch = {
 		// Search starts: they fade in from nothing.
 		results.style.display = ''
 		results.style.opacity = ''
-		await nextPaint()
 		const fade = pausableAnimations(results).filter(
 			(a) => (a as CSSTransition).transitionProperty === 'opacity',
 		)
 		await expect(fade).toHaveLength(1)
 		const opacity = () => Number.parseFloat(getComputedStyle(results).opacity)
+		// @spec components/infrastructure/fan/web/route/discovery "Starting a search"
+		await expect(Number(fade[0].effect?.getComputedTiming().duration)).toBe(200)
 		await seekMotion(fade, 0)
 		await expect(opacity()).toBeLessThan(0.2)
-		await seekMotion(fade, 0.5)
+		await seekMotion(fade, 0.1)
 		await expect(opacity()).toBeGreaterThan(0.2)
 		await expect(opacity()).toBeLessThan(1)
 		finishMotion(fade)

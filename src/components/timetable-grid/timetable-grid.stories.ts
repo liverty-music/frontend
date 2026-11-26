@@ -5,12 +5,18 @@ import {
 	type StoryObj,
 } from '@aurelia/storybook'
 import { CustomElement, Registration } from 'aurelia'
-import { expect, userEvent, waitFor } from 'storybook/test'
+import { expect, waitFor } from 'storybook/test'
 import { composite, contrast, resolveColor } from '../../../.storybook/contrast'
 import { noGuide } from '../../../.storybook/guide'
 import { artistHue } from '../../adapter/view/artist-color'
 import { BeamVarsCustomAttribute } from '../../custom-attributes/beam-vars'
 import type { Concert, DateGroup, LaneType } from '../../entities/concert'
+import {
+	finishMotion,
+	nextPaint,
+	pausableAnimations,
+} from '../../../.storybook/motion'
+import { transitionsEnded } from '../../../.storybook/transitions-ended'
 import { IActionMenuService } from '../../services/action-menu-service'
 import { ActionMenu } from '../action-menu/action-menu'
 import { ConcertCard } from './concert-card'
@@ -1689,12 +1695,37 @@ export const MonthJumpHiddenWhileFabOpen = {
 			if (!el) throw new Error('launcher not rendered yet')
 			return el
 		})
-		await userEvent.click(fab)
-		await waitFor(() => expect(fab.getAttribute('aria-expanded')).toBe('true'))
+		const capsule = canvasElement.querySelector(
+			'.month-jump-capsule',
+		) as HTMLElement
+		const fading = async () => {
+			// @spec components/infrastructure/fan/web/route/timetable "The capsule gives way to the FAB with a fade"
+			await nextPaint()
+			const fade = pausableAnimations(capsule).filter(
+				(a) =>
+					a instanceof CSSTransition &&
+					a.transitionProperty === 'opacity' &&
+					a.effect?.target === capsule,
+			)
+			await expect(fade).toHaveLength(1)
+			await expect(Number(fade[0].effect?.getComputedTiming().duration)).toBe(
+				200,
+			)
+			finishMotion(fade)
+		}
+		// At rest first (a fade cut short runs for a shorter time), then caught as
+		// it starts: a pointer click takes longer than the fade.
+		await transitionsEnded(capsule)
+		fab.click()
+		await fading()
+		await expect(fab.getAttribute('aria-expanded')).toBe('true')
 		await waitFor(() => expect(shownJumps(canvasElement)).toEqual([]))
+		await expect(getComputedStyle(capsule).display).toBe('none')
 
-		await userEvent.click(fab)
-		await waitFor(() => expect(fab.getAttribute('aria-expanded')).toBe('false'))
+		await transitionsEnded(capsule)
+		fab.click()
+		await fading()
+		await expect(fab.getAttribute('aria-expanded')).toBe('false')
 		await waitFor(() =>
 			expect(shownJumps(canvasElement)).toEqual(['prev', 'next']),
 		)

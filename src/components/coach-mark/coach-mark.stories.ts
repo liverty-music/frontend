@@ -4,6 +4,8 @@ import {
 	type StoryObj,
 } from '@aurelia/storybook'
 import { expect, userEvent, waitFor, within } from 'storybook/test'
+import { nextPaint, pausableAnimations } from '../../../.storybook/motion'
+import { transitionsEnded } from '../../../.storybook/transitions-ended'
 import { CoachMark } from './coach-mark'
 
 const MESSAGE = 'カードをタップして、チケットや会場をチェック'
@@ -253,6 +255,52 @@ export const OutsideTap = {
 			rootOverflow,
 		)
 		await expect(getComputedStyle(document.body).overflow).toBe(bodyOverflow)
+	},
+} satisfies Story
+
+/**
+ * A tap outside dismisses the coach mark with a fade: the overlay is inert at
+ * once and fades out over 200 ms with the spotlight's cut-out still around the
+ * target, then it is not rendered.
+ */
+export const TapOutsideFades = {
+	render: render(),
+	play: async ({ canvasElement }) => {
+		// @spec components/infrastructure/fan/web/global/coach-mark "A tap outside dismisses the coach mark with a fade"
+		const spot = await shownSpotlight(canvasElement)
+		const overlay = canvasElement.querySelector(
+			'.coach-mark-overlay',
+		) as HTMLElement
+		const target = byId(canvasElement, 'coach-target')
+		await transitionsEnded(overlay)
+		// The tap's first event, sent at once; the fade is then caught as it
+		// starts (polled, since the binding that hides the overlay runs a task
+		// later), before a loaded runner can run it out.
+		byId(canvasElement, 'page-under').dispatchEvent(
+			new PointerEvent('pointerdown', { bubbles: true }),
+		)
+		const fadeOf = () =>
+			pausableAnimations(overlay).filter(
+				(a) =>
+					a instanceof CSSTransition &&
+					a.transitionProperty === 'opacity' &&
+					a.effect?.target === overlay,
+			)
+		await nextPaint()
+		await waitFor(() => expect(fadeOf()).toHaveLength(1))
+		const fade = fadeOf()
+		await expect(overlay.hidden).toBe(true)
+		await expect(overlay.inert).toBe(true)
+		await expect(Number(fade[0].effect?.getComputedTiming().duration)).toBe(200)
+		// The cut-out is still around the target while it fades.
+		const around = spot.getBoundingClientRect()
+		const t = target.getBoundingClientRect()
+		await expect(around.left).toBeLessThan(t.left)
+		await expect(around.right).toBeGreaterThan(t.right)
+		await expect(getComputedStyle(spot).boxShadow).toMatch(/0\.7\)/)
+		// Fading out, towards nothing.
+		await expect(getComputedStyle(overlay).opacity).not.toBe('1')
+		await waitFor(() => expect(overlayIsGone(canvasElement)).toBe(true))
 	},
 } satisfies Story
 

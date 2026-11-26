@@ -319,6 +319,7 @@ describe('CelebrationOverlay', () => {
 			delete (navigator as unknown as Record<string, unknown>).vibrate
 		})
 
+		// @spec components/infrastructure/fan/web/global/celebration-overlay "Post-signup confetti, sound and vibration"
 		it('bursts confetti, plays the celebration and vibrates once', () => {
 			const overlay = build()
 

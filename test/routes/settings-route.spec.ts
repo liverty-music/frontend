@@ -199,6 +199,7 @@ describe('SettingsRoute', () => {
 			expect(mockAuth.refreshEmailVerified).toHaveBeenCalledOnce()
 		})
 
+		// @spec components/infrastructure/fan/web/global/home-area-selector "My Home Area displays from backend User entity"
 		it('derives currentHome from userService.current.home (no loading() copy)', async () => {
 			// currentHome is a computed getter — set userService.current.home
 			// and the getter reflects it on next read. loading() is intentionally
@@ -207,6 +208,7 @@ describe('SettingsRoute', () => {
 			expect(sut.currentHome).toBe('tokyo')
 		})
 
+		// @spec components/infrastructure/fan/web/global/home-area-selector "My Home Area displays from backend User entity"
 		it('returns null currentHome when userService.current has no home', async () => {
 			// Authenticated route: no guest-storage fallback. If hydration has
 			// not populated home, the getter is null (UI renders 'Not set').
@@ -345,6 +347,7 @@ describe('SettingsRoute', () => {
 	})
 
 	describe('home area persistence (the caller owns it)', () => {
+		// @spec components/infrastructure/fan/web/global/home-area-selector "Changing home area"
 		// @spec components/infrastructure/fan/web/global/home-area-selector "Caller owns persistence — authenticated home save"
 		it("saves a signed-in fan's home with UserService.SetHome", async () => {
 			mockAuth.isAuthenticated = true

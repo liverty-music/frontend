@@ -15,6 +15,7 @@ import {
 import { swipeVertically } from '../../../.storybook/gestures'
 import {
 	finishMotion,
+	nextPaint,
 	pausableAnimations,
 	seekMotion,
 } from '../../../.storybook/motion'
@@ -952,6 +953,46 @@ export const RisesFromTheBottom = {
 			innerHeight - 1,
 		)
 		finishMotion(slides)
+	},
+} satisfies Story
+
+// Under reduced motion the sheet is at its resting place in the first frame and
+// fades in over at most 100 ms (it does not slide).
+export const EntryUnderReducedMotion = {
+	tags: ['reduced-motion'],
+	render: behaviour,
+	args: { open: true },
+	play: async ({ canvasElement, globals }) => {
+		const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches
+		await expect(reduced).toBe(globals.reducedMotion)
+		if (!reduced) return
+		// @spec components/infrastructure/fan/web/global/bottom-sheet "Entry under reduced motion"
+		// @spec components/infrastructure/fan/web/global/design-tokens "A surface appears under reduced motion"
+		await ready(canvasElement)
+		const body = bodyOf(canvasElement)
+		await transitionsEnded(canvasElement)
+		const rest = body.getBoundingClientRect().top
+		body.style.animation = 'none'
+		void body.offsetHeight
+		body.style.animation = ''
+		const fades = pausableAnimations(canvasElement).filter(
+			(a) => (a as CSSAnimation).animationName === 'sheet-fade',
+		)
+		await expect(fades).toHaveLength(1)
+		await expect(
+			Number(fades[0].effect?.getComputedTiming().duration),
+		).toBeLessThanOrEqual(100)
+		const opacity = () => Number.parseFloat(getComputedStyle(body).opacity)
+		// First frame: in place, not yet shown.
+		await seekMotion(fades, 0)
+		await expect(body.getBoundingClientRect().top).toBeCloseTo(rest, 0)
+		await expect(opacity()).toBeLessThan(0.1)
+		await seekMotion(fades, 0.5)
+		await expect(body.getBoundingClientRect().top).toBeCloseTo(rest, 0)
+		await expect(opacity()).toBeGreaterThan(0.1)
+		finishMotion(fades)
+		await nextPaint()
+		await expect(opacity()).toBe(1)
 	},
 } satisfies Story
 

@@ -3,7 +3,13 @@ import {
 	type Meta,
 	type StoryObj,
 } from '@aurelia/storybook'
-import { expect, fn, userEvent, within } from 'storybook/test'
+import { expect, fn, userEvent, waitFor, within } from 'storybook/test'
+import {
+	finishMotion,
+	nextPaint,
+	pausableAnimations,
+	seekMotion,
+} from '../../../.storybook/motion'
 import { transitionsEnded } from '../../../.storybook/transitions-ended'
 import { expectScreenshot } from '../../../.storybook/screenshot'
 import { BusyOnClickCustomAttribute } from '../../custom-attributes/busy-on-click'
@@ -113,6 +119,79 @@ export const Expanded = {
 		)
 		await atRest(userEvent, canvasElement)
 		await expectScreenshot(canvasElement, 'settings-consent-row-expanded')
+	},
+} satisfies Story
+
+/**
+ * The description opens by growing to its height and fading in over 300 ms, and
+ * closes by shrinking and fading out over 300 ms, after which it is not
+ * rendered. The story steps through the opening.
+ */
+export const DescriptionOpensAndCloses = {
+	args: { action: fn() },
+	render,
+	play: async ({ canvasElement }) => {
+		// @spec components/infrastructure/fan/web/route/settings "Opening the description"
+		const canvas = within(canvasElement)
+		const description = canvasElement.querySelector(
+			'.settings-toggle-desc',
+		) as HTMLElement
+		const disclosure = canvas.getByRole('button', {
+			name: /アナリティクス/,
+			expanded: false,
+		})
+		disclosure.click()
+		await nextPaint()
+		const motion = (property: string) =>
+			pausableAnimations(description).filter(
+				(a) =>
+					a instanceof CSSTransition &&
+					a.transitionProperty === property &&
+					a.effect?.target === description,
+			)
+		// Polled, not waited for by a frame: the transition is caught while it runs.
+		await waitFor(() => {
+			expect(motion('height')).toHaveLength(1)
+			expect(motion('opacity')).toHaveLength(1)
+		})
+		const grow = motion('height')
+		const fade = motion('opacity')
+		await expect(fade).toHaveLength(1)
+		for (const a of [...grow, ...fade]) {
+			await expect(Number(a.effect?.getComputedTiming().duration)).toBe(300)
+		}
+		const opacity = () =>
+			Number.parseFloat(getComputedStyle(description).opacity)
+		// The 4 px of padding above the text stays; the text's own height is what grows.
+		const height = () => description.getBoundingClientRect().height - 4
+		await seekMotion([...grow, ...fade], 0)
+		await expect(opacity()).toBeLessThan(0.1)
+		await expect(height()).toBeLessThan(1)
+		await seekMotion([...grow, ...fade], 0.1)
+		await expect(opacity()).toBeGreaterThan(0.1)
+		await expect(opacity()).toBeLessThan(1)
+		await expect(height()).toBeGreaterThan(1)
+		finishMotion([...grow, ...fade])
+		await transitionsEnded(canvasElement)
+		const full = height()
+		await expect(full).toBeGreaterThan(20)
+		await expect(opacity()).toBe(1)
+
+		// Closing shrinks and fades it out the same way, then it is not rendered.
+		canvas
+			.getByRole('button', { name: /アナリティクス/, expanded: true })
+			.click()
+		await nextPaint()
+		await waitFor(() => expect(motion('height')).toHaveLength(1))
+		const closing = [...motion('height'), ...motion('opacity')]
+		await expect(closing.length).toBeGreaterThan(0)
+		await seekMotion(closing, 0.1)
+		await expect(height()).toBeLessThan(full)
+		await expect(opacity()).toBeLessThan(1)
+		finishMotion(closing)
+		await waitFor(() =>
+			expect(getComputedStyle(description).display).toBe('none'),
+		)
 	},
 } satisfies Story
 

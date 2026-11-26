@@ -7,6 +7,7 @@ import {
 import { Registration } from 'aurelia'
 import { expect, userEvent, waitFor } from 'storybook/test'
 import { composite, contrast, resolveColor } from '../../../.storybook/contrast'
+import { pressKey } from '../../../.storybook/gestures'
 import { noGuide } from '../../../.storybook/guide'
 import { atWidth } from '../../../.storybook/viewport'
 import {
@@ -236,6 +237,7 @@ export const TapOutsideTheArc = {
 	render: () => launcher(),
 	play: async ({ canvasElement }) => {
 		// @spec components/infrastructure/fan/web/global/action-menu "Tapping outside the arc only closes it"
+		// @spec components/infrastructure/fan/web/global/action-menu "Escape and outside activation dismiss the panel"
 		const reached: string[] = []
 		const tab = canvasElement.querySelector<HTMLElement>(
 			'[data-testid="behind-tab"]',
@@ -272,6 +274,55 @@ export const TapOutsideTheArc = {
 		await tapAt(tab)
 		await tapAt(link)
 		await expect(reached).toEqual(['tab', 'link'])
+	},
+} satisfies Story
+
+/**
+ * The launcher is a disclosure, not a menu: the FAB says whether the panel is
+ * open and which element it controls, and nothing carries a `menu` or
+ * `menuitem` role.
+ */
+export const DisclosureState = {
+	render: () => launcher(),
+	play: async ({ canvasElement }) => {
+		// @spec components/infrastructure/fan/web/global/action-menu "action menu exposes disclosure state"
+		const button = await waitFor(() => {
+			const el = fab(canvasElement)
+			if (!el) throw new Error('launcher not rendered yet')
+			return el
+		})
+		await expect(button.getAttribute('aria-expanded')).toBe('false')
+		const panel = canvasElement.querySelector('action-menu .fab-panel')
+		if (!panel) throw new Error('no panel')
+		await expect(button.getAttribute('aria-controls')).toBe(panel.id)
+		await expect(panel.id).not.toBe('')
+		await openArc(canvasElement)
+		await expect(button.getAttribute('aria-expanded')).toBe('true')
+		await expect(canvasElement.querySelector('[role="menu"]')).toBeNull()
+		await expect(canvasElement.querySelector('[role="menuitem"]')).toBeNull()
+		await userEvent.click(button)
+		await waitFor(() =>
+			expect(button.getAttribute('aria-expanded')).toBe('false'),
+		)
+	},
+} satisfies Story
+
+/** Escape closes the open arc. */
+export const EscapeClosesTheArc = {
+	render: () => launcher(),
+	play: async ({ canvasElement }) => {
+		// @spec components/infrastructure/fan/web/global/action-menu "Escape and outside activation dismiss the panel"
+		const button = await openArc(canvasElement)
+		const panel = canvasElement.querySelector<HTMLElement>(
+			'action-menu .fab-panel',
+		)
+		await expect(panel?.matches(':popover-open')).toBe(true)
+		// A real key: a script's Escape does not close a popover.
+		if (!(await pressKey('{Escape}'))) return
+		await waitFor(() =>
+			expect(button.getAttribute('aria-expanded')).toBe('false'),
+		)
+		await expect(panel?.matches(':popover-open')).toBe(false)
 	},
 } satisfies Story
 
