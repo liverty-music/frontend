@@ -9,7 +9,6 @@ import {
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/scanner_pb.js'
 import { PublishState } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
 import { create } from '@bufbuild/protobuf'
-import { timestampFromDate } from '@bufbuild/protobuf/wkt'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -27,6 +26,7 @@ import { ConsoleButton } from '../../../organizer/ui/console-button/console-butt
 import { ConsoleIcon } from '../../../organizer/ui/console-icon/console-icon'
 import { ListItem } from '../../../organizer/ui/list-item/list-item'
 import { authoredSeries } from '../authored-series'
+import { timeOfDayAt, venueIn } from '../zoned-fixtures'
 
 const SPEC = 'components/infrastructure/organizer/web/route/home'
 
@@ -35,7 +35,7 @@ const NOW = new Date('2026-10-28T10:00:00+09:00').getTime()
 
 const BAND_A = { id: { value: 'a-1' }, name: { value: 'Band A' } }
 
-const at = (day: string) => timestampFromDate(new Date(`${day}T18:00:00+09:00`))
+const at = (day: string) => timeOfDayAt(new Date(`${day}T18:00:00+09:00`))
 
 /** XX Tour 2026: published dates on 3 and 10 November, both with a start time. */
 const XX_TOUR = authoredSeries({
@@ -46,12 +46,14 @@ const XX_TOUR = authoredSeries({
 			id: { value: 'e-1103' },
 			localDate: { value: { year: 2026, month: 11, day: 3 } },
 			startTime: { value: at('2026-11-03') },
+			venue: venueIn('Zepp Haneda'),
 			publishState: PublishState.PUBLISHED,
 		},
 		{
 			id: { value: 'e-1110' },
 			localDate: { value: { year: 2026, month: 11, day: 10 } },
 			startTime: { value: at('2026-11-10') },
+			venue: venueIn('Zepp Haneda'),
 			publishState: PublishState.PUBLISHED,
 		},
 	],
@@ -66,6 +68,7 @@ const XX_SOLO = authoredSeries({
 			id: { value: 'e-1220' },
 			localDate: { value: { year: 2026, month: 12, day: 20 } },
 			startTime: { value: at('2026-12-20') },
+			venue: venueIn('Zepp Haneda'),
 			publishState: PublishState.DRAFT,
 		},
 	],
@@ -219,7 +222,7 @@ describe('home route', () => {
 
 		const [item, ...rest] = group('7日以内')
 		expect(rest).toHaveLength(0)
-		expect(read(item)).toContain('11月3日(火) 18:00 JST · 受付リンクなし')
+		expect(read(item)).toContain('11月3日(火) 18:00 日本時間 · 受付リンクなし')
 		expect(read(item)).toContain('XX Tour 2026')
 		const action = actionOf(item)
 		expect(read(item)).toContain('発行する')
@@ -234,6 +237,32 @@ describe('home route', () => {
 		await done()
 	})
 
+	it(`@spec ${SPEC} "Event abroad next week without a scanner"`, async () => {
+		const london = authoredSeries({
+			series: { id: { value: 's-tour' }, title: { value: 'XX Tour 2027' } },
+			performers: [BAND_A],
+			events: [
+				{
+					id: { value: 'e-0220' },
+					localDate: { value: { year: 2027, month: 2, day: 20 } },
+					startTime: { value: { hours: 19, minutes: 30 } },
+					venue: venueIn('O2 Arena', 'Europe/London'),
+					publishState: PublishState.PUBLISHED,
+				},
+			],
+		})
+		const { group, done } = await mount({
+			concerts: [london],
+			now: new Date('2027-02-15T00:00:00Z').getTime(),
+		})
+
+		expect(read(group('7日以内')[0])).toContain(
+			'2月20日(土) 19:30 ロンドン時間（日本時間 2月21日(日) 04:30） · 受付リンクなし',
+		)
+		expect(read(group('7日以内')[0])).toContain('発行する')
+		await done()
+	})
+
 	it(`@spec ${SPEC} "Revoked scanners only"`, async () => {
 		const { group, done } = await mount({
 			concerts: [XX_TOUR],
@@ -241,7 +270,7 @@ describe('home route', () => {
 		})
 
 		const item = group('7日以内')[0]
-		expect(read(item)).toContain('11月3日(火) 18:00 JST · 受付リンクなし')
+		expect(read(item)).toContain('11月3日(火) 18:00 日本時間 · 受付リンクなし')
 		expect(
 			item
 				.querySelector('list-item')

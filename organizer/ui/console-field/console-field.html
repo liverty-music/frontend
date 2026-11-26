@@ -59,7 +59,7 @@
       >
     </template>
     <span if.bind="type === 'yen'" class="[ affix ] [ md-typescale-body-large ]" aria-hidden="true">${'field.yenSuffix' & t}</span>
-    <span if.bind="isTime" id.bind="`${inputId}-zone`" class="[ affix ] [ md-typescale-body-large ]">${'common.jst' & t}</span>
+    <span if.bind="isTime" id.bind="`${inputId}-zone`" class="[ affix ] [ md-typescale-body-large ]">${zoneLabel}</span>
     <console-icon if.bind="errorText" name="error" class="error-icon"></console-icon>
   </div>
   <!-- The error replaces the supporting text (M3 text fields). -->

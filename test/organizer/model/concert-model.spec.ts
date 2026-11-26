@@ -1,7 +1,7 @@
 import { PublishState } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
-import { timestampFromDate } from '@bufbuild/protobuf/wkt'
 import { describe, expect, it } from 'vitest'
 import {
+	eventZone,
 	concertCancelled,
 	concertsOf,
 	eventDay,
@@ -16,6 +16,7 @@ import {
 	venueName,
 } from '../../../organizer/model/concert-model'
 import { authoredSeries } from '../authored-series'
+import { timeOfDayAt, venueIn } from '../zoned-fixtures'
 
 const tour = authoredSeries({
 	series: { id: { value: 's1' }, title: { value: 'XX Tour 2026' } },
@@ -23,25 +24,27 @@ const tour = authoredSeries({
 		{
 			id: { value: 'e2' },
 			localDate: { value: { year: 2026, month: 11, day: 10 } },
-			startTime: {
-				value: timestampFromDate(new Date('2026-11-10T09:00:00Z')),
-			},
+			startTime: { value: timeOfDayAt(new Date('2026-11-10T09:00:00Z')) },
 			listedVenueName: { value: 'Zepp Osaka Bayside' },
+			venue: { timeZone: { value: 'Asia/Tokyo' } },
 			publishState: PublishState.PUBLISHED,
 		},
 		{
 			id: { value: 'e1' },
 			localDate: { value: { year: 2026, month: 11, day: 3 } },
-			venue: { name: { value: 'Zepp Haneda' } },
+			venue: venueIn('Zepp Haneda'),
 			publishState: PublishState.DRAFT,
 		},
 	],
 })
 
 describe('concert model', () => {
-	it('reads an event day as midnight in Japan time', () => {
-		const day = eventDay(tour.events[1])
-		expect(day?.toISOString()).toBe('2026-11-02T15:00:00.000Z')
+	it('reads an event day as the calendar date at its Venue', () => {
+		expect(eventDay(tour.events[1])).toEqual({ year: 2026, month: 11, day: 3 })
+	})
+
+	it('reads the event zone from its Venue', () => {
+		expect(eventZone(tour.events[0])).toBe('Asia/Tokyo')
 	})
 
 	it('orders events by start time, else by day', () => {

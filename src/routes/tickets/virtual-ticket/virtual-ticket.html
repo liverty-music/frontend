@@ -86,11 +86,11 @@
 				</div>
 				<div if.bind="event.openTime">
 					<dt t="tickets.event.open"></dt>
-					<dd>${time(event.openTime)}</dd>
+					<dd>${openText}</dd>
 				</div>
 				<div if.bind="event.startTime">
 					<dt t="tickets.event.start"></dt>
-					<dd>${time(event.startTime)}</dd>
+					<dd>${startText}</dd>
 				</div>
 				<div class="ticket-front-seat-type" if.bind="ticket.seatTypeName">
 					<dt t="tickets.field.seatType"></dt>
@@ -148,7 +148,7 @@
 				</div>
 				<div if.bind="event.openTime || event.startTime">
 					<dt>${'tickets.event.open' & t} / ${'tickets.event.start' & t}</dt>
-					<dd>${time(event.openTime)} / ${time(event.startTime)}</dd>
+					<dd>${openText}<template if.bind="openText && startText"> / </template>${startText}</dd>
 				</div>
 				<div>
 					<dt>${'tickets.field.seatType' & t} / ${'tickets.field.seat' & t}</dt>

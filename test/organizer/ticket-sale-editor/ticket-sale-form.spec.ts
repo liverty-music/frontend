@@ -3,12 +3,14 @@ import {
 	blankFormModel,
 	formModelOf,
 	isFormValid,
-	parseDateTime,
 	type TicketSaleFormContext,
 	type TicketSaleFormModel,
 	toCreateInput,
 	validateTicketSaleForm,
 } from '../../../organizer/ticket-sale-editor/ticket-sale-form'
+
+const EDITOR =
+	'components/infrastructure/organizer/web/route/ticket-sale-editor'
 
 /** 2026-11-20 19:00 in Japan time. */
 const EVENT_START = new Date(Date.UTC(2026, 10, 20, 10, 0))
@@ -17,47 +19,114 @@ const CTX: TicketSaleFormContext = { eventStart: EVENT_START }
 function valid(): TicketSaleFormModel {
 	return {
 		name: '一般発売',
+		timeZone: 'Asia/Tokyo',
 		saleStart: { date: '2026-11-01', time: '12:00' },
 		saleEnd: { date: '2026-11-20', time: '19:00' },
 	}
 }
 
-describe('Japan-time inputs', () => {
-	it('reads a date and a 24-hour time as Japan time whatever the browser zone', () => {
-		expect(
-			parseDateTime({ date: '2026-11-20', time: '19:00' })?.toISOString(),
-		).toBe('2026-11-20T10:00:00.000Z')
-		// Crossing midnight in UTC.
-		expect(
-			parseDateTime({ date: '2026-11-21', time: '08:30' })?.toISOString(),
-		).toBe('2026-11-20T23:30:00.000Z')
+describe('a window in the sale zone', () => {
+	it(`@spec ${EDITOR} "Event abroad"`, () => {
+		// A sale of an event at a Venue in Taipei: 12:00 on 1 February, Taipei time.
+		const input = toCreateInput('series-1', 'event-1', {
+			...valid(),
+			timeZone: 'Asia/Taipei',
+			saleStart: { date: '2027-02-01', time: '12:00' },
+			saleEnd: { date: '2027-02-10', time: '18:00' },
+		})
+		expect(input.timeZone).toBe('Asia/Taipei')
+		expect(input.saleStart).toEqual({
+			year: 2027,
+			month: 2,
+			day: 1,
+			hour: 12,
+			minute: 0,
+		})
 	})
 
-	it('shows a stored window as Japan-time dates and times', () => {
+	it(`@spec ${EDITOR} "Device in another time zone"`, () => {
+		// The form holds the wall clock the member typed; the zone is the sale's,
+		// so 12:00 on 10 October is 12:00 Japan time on any device.
+		const input = toCreateInput('s', 'e', {
+			...valid(),
+			saleStart: { date: '2026-10-10', time: '12:00' },
+		})
+		expect(input.timeZone).toBe('Asia/Tokyo')
+		expect(input.saleStart).toMatchObject({ month: 10, day: 10, hour: 12 })
+	})
+
+	it('shows a stored window as the dates and times in its zone', () => {
 		const model = formModelOf({
 			name: '一般発売',
-			saleStartTime: new Date('2026-11-20T23:30:00Z'),
-			saleEndTime: EVENT_START,
+			timeZone: 'Asia/Taipei',
+			saleStart: { date: '2027-02-01', time: '12:00' },
+			saleEnd: null,
 		})
-		expect(model.saleStart).toEqual({ date: '2026-11-21', time: '08:30' })
-		expect(model.saleEnd).toEqual({ date: '2026-11-20', time: '19:00' })
+		expect(model.saleStart).toEqual({ date: '2027-02-01', time: '12:00' })
+		expect(model.timeZone).toBe('Asia/Taipei')
+		expect(model.saleEnd).toEqual({ date: '', time: '' })
+	})
+})
+
+describe('the sale zone', () => {
+	it(`@spec ${EDITOR} "Events at venues in different zones"`, () => {
+		// Several zones, none chosen: saving says a time zone must be chosen.
+		const errors = validateTicketSaleForm({ ...valid(), timeZone: '' }, CTX)
+		expect(errors.timeZone).toEqual({ key: 'saleEditor.error.timeZone' })
+		expect(isFormValid(errors)).toBe(false)
 	})
 
-	it('rejects blank, malformed and non-existent times', () => {
-		expect(parseDateTime({ date: '', time: '' })).toBeNull()
-		expect(parseDateTime({ date: '2026-11-20', time: '' })).toBeNull()
-		expect(parseDateTime({ date: '2026-02-30', time: '10:00' })).toBeNull()
-		expect(parseDateTime({ date: '2026-11-20', time: '24:00' })).toBeNull()
+	it(`@spec ${EDITOR} "Event in Japan"`, () => {
+		// The shared zone is preselected, and the form is valid with it.
+		const model = blankFormModel(EVENT_START, '一般発売', 'Asia/Tokyo')
+		expect(model.timeZone).toBe('Asia/Tokyo')
+		expect(model.saleEnd).toEqual({ date: '2026-11-20', time: '19:00' })
+	})
+})
+
+describe('a time the clocks skip', () => {
+	it(`@spec ${EDITOR} "Time skipped by the clocks moving forward"`, () => {
+		const errors = validateTicketSaleForm(
+			{
+				...valid(),
+				timeZone: 'America/New_York',
+				saleStart: { date: '2027-03-14', time: '02:30' },
+				saleEnd: { date: '2027-03-20', time: '12:00' },
+			},
+			{ eventStart: new Date('2027-03-21T00:00:00Z') },
+		)
+		expect(errors.saleStartTime).toEqual({
+			key: 'saleEditor.error.timeSkipped',
+		})
+		expect(isFormValid(errors)).toBe(false)
 	})
 })
 
 describe('blankFormModel', () => {
-	it('ends the sale at the event start, with no price, quantity or limit', () => {
-		const model = blankFormModel(EVENT_START, '一般発売')
+	it(`@spec ${EDITOR} "Blank form"`, () => {
+		const model = blankFormModel(EVENT_START, '一般発売', 'Asia/Tokyo')
 		expect(model.saleEnd).toEqual({ date: '2026-11-20', time: '19:00' })
-		expect(Object.keys(model).sort()).toEqual(['name', 'saleEnd', 'saleStart'])
+		expect(Object.keys(model).sort()).toEqual([
+			'name',
+			'saleEnd',
+			'saleStart',
+			'timeZone',
+		])
 		expect(model.name).toBe('一般発売')
 		expect(model.saleStart).toEqual({ date: '', time: '' })
+	})
+
+	it('ends the sale at the event start in the sale zone', () => {
+		const model = blankFormModel(EVENT_START, '', 'Asia/Taipei')
+		// 19:00 Japan time is 18:00 in Taipei.
+		expect(model.saleEnd).toEqual({ date: '2026-11-20', time: '18:00' })
+	})
+
+	it('leaves the end empty while no zone is chosen', () => {
+		expect(blankFormModel(EVENT_START, '').saleEnd).toEqual({
+			date: '',
+			time: '',
+		})
 	})
 })
 
@@ -73,7 +142,12 @@ describe('validateTicketSaleForm', () => {
 		)
 		expect(errors.saleEndDate).toEqual({
 			key: 'firstComeEditor.error.endAfterEvent',
-			params: { eventStart: EVENT_START },
+			params: {
+				eventStart: {
+					wall: { year: 2026, month: 11, day: 20, hour: 19, minute: 0 },
+					zone: 'Asia/Tokyo',
+				},
+			},
 		})
 	})
 
@@ -133,14 +207,15 @@ describe('validateTicketSaleForm — name', () => {
 })
 
 describe('toCreateInput', () => {
-	it('converts the model into a FirstCome sale naming the event', () => {
+	it('converts the model into a FirstCome sale naming the event, with its zone', () => {
 		const input = toCreateInput('series-1', 'event-1', valid())
 		expect(input).toEqual({
 			seriesId: 'series-1',
 			name: '一般発売',
 			method: 'firstCome',
-			saleStartTime: new Date('2026-11-01T03:00:00Z'),
-			saleEndTime: EVENT_START,
+			saleStart: { year: 2026, month: 11, day: 1, hour: 12, minute: 0 },
+			saleEnd: { year: 2026, month: 11, day: 20, hour: 19, minute: 0 },
+			timeZone: 'Asia/Tokyo',
 			eventIds: ['event-1'],
 		})
 	})

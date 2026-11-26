@@ -21,6 +21,7 @@ import {
 	XX_TOUR,
 } from '../support/organizer-data'
 import { expect, type Page, test } from '../support/test'
+import { type WireDateTime, wireInstant } from '../support/zoned-wire'
 
 /**
  * The event page's Sales tab where it needs the real console: the publish
@@ -153,8 +154,8 @@ test.describe('starting and editing a sale', () => {
 			created = lottery({
 				id: 'sale-new',
 				name: (body.name as { value: string }).value,
-				start: body.saleStartTime as string,
-				end: body.saleEndTime as string,
+				start: wireInstant(body.saleStartTime as WireDateTime),
+				end: wireInstant(body.saleEndTime as WireDateTime),
 			})
 			const list = salesOf('e-1103', [created]) as { ticketSales: unknown[] }
 			return { body: { ticketSale: list.ticketSales[0] } }
@@ -206,6 +207,7 @@ test.describe('starting and editing a sale', () => {
 		await expect(page.getByLabel('販売開始日')).toHaveValue('2026-10-20')
 		await expect.poll(() => shownTime(page, '販売開始時刻')).toBe('10:00')
 		// The name is shown, not edited.
-		await expect(page.locator('.fixed')).toContainText('一般発売')
+		await expect(page.locator('.fixed').first()).toContainText('一般発売')
+		await expect(page.getByTestId('sale-zone')).toContainText('日本')
 	})
 })

@@ -9,11 +9,6 @@ import {
 	LANGUAGE_STORAGE_KEY,
 } from '../../../organizer/i18n/console-language'
 import { ConsoleFormatters } from '../../../organizer/i18n/converters'
-import {
-	formatJstDateTime,
-	parseJstDateTimeLocal,
-	toJstDateTimeLocal,
-} from '../../../organizer/i18n/format'
 import { priceOf } from '../../../organizer/model/stock-model'
 
 function browserLanguages(languages: string[]): void {
@@ -93,30 +88,24 @@ describe('console language', () => {
 	})
 })
 
-describe('Japan time', () => {
+describe('times in the zone they belong to', () => {
 	afterEach(() => vi.restoreAllMocks())
 
-	it('formats a template date in Japan time', async () => {
+	it('formats a template Event time at its Venue, named', async () => {
 		browserLanguages(['ja-JP'])
 		localStorage.clear()
 		const { assertText, tearDown } = await mount(
-			`<p>\${startTime | jstDateTime}</p>`,
-			{ startTime: new Date('2026-11-03T09:00:00Z') },
+			`<p>\${when | eventWhen}</p>`,
+			{
+				when: {
+					date: { year: 2026, month: 11, day: 3 },
+					time: { hour: 18, minute: 0 },
+					zone: 'Asia/Tokyo',
+				},
+			},
 		)
-		assertText('11月3日(火) 18:00 JST')
+		assertText('11月3日(火) 18:00 日本時間')
 		await tearDown()
-	})
-
-	it('rejects a malformed or rolled-over value', () => {
-		expect(parseJstDateTimeLocal('')).toBeUndefined()
-		expect(parseJstDateTimeLocal('2026-02-30T10:00')).toBeUndefined()
-		expect(parseJstDateTimeLocal('2026-10-10 12:00')).toBeUndefined()
-		expect(formatJstDateTime(new Date('2026-11-03T09:00:00Z'), 'ja')).toBe(
-			'11月3日(火) 18:00 JST',
-		)
-		expect(toJstDateTimeLocal(new Date('2026-10-10T03:00:00Z'))).toBe(
-			'2026-10-10T12:00',
-		)
 	})
 })
 

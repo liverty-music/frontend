@@ -1,13 +1,17 @@
 import type { FieldError } from '../i18n/field-error'
 import {
-	type JstDateTime,
-	parseJstDateTime,
-	toJstDateTime,
+	type DateTimeInput,
+	emptyDateTimeInput,
+	instantOfInput,
+	toDateTimeInput,
 	unsetPartOf,
-} from '../i18n/format'
+	wallOfInput,
+} from '../i18n/wall-input'
+import { wallInZone } from '../model/sale-zone'
+import { addWallMinutes } from '../../shared/lib/zoned-time/zoned-time'
 import type { CreateTicketSaleInput } from '../services/ticket-sale-client'
 
-export type { FieldError, JstDateTime }
+export type { DateTimeInput, FieldError }
 
 /** Default application-window duration in days (server + console default). */
 export const DEFAULT_WINDOW_DAYS = 10
@@ -22,31 +26,35 @@ export const MAX_WINDOW_DAYS = 14
 /** Maximum length of the sale's name, in characters. */
 export const MAX_NAME_LENGTH = 100
 
-const MS_PER_DAY = 24 * 60 * 60 * 1000
+const MINUTES_PER_DAY = 24 * 60
 /** The minute steps of the console's time field (design D19). */
 const MINUTE_STEP_MS = 5 * 60 * 1000
 
 /**
  * The editable, transport-agnostic model of the lottery form: the sale's name
- * and window. The window's start and end are each a date and a 24-hour time
- * in Japan time (design D19). The sale draws from every TicketStock of the
+ * zone and window. The window's start and end are each a date and a 24-hour
+ * time in the sale's time zone (design D19). The sale draws from every TicketStock of the
  * event and the per-account limit is the event's, so it carries neither.
  */
 export interface LotterySaleFormModel {
 	/** The sale's name, e.g. ファンクラブ先行. */
 	name: string
-	/** When the window opens, in Japan time. */
-	saleStart: JstDateTime
-	/** When the window closes, in Japan time. */
-	saleEnd: JstDateTime
+	/** The IANA zone the window is read in; '' while none is chosen. */
+	timeZone: string
+	/** When the window opens, in the sale's zone. */
+	saleStart: DateTimeInput
+	/** When the window closes, in the sale's zone. */
+	saleEnd: DateTimeInput
 }
 
 /** Per-field validation errors, keyed for inline display next to each control. */
 export interface LotterySaleFormErrors {
 	name?: FieldError
 	/** The start's date is unset or not a calendar day. */
+	/** No time zone is chosen, or the server refused the one chosen. */
+	timeZone?: FieldError
 	saleStartDate?: FieldError
-	/** The start's time is unset. */
+	/** The start's time is unset, or skipped by the clocks moving forward. */
 	saleStartTime?: FieldError
 	saleEndDate?: FieldError
 	saleEndTime?: FieldError
@@ -56,41 +64,63 @@ export interface LotterySaleFormErrors {
 
 /** What the form is checked against besides its own values. */
 export interface LotterySaleFormContext {
-	/** The event's start time; the lottery must close before it. */
+	/** The event's start; the lottery must close before it. */
 	readonly eventStart?: Date | null
 }
 
-/** The date and time fields showing `date` in Japan time. */
-export function toDateTime(date: Date): JstDateTime {
-	return toJstDateTime(date)
-}
-
 /**
- * Returns a blank form model with the window defaulted (open now, close
- * {@link DEFAULT_WINDOW_DAYS} later). "Now" is rounded up to the time field's
- * 5-minute steps, so the default is a time the field offers. `now` is
- * injected for deterministic tests.
+ * Returns a blank form model. With a zone the window is defaulted (open now,
+ * close {@link DEFAULT_WINDOW_DAYS} later on the calendar of the zone); without
+ * one (several to choose from) it is left empty until a zone is chosen. "Now"
+ * is rounded up to the time field's 5-minute steps, so the default is a time
+ * the field offers. `now` is injected for deterministic tests.
  */
-export function emptyFormModel(now: Date = new Date()): LotterySaleFormModel {
-	const open = new Date(
-		Math.ceil(now.getTime() / MINUTE_STEP_MS) * MINUTE_STEP_MS,
-	)
-	const close = new Date(open.getTime() + DEFAULT_WINDOW_DAYS * MS_PER_DAY)
+export function emptyFormModel(
+	now: Date = new Date(),
+	timeZone = '',
+): LotterySaleFormModel {
 	return {
 		name: '',
-		saleStart: toDateTime(open),
-		saleEnd: toDateTime(close),
+		timeZone,
+		...defaultWindow(now, timeZone),
 	}
 }
 
-/** The instant of a date and time entered in Japan time, or null. */
-export function parseDateTime(value: JstDateTime): Date | null {
-	return parseJstDateTime(value) ?? null
+/** The default window in `zone`: open at `now` rounded up to 5 minutes, closing 10 calendar days later. */
+export function defaultWindow(
+	now: Date,
+	timeZone: string,
+): { saleStart: DateTimeInput; saleEnd: DateTimeInput } {
+	if (!timeZone) {
+		return { saleStart: emptyDateTimeInput(), saleEnd: emptyDateTimeInput() }
+	}
+	const open = new Date(
+		Math.ceil(now.getTime() / MINUTE_STEP_MS) * MINUTE_STEP_MS,
+	)
+	const openWall = wallInZone(open, timeZone)
+	return {
+		saleStart: toDateTimeInput(openWall),
+		saleEnd: toDateTimeInput(
+			addWallMinutes(openWall, DEFAULT_WINDOW_DAYS * MINUTES_PER_DAY),
+		),
+	}
 }
 
-/** Whole days (fractional) between two instants; may be fractional. */
-export function windowDurationDays(open: Date, close: Date): number {
-	return (close.getTime() - open.getTime()) / MS_PER_DAY
+/**
+ * The length of the window in days, counted on the zone's own calendar
+ * (fractional), so a window across a daylight-saving change still counts its
+ * calendar days.
+ */
+export function windowDurationDays(
+	open: DateTimeInput,
+	close: DateTimeInput,
+): number | null {
+	const a = wallOfInput(open)
+	const b = wallOfInput(close)
+	if (!a || !b) return null
+	const at = (w: typeof a) =>
+		Date.UTC(w.year, w.month - 1, w.day, w.hour, w.minute)
+	return (at(b) - at(a)) / (MINUTES_PER_DAY * 60_000)
 }
 
 /**
@@ -128,10 +158,20 @@ export function validateLotterySaleForm(
 	} else if (endUnset === 'time') {
 		errors.saleEndTime = { key: 'lotteryEditor.error.end' }
 	}
-	const open = parseDateTime(model.saleStart)
-	const close = parseDateTime(model.saleEnd)
-	if (open !== null && close !== null) {
-		const days = windowDurationDays(open, close)
+	if (model.timeZone === '') {
+		errors.timeZone = { key: 'saleEditor.error.timeZone' }
+		return errors
+	}
+	const open = instantOfInput(model.saleStart, model.timeZone)
+	const close = instantOfInput(model.saleEnd, model.timeZone)
+	if (!open && !startUnset) {
+		errors.saleStartTime = { key: 'saleEditor.error.timeSkipped' }
+	}
+	if (!close && !endUnset) {
+		errors.saleEndTime = { key: 'saleEditor.error.timeSkipped' }
+	}
+	const days = windowDurationDays(model.saleStart, model.saleEnd)
+	if (open && close && days !== null) {
 		if (days <= 0) {
 			errors.window = { key: 'lotteryEditor.error.endBeforeStart' }
 		} else if (days < MIN_WINDOW_DAYS || days > MAX_WINDOW_DAYS) {
@@ -168,12 +208,14 @@ export function toCreateInput(
 	eventId: string,
 	model: LotterySaleFormModel,
 ): CreateTicketSaleInput {
+	const zero = { year: 1970, month: 1, day: 1, hour: 0, minute: 0 }
 	return {
 		seriesId,
 		name: model.name.trim(),
 		method: 'lottery',
-		saleStartTime: parseDateTime(model.saleStart) ?? new Date(0),
-		saleEndTime: parseDateTime(model.saleEnd) ?? new Date(0),
+		saleStart: wallOfInput(model.saleStart) ?? zero,
+		saleEnd: wallOfInput(model.saleEnd) ?? zero,
+		timeZone: model.timeZone,
 		eventIds: [eventId],
 	}
 }

@@ -6,7 +6,9 @@ import {
 import { describe, expect, it } from 'vitest'
 import {
 	type ConcertFormModel,
-	composeInstant,
+	isSkippedTime,
+	parseWallTime,
+	rowTimeZone,
 	emptyFormModel,
 	isFormValid,
 	nextEventRow,
@@ -138,17 +140,28 @@ describe('parseIsoDate', () => {
 	})
 })
 
-describe('composeInstant', () => {
-	it('reads a calendar date and HH:mm as Japan time', () => {
-		const d = composeInstant({ year: 2026, month: 6, day: 16 }, '19:30')
-		// 19:30 JST is 10:30 UTC, whatever the device's time zone.
-		expect(d?.toISOString()).toBe('2026-06-16T10:30:00.000Z')
+describe('times at the venue', () => {
+	it('reads an HH:mm entry as a time of day', () => {
+		expect(parseWallTime('19:30')).toEqual({ hour: 19, minute: 30 })
 	})
 
 	it('returns null for empty or malformed times', () => {
-		expect(composeInstant(TODAY, '')).toBeNull()
-		expect(composeInstant(TODAY, '25:00')).toBeNull()
-		expect(composeInstant(TODAY, '7pm')).toBeNull()
+		expect(parseWallTime('')).toBeNull()
+		expect(parseWallTime('25:00')).toBeNull()
+		expect(parseWallTime('7pm')).toBeNull()
+	})
+
+	it('reads the zone of a row from its confirmed place', () => {
+		expect(rowTimeZone(validModel().events[0])).toBe('Asia/Tokyo')
+	})
+
+	it('finds a time the clocks skip, and only in a zone that skips it', () => {
+		const day = { year: 2027, month: 3, day: 14 }
+		expect(isSkippedTime(day, '02:30', 'America/New_York')).toBe(true)
+		expect(isSkippedTime(day, '03:30', 'America/New_York')).toBe(false)
+		expect(isSkippedTime(day, '02:30', 'Asia/Tokyo')).toBe(false)
+		// No zone yet: nothing is skipped.
+		expect(isSkippedTime(day, '02:30', '')).toBe(false)
 	})
 })
 
@@ -261,6 +274,59 @@ describe('validateConcertForm', () => {
 		expect(errors.rows[0].time).toBeUndefined()
 	})
 
+	it('@spec components/infrastructure/organizer/web/route/concert-editor "Time skipped by the clocks moving forward"', () => {
+		const model = validModel()
+		model.events[0].place = {
+			placeId: 'ChIJ-zepp-tokyo',
+			kind: 'draft',
+			name: 'Radio City',
+			countryCode: 'US',
+			adminArea: 'US-NY',
+			timeZone: 'America/New_York',
+		}
+		model.events[0].localDate = '2027-03-14'
+		model.events[0].openTime = '01:30'
+		model.events[0].startTime = '02:30'
+		const errors = validateConcertForm(model, {
+			today: { year: 2027, month: 3, day: 1 },
+		})
+		expect(errors.rows[0].time).toBe('concertEditor.error.timeSkipped')
+		expect(isFormValid(errors)).toBe(false)
+		// A skipped open time is flagged on the open time field.
+		model.events[0].openTime = '02:15'
+		model.events[0].startTime = '03:30'
+		expect(
+			validateConcertForm(model, { today: { year: 2027, month: 3, day: 1 } })
+				.rows[0].openTime,
+		).toBe('concertEditor.error.timeSkipped')
+	})
+
+	it('reads the current date at the venue when no date is injected', () => {
+		const model = validModel()
+		model.events[0].localDate = '2026-06-15'
+		// 23:59 on 15 June in Tokyo: the date is today there.
+		expect(
+			validateConcertForm(model, { now: new Date('2026-06-15T14:59:00Z') })
+				.rows[0].localDate,
+		).toBeUndefined()
+		// A minute later it is 16 June in Tokyo, but still 15 June in London.
+		const after = new Date('2026-06-15T15:00:00Z')
+		expect(
+			validateConcertForm(model, { now: after }).rows[0].localDate,
+		).toContain('past')
+		model.events[0].place = {
+			placeId: 'ChIJ-zepp-tokyo',
+			kind: 'venue',
+			name: 'O2 Arena',
+			countryCode: 'GB',
+			adminArea: 'GB-ENG',
+			timeZone: 'Europe/London',
+		}
+		expect(
+			validateConcertForm(model, { now: after }).rows[0].localDate,
+		).toBeUndefined()
+	})
+
 	it('flags an empty event list', () => {
 		const model = {
 			...emptyFormModel(),
@@ -288,8 +354,9 @@ describe('toSeriesDraftInput', () => {
 		// The picked place goes with the venue name: never a typed name alone.
 		expect(input.events[0].placeId).toBe('ChIJ-zepp-tokyo')
 		expect(input.events[0].localDate).toEqual({ year: 2026, month: 6, day: 16 })
-		expect(input.events[0].startTime).toBeInstanceOf(Date)
-		expect(input.events[0].openTime).toBeInstanceOf(Date)
+		// Times are wall clocks at the venue, not instants.
+		expect(input.events[0].startTime).toEqual({ hour: 19, minute: 0 })
+		expect(input.events[0].openTime).toEqual({ hour: 18, minute: 0 })
 	})
 
 	it('sends the id of a stored event and none for a new date', () => {

@@ -2,7 +2,12 @@ import {
 	TicketSaleMethod,
 	VerificationRequirement,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_sale_pb.js'
-import { timestampDate } from '@bufbuild/protobuf/wkt'
+import {
+	instantOfDateTime,
+	wallOfDateTime,
+	zoneOfDateTime,
+} from '../../shared/lib/zoned-time/proto'
+import type { SaleWindow } from '../i18n/format'
 import type {
 	EventTicketSales,
 	ReferralCodeStats,
@@ -42,8 +47,11 @@ export interface SaleView {
 	id: string
 	name: string
 	method: 'lottery' | 'firstCome'
+	/** The window's instants, read in the sale's zone: what states and countdowns compare with `now`. */
 	start?: Date
 	end?: Date
+	/** The window as its civil date-times in the sale's zone, for display. */
+	window?: SaleWindow
 	state: LotteryState | FirstComeState
 	tone: StatusTone
 	/** Catalog key of the state's label (受付開始前, 受付中, …). */
@@ -106,9 +114,24 @@ export function saleViewsOf(
 		if (!sale.eventIds.some((e) => e.value === eventId)) return []
 		const id = sale.id?.value ?? ''
 		const start = sale.saleStartTime
-			? timestampDate(sale.saleStartTime)
+			? instantOfDateTime(sale.saleStartTime)
 			: undefined
-		const end = sale.saleEndTime ? timestampDate(sale.saleEndTime) : undefined
+		const end = sale.saleEndTime
+			? instantOfDateTime(sale.saleEndTime)
+			: undefined
+		const zone = sale.saleStartTime
+			? zoneOfDateTime(sale.saleStartTime)
+			: undefined
+		const window: SaleWindow | undefined =
+			sale.saleStartTime && zone
+				? {
+						start: wallOfDateTime(sale.saleStartTime),
+						...(sale.saleEndTime
+							? { end: wallOfDateTime(sale.saleEndTime) }
+							: {}),
+						zone,
+					}
+				: undefined
 		const notOpenYet = start !== undefined && now < start.getTime()
 		const closed = end !== undefined && now >= end.getTime()
 		const base = {
@@ -116,6 +139,7 @@ export function saleViewsOf(
 			name: sale.name?.value ?? '',
 			start,
 			end,
+			window,
 			verification: sale.verificationRequirement,
 			countdown: notOpenYet && start ? countdownTo(start, now) : undefined,
 		}

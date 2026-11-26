@@ -3,7 +3,7 @@
 <section class="sale-editor">
   <h1 class="page-title">${(isChange ? 'lotteryEditor.changeTitle' : 'lotteryEditor.newTitle') & t}</h1>
   <p if.bind="event" class="context">
-    ${title} · <template if.bind="start">${start | jstDateTime}</template> · ${venue}
+    ${title} · <span data-testid="event-when">${when | eventWhen}</span> · ${venue}
   </p>
 
   <div if.bind="state === 'notFound'" class="[ state-placeholder ]" role="alert">
@@ -55,11 +55,29 @@
     </div>
 
     <h2 class="[ section-title ] [ md-typescale-title-large ]">${'lotteryEditor.sections.window' & t}</h2>
+    <div if.bind="!zoneIsChoice" class="fixed" data-testid="sale-zone">
+      <span class="[ label ] [ md-typescale-label-large ]">${'saleEditor.timeZone' & t}</span>
+      <span>${zoneNameOf(model.timeZone, language.current)}</span>
+      <p if.bind="error(errors.timeZone, submitted)" class="problem" role="alert"><console-icon name="error"></console-icon><span>${error(errors.timeZone, submitted).key & t}</span></p>
+    </div>
+    <console-field
+      else
+      type="select"
+      label.bind="'saleEditor.timeZone' & t"
+      options.bind="zoneOptions"
+      value.bind="model.timeZone"
+      required.bind="true"
+      hint.bind="'saleEditor.timeZoneHint' & t"
+      error.bind="error(errors.timeZone, submitted)"
+      change.trigger="zoneChosen($event.detail.value)"
+      data-field="time-zone"
+    ></console-field>
     <div class="row">
       <console-field
         type="date"
         label.bind="'lotteryEditor.startDate' & t"
         value.bind="model.saleStart.date"
+        zone-label.bind="zoneLabelOf(model.timeZone, language.current)"
         required.bind="true"
         error.bind="error(errors.saleStartDate, submitted)"
         data-field="start"
@@ -67,6 +85,7 @@
       <console-time-field
         label.bind="'lotteryEditor.startTime' & t"
         value.bind="model.saleStart.time"
+        zone-label.bind="zoneLabelOf(model.timeZone, language.current)"
         required.bind="true"
         error.bind="error(errors.saleStartTime, submitted)"
         data-field="start-time"
@@ -77,6 +96,7 @@
         type="date"
         label.bind="'lotteryEditor.endDate' & t"
         value.bind="model.saleEnd.date"
+        zone-label.bind="zoneLabelOf(model.timeZone, language.current)"
         required.bind="true"
         error.bind="error(errors.saleEndDate || errors.window, submitted)"
         hint.bind="'lotteryEditor.windowHint' & t:{ min: minWindowDays, max: maxWindowDays }"
@@ -85,6 +105,7 @@
       <console-time-field
         label.bind="'lotteryEditor.endTime' & t"
         value.bind="model.saleEnd.time"
+        zone-label.bind="zoneLabelOf(model.timeZone, language.current)"
         required.bind="true"
         error.bind="error(errors.saleEndTime, submitted)"
         data-field="end-time"

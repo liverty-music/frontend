@@ -9,7 +9,10 @@ import {
 	TicketStockState as ProtoTicketStockState,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_stock_pb.js'
 import type { ListByEventResponse } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/ticket_sale/v1/ticket_sale_service_pb.js'
-import { timestampDate } from '@bufbuild/protobuf/wkt'
+import {
+	instantOfDateTime,
+	zoneOfDateTime,
+} from '../../../../shared/lib/zoned-time/proto'
 import type {
 	EventTicketSales,
 	TicketSale,
@@ -54,12 +57,15 @@ export function ticketSaleFrom(proto: ProtoTicketSale): TicketSale {
 		name: proto.name?.value ?? '',
 		method:
 			proto.method === ProtoTicketSaleMethod.LOTTERY ? 'lottery' : 'firstCome',
-		saleStartTime: proto.saleStartTime
-			? timestampDate(proto.saleStartTime)
-			: new Date(0),
-		saleEndTime: proto.saleEndTime
-			? timestampDate(proto.saleEndTime)
-			: new Date(0),
+		saleStartTime:
+			(proto.saleStartTime && instantOfDateTime(proto.saleStartTime)) ||
+			new Date(0),
+		saleEndTime:
+			(proto.saleEndTime && instantOfDateTime(proto.saleEndTime)) ||
+			new Date(0),
+		timeZone: proto.saleStartTime
+			? zoneOfDateTime(proto.saleStartTime)
+			: undefined,
 		verificationRequirement:
 			REQUIREMENTS[proto.verificationRequirement] ?? 'none',
 		eventIds: proto.eventIds.map((e) => e.value),

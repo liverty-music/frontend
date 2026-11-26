@@ -3,7 +3,11 @@ import {
 	SeriesType,
 	Visibility,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
-import { parseJstDateAndTime, toJstDateInput } from '../i18n/format'
+import {
+	instantToWall,
+	parseTimeKey,
+	wallToInstant,
+} from '../../shared/lib/zoned-time/zoned-time'
 import {
 	DEFAULT_PER_ACCOUNT_LIMIT,
 	MAX_PER_ACCOUNT_LIMIT,
@@ -19,8 +23,8 @@ import type { VenuePick } from '../ui/venue-field/venue-field'
 
 /**
  * The editable, transport-agnostic model of a single event row in the editor.
- * Times are 24-hour Japan-time `HH:mm` strings scoped to the event's local
- * date; empty strings mean "not set". Kept as plain strings so `value.bind`
+ * Times are 24-hour wall-clock `HH:mm` strings at the event's venue, read in
+ * the venue's time zone on the event's local date; empty strings mean "not set". Kept as plain strings so `value.bind`
  * maps directly onto `<input type="date">` and the console time field.
  */
 export interface EventFormRow {
@@ -86,7 +90,10 @@ export interface EventRowErrors {
 	venueArea?: string
 	venueTimeZone?: string
 	localDate?: string
+	/** The start time: after the open time, or skipped by the clocks moving forward. */
 	time?: string
+	/** The open time does not exist at the venue on that date. */
+	openTime?: string
 	perAccountLimit?: string
 }
 
@@ -161,29 +168,35 @@ export function parseIsoDate(iso: string): CalendarDate | null {
 	return { year, month, day }
 }
 
+/** The time of day of an `HH:mm` entry, or null when empty or malformed. */
+export function parseWallTime(
+	hhmm: string,
+): { hour: number; minute: number } | null {
+	return parseTimeKey(hhmm.trim()) ?? null
+}
+
 /**
- * Composes an absolute `Date` from an event's local date and a wall-clock
- * `HH:mm`. Interpreted in the browser's local timezone — the console has no
- * venue timezone, and the backend re-anchors to the venue on write; this is a
- * best-effort instant for the optional start/open fields. Returns null when the
- * time is empty or malformed.
+ * The time zone a row's times are read in: its venue's, from the place the
+ * member picked and confirmed (a stored Venue's zone, or the zone chosen for a
+ * new one). '' while no place is read or the venue has no zone.
  */
-export function composeInstant(date: CalendarDate, hhmm: string): Date | null {
-	const trimmed = hhmm.trim()
-	if (trimmed === '') return null
-	const m = /^(\d{2}):(\d{2})$/.exec(trimmed)
-	if (!m) return null
-	const hours = Number(m[1])
-	const minutes = Number(m[2])
-	if (hours > 23 || minutes > 59) return null
-	const pad = (n: number) => String(n).padStart(2, '0')
-	// The wall clock is Japan time, whatever the device's time zone.
-	return (
-		parseJstDateAndTime(
-			`${date.year}-${pad(date.month)}-${pad(date.day)}`,
-			`${pad(hours)}:${pad(minutes)}`,
-		) ?? null
-	)
+export function rowTimeZone(row: EventFormRow): string {
+	return row.place?.timeZone ?? ''
+}
+
+/**
+ * True when `hhmm` on `date` does not exist at the venue because the clocks
+ * move forward then. A time that is empty or malformed, or a row with no zone
+ * yet, is not skipped.
+ */
+export function isSkippedTime(
+	date: CalendarDate,
+	hhmm: string,
+	zone: string,
+): boolean {
+	const time = parseWallTime(hhmm)
+	if (!time || !zone) return false
+	return wallToInstant({ ...date, ...time }, zone) === undefined
 }
 
 /** Compares a calendar date against a "today" triple. Negative when before. */
@@ -193,10 +206,16 @@ function compareToToday(date: CalendarDate, today: CalendarDate): number {
 	return date.day - today.day
 }
 
-/** Derives the caller's local-today calendar triple from a `Date`. */
-export function todayCalendarDate(now: Date = new Date()): CalendarDate {
-	const [year, month, day] = toJstDateInput(now).split('-').map(Number)
-	return { year, month, day }
+/**
+ * The current calendar date in `zone`; in UTC−12 (the last zone to reach a
+ * date) when the zone is not known, so a date is never called past too early.
+ */
+export function todayCalendarDate(
+	zone: string | undefined,
+	now: Date = new Date(),
+): CalendarDate {
+	const w = instantToWall(now, zone || 'Etc/GMT+12')
+	return { year: w.year, month: w.month, day: w.day }
 }
 
 /**
@@ -207,17 +226,17 @@ export function todayCalendarDate(now: Date = new Date()): CalendarDate {
  * non-past local date; open time must not be after start time; and a new or
  * DRAFT date's per-account limit is a whole number from 1 to 10.
  *
- * `today` is injected (defaults to the caller's local today) so the past-date
- * rule is deterministic and unit-testable. The past-date rule applies only to
+ * The current date is read at each row's venue (UTC−12 while its zone is
+ * unknown); `today` replaces it for every row, and `now` sets the moment it is
+ * read at, so the past-date rule is deterministic and unit-testable. The past-date rule applies only to
  * new and DRAFT rows: a PUBLISHED or CANCELLED event legitimately carries a
  * past date while its concert is corrected. `allowPastDates` relaxes it for
  * every row.
  */
 export function validateConcertForm(
 	model: ConcertFormModel,
-	options?: { today?: CalendarDate; allowPastDates?: boolean },
+	options?: { today?: CalendarDate; now?: Date; allowPastDates?: boolean },
 ): ConcertFormErrors {
-	const today = options?.today ?? todayCalendarDate()
 	const allowPastDates = options?.allowPastDates ?? false
 	const errors: ConcertFormErrors = { rows: [] }
 
@@ -248,13 +267,25 @@ export function validateConcertForm(
 		} else if (
 			!allowPastDates &&
 			!hasFixedVenueAndDate(row) &&
-			compareToToday(date, today) < 0
+			compareToToday(
+				date,
+				options?.today ?? todayCalendarDate(rowTimeZone(row), options?.now),
+			) < 0
 		) {
 			rowErrors.localDate = 'concertEditor.error.pastDate'
 		} else {
-			const start = composeInstant(date, row.startTime)
-			const open = composeInstant(date, row.openTime)
-			if (start && open && open.getTime() > start.getTime()) {
+			const zone = rowTimeZone(row)
+			const start = parseWallTime(row.startTime)
+			const open = parseWallTime(row.openTime)
+			if (isSkippedTime(date, row.startTime, zone)) {
+				rowErrors.time = 'concertEditor.error.timeSkipped'
+			} else if (isSkippedTime(date, row.openTime, zone)) {
+				rowErrors.openTime = 'concertEditor.error.timeSkipped'
+			} else if (
+				start &&
+				open &&
+				open.hour * 60 + open.minute > start.hour * 60 + start.minute
+			) {
 				rowErrors.time = 'concertEditor.error.openAfterStart'
 			}
 		}
@@ -322,6 +353,7 @@ export function isFormValid(errors: ConcertFormErrors): boolean {
 			!r.venueTimeZone &&
 			!r.localDate &&
 			!r.time &&
+			!r.openTime &&
 			!r.perAccountLimit,
 	)
 }
@@ -335,8 +367,8 @@ export function isFormValid(errors: ConcertFormErrors): boolean {
 export function toSeriesDraftInput(model: ConcertFormModel): SeriesDraftInput {
 	const events: EventDraftInput[] = model.events.map((row) => {
 		const date = parseIsoDate(row.localDate) ?? { year: 0, month: 0, day: 0 }
-		const start = composeInstant(date, row.startTime)
-		const open = composeInstant(date, row.openTime)
+		const start = parseWallTime(row.startTime)
+		const open = parseWallTime(row.openTime)
 		return {
 			...(row.eventId ? { eventId: row.eventId } : {}),
 			// A fixed (published or cancelled) date resends the listed name it

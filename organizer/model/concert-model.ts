@@ -4,11 +4,15 @@ import {
 	SeriesType,
 	Visibility,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
-import { timestampDate } from '@bufbuild/protobuf/wkt'
 import {
 	fanOriginOf,
 	type KnownEnvironment,
 } from '../../shared/config/known-hosts'
+import {
+	startOfDay,
+	wallToInstant,
+} from '../../shared/lib/zoned-time/zoned-time'
+import type { CivilDate, EventWhen } from '../i18n/format'
 import type { AuthoredSeries } from '../services/series-client'
 import type { StatusTone } from '../ui/status-badge/status-badge'
 
@@ -16,8 +20,6 @@ import type { StatusTone } from '../ui/status-badge/status-badge'
  * Plain readings of an authored concert and its events for the console's
  * screens. Labels are catalog keys; the screens translate them.
  */
-
-const JST_OFFSET_MS = 9 * 60 * 60 * 1000
 
 export function seriesId(concert: AuthoredSeries): string {
 	return concert.series.id?.value ?? ''
@@ -31,22 +33,61 @@ export function concertTitle(concert: AuthoredSeries): string {
 	return concert.series.title?.value ?? ''
 }
 
-/** The event's start instant, when it is set. */
-export function eventStart(event: Event): Date | undefined {
-	const ts = event.startTime?.value
-	return ts ? timestampDate(ts) : undefined
+/** The IANA time zone of the event's Venue, or undefined for a Venue with none. */
+export function eventZone(event: Event): string | undefined {
+	return event.venue?.timeZone?.value || undefined
 }
 
-/** Midnight in Japan time of the event's local date. */
-export function eventDay(event: Event): Date | undefined {
+/** The event's calendar date at its Venue, when it is set. */
+export function eventDay(event: Event): CivilDate | undefined {
 	const d = event.localDate?.value
-	if (!d) return undefined
-	return new Date(Date.UTC(d.year, d.month - 1, d.day) - JST_OFFSET_MS)
+	return d ? { year: d.year, month: d.month, day: d.day } : undefined
+}
+
+/** True when the event has a start time. */
+export function hasStartTime(event: Event): boolean {
+	return event.startTime?.value !== undefined
+}
+
+/**
+ * The event's date, start time and Venue zone, for display: an event with no
+ * start time is its day alone.
+ */
+export function eventWhen(event: Event): EventWhen | undefined {
+	const date = eventDay(event)
+	if (!date) return undefined
+	const t = event.startTime?.value
+	return {
+		date,
+		...(t ? { time: { hour: t.hours, minute: t.minutes } } : {}),
+		zone: eventZone(event),
+	}
+}
+
+/**
+ * The event's start instant: its wall-clock start read in its Venue's zone.
+ * Undefined without a start time, or when the time does not exist in the zone.
+ * A Venue with no zone reads in UTC, which only orders such events.
+ */
+export function eventStart(event: Event): Date | undefined {
+	const date = eventDay(event)
+	const t = event.startTime?.value
+	if (!date || !t) return undefined
+	return wallToInstant(
+		{ ...date, hour: t.hours, minute: t.minutes },
+		eventZone(event) ?? 'UTC',
+	)
+}
+
+/** Midnight of the event's local date at its Venue, used to order events. */
+function eventDayStart(event: Event): Date | undefined {
+	const date = eventDay(event)
+	return date ? startOfDay(date, eventZone(event) ?? 'UTC') : undefined
 }
 
 /** The instant used to order events: the start time, else the day. */
 export function eventSortKey(event: Event): number {
-	return (eventStart(event) ?? eventDay(event))?.getTime() ?? 0
+	return (eventStart(event) ?? eventDayStart(event))?.getTime() ?? 0
 }
 
 export function venueName(event: Event): string {

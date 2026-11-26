@@ -58,12 +58,18 @@ export class TimetableRoute {
 	@observable public filteredArtistIds: string[] = []
 	@observable public filteredStatuses: JourneyStatus[] = []
 	/**
-	 * The active lower bound sent as `from` to ListFollowed. Defaults to the
-	 * client's local date (today onward); a past date widens the timetable into
-	 * the past. Restored from the `from` URL query param on load. Unlike the
+	 * The active lower bound of the timetable. Defaults to the client's local
+	 * date, which the date filter shows but ListFollowed never receives (the
+	 * default view sends no `from`); a past date widens the timetable into the
+	 * past and is sent. Restored from the `from` URL query param on load. Unlike the
 	 * artist/journey facets (client-side narrowing), changing this re-fetches.
 	 */
 	@observable public fromDate: CalendarDate = todayCalendarDate()
+	/**
+	 * The date `fromDate` holds when the fan chose none. Kept apart from
+	 * "today", so a page left open past midnight still asks for the default view.
+	 */
+	private defaultFrom: CalendarDate = this.fromDate
 	public needsRegion = false
 	public isLoading = false
 	/**
@@ -271,6 +277,19 @@ export class TimetableRoute {
 		this.history.replaceState(null, '', url)
 	}
 
+	/**
+	 * The `from` sent to ListFollowed: none for the default view, so the server
+	 * applies each concert's own Venue's current date, and the chosen date only
+	 * when the fan looked back or ahead. The device's date is never sent as
+	 * "today": it is not the current date at a Venue in another time zone.
+	 */
+	private get sentFrom(): CalendarDate | undefined {
+		return sameCalendarDate(this.fromDate, this.defaultFrom) ||
+			this.isDefaultFrom()
+			? undefined
+			: this.fromDate
+	}
+
 	/** Whether the active `from` equals the client's local date (the default view). */
 	private isDefaultFrom(): boolean {
 		return sameCalendarDate(this.fromDate, todayCalendarDate())
@@ -403,7 +422,8 @@ export class TimetableRoute {
 			// the (unchanged) URL back, a no-op.
 			const rawFrom = next.queryParams.get('from')
 			const parsedFrom = rawFrom ? parseDateInput(rawFrom) : null
-			this.fromDate = parsedFrom ?? todayCalendarDate()
+			this.defaultFrom = todayCalendarDate()
+			this.fromDate = parsedFrom ?? this.defaultFrom
 		}
 
 		// A person without a home area (a guest who has not chosen one, or a
@@ -591,8 +611,8 @@ export class TimetableRoute {
 		const [artistMap, groups, journeyMap, purchasedMap] = await Promise.all([
 			this.followStore.getFollowedArtistMap(signal),
 			forceConcerts
-				? this.concertService.revalidateFollower(this.fromDate)
-				: this.concertService.listFollowed(this.fromDate, signal),
+				? this.concertService.revalidateFollower(this.sentFrom)
+				: this.concertService.listFollowed(this.sentFrom, signal),
 			this.fetchJourneyMap(signal),
 			this.fetchPurchasedMap(signal),
 		])

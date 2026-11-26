@@ -1,5 +1,11 @@
 import type { APIRequestContext } from '@playwright/test'
 import { getConcert } from './support'
+import {
+	type WireDateTime,
+	wireDateTime,
+	wireDateTimeAt,
+	wireInstant,
+} from '../support/zoned-wire'
 
 /**
  * The event's ticket sales and ticket stocks through the fan and the
@@ -21,8 +27,8 @@ const ORGANIZER_API_BASE =
 export interface WireTicketSale {
 	id: { value: string }
 	method: string
-	saleStartTime: string
-	saleEndTime: string
+	saleStartTime: WireDateTime
+	saleEndTime: WireDateTime
 	eventIds?: { value: string }[]
 }
 
@@ -76,8 +82,8 @@ export function openFirstCome(
 	return sales.find(
 		(s) =>
 			s.method === FIRST_COME &&
-			Date.parse(s.saleStartTime) <= now &&
-			now < Date.parse(s.saleEndTime),
+			Date.parse(wireInstant(s.saleStartTime)) <= now &&
+			now < Date.parse(wireInstant(s.saleEndTime)),
 	)
 }
 
@@ -219,8 +225,13 @@ export async function openFreshSale(
 ): Promise<SaleStock> {
 	const now = new Date()
 	const concert = await getConcert(request, eventId)
-	if (!concert.startTime) {
+	const zone = concert.venue?.timeZone?.value
+	if (!concert.startTime || !zone) {
 		throw new Error(`event ${eventId} has no start time to end the sale at`)
+	}
+	const start = {
+		hour: concert.startTime.hours ?? 0,
+		minute: concert.startTime.minutes ?? 0,
 	}
 
 	const seatTypeName = `E2E ${now.toISOString()}`
@@ -257,7 +268,7 @@ export async function openFreshSale(
 			{
 				ticketSaleId: open.id,
 				saleStartTime: open.saleStartTime,
-				saleEndTime: now.toISOString(),
+				saleEndTime: wireDateTimeAt(now, open.saleStartTime.timeZone.id),
 			},
 			organizerToken,
 		)
@@ -269,8 +280,8 @@ export async function openFreshSale(
 			seriesId: concert.series.id,
 			name: { value: `E2E 先着 ${now.toISOString()}` },
 			method: FIRST_COME,
-			saleStartTime: now.toISOString(),
-			saleEndTime: concert.startTime,
+			saleStartTime: wireDateTimeAt(now, zone),
+			saleEndTime: wireDateTime({ ...concert.localDate, ...start }, zone),
 			eventIds: [{ value: eventId }],
 		},
 		organizerToken,

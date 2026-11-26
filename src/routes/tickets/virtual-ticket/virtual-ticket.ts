@@ -6,7 +6,7 @@ import { currentLanguage } from '../../../util/change-locale'
 import {
 	type ConcertPageConcert,
 	formatEventDate,
-	formatEventTime,
+	eventTimesText,
 	prefectureLabel,
 } from '../../concert/concert-page'
 import type { TicketView, WalletPersonalDetails } from '../ticket-view'
@@ -537,8 +537,18 @@ export class VirtualTicket {
 		return this.event ? prefectureLabel(this.event, this.lang) : ''
 	}
 
-	public time(value: Date | undefined): string {
-		return value ? formatEventTime(value) : ''
+	/** The open time at the Venue; with the zone text when no start time follows it. */
+	public get openText(): string {
+		if (!this.event) return ''
+		const t = eventTimesText(this.event, this.lang)
+		return t.start || !t.zone ? t.open : `${t.open} ${t.zone}`
+	}
+
+	/** The start time at the Venue, with the zone text that follows the times. */
+	public get startText(): string {
+		if (!this.event) return ''
+		const t = eventTimesText(this.event, this.lang)
+		return t.zone ? `${t.start} ${t.zone}` : t.start
 	}
 
 	public get phoneNumber(): string {

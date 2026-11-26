@@ -21,8 +21,12 @@ export interface Concert {
 	venueName: string
 	locationLabel: string
 	date: Date
+	/** The start time at the Venue as `HH:mm`, read in `timeZone`; '' when not announced. */
 	startTime: string
+	/** The open time at the Venue as `HH:mm`. */
 	openTime?: string
+	/** The Venue's IANA time zone; absent for a Venue stored before zones were recorded. */
+	timeZone?: string
 	title: string
 	sourceUrl: string
 	/**

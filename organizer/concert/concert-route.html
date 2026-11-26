@@ -107,8 +107,7 @@
         <label repeat.for="date of draftDates" class="[ choice ] [ state-layer ]">
           <input type="checkbox" checked.bind="chosen[date.id]">
           <span>
-            <template if.bind="date.start">${date.start | jstDateTime}</template>
-            <template else>${date.day | jstDay}</template>
+            ${date.when | eventWhen}
             · ${date.venue}
           </span>
         </label>

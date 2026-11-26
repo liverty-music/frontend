@@ -107,6 +107,7 @@
           <template if.bind="openTimeLabel || startTimeLabel">
             <br /><span if.bind="openTimeLabel"><span t="concert.open"></span> ${openTimeLabel}</span>
             <span if.bind="startTimeLabel"><span t="concert.start"></span> ${startTimeLabel}</span>
+            <span if.bind="zoneLabel" data-testid="event-zone">${zoneLabel}</span>
           </template>
         </dd>
       </div>

@@ -27,6 +27,10 @@ const meta = {
 		required: { control: 'boolean' },
 		disabled: { control: 'boolean' },
 		readonly: { control: 'boolean' },
+		zoneLabel: {
+			control: 'text',
+			description: 'The zone the time is read in.',
+		},
 	},
 	args: {
 		label: '開演',
@@ -36,6 +40,7 @@ const meta = {
 		required: false,
 		disabled: false,
 		readonly: false,
+		zoneLabel: '日本時間',
 	},
 } satisfies Meta<typeof ConsoleTimeField>
 
@@ -48,7 +53,7 @@ const render: Story['render'] = (args) =>
 			<div style="inline-size:360px; padding:16px; background:var(--md-sys-color-surface)">
 				<console-time-field
 					label.bind="label" value.bind="value" error.bind="error" hint.bind="hint"
-					required.bind="required" disabled.bind="disabled" readonly.bind="readonly"
+					required.bind="required" disabled.bind="disabled" readonly.bind="readonly" zone-label.bind="zoneLabel"
 				></console-time-field>
 			</div>
 		`,
@@ -79,8 +84,8 @@ export const Empty = {
 			.element() as HTMLSelectElement
 		await expect(hour.value).toBe('')
 		await expect(minute.value).toBe('')
-		await expect(hour).toHaveAccessibleDescription('JST')
-		await expect(canvas.getByText('JST').element()).toBeVisible()
+		await expect(hour).toHaveAccessibleDescription('日本時間')
+		await expect(canvas.getByText('日本時間').element()).toBeVisible()
 	},
 } satisfies Story
 
@@ -107,7 +112,7 @@ export const RequiredWithError = {
 			.element()
 		await expect(hour).toBeRequired()
 		await expect(hour).toHaveAttribute('aria-invalid', 'true')
-		await expect(hour).toHaveAccessibleDescription('JST 必須')
+		await expect(hour).toHaveAccessibleDescription('日本時間 必須')
 	},
 } satisfies Story
 
@@ -136,7 +141,7 @@ export const ReadOnly = {
 		await expect(input).toHaveValue('18:30')
 		await expect(input).toHaveAttribute('readonly')
 		await expect(input).not.toBeDisabled()
-		await expect(input).toHaveAccessibleDescription('JST')
+		await expect(input).toHaveAccessibleDescription('日本時間')
 	},
 } satisfies Story
 

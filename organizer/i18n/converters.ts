@@ -2,18 +2,22 @@ import { I18N, Signals } from '@aurelia/i18n'
 import { resolve, valueConverter } from 'aurelia'
 import { toConsoleLocale } from './console-language'
 import {
+	type CivilDate,
 	type ConsoleLocale,
+	type EventWhen,
 	formatCount,
-	formatJstDate,
-	formatJstDateTime,
-	formatJstDay,
-	formatJstRange,
-	formatJstTime,
+	formatEventDate,
+	formatEventDay,
+	formatEventWhen,
+	formatMomentAt,
+	formatSaleWindow,
 	formatYen,
+	type MomentAt,
+	type SaleWindow,
 } from './format'
 
 /**
- * Template formatters for Japan time, yen and counts. Each re-evaluates when
+ * Template formatters for times in their zones, yen and counts. Each re-evaluates when
  * the language changes (the i18n signal), so a switch updates every value on
  * the page at once.
  */
@@ -26,47 +30,43 @@ abstract class LocaleConverter {
 	}
 }
 
-/** `${event.startTime | jstDateTime}` → `11月3日(火) 18:00 JST`. */
-@valueConverter('jstDateTime')
-export class JstDateTimeValueConverter extends LocaleConverter {
-	public toView(value: Date | undefined | null): string {
-		return value ? formatJstDateTime(value, this.locale) : ''
+/** `${event.when | eventWhen}` → `2月20日(土) 19:30 ロンドン時間（日本時間 2月21日(日) 04:30）`. */
+@valueConverter('eventWhen')
+export class EventWhenValueConverter extends LocaleConverter {
+	public toView(value: EventWhen | undefined | null): string {
+		return value ? formatEventWhen(value, this.locale) : ''
 	}
 }
 
-/** `${event.date | jstDate}` → `2026年11月3日(火)`. */
-@valueConverter('jstDate')
-export class JstDateValueConverter extends LocaleConverter {
-	public toView(value: Date | undefined | null): string {
-		return value ? formatJstDate(value, this.locale) : ''
+/** `${event.date | eventDate}` → `2026年11月3日(火)`. */
+@valueConverter('eventDate')
+export class EventDateValueConverter extends LocaleConverter {
+	public toView(value: CivilDate | undefined | null): string {
+		return value ? formatEventDate(value, this.locale) : ''
 	}
 }
 
-/** `${event.day | jstDay}` → `11月3日(火)`. */
-@valueConverter('jstDay')
-export class JstDayValueConverter extends LocaleConverter {
-	public toView(value: Date | undefined | null): string {
-		return value ? formatJstDay(value, this.locale) : ''
+/** `${event.day | eventDay}` → `11月3日(火)`. */
+@valueConverter('eventDay')
+export class EventDayValueConverter extends LocaleConverter {
+	public toView(value: CivilDate | undefined | null): string {
+		return value ? formatEventDay(value, this.locale) : ''
 	}
 }
 
-/** `${sale | jstRange}` (an object with `start` and `end`) → `… 〜 … JST`. */
-@valueConverter('jstRange')
-export class JstRangeValueConverter extends LocaleConverter {
-	public toView(
-		value: { start?: Date; end?: Date } | undefined | null,
-	): string {
-		return value?.start
-			? formatJstRange(value.start, value.end, this.locale)
-			: ''
+/** `${sale.window | saleWindow}` → `… 〜 … 日本時間`, in the sale's zone. */
+@valueConverter('saleWindow')
+export class SaleWindowValueConverter extends LocaleConverter {
+	public toView(value: SaleWindow | undefined | null): string {
+		return value ? formatSaleWindow(value, this.locale) : ''
 	}
 }
 
-/** `${event.startTime | jstTime}` → `18:00 JST`. */
-@valueConverter('jstTime')
-export class JstTimeValueConverter extends LocaleConverter {
-	public toView(value: Date | undefined | null): string {
-		return value ? formatJstTime(value, this.locale) : ''
+/** `${scanner.boundSince | momentAt}` → `11月3日(火) 14:10 日本時間`, a past moment in a zone. */
+@valueConverter('momentAt')
+export class MomentAtValueConverter extends LocaleConverter {
+	public toView(value: MomentAt | undefined | null): string {
+		return value ? formatMomentAt(value, this.locale) : ''
 	}
 }
 
@@ -91,11 +91,11 @@ export class CountValueConverter extends LocaleConverter {
 }
 
 export const ConsoleFormatters = [
-	JstDateTimeValueConverter,
-	JstDateValueConverter,
-	JstDayValueConverter,
-	JstRangeValueConverter,
-	JstTimeValueConverter,
+	EventWhenValueConverter,
+	EventDateValueConverter,
+	EventDayValueConverter,
+	SaleWindowValueConverter,
+	MomentAtValueConverter,
 	YenValueConverter,
 	CountValueConverter,
 ]

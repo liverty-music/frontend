@@ -5,7 +5,6 @@ import { ArtistSchema } from '@buf/liverty-music_schema.bufbuild_es/liverty_musi
 import { OrganizerSchema } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/organizer_pb.js'
 import { PublishState } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
 import { create } from '@bufbuild/protobuf'
-import { timestampFromDate } from '@bufbuild/protobuf/wkt'
 import { CustomElement, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ConcertRoute } from '../../../organizer/concert/concert-route'
@@ -20,6 +19,7 @@ import { ITicketStockClient } from '../../../organizer/services/ticket-stock-cli
 import { IBreadcrumbs } from '../../../organizer/shell/breadcrumbs'
 import { IConsoleContext } from '../../../organizer/shell/console-context'
 import { authoredSeries } from '../authored-series'
+import { timeOfDayAt } from '../zoned-fixtures'
 
 const SPEC = 'components/infrastructure/organizer/web/global/organizer-shell'
 
@@ -27,7 +27,7 @@ const BAND_A = { id: { value: 'a-1' }, name: { value: 'Band A' } }
 const BAND_B = { id: { value: 'a-2' }, name: { value: 'Band B' } }
 
 const at = (day: string, time: string) =>
-	timestampFromDate(new Date(`${day}T${time}:00+09:00`))
+	timeOfDayAt(new Date(`${day}T${time}:00+09:00`))
 
 /** XX × YY 2026: Band A and Band B, both represented, perform. */
 const XX_YY = authoredSeries({

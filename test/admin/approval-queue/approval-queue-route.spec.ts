@@ -7,7 +7,7 @@ import {
 	Resolution,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/admin/concert_candidate/v1/concert_candidate_service_pb.js'
 import { create } from '@bufbuild/protobuf'
-import { type Timestamp, timestampFromDate } from '@bufbuild/protobuf/wkt'
+import { timestampFromDate } from '@bufbuild/protobuf/wkt'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { DI, Registration } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -75,8 +75,8 @@ function makeConcert(opts: {
 	/** The time zone; Asia/Tokyo when absent, none when null. */
 	timeZone?: string | null
 	sourceUrl?: string
-	openTime?: Timestamp
-	startTime?: Timestamp
+	openTime?: { hours: number; minutes: number }
+	startTime?: { hours: number; minutes: number }
 }): ConcertCandidate {
 	return create(ConcertCandidateSchema, {
 		id: { value: opts.concertCandidateId },
@@ -757,7 +757,7 @@ describe('ApprovalQueueRoute', () => {
 
 	describe('toRow openTime mapping', () => {
 		it('formats openTime via formatTimeOfDay when present', async () => {
-			const openTs = timestampFromDate(new Date('2026-07-15T18:00:00Z'))
+			const openTs = { hours: 18, minutes: 0 }
 			const concert = makeConcert({
 				concertCandidateId: 'candidate-1',
 				artist: 'The Resolved Band',
@@ -778,7 +778,7 @@ describe('ApprovalQueueRoute', () => {
 			const row = vm.groups[0].series[0].rows[0]
 			// formatTimeOfDay uses toLocaleTimeString; in test env it produces HH:MM.
 			expect(row.openTime).not.toBe('—')
-			expect(row.openTime).toMatch(/\d{1,2}:\d{2}/)
+			expect(row.openTime).toBe('18:00')
 		})
 
 		it('returns dash placeholder when openTime is absent', async () => {
@@ -796,7 +796,7 @@ describe('ApprovalQueueRoute', () => {
 
 	describe('toConflictView candidateOpenTime mapping', () => {
 		it('sets candidateOpenTime from row.openTime when present', async () => {
-			const openTs = timestampFromDate(new Date('2026-07-15T18:00:00Z'))
+			const openTs = { hours: 18, minutes: 0 }
 			const concert = makeConcert({
 				concertCandidateId: 'candidate-1',
 				artist: 'The Resolved Band',

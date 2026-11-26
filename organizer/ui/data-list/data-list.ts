@@ -1,5 +1,6 @@
 import { bindable } from 'aurelia'
 import type { CatalogText } from '../../i18n/catalog-text'
+import type { CivilDate, EventWhen } from '../../i18n/format'
 import type { StatusTone } from '../status-badge/status-badge'
 
 export type DataCellKind =
@@ -36,7 +37,9 @@ export type DataCell =
 	| readonly CellText[]
 	| number
 	| bigint
-	| Date
+	/** An Event's date and times in its Venue's zone (kind `datetime`) or a calendar day (kind `date`). */
+	| EventWhen
+	| CivilDate
 	| StatusCell
 	| undefined
 

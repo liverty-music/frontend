@@ -4,7 +4,6 @@ import { createFixture } from '@aurelia/testing'
 import { EventSchema } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/event_pb.js'
 import { SeriesSchema } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
 import { create } from '@bufbuild/protobuf'
-import { timestampFromDate } from '@bufbuild/protobuf/wkt'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { CustomElement, Registration } from 'aurelia'
 import { describe, expect, it, vi } from 'vitest'
@@ -27,6 +26,8 @@ import { IStripeService } from '../../src/services/stripe-service'
 import { IUserStore } from '../../src/services/user-store'
 import { createMockErrorBoundary } from '../helpers/mock-error-boundary'
 import { routeNodeWithQuery } from '../helpers/route-node'
+import { tokyoTimeOfDay } from '../helpers/tokyo-time'
+import { useViewerZone } from '../helpers/viewer-zone'
 
 const EVENT_ID = 'event-1'
 const STOCK_ID = 'stock-s'
@@ -67,8 +68,9 @@ const concert = {
 	event: create(EventSchema, {
 		id: { value: EVENT_ID },
 		localDate: { value: { year: 2026, month: 11, day: 10 } },
-		openTime: { value: timestampFromDate(jst(10, 13)) },
-		startTime: { value: timestampFromDate(jst(10, 14)) },
+		openTime: { value: tokyoTimeOfDay(jst(10, 13)) },
+		startTime: { value: tokyoTimeOfDay(jst(10, 14)) },
+		venue: { timeZone: { value: 'Asia/Tokyo' } },
 		listedVenueName: { value: 'Zepp Haneda' },
 		seriesId: { value: 's1' },
 	}),
@@ -182,6 +184,8 @@ async function toConfirmation(vm: NewResaleEntryRoute): Promise<void> {
 const byTestId = (host: HTMLElement, id: string) =>
 	host.querySelector(`[data-testid="${id}"]`)
 
+useViewerZone('Asia/Tokyo')
+
 describe('NewResaleEntryRoute applying (fixture)', () => {
 	it('shows the seat type, its price and how the draws work, then 申し込みました with the next draw', async () => {
 		// @spec components/infrastructure/fan/web/route/new-resale-entry "Applying for two tickets"
@@ -197,7 +201,7 @@ describe('NewResaleEntryRoute applying (fixture)', () => {
 			'3,000円（税込',
 		)
 		const how = byTestId(host, 'resale-entry-how')?.textContent ?? ''
-		expect(how).toContain('毎日12:00')
+		expect(how).toContain('毎日、会場の現地時間の12:00')
 		expect(how).toContain('開演3時間前')
 		expect(how).toContain('すべてまとめて')
 		expect(how).toContain('当選したときだけ')
@@ -220,7 +224,7 @@ describe('NewResaleEntryRoute applying (fixture)', () => {
 			'申し込みました',
 		)
 		expect(byTestId(host, 'resale-entry-next-draw')?.textContent).toBe(
-			'次の抽選：2026年11月6日(金) 12:00',
+			'次の抽選：11月6日(金) 12:00',
 		)
 		await fixture.stop(true)
 	})
@@ -251,7 +255,7 @@ describe('NewResaleEntryRoute applying (fixture)', () => {
 			'2枚',
 		)
 		expect(byTestId(host, 'resale-entry-next-draw')?.textContent).toBe(
-			'次の抽選：2026年11月6日(金) 12:00',
+			'次の抽選：11月6日(金) 12:00',
 		)
 		expect(byTestId(host, 'resale-entry-count')).toBeNull()
 		await fixture.stop(true)
@@ -283,10 +287,10 @@ describe('NewResaleEntryRoute 特商法 final confirmation (fixture)', () => {
 		expect(text('resale-entry-confirm-payment')).toContain('クレジットカード')
 		expect(text('resale-entry-confirm-payment')).toContain('当選したときだけ')
 		expect(text('resale-entry-confirm-payment')).toContain('解除')
-		expect(text('resale-entry-confirm-draws')).toContain('毎日12:00')
 		expect(text('resale-entry-confirm-draws')).toContain(
-			'2026年11月10日(火) 11:00',
+			'毎日、会場の現地時間の12:00',
 		)
+		expect(text('resale-entry-confirm-draws')).toContain('11月10日(火) 11:00')
 		expect(text('resale-entry-confirm-allocation')).toContain('すべてまとめて')
 		expect(text('resale-entry-confirm-delivery')).toContain('「チケット」画面')
 		expect(text('resale-entry-confirm-withdrawal')).toContain('取り消せます')

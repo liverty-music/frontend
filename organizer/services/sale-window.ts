@@ -1,4 +1,4 @@
-import { timestampDate } from '@bufbuild/protobuf/wkt'
+import { instantOfDateTime } from '../../shared/lib/zoned-time/proto'
 import type { TicketSale } from './ticket-sale-client'
 
 /**
@@ -15,8 +15,12 @@ export function findOverlappingSale(
 	return sales.find((s) => {
 		if (exceptSaleId && s.id?.value === exceptSaleId) return false
 		if (!s.saleStartTime || !s.saleEndTime) return false
-		const otherStart = timestampDate(s.saleStartTime).getTime()
-		const otherEnd = timestampDate(s.saleEndTime).getTime()
-		return start.getTime() < otherEnd && otherStart < end.getTime()
+		const otherStart = instantOfDateTime(s.saleStartTime)
+		const otherEnd = instantOfDateTime(s.saleEndTime)
+		if (!otherStart || !otherEnd) return false
+		return (
+			start.getTime() < otherEnd.getTime() &&
+			otherStart.getTime() < end.getTime()
+		)
 	})
 }

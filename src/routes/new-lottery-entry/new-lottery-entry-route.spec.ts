@@ -4,7 +4,6 @@ import {
 	SeriesSchema,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
 import { create } from '@bufbuild/protobuf'
-import { timestampFromDate } from '@bufbuild/protobuf/wkt'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ResolvedConcert } from '../../adapter/rpc/client/concert-client'
@@ -41,7 +40,8 @@ const concert: ResolvedConcert = {
 	event: create(EventSchema, {
 		id: { value: EVENT_ID },
 		localDate: { value: { year: 2026, month: 11, day: 3 } },
-		startTime: { value: timestampFromDate(jst(3, 19)) },
+		startTime: { value: tokyoTimeOfDay(jst(3, 19)) },
+		venue: { timeZone: { value: 'Asia/Tokyo' } },
 		listedVenueName: { value: 'Zepp Haneda' },
 		seriesId: { value: 's1' },
 	}),
@@ -168,6 +168,7 @@ vi.mock('aurelia', async (importOriginal) => {
 import { routeNodeWithQuery } from '../../../test/helpers/route-node'
 import { Events } from '../../lib/analytics/analytics-service'
 import { NewLotteryEntryRoute } from './new-lottery-entry-route'
+import { tokyoTimeOfDay } from '../../../test/helpers/tokyo-time'
 
 // Flush pending microtasks (the mount handshake uses queueMicrotask).
 const flush = () => new Promise((r) => setTimeout(r, 0))

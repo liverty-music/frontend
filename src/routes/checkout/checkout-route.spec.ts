@@ -4,7 +4,6 @@ import {
 	SeriesSchema,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
 import { create } from '@bufbuild/protobuf'
-import { timestampFromDate } from '@bufbuild/protobuf/wkt'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ResolvedConcert } from '../../adapter/rpc/client/concert-client'
@@ -38,8 +37,9 @@ const concert: ResolvedConcert = {
 	event: create(EventSchema, {
 		id: { value: EVENT_ID },
 		localDate: { value: { year: 2026, month: 11, day: 20 } },
-		openTime: { value: timestampFromDate(jst(20, 18)) },
-		startTime: { value: timestampFromDate(jst(20, 19)) },
+		openTime: { value: tokyoTimeOfDay(jst(20, 18)) },
+		startTime: { value: tokyoTimeOfDay(jst(20, 19)) },
+		venue: { timeZone: { value: 'Asia/Tokyo' } },
 		listedVenueName: { value: 'Shibuya WWW' },
 		seriesId: { value: 's1' },
 	}),
@@ -180,6 +180,8 @@ vi.mock('aurelia', async (importOriginal) => {
 import { routeNodeWithQuery } from '../../../test/helpers/route-node'
 import { Events } from '../../lib/analytics/analytics-service'
 import { CheckoutRoute } from './checkout-route'
+import { tokyoTimeOfDay } from '../../../test/helpers/tokyo-time'
+import { useViewerZone } from '../../../test/helpers/viewer-zone'
 
 const flush = () => new Promise((r) => setTimeout(r, 0))
 
@@ -227,6 +229,8 @@ function ja_(path: string, params: Record<string, string | number>): string {
 		.reduce<unknown>((o, k) => (o as Record<string, unknown>)[k], ja) as string
 	return template.replace(/{{(\w+)}}/g, (_, k) => String(params[k]))
 }
+
+useViewerZone('Asia/Tokyo')
 
 describe('CheckoutRoute', () => {
 	beforeEach(() => {
@@ -746,9 +750,7 @@ describe('CheckoutRoute', () => {
 				'この公演でその席種が完売した場合にのみ',
 			)
 			expect(sut.cardLabel).toBe('VISA •••• 4242')
-			expect(sut.salePeriodLabel).toBe(
-				'2026年11月1日(日) 10:00 – 2026年11月20日(金) 18:00',
-			)
+			expect(sut.salePeriodLabel).toBe('11月1日(日) 10:00 – 11月20日(金) 18:00')
 			expect(sut.businessDetails).toEqual({
 				legalName: '株式会社リバティ',
 				representativeName: '山田 太郎',

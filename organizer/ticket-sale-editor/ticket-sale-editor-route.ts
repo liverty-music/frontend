@@ -1,28 +1,42 @@
 import { IRouteContext, IRouter } from '@aurelia/router'
 import type { Event } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/event_pb.js'
 import { TicketSaleMethod } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_sale_pb.js'
-import { timestampDate } from '@bufbuild/protobuf/wkt'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { ILogger, resolve } from 'aurelia'
 import { type SaleBlock, saleBlocksOf } from '../event/event-page'
 import { IConsoleLanguage } from '../i18n/console-language'
 import type { FieldError } from '../i18n/field-error'
-import { sameJstDateTime, toJstDateTime } from '../i18n/format'
+import type { WallClock } from '../../shared/lib/zoned-time/zoned-time'
+import { zoneLabel, zoneName } from '../../shared/lib/zoned-time/zone-name'
+import { instantOfDateTime } from '../../shared/lib/zoned-time/proto'
+import {
+	instantOfInput,
+	sameDateTimeInput,
+	toDateTimeInput,
+} from '../i18n/wall-input'
 import {
 	concertTitle,
 	eventDay,
 	eventStart,
+	eventWhen,
 	findConcert,
 	findEvent,
 	paths,
 	perAccountLimitOf,
 	venueName,
 } from '../model/concert-model'
+import {
+	saleZonesOf,
+	storedWindowOf,
+	wallInZone,
+	wallText,
+	zoneOptions,
+} from '../model/sale-zone'
 import { type StockView, stockViewsOf } from '../model/stock-model'
 import { IClock } from '../services/clock'
 import { IOrganizerClient } from '../services/organizer-client'
 import { findOverlappingSale } from '../services/sale-window'
-import { ISeriesClient } from '../services/series-client'
+import { type AuthoredSeries, ISeriesClient } from '../services/series-client'
 import {
 	ITicketSaleClient,
 	type TicketSale,
@@ -37,7 +51,6 @@ import {
 	blankFormModel,
 	formModelOf,
 	isFormValid,
-	parseDateTime,
 	type TicketSaleFormErrors,
 	type TicketSaleFormModel,
 	toCreateInput,
@@ -60,8 +73,8 @@ export function firstComeSaleOf(
 		return [
 			{
 				sale: s,
-				start: timestampDate(s.saleStartTime).getTime(),
-				end: timestampDate(s.saleEndTime).getTime(),
+				start: instantOfDateTime(s.saleStartTime)?.getTime() ?? 0,
+				end: instantOfDateTime(s.saleEndTime)?.getTime() ?? 0,
 			},
 		]
 	})
@@ -76,7 +89,8 @@ export function firstComeSaleOf(
 
 /**
  * Starts the event's first-come sale, or moves its window at any time, in
- * Japan time. The sale sells every TicketStock of the event, listed with
+ * the sale's time zone (the zone its events' venues share, else a choice
+ * between theirs). The sale sells every TicketStock of the event, listed with
  * their seat types, prices and quantities, and the per-account limit is the
  * event's: neither is set here. Opened from the Sales tab and back there
  * after saving or leaving.
@@ -92,7 +106,7 @@ export class TicketSaleEditorRoute {
 	private readonly consoleContext = resolve(IConsoleContext)
 	private readonly snackbar = resolve(ISnackbar)
 	private readonly clock = resolve(IClock)
-	private readonly language = resolve(IConsoleLanguage)
+	public readonly language = resolve(IConsoleLanguage)
 	private readonly progress = resolve(IPageProgress)
 	private readonly logger = resolve(ILogger).scopeTo('TicketSaleEditorRoute')
 
@@ -101,12 +115,15 @@ export class TicketSaleEditorRoute {
 	public eventId = ''
 	public title = ''
 	public event: Event | undefined
+	private concert: AuthoredSeries | undefined
 	public blocks: SaleBlock[] = []
 	public sale: TicketSale | undefined
 	public model: TicketSaleFormModel = blankFormModel(null)
 	public submitted = false
 	/** Catalog key of a message about the whole save; the template translates it. */
 	public saveProblem = ''
+	/** The server refused the sale's zone (it is not one of its events' venues'). */
+	public zoneRefused = false
 	public guard!: UnsavedChanges
 	/** The event's TicketStocks: what the sale sells. */
 	public stocks: StockView[] = []
@@ -159,6 +176,66 @@ export class TicketSaleEditorRoute {
 		return this.event ? eventStart(this.event) : undefined
 	}
 
+	/** The event's date and start time at its Venue, for the header. */
+	public get when() {
+		return this.event ? eventWhen(this.event) : undefined
+	}
+
+	/** The time zones the sale may be in: those of its events' venues. */
+	public get zones(): string[] {
+		return saleZonesOf(this.saleEvents())
+	}
+
+	/**
+	 * The events the sale names: those of an existing sale (a tour presale names
+	 * several dates), else the one event the editor was opened from.
+	 */
+	private saleEvents(): Event[] {
+		const named = this.sale?.eventIds.map((e) => e.value) ?? []
+		const events = named.length
+			? (this.concert?.events ?? []).filter((e) =>
+					named.includes(e.id?.value ?? ''),
+				)
+			: []
+		return events.length ? events : this.event ? [this.event] : []
+	}
+
+	/** True when the sale's zone is a choice between several; one zone is text. */
+	public get zoneIsChoice(): boolean {
+		return this.zones.length > 1
+	}
+
+	public get zoneOptions() {
+		return zoneOptions(this.zones, this.language.current)
+	}
+
+	/** The name of the sale's zone (`台北`), or ''. */
+	public zoneNameOf(zone: string, locale: string): string {
+		return zone ? zoneName(zone, locale === 'ja' ? 'ja' : 'en') : ''
+	}
+
+	/** The zone's label for the window's fields (`台北時間`), or '' while none is chosen. */
+	public zoneLabelOf(zone: string, locale: string): string {
+		return zone ? zoneLabel(zone, locale === 'ja' ? 'ja' : 'en') : ''
+	}
+
+	/** The member chose a zone: an unset end defaults to the event's start there. */
+	public zoneChosen(zone: string): void {
+		this.model.timeZone = zone
+		this.zoneRefused = false
+		const start = this.start
+		if (
+			this.model.timeZone &&
+			start &&
+			!this.model.saleEnd.date &&
+			!this.model.saleEnd.time
+		) {
+			this.model.saleEnd = toDateTimeInput(
+				wallInZone(start, this.model.timeZone),
+			)
+		}
+	}
+
 	public get venue(): string {
 		return this.event ? venueName(this.event) : ''
 	}
@@ -180,8 +257,11 @@ export class TicketSaleEditorRoute {
 		const errors = validateTicketSaleForm(this.model, {
 			eventStart: this.start ?? null,
 		})
-		const start = parseDateTime(this.model.saleStart)
-		const end = parseDateTime(this.model.saleEnd)
+		if (this.zoneRefused && !errors.timeZone) {
+			errors.timeZone = { key: 'saleEditor.error.zoneRefused' }
+		}
+		const start = instantOfInput(this.model.saleStart, this.model.timeZone)
+		const end = instantOfInput(this.model.saleEnd, this.model.timeZone)
 		if (
 			!errors.saleStartDate &&
 			!errors.saleStartTime &&
@@ -197,16 +277,13 @@ export class TicketSaleEditorRoute {
 				this.sale?.id?.value,
 			)
 			if (other) {
+				const window = storedWindowOf(other)
 				errors.saleStartDate = {
 					key: 'firstComeEditor.error.overlap',
 					params: {
 						name: other.name?.value ?? '',
-						start: other.saleStartTime
-							? timestampDate(other.saleStartTime)
-							: undefined,
-						end: other.saleEndTime
-							? timestampDate(other.saleEndTime)
-							: undefined,
+						start: { wall: window.start, zone: window.zone },
+						end: { wall: window.end, zone: window.zone },
 					},
 				}
 			}
@@ -223,9 +300,11 @@ export class TicketSaleEditorRoute {
 		if (!submitted || !error) return null
 		const params: Record<string, unknown> = { ...error.params }
 		for (const [k, v] of Object.entries(params)) {
-			if (v instanceof Date) {
-				const at = toJstDateTime(v)
-				params[k] = `${at.date} ${at.time}`
+			const moment = v as { wall?: WallClock; zone?: string } | undefined
+			if (moment && typeof moment === 'object' && 'wall' in moment) {
+				params[k] = moment.wall
+					? `${wallText(moment.wall)}${moment.zone ? ` ${zoneLabel(moment.zone, this.language.current)}` : ''}`
+					: ''
 			}
 		}
 		return { key: error.key, params }
@@ -241,6 +320,7 @@ export class TicketSaleEditorRoute {
 				this.ticketStocks.listByEvent(this.eventId, this.abort.signal),
 			])
 			const concert = findConcert(concerts, this.seriesId)
+			this.concert = concert
 			this.event = findEvent(concert, this.eventId)
 			if (!concert || !this.event) {
 				this.state = 'notFound'
@@ -277,6 +357,7 @@ export class TicketSaleEditorRoute {
 		if (this.blocks.length > 0) return
 		this.submitted = true
 		this.saveProblem = ''
+		this.zoneRefused = false
 		if (!isFormValid(this.errors)) return
 		try {
 			if (this.sale) await this.saveChanges(this.sale)
@@ -288,6 +369,11 @@ export class TicketSaleEditorRoute {
 			this.logger.warn('First-come sale not saved', err)
 			if (err instanceof ConnectError && err.code === Code.FailedPrecondition) {
 				this.saveProblem = 'firstComeEditor.rejected'
+				return
+			}
+			if (err instanceof ConnectError && err.code === Code.InvalidArgument) {
+				// The zone is not one of the zones of the events' venues.
+				this.zoneRefused = true
 				return
 			}
 			this.snackbar.showError('firstComeEditor.saveFailed', {
@@ -309,16 +395,21 @@ export class TicketSaleEditorRoute {
 	private async saveChanges(sale: TicketSale): Promise<void> {
 		const stored = this.storedModel()
 		if (
-			sameJstDateTime(this.model.saleStart, stored.saleStart) &&
-			sameJstDateTime(this.model.saleEnd, stored.saleEnd)
+			this.model.timeZone === stored.timeZone &&
+			sameDateTimeInput(this.model.saleStart, stored.saleStart) &&
+			sameDateTimeInput(this.model.saleEnd, stored.saleEnd)
 		) {
 			return
 		}
+		const input = toCreateInput(this.seriesId, this.eventId, this.model)
 		const updated =
 			(await this.ticketSales.setWindow(
 				sale.id?.value ?? '',
-				parseDateTime(this.model.saleStart) ?? new Date(0),
-				parseDateTime(this.model.saleEnd) ?? new Date(0),
+				{
+					saleStart: input.saleStart,
+					saleEnd: input.saleEnd,
+					timeZone: input.timeZone,
+				},
 				this.abort.signal,
 			)) ?? sale
 		this.sales = this.sales.map((s) =>
@@ -330,18 +421,20 @@ export class TicketSaleEditorRoute {
 	private storedModel(): TicketSaleFormModel {
 		const sale = this.sale
 		if (!sale) {
-			// A value the member saves, in the language of the moment.
+			// A value the member saves, in the language of the moment. A zone the
+			// events' venues share is the sale's; several leave it to the member.
 			return blankFormModel(
 				this.start ?? null,
 				this.language.text('firstComeEditor.defaultName'),
+				this.zones.length === 1 ? this.zones[0] : '',
 			)
 		}
+		const window = storedWindowOf(sale)
 		return formModelOf({
 			name: sale.name?.value ?? '',
-			saleStartTime: sale.saleStartTime
-				? timestampDate(sale.saleStartTime)
-				: null,
-			saleEndTime: sale.saleEndTime ? timestampDate(sale.saleEndTime) : null,
+			timeZone: window.zone ?? '',
+			saleStart: window.start ? toDateTimeInput(window.start) : null,
+			saleEnd: window.end ? toDateTimeInput(window.end) : null,
 		})
 	}
 

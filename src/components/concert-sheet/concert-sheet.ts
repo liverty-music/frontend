@@ -45,6 +45,7 @@ import {
 	eventCalendarUrl,
 	eventGoogleMapsUrl,
 	eventOpenTimeOrFallback,
+	eventZoneText,
 } from './concert-sheet-utils'
 
 /**
@@ -705,6 +706,11 @@ export class ConcertSheet {
 		} finally {
 			this.hypeUpdating = false
 		}
+	}
+
+	/** The Venue zone's name with the viewer's times, when the offsets differ. */
+	public get zoneText(): string {
+		return eventZoneText(this.event, currentLanguage(this.i18n))
 	}
 
 	public get openTimeOrFallback(): string {

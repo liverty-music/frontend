@@ -69,11 +69,11 @@
 					</div>
 					<div if.bind="group.event.openTime">
 						<dt class="md-typescale-label-large" t="tickets.event.open"></dt>
-						<dd class="md-typescale-body-large">${time(group.event.openTime)}</dd>
+						<dd class="md-typescale-body-large">${openText(group)}</dd>
 					</div>
 					<div if.bind="group.event.startTime">
 						<dt class="md-typescale-label-large" t="tickets.event.start"></dt>
-						<dd class="md-typescale-body-large">${time(group.event.startTime)}</dd>
+						<dd class="md-typescale-body-large">${startText(group)}</dd>
 					</div>
 				</dl>
 			</header>

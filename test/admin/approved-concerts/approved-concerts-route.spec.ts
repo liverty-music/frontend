@@ -3,7 +3,6 @@ import { ArtistSchema } from '@buf/liverty-music_schema.bufbuild_es/liverty_musi
 import { EventSchema } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/event_pb.js'
 import { SeriesSchema } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
 import { create } from '@bufbuild/protobuf'
-import { timestampFromDate } from '@bufbuild/protobuf/wkt'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { DI, Registration } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -42,8 +41,8 @@ function concert(opts: {
 	seriesTitle: string
 	venue: string
 	day: number
-	startHourUtc?: number
-	openHourUtc?: number
+	startHour?: number
+	openHour?: number
 }): ResolvedConcert {
 	const event = create(EventSchema, {
 		id: { value: opts.eventId },
@@ -52,22 +51,14 @@ function concert(opts: {
 			value: { year: 2026, month: 7, day: opts.day },
 		},
 		venue: { name: { value: opts.venue } },
-		...(opts.startHourUtc !== undefined
+		...(opts.startHour !== undefined
 			? {
-					startTime: {
-						value: timestampFromDate(
-							new Date(Date.UTC(2026, 6, opts.day, opts.startHourUtc)),
-						),
-					},
+					startTime: { value: { hours: opts.startHour, minutes: 0 } },
 				}
 			: {}),
-		...(opts.openHourUtc !== undefined
+		...(opts.openHour !== undefined
 			? {
-					openTime: {
-						value: timestampFromDate(
-							new Date(Date.UTC(2026, 6, opts.day, opts.openHourUtc)),
-						),
-					},
+					openTime: { value: { hours: opts.openHour, minutes: 0 } },
 				}
 			: {}),
 	})
@@ -178,8 +169,8 @@ describe('ApprovedConcertsRoute', () => {
 					seriesTitle: 'A Tour',
 					venue: 'Hall',
 					day: 4,
-					startHourUtc: 9,
-					openHourUtc: 8,
+					startHour: 9,
+					openHour: 8,
 				}),
 				concert({
 					eventId: 'e2',

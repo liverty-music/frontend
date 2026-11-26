@@ -12,7 +12,6 @@ import {
 	ReferralCodeStatsSchema,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/organizer/ticket_sale/v1/ticket_sale_service_pb.js'
 import { create } from '@bufbuild/protobuf'
-import { timestampFromDate } from '@bufbuild/protobuf/wkt'
 import { describe, expect, it } from 'vitest'
 import {
 	currentSale,
@@ -20,6 +19,7 @@ import {
 	saleViewsOf,
 } from '../../../organizer/model/sale-model'
 import { stockViewsOf } from '../../../organizer/model/stock-model'
+import { dateTimeAt } from '../zoned-fixtures'
 
 const EVENT_SPEC = 'components/infrastructure/organizer/web/route/event'
 
@@ -71,13 +71,14 @@ function sale(init: {
 	start: string
 	end: string
 	eventId?: string
+	timeZone?: string
 }) {
 	return create(TicketSaleSchema, {
 		id: { value: init.id },
 		name: { value: init.id },
 		method: init.method,
-		saleStartTime: timestampFromDate(jst(init.start)),
-		saleEndTime: timestampFromDate(jst(init.end)),
+		saleStartTime: dateTimeAt(jst(init.start), init.timeZone),
+		saleEndTime: dateTimeAt(jst(init.end), init.timeZone),
 		eventIds: [{ value: init.eventId ?? 'e-1' }],
 	})
 }

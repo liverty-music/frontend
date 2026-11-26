@@ -4,6 +4,7 @@ import { callsOf, FAN_SUB, mockFanRpc } from '../support/fan-auth'
 import { seedSignedInFan } from '../support/fan-shell'
 import { stubStripe } from '../support/stripe'
 import { expect, type Page, test } from '../support/test'
+import { wireDateTimeAt } from '../support/zoned-wire'
 
 // The first page load compiles the app on the dev server; allow for it.
 test.describe.configure({ timeout: 90_000 })
@@ -57,8 +58,8 @@ function sale(
 		name: { value: name },
 		method: `TICKET_SALE_METHOD_${method}`,
 		seriesId: { value: SERIES_ID },
-		saleStartTime: new Date(Date.now() - DAY).toISOString(),
-		saleEndTime: new Date(Date.now() + 9 * DAY).toISOString(),
+		saleStartTime: wireDateTimeAt(Date.now() - DAY),
+		saleEndTime: wireDateTimeAt(Date.now() + 9 * DAY),
 		eventIds: eventIds.map((value) => ({ value })),
 	}
 }

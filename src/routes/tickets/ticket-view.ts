@@ -3,7 +3,16 @@ import { TicketStatus } from '@buf/liverty-music_schema.bufbuild_es/liverty_musi
 import { timestampDate } from '@bufbuild/protobuf/wkt'
 import { MAX_TICKETS_PER_CODE } from '../../../shared/lib/admission-code/admission-code'
 import type { ResaleListing } from '../../entities/resale-listing'
-import { type ConcertPageConcert, todayInJapan } from '../concert/concert-page'
+import {
+	type WallTime,
+	parseDateKey,
+	startOfDay,
+} from '../../../shared/lib/zoned-time/zoned-time'
+import { todayAtVenue } from '../../lib/time-format/time-format'
+import {
+	type ConcertPageConcert,
+	eventStartInstant,
+} from '../concert/concert-page'
 
 /**
  * A ticket's state on the tickets screen:
@@ -125,14 +134,53 @@ export function ticketViewFromProto(t: Ticket): TicketView {
 	}
 }
 
-/** When the event begins: its start time, else its open time, else its date. */
+/**
+ * When the event begins, for ordering: its start time, else its open time,
+ * else the start of its day at the Venue (UTC when the Venue's zone is
+ * unknown).
+ */
 function sortTime(event: ConcertPageConcert): number {
-	return (event.startTime ?? event.openTime ?? event.date).getTime()
+	return (
+		(
+			eventStartInstant(event) ??
+			startOfDay(event.localDate, event.timeZone ?? 'UTC')
+		)?.getTime() ?? 0
+	)
+}
+
+/**
+ * A snapshot saved before an Event's times became wall-clock times at its
+ * Venue holds instants and no `localDate`: its events keep their date and
+ * lose their times, which the live read puts back.
+ */
+export function restoreSnapshot(saved: WalletSnapshot): WalletSnapshot {
+	return {
+		...saved,
+		groups: saved.groups.map((g) => {
+			const e = g.event as Partial<ConcertPageConcert> | null
+			if (!g.event || !e || e.localDate) return g
+			const localDate = parseDateKey(g.event.dateKey)
+			if (!localDate) return { ...g, event: null }
+			const wallTime = (t: unknown): WallTime | undefined =>
+				typeof (t as WallTime | undefined)?.hour === 'number'
+					? (t as WallTime)
+					: undefined
+			return {
+				...g,
+				event: {
+					...g.event,
+					localDate,
+					openTime: wallTime(e.openTime),
+					startTime: wallTime(e.startTime),
+				},
+			}
+		}),
+	}
 }
 
 /**
  * Group tickets by event, nearest event first: upcoming events (today
- * included, in Japan time) soonest first, then past events most recent first,
+ * included, at the event's Venue) soonest first, then past events most recent first,
  * then events whose details are unknown. Tickets keep their order within an
  * event.
  */
@@ -147,7 +195,6 @@ export function groupByEvent(
 		if (list) list.push(t)
 		else byEvent.set(t.eventId, [t])
 	}
-	const today = todayInJapan(now)
 	const groups: WalletEventGroup[] = [...byEvent].map(([eventId, list]) => ({
 		eventId,
 		event: events.get(eventId) ?? null,
@@ -155,7 +202,7 @@ export function groupByEvent(
 	}))
 	const rank = (g: WalletEventGroup): number => {
 		if (!g.event) return 2
-		return g.event.dateKey >= today ? 0 : 1
+		return g.event.dateKey >= todayAtVenue(g.event.timeZone, now) ? 0 : 1
 	}
 	return groups.sort((a, b) => {
 		const ra = rank(a)

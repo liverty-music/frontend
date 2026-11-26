@@ -32,6 +32,7 @@ const EVENT: ConcertPageConcert = {
 	performers: [{ id: 'a-1', name: 'The Band', mbid: '' }],
 	dateKey: '2026-11-20',
 	date: new Date(2026, 10, 20),
+	localDate: { year: 2026, month: 11, day: 20 },
 	venueName: 'Shibuya WWW',
 	adminArea: 'JP-13',
 	cancelled: false,

@@ -40,8 +40,8 @@ export interface FieldChange {
  * under the field; an error replaces the supporting line and puts the error
  * icon at the field's trailing edge. A field error is shown here and nowhere else: it never goes to
  * the snackbar. The error and the option labels are catalog
- * keys, translated in the field's template. Date and time fields say JST: their values are
- * read as Japan time by the screen (`parseJstDateTimeLocal`).
+ * keys, translated in the field's template. Date and time fields name their zone (`zoneLabel`): their values are
+ * read in that zone by the screen.
  *
  * The control and its label live in the field's shadow root. A screen reads
  * the value through `value` or, when the member commits a change, through
@@ -65,15 +65,22 @@ export class ConsoleField {
 	@bindable public placeholder = ''
 	@bindable public name = ''
 	@bindable public autocomplete = 'off'
+	/**
+	 * The name of the time zone a date or time field is read in (`日本時間`),
+	 * shown beside the value. A field with no zone yet shows none.
+	 */
+	@bindable public zoneLabel = ''
 
 	public readonly inputId = `console-field-${nextId++}`
 	public input!: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
 
+	/** True for a date or time field that names the zone it is read in. */
 	public get isTime(): boolean {
 		return (
-			this.type === 'datetime-local' ||
-			this.type === 'date' ||
-			this.type === 'time'
+			this.zoneLabel !== '' &&
+			(this.type === 'datetime-local' ||
+				this.type === 'date' ||
+				this.type === 'time')
 		)
 	}
 

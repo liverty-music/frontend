@@ -14,7 +14,10 @@ import {
 import { ITicketSaleRpcClient } from '../../adapter/rpc/client/ticket-sale-client'
 import { referralCodeForSeries } from '../../adapter/storage/referral-storage'
 import type { ResaleEntry } from '../../entities/resale-entry'
-import { resaleDeadline } from '../../entities/resale-listing'
+import {
+	displayLanguage,
+	formatInstantAtVenue,
+} from '../../lib/time-format/time-format'
 import {
 	countOptions,
 	type EventTicketSales,
@@ -34,8 +37,8 @@ import {
 	type ConcertPageConcert,
 	eventFromConcert,
 	formatEventDate,
-	formatEventTime,
-	formatSaleStart,
+	eventTimesText,
+	resaleDeadlineLabel,
 } from '../concert/concert-page'
 
 /**
@@ -312,23 +315,33 @@ export class NewResaleEntryRoute implements IRouteViewModel {
 	}
 
 	public get openTimeLabel(): string {
-		return this.event?.openTime ? formatEventTime(this.event.openTime) : ''
+		return this.event ? eventTimesText(this.event, this.lang).open : ''
 	}
 
 	public get startTimeLabel(): string {
-		return this.event?.startTime ? formatEventTime(this.event.startTime) : ''
+		return this.event ? eventTimesText(this.event, this.lang).start : ''
 	}
 
-	/** The resale deadline (the last draw) in Japan time. */
+	/** The Venue zone's name and the viewer's times, when the offsets differ. */
+	public get zoneLabel(): string {
+		return this.event ? eventTimesText(this.event, this.lang).zone : ''
+	}
+
+	/** The resale deadline (the last draw) at the Venue's local time. */
 	public get deadlineLabel(): string {
-		const start = this.event?.startTime
-		return start ? formatSaleStart(resaleDeadline(start), this.lang) : ''
+		return this.event ? resaleDeadlineLabel(this.event, this.lang) : ''
 	}
 
-	/** The next draw of the fan's entry in Japan time, or empty. */
+	/** The next draw of the fan's entry at the Venue's local time, or empty. */
 	public get nextDrawLabel(): string {
 		const next = this.entry?.nextDrawTime
-		return next ? formatSaleStart(next, this.lang) : ''
+		return next && this.event
+			? formatInstantAtVenue(
+					next,
+					this.event.timeZone,
+					displayLanguage(this.lang),
+				)
+			: ''
 	}
 
 	// ── Step transitions ──────────────────────────────────────────────────────

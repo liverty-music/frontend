@@ -99,15 +99,7 @@ function listByFollowerResponse() {
 								day: tomorrow.getDate(),
 							},
 						},
-						startTime: {
-							value: new Date(
-								tomorrow.getFullYear(),
-								tomorrow.getMonth(),
-								tomorrow.getDate(),
-								18,
-								0,
-							).toISOString(),
-						},
+						startTime: { value: { hours: 18 } },
 						venue: {
 							name: { value: 'Budokan' },
 							adminArea: { value: 'JP-13' },
@@ -138,15 +130,7 @@ function listByFollowerResponse() {
 								day: tomorrow.getDate(),
 							},
 						},
-						startTime: {
-							value: new Date(
-								tomorrow.getFullYear(),
-								tomorrow.getMonth(),
-								tomorrow.getDate(),
-								19,
-								0,
-							).toISOString(),
-						},
+						startTime: { value: { hours: 19 } },
 						venue: {
 							name: { value: 'Zepp DiverCity' },
 							adminArea: { value: 'JP-13' },

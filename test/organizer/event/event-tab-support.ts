@@ -14,10 +14,10 @@ import {
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_stock_pb.js'
 import { LotteryEntryStatsSchema } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/organizer/ticket_sale/v1/ticket_sale_service_pb.js'
 import { create } from '@bufbuild/protobuf'
-import { timestampFromDate } from '@bufbuild/protobuf/wkt'
 import { vi } from 'vitest'
 import type { EventTicketStocks } from '../../../organizer/services/ticket-stock-client'
 import { authoredSeries } from '../authored-series'
+import { dateTimeAt, timeOfDayAt, venueIn } from '../zoned-fixtures'
 
 /**
  * Builders and queries shared by the tests of the event page's tabs and of
@@ -117,6 +117,7 @@ export function eventInit(
 		publishState: PublishState
 		start: Date | null
 		venue: string
+		timeZone: string
 	}> = {},
 ) {
 	const start =
@@ -125,8 +126,10 @@ export function eventInit(
 		id: { value: init.id ?? 'e-1103' },
 		publishState: init.publishState ?? PublishState.PUBLISHED,
 		localDate: { value: init.localDate ?? { year: 2026, month: 11, day: 3 } },
-		venue: { name: { value: init.venue ?? 'Zepp Haneda' } },
-		...(start ? { startTime: { value: timestampFromDate(start) } } : {}),
+		venue: venueIn(init.venue ?? 'Zepp Haneda', init.timeZone),
+		...(start
+			? { startTime: { value: timeOfDayAt(start, init.timeZone) } }
+			: {}),
 	}
 }
 
@@ -147,6 +150,8 @@ export interface SaleInit {
 	end: Date
 	verification?: VerificationRequirement
 	eventIds?: string[]
+	/** The sale's zone; Japan's by default. */
+	timeZone?: string
 }
 
 export function ticketSale(init: SaleInit): TicketSale {
@@ -157,8 +162,8 @@ export function ticketSale(init: SaleInit): TicketSale {
 			init.method === 'FIRST_COME'
 				? TicketSaleMethod.FIRST_COME
 				: TicketSaleMethod.LOTTERY,
-		saleStartTime: timestampFromDate(init.start),
-		saleEndTime: timestampFromDate(init.end),
+		saleStartTime: dateTimeAt(init.start, init.timeZone),
+		saleEndTime: dateTimeAt(init.end, init.timeZone),
 		verificationRequirement:
 			init.verification ?? VerificationRequirement.UNSPECIFIED,
 		eventIds: (init.eventIds ?? ['e-1103']).map((value) => ({ value })),

@@ -2,7 +2,7 @@ import type { Event } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/
 import type { Organizer } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/organizer_pb.js'
 import { DI, ILogger, resolve } from 'aurelia'
 import {
-	eventStart,
+	hasStartTime,
 	findConcert,
 	findEvent,
 	isCancelled,
@@ -50,7 +50,7 @@ export function saleBlocksOf(
 	const blocks: SaleBlock[] = []
 	if (isCancelled(event)) blocks.push('cancelled')
 	else if (!isPublished(event)) blocks.push('notPublished')
-	if (!eventStart(event)) blocks.push('noStartTime')
+	if (!hasStartTime(event)) blocks.push('noStartTime')
 	if (stockCount === 0) blocks.push('noStock')
 	if (!businessDetailsComplete(organizer)) blocks.push('businessDetails')
 	return blocks

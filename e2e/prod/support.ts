@@ -29,9 +29,11 @@ export interface ApiConcert {
 	series: { id: { value: string }; title: { value: string } }
 	performers?: { id: { value: string }; name: { value: string } }[]
 	listedVenueName?: { value: string }
-	venue?: { name?: { value: string } }
-	/** The event's start time (RFC 3339), when announced. */
-	startTime?: string
+	venue?: { name?: { value: string }; timeZone?: { value: string } }
+	/** The event's date at its Venue. */
+	localDate: { year: number; month: number; day: number }
+	/** The event's start time at its Venue, when announced. */
+	startTime?: { hours?: number; minutes?: number }
 }
 
 /** A Concert in Connect JSON: its Event and the ids of its Artists. */
@@ -40,8 +42,9 @@ interface WireConcert {
 		id: { value: string }
 		seriesId: { value: string }
 		listedVenueName?: { value: string }
-		venue?: { name?: { value: string } }
-		startTime?: { value?: string }
+		venue?: { name?: { value: string }; timeZone?: { value: string } }
+		localDate: { value: ApiConcert['localDate'] }
+		startTime?: { value?: ApiConcert['startTime'] }
 	}
 	artistIds?: { value: string }[]
 }
@@ -68,6 +71,7 @@ function joined(concert: WireConcert, lists: SideLists): ApiConcert {
 		),
 		listedVenueName: concert.event.listedVenueName,
 		venue: concert.event.venue,
+		localDate: concert.event.localDate.value,
 		startTime: concert.event.startTime?.value,
 	}
 }

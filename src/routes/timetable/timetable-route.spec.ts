@@ -866,14 +866,16 @@ describe('TimetableRoute', () => {
 		})
 
 		// @spec components/infrastructure/fan/web/route/timetable "Fresh load defaults to today onward"
-		it('requests ListFollowed from the client local date when no ?from is given', async () => {
+		// @spec components/infrastructure/fan/web/route/timetable "Fresh load defaults to today onward"
+		it('requests ListFollowed without `from` when no ?from is given', async () => {
 			mockConcertService.listFollowed.mockClear()
 			await sut.loading({}, makeRouteNode(null))
 			await flushLoad()
 
 			expect(sut.fromDate).toEqual(todayCalendarDate())
+			// The device's date is never sent: the server applies each venue's today.
 			expect(mockConcertService.listFollowed).toHaveBeenCalledWith(
-				todayCalendarDate(),
+				undefined,
 				expect.anything(),
 			)
 		})
@@ -2000,8 +2002,9 @@ describe('TimetableRoute', () => {
 
 				// Revalidated, not served from the 24h cache.
 				expect(mockConcertService.revalidateFollower).toHaveBeenCalledTimes(1)
+				// The default view revalidates without `from`.
 				expect(mockConcertService.revalidateFollower).toHaveBeenCalledWith(
-					sut.fromDate,
+					undefined,
 				)
 				expect(mockConcertService.listFollowed).not.toHaveBeenCalled()
 				// The refreshed value replaces the cached one in place: same route
@@ -2039,8 +2042,9 @@ describe('TimetableRoute', () => {
 
 			// Default (today-onward) view with no upcoming concerts.
 			expect(sut.fromDate).toEqual(todayCalendarDate())
+			// The device's date is never sent: the server applies each venue's today.
 			expect(mockConcertService.listFollowed).toHaveBeenCalledWith(
-				todayCalendarDate(),
+				undefined,
 				expect.anything(),
 			)
 			// The template's empty-state placeholder gate:

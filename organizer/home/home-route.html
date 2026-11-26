@@ -23,16 +23,16 @@
               <template case="payout">${'home.payout' & t}</template>
               <template case="scanner">
                 ${item.concertTitle}
-                <span slot="supporting">${item.when | jstDateTime} · ${'home.noScanner' & t}</span>
+                <span slot="supporting">${item.when | eventWhen} · ${'home.noScanner' & t}</span>
               </template>
               <template case="startTime">
                 ${item.concertTitle}
-                <span slot="supporting">${item.when | jstDay} · ${'home.noStartTime' & t}</span>
+                <span slot="supporting">${item.when | eventWhen} · ${'home.noStartTime' & t}</span>
               </template>
               <template case="draft">${item.concertTitle}</template>
               </template>
               <span slot="trailing" class="[ trailing ] [ md-typescale-label-large ]">
-                <template if.bind="item.kind === 'draft'">${item.when | jstDay}</template>
+                <template if.bind="item.kind === 'draft'">${item.when.date | eventDay}</template>
                 <template else>${`home.action.${item.kind}` & t}</template>
                 <console-icon name="chevron-right"></console-icon>
               </span>

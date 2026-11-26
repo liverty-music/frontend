@@ -5,7 +5,6 @@ import {
 	PublishState,
 	Visibility,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
-import { timestampFromDate } from '@bufbuild/protobuf/wkt'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -20,6 +19,7 @@ import { ConsoleSnackbar } from '../../../organizer/ui/console-snackbar/console-
 import { ISnackbar } from '../../../organizer/ui/console-snackbar/snackbar'
 import { IAppConfig } from '../../../shared/config/app-config'
 import { authoredSeries } from '../authored-series'
+import { timeOfDayAt, venueIn } from '../zoned-fixtures'
 
 const SPEC = 'components/infrastructure/organizer/web/global/error-messages'
 
@@ -49,8 +49,8 @@ function concertOf(
 				localDate: { value: { year: 2026, month: 11, day: 20 } },
 				...(init.start === false
 					? {}
-					: { startTime: { value: timestampFromDate(EVENT_START) } }),
-				venue: { name: { value: 'Zepp Shinjuku' } },
+					: { startTime: { value: timeOfDayAt(EVENT_START) } }),
+				venue: venueIn('Zepp Shinjuku'),
 			},
 		],
 		performers: [{ id: { value: 'a-1' } }],
@@ -215,8 +215,12 @@ describe('event page publish', () => {
 
 		expect(vm.page.state).toBe('ready')
 		expect(vm.title).toBe('XX Tour')
-		expect(vm.start).toEqual(EVENT_START)
-		expect(vm.day).toEqual(new Date('2026-11-19T15:00:00Z'))
+		expect(vm.when).toEqual({
+			date: { year: 2026, month: 11, day: 20 },
+			time: { hour: 19, minute: 0 },
+			zone: 'Asia/Tokyo',
+		})
+		expect(vm.day).toEqual({ year: 2026, month: 11, day: 20 })
 		expect(vm.venue).toBe('Zepp Shinjuku')
 		expect(vm.draft).toBe(true)
 		expect(vm.cancelled).toBe(false)

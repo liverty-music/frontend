@@ -7,7 +7,6 @@ import {
 	Visibility,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
 import { create } from '@bufbuild/protobuf'
-import { timestampFromDate } from '@bufbuild/protobuf/wkt'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -23,6 +22,7 @@ import { IConsoleContext } from '../../../organizer/shell/console-context'
 import { ConsoleSnackbar } from '../../../organizer/ui/console-snackbar/console-snackbar'
 import { ISnackbar } from '../../../organizer/ui/console-snackbar/snackbar'
 import { authoredSeries } from '../authored-series'
+import { timeOfDayAt, venueIn } from '../zoned-fixtures'
 
 /** 2026-12-11 18:00 in Japan time. */
 const DRAFT_START = new Date(Date.UTC(2026, 11, 11, 9, 0))
@@ -38,8 +38,8 @@ const draftConcert = authoredSeries({
 			id: { value: 'e-1' },
 			publishState: PublishState.DRAFT,
 			localDate: { value: { year: 2026, month: 12, day: 11 } },
-			startTime: { value: timestampFromDate(DRAFT_START) },
-			venue: { name: { value: 'Zepp Haneda' } },
+			startTime: { value: timeOfDayAt(DRAFT_START) },
+			venue: venueIn('Zepp Haneda'),
 		},
 	],
 	performers: [{ id: { value: 'a-1' } }],

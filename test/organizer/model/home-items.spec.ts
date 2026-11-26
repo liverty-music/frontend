@@ -5,7 +5,6 @@ import {
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/scanner_pb.js'
 import { PublishState } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
 import { create } from '@bufbuild/protobuf'
-import { timestampFromDate } from '@bufbuild/protobuf/wkt'
 import { describe, expect, it } from 'vitest'
 import {
 	eventsWithinWeek,
@@ -14,6 +13,7 @@ import {
 	homeItems,
 } from '../../../organizer/model/home-model'
 import { authoredSeries } from '../authored-series'
+import { timeOfDayAt } from '../zoned-fixtures'
 
 /** Wednesday 28 October 2026, 10:00 JST. */
 const NOW = new Date('2026-10-28T10:00:00+09:00').getTime()
@@ -29,9 +29,7 @@ const tour = authoredSeries({
 		{
 			id: { value: 'e-1103' },
 			localDate: { value: { year: 2026, month: 11, day: 3 } },
-			startTime: {
-				value: timestampFromDate(new Date('2026-11-03T18:00:00+09:00')),
-			},
+			startTime: { value: timeOfDayAt(new Date('2026-11-03T18:00:00+09:00')) },
 			publishState: PublishState.PUBLISHED,
 		},
 		{
@@ -61,9 +59,7 @@ const cancelled = authoredSeries({
 		{
 			id: { value: 'e-off' },
 			localDate: { value: { year: 2026, month: 11, day: 1 } },
-			startTime: {
-				value: timestampFromDate(new Date('2026-11-01T18:00:00+09:00')),
-			},
+			startTime: { value: timeOfDayAt(new Date('2026-11-01T18:00:00+09:00')) },
 			publishState: PublishState.CANCELLED,
 		},
 	],

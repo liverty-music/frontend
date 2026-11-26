@@ -15,8 +15,11 @@ import {
 import {
 	RESALE_FEE_PERCENT,
 	type ResaleListing,
-	resaleDeadline,
 } from '../../entities/resale-listing'
+import {
+	displayLanguage,
+	formatPastMoment,
+} from '../../lib/time-format/time-format'
 import { toDomesticDisplay } from '../../lib/to-e164'
 import {
 	type DeviceReadiness,
@@ -27,8 +30,9 @@ import {
 	type ConcertPageConcert,
 	eventFromConcert,
 	formatEventDate,
-	formatEventTime,
-	formatSaleStart,
+	eventTimesText,
+	resaleDeadlineLabel,
+	resaleDeadlineOf,
 } from '../concert/concert-page'
 import { AdmissionCodeSession } from './admission-code-session'
 import {
@@ -44,6 +48,7 @@ import {
 	type WalletEventGroup,
 	type WalletPersonalDetails,
 	type WalletSnapshot,
+	restoreSnapshot,
 } from './ticket-view'
 import { IShareImage, shareImageScale } from './virtual-ticket/share-image'
 import type { TicketPreset } from './virtual-ticket/ticket-presets'
@@ -184,7 +189,8 @@ export class TicketsRoute {
 		this.abortController = controller
 		const { signal } = controller
 
-		const saved = await this.wallet.loadSnapshot<WalletSnapshot>()
+		const stored = await this.wallet.loadSnapshot<WalletSnapshot>()
+		const saved = stored ? restoreSnapshot(stored) : undefined
 		if (signal.aborted) return
 		if (saved && this.step !== 'loaded') this.showSnapshot(saved)
 
@@ -712,11 +718,11 @@ export class TicketsRoute {
 	 */
 	@computed
 	public explainsNoResale(group: WalletEventGroup): boolean {
-		const start = group.event?.startTime
+		const deadline = group.event ? resaleDeadlineOf(group.event) : undefined
 		return (
 			!this.offline &&
-			start !== undefined &&
-			Date.now() < resaleDeadline(start).getTime() &&
+			deadline !== undefined &&
+			Date.now() < deadline.getTime() &&
 			group.tickets.some((t) => {
 				if (shownState(t, this.listings) !== 'not-entered') return false
 				const resale = t.ticketStockId
@@ -740,9 +746,8 @@ export class TicketsRoute {
 
 	/** When listing closes for the group's event: the resale deadline. */
 	public listingDeadlineLabel(group: WalletEventGroup | null): string {
-		const start = group?.event?.startTime
-		return start
-			? formatSaleStart(resaleDeadline(start), this.userStore.currentLanguage)
+		return group?.event
+			? resaleDeadlineLabel(group.event, this.userStore.currentLanguage)
 			: ''
 	}
 
@@ -836,11 +841,10 @@ export class TicketsRoute {
 		return amount.toLocaleString('ja-JP')
 	}
 
-	/** A date as month/day in Japan time, e.g. "11/14". */
+	/** A date as month/day in the viewer's time zone, e.g. "11/14". */
 	public day(value: Date | undefined): string {
 		if (!value) return ''
 		return new Intl.DateTimeFormat(this.userStore.currentLanguage, {
-			timeZone: 'Asia/Tokyo',
 			month: 'numeric',
 			day: 'numeric',
 		}).format(value)
@@ -879,21 +883,32 @@ export class TicketsRoute {
 			: ''
 	}
 
-	public time(value: Date | null | undefined): string {
-		return value ? formatEventTime(value) : ''
+	/** The open time at the Venue; with the zone text when no start time follows it. */
+	@computed
+	public openText(group: WalletEventGroup): string {
+		if (!group.event) return ''
+		const t = eventTimesText(group.event, this.userStore.currentLanguage)
+		return t.start || !t.zone ? t.open : `${t.open} ${t.zone}`
 	}
 
-	/** Admitted time as month/day and time in Japan time, e.g. "11/20 18:32". */
+	/** The start time at the Venue, with the zone text that follows the times. */
+	@computed
+	public startText(group: WalletEventGroup): string {
+		if (!group.event) return ''
+		const t = eventTimesText(group.event, this.userStore.currentLanguage)
+		return t.zone ? `${t.start} ${t.zone}` : t.start
+	}
+
+	/**
+	 * When the ticket was admitted: a moment in the past, in the viewer's time
+	 * zone, e.g. "2月21日(日) 03:10".
+	 */
 	public admitted(ticket: TicketView): string {
 		if (!ticket.admitTime) return ''
-		return new Intl.DateTimeFormat(this.userStore.currentLanguage, {
-			timeZone: 'Asia/Tokyo',
-			month: 'numeric',
-			day: 'numeric',
-			hour: '2-digit',
-			minute: '2-digit',
-			hourCycle: 'h23',
-		}).format(ticket.admitTime)
+		return formatPastMoment(
+			ticket.admitTime,
+			displayLanguage(this.userStore.currentLanguage),
+		)
 	}
 
 	public saveTimeLabel(): string {

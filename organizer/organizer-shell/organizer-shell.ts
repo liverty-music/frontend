@@ -2,7 +2,7 @@ import { IRouterEvents, route } from '@aurelia/router'
 import { type IDisposable, resolve, watch } from 'aurelia'
 import { chapterOf, guideHref } from '../guide/guide-link'
 import { IConsoleLanguage } from '../i18n/console-language'
-import { formatJstDay } from '../i18n/format'
+import { formatEventDay } from '../i18n/format'
 import { type Crumb, IBreadcrumbs } from '../shell/breadcrumbs'
 import {
 	type Destination,
@@ -177,7 +177,7 @@ export class OrganizerShell {
 
 	private crumbText(crumb: Crumb): string {
 		if (crumb.labelKey) return this.language.text(crumb.labelKey)
-		if (crumb.day) return formatJstDay(crumb.day, this.language.current)
+		if (crumb.day) return formatEventDay(crumb.day, this.language.current)
 		return crumb.label ?? ''
 	}
 

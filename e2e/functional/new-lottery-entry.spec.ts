@@ -4,6 +4,7 @@ import { callsOf, connectError, mockFanRpc } from '../support/fan-auth'
 import { seedSignedInFan } from '../support/fan-shell'
 import { stripeClientSecrets, stubStripe } from '../support/stripe'
 import { expect, type Page, test } from '../support/test'
+import { wireDateTimeAt } from '../support/zoned-wire'
 
 // The first page load compiles the app on the dev server; allow for it.
 test.describe.configure({ timeout: 60_000 })
@@ -55,8 +56,8 @@ function sales() {
 				id: { value: SALE_ID },
 				name: { value: 'ファンクラブ先行' },
 				method: 'TICKET_SALE_METHOD_LOTTERY',
-				saleStartTime: new Date(Date.now() - day).toISOString(),
-				saleEndTime: new Date(Date.now() + 9 * day).toISOString(),
+				saleStartTime: wireDateTimeAt(Date.now() - day),
+				saleEndTime: wireDateTimeAt(Date.now() + 9 * day),
 				verificationRequirement: 'VERIFICATION_REQUIREMENT_UNSPECIFIED',
 				eventIds: [{ value: EVENT_ID }],
 			},

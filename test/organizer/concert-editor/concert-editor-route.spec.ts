@@ -773,4 +773,130 @@ describe('concert editor', () => {
 			await m.fixture.tearDown()
 		})
 	})
+
+	describe('times at the venue', () => {
+		const rowZone = (m: Mounted) =>
+			row(m, 0)
+				.querySelector('[data-testid="row-zone"]')
+				?.textContent?.trim() ?? ''
+
+		/** A pick of a place a Venue in `zone` already holds. */
+		const venueIn = (timeZone: string, adminArea: string) =>
+			vi.fn(async () => ({
+				kind: 'venue' as const,
+				name: HANEDA.name,
+				adminArea,
+				timeZone,
+			}))
+
+		async function pickedAt(
+			timeZone: string,
+			adminArea: string,
+			over: Options = {},
+		) {
+			const m = await mount({
+				...over,
+				resolvePlace: venueIn(timeZone, adminArea),
+			})
+			fillNewConcert(m)
+			pickVenue(row(m, 0))
+			await vi.waitFor(() =>
+				expect(m.vm.model.events[0].place?.timeZone).toBe(timeZone),
+			)
+			await tasksSettled()
+			return m
+		}
+
+		it(`@spec ${SPEC} "Venue in Japan"`, async () => {
+			const m = await pickedAt('Asia/Tokyo', 'JP-13')
+			chooseTime(row(m, 0), '開演', '18:00')
+			await tasksSettled()
+
+			expect(rowZone(m)).toBe('日本時間')
+			await m.fixture.tearDown()
+		})
+
+		it(`@spec ${SPEC} "Venue abroad"`, async () => {
+			const m = await pickedAt('Asia/Seoul', 'KR-11')
+			fillField(row(m, 0), '日付', '2027-03-14')
+			chooseTime(row(m, 0), '開場', '17:30')
+			chooseTime(row(m, 0), '開演', '18:30')
+			await tasksSettled()
+
+			expect(rowZone(m)).toBe('ソウル時間（日本時間 18:30）')
+			await m.fixture.tearDown()
+		})
+
+		it(`@spec ${SPEC} "Japan time on another date"`, async () => {
+			const m = await pickedAt('Europe/London', 'GB-ENG')
+			fillField(row(m, 0), '日付', '2027-02-20')
+			chooseTime(row(m, 0), '開演', '19:30')
+			await tasksSettled()
+
+			expect(rowZone(m)).toBe('ロンドン時間（日本時間 2月21日(日) 04:30）')
+			await m.fixture.tearDown()
+		})
+
+		it('keeps the entered date and times when the venue zone changes', async () => {
+			const m = await pickedAt('Asia/Tokyo', 'JP-13')
+			chooseTime(row(m, 0), '開演', '19:00')
+			m.vm.model.events[0].place = {
+				...(m.vm.model.events[0].place as NonNullable<
+					(typeof m.vm.model.events)[number]['place']
+				>),
+				timeZone: 'Europe/London',
+			}
+			await tasksSettled()
+
+			expect(shownTime(row(m, 0), '開演')).toBe('19:00')
+			expect(rowZone(m)).toContain('ロンドン時間')
+			await m.fixture.tearDown()
+		})
+
+		it(`@spec ${SPEC} "Device in another time zone"`, async () => {
+			const m = await pickedAt('Asia/Tokyo', 'JP-13')
+			chooseTime(row(m, 0), '開演', '18:00')
+			await save(m, '公演をつくる')
+
+			// The wall clock the member chose goes out, never an instant.
+			const draft = m.createSeries.mock.calls[0][0]
+			expect(draft.events[0].startTime).toEqual({ hour: 18, minute: 0 })
+			expect(rowZone(m)).toBe('日本時間')
+			await m.fixture.tearDown()
+		})
+
+		it(`@spec ${SPEC} "Time skipped by the clocks moving forward"`, async () => {
+			const m = await pickedAt('America/New_York', 'US-NY')
+			fillField(row(m, 0), '日付', '2027-03-14')
+			chooseTime(row(m, 0), '開場', '01:00')
+			chooseTime(row(m, 0), '開演', '02:30')
+			await save(m, '公演をつくる')
+
+			const start = deepAll(row(m, 0), 'console-time-field').find(
+				(el) =>
+					CustomElement.for<ConsoleTimeField>(el).viewModel.label === '開演',
+			) as Element
+			expect(deepText(start)).toContain(
+				'この時刻は、この日の会場では時計が進むため存在しません',
+			)
+			expect(m.createSeries).not.toHaveBeenCalled()
+			await m.fixture.tearDown()
+		})
+
+		it(`@spec ${SPEC} "Device using a 12-hour clock"`, async () => {
+			// An English (United States) device writes 18:00 as 6:00 PM.
+			vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['en-US', 'en'])
+			vi.spyOn(navigator, 'language', 'get').mockReturnValue('en-US')
+			const m = await mount()
+			const field = deepAll(row(m, 0), 'console-time-field')[1]
+			const [hours] = deepAll<HTMLSelectElement>(field, 'select')
+			expect(
+				[...hours.options].map((o) => o.textContent?.trim()).slice(-24),
+			).toEqual(
+				Array.from({ length: 24 }, (_, h) => String(h).padStart(2, '0')),
+			)
+			expect(deepText(field)).not.toMatch(/AM|PM|午前|午後/)
+			await m.fixture.tearDown()
+		})
+	})
 })

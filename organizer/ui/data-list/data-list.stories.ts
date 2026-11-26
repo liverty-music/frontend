@@ -42,11 +42,15 @@ const rows: DataRow[] = [
 		cells: {
 			title: 'XX Tour 2026 東京',
 			state: { tone: 'success', labelKey: 'publishState.published' },
-			startTime: new Date('2026-11-03T09:00:00Z'),
+			startTime: {
+				date: { year: 2026, month: 11, day: 3 },
+				time: { hour: 18, minute: 0 },
+				zone: 'Asia/Tokyo',
+			},
 			schedule: [
 				{
 					key: 'concerts.moreDates',
-					params: { day: new Date('2026-11-03T09:00:00Z'), count: 2 },
+					params: { day: { year: 2026, month: 11, day: 3 }, count: 2 },
 				},
 				'Zepp Haneda',
 			],
@@ -60,7 +64,11 @@ const rows: DataRow[] = [
 		cells: {
 			title: 'XX Tour 2026 大阪',
 			state: { tone: 'neutral', labelKey: 'publishState.draft' },
-			startTime: new Date('2026-11-10T09:00:00Z'),
+			startTime: {
+				date: { year: 2026, month: 11, day: 10 },
+				time: { hour: 18, minute: 0 },
+				zone: 'Asia/Tokyo',
+			},
 			schedule: 'Zepp Osaka Bayside',
 			entries: 1380,
 			price: 7000,
@@ -97,7 +105,7 @@ export const List = {
 		// Column titles, statuses and catalog texts are translated by the list.
 		await expect(items[0]).toHaveTextContent('ツアー · Band A')
 		await expect(items[0]).toHaveTextContent('XX Tour 2026 東京')
-		await expect(items[0]).toHaveTextContent('11月3日(火) 18:00 JST')
+		await expect(items[0]).toHaveTextContent('11月3日(火) 18:00 日本時間')
 		await expect(items[0]).toHaveTextContent(
 			'11月3日(火) 他 2公演 · Zepp Haneda',
 		)

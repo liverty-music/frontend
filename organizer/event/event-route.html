@@ -18,8 +18,8 @@
         <div class="heading">
           <p class="concert-title">${title}</p>
           <h1 class="page-title">
-            <template if.bind="start">${start | jstDateTime}</template>
-            <template else>${day | jstDay} · ${'event.noStartTime' & t}</template>
+            <span data-testid="event-when"><template if.bind="hasStart">${when | eventWhen}</template>
+            <template else>${when | eventWhen} · ${'event.noStartTime' & t}</template></span>
           </h1>
           <p class="[ meta ] [ cluster ]">
             <span class="venue">${venue}</span>

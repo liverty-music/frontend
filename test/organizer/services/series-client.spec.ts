@@ -7,7 +7,6 @@ import {
 	Visibility,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
 import { create } from '@bufbuild/protobuf'
-import { timestampDate } from '@bufbuild/protobuf/wkt'
 import { describe, expect, it } from 'vitest'
 import {
 	authoredSeriesFrom,
@@ -26,8 +25,8 @@ const BASE: SeriesDraftInput = {
 			venueName: 'Zepp Tokyo',
 			placeId: 'ChIJabc',
 			localDate: { year: 2026, month: 6, day: 16 },
-			startTime: new Date(2026, 5, 16, 19, 0, 0),
-			openTime: new Date(2026, 5, 16, 18, 0, 0),
+			startTime: { hour: 19, minute: 30 },
+			openTime: { hour: 18, minute: 0 },
 		},
 	],
 }
@@ -50,16 +49,11 @@ describe('toSeriesDraft', () => {
 		expect(event.localDate?.value?.year).toBe(2026)
 		expect(event.localDate?.value?.month).toBe(6)
 		expect(event.localDate?.value?.day).toBe(16)
-		expect(
-			event.startTime?.value
-				? timestampDate(event.startTime.value).getHours()
-				: undefined,
-		).toBe(19)
-		expect(
-			event.openTime?.value
-				? timestampDate(event.openTime.value).getHours()
-				: undefined,
-		).toBe(18)
+		// Times are wall clocks at the venue, never instants.
+		expect(event.startTime?.value?.hours).toBe(19)
+		expect(event.startTime?.value?.minutes).toBe(30)
+		expect(event.openTime?.value?.hours).toBe(18)
+		expect(event.openTime?.value?.minutes).toBe(0)
 	})
 
 	it('marshals the id of a stored event and the source page', () => {

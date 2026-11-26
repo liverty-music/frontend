@@ -56,7 +56,7 @@ import {
 	type ConcertPageConcert,
 	eventFromConcert,
 	formatEventDate,
-	formatEventTime,
+	eventTimesText,
 	formatSaleStart,
 } from '../concert/concert-page'
 import {
@@ -408,16 +408,21 @@ export class CheckoutRoute implements IRouteViewModel {
 	}
 
 	public get openTimeLabel(): string {
-		return this.event?.openTime ? formatEventTime(this.event.openTime) : ''
+		return this.event ? eventTimesText(this.event, this.lang).open : ''
 	}
 
 	public get startTimeLabel(): string {
-		return this.event?.startTime ? formatEventTime(this.event.startTime) : ''
+		return this.event ? eventTimesText(this.event, this.lang).start : ''
+	}
+
+	/** The Venue zone's name and the viewer's times, when the offsets differ. */
+	public get zoneLabel(): string {
+		return this.event ? eventTimesText(this.event, this.lang).zone : ''
 	}
 
 	public get salePeriodLabel(): string {
 		if (!this.sale) return ''
-		return `${formatSaleStart(this.sale.saleStartTime, this.lang)} – ${formatSaleStart(this.sale.saleEndTime, this.lang)}`
+		return `${formatSaleStart(this.sale.saleStartTime, this.sale.timeZone, this.lang)} – ${formatSaleStart(this.sale.saleEndTime, this.sale.timeZone, this.lang)}`
 	}
 
 	/** The card as the final confirmation names it, e.g. "VISA •••• 4242". */

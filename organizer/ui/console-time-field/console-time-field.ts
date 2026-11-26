@@ -10,9 +10,9 @@ import { HOURS, minuteChoices, partsOf, timeOf } from './time-of-day'
 let nextId = 0
 
 /**
- * A time of day in Japan time on a 24-hour clock (design D19): an hour select
+ * A time of day on a 24-hour clock (design D19): an hour select
  * (00-23) and a minute select (00-55 in 5-minute steps) in one group named by
- * the label, marked JST. No AM or PM, whatever the device's clock: the
+ * the label, named with its zone (`zoneLabel`). No AM or PM, whatever the device's clock: the
  * choices are two-digit numbers, not a locale's format. Each select is a
  * native one, so typing digits picks a choice.
  *
@@ -38,6 +38,8 @@ export class ConsoleTimeField {
 	@bindable public disabled = false
 	/** Shown at full contrast but not editable, for a time that is fixed. */
 	@bindable public readonly = false
+	/** The name of the zone the time is read in (`日本時間`); none shows no zone. */
+	@bindable public zoneLabel = ''
 
 	public readonly fieldId = `console-time-field-${nextId++}`
 	public readonly hours = HOURS
@@ -57,7 +59,7 @@ export class ConsoleTimeField {
 	public get describedBy(): string {
 		return [
 			this.hint ? `${this.fieldId}-hint` : '',
-			`${this.fieldId}-zone`,
+			this.zoneLabel ? `${this.fieldId}-zone` : '',
 			this.error ? `${this.fieldId}-error` : '',
 		]
 			.filter(Boolean)

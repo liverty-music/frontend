@@ -5,7 +5,6 @@ import {
 	PublishState,
 	Visibility,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
-import { timestampFromDate } from '@bufbuild/protobuf/wkt'
 import { Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { EventRoute } from '../../../organizer/event/event-route'
@@ -20,6 +19,7 @@ import { CrumbText } from '../../../organizer/shell/crumb-text/crumb-text'
 import { ConsoleIcon } from '../../../organizer/ui/console-icon/console-icon'
 import { IAppConfig } from '../../../shared/config/app-config'
 import { authoredSeries } from '../authored-series'
+import { timeOfDayAt, venueIn } from '../zoned-fixtures'
 
 const SPEC = 'components/infrastructure/organizer/web/global/organizer-shell'
 
@@ -34,10 +34,8 @@ const XX_TOUR = authoredSeries({
 			id: { value: 'e-1103' },
 			publishState: PublishState.PUBLISHED,
 			localDate: { value: { year: 2026, month: 11, day: 3 } },
-			startTime: {
-				value: timestampFromDate(new Date('2026-11-03T18:00:00+09:00')),
-			},
-			venue: { name: { value: 'Zepp Haneda' } },
+			startTime: { value: timeOfDayAt(new Date('2026-11-03T18:00:00+09:00')) },
+			venue: venueIn('Zepp Haneda'),
 		},
 	],
 	performers: [{ id: { value: 'a-1' } }],

@@ -1,83 +1,164 @@
 /**
- * Japan-time and yen formatting for the organizer console.
+ * Times in the zone they belong to, yen and counts for the organizer console.
  *
- * Every date and time is shown in Japan time with "JST", whatever the device's
- * time zone, and every date and time a member enters is read as Japan time.
- * Japan has no daylight saving time, so Japan time is always UTC+09:00.
+ * An Event's date and times are the wall clock at its Venue (read in the
+ * Venue's zone); a TicketSale's window is a civil date-time in the sale's
+ * zone; a moment in the past about an event reads in the Venue's zone. Every
+ * value is labelled with its zone's name (`ロンドン時間`, `London time`), and a
+ * Venue outside Japan also gets Japan time in parentheses, so a member
+ * announcing a show abroad to fans in Japan sees both. Nothing here reads the
+ * device's time zone.
  */
+import {
+	convertWall,
+	formatDay,
+	formatDayTime,
+	otherZoneReading,
+	zoneLabel,
+} from '../../shared/lib/zoned-time/format'
+import {
+	type WallClock,
+	type WallTime,
+	instantToWall,
+} from '../../shared/lib/zoned-time/zoned-time'
 
 export type ConsoleLocale = 'ja' | 'en'
 
+/**
+ * Japan time, which the console writes in parentheses after the time of an
+ * Event in any other zone, because the fans an Organizer announces to are in
+ * Japan (components/infrastructure/organizer/web/global/i18n "Dates and times
+ * in the zone they belong to"). It is the one zone the console names itself;
+ * every other zone comes from a response.
+ */
 export const JAPAN_TIME_ZONE = 'Asia/Tokyo'
-const JST_OFFSET_MS = 9 * 60 * 60 * 1000
 
-const dateTimeFormats = new Map<string, Intl.DateTimeFormat>()
+/** A calendar date. */
+export interface CivilDate {
+	readonly year: number
+	readonly month: number
+	readonly day: number
+}
 
-function formatter(
+/** An Event's date, its start time when set, and its Venue's zone. */
+export interface EventWhen {
+	readonly date: CivilDate
+	readonly time?: WallTime
+	/** The Venue's IANA zone; absent for a Venue that has none. */
+	readonly zone?: string
+}
+
+/** A TicketSale's window: civil date-times in the sale's zone. */
+export interface SaleWindow {
+	readonly start: WallClock
+	readonly end?: WallClock
+	readonly zone: string
+}
+
+/** A moment (an instant) read in a zone, for a time in the past. */
+export interface MomentAt {
+	readonly at: Date
+	readonly zone?: string
+}
+
+/** `11月3日(火)` / `Tue, Nov 3`: a calendar day. */
+export function formatEventDay(date: CivilDate, locale: ConsoleLocale): string {
+	return formatDay(date, locale)
+}
+
+/** `2026年11月3日(火)` / `Tue, Nov 3, 2026`: a calendar day with its year. */
+export function formatEventDate(
+	date: CivilDate,
 	locale: ConsoleLocale,
-	key: string,
-	options: Intl.DateTimeFormatOptions,
-): Intl.DateTimeFormat {
-	const id = `${locale}:${key}`
-	let f = dateTimeFormats.get(id)
-	if (!f) {
-		f = new Intl.DateTimeFormat(locale, {
-			...options,
-			timeZone: JAPAN_TIME_ZONE,
-		})
-		dateTimeFormats.set(id, f)
-	}
-	return f
+): string {
+	return formatDay(date, locale, { year: true })
 }
 
-const TIME: Intl.DateTimeFormatOptions = {
-	hour: '2-digit',
-	minute: '2-digit',
-	hourCycle: 'h23',
-}
-
-function dayOptions(locale: ConsoleLocale): Intl.DateTimeFormatOptions {
-	return {
-		month: locale === 'ja' ? 'long' : 'short',
-		day: 'numeric',
-		weekday: 'short',
-	}
-}
-
-/** `11月3日(火) 18:00 JST` / `Tue, Nov 3, 18:00 JST`. */
-export function formatJstDateTime(date: Date, locale: ConsoleLocale): string {
-	return `${formatter(locale, 'datetime', { ...dayOptions(locale), ...TIME }).format(date)} JST`
+/** The parenthesis that follows an Event's zone label: Japan time, when the zone is not Japan's. */
+function japanTimeNote(
+	wall: WallClock,
+	zone: string,
+	locale: ConsoleLocale,
+): string {
+	if (zone === JAPAN_TIME_ZONE) return ''
+	const japan = convertWall(wall, zone, JAPAN_TIME_ZONE)
+	if (!japan) return ''
+	const reading = `${zoneLabel(JAPAN_TIME_ZONE, locale)} ${otherZoneReading(wall, japan, locale)}`
+	return locale === 'ja' ? `（${reading}）` : ` (${reading})`
 }
 
 /**
- * A window in Japan time: `10月10日(土) 12:00 〜 10月17日(土) 23:59 JST`.
+ * An Event's date and start time at its Venue with the zone's name, and Japan
+ * time after it for a Venue outside Japan:
+ * `2月20日(土) 19:30 ロンドン時間（日本時間 2月21日(日) 04:30）`. An Event with
+ * no start time is its day alone, which carries no label.
  */
-export function formatJstRange(
-	start: Date,
-	end: Date | undefined,
+export function formatEventWhen(
+	when: EventWhen,
 	locale: ConsoleLocale,
 ): string {
-	const dt = formatter(locale, 'datetime', { ...dayOptions(locale), ...TIME })
-	const from = dt.format(start)
-	return end ? `${from} 〜 ${dt.format(end)} JST` : `${from} JST 〜`
+	if (!when.time) return formatEventDay(when.date, locale)
+	const wall: WallClock = { ...when.date, ...when.time }
+	const text = formatDayTime(wall, locale)
+	if (!when.zone) return text
+	return `${text} ${formatZoneAtVenue(when.date, when.time, when.zone, locale)}`
 }
 
-/** `2026年11月3日(火)` / `Tue, Nov 3, 2026`: a calendar day, no time. */
-export function formatJstDate(date: Date, locale: ConsoleLocale): string {
-	return formatter(locale, 'date', {
-		...dayOptions(locale),
-		year: 'numeric',
-	}).format(date)
+/**
+ * The zone's name that follows the times of an Event on `date`, and, for a
+ * zone other than Japan's, the Japan time of `time` in parentheses:
+ * `ロンドン時間（日本時間 2月21日(日) 04:30）`. `time` is the start time; without
+ * one only the name is returned.
+ */
+export function formatZoneAtVenue(
+	date: CivilDate,
+	time: WallTime | undefined,
+	zone: string,
+	locale: ConsoleLocale,
+): string {
+	const name = zoneLabel(zone, locale)
+	return time
+		? `${name}${japanTimeNote({ ...date, ...time }, zone, locale)}`
+		: name
 }
 
-/** `11月3日(火)` / `Tue, Nov 3`: a calendar day in the current year's style. */
-export function formatJstDay(date: Date, locale: ConsoleLocale): string {
-	return formatter(locale, 'day', dayOptions(locale)).format(date)
+/**
+ * A sale's window in the sale's zone, named once after the end:
+ * `10月10日(土) 12:00 〜 10月17日(土) 23:59 日本時間`.
+ */
+export function formatSaleWindow(
+	window: SaleWindow,
+	locale: ConsoleLocale,
+): string {
+	const label = zoneLabel(window.zone, locale)
+	const start = formatDayTime(window.start, locale)
+	return window.end
+		? `${start} 〜 ${formatDayTime(window.end, locale)} ${label}`
+		: `${start} ${label} 〜`
 }
 
-/** `18:00 JST`. */
-export function formatJstTime(date: Date, locale: ConsoleLocale): string {
-	return `${formatter(locale, 'time', TIME).format(date)} JST`
+/** One moment of a sale in its zone: `2月1日(月) 12:00 台北時間`. */
+export function formatSaleMoment(
+	wall: WallClock,
+	zone: string,
+	locale: ConsoleLocale,
+): string {
+	return `${formatDayTime(wall, locale)} ${zoneLabel(zone, locale)}`
+}
+
+/**
+ * A moment in the past read in a zone with its name:
+ * `11月3日(火) 14:10 日本時間`. Without a zone the name is left out and the
+ * moment is read in UTC.
+ */
+export function formatMomentAt(
+	moment: MomentAt,
+	locale: ConsoleLocale,
+): string {
+	const zone = moment.zone
+	const wall = instantToWall(moment.at, zone ?? 'UTC')
+	const text = formatDayTime(wall, locale)
+	return zone ? `${text} ${zoneLabel(zone, locale)}` : text
 }
 
 /** A count with digit separators: `1,380`. */
@@ -105,111 +186,7 @@ export function formatYen(
 	}).format(value)
 }
 
-/** Wall-clock parts of a Japan-time instant. */
-function jstParts(date: Date): {
-	year: number
-	month: number
-	day: number
-	hour: number
-	minute: number
-} {
-	const shifted = new Date(date.getTime() + JST_OFFSET_MS)
-	return {
-		year: shifted.getUTCFullYear(),
-		month: shifted.getUTCMonth() + 1,
-		day: shifted.getUTCDate(),
-		hour: shifted.getUTCHours(),
-		minute: shifted.getUTCMinutes(),
-	}
-}
-
-const pad = (n: number) => String(n).padStart(2, '0')
-
-/**
- * Reads an `<input type="datetime-local">` value (`2026-10-10T12:00`) as Japan
- * time. Returns undefined for an empty or malformed value.
- */
-export function parseJstDateTimeLocal(value: string): Date | undefined {
-	const m = value.match(
-		/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?$/,
-	)
-	if (!m) return undefined
-	const [year, month, day, hour, minute] = m.slice(1, 6).map(Number)
-	const date = new Date(
-		Date.UTC(year, month - 1, day, hour, minute) - JST_OFFSET_MS,
-	)
-	// Reject values that roll over (2026-02-30 → March 2).
-	const back = jstParts(date)
-	if (back.month !== month || back.day !== day) return undefined
-	return date
-}
-
-/**
- * Reads a date (`2026-10-10`) and a time (`18:00`) entered separately as one
- * Japan-time instant.
- */
-export function parseJstDateAndTime(
-	date: string,
-	time: string,
-): Date | undefined {
-	return parseJstDateTimeLocal(`${date}T${time}`)
-}
-
-/** The `datetime-local` value showing `date` in Japan time. */
-export function toJstDateTimeLocal(date: Date): string {
-	const p = jstParts(date)
-	return `${p.year}-${pad(p.month)}-${pad(p.day)}T${pad(p.hour)}:${pad(p.minute)}`
-}
-
-/** The `date` input value of `date`'s Japan-time calendar day. */
-export function toJstDateInput(date: Date): string {
-	return toJstDateTimeLocal(date).slice(0, 10)
-}
-
-/** The `time` input value of `date`'s Japan-time wall clock. */
-export function toJstTimeInput(date: Date): string {
-	return toJstDateTimeLocal(date).slice(11)
-}
-
-/**
- * A Japan-time instant as the console enters it (design D19): a date field
- * (`YYYY-MM-DD`) and a 24-hour time field (`HH:mm`), each '' while unset.
- */
-export interface JstDateTime {
-	date: string
-	time: string
-}
-
-/** An unset date and time. */
-export function emptyJstDateTime(): JstDateTime {
-	return { date: '', time: '' }
-}
-
-/** The date and time fields showing `date` in Japan time. */
-export function toJstDateTime(date: Date): JstDateTime {
-	const local = toJstDateTimeLocal(date)
-	return { date: local.slice(0, 10), time: local.slice(11) }
-}
-
-/** The instant of a date and a time entered in Japan time, or undefined. */
-export function parseJstDateTime(value: JstDateTime): Date | undefined {
-	return parseJstDateAndTime(value.date.trim(), value.time.trim())
-}
-
-/**
- * The part of `value` that keeps it from being an instant, the date first:
- * 'date' while the date is unset or not a calendar day, 'time' while the
- * time is unset or malformed, null once it reads as an instant.
- */
-export function unsetPartOf(value: JstDateTime): 'date' | 'time' | null {
-	const date = value.date.trim()
-	if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return 'date'
-	if (!parseJstDateAndTime(date, '00:00')) return 'date'
-	if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(value.time.trim())) return 'time'
-	return null
-}
-
-/** True when both parts are the same. */
-export function sameJstDateTime(a: JstDateTime, b: JstDateTime): boolean {
-	return a.date === b.date && a.time === b.time
+/** The `date` input value (`2026-10-10`) of a civil date. */
+export function toDateInput(date: CivilDate): string {
+	return `${date.year}-${String(date.month).padStart(2, '0')}-${String(date.day).padStart(2, '0')}`
 }
