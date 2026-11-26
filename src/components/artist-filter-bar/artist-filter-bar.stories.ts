@@ -59,10 +59,14 @@ async function openFilter(root: HTMLElement): Promise<HTMLDialogElement> {
 	const dialog = root.querySelector('dialog') as HTMLDialogElement
 	await waitFor(() => expect(dialog.matches(':popover-open')).toBe(true))
 	const body = root.querySelector('.sheet-body') as HTMLElement
-	await waitFor(() =>
-		expect(
-			Math.abs(body.getBoundingClientRect().bottom - innerHeight),
-		).toBeLessThan(1),
+	// The sheet slides in over 400 ms, which a loaded runner can stretch past
+	// the default one-second wait.
+	await waitFor(
+		() =>
+			expect(
+				Math.abs(body.getBoundingClientRect().bottom - innerHeight),
+			).toBeLessThan(1),
+		{ timeout: 5000 },
 	)
 	// The scroll that put the sheet there has ended.
 	await pause(300)
