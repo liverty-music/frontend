@@ -191,6 +191,8 @@ export const TapElsewhere: Story = {
 		expect(canvas.getByTestId('counts')).toHaveTextContent('elsewhere 1')
 		await waitFor(() => expect(line.matches(':popover-open')).toBe(false))
 		expect(target).not.toHaveAttribute('data-guide-active')
+		// The anchor stays, so the line fades out where it was.
+		expect(getComputedStyle(target).anchorName).toBe('--guide-target')
 	},
 }
 

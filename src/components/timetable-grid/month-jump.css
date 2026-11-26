@@ -77,8 +77,9 @@
 			translate: calc(var(--_jump-button) / -2) 0;
 		}
 
-		:scope[data-has-prev="false"][data-has-next="false"] {
+		:scope[data-none="true"] .month-jump-capsule {
 			display: none;
+			opacity: 0;
 		}
 
 		/* Not before the fan has scrolled the list: at its top, until the

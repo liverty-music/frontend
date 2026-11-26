@@ -132,6 +132,15 @@ type Story = StoryObj<typeof meta>
  * Runs the router's `loading` hook on every route in the canvas (no router
  * runs here) and waits for `count` rows in total.
  */
+/** The route's edit action, once the route has registered its actions. */
+function editAction() {
+	return waitFor(() => {
+		const edit = fab.actions.find((a) => a.id === 'edit')
+		if (edit?.kind !== 'command') throw new Error('no edit action')
+		return edit
+	})
+}
+
 async function rendered(canvasElement: HTMLElement, count: number) {
 	for (const host of canvasElement.querySelectorAll('my-artists-route')) {
 		await CustomElement.for<MyArtistsRoute>(host).viewModel.loading()
@@ -271,8 +280,7 @@ export const RemoveWhileScrolled = {
 		}),
 	play: async ({ canvasElement }) => {
 		const { thead, tbody } = await rendered(canvasElement, 40)
-		const edit = fab.actions.find((a) => a.id === 'edit')
-		if (edit?.kind !== 'command') throw new Error('no edit action')
+		const edit = await editAction()
 		edit.invoke()
 		await waitFor(() =>
 			expect(canvasElement.querySelector('.artist-remove-btn')).not.toBeNull(),
@@ -814,8 +822,7 @@ export const EditModeAndUndoMotion = {
 		}),
 	play: async ({ canvasElement }) => {
 		await rendered(canvasElement, 6)
-		const edit = fab.actions.find((a) => a.id === 'edit')
-		if (edit?.kind !== 'command') throw new Error('no edit action')
+		const edit = await editAction()
 
 		// @spec components/infrastructure/fan/web/route/my-artists "Entering edit mode"
 		edit.invoke()

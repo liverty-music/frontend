@@ -124,6 +124,8 @@ export class TimetableGrid {
 	 */
 	public prevMonth: Date | null = null
 	public nextMonth: Date | null = null
+	/** No month lies in either direction: the capsule leaves, as it stands. */
+	public noOtherMonth = true
 
 	/**
 	 * Whether the fan has scrolled the list or jumped since it was shown. The
@@ -295,6 +297,9 @@ export class TimetableGrid {
 	private updateMonthJump(dateKey: string | null): void {
 		const prev = dateKey === null ? undefined : this.monthTarget(dateKey, -1)
 		const next = dateKey === null ? undefined : this.monthTarget(dateKey, 1)
+		this.noOtherMonth = !prev && !next
+		// With none left the buttons stay as they were while the capsule fades.
+		if (this.noOtherMonth) return
 		this.prevMonth = prev ? firstOfMonth(prev.dateKey) : null
 		this.nextMonth = next ? firstOfMonth(next.dateKey) : null
 	}

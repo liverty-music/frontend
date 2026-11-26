@@ -12,6 +12,7 @@ import {
 } from '../../../.storybook/motion'
 import { transitionsEnded } from '../../../.storybook/transitions-ended'
 import { BusyOnClickCustomAttribute } from '../../custom-attributes/busy-on-click'
+import { StatePlaceholder } from '../../components/state-placeholder/state-placeholder'
 import { DiscoverySearchResults } from './discovery-search-results'
 
 const meta = {
@@ -47,7 +48,11 @@ function render(search: Record<string, unknown>): Story['render'] {
 				followedIds: new Set(['a2']),
 				follow: async () => {},
 			},
-			register: [DiscoverySearchResults, BusyOnClickCustomAttribute],
+			register: [
+				DiscoverySearchResults,
+				StatePlaceholder,
+				BusyOnClickCustomAttribute,
+			],
 		})
 }
 
@@ -72,7 +77,9 @@ const roleOnListItem = {
 export const Searching = {
 	render: render({ isSearching: true, searchQuery: 'YOA' }),
 	play: async ({ canvasElement }) => {
-		await expect(canvasElement.querySelector('.search-status')).not.toBeNull()
+		await expect(
+			canvasElement.querySelectorAll('.skeleton-row').length,
+		).toBeGreaterThan(0)
 	},
 } satisfies Story
 
@@ -97,6 +104,10 @@ export const Results = {
 		await expect(rows).toHaveLength(2)
 		await expect(rows[0]).toHaveAttribute('data-followed', 'false')
 		await expect(rows[1]).toHaveAttribute('data-followed', 'true')
+		// The rows fade in and end at their own opacity: a followed one dimmed.
+		await transitionsEnded(canvasElement)
+		await expect(getComputedStyle(rows[0]).opacity).toBe('1')
+		await expect(getComputedStyle(rows[1]).opacity).toBe('0.5')
 
 		// The list fades in and out with search (the route hides it outside
 		// search with `display: none`, flipped after the exit).
@@ -182,7 +193,11 @@ export const ResultsFromTheKeyboard = {
 				followedIds: new Set(['a2']),
 				follow: keyFollow,
 			},
-			register: [DiscoverySearchResults, BusyOnClickCustomAttribute],
+			register: [
+				DiscoverySearchResults,
+				StatePlaceholder,
+				BusyOnClickCustomAttribute,
+			],
 		})
 	},
 	play: async ({ canvasElement }) => {

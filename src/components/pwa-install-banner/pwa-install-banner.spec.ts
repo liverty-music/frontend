@@ -69,6 +69,17 @@ describe('PwaInstallBanner', () => {
 		vi.restoreAllMocks()
 	})
 
+	describe('a post-signup surface', () => {
+		it('hides the banner without removing it, and it returns afterwards', () => {
+			fakeShouldShowInstallBanner = true
+			const sut = new PwaInstallBanner()
+			sut.suppressed = true
+			expect(sut.isVisible).toBe(false)
+			sut.suppressed = false
+			expect(sut.isVisible).toBe(true)
+		})
+	})
+
 	describe('binding() — install mode initialisation', () => {
 		it('seeds installMode to native when canShowFab and not iOS', () => {
 			fakeCanShowFab = true

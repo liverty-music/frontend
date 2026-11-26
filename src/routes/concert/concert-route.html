@@ -4,7 +4,8 @@
 <import from="../../components/concert-performers/concert-performers"></import>
 <import from="../../components/concert-details/concert-details"></import>
 
-<article class="[ concert-page ] [ flow wrapper ]" data-state.bind="state">
+<!-- Once loaded, the page's parts fade in over the skeleton's place. -->
+<article class="[ concert-page ] [ flow wrapper ]" data-state.bind="state" content-arrive-rows.class="state === 'ready'">
   <!-- Loading -->
   <state-placeholder if.bind="state === 'loading'" loading.bind="true" variant="card" rows="4" label.bind="'concert.loading' | t"></state-placeholder>
 

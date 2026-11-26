@@ -10,7 +10,7 @@
   </section>
 
   <template if.bind="listState === 'ready'">
-    <ul class="[ passkeys-card card ] [ content-arrive ]" role="list" data-testid="passkeys-list">
+    <ul class="[ passkeys-card card ] [ content-arrive-rows ]" role="list" data-testid="passkeys-list">
       <li repeat.for="passkey of passkeys" class="passkeys-item" style="--passkey-vt-name: ${passkey.rowName}" data-testid="passkeys-item">
         <svg-icon name="lock" size="lg" class="passkeys-icon"></svg-icon>
         <span class="[ passkeys-label ] [ stack ]">
