@@ -75,6 +75,10 @@
 						<dt class="md-typescale-label-large" t="tickets.event.start"></dt>
 						<dd class="md-typescale-body-large">${startText(group)}</dd>
 					</div>
+					<div if.bind="zoneText(group)">
+						<dt class="md-typescale-label-large" t="tickets.event.timeZone"></dt>
+						<dd class="md-typescale-body-large" data-testid="event-zone">${zoneText(group)}</dd>
+					</div>
 				</dl>
 			</header>
 

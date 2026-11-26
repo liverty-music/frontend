@@ -104,7 +104,7 @@ describe('ConcertStore', () => {
 			const result = await sut.listFollowed()
 
 			expect(mockRpcClient.listFollowed).toHaveBeenCalledTimes(1)
-			expect(result).toBe(groups)
+			expect(result).toEqual(groups)
 		})
 
 		// @spec components/infrastructure/fan/web/route/timetable "Cache miss on first load"
@@ -264,6 +264,37 @@ describe('ConcertStore', () => {
 					result.map((g) => g.away[0].event.venue?.timeZone?.value),
 				).toEqual(['Europe/London'])
 				expect(result[0].date?.value?.day).toBe(14)
+			} finally {
+				vi.useRealTimers()
+			}
+		})
+
+		it('drops a concert that ended since the signed-in default view was cached', async () => {
+			vi.useFakeTimers({ toFake: ['Date'] })
+			vi.setSystemTime(new Date('2027-03-14T03:00:00Z'))
+			try {
+				mockRpcClient.listFollowed.mockResolvedValue([
+					{
+						date: { value: { year: 2027, month: 3, day: 14 } },
+						home: [
+							{
+								event: {
+									localDate: { value: { year: 2027, month: 3, day: 14 } },
+									venue: { timeZone: { value: 'Asia/Tokyo' } },
+								},
+							},
+						],
+						nearby: [],
+						away: [],
+					} as unknown as ProximityGroup,
+				])
+				expect(await sut.listFollowed()).toHaveLength(1)
+
+				// The next day in Japan, served from the same cached list.
+				vi.setSystemTime(new Date('2027-03-14T16:00:00Z'))
+
+				expect(await sut.listFollowed()).toHaveLength(0)
+				expect(mockRpcClient.listFollowed).toHaveBeenCalledTimes(1)
 			} finally {
 				vi.useRealTimers()
 			}

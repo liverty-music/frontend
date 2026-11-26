@@ -300,6 +300,26 @@ export const EventUnknown = {
 	},
 } satisfies Story
 
+/**
+ * A show in another zone than the fan's, on a phone: the zone and the fan's
+ * own times stand under the headline, whole, and the facts keep their cells.
+ */
+export const Abroad = {
+	globals: { viewport: { value: 'mobile1' } },
+	render: () =>
+		ticketStory({ event: { ...EVENT, timeZone: 'America/New_York' } }),
+	play: async ({ canvasElement }) => {
+		const face = faceOf(canvasElement)
+		const zone = face.querySelector('[data-testid="event-zone"]')
+		await expect(zone?.textContent).toContain('ニューヨーク時間')
+		const art = face.querySelector('.ticket-front-art')
+		const bounds = art?.getBoundingClientRect()
+		const line = zone?.getBoundingClientRect()
+		await expect(line?.bottom).toBeLessThanOrEqual(bounds?.bottom ?? 0)
+		await expect(line?.top).toBeGreaterThanOrEqual(bounds?.top ?? 0)
+	},
+} satisfies Story
+
 function presetStory(
 	preset: TicketPreset,
 	event: Partial<ConcertPageConcert>,

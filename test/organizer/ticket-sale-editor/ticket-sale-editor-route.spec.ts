@@ -862,7 +862,7 @@ describe('the sale zone of the first-come editor', () => {
 			saleEndTime: dateTimeAt(new Date('2027-02-10T03:00:00Z')),
 			eventIds: [{ value: 'e-1' }, { value: 'e-2' }],
 		})
-		const { fixture, vm, host } = await mount({
+		const { fixture, vm, host, d } = await mount({
 			list: vi.fn().mockResolvedValue(concertAt('Asia/Tokyo', 'Asia/Taipei')),
 			listByEvent: vi.fn().mockResolvedValue({ ticketSales: [sale] }),
 		})
@@ -877,6 +877,17 @@ describe('the sale zone of the first-come editor', () => {
 			'Asia/Tokyo',
 			'Asia/Taipei',
 		])
+
+		// With none selected, saving says a zone must be chosen and sends nothing.
+		vm.model.timeZone = ''
+		await vm.save()
+		await tasksSettled()
+		expect(vm.error(vm.errors.timeZone)?.key).toBe('saleEditor.error.timeZone')
+		expect(select?.shadowRoot?.textContent).toContain(
+			'タイムゾーンを選んでください',
+		)
+		expect(d.setWindow).not.toHaveBeenCalled()
+		expect(d.create).not.toHaveBeenCalled()
 		await fixture.tearDown()
 	})
 

@@ -70,7 +70,9 @@ describe('a window in the sale zone', () => {
 
 describe('the sale zone', () => {
 	it(`@spec ${EDITOR} "Events at venues in different zones"`, () => {
-		// Several zones, none chosen: saving says a time zone must be chosen.
+		// A new sale whose events' zones differ starts with none chosen, and
+		// saving says a time zone must be chosen.
+		expect(blankFormModel(EVENT_START, '一般発売').timeZone).toBe('')
 		const errors = validateTicketSaleForm({ ...valid(), timeZone: '' }, CTX)
 		expect(errors.timeZone).toEqual({ key: 'saleEditor.error.timeZone' })
 		expect(isFormValid(errors)).toBe(false)

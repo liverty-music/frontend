@@ -42,9 +42,9 @@ function cityOf(zone: string): string {
 /** The zone's city name in the display language (`日本` / `Japan` for Japan time). */
 export function zoneName(zone: string, lang: DisplayLanguage): string {
 	const api = registered.get(zone)
-	if (api) return (lang === 'ja' ? api.ja : undefined) ?? api.en
-	const en = ZONE_NAMES_EN[zone] ?? cityOf(zone)
-	if (lang === 'ja') return ZONE_NAMES_JA[zone] ?? en
+	// A name the API leaves empty is no name: the next source answers.
+	const en = api?.en || ZONE_NAMES_EN[zone] || cityOf(zone)
+	if (lang === 'ja') return api?.ja || ZONE_NAMES_JA[zone] || en
 	return en
 }
 

@@ -141,7 +141,7 @@ export class ConcertStore {
 		if (!this.authService.isAuthenticated) {
 			return onOrAfter(await this.listFollowedGuest(signal), from)
 		}
-		return this.followerConcerts.read(from, signal)
+		return cutDefaultView(await this.followerConcerts.read(from, signal), from)
 	}
 
 	/**
@@ -162,7 +162,7 @@ export class ConcertStore {
 				? onOrAfter(await this.proximityConcerts.revalidate(input), from)
 				: []
 		}
-		return this.followerConcerts.revalidate(from)
+		return cutDefaultView(await this.followerConcerts.revalidate(from), from)
 	}
 
 	/** The last rendered concert groups for these inputs, or null. */
@@ -555,6 +555,19 @@ function onOrAfter(
 		if (!d) return true
 		return d.year * 10000 + d.month * 100 + d.day >= bound
 	})
+}
+
+/**
+ * The default view of the signed-in list, cut once more at each Venue's
+ * current date: the server applied it when the list was read, and a cached
+ * list outlives the day it was read on. A list read with `from` stays as the
+ * server answered it.
+ */
+function cutDefaultView(
+	groups: ProximityGroup[],
+	from?: CalendarDate,
+): ProximityGroup[] {
+	return from ? groups : onOrAfter(groups)
 }
 
 /**

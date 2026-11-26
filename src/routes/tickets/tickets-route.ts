@@ -883,20 +883,31 @@ export class TicketsRoute {
 			: ''
 	}
 
-	/** The open time at the Venue; with the zone text when no start time follows it. */
+	/** The open time at the Venue, or ''. */
 	@computed
 	public openText(group: WalletEventGroup): string {
-		if (!group.event) return ''
-		const t = eventTimesText(group.event, this.userStore.currentLanguage)
-		return t.start || !t.zone ? t.open : `${t.open} ${t.zone}`
+		return group.event
+			? eventTimesText(group.event, this.userStore.currentLanguage).open
+			: ''
 	}
 
-	/** The start time at the Venue, with the zone text that follows the times. */
+	/** The start time at the Venue, or ''. */
 	@computed
 	public startText(group: WalletEventGroup): string {
-		if (!group.event) return ''
-		const t = eventTimesText(group.event, this.userStore.currentLanguage)
-		return t.zone ? `${t.start} ${t.zone}` : t.start
+		return group.event
+			? eventTimesText(group.event, this.userStore.currentLanguage).start
+			: ''
+	}
+
+	/**
+	 * The Venue zone's name and the fan's own times, shown once after the
+	 * times; '' when the fan's zone has the Venue's offset.
+	 */
+	@computed
+	public zoneText(group: WalletEventGroup): string {
+		return group.event
+			? eventTimesText(group.event, this.userStore.currentLanguage).zone
+			: ''
 	}
 
 	/**

@@ -65,6 +65,9 @@
 						<template else><span t="tickets.event.unknown"></span></template>
 					</h2>
 					<p class="ticket-front-performers" if.bind="performers">${performers}</p>
+					<!-- A show in another zone than the fan's: the zone of the times
+					     below and the fan's own times, which no time's cell holds. -->
+					<p class="ticket-front-zone" if.bind="zoneText" data-testid="event-zone">${zoneText}</p>
 				</div>
 			</div>
 
@@ -148,7 +151,7 @@
 				</div>
 				<div if.bind="event.openTime || event.startTime">
 					<dt>${'tickets.event.open' & t} / ${'tickets.event.start' & t}</dt>
-					<dd>${openText}<template if.bind="openText && startText"> / </template>${startText}</dd>
+					<dd>${openText}<template if.bind="openText && startText"> / </template>${startText}<template if.bind="zoneText"> ${zoneText}</template></dd>
 				</div>
 				<div>
 					<dt>${'tickets.field.seatType' & t} / ${'tickets.field.seat' & t}</dt>

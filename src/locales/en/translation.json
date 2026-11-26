@@ -492,7 +492,8 @@
 			"date": "Date",
 			"venue": "Venue",
 			"open": "Doors",
-			"start": "Start"
+			"start": "Start",
+			"timeZone": "Time zone"
 		},
 		"ticketN": "Ticket {{n}}",
 		"state": {

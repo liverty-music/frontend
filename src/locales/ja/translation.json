@@ -490,7 +490,8 @@
 			"date": "日付",
 			"venue": "会場",
 			"open": "開場",
-			"start": "開演"
+			"start": "開演",
+			"timeZone": "タイムゾーン"
 		},
 		"ticketN": "チケット {{n}}",
 		"state": {

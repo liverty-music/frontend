@@ -537,18 +537,22 @@ export class VirtualTicket {
 		return this.event ? prefectureLabel(this.event, this.lang) : ''
 	}
 
-	/** The open time at the Venue; with the zone text when no start time follows it. */
+	/** The open time at the Venue, or ''. */
 	public get openText(): string {
-		if (!this.event) return ''
-		const t = eventTimesText(this.event, this.lang)
-		return t.start || !t.zone ? t.open : `${t.open} ${t.zone}`
+		return this.event ? eventTimesText(this.event, this.lang).open : ''
 	}
 
-	/** The start time at the Venue, with the zone text that follows the times. */
+	/** The start time at the Venue, or ''. */
 	public get startText(): string {
-		if (!this.event) return ''
-		const t = eventTimesText(this.event, this.lang)
-		return t.zone ? `${t.start} ${t.zone}` : t.start
+		return this.event ? eventTimesText(this.event, this.lang).start : ''
+	}
+
+	/**
+	 * The Venue zone's name and the fan's own times, shown once after the
+	 * times; '' when the fan's zone has the Venue's offset.
+	 */
+	public get zoneText(): string {
+		return this.event ? eventTimesText(this.event, this.lang).zone : ''
 	}
 
 	public get phoneNumber(): string {
