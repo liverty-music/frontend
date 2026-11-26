@@ -549,7 +549,8 @@ describe('TimetableGrid', () => {
 			sut.dateGroups = months(['2026-11', 30])
 			sut.dateGroupsChanged()
 
-			expect(sut.nextMonth).toBeNull()
+			// One month only: the capsule leaves, its buttons as they were.
+			expect(sut.noOtherMonth).toBe(true)
 		})
 	})
 
