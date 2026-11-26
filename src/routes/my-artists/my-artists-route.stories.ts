@@ -59,9 +59,13 @@ function items(
 	{
 		setHype = async () => {},
 		hypes = STILL_HYPES,
+		auth = { isAuthenticated: true },
+		onboarding = { isOnboarding: false },
 	}: {
 		setHype?: (artistId: string, hype: Hype) => Promise<void>
 		hypes?: Hype[]
+		auth?: { isAuthenticated: boolean }
+		onboarding?: { isOnboarding: boolean }
 	} = {},
 ) {
 	return [
@@ -70,8 +74,8 @@ function items(
 			unfollow: async () => {},
 			setHype,
 		}),
-		Registration.instance(IAuthService, { isAuthenticated: true }),
-		Registration.instance(IOnboardingService, { isOnboarding: false }),
+		Registration.instance(IAuthService, auth),
+		Registration.instance(IOnboardingService, onboarding),
 		Registration.instance(IUserStore, {
 			needsHome: false,
 			currentHome: 'JP-13',
@@ -872,5 +876,66 @@ export const EditModeAndUndoMotion = {
 		)
 		await expect(canvasElement.querySelectorAll('.artist-row')).toHaveLength(6)
 		await transitionEnded()
+	},
+} satisfies Story
+
+/** Fakes a story changes while the route is on screen. */
+const guest = { isAuthenticated: false }
+
+const signupBanner = (root: HTMLElement) =>
+	root.querySelector('signup-prompt-banner aside') as HTMLElement
+
+/** A guest after onboarding sees the signup banner; signing up takes it away. */
+export const GuestSignupBanner = {
+	render: () => {
+		guest.isAuthenticated = false
+		return defineAureliaStory({
+			template: frame(375, 600),
+			register,
+			items: items(3, { auth: guest }),
+		})
+	},
+	play: async ({ canvasElement }) => {
+		await rendered(canvasElement, 3)
+		// @spec components/infrastructure/fan/web/route/my-artists "Banner appears for guest user after onboarding"
+		await waitFor(() => expect(signupBanner(canvasElement).hidden).toBe(false))
+		// @spec components/infrastructure/fan/web/route/my-artists "Banner disappears after signup"
+		guest.isAuthenticated = true
+		await waitFor(() => expect(signupBanner(canvasElement).hidden).toBe(true))
+		await expect(signupBanner(canvasElement).inert).toBe(true)
+	},
+} satisfies Story
+
+/** A guest still onboarding sees the banner once the list has loaded. */
+export const GuestSignupBannerDuringOnboarding = {
+	render: () =>
+		defineAureliaStory({
+			template: frame(375, 600),
+			register,
+			items: items(3, {
+				auth: { isAuthenticated: false },
+				onboarding: { isOnboarding: true },
+			}),
+		}),
+	play: async ({ canvasElement }) => {
+		await rendered(canvasElement, 3)
+		// @spec components/infrastructure/fan/web/route/my-artists "Banner appears for guest user during onboarding"
+		await waitFor(() => expect(signupBanner(canvasElement).hidden).toBe(false))
+	},
+} satisfies Story
+
+/** A signed-in fan is shown no signup banner. */
+export const SignedInHasNoSignupBanner = {
+	render: () =>
+		defineAureliaStory({
+			template: frame(375, 600),
+			register,
+			items: items(3),
+		}),
+	play: async ({ canvasElement }) => {
+		await rendered(canvasElement, 3)
+		// @spec components/infrastructure/fan/web/route/my-artists "Banner not shown for authenticated users"
+		await expect(signupBanner(canvasElement).hidden).toBe(true)
+		await expect(signupBanner(canvasElement).inert).toBe(true)
 	},
 } satisfies Story

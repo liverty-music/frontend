@@ -838,6 +838,20 @@ describe('app-shell', () => {
 			expect(host().querySelector('pwa-install-banner')).toBeNull()
 		})
 
+		it('stays in the DOM, hidden, once the app is installed', async () => {
+			await renderAt(signedIn)
+			const install = fixture.container.get(IPwaInstallService) as unknown as {
+				shouldShowInstallBanner: boolean
+			}
+
+			// @spec components/infrastructure/fan/web/global/pwa-install-banner "App installed via native dialog"
+			// @spec components/infrastructure/fan/web/global/pwa-install-banner "App installed confirmed manually (iOS)"
+			install.shouldShowInstallBanner = false
+			await tasksSettled()
+			expect(banner()?.hasAttribute('hidden')).toBe(true)
+			expect((banner() as HTMLElement).inert).toBe(true)
+		})
+
 		it('is hidden while a post-signup surface is open and returns after', async () => {
 			await renderAt(signedIn)
 			const coordinator = fixture.container.get(IPromptCoordinator)

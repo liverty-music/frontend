@@ -328,6 +328,7 @@ describe('PwaInstallService', () => {
 			expect(sut.shouldShowInstallBanner).toBe(false)
 		})
 
+		// @spec components/infrastructure/fan/web/global/pwa-install-banner "App installed via native dialog"
 		it('becomes false on appinstalled', () => {
 			Object.defineProperty(window, 'BeforeInstallPromptEvent', {
 				value: class {},
@@ -346,6 +347,7 @@ describe('PwaInstallService', () => {
 	})
 
 	describe('confirmInstalled', () => {
+		// @spec components/infrastructure/fan/web/global/pwa-install-banner "App installed confirmed manually (iOS)"
 		it('persists installed state and clears banner + fab visibility', () => {
 			Object.defineProperty(window, 'BeforeInstallPromptEvent', {
 				value: class {},
@@ -363,6 +365,7 @@ describe('PwaInstallService', () => {
 
 			expect(localStorage.getItem(StorageKeys.pwaInstalled)).toBe('true')
 			expect(sut.canShowFab).toBe(false)
+			expect(sut.shouldShowInstallBanner).toBe(false)
 			expect(sut.shouldShowInstallBanner).toBe(false)
 
 			delete (window as unknown as Record<string, unknown>)
