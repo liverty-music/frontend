@@ -104,6 +104,10 @@ export const Results = {
 		await expect(rows).toHaveLength(2)
 		await expect(rows[0]).toHaveAttribute('data-followed', 'false')
 		await expect(rows[1]).toHaveAttribute('data-followed', 'true')
+		// The rows fade in and end at their own opacity: a followed one dimmed.
+		await transitionsEnded(canvasElement)
+		await expect(getComputedStyle(rows[0]).opacity).toBe('1')
+		await expect(getComputedStyle(rows[1]).opacity).toBe('0.5')
 
 		// The list fades in and out with search (the route hides it outside
 		// search with `display: none`, flipped after the exit).

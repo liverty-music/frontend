@@ -97,12 +97,10 @@
 	   content's space and the layout stays put. Where `sibling-index()` is
 	   unknown the rows arrive together. */
 	@keyframes content-arrive {
+		/* No end value: the element ends at its own opacity, so a dimmed row
+		   (a followed artist) stays dimmed. */
 		from {
 			opacity: 0;
-		}
-
-		to {
-			opacity: 1;
 		}
 	}
 
@@ -287,9 +285,13 @@
 
 /* Guide moment target, the state itself (see the keyframes above). */
 @layer exception {
+	/* stylelint-disable-next-line cube/data-attr-naming -- set by the guide-target attribute: the anchor the guide line sits next to, kept while the line fades out */
+	[data-guide-anchor] {
+		anchor-name: --guide-target;
+	}
+
 	/* stylelint-disable-next-line cube/data-attr-naming -- set by the guide-target attribute on any block's control, like data-busy; not one block's own state */
 	[data-guide-active] {
-		anchor-name: --guide-target;
 		box-shadow: var(--glow-guide);
 		animation: guide-pulse 1.6s ease-in-out infinite;
 	}

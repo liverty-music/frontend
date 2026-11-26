@@ -11,6 +11,10 @@ import { type GuideMoment, IGuideService } from '../services/guide-service'
  * which names the anchor the guide line sits next to. The attribute registers
  * the element with {@link IGuideService} so a tap on it is not taken as a tap
  * elsewhere; the target's own handler reports the use.
+ *
+ * When the moment ends the glow goes at once, but the element keeps
+ * `data-guide-anchor`, so the fading guide line stays beside it; the next
+ * target to light up takes the anchor away.
  */
 @customAttribute('guide-target')
 export class GuideTargetCustomAttribute {
@@ -31,6 +35,7 @@ export class GuideTargetCustomAttribute {
 
 	public detaching(): void {
 		this.element.removeAttribute('data-guide-active')
+		this.element.removeAttribute('data-guide-anchor')
 	}
 
 	public get isActive(): boolean {
@@ -44,6 +49,11 @@ export class GuideTargetCustomAttribute {
 
 	private sync(active: boolean): void {
 		if (active && this.value !== '') {
+			// One anchor at a time: of two, the later in the document would win.
+			for (const old of document.querySelectorAll('[data-guide-anchor]')) {
+				old.removeAttribute('data-guide-anchor')
+			}
+			this.element.setAttribute('data-guide-anchor', '')
 			this.element.setAttribute('data-guide-active', this.shape)
 			this.guide.setTarget(this.value, this.element)
 		} else {
