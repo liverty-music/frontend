@@ -225,7 +225,7 @@ export function confirmDialog(
 
 /**
  * The console time field labelled `label` within `scope`: a group of an hour
- * and a minute select on a 24-hour clock, marked JST (design D19). A required
+ * and a minute select on a 24-hour clock, marked with its zone's name (design D19). A required
  * field's name also carries its asterisk and 必須.
  */
 export function timeField(scope: Page | Locator, label: string): Locator {

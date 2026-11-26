@@ -2,7 +2,7 @@ import { Code, ConnectError } from '@connectrpc/connect'
 import { ILogger, resolve } from 'aurelia'
 import type { FieldError } from '../../i18n/field-error'
 import {
-	eventStart,
+	hasStartTime,
 	isCancelled,
 	isPublished,
 	paths,
@@ -133,7 +133,7 @@ export class SalesTab {
 	public get prerequisite(): SalesPrerequisite | null {
 		const event = this.page.event
 		if (!event || !isPublished(event)) return 'notPublished'
-		if (!eventStart(event)) return 'noStartTime'
+		if (!hasStartTime(event)) return 'noStartTime'
 		if (this.stocks.length === 0) return 'noStock'
 		if (!this.page.businessDetailsComplete) return 'businessDetails'
 		return null

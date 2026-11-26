@@ -14,6 +14,7 @@ import type { TicketStock } from '../../src/entities/ticket-sale'
 import ja from '../../src/locales/ja/translation.json'
 import { ResaleEntriesRoute } from '../../src/routes/resale-entries/resale-entries-route'
 import { IUserStore } from '../../src/services/user-store'
+import { useViewerZone } from '../helpers/viewer-zone'
 
 const EVENT_ID = 'event-1'
 
@@ -94,6 +95,8 @@ const byTestId = (host: Element, id: string) =>
 const theEntry = (host: Element) =>
 	byTestId(host, 'resale-entries-entry') as HTMLElement
 
+useViewerZone('Asia/Tokyo')
+
 describe('ResaleEntriesRoute (fixture)', () => {
 	it('shows a lapsed entry as 期限切れ, says nothing was charged and offers to apply again', async () => {
 		// @spec components/infrastructure/fan/web/route/resale-entries "Lapsed entry"
@@ -169,7 +172,7 @@ describe('ResaleEntriesRoute (fixture)', () => {
 		)
 		expect(
 			byTestId(theEntry(host), 'resale-entries-next-draw')?.textContent,
-		).toBe('次の抽選：2026年11月6日(金) 12:00')
+		).toBe('次の抽選：11月6日(金) 12:00')
 		;(byTestId(host, 'resale-entries-withdraw') as HTMLButtonElement).click()
 		await tasksSettled()
 		expect(

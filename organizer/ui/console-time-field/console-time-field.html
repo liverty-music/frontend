@@ -41,7 +41,7 @@
         <option repeat.for="m of minutes" value.bind="m">${m}</option>
       </select>
     </template>
-    <span id.bind="`${fieldId}-zone`" class="affix">${'common.jst' & t}</span>
+    <span if.bind="zoneLabel" id.bind="`${fieldId}-zone`" class="affix">${zoneLabel}</span>
   </div>
   <p if.bind="hint" id.bind="`${fieldId}-hint`" class="supporting">${hint}</p>
   <p if.bind="errorText" id.bind="`${fieldId}-error`" class="error">${errorText.key & t:errorText.params}</p>

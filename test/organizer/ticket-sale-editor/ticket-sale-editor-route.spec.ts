@@ -13,7 +13,6 @@ import {
 	TicketStockState,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_stock_pb.js'
 import { create } from '@bufbuild/protobuf'
-import { timestampFromDate } from '@bufbuild/protobuf/wkt'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { CustomElement, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -51,6 +50,7 @@ import { StatTile } from '../../../organizer/ui/stat-tile/stat-tile'
 import { StatusBadge } from '../../../organizer/ui/status-badge/status-badge'
 import { UnsavedChanges } from '../../../organizer/ui/unsaved-changes/unsaved-changes'
 import { authoredSeries } from '../authored-series'
+import { dateTimeAt, timeOfDayAt, venueIn } from '../zoned-fixtures'
 import {
 	controlsNamed,
 	deepAll,
@@ -74,14 +74,22 @@ type Route = InstanceType<typeof TicketSaleEditorRoute>
 const NOW = Date.UTC(2026, 9, 1)
 
 function eventInit(
-	init: Partial<{ publishState: PublishState; start: Date | null }> = {},
+	init: Partial<{
+		publishState: PublishState
+		start: Date | null
+		id: string
+		timeZone: string
+	}> = {},
 ) {
 	const start = init.start === undefined ? EVENT_START : init.start
 	return {
-		id: { value: 'e-1' },
+		id: { value: init.id ?? 'e-1' },
 		publishState: init.publishState ?? PublishState.PUBLISHED,
 		localDate: { value: { year: 2026, month: 11, day: 20 } },
-		...(start ? { startTime: { value: timestampFromDate(start) } } : {}),
+		venue: venueIn('Zepp Haneda', init.timeZone),
+		...(start
+			? { startTime: { value: timeOfDayAt(start, init.timeZone) } }
+			: {}),
 	}
 }
 
@@ -101,13 +109,14 @@ function firstComeSale(init: {
 	end: Date
 	eventId?: string
 	method?: TicketSaleMethod
+	timeZone?: string
 }): TicketSale {
 	return create(TicketSaleSchema, {
 		id: { value: init.id },
 		name: { value: init.name ?? '一般発売' },
 		method: init.method ?? TicketSaleMethod.FIRST_COME,
-		saleStartTime: timestampFromDate(init.start),
-		saleEndTime: timestampFromDate(init.end),
+		saleStartTime: dateTimeAt(init.start, init.timeZone),
+		saleEndTime: dateTimeAt(init.end, init.timeZone),
 		eventIds: [{ value: init.eventId ?? 'e-1' }],
 	})
 }
@@ -253,6 +262,7 @@ async function mount(
 function validModel() {
 	return {
 		name: '一般発売',
+		timeZone: 'Asia/Tokyo',
 		saleStart: { date: '2026-11-01', time: '12:00' },
 		saleEnd: { date: '2026-11-20', time: '19:00' },
 	}
@@ -525,7 +535,7 @@ describe('first-come sale editor', () => {
 		await tasksSettled()
 
 		expect(d.create).not.toHaveBeenCalled()
-		// The refusal names the other sale and its window in Japan time.
+		// The refusal names the other sale and its window in the other sale's zone.
 		expect(deepText(fieldLabelled(host, ja.firstComeEditor.startDate))).toMatch(
 			/販売「先行販売」.*と期間が重なっています/,
 		)
@@ -533,8 +543,8 @@ describe('first-come sale editor', () => {
 			key: 'firstComeEditor.error.overlap',
 			params: {
 				name: '先行販売',
-				start: '2026-10-31 12:00',
-				end: '2026-11-05 12:00',
+				start: '2026-10-31 12:00 日本時間',
+				end: '2026-11-05 12:00 日本時間',
 			},
 		})
 		await fixture.tearDown()
@@ -559,8 +569,9 @@ describe('first-come sale editor', () => {
 				seriesId: 's-1',
 				name: '一般発売',
 				method: 'firstCome',
-				saleStartTime: new Date('2026-11-01T03:00:00Z'),
-				saleEndTime: EVENT_START,
+				saleStart: { year: 2026, month: 11, day: 1, hour: 12, minute: 0 },
+				saleEnd: { year: 2026, month: 11, day: 20, hour: 19, minute: 0 },
+				timeZone: 'Asia/Tokyo',
 				eventIds: ['e-1'],
 			},
 			expect.any(AbortSignal),
@@ -688,6 +699,7 @@ describe('first-come sale editor', () => {
 
 			expect(vm.model).toEqual({
 				name: '一般発売',
+				timeZone: 'Asia/Tokyo',
 				saleStart: { date: '2026-09-20', time: '12:00' },
 				saleEnd: { date: '2026-11-20', time: '19:00' },
 			})
@@ -716,8 +728,11 @@ describe('first-come sale editor', () => {
 
 			expect(d.setWindow).toHaveBeenCalledWith(
 				'fc-1',
-				new Date('2026-09-25T03:00:00Z'),
-				EVENT_START,
+				{
+					saleStart: { year: 2026, month: 9, day: 25, hour: 12, minute: 0 },
+					saleEnd: { year: 2026, month: 11, day: 20, hour: 19, minute: 0 },
+					timeZone: 'Asia/Tokyo',
+				},
 				expect.any(AbortSignal),
 			)
 			expect(d.create).not.toHaveBeenCalled()
@@ -757,5 +772,243 @@ describe('first-come sale editor', () => {
 			expect(d.load).not.toHaveBeenCalled()
 			await fixture.tearDown()
 		})
+	})
+})
+
+describe('the sale zone of the first-come editor', () => {
+	beforeEach(() => {
+		localStorage.clear()
+		vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['ja-JP', 'ja'])
+		vi.spyOn(navigator, 'language', 'get').mockReturnValue('ja-JP')
+	})
+	afterEach(() => {
+		vi.restoreAllMocks()
+	})
+
+	const concertAt = (...zones: string[]) => [
+		authoredSeries({
+			series: { id: { value: 's-1' }, title: { value: 'XX Tour' } },
+			events: zones.map((timeZone, i) =>
+				eventInit({ id: i === 0 ? 'e-1' : `e-${i + 1}`, timeZone }),
+			),
+		}),
+	]
+
+	it(`@spec ${EDITOR_SPEC} "Event in Japan"`, async () => {
+		const { fixture, vm, host } = await mount()
+
+		expect(vm.model.timeZone).toBe('Asia/Tokyo')
+		// The zone is text with no select, and the window's fields name it.
+		expect(
+			host.querySelector('[data-testid="sale-zone"]')?.textContent,
+		).toContain('日本')
+		expect(
+			host.querySelector('console-field[data-field="time-zone"]'),
+		).toBeNull()
+		const times = [...host.querySelectorAll('console-time-field')]
+		expect(times).toHaveLength(2)
+		for (const t of times) {
+			expect(CustomElement.for<ConsoleTimeField>(t).viewModel.zoneLabel).toBe(
+				'日本時間',
+			)
+		}
+		await fixture.tearDown()
+	})
+
+	it(`@spec ${EDITOR_SPEC} "Event abroad"`, async () => {
+		const taipei = [
+			authoredSeries({
+				series: { id: { value: 's-1' }, title: { value: 'XX Tour' } },
+				events: [eventInit({ timeZone: 'Asia/Taipei' })],
+			}),
+		]
+		const created = firstComeSale({
+			id: 'new',
+			start: new Date('2027-02-01T04:00:00Z'),
+			end: new Date('2027-02-10T10:00:00Z'),
+			timeZone: 'Asia/Taipei',
+		})
+		const { fixture, vm, host, d } = await mount({
+			list: vi.fn().mockResolvedValue(taipei),
+			create: vi.fn().mockResolvedValue(created),
+		})
+
+		expect(
+			host.querySelector('[data-testid="sale-zone"]')?.textContent,
+		).toContain('台北')
+		vm.model.saleStart = { date: '2026-11-01', time: '12:00' }
+		vm.model.saleEnd = { date: '2026-11-10', time: '18:00' }
+		await vm.save()
+
+		// The window goes out as 12:00 on 1 November with the zone Asia/Taipei.
+		expect(d.create).toHaveBeenCalledWith(
+			expect.objectContaining({
+				saleStart: { year: 2026, month: 11, day: 1, hour: 12, minute: 0 },
+				timeZone: 'Asia/Taipei',
+			}),
+			expect.any(AbortSignal),
+		)
+		await fixture.tearDown()
+	})
+
+	it(`@spec ${EDITOR_SPEC} "Events at venues in different zones"`, async () => {
+		// A sale naming a date in Tokyo and a date in Taipei: its zone is a select
+		// of the two, with the stored zone chosen for an existing sale.
+		const sale = create(TicketSaleSchema, {
+			id: { value: 'fc-1' },
+			name: { value: '一般発売' },
+			method: TicketSaleMethod.FIRST_COME,
+			saleStartTime: dateTimeAt(new Date('2027-02-01T03:00:00Z')),
+			saleEndTime: dateTimeAt(new Date('2027-02-10T03:00:00Z')),
+			eventIds: [{ value: 'e-1' }, { value: 'e-2' }],
+		})
+		const { fixture, vm, host, d } = await mount({
+			list: vi.fn().mockResolvedValue(concertAt('Asia/Tokyo', 'Asia/Taipei')),
+			listByEvent: vi.fn().mockResolvedValue({ ticketSales: [sale] }),
+		})
+
+		expect(vm.zones).toEqual(['Asia/Tokyo', 'Asia/Taipei'])
+		expect(vm.zoneIsChoice).toBe(true)
+		expect(vm.model.timeZone).toBe('Asia/Tokyo')
+		const select = host.querySelector('console-field[data-field="time-zone"]')
+		expect(select).not.toBeNull()
+		expect(vm.zoneOptions.map((o) => o.value)).toEqual([
+			'',
+			'Asia/Tokyo',
+			'Asia/Taipei',
+		])
+		const choices = [...(select?.shadowRoot?.querySelectorAll('option') ?? [])]
+		expect(choices.map((o) => o.textContent?.trim())).toEqual([
+			'選択してください',
+			'日本',
+			'台北',
+		])
+
+		// With none selected, saving says a zone must be chosen and sends nothing.
+		vm.model.timeZone = ''
+		await vm.save()
+		await tasksSettled()
+		expect(vm.error(vm.errors.timeZone)?.key).toBe('saleEditor.error.timeZone')
+		expect(select?.shadowRoot?.textContent).toContain(
+			'タイムゾーンを選んでください',
+		)
+		expect(d.setWindow).not.toHaveBeenCalled()
+		expect(d.create).not.toHaveBeenCalled()
+		await fixture.tearDown()
+	})
+
+	it('asks for a zone until one is chosen, then fills the end from the event start', async () => {
+		const { fixture, vm } = await mount()
+		vm.model.timeZone = ''
+		vm.model.saleEnd = { date: '', time: '' }
+		vm.submitted = true
+		expect(vm.errors.timeZone).toEqual({ key: 'saleEditor.error.timeZone' })
+		vm.zoneChosen('Asia/Taipei')
+		// 19:00 Japan time is 18:00 in Taipei.
+		expect(vm.model.saleEnd).toEqual({ date: '2026-11-20', time: '18:00' })
+		await fixture.tearDown()
+	})
+
+	it(`@spec ${EDITOR_SPEC} "Device in another time zone"`, async () => {
+		const { fixture, vm, d } = await mount({
+			create: vi.fn().mockResolvedValue(undefined),
+		})
+		vm.model = {
+			...validModel(),
+			saleStart: { date: '2026-10-10', time: '12:00' },
+		}
+		await vm.save()
+		// 12:00 on 10 October in the sale's zone (Asia/Tokyo), not the device's.
+		expect(d.create).toHaveBeenCalledWith(
+			expect.objectContaining({
+				saleStart: { year: 2026, month: 10, day: 10, hour: 12, minute: 0 },
+				timeZone: 'Asia/Tokyo',
+			}),
+			expect.any(AbortSignal),
+		)
+		await fixture.tearDown()
+	})
+
+	it(`@spec ${EDITOR_SPEC} "Time skipped by the clocks moving forward"`, async () => {
+		const { fixture, vm, d } = await mount({
+			list: vi.fn().mockResolvedValue([
+				authoredSeries({
+					series: { id: { value: 's-1' }, title: { value: 'XX Tour' } },
+					events: [eventInit({ timeZone: 'America/New_York' })],
+				}),
+			]),
+		})
+		vm.model = {
+			...validModel(),
+			timeZone: 'America/New_York',
+			saleStart: { date: '2027-03-14', time: '02:30' },
+			saleEnd: { date: '2027-03-14', time: '23:00' },
+		}
+		await vm.save()
+		expect(vm.error(vm.errors.saleStartTime)?.key).toBe(
+			'saleEditor.error.timeSkipped',
+		)
+		expect(d.create).not.toHaveBeenCalled()
+		await fixture.tearDown()
+	})
+
+	const refused = () =>
+		vi.fn().mockRejectedValue(new ConnectError('no', Code.InvalidArgument))
+
+	it('says so next to the zone when the server refuses it, and saves nothing', async () => {
+		const concertIn = (timeZone: string) => [
+			authoredSeries({
+				series: { id: { value: 's-1' }, title: { value: 'XX Tour' } },
+				events: [eventInit({ timeZone })],
+			}),
+		]
+		// The venue's zone changed after the editor read it.
+		const { fixture, vm, d } = await mount({
+			list: vi
+				.fn()
+				.mockResolvedValueOnce(concertIn('Asia/Tokyo'))
+				.mockResolvedValue(concertIn('Asia/Seoul')),
+			create: refused(),
+		})
+		vm.model = validModel()
+		await vm.save()
+		expect(vm.error(vm.errors.timeZone)?.key).toBe(
+			'saleEditor.error.zoneRefused',
+		)
+		expect(vm.model.timeZone).toBe('Asia/Seoul')
+		expect(d.showError).not.toHaveBeenCalled()
+		await fixture.tearDown()
+	})
+
+	it('still says why when the refused zone leaves several to choose from', async () => {
+		const concertIn = (...zones: string[]) => [
+			authoredSeries({
+				series: { id: { value: 's-1' }, title: { value: 'XX Tour' } },
+				events: zones.map((timeZone, i) =>
+					eventInit({ id: `e-${i + 1}`, timeZone }),
+				),
+			}),
+		]
+		const { fixture, vm } = await mount({
+			list: vi
+				.fn()
+				.mockResolvedValueOnce(concertIn('Asia/Tokyo'))
+				.mockResolvedValue(concertIn('Asia/Seoul')),
+			create: refused(),
+		})
+		vm.model = validModel()
+		await vm.save()
+		vm.model.timeZone = ''
+		expect(vm.errors.timeZone?.key).toBe('saleEditor.error.zoneRefused')
+		await fixture.tearDown()
+	})
+
+	it('offers a retry for another refusal while the zone is still offered', async () => {
+		const { fixture, vm, d } = await mount({ create: refused() })
+		vm.model = validModel()
+		await vm.save()
+		expect(vm.errors.timeZone).toBeUndefined()
+		expect(d.showError).toHaveBeenCalled()
+		await fixture.tearDown()
 	})
 })

@@ -3,11 +3,11 @@ import { Visibility } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/
 import { Code, ConnectError } from '@connectrpc/connect'
 import { ILogger, resolve } from 'aurelia'
 import type { FieldError } from '../i18n/field-error'
+import type { EventWhen } from '../i18n/format'
 import {
 	concertTitle,
-	eventDay,
 	eventId,
-	eventStart,
+	eventWhen,
 	eventsByDate,
 	findConcert,
 	isCancelled,
@@ -184,8 +184,7 @@ export class ConcertRoute {
 	/** The draft dates, in date order, that 公開する can publish together. */
 	public get draftDates(): Array<{
 		id: string
-		start?: Date
-		day?: Date
+		when?: EventWhen
 		venue: string
 	}> {
 		if (!this.concert) return []
@@ -193,8 +192,7 @@ export class ConcertRoute {
 			.filter(isDraft)
 			.map((e) => ({
 				id: eventId(e),
-				start: eventStart(e),
-				day: eventDay(e),
+				when: eventWhen(e),
 				venue: venueName(e),
 			}))
 	}
@@ -512,18 +510,17 @@ export class ConcertRoute {
 		const concert = this.concert
 		if (!concert) return
 		this.rows = eventsByDate(concert).map((event) => {
-			const start = eventStart(event)
-			const day = eventDay(event)
+			const when = eventWhen(event)
 			const badge = publishBadge(event.publishState)
 			const sale = this.sales.get(eventId(event))
 			return {
 				id: eventId(event),
 				href: paths.event(this.context.scope, this.seriesId, eventId(event)),
 				cells: {
-					date: start
-						? { key: 'format.dateTime', params: { at: start } }
-						: day
-							? { key: 'concert.dayNoStartTime', params: { day } }
+					date: when?.time
+						? { key: 'format.dateTime', params: { at: when } }
+						: when
+							? { key: 'concert.dayNoStartTime', params: { day: when.date } }
 							: '',
 					venue: venueName(event),
 					sale:

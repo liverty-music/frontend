@@ -16,7 +16,6 @@
 		"saving": "保存中…",
 		"edit": "編集",
 		"open": "開く",
-		"jst": "JST",
 		"required": "必須",
 		"moreActions": "その他の操作",
 		"cancelEdit": "キャンセル",
@@ -26,8 +25,8 @@
 	},
 	"format": {
 		"yen": "{{amount}}円",
-		"day": "{{day, jstDay}}",
-		"dateTime": "{{at, jstDateTime}}"
+		"day": "{{day, eventDay}}",
+		"dateTime": "{{at, eventWhen}}"
 	},
 	"field": {
 		"yenPrefix": "",
@@ -107,7 +106,7 @@
 		"create": "公演をつくる",
 		"loadFailed": "公演を読み込めませんでした。",
 		"empty": "まだ公演がありません。",
-		"moreDates": "{{day, jstDay}} 他 {{count}}公演",
+		"moreDates": "{{day, eventDay}} 他 {{count}}公演",
 		"moreVenues": "{{venue}} 他",
 		"column": {
 			"title": "公演名",
@@ -228,7 +227,7 @@
 		"datesPublished": "{{count, number}}件の公演日を公開しました",
 		"cancelled": "公演を中止しました",
 		"draftsRemoved": "下書きの公演を削除しました",
-		"dayNoStartTime": "{{day, jstDay}} · $t(event.noStartTime)",
+		"dayNoStartTime": "{{day, eventDay}} · $t(event.noStartTime)",
 		"summary": "概要"
 	},
 	"event": {
@@ -380,6 +379,7 @@
 			"date": "日付を入力してください",
 			"pastDate": "過去の日付は選べません",
 			"openAfterStart": "開場は開演より前にしてください",
+			"timeSkipped": "この時刻は、この日の会場では時計が進むため存在しません",
 			"perAccountLimit": "1アカウントの上限は1〜10枚の整数で入力してください",
 			"venueName": "会場名を入力してください",
 			"venueArea": "地域を選択してください",
@@ -463,7 +463,7 @@
 			"nameLength": "販売名は{{max}}文字以内にしてください",
 			"start": "販売開始の日時を入力してください",
 			"end": "販売終了の日時を入力してください",
-			"endAfterEvent": "販売終了は開演時刻（{{eventStart}} JST）までにしてください",
+			"endAfterEvent": "販売終了は開演時刻（{{eventStart}}）までにしてください",
 			"endBeforeStart": "販売終了は販売開始より後にしてください",
 			"overlap": "販売「{{name}}」（{{start}} 〜 {{end}}）と期間が重なっています"
 		},
@@ -558,7 +558,16 @@
 		"toStocks": "席種と枚数へ",
 		"noStockBody": "販売を始めるには、公演日の販売タブで、売る席種と枚数を先に追加してください。",
 		"sellsEveryStock": "この販売は、公演日のすべての席種を売ります。1アカウント{{limit, number}}枚まで（この公演日のすべての販売を合わせて）。",
-		"drawsEveryStock": "この抽選は、公演日のすべての席種を抽選します。1アカウント{{limit, number}}枚まで（この公演日のすべての販売を合わせて）。"
+		"drawsEveryStock": "この抽選は、公演日のすべての席種を抽選します。1アカウント{{limit, number}}枚まで（この公演日のすべての販売を合わせて）。",
+		"timeZone": "タイムゾーン",
+		"timeZoneHint": "販売期間は、このタイムゾーンの日時で入力します。",
+		"zoneNone": "選択してください",
+		"zoneOption": "{{name}}",
+		"error": {
+			"timeZone": "タイムゾーンを選んでください",
+			"timeSkipped": "この日時は、このタイムゾーンでは時計が進むため存在しません",
+			"zoneRefused": "会場のタイムゾーンが変わったため、このタイムゾーンは選べません。タイムゾーンと日時を確かめて、もう一度保存してください"
+		}
 	},
 	"venueConfirm": {
 		"loading": "会場を確認しています…",

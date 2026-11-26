@@ -56,6 +56,7 @@
               t="concertSheet.openStart"
               t-params.bind="{ open: openTimeOrFallback, start: event.startTime }"
             ></p>
+            <p if.bind="zoneText" class="[ detail-secondary ] [ md-typescale-body-medium ]" data-testid="event-zone">${zoneText}</p>
             <a
               href.bind="calendarUrl"
               target="_blank"

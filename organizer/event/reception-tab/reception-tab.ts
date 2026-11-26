@@ -3,7 +3,13 @@ import { timestampDate } from '@bufbuild/protobuf/wkt'
 import { ILogger, resolve } from 'aurelia'
 import { IAppConfig } from '../../../shared/config/app-config'
 import { IConsoleLanguage } from '../../i18n/console-language'
-import { eventStart, isPublished, paths } from '../../model/concert-model'
+import type { MomentAt } from '../../i18n/format'
+import {
+	eventZone,
+	hasStartTime,
+	isPublished,
+	paths,
+} from '../../model/concert-model'
 import { IScannerClient, type Scanner } from '../../services/scanner-client'
 import { IConsoleContext } from '../../shell/console-context'
 import { IPageProgress } from '../../shell/page-progress'
@@ -12,7 +18,10 @@ import { ISnackbar } from '../../ui/console-snackbar/snackbar'
 import type { MenuItem } from '../../ui/overflow-menu/overflow-menu'
 import type { StatusTone } from '../../ui/status-badge/status-badge'
 import { IEventPage } from '../event-page'
-import { admissionWindowOf } from './admission-window'
+import {
+	type AdmissionWindowTimes,
+	admissionWindowOf,
+} from './admission-window'
 
 export type ReceptionPrerequisite = 'notPublished' | 'noStartTime'
 
@@ -25,7 +34,8 @@ export interface ScannerRow {
 	statusKey: string
 	/** The link, shown only while the Scanner is Unused. */
 	url: string
-	boundSince?: Date
+	/** When staff first opened the link, read in the event's Venue zone. */
+	boundSince?: MomentAt
 	canRevoke: boolean
 	/** Set on the row just issued, for its entering motion. */
 	isNew: boolean
@@ -53,6 +63,7 @@ export function scannerRow(
 	scanner: Scanner,
 	receptionBaseUrl: string,
 	isNew = false,
+	zone?: string,
 ): ScannerRow {
 	const token = scanner.linkToken?.value ?? ''
 	const status = STATUS[scanner.status] ?? STATUS[ScannerStatus.REVOKED]
@@ -66,7 +77,9 @@ export function scannerRow(
 			scanner.status === ScannerStatus.UNUSED && token
 				? scannerUrl(receptionBaseUrl, token)
 				: '',
-		boundSince: scanner.bindTime ? timestampDate(scanner.bindTime) : undefined,
+		boundSince: scanner.bindTime
+			? { at: timestampDate(scanner.bindTime), zone }
+			: undefined,
 		canRevoke: scanner.status !== ScannerStatus.REVOKED,
 		isNew,
 	}
@@ -117,11 +130,16 @@ export class ReceptionTab {
 	public get prerequisite(): ReceptionPrerequisite | null {
 		const event = this.page.event
 		if (!event || !isPublished(event)) return 'notPublished'
-		if (!eventStart(event)) return 'noStartTime'
+		if (!hasStartTime(event)) return 'noStartTime'
 		return null
 	}
 
-	public get admission(): { open: Date; close: Date } | null {
+	/** The event's Venue zone, in which a Scanner's first-open time is read. */
+	private get zone(): string | undefined {
+		return this.page.event ? eventZone(this.page.event) : undefined
+	}
+
+	public get admission(): AdmissionWindowTimes | null {
 		return this.page.event ? admissionWindowOf(this.page.event) : null
 	}
 
@@ -178,7 +196,7 @@ export class ReceptionTab {
 				this.abort.signal,
 			)
 			this.rows = scanners
-				.map((s) => scannerRow(s, this.receptionBaseUrl))
+				.map((s) => scannerRow(s, this.receptionBaseUrl, false, this.zone))
 				.sort((a, b) => a.number - b.number)
 			this.state = 'ready'
 		} catch (err) {
@@ -251,7 +269,7 @@ export class ReceptionTab {
 
 	private upsert(scanner: Scanner | undefined, isNew = false): void {
 		if (!scanner) return
-		const row = scannerRow(scanner, this.receptionBaseUrl, isNew)
+		const row = scannerRow(scanner, this.receptionBaseUrl, isNew, this.zone)
 		const i = this.rows.findIndex((r) => r.id === row.id)
 		if (i >= 0) this.rows.splice(i, 1, row)
 		else {

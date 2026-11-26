@@ -10,13 +10,13 @@ import {
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_stock_pb.js'
 import { ListByEventResponseSchema } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/ticket_sale/v1/ticket_sale_service_pb.js'
 import { create } from '@bufbuild/protobuf'
-import { timestampFromDate } from '@bufbuild/protobuf/wkt'
 import { describe, expect, it } from 'vitest'
 import {
 	eventTicketSalesFrom,
 	ticketSaleFrom,
 	ticketStockFrom,
 } from '../../../../src/adapter/rpc/mapper/ticket-sale-mapper'
+import { dateTimeInit } from '../../../../shared/lib/zoned-time/proto'
 
 const seatType = create(SeatTypeSchema, {
 	id: { value: 'seat-s' },
@@ -81,8 +81,15 @@ describe('ticketSaleFrom', () => {
 				id: { value: 'sale-1' },
 				name: { value: '一次' },
 				method: TicketSaleMethod.LOTTERY,
-				saleStartTime: timestampFromDate(start),
-				saleEndTime: timestampFromDate(end),
+				// 09:00 in Japan is 00:00 UTC.
+				saleStartTime: dateTimeInit(
+					{ year: 2026, month: 11, day: 1, hour: 9, minute: 0 },
+					'Asia/Tokyo',
+				),
+				saleEndTime: dateTimeInit(
+					{ year: 2026, month: 11, day: 5, hour: 9, minute: 0 },
+					'Asia/Tokyo',
+				),
 				verificationRequirement: VerificationRequirement.JPKI_ONLY,
 				eventIds: [{ value: 'event-1' }],
 			}),
@@ -93,6 +100,7 @@ describe('ticketSaleFrom', () => {
 			method: 'lottery',
 			saleStartTime: start,
 			saleEndTime: end,
+			timeZone: 'Asia/Tokyo',
 			verificationRequirement: 'jpkiOnly',
 			eventIds: ['event-1'],
 		})

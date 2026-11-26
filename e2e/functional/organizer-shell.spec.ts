@@ -333,7 +333,7 @@ test.describe('breadcrumb', () => {
 		).toBeVisible()
 
 		await page
-			.getByRole('link', { name: /11月3日\(火\) 18:00 JST/ })
+			.getByRole('link', { name: /11月3日\(火\) 18:00 日本時間/ })
 			.first()
 			.click()
 		await expect(page).toHaveURL(/\/events\/e-1103\/ticket-sales$/)
@@ -402,7 +402,7 @@ test.describe('addresses name the Organizer and the Artist', () => {
 		await nav(page).getByRole('link', { name: '公演' }).click()
 		await page.getByRole('link', { name: 'XX Tour 2026' }).first().click()
 		await page
-			.getByRole('link', { name: /11月3日\(火\) 18:00 JST/ })
+			.getByRole('link', { name: /11月3日\(火\) 18:00 日本時間/ })
 			.first()
 			.click()
 		await expect(page).toHaveURL(/\/ticket-sales$/)

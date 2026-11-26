@@ -10,8 +10,11 @@ import {
 	type ConcertPageConcert,
 	eventFromConcert,
 	formatEventDate,
-	formatSaleStart,
 } from '../concert/concert-page'
+import {
+	displayLanguage,
+	formatInstantAtVenue,
+} from '../../lib/time-format/time-format'
 
 /**
  * - `loading`: the entries are read.
@@ -123,7 +126,15 @@ export class ResaleEntriesRoute implements IRouteViewModel {
 
 	public nextDrawLabel(row: ResaleEntryRow): string {
 		const next = row.entry.nextDrawTime
-		return next ? formatSaleStart(next, this.lang) : ''
+		// An entry whose concert could not be read still says when it is drawn,
+		// in the fan's own zone.
+		return next
+			? formatInstantAtVenue(
+					next,
+					row.event?.timeZone,
+					displayLanguage(this.lang),
+				)
+			: ''
 	}
 
 	/** True when a lapsed or withdrawn entry may be made again. */

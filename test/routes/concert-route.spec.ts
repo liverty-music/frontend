@@ -5,7 +5,6 @@ import {
 	SeriesSchema,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
 import { create } from '@bufbuild/protobuf'
-import { timestampFromDate } from '@bufbuild/protobuf/wkt'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -27,6 +26,10 @@ import {
 	Events,
 	IAnalyticsService,
 } from '../../src/lib/analytics/analytics-service'
+import {
+	buildIcs,
+	type ConcertPageConcert,
+} from '../../src/routes/concert/concert-page'
 import { ConcertRoute } from '../../src/routes/concert/concert-route'
 import { IAuthService } from '../../src/services/auth-service'
 import { IFollowStore } from '../../src/services/follow-store'
@@ -39,6 +42,8 @@ import { IUserStore } from '../../src/services/user-store'
 import { createTestContainer } from '../helpers/create-container'
 import { createMockAnalytics } from '../helpers/mock-analytics'
 import { createMockAuth } from '../helpers/mock-auth'
+import { tokyoTimeOfDay } from '../helpers/tokyo-time'
+import { useViewerZone } from '../helpers/viewer-zone'
 
 const EVENT_ID = '019a0000-0000-7000-8000-0000000000e1'
 const SERIES_ID = '019a0000-0000-7000-8000-0000000000a1'
@@ -60,6 +65,14 @@ interface ConcertOpts {
 	/** The Series' derived publish state; defaults to PUBLISHED. */
 	seriesState?: PublishState
 	title?: string
+	/** The Venue's zone; Asia/Tokyo unless given. */
+	zone?: string
+	/** The date and wall-clock times at the Venue, in place of `day`, `open` and `start`. */
+	at?: {
+		date: { year: number; month: number; day: number }
+		open?: { hours: number; minutes: number }
+		start?: { hours: number; minutes: number }
+	}
 }
 
 /**
@@ -71,11 +84,23 @@ function protoConcert(o: ConcertOpts = {}): ResolvedConcert {
 	const concert = create(ConcertSchema, {
 		event: {
 			id: { value: o.id ?? EVENT_ID },
-			localDate: { value: { year: 2026, month: 11, day } },
-			openTime: o.open ? { value: timestampFromDate(o.open) } : undefined,
-			startTime: o.start ? { value: timestampFromDate(o.start) } : undefined,
+			localDate: { value: o.at?.date ?? { year: 2026, month: 11, day } },
+			openTime: o.at?.open
+				? { value: o.at.open }
+				: o.open
+					? { value: tokyoTimeOfDay(o.open) }
+					: undefined,
+			startTime: o.at?.start
+				? { value: o.at.start }
+				: o.start
+					? { value: tokyoTimeOfDay(o.start) }
+					: undefined,
 			listedVenueName: { value: 'Shibuya WWW' },
-			venue: { name: { value: 'WWW' }, adminArea: { value: 'JP-13' } },
+			venue: {
+				name: { value: 'WWW' },
+				adminArea: { value: 'JP-13' },
+				timeZone: { value: o.zone ?? 'Asia/Tokyo' },
+			},
 			seriesId: { value: SERIES_ID },
 			publishState: o.state ?? PublishState.PUBLISHED,
 		},
@@ -128,6 +153,8 @@ function makePurchasedStore(counts = new Map<string, number>()) {
 		load: vi.fn().mockResolvedValue(counts),
 	}
 }
+
+useViewerZone('Asia/Tokyo')
 
 describe('ConcertRoute', () => {
 	let concertClient: {
@@ -250,14 +277,68 @@ describe('ConcertRoute', () => {
 			expect(sut.startTimeLabel).toBe('')
 		})
 
-		it('writes times in Japan time', async () => {
+		// @spec components/infrastructure/fan/web/route/concert "Event in Japan seen from Japan"
+		it('shows OPEN and START of a show in Japan with no zone', async () => {
 			concertClient.get.mockResolvedValue(
-				protoConcert({ open: jst(20, 18), start: jst(20, 19) }),
+				protoConcert({ open: jst(20, 17), start: jst(20, 18) }),
 			)
 			const sut = build()
 			await open(sut)
-			expect(sut.openTimeLabel).toBe('18:00')
-			expect(sut.startTimeLabel).toBe('19:00')
+
+			expect(sut.openTimeLabel).toBe('17:00')
+			expect(sut.startTimeLabel).toBe('18:00')
+			expect(sut.zoneLabel).toBe('')
+		})
+
+		const abroad = () =>
+			protoConcert({
+				zone: 'Europe/London',
+				at: {
+					date: { year: 2027, month: 2, day: 20 },
+					open: { hours: 18, minutes: 30 },
+					start: { hours: 19, minutes: 30 },
+				},
+			})
+
+		// @spec components/infrastructure/fan/web/route/concert "Event abroad"
+		it("shows a show abroad at the venue's time with its zone and the fan's times", async () => {
+			concertClient.get.mockResolvedValue(abroad())
+			const sut = build()
+			await open(sut)
+
+			expect(sut.dateLabel).toContain('2月20日(土)')
+			expect(sut.openTimeLabel).toBe('18:30')
+			expect(sut.startTimeLabel).toBe('19:30')
+			expect(sut.zoneLabel).toBe(
+				'ロンドン時間（日本時間 2月21日(日) 03:30 / 04:30）',
+			)
+		})
+
+		// @spec components/infrastructure/fan/web/route/concert "Add an event abroad to a calendar"
+		it("adds a show abroad to the calendar at 19:30 in the venue's zone", async () => {
+			concertClient.get.mockResolvedValue(abroad())
+			const sut = build()
+			await open(sut)
+
+			const ics = buildIcs(
+				sut.event as ConcertPageConcert,
+				'https://liverty-music.app/concerts/e1',
+			)
+
+			expect(ics).toContain('DTSTART;TZID=Europe/London:20270220T193000')
+			expect(ics).toContain('DTEND;TZID=Europe/London:20270220T213000')
+			expect(ics).toContain('BEGIN:VTIMEZONE\r\nTZID:Europe/London')
+			expect(ics).toContain('TZOFFSETTO:+0000')
+		})
+
+		it('keeps a show abroad on while it is still its date at the venue', async () => {
+			// 08:00 on 21 February in Japan is 23:00 on the 20th in London.
+			vi.setSystemTime(new Date('2027-02-20T23:00:00Z'))
+			concertClient.get.mockResolvedValue(abroad())
+			const sut = build()
+			await open(sut)
+
+			expect(sut.isEnded).toBe(false)
 		})
 
 		it('keeps organizer text as entered and localizes labels in English', async () => {
@@ -436,6 +517,7 @@ describe('ConcertRoute', () => {
 				method: 'firstCome',
 				saleStartTime: jst(1, 10),
 				saleEndTime: jst(20, 18),
+				timeZone: 'Asia/Tokyo',
 				verificationRequirement: 'none',
 				eventIds: [EVENT_ID],
 				...o,
@@ -558,7 +640,25 @@ describe('ConcertRoute', () => {
 			})
 		})
 
-		it('shows the opening date and time in Japan time before the sale opens', async () => {
+		// @spec components/infrastructure/fan/web/route/concert "Sale abroad seen from Japan"
+		it("shows a sale abroad in the fan's zone and names it", async () => {
+			ticketSaleClient.listByEvent.mockResolvedValue(
+				tickets([
+					sale({
+						// 12:00 on 1 February 2027 in Taipei.
+						saleStartTime: new Date('2027-02-01T04:00:00Z'),
+						saleEndTime: new Date('2027-02-10T04:00:00Z'),
+						timeZone: 'Asia/Taipei',
+					}),
+				]),
+			)
+			const sut = build()
+			await open(sut)
+
+			expect(sut.saleStartLabel).toBe('2月1日(月) 13:00 日本時間')
+		})
+
+		it("shows the opening date and time in the fan's zone before the sale opens", async () => {
 			// @spec components/infrastructure/fan/web/route/concert "Not yet on sale"
 			ticketSaleClient.listByEvent.mockResolvedValue(
 				tickets([sale({ saleStartTime: jst(1, 13) })]),
@@ -568,7 +668,7 @@ describe('ConcertRoute', () => {
 
 			expect(sut.isSaleUpcoming).toBe(true)
 			expect(sut.isSaleOpen).toBe(false)
-			expect(sut.saleStartLabel).toBe('2026年11月1日(日) 13:00')
+			expect(sut.saleStartLabel).toBe('11月1日(日) 13:00')
 			expect(row(sut, 'S席').price).toBe('3,000')
 		})
 
@@ -647,7 +747,7 @@ describe('ConcertRoute', () => {
 
 			expect(sut.shownSale?.name).toBe('一般発売')
 			expect(sut.isSaleUpcoming).toBe(true)
-			expect(sut.saleStartLabel).toBe('2026年11月20日(金) 10:00')
+			expect(sut.saleStartLabel).toBe('11月20日(金) 10:00')
 		})
 
 		it('shows an open lottery with its window, seat type, price and the action to enter', async () => {
@@ -660,8 +760,8 @@ describe('ConcertRoute', () => {
 			await open(sut)
 
 			expect(sut.shownSale?.name).toBe('ファンクラブ先行')
-			expect(sut.saleStartLabel).toBe('2026年11月1日(日) 10:00')
-			expect(sut.saleEndLabel).toBe('2026年11月10日(火) 23:00')
+			expect(sut.saleStartLabel).toBe('11月1日(日) 10:00')
+			expect(sut.saleEndLabel).toBe('11月10日(火) 23:00')
 			expect(sut.isSaleOpen).toBe(true)
 			const s = row(sut, 'S席')
 			expect(s.price).toBe('8,000')
@@ -928,8 +1028,7 @@ describe('ConcertRoute', () => {
 				{ event_id: EVENT_ID, surface: 'concert_page' },
 			)
 			const ics = await blobs[0].text()
-			// 19:00 in Japan is 10:00 UTC.
-			expect(ics).toContain('DTSTART:20261120T100000Z')
+			expect(ics).toContain('DTSTART;TZID=Asia/Tokyo:20261120T190000')
 			expect(ics).toContain('SUMMARY:ONE MAN LIVE')
 			expect(ics).toContain(
 				`URL:${window.location.origin}/concerts/${EVENT_ID}`,

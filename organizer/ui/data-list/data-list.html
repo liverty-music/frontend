@@ -15,8 +15,8 @@
     <status-badge case="status" tone.bind="value?.tone" label.bind="value?.labelKey & t"></status-badge>
     <data case="count" value.bind="value">${value | count}</data>
     <data case="yen" value.bind="value">${value | yen}</data>
-    <time case="datetime" datetime.bind="value ? value.toISOString() : null">${value | jstDateTime}</time>
-    <time case="date" datetime.bind="value ? value.toISOString() : null">${value | jstDate}</time>
+    <span case="datetime">${value | eventWhen}</span>
+    <span case="date">${value | eventDate}</span>
     <cell-text default-case value.bind="value"></cell-text>
   </template>
 </template>

@@ -5,7 +5,6 @@ import {
 	PublishState,
 	Visibility,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
-import { timestampFromDate } from '@bufbuild/protobuf/wkt'
 import { CustomElement, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { EventRoute } from '../../../organizer/event/event-route'
@@ -25,6 +24,7 @@ import {
 	deepText,
 	installDialogAndPopover,
 } from '../console-dom'
+import { timeOfDayAt, venueIn } from '../zoned-fixtures'
 
 /**
  * The event page's header as the member sees it: the real route template and
@@ -54,8 +54,8 @@ function tour(
 				id: { value: 'e-1103' },
 				publishState,
 				localDate: { value: { year: 2026, month: 11, day: 3 } },
-				startTime: { value: timestampFromDate(START) },
-				venue: { name: { value: 'Zepp Haneda' } },
+				startTime: { value: timeOfDayAt(START) },
+				venue: venueIn('Zepp Haneda'),
 			},
 		],
 		performers: [{ id: { value: 'a-1' } }],
@@ -136,13 +136,40 @@ describe('event page header', () => {
 		window.history.pushState({}, '', '/')
 	})
 
+	it(`@spec ${SPEC} "Event abroad"`, async () => {
+		const london = authoredSeries({
+			series: {
+				id: { value: 's-tour' },
+				title: { value: 'XX Tour 2027' },
+				visibility: Visibility.PUBLIC,
+			},
+			events: [
+				{
+					id: { value: 'e-1103' },
+					publishState: PublishState.PUBLISHED,
+					localDate: { value: { year: 2027, month: 2, day: 20 } },
+					startTime: { value: { hours: 19, minutes: 30 } },
+					venue: venueIn('O2 Arena', 'Europe/London'),
+				},
+			],
+			performers: [{ id: { value: 'a-1' } }],
+		})
+		const { fixture, host, header } = await mount(london)
+
+		expect(
+			host.querySelector('h1')?.textContent?.replace(/\s+/g, ' ').trim(),
+		).toBe('2月20日(土) 19:30 ロンドン時間（日本時間 2月21日(日) 04:30）')
+		expect(header().querySelector('.venue')?.textContent).toBe('O2 Arena')
+		await fixture.tearDown()
+	})
+
 	it(`@spec ${SPEC} "Draft event"`, async () => {
 		const { fixture, host, header, actions } = await mount(
 			tour(PublishState.DRAFT),
 		)
 
 		expect(host.querySelector('h1')?.textContent?.trim()).toBe(
-			'11月3日(火) 18:00 JST',
+			'11月3日(火) 18:00 日本時間',
 		)
 		expect(header().textContent).toContain('XX Tour 2026')
 		expect(header().querySelector('.venue')?.textContent).toBe('Zepp Haneda')

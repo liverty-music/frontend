@@ -1,10 +1,27 @@
 import { PublishState } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
-import { timestampDate } from '@bufbuild/protobuf/wkt'
 import type { ResolvedConcert } from '../../adapter/rpc/client/concert-client'
+import { resaleDeadline } from '../../entities/resale-listing'
 import { displayName } from '../../entities/user'
-
-/** Japan time, in which every event date and time is held and compared. */
-export const EVENT_TIME_ZONE = 'Asia/Tokyo'
+import {
+	type CivilDate,
+	displayLanguage,
+	eventInstant,
+	formatEventDay,
+	formatInstantAtVenue,
+	formatEventTimes,
+	type EventTimesText,
+	formatSaleMoment,
+	formatTabDay,
+	todayAtVenue,
+} from '../../lib/time-format/time-format'
+import {
+	type WallTime,
+	addWallMinutes,
+	dateKey as civilDateKey,
+	offsetMsAt,
+	timeKey,
+	wallToInstant,
+} from '../../../shared/lib/zoned-time/zoned-time'
 
 /** A performer of the event, with what a follow control needs. */
 export interface ConcertPerformer {
@@ -29,8 +46,13 @@ export interface ConcertPageConcert {
 	readonly dateKey: string
 	/** The calendar date at local midnight, for date formatting only. */
 	readonly date: Date
-	readonly openTime?: Date
-	readonly startTime?: Date
+	/** The calendar date at the Venue. */
+	readonly localDate: CivilDate
+	/** The wall-clock times at the Venue, read in `timeZone`. */
+	readonly openTime?: WallTime
+	readonly startTime?: WallTime
+	/** The Venue's IANA time zone; absent for a Venue stored before zones were recorded. */
+	readonly timeZone?: string
 	readonly venueName: string
 	/** ISO 3166-2 code of the venue's prefecture, or empty. */
 	readonly adminArea: string
@@ -59,12 +81,10 @@ export function eventFromConcert(
 		}),
 		dateKey: dateKeyOf(d.year, d.month, d.day),
 		date: new Date(d.year, d.month - 1, d.day),
-		openTime: proto.openTime?.value
-			? timestampDate(proto.openTime.value)
-			: undefined,
-		startTime: proto.startTime?.value
-			? timestampDate(proto.startTime.value)
-			: undefined,
+		localDate: { year: d.year, month: d.month, day: d.day },
+		openTime: wallTimeOf(proto.openTime?.value),
+		startTime: wallTimeOf(proto.startTime?.value),
+		timeZone: proto.venue?.timeZone?.value || undefined,
 		// The organizer typed the listed name; show it as entered.
 		venueName: proto.listedVenueName?.value || proto.venue?.name?.value || '',
 		adminArea: proto.venue?.adminArea?.value ?? '',
@@ -74,27 +94,27 @@ export function eventFromConcert(
 	}
 }
 
+/** The time of day of a `TimeOfDay`, to the minute; undefined when absent. */
+function wallTimeOf(
+	time: { hours: number; minutes: number } | undefined,
+): WallTime | undefined {
+	return time ? { hour: time.hours, minute: time.minutes } : undefined
+}
+
 function dateKeyOf(year: number, month: number, day: number): string {
 	return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
 }
 
-/** Today's calendar date in Japan time, as `YYYY-MM-DD`. */
-export function todayInJapan(now: Date = new Date()): string {
-	// en-CA formats a date as YYYY-MM-DD.
-	return new Intl.DateTimeFormat('en-CA', {
-		timeZone: EVENT_TIME_ZONE,
-		year: 'numeric',
-		month: '2-digit',
-		day: '2-digit',
-	}).format(now)
-}
-
-/** True when the event's date is before today's date in Japan time. */
+/**
+ * True when the event's date is before today's date at its Venue, so a show
+ * in London is not ended while it is still that day there. A Venue whose zone
+ * is unknown counts as ended only when the date has passed everywhere.
+ */
 export function isEnded(
 	event: ConcertPageConcert,
 	now: Date = new Date(),
 ): boolean {
-	return event.dateKey < todayInJapan(now)
+	return event.dateKey < todayAtVenue(event.timeZone, now)
 }
 
 /** Long date with weekday in the display language, e.g. "2026年11月20日(金)". */
@@ -102,31 +122,62 @@ export function formatEventDate(
 	event: ConcertPageConcert,
 	lang: string,
 ): string {
-	return new Intl.DateTimeFormat(lang, {
-		year: 'numeric',
-		month: 'long',
-		day: 'numeric',
-		weekday: 'short',
-	}).format(event.date)
+	return formatEventDay(event.localDate, displayLanguage(lang))
 }
 
 /** Short date with weekday for a date tab, e.g. "11/20(金)". */
 export function formatTabDate(event: ConcertPageConcert, lang: string): string {
-	return new Intl.DateTimeFormat(lang, {
-		month: 'numeric',
-		day: 'numeric',
-		weekday: 'short',
-	}).format(event.date)
+	return formatTabDay(event.localDate, displayLanguage(lang))
 }
 
-/** A time of day in Japan time, 24-hour, e.g. "18:30". */
-export function formatEventTime(time: Date): string {
-	return new Intl.DateTimeFormat('en-GB', {
-		timeZone: EVENT_TIME_ZONE,
-		hour: '2-digit',
-		minute: '2-digit',
-		hourCycle: 'h23',
-	}).format(time)
+/** The instant the event starts (else opens), or undefined without a time or zone. */
+export function eventStartInstant(event: ConcertPageConcert): Date | undefined {
+	const clock = clockOf(event)
+	return eventInstant(clock, event.startTime ?? event.openTime)
+}
+
+/**
+ * The event's open and start times at its Venue, and the zone text that
+ * follows them (the Venue zone's name and the viewer's times when the viewer's
+ * zone is at another offset).
+ */
+export function eventTimesText(
+	event: ConcertPageConcert,
+	lang: string,
+): EventTimesText {
+	return formatEventTimes(clockOf(event), displayLanguage(lang))
+}
+
+/**
+ * The resale deadline of an event (its last draw) at its Venue's local time,
+ * or '' without a start time or a zone.
+ */
+export function resaleDeadlineLabel(
+	event: ConcertPageConcert,
+	lang: string,
+): string {
+	const deadline = resaleDeadlineOf(event)
+	return deadline
+		? formatInstantAtVenue(deadline, event.timeZone, displayLanguage(lang))
+		: ''
+}
+
+/** The instant listing and applying for resale close, or undefined without a start time and zone. */
+export function resaleDeadlineOf(event: ConcertPageConcert): Date | undefined {
+	const start = eventInstant(clockOf(event), event.startTime)
+	return start && event.timeZone
+		? resaleDeadline(start, event.timeZone)
+		: undefined
+}
+
+/** The event's wall-clock times as the formatting module reads them. */
+export function clockOf(event: ConcertPageConcert) {
+	return {
+		date: event.localDate,
+		open: event.openTime,
+		start: event.startTime,
+		timeZone: event.timeZone,
+	}
 }
 
 /** The venue's prefecture as a localized name, never the raw code. */
@@ -140,18 +191,15 @@ export function prefectureLabel(
 }
 
 /**
- * A sale's start in Japan time with weekday, date and 24-hour time, e.g.
- * "2026年11月1日(日) 10:00".
+ * A moment of a sale in the viewer's zone, named when it is not the sale's
+ * zone, e.g. "2026年11月1日(日) 10:00" for a fan in the sale's zone.
  */
-export function formatSaleStart(start: Date, lang: string): string {
-	const date = new Intl.DateTimeFormat(lang, {
-		timeZone: EVENT_TIME_ZONE,
-		year: 'numeric',
-		month: 'long',
-		day: 'numeric',
-		weekday: 'short',
-	}).format(start)
-	return `${date} ${formatEventTime(start)}`
+export function formatSaleStart(
+	instant: Date,
+	saleZone: string | undefined,
+	lang: string,
+): string {
+	return formatSaleMoment(instant, saleZone, displayLanguage(lang))
 }
 
 /** Google Maps search URL for the event's venue. */
@@ -180,19 +228,31 @@ export function canonicalEventUrl(origin: string, eventId: string): string {
 }
 
 /** Default length of a calendar entry when the event has no end time. */
-const CALENDAR_DURATION_MS = 2 * 60 * 60 * 1000
+const CALENDAR_DURATION_MINUTES = 2 * 60
+
+/** `20270220T193000`, the wall clock of an iCalendar local date-time. */
+function icsLocal(wall: {
+	year: number
+	month: number
+	day: number
+	hour: number
+	minute: number
+}): string {
+	return `${civilDateKey(wall).replace(/-/g, '')}T${timeKey(wall).replace(':', '')}00`
+}
 
 /**
- * An iCalendar (.ics) document for the event. Times are written as UTC
- * instants, which keep the Japan-time start exact in every calendar app. An
- * event without any announced time becomes an all-day entry on its date.
+ * An iCalendar (.ics) document for the event. A timed event starts at its
+ * wall-clock time in its Venue's time zone (`TZID`), which the fan's calendar
+ * converts to the fan's own zone; the entry is not turned into an instant here.
+ * An event without any announced time becomes an all-day entry on its date.
  */
 export function buildIcs(
 	event: ConcertPageConcert,
 	url: string,
 	now: Date = new Date(),
 ): string {
-	const start = event.startTime ?? event.openTime
+	const time = event.startTime ?? event.openTime
 	const lines = [
 		'BEGIN:VCALENDAR',
 		'VERSION:2.0',
@@ -202,10 +262,24 @@ export function buildIcs(
 		`UID:${event.id}@liverty-music.app`,
 		`DTSTAMP:${icsUtc(now)}`,
 	]
-	if (start) {
+	if (time) {
+		const start = { ...event.localDate, ...time }
+		const end = addWallMinutes(start, CALENDAR_DURATION_MINUTES)
+		// Without a zone the entry is a floating local time.
+		const tzid = event.timeZone ? `;TZID=${event.timeZone}` : ''
+		if (event.timeZone) {
+			const instant = wallToInstant(start, event.timeZone)
+			if (instant) {
+				lines.splice(
+					lines.indexOf('BEGIN:VEVENT'),
+					0,
+					...icsZone(event.timeZone, offsetMsAt(instant, event.timeZone)),
+				)
+			}
+		}
 		lines.push(
-			`DTSTART:${icsUtc(start)}`,
-			`DTEND:${icsUtc(new Date(start.getTime() + CALENDAR_DURATION_MS))}`,
+			`DTSTART${tzid}:${icsLocal(start)}`,
+			`DTEND${tzid}:${icsLocal(end)}`,
 		)
 	} else {
 		const day = event.dateKey.replace(/-/g, '')
@@ -224,6 +298,27 @@ export function buildIcs(
 		'END:VCALENDAR',
 	)
 	return `${lines.join('\r\n')}\r\n`
+}
+
+/**
+ * The VTIMEZONE a `TZID` reference needs (RFC 5545 §3.6.5), holding the one
+ * offset in force at the event's start. A calendar that knows the IANA name
+ * uses its own rules for it.
+ */
+function icsZone(zone: string, offsetMs: number): string[] {
+	const minutes = Math.round(offsetMs / 60_000)
+	const abs = Math.abs(minutes)
+	const offset = `${minutes < 0 ? '-' : '+'}${String(Math.floor(abs / 60)).padStart(2, '0')}${String(abs % 60).padStart(2, '0')}`
+	return [
+		'BEGIN:VTIMEZONE',
+		`TZID:${zone}`,
+		'BEGIN:STANDARD',
+		'DTSTART:19700101T000000',
+		`TZOFFSETFROM:${offset}`,
+		`TZOFFSETTO:${offset}`,
+		'END:STANDARD',
+		'END:VTIMEZONE',
+	]
 }
 
 function icsUtc(d: Date): string {

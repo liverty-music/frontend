@@ -42,7 +42,7 @@ import {
 	dateNavMode,
 	eventFromConcert,
 	formatEventDate,
-	formatEventTime,
+	eventTimesText,
 	formatSaleStart,
 	formatTabDate,
 	googleMapsUrl,
@@ -332,11 +332,16 @@ export class ConcertRoute implements IRouteViewModel {
 	}
 
 	public get openTimeLabel(): string {
-		return this.event?.openTime ? formatEventTime(this.event.openTime) : ''
+		return this.event ? eventTimesText(this.event, this.lang).open : ''
 	}
 
 	public get startTimeLabel(): string {
-		return this.event?.startTime ? formatEventTime(this.event.startTime) : ''
+		return this.event ? eventTimesText(this.event, this.lang).start : ''
+	}
+
+	/** The Venue zone's name and the viewer's times, when the offsets differ. */
+	public get zoneLabel(): string {
+		return this.event ? eventTimesText(this.event, this.lang).zone : ''
 	}
 
 	public get prefecture(): string {
@@ -422,16 +427,20 @@ export class ConcertRoute implements IRouteViewModel {
 		}))
 	}
 
-	/** The sale start in Japan time, e.g. "2026年11月1日(日) 10:00". */
+	/** The sale start in the viewer's zone, e.g. "11月1日(日) 10:00". */
 	public get saleStartLabel(): string {
 		const sale = this.shownSale
-		return sale ? formatSaleStart(sale.saleStartTime, this.lang) : ''
+		return sale
+			? formatSaleStart(sale.saleStartTime, sale.timeZone, this.lang)
+			: ''
 	}
 
-	/** The sale end in Japan time. */
+	/** The sale end in the viewer's zone. */
 	public get saleEndLabel(): string {
 		const sale = this.shownSale
-		return sale ? formatSaleStart(sale.saleEndTime, this.lang) : ''
+		return sale
+			? formatSaleStart(sale.saleEndTime, sale.timeZone, this.lang)
+			: ''
 	}
 
 	public get dateNav(): DateNavMode {

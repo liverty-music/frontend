@@ -313,7 +313,7 @@ export class NewLotteryEntryRoute implements IRouteViewModel {
 
 	public get windowLabel(): string {
 		if (!this.sale) return ''
-		return `${formatSaleStart(this.sale.saleStartTime, this.lang)} – ${formatSaleStart(this.sale.saleEndTime, this.lang)}`
+		return `${formatSaleStart(this.sale.saleStartTime, this.sale.timeZone, this.lang)} – ${formatSaleStart(this.sale.saleEndTime, this.sale.timeZone, this.lang)}`
 	}
 
 	/** The Event, TicketStock and count an entry event reports. */

@@ -9,18 +9,22 @@ import {
 	TicketSaleSchema,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_sale_pb.js'
 import { create } from '@bufbuild/protobuf'
-import { timestampFromDate } from '@bufbuild/protobuf/wkt'
-import {
-	type ConcertSpec,
-	jst,
-	type PublishStateName,
+import type {
+	ConcertSpec,
+	PublishStateName,
 } from '../../e2e/support/organizer-data'
 import type { AuthoredSeries } from '../../organizer/services/series-client'
 import type { EventTicketSales } from '../../organizer/services/ticket-sale-client'
 import { authoredSeries } from './authored-series'
+import { at, dateTimeAt, FIXTURE_ZONE, timeOfDayAt } from './zoned-fixtures'
 
 export type { ConcertSpec } from '../../e2e/support/organizer-data'
-export { jst, XX_SOLO, XX_TOUR } from '../../e2e/support/organizer-data'
+export { XX_SOLO, XX_TOUR } from '../../e2e/support/organizer-data'
+
+/** A Japan-time wall clock as an instant. */
+export function jst(date: string, time = '00:00'): string {
+	return at(date, time).toISOString()
+}
 
 /**
  * The concerts of the console's end-to-end specs (`e2e/support/organizer-data.ts`:
@@ -46,15 +50,14 @@ export function authored(spec: ConcertSpec): AuthoredSeries {
 				localDate: { value: { year, month, day } },
 				...(e.start
 					? {
-							startTime: {
-								value: timestampFromDate(new Date(jst(e.date, e.start))),
-							},
+							startTime: { value: timeOfDayAt(at(e.date, e.start)) },
 						}
 					: {}),
 				...(e.venue
 					? {
 							venue: {
 								name: { value: e.venue },
+								timeZone: { value: FIXTURE_ZONE },
 								...(e.placeId ? { placeId: { value: e.placeId } } : {}),
 							},
 						}
@@ -98,8 +101,8 @@ export function openLottery(eventId: string): EventTicketSales {
 				id: { value: 'sale-1' },
 				name: { value: '最速先行' },
 				method: TicketSaleMethod.LOTTERY,
-				saleStartTime: timestampFromDate(new Date(jst('2026-10-20', '12:00'))),
-				saleEndTime: timestampFromDate(new Date(jst('2026-11-01', '23:59'))),
+				saleStartTime: dateTimeAt(at('2026-10-20', '12:00')),
+				saleEndTime: dateTimeAt(at('2026-11-01', '23:59')),
 				eventIds: [{ value: eventId }],
 			}),
 		],

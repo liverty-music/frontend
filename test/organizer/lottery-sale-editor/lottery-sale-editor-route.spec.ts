@@ -192,8 +192,9 @@ function createInput(d: Doubles) {
 		seriesId: string
 		name: string
 		method: string
-		saleStartTime: Date
-		saleEndTime: Date
+		saleStart: Record<string, number>
+		saleEnd: Record<string, number>
+		timeZone: string
 		eventIds: string[]
 	}
 }
@@ -269,12 +270,22 @@ describe('lottery sale editor', () => {
 			const input = createInput(d)
 			expect(input.name).toBe('ファンクラブ先行')
 			expect(input.method).toBe('lottery')
-			expect(input.saleStartTime.toISOString()).toBe(
-				jst('2026-10-01', '12:00').toISOString(),
-			)
-			expect(input.saleEndTime.toISOString()).toBe(
-				jst('2026-10-11', '12:00').toISOString(),
-			)
+			// 12:00 on 1 October, closing 10 days later, in the sale's zone.
+			expect(input.timeZone).toBe('Asia/Tokyo')
+			expect(input.saleStart).toEqual({
+				year: 2026,
+				month: 10,
+				day: 1,
+				hour: 12,
+				minute: 0,
+			})
+			expect(input.saleEnd).toEqual({
+				year: 2026,
+				month: 10,
+				day: 11,
+				hour: 12,
+				minute: 0,
+			})
 			expect(input.eventIds).toEqual(['e-1103'])
 			expect(input.seriesId).toBe('s-tour')
 			await fixture.tearDown()
@@ -438,19 +449,20 @@ describe('lottery sale editor', () => {
 	describe('times in another time zone', () => {
 		it(`@spec ${SPEC} "Device in another time zone"`, async () => {
 			// The window is entered in Japan time whatever the device's zone; the
-			// device's own zone is exercised in japan-time.node.spec.ts.
+			// device's own zone is exercised in i18n/device-zone.node.spec.ts.
 			const { fixture, vm, d, fieldLabelled, save } = await mount({
 				create: vi.fn().mockResolvedValue(presale()),
 			})
 			vm.model = {
 				name: 'ファンクラブ先行',
+				timeZone: 'Asia/Tokyo',
 				saleStart: { date: '2026-10-10', time: '12:00' },
 				saleEnd: { date: '2026-10-17', time: '12:00' },
 			}
 			await tasksSettled()
 
 			const start = fieldLabelled('受付開始時刻')
-			expect(deepText(start)).toContain('JST')
+			expect(deepText(start)).toContain('日本時間')
 			// Hours 00 to 23 on the 24-hour clock, whatever the device's clock.
 			expect(
 				deepAll<HTMLSelectElement>(start, 'select')[0].options,
@@ -464,9 +476,10 @@ describe('lottery sale editor', () => {
 			await save()
 
 			const input = createInput(d)
-			// 12:00 JST on 10 October is 03:00 UTC.
-			expect(input.saleStartTime.toISOString()).toBe('2026-10-10T03:00:00.000Z')
-			expect(input.saleEndTime.toISOString()).toBe('2026-10-17T03:00:00.000Z')
+			// 12:00 on 10 October in the sale's zone, whatever the device's.
+			expect(input.timeZone).toBe('Asia/Tokyo')
+			expect(input.saleStart).toMatchObject({ month: 10, day: 10, hour: 12 })
+			expect(input.saleEnd).toMatchObject({ month: 10, day: 17, hour: 12 })
 			await fixture.tearDown()
 		})
 
@@ -533,10 +546,11 @@ describe('lottery sale editor', () => {
 			await save()
 
 			expect(d.setWindow).toHaveBeenCalledTimes(1)
-			const [id, start, end] = d.setWindow.mock.calls[0]
+			const [id, window] = d.setWindow.mock.calls[0]
 			expect(id).toBe('l-1')
-			expect(start.toISOString()).toBe(MOVED_START.toISOString())
-			expect(end.toISOString()).toBe(MOVED_END.toISOString())
+			expect(window.timeZone).toBe('Asia/Tokyo')
+			expect(window.saleStart).toMatchObject({ month: 10, day: 12, hour: 12 })
+			expect(window.saleEnd).toMatchObject({ month: 10, day: 19, hour: 12 })
 			expect(d.create).not.toHaveBeenCalled()
 			expect(d.show).toHaveBeenCalledWith('lotteryEditor.changed')
 			expect(d.load).toHaveBeenCalledWith(SALES_HREF)

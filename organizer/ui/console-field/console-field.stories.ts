@@ -39,6 +39,10 @@ const meta = {
 		required: { control: 'boolean' },
 		disabled: { control: 'boolean' },
 		readonly: { control: 'boolean' },
+		zoneLabel: {
+			control: 'text',
+			description: 'The zone a date or time is read in.',
+		},
 	},
 	args: {
 		type: 'text',
@@ -49,6 +53,7 @@ const meta = {
 		required: false,
 		disabled: false,
 		readonly: false,
+		zoneLabel: '',
 	},
 } satisfies Meta<typeof ConsoleField>
 
@@ -61,7 +66,7 @@ const render: Story['render'] = (args) =>
 			<div style="inline-size:360px; padding:16px; background:var(--md-sys-color-surface)">
 				<console-field
 					type.bind="type" label.bind="label" value.bind="value" error.bind="error"
-					hint.bind="hint" required.bind="required" disabled.bind="disabled" readonly.bind="readonly" options.bind="options"
+					hint.bind="hint" required.bind="required" disabled.bind="disabled" readonly.bind="readonly" options.bind="options" zone-label.bind="zoneLabel"
 				></console-field>
 			</div>
 		`,
@@ -102,11 +107,12 @@ export const DateTimeInJapanTime = {
 		type: 'datetime-local',
 		label: '販売開始',
 		value: '2026-10-10T12:00',
+		zoneLabel: '日本時間',
 	},
 	play: async ({ canvasElement }) => {
-		// The field says JST next to it.
+		// The field names its zone next to it.
 		await expect(
-			canvasOf(canvasElement).getByText('JST').element(),
+			canvasOf(canvasElement).getByText('日本時間').element(),
 		).toBeVisible()
 	},
 } satisfies Story
@@ -229,13 +235,19 @@ export const Disabled = {
 /** A fixed value (a published date): readable at full contrast, not editable. */
 export const ReadOnlyDate = {
 	render,
-	args: { type: 'date', label: '日付', value: '2026-11-03', readonly: true },
+	args: {
+		type: 'date',
+		label: '日付',
+		value: '2026-11-03',
+		readonly: true,
+		zoneLabel: '日本時間',
+	},
 	play: async ({ canvasElement }) => {
 		const input = canvasOf(canvasElement).getByLabelText('日付').element()
 		await expect(input).toHaveAttribute('readonly')
 		await expect(input).not.toBeDisabled()
 		await expect(
-			canvasOf(canvasElement).getByText('JST').element(),
+			canvasOf(canvasElement).getByText('日本時間').element(),
 		).toBeVisible()
 	},
 } satisfies Story

@@ -19,6 +19,7 @@ import {
 	XX_TOUR,
 } from '../support/organizer-data'
 import { expect, type Page, test } from '../support/test'
+import { type WireDateTime, wireInstant } from '../support/zoned-wire'
 
 /**
  * The first-come sale editor reached from the event's Sales tab: only the
@@ -28,10 +29,10 @@ import { expect, type Page, test } from '../support/test'
 
 const SPEC = 'components/infrastructure/organizer/web/route/ticket-sale-editor'
 
-/** Thursday 1 October 2026, 12:00 JST. */
+/** Thursday 1 October 2026, 12:00 Japan time. */
 const NOW = new Date('2026-10-01T12:00:00+09:00')
 
-/** A published concert with one date starting 2026-11-20 19:00 JST. */
+/** A published concert with one date starting 2026-11-20 19:00 Japan time. */
 const SHOW: ConcertSpec = {
 	id: 's-show',
 	title: 'XX 秋の単独公演',
@@ -99,7 +100,7 @@ function oneSale(eventId: string, sale: SaleSpec) {
 }
 
 const field = (page: Page, label: string) => page.getByLabel(label)
-/** Enters when the sale opens (`start`) or closes (`end`), in JST. */
+/** Enters when the sale opens (`start`) or closes (`end`), in Japan time. */
 async function enterWindow(
 	page: Page,
 	which: 'start' | 'end',
@@ -145,17 +146,14 @@ test.describe('a new first-come sale', () => {
 		await expect(snackbar(page)).toContainText('先着販売を保存しました')
 		const body = calls(log, 'TicketSaleService/Create')[0].body as {
 			method: string
-			saleStartTime: string
-			saleEndTime: string
+			saleStartTime: WireDateTime
+			saleEndTime: WireDateTime
 			eventIds: unknown
 		}
 		expect(body.method).toBe('TICKET_SALE_METHOD_FIRST_COME')
 		expect(body.eventIds).toEqual([{ value: 'e-1120' }])
-		expect(new Date(body.saleStartTime).toISOString()).toBe(
-			jst('2026-11-11', '12:00'),
-		)
-		expect(new Date(body.saleEndTime).toISOString()).toBe(
-			jst('2026-11-20', '19:00'),
-		)
+		expect(wireInstant(body.saleStartTime)).toBe(jst('2026-11-11', '12:00'))
+		expect(wireInstant(body.saleEndTime)).toBe(jst('2026-11-20', '19:00'))
+		expect(body.saleStartTime.timeZone).toEqual({ id: 'Asia/Tokyo' })
 	})
 })

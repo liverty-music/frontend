@@ -104,7 +104,7 @@ describe('ConcertStore', () => {
 			const result = await sut.listFollowed()
 
 			expect(mockRpcClient.listFollowed).toHaveBeenCalledTimes(1)
-			expect(result).toBe(groups)
+			expect(result).toEqual(groups)
 		})
 
 		// @spec components/infrastructure/fan/web/route/timetable "Cache miss on first load"
@@ -225,14 +225,80 @@ describe('ConcertStore', () => {
 			expect(mockRpcClient.listByArtists).toHaveBeenCalledTimes(1)
 		})
 
-		it('keeps every guest date when no `from` is given', async () => {
+		it('keeps a dated group with no concerts out of the default guest view', async () => {
 			mockAuth.isAuthenticated = false
-			mockRpcClient.listByArtists.mockResolvedValue([
-				groupOn(2026, 3, 1),
-				groupOn(2027, 1, 2),
-			])
+			mockRpcClient.listByArtists.mockResolvedValue([groupOn(2099, 1, 2)])
 
-			expect(await sut.listFollowed()).toHaveLength(2)
+			expect(await sut.listFollowed()).toHaveLength(0)
+		})
+
+		// @spec components/infrastructure/fan/web/route/timetable "Concert abroad still today at its venue"
+		// @spec components/infrastructure/fan/web/route/timetable "Guest's concert abroad still today at its venue"
+		it('keeps a London concert of 14 March while it is still 14 March there', async () => {
+			// 08:00 on 15 March in Japan is 23:00 on 14 March in London.
+			vi.useFakeTimers({ toFake: ['Date'] })
+			vi.setSystemTime(new Date('2027-03-14T23:00:00Z'))
+			try {
+				const concertAt = (day: number, zone: string) => ({
+					event: {
+						localDate: { value: { year: 2027, month: 3, day } },
+						venue: { timeZone: { value: zone } },
+					},
+				})
+				const group = (day: number, zone: string) =>
+					({
+						date: { value: { year: 2027, month: 3, day } },
+						home: [],
+						nearby: [],
+						away: [concertAt(day, zone)],
+					}) as unknown as ProximityGroup
+				mockAuth.isAuthenticated = false
+				mockRpcClient.listByArtists.mockResolvedValue([
+					group(13, 'Europe/London'),
+					group(14, 'Europe/London'),
+					group(14, 'Asia/Tokyo'),
+				])
+
+				const result = await sut.listFollowed()
+
+				expect(
+					result.map((g) => g.away[0].event.venue?.timeZone?.value),
+				).toEqual(['Europe/London'])
+				expect(result[0].date?.value?.day).toBe(14)
+			} finally {
+				vi.useRealTimers()
+			}
+		})
+
+		it('drops a concert that ended since the signed-in default view was cached', async () => {
+			vi.useFakeTimers({ toFake: ['Date'] })
+			vi.setSystemTime(new Date('2027-03-14T03:00:00Z'))
+			try {
+				mockRpcClient.listFollowed.mockResolvedValue([
+					{
+						date: { value: { year: 2027, month: 3, day: 14 } },
+						home: [
+							{
+								event: {
+									localDate: { value: { year: 2027, month: 3, day: 14 } },
+									venue: { timeZone: { value: 'Asia/Tokyo' } },
+								},
+							},
+						],
+						nearby: [],
+						away: [],
+					} as unknown as ProximityGroup,
+				])
+				expect(await sut.listFollowed()).toHaveLength(1)
+
+				// The next day in Japan, served from the same cached list.
+				vi.setSystemTime(new Date('2027-03-14T16:00:00Z'))
+
+				expect(await sut.listFollowed()).toHaveLength(0)
+				expect(mockRpcClient.listFollowed).toHaveBeenCalledTimes(1)
+			} finally {
+				vi.useRealTimers()
+			}
 		})
 
 		// @spec components/infrastructure/fan/web/route/timetable "Guest resume refresh keeps the cut"

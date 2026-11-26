@@ -406,12 +406,34 @@ describe('event page Sales tab', () => {
 				'あと 2日 3時間',
 			)
 			expect(deepText(row)).toContain(
-				'10月10日(土) 12:00 〜 10月17日(土) 23:59 JST',
+				'10月10日(土) 12:00 〜 10月17日(土) 23:59 日本時間',
 			)
 			expect(deepText(row)).toContain('抽選')
 			// Said once above the list: the seat types are shared, the limit is the event's.
 			expect(deepText(tab)).toContain(
 				'1アカウントの上限は、この公演日のすべての販売を合わせて4枚です。',
+			)
+			await fixture.tearDown()
+		})
+
+		it(`@spec ${SPEC} "Sale in another zone"`, async () => {
+			const { fixture, tab } = await mount({
+				sales: [
+					{
+						sale: {
+							...lottery({
+								id: 'sale-kr',
+								start: new Date('2027-02-01T03:00:00Z'),
+							}),
+							end: new Date('2027-02-10T14:59:00Z'),
+							timeZone: 'Asia/Seoul',
+						},
+					},
+				],
+			})
+
+			expect(deepText(sale(tab, 'sale-kr') as HTMLElement)).toContain(
+				'2月1日(月) 12:00 〜 2月10日(水) 23:59 ソウル時間',
 			)
 			await fixture.tearDown()
 		})

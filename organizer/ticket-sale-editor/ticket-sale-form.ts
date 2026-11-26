@@ -1,37 +1,43 @@
 import type { FieldError } from '../i18n/field-error'
 import {
-	emptyJstDateTime,
-	type JstDateTime,
-	parseJstDateTime,
-	toJstDateTime,
+	type DateTimeInput,
+	emptyDateTimeInput,
+	instantOfInput,
+	toDateTimeInput,
 	unsetPartOf,
-} from '../i18n/format'
+	wallOfInput,
+} from '../i18n/wall-input'
+import { wallInZone } from '../model/sale-zone'
 import type { CreateTicketSaleInput } from '../services/ticket-sale-client'
 
-export type { FieldError, JstDateTime }
+export type { DateTimeInput, FieldError }
 
 /** Maximum length of the sale's name, in characters. */
 export const MAX_NAME_LENGTH = 100
 
 /**
- * The editable model of the sale form: its name and window. The window's
- * start and end are each a date and a 24-hour time read as Japan time
- * whatever the browser's zone is (design D19). The seat types, prices and
- * quantities are the event's TicketStocks and the per-account limit is the
- * event's, so the sale carries none of them.
+ * The editable model of the sale form: its name, its time zone and its window.
+ * The window's start and end are each a date and a 24-hour time read in the
+ * sale's time zone whatever the browser's zone is (design D19). The seat
+ * types, prices and quantities are the event's TicketStocks and the
+ * per-account limit is the event's, so the sale carries none of them.
  */
 export interface TicketSaleFormModel {
 	name: string
-	saleStart: JstDateTime
-	saleEnd: JstDateTime
+	/** The IANA zone the window is read in; '' while none is chosen. */
+	timeZone: string
+	saleStart: DateTimeInput
+	saleEnd: DateTimeInput
 }
 
 /** Per-field errors, shown next to each control. */
 export interface TicketSaleFormErrors {
 	name?: FieldError
+	/** No time zone is chosen, or the server refused the one chosen. */
+	timeZone?: FieldError
 	/** The start's date is unset, or the window overlaps another sale. */
 	saleStartDate?: FieldError
-	/** The start's time is unset. */
+	/** The start's time is unset, or skipped by the clocks moving forward. */
 	saleStartTime?: FieldError
 	/** The end's date is unset, or the end is out of order. */
 	saleEndDate?: FieldError
@@ -40,52 +46,51 @@ export interface TicketSaleFormErrors {
 
 /** What the form is checked against besides its own values. */
 export interface TicketSaleFormContext {
-	/** The event's start time; the sale must end by then. */
+	/** The event's start; the sale must end by then. */
 	readonly eventStart: Date | null
-}
-
-/** The instant of a date and time entered in Japan time, or null. */
-export function parseDateTime(value: JstDateTime): Date | null {
-	return parseJstDateTime(value) ?? null
 }
 
 /**
  * The form for an event without a first-come sale: the name is the given
- * default name and the sale ends at the event's start time.
+ * default name, the zone is the given one ('' while the member must choose)
+ * and the sale ends at the event's start time in that zone.
  */
 export function blankFormModel(
 	eventStart: Date | null,
 	defaultName = '',
+	timeZone = '',
 ): TicketSaleFormModel {
 	return {
 		name: defaultName,
-		saleStart: emptyJstDateTime(),
-		saleEnd: eventStart ? toJstDateTime(eventStart) : emptyJstDateTime(),
+		timeZone,
+		saleStart: emptyDateTimeInput(),
+		saleEnd:
+			eventStart && timeZone
+				? toDateTimeInput(wallInZone(eventStart, timeZone))
+				: emptyDateTimeInput(),
 	}
 }
 
 /** The form for an existing sale, from its stored values. */
 export function formModelOf(sale: {
 	readonly name: string
-	readonly saleStartTime: Date | null
-	readonly saleEndTime: Date | null
+	readonly timeZone: string
+	readonly saleStart: DateTimeInput | null
+	readonly saleEnd: DateTimeInput | null
 }): TicketSaleFormModel {
 	return {
 		name: sale.name,
-		saleStart: sale.saleStartTime
-			? toJstDateTime(sale.saleStartTime)
-			: emptyJstDateTime(),
-		saleEnd: sale.saleEndTime
-			? toJstDateTime(sale.saleEndTime)
-			: emptyJstDateTime(),
+		timeZone: sale.timeZone,
+		saleStart: sale.saleStart ?? emptyDateTimeInput(),
+		saleEnd: sale.saleEnd ?? emptyDateTimeInput(),
 	}
 }
 
 /**
  * Checks the form the way the server will, so errors show next to the field
- * before a round trip: the name 1–{@link MAX_NAME_LENGTH} characters, both
- * times required, and the end after the start and not after the event's
- * start time.
+ * before a round trip: the name 1–{@link MAX_NAME_LENGTH} characters, a time
+ * zone, both times required and existing in that zone, and the end after the
+ * start and not after the event's start time.
  */
 export function validateTicketSaleForm(
 	model: TicketSaleFormModel,
@@ -102,6 +107,9 @@ export function validateTicketSaleForm(
 			params: { max: MAX_NAME_LENGTH },
 		}
 	}
+	if (model.timeZone === '') {
+		errors.timeZone = { key: 'saleEditor.error.timeZone' }
+	}
 
 	const startUnset = unsetPartOf(model.saleStart)
 	if (startUnset === 'date') {
@@ -109,19 +117,35 @@ export function validateTicketSaleForm(
 	} else if (startUnset === 'time') {
 		errors.saleStartTime = { key: 'firstComeEditor.error.start' }
 	}
-	const start = parseDateTime(model.saleStart)
-	const end = parseDateTime(model.saleEnd)
 	const endUnset = unsetPartOf(model.saleEnd)
 	if (endUnset === 'date') {
 		errors.saleEndDate = { key: 'firstComeEditor.error.end' }
-	} else if (endUnset === 'time' || end === null) {
+	} else if (endUnset === 'time') {
 		errors.saleEndTime = { key: 'firstComeEditor.error.end' }
-	} else if (ctx.eventStart && end.getTime() > ctx.eventStart.getTime()) {
+	}
+
+	// The times can be compared once there is a zone to read them in.
+	if (model.timeZone === '') return errors
+	const start = instantOfInput(model.saleStart, model.timeZone)
+	const end = instantOfInput(model.saleEnd, model.timeZone)
+	if (!start && !startUnset) {
+		errors.saleStartTime = { key: 'saleEditor.error.timeSkipped' }
+	}
+	if (!end && !endUnset) {
+		errors.saleEndTime = { key: 'saleEditor.error.timeSkipped' }
+	}
+	if (!end || errors.saleEndDate || errors.saleEndTime) return errors
+	if (ctx.eventStart && end.getTime() > ctx.eventStart.getTime()) {
 		errors.saleEndDate = {
 			key: 'firstComeEditor.error.endAfterEvent',
-			params: { eventStart: ctx.eventStart },
+			params: {
+				eventStart: {
+					wall: wallInZone(ctx.eventStart, model.timeZone),
+					zone: model.timeZone,
+				},
+			},
 		}
-	} else if (start !== null && end.getTime() <= start.getTime()) {
+	} else if (start && end.getTime() <= start.getTime()) {
 		errors.saleEndDate = { key: 'firstComeEditor.error.endBeforeStart' }
 	}
 
@@ -143,12 +167,14 @@ export function toCreateInput(
 	eventId: string,
 	model: TicketSaleFormModel,
 ): CreateTicketSaleInput {
+	const zero = { year: 1970, month: 1, day: 1, hour: 0, minute: 0 }
 	return {
 		seriesId,
 		name: model.name.trim(),
 		method: 'firstCome',
-		saleStartTime: parseDateTime(model.saleStart) ?? new Date(0),
-		saleEndTime: parseDateTime(model.saleEnd) ?? new Date(0),
+		saleStart: wallOfInput(model.saleStart) ?? zero,
+		saleEnd: wallOfInput(model.saleEnd) ?? zero,
+		timeZone: model.timeZone,
 		eventIds: [eventId],
 	}
 }

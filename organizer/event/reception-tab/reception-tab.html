@@ -22,7 +22,7 @@
 
   <template if.bind="!prerequisite">
     <div class="about">
-      <p if.bind="admission">${'reception.window' & t} ${admission.open | jstDateTime} 〜 ${admission.close | jstDateTime}</p>
+      <p if.bind="admission">${'reception.window' & t} <span data-testid="admission-window">${admission.openAt | momentAt} 〜 ${admission.closeAt | momentAt}</span></p>
       <p>${'reception.oneDevice' & t}</p>
       <a href.bind="guideUrl" target="_blank" rel="noopener" class="guide">${'reception.guide' & t}</a>
     </div>
@@ -40,7 +40,7 @@
           ${'reception.label' & t:{ number: row.number }}
           <span slot="supporting" class="[ state ] [ cluster ]">
             <status-badge tone.bind="row.tone" label.bind="row.statusKey & t"></status-badge>
-            <span if.bind="row.boundSince">${'reception.since' & t} ${row.boundSince | jstDateTime}</span>
+            <span if.bind="row.boundSince" data-testid="scanner-since">${'reception.since' & t} ${row.boundSince | momentAt}</span>
           </span>
           <span if.bind="row.url" slot="supporting" class="[ url ] [ typeface-mono ]">${row.url}</span>
           <span if.bind="row.url || row.canRevoke" slot="trailing">

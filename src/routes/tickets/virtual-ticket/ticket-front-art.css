@@ -64,6 +64,10 @@
 			overflow-wrap: break-word;
 		}
 
+		.ticket-front-zone {
+			font: 600 0.75rem / 1.25 var(--md-ref-typeface-plain);
+		}
+
 		/* The headline in gold foil. */
 		.virtual-ticket-card[data-preset="classic"] .ticket-front-performers {
 			padding-block-end: 0.125rem;

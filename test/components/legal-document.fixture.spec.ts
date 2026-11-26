@@ -305,7 +305,7 @@ const TERMS_RESALE = {
 		'第7条（公式リセール）',
 		'その席種が完売した場合にのみ開始されます',
 		'完売しなかった席種には公式リセールはなく',
-		'毎日12:00（日本時間）の抽選で割り当てます',
+		'毎日、会場の現地時間の12:00の抽選で割り当てます',
 		'12:00と開演の3時間前のどちらか早い時刻に行う抽選が最後の抽選であり、公式リセールの締切です',
 		'すべてまとめて割り当てるか、まったく割り当てないか',
 		'当選した場合にのみ請求され',
@@ -321,7 +321,7 @@ const TERMS_RESALE = {
 		'7. Official Resale',
 		'opens for a seat type of a concert only when that seat type sells out',
 		'A seat type that does not sell out has no official resale',
-		'allocated by a draw every day at 12:00 Japan time',
+		'allocated by a draw every day at 12:00 local time at the venue',
 		'whichever is earlier, is the last draw and the resale deadline',
 		'allocated all together or not at all',
 		'it is charged only if you win',
@@ -339,6 +339,7 @@ describe('Terms of Service state the official resale rules', () => {
 	for (const lng of ['ja', 'en'] as const) {
 		it(`has the official resale article in ${lng}`, async () => {
 			// @spec components/infrastructure/fan/web/global/legal-document "Resale article present"
+			// @spec components/infrastructure/fan/web/global/legal-document "Draw time at the venue"
 			const fixture = await createFixture
 				.html('<legal-document doc-key="terms"></legal-document>')
 				.deps(i18nFor(lng), LegalDocument)
@@ -348,6 +349,10 @@ describe('Terms of Service state the official resale rules', () => {
 			for (const phrase of TERMS_RESALE[lng]) {
 				expect(text).toContain(phrase)
 			}
+			// The draw is at the venue's local time, never Japan time.
+			expect(text).not.toContain(
+				lng === 'ja' ? '12:00（日本時間）' : '12:00 Japan time',
+			)
 		})
 	}
 })

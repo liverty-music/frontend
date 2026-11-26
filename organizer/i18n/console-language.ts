@@ -10,7 +10,13 @@ import {
 import i18nextBrowserLanguageDetector from 'i18next-browser-languagedetector'
 import en from '../locales/en/translation.json'
 import ja from '../locales/ja/translation.json'
-import { type ConsoleLocale, formatJstDateTime, formatJstDay } from './format'
+import {
+	type CivilDate,
+	type ConsoleLocale,
+	type EventWhen,
+	formatEventDay,
+	formatEventWhen,
+} from './format'
 
 /**
  * localStorage key of the language chosen on this device. The console origin
@@ -96,19 +102,25 @@ async function syncDocumentLanguage(container: IContainer): Promise<void> {
 }
 
 /**
- * Catalog formats for Date values, in Japan time and the language being
- * shown: `{{day, jstDay}}` → `11月3日(火)`, `{{at, jstDateTime}}` →
- * `11月3日(火) 18:00 JST`. A view-model passes the Date itself, so a language
- * switch re-formats it with the text around it.
+ * Catalog formats for dates and times in the zone they belong to and the
+ * language being shown: `{{day, eventDay}}` → `11月3日(火)`, `{{at, eventWhen}}`
+ * → `11月3日(火) 18:00 日本時間`. A view-model passes the date (a
+ * {@link CivilDate}) or the {@link EventWhen} itself, so a language switch
+ * re-formats it with the text around it.
  */
 async function addCatalogFormats(container: IContainer): Promise<void> {
 	const i18n = container.get(I18N)
 	await i18n.initPromise
-	const formats: Record<string, (date: Date, locale: ConsoleLocale) => string> =
-		{ jstDay: formatJstDay, jstDateTime: formatJstDateTime }
+	const formats: Record<
+		string,
+		(value: unknown, locale: ConsoleLocale) => string
+	> = {
+		eventDay: (v, l) => formatEventDay(v as CivilDate, l),
+		eventWhen: (v, l) => formatEventWhen(v as EventWhen, l),
+	}
 	for (const [name, format] of Object.entries(formats)) {
 		i18n.i18next.services.formatter?.add(name, (value, lng) =>
-			value instanceof Date
+			value && typeof value === 'object'
 				? format(value, toConsoleLocale(lng))
 				: String(value ?? ''),
 		)

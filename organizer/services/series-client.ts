@@ -16,11 +16,12 @@ import {
 	SeriesService,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/organizer/series/v1/series_service_pb.js'
 import { create } from '@bufbuild/protobuf'
-import { timestampFromDate } from '@bufbuild/protobuf/wkt'
 import { createClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
 import { IAppConfig } from '../../shared/config/app-config'
 import { concertResolver } from '../../shared/lib/concert/resolve-concert'
+import { timeOfDayInit } from '../../shared/lib/zoned-time/proto'
+import type { WallTime } from '../../shared/lib/zoned-time/zoned-time'
 import { IAuthService } from '../../shared/services/auth-service'
 import { IConsoleLanguage } from '../i18n/console-language'
 import { createOrganizerTransport } from './organizer-transport'
@@ -88,8 +89,8 @@ export interface CalendarDate {
 
 /**
  * The plain, transport-agnostic shape of one authored event. `startTime` /
- * `openTime` are absolute instants (the console composes them from the event's
- * local date + a wall-clock time); omitted when not yet confirmed.
+ * `openTime` are wall-clock times at the event's Venue (read in the Venue's
+ * zone, never turned into instants); omitted when not yet confirmed.
  */
 export interface EventDraftInput {
 	/**
@@ -104,8 +105,8 @@ export interface EventDraftInput {
 	/** The IANA time zone the member confirmed for a new Venue. */
 	readonly timeZone?: string
 	readonly localDate: CalendarDate
-	readonly startTime?: Date
-	readonly openTime?: Date
+	readonly startTime?: WallTime
+	readonly openTime?: WallTime
 	/** The most tickets one account may hold for the date (1 to 10); the server's default is 4. */
 	readonly perAccountLimit?: number
 }
@@ -140,10 +141,10 @@ function toEventDraft(input: EventDraftInput): ProtoEventDraft {
 			},
 		},
 		...(input.startTime
-			? { startTime: { value: timestampFromDate(input.startTime) } }
+			? { startTime: { value: timeOfDayInit(input.startTime) } }
 			: {}),
 		...(input.openTime
-			? { openTime: { value: timestampFromDate(input.openTime) } }
+			? { openTime: { value: timeOfDayInit(input.openTime) } }
 			: {}),
 		...(input.perAccountLimit !== undefined
 			? { perAccountLimit: input.perAccountLimit }

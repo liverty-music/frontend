@@ -60,6 +60,8 @@ import { ITicketWallet, TicketWallet } from '../../src/services/ticket-wallet'
 import { IUserStore } from '../../src/services/user-store'
 import { createTestContainer } from '../helpers/create-container'
 import { FakeWalletStorage } from '../helpers/fake-wallet-storage'
+import { tokyoTimeOfDay } from '../helpers/tokyo-time'
+import { useViewerZone } from '../helpers/viewer-zone'
 
 // The virtual ticket's renderers fail at once, as they do without WebGL, so
 // the ticket settles and a pressed stamp appears without loading PixiJS.
@@ -111,15 +113,26 @@ function protoTicket(i: number, o: TicketOpts = {}): Ticket {
 }
 
 /** A ConcertService.Get result, resolved the way the RPC client resolves it. */
-function protoConcert(id: string, day: number) {
+function protoConcert(
+	id: string,
+	day: number,
+	abroad?: { zone: string; date: { year: number; month: number; day: number } },
+) {
 	const concert = create(ConcertSchema, {
 		event: {
 			id: { value: id },
-			localDate: { value: { year: 2026, month: 11, day } },
-			openTime: { value: timestampFromDate(jst(day, 17, 30)) },
-			startTime: { value: timestampFromDate(jst(day, 18, 30)) },
+			localDate: { value: abroad?.date ?? { year: 2026, month: 11, day } },
+			openTime: { value: tokyoTimeOfDay(jst(day, 17, 30)) },
+			startTime: {
+				value: abroad
+					? { hours: 19, minutes: 30 }
+					: tokyoTimeOfDay(jst(day, 18, 30)),
+			},
 			listedVenueName: { value: 'Shibuya WWW' },
-			venue: { adminArea: { value: 'JP-13' } },
+			venue: {
+				adminArea: { value: 'JP-13' },
+				timeZone: { value: abroad?.zone ?? 'Asia/Tokyo' },
+			},
 			seriesId: { value: 'series-1' },
 		},
 	})
@@ -181,6 +194,8 @@ const BottomSheetStub = CustomElement.define(
 )
 
 const offlineError = () => new ConnectError('Failed to fetch', Code.Unavailable)
+
+useViewerZone('Asia/Tokyo')
 
 describe('TicketsRoute', () => {
 	let storage: FakeWalletStorage
@@ -357,8 +372,8 @@ describe('TicketsRoute', () => {
 			const [group] = sut.groups
 			expect(group.event?.title).toBe('LIVE 20')
 			expect(group.event?.venueName).toBe('Shibuya WWW')
-			expect(sut.time(group.event?.openTime)).toBe('17:30')
-			expect(sut.time(group.event?.startTime)).toBe('18:30')
+			expect(sut.openText(group)).toBe('17:30')
+			expect(sut.startText(group)).toBe('18:30')
 			expect(group.tickets).toHaveLength(3)
 			expect(sut.personalDetails?.fullName).toBe('山田太郎')
 			expect(sut.phoneNumberDisplay).toBe('090-1234-5678')
@@ -863,7 +878,7 @@ describe('TicketsRoute', () => {
 			const [t1] = sut.groups[0].tickets
 			expect(sut.stateLabel(t1)).toBe('tickets.state.entered')
 			expect(ja.tickets.state.entered).toBe('入場済み')
-			expect(sut.admitted(t1)).toContain('12:00')
+			expect(sut.admitted(t1)).toBe('11月10日(火) 12:00')
 			// Nothing is left to enter, so no code is shown.
 			expect(sut.headCount).toBe(0)
 			expect(ja.tickets.code.allEntered).toContain('入場済み')
@@ -1268,6 +1283,23 @@ describe('TicketsRoute', () => {
 			}
 		}
 
+		it("states the resale deadline of a show abroad at the venue's time", async () => {
+			// @spec components/infrastructure/fan/web/route/tickets "Resale deadline of an event abroad"
+			ticketClient.list.mockResolvedValue([protoTicket(1)])
+			saleClient.listByEvent.mockResolvedValue(firstCome())
+			concertClient.get.mockImplementation(async (id: string) =>
+				protoConcert(id, 20, {
+					zone: 'Europe/London',
+					date: { year: 2027, month: 2, day: 20 },
+				}),
+			)
+			const sut = await open()
+
+			expect(sut.listingDeadlineLabel(sut.groups[0])).toBe(
+				'2月20日(土) 12:00 ロンドン時間（日本時間 21:00）',
+			)
+		})
+
 		it('lists a ticket after showing the price, fee and refund', async () => {
 			// @spec components/infrastructure/fan/web/route/tickets "Fan lists a ticket"
 			ticketClient.list.mockResolvedValue([protoTicket(1), protoTicket(2)])
@@ -1287,7 +1319,7 @@ describe('TicketsRoute', () => {
 			// The event starts at 18:30, so listing closes at the 12:00 draw
 			// that day, earlier than 3 hours before the start.
 			expect(sut.listingDeadlineLabel(sut.listingGroup)).toBe(
-				'2026年11月20日(金) 12:00',
+				'11月20日(金) 12:00',
 			)
 			expect(ja.tickets.resale.termRefund).toContain('購入時のカード')
 			expect(ja.tickets.resale.termNotGuaranteed).toContain('保証はありません')

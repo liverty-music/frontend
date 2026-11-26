@@ -208,6 +208,25 @@ describe('event page Reception tab', () => {
 		await fixture.tearDown()
 	})
 
+	it(`@spec ${SPEC} "Scanner opened abroad"`, async () => {
+		// Staff open the link at 17:40 in London; the member's device is irrelevant.
+		const { fixture, row } = await mount({
+			event: tourWith(eventInit({ timeZone: 'Europe/London' })).events[0],
+			scanners: [
+				{
+					id: 'scanner-1',
+					number: 1,
+					status: ScannerStatus.IN_USE,
+					token: 'token-1',
+					bindTime: new Date('2026-11-03T17:40:00Z'),
+				},
+			],
+		})
+
+		expect(deepText(row(1) as HTMLElement)).toContain('17:40 ロンドン時間')
+		await fixture.tearDown()
+	})
+
 	it(`@spec ${SPEC} "Scanner opened by staff"`, async () => {
 		const { fixture, row } = await mount({
 			scanners: [
@@ -223,7 +242,7 @@ describe('event page Reception tab', () => {
 
 		const r = row(1) as HTMLElement
 		expect(deepText(deepOne(r, 'status-badge') as HTMLElement)).toBe('使用中')
-		expect(deepText(r)).toContain('14:10 JST')
+		expect(deepText(r)).toContain('14:10 日本時間')
 		expect(deepText(r)).not.toContain('token-1')
 		expect(deepAll(r, 'copy-button')).toHaveLength(0)
 		await fixture.tearDown()

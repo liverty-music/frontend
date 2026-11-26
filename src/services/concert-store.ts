@@ -19,6 +19,8 @@ import {
 	type TimetableAnchor,
 } from '../entities/concert'
 import { DEFAULT_HYPE, type Hype } from '../entities/follow'
+import { todayAtVenue } from '../lib/time-format/time-format'
+import { dateKey } from '../../shared/lib/zoned-time/zoned-time'
 import { IAuthService } from './auth-service'
 import { CachedResource } from './cache/cached-resource'
 import { HomeChanged } from './events/home-changed'
@@ -139,7 +141,7 @@ export class ConcertStore {
 		if (!this.authService.isAuthenticated) {
 			return onOrAfter(await this.listFollowedGuest(signal), from)
 		}
-		return this.followerConcerts.read(from, signal)
+		return cutDefaultView(await this.followerConcerts.read(from, signal), from)
 	}
 
 	/**
@@ -160,7 +162,7 @@ export class ConcertStore {
 				? onOrAfter(await this.proximityConcerts.revalidate(input), from)
 				: []
 		}
-		return this.followerConcerts.revalidate(from)
+		return cutDefaultView(await this.followerConcerts.revalidate(from), from)
 	}
 
 	/** The last rendered concert groups for these inputs, or null. */
@@ -514,23 +516,58 @@ export class ConcertStore {
 }
 
 /**
- * Keep the groups whose date is on or after `from`, the lower bound the
- * authenticated `ListFollowed` applies on the server. `ListByArtists`, which the
- * guest timetable reads, returns every date and has no `from`, so the guest
- * result is cut here, after the cache, to follow the same rule. Without `from`
- * the groups pass through untouched, as does a group with no date.
+ * Keep the groups the authenticated `ListFollowed` would return. With `from`,
+ * the groups whose date is on or after it. Without `from`, the concerts on or
+ * after the current date at their own Venue, which is what the server applies
+ * to its default view: a show in London is not dropped while it is still that
+ * day there. `ListByArtists`, which the guest timetable reads, returns every
+ * date and has no `from`, so the guest result is cut here, after the cache. A
+ * group with no date passes through untouched.
  */
 function onOrAfter(
 	groups: ProximityGroup[],
 	from?: CalendarDate,
+	now: Date = new Date(),
 ): ProximityGroup[] {
-	if (!from) return groups
+	if (!from) {
+		const upcoming = (concerts: ResolvedConcert[]) =>
+			concerts.filter((c) => {
+				const d = c.event.localDate?.value
+				if (!d) return true
+				return dateKey(d) >= todayAtVenue(c.event.venue?.timeZone?.value, now)
+			})
+		return groups.flatMap((g) => {
+			if (!g.date?.value) return [g]
+			const next = {
+				...g,
+				home: upcoming(g.home),
+				nearby: upcoming(g.nearby),
+				away: upcoming(g.away),
+			}
+			return next.home.length + next.nearby.length + next.away.length > 0
+				? [next]
+				: []
+		})
+	}
 	const bound = from.year * 10000 + from.month * 100 + from.day
 	return groups.filter((g) => {
 		const d = g.date?.value
 		if (!d) return true
 		return d.year * 10000 + d.month * 100 + d.day >= bound
 	})
+}
+
+/**
+ * The default view of the signed-in list, cut once more at each Venue's
+ * current date: the server applied it when the list was read, and a cached
+ * list outlives the day it was read on. A list read with `from` stays as the
+ * server answered it.
+ */
+function cutDefaultView(
+	groups: ProximityGroup[],
+	from?: CalendarDate,
+): ProximityGroup[] {
+	return from ? groups : onOrAfter(groups)
 }
 
 /**
@@ -595,11 +632,12 @@ function concertFrom(
 
 	const jsDate = new Date(localDate.year, localDate.month - 1, localDate.day)
 
+	// Wall-clock times at the Venue, read in its time zone: never the device's.
 	const startTime = proto.startTime?.value
-		? timestampToTimeString(Number(proto.startTime.value.seconds))
+		? timeOfDayString(proto.startTime.value)
 		: ''
 	const openTime = proto.openTime?.value
-		? timestampToTimeString(Number(proto.openTime.value.seconds))
+		? timeOfDayString(proto.openTime.value)
 		: undefined
 
 	const venueName = resolveVenueName(
@@ -622,6 +660,7 @@ function concertFrom(
 		date: jsDate,
 		startTime,
 		openTime,
+		timeZone: proto.venue?.timeZone?.value || undefined,
 		title: series?.title?.value ?? '',
 		sourceUrl: series?.sourceUrl?.value ?? '',
 		isFirstParty: !!series?.organizerId?.value,
@@ -647,7 +686,6 @@ function resolveVenueName(
 	return venueName || listedVenueName || ''
 }
 
-function timestampToTimeString(epochSeconds: number): string {
-	const d = new Date(epochSeconds * 1000)
-	return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+function timeOfDayString(time: { hours: number; minutes: number }): string {
+	return `${String(time.hours).padStart(2, '0')}:${String(time.minutes).padStart(2, '0')}`
 }

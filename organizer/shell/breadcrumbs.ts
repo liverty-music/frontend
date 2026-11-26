@@ -1,14 +1,15 @@
 import { IRouterEvents } from '@aurelia/router'
 import { DI, resolve } from 'aurelia'
+import type { CivilDate } from '../i18n/format'
 
 /**
  * One part of a breadcrumb: a parent page (with `href`) or the current page.
- * Its text is a catalog key, a Japan-time day, or a name as entered (a concert
+ * Its text is a catalog key, a calendar day at the Venue, or a name as entered (a concert
  * title), so a language switch updates the trail too.
  */
 export interface Crumb {
 	labelKey?: string
-	day?: Date
+	day?: CivilDate
 	label?: string
 	href?: string
 }

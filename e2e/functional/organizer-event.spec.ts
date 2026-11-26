@@ -78,7 +78,10 @@ test.describe('the event header', () => {
 		await page.goto(`${SERIES}/s-tour/events/e-1103/scanners`)
 
 		await expect(
-			page.getByRole('heading', { level: 1, name: '11月3日(火) 18:00 JST' }),
+			page.getByRole('heading', {
+				level: 1,
+				name: '11月3日(火) 18:00 日本時間',
+			}),
 		).toBeVisible()
 		await expect(
 			page.getByRole('link', { name: '受付', exact: true }),

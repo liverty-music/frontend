@@ -24,6 +24,7 @@ import {
 	XX_SOLO,
 } from '../support/organizer-data'
 import { expect, type Page, test } from '../support/test'
+import { type WireDateTime, wireInstant } from '../support/zoned-wire'
 
 /**
  * Story: a member takes one event from draft to the door in the console,
@@ -100,8 +101,8 @@ function server(): Server {
 					id: `sale-${sales.length + 1}`,
 					name: (req.name as { value: string }).value,
 					method: 'LOTTERY',
-					start: req.saleStartTime as string,
-					end: req.saleEndTime as string,
+					start: wireInstant(req.saleStartTime as WireDateTime),
+					end: wireInstant(req.saleEndTime as WireDateTime),
 					eventIds: (req.eventIds as Array<{ value: string }>).map(
 						(e) => e.value,
 					),
@@ -173,7 +174,7 @@ async function walk(page: Page, api: Server, log: RpcLog): Promise<void> {
 
 	// The concert lists its 20 December date; it opens the event page.
 	await page
-		.getByRole('link', { name: /12月20日\(日\) 18:00 JST/ })
+		.getByRole('link', { name: /12月20日\(日\) 18:00 日本時間/ })
 		.first()
 		.click()
 	await expect(page).toHaveURL(/\/events\/e-1220\/ticket-sales$/)

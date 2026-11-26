@@ -13,7 +13,7 @@
 	}
 
 	/* Each select is as wide as its two digits and its picker icon, not the
-	   whole field: the time reads as one value, HH : mm JST. */
+	   whole field: the time reads as one value, HH : mm and its zone. */
 	.control select {
 		flex: none;
 		min-inline-size: 4.5em;

@@ -492,7 +492,8 @@
 			"date": "Date",
 			"venue": "Venue",
 			"open": "Doors",
-			"start": "Start"
+			"start": "Start",
+			"timeZone": "Time zone"
 		},
 		"ticketN": "Ticket {{n}}",
 		"state": {
@@ -737,7 +738,7 @@
 					"body": [
 						"The organizer consents to the transfer of tickets only through official resale on the Service at face value. Resale by any other means is prohibited.",
 						"Official resale opens for a seat type of a concert only when that seat type sells out. A seat type that does not sell out has no official resale, and if you can no longer attend there is no refund unless the concert is cancelled.",
-						"Official resale tickets are not sold first come, first served: they are allocated by a draw every day at 12:00 Japan time. On the day of the concert, the draw at 12:00 or 3 hours before the start time, whichever is earlier, is the last draw and the resale deadline. The tickets of one application are allocated all together or not at all. The total of an application is held on your card from when you apply until the application wins, expires, loses or is withdrawn; it is charged only if you win, and the hold is released otherwise.",
+						"Official resale tickets are not sold first come, first served: they are allocated by a draw every day at 12:00 local time at the venue. On the day of the concert, the draw at 12:00 or 3 hours before the start time, whichever is earlier, is the last draw and the resale deadline. The tickets of one application are allocated all together or not at all. The total of an application is held on your card from when you apply until the application wins, expires, loses or is withdrawn; it is charged only if you win, and the hold is released otherwise.",
 						"You can withdraw an application while it waits for a draw. An application whose hold on your card would expire before it could be charged ends, and you can apply again. If the card of a winning application cannot be charged, the win is cancelled.",
 						"Listing closes at the resale deadline. A ticket that has not been allocated by then stays yours and remains valid for entry. You can withdraw a listing until a draw allocates it. A sale of a listed ticket is not guaranteed.",
 						"When a listed ticket is allocated and the winning user is charged, it becomes invalid and a new ticket is issued to the winning user. You are refunded the face value minus a resale fee of 10% to the card you paid with.",
@@ -1008,7 +1009,7 @@
 		"officialResale": "Official resale",
 		"price": "¥{{price}} per ticket (tax included, face value)",
 		"how": {
-			"draws": "Tickets are allocated by a draw every day at 12:00. On the event's day, the last draw is at 12:00 or 3 hours before the start, whichever is earlier.",
+			"draws": "Tickets are allocated by a draw every day at 12:00 local time at the venue. On the event's day, the last draw is at 12:00 or 3 hours before the start, whichever is earlier.",
 			"allOrNothing": "The tickets you apply for are allocated all together or not at all.",
 			"chargedOnWin": "Your card is charged only if you win."
 		},
@@ -1045,7 +1046,7 @@
 			"payment": "Payment",
 			"paymentValue": "Credit card. ¥{{total}} is held on your card when you apply and charged only if you win. A hold that is not charged is released.",
 			"draws": "Draws and deadline",
-			"drawsValue": "A draw runs every day at 12:00. On the event's day, the last draw is at 12:00 or 3 hours before the start, whichever is earlier. Resale for this event closes at {{deadline}} (the last draw).",
+			"drawsValue": "A draw runs every day at 12:00 local time at the venue. On the event's day, the last draw is at 12:00 or 3 hours before the start, whichever is earlier. Resale for this event closes at {{deadline}} (the last draw).",
 			"allocation": "Allocation",
 			"allocationValue": "The tickets you apply for are allocated all together or not at all.",
 			"delivery": "Getting your tickets",

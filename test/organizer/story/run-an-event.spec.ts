@@ -13,7 +13,6 @@ import {
 	Visibility,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
 import { create } from '@bufbuild/protobuf'
-import { timestampFromDate } from '@bufbuild/protobuf/wkt'
 import { CustomElement, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ConcertRoute } from '../../../organizer/concert/concert-route'
@@ -39,6 +38,7 @@ import { ListItem } from '../../../organizer/ui/list-item/list-item'
 import { StatusBadge } from '../../../organizer/ui/status-badge/status-badge'
 import { IAppConfig } from '../../../shared/config/app-config'
 import { authoredSeries } from '../authored-series'
+import { timeOfDayAt, venueIn } from '../zoned-fixtures'
 
 const STORY = 'stories/run-an-event-from-the-organizer-console'
 
@@ -54,10 +54,8 @@ const SOLO = authoredSeries({
 			id: { value: 'e-1220' },
 			publishState: PublishState.DRAFT,
 			localDate: { value: { year: 2026, month: 12, day: 20 } },
-			startTime: {
-				value: timestampFromDate(new Date('2026-12-20T18:00:00+09:00')),
-			},
-			venue: { name: { value: 'Zepp Haneda' } },
+			startTime: { value: timeOfDayAt(new Date('2026-12-20T18:00:00+09:00')) },
+			venue: venueIn('Zepp Haneda'),
 		},
 	],
 	performers: [{ id: { value: 'a-1' } }],
@@ -294,9 +292,7 @@ describe('run an event from the organizer console', () => {
 			id: { value: 'e-1220' },
 			publishState: PublishState.PUBLISHED,
 			localDate: { value: { year: 2026, month: 12, day: 20 } },
-			startTime: {
-				value: timestampFromDate(new Date('2026-12-20T18:00:00+09:00')),
-			},
+			startTime: { value: timeOfDayAt(new Date('2026-12-20T18:00:00+09:00')) },
 		})
 		const fixture = createFixture(
 			'<console-snackbar></console-snackbar><reception-tab></reception-tab>',

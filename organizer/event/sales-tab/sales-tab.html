@@ -107,7 +107,7 @@
             <status-badge tone.bind="sale.tone" label.bind="sale.stateKey & t"></status-badge>
           </div>
           <p class="window">
-            <span class="[ method ] [ md-typescale-label-large ]">${`sale.method.${sale.method}` & t}</span> · ${sale | jstRange}
+            <span class="[ method ] [ md-typescale-label-large ]">${`sale.method.${sale.method}` & t}</span> · <span data-testid="sale-window">${sale.window | saleWindow}</span>
           </p>
 
           <p if.bind="sale.countdown" class="[ countdown ] [ md-typescale-title-small ]">

@@ -22,6 +22,10 @@ test.use({ viewport: { width: 390, height: 844 }, locale: 'ja-JP' })
  */
 
 const UI = 'components/infrastructure/fan/web/global/ui-primitives'
+
+// The mocked shows are in Japan, and so is the fan whose screens these
+// placeholders are sized for: a fan abroad gets a further line with the zone.
+test.use({ timezoneId: 'Asia/Tokyo' })
 const TOLERANCE = 12
 // A page's height follows its details, so its placeholder is only near it.
 const PAGE_TOLERANCE = 48

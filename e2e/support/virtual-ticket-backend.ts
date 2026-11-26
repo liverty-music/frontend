@@ -4,6 +4,7 @@ import { concertWire } from './concert-wire'
 import { fakeId } from './fake-id'
 import { connectError, FAN_SUB, mockFanRpc } from './fan-auth'
 import { seedSignedInFan } from './fan-shell'
+import { wireTime } from './zoned-wire'
 
 // The backend of the virtual ticket specs: one event with a cover, and two
 // tickets of a signed-in fan that turn 入場済み once `admit()` is called.
@@ -58,10 +59,6 @@ function solidPng(width: number, height: number, [r, g, b]: readonly number[]) {
 
 function concert() {
 	const d = new Date(Date.now() + 10 * DAY)
-	const at = (h: number, m: number) =>
-		new Date(
-			Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), h - 9, m),
-		).toISOString()
 	return {
 		id: { value: EVENT_ID },
 		performers: [
@@ -83,10 +80,13 @@ function concert() {
 				day: d.getDate(),
 			},
 		},
-		openTime: { value: at(17, 30) },
-		startTime: { value: at(18, 30) },
+		openTime: wireTime('17:30'),
+		startTime: wireTime('18:30'),
 		listedVenueName: { value: 'Shibuya WWW' },
-		venue: { adminArea: { value: 'JP-13' } },
+		venue: {
+			adminArea: { value: 'JP-13' },
+			timeZone: { value: 'Asia/Tokyo' },
+		},
 	}
 }
 

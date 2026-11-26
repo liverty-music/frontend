@@ -86,6 +86,8 @@ interface Options {
 	artist?: string
 	path?: string
 	seriesId?: string
+	/** The zone of every date's venue; Japan's by default. */
+	timeZone?: string
 }
 
 /**
@@ -96,7 +98,14 @@ interface Options {
 async function mount(opts: Options = {}) {
 	const state: ConcertSpec = structuredClone(opts.concert ?? TOUR_OF_THREE)
 	const seatTypes = [...(opts.seatTypes ?? [])]
-	const list = vi.fn(async () => [authored(state)])
+	const list = vi.fn(async () => {
+		const concert = authored(state)
+		for (const e of concert.events) {
+			if (e.venue?.timeZone && opts.timeZone)
+				e.venue.timeZone.value = opts.timeZone
+		}
+		return [concert]
+	})
 	const publish = vi.fn(async (_series: string, ids: string[]) => {
 		for (const e of state.events) {
 			if (e.state === 'DRAFT' && (ids.length === 0 || ids.includes(e.id))) {
@@ -273,9 +282,14 @@ describe('concert page', () => {
 			const dates = m.dates()
 			expect(dates).toHaveLength(3)
 			const expected = [
-				['11月3日(火) 18:00 JST', 'Zepp Haneda', '受付中', '公開中'],
-				['11月10日(火) 18:00 JST', 'Zepp Osaka Bayside', '販売なし', '公開中'],
-				['11月17日(火) 18:00 JST', 'Zepp Nagoya', '公開中'],
+				['11月3日(火) 18:00 日本時間', 'Zepp Haneda', '受付中', '公開中'],
+				[
+					'11月10日(火) 18:00 日本時間',
+					'Zepp Osaka Bayside',
+					'販売なし',
+					'公開中',
+				],
+				['11月17日(火) 18:00 日本時間', 'Zepp Nagoya', '公開中'],
 			]
 			dates.forEach((date, i) => {
 				for (const text of expected[i]) expect(deepText(date)).toContain(text)
@@ -292,6 +306,37 @@ describe('concert page', () => {
 			)
 			expect(deepText(summary)).toContain('ツアー')
 			expect(deepText(summary)).toContain('Band A')
+			await m.fixture.tearDown()
+		})
+
+		it(`@spec ${SPEC} "Date in Japan"`, async () => {
+			const m = await mount()
+
+			expect(deepText(m.dates()[0])).toContain('11月3日(火) 18:00 日本時間')
+			expect(deepText(m.dates()[0])).not.toContain('（日本時間')
+			await m.fixture.tearDown()
+		})
+
+		it(`@spec ${SPEC} "Date abroad"`, async () => {
+			const abroad: ConcertSpec = {
+				...TOUR_OF_THREE,
+				events: [
+					{
+						id: 'e-0220',
+						date: '2027-02-20',
+						start: '19:30',
+						venue: 'O2 Arena',
+						state: 'PUBLISHED',
+					},
+				],
+			}
+			// The fixture writes the wall clock in Japan time, which the London
+			// venue then reads: 19:30 on 20 February in London.
+			const m = await mount({ concert: abroad, timeZone: 'Europe/London' })
+
+			expect(deepText(m.dates()[0])).toContain(
+				'2月20日(土) 19:30 ロンドン時間（日本時間 2月21日(日) 04:30）',
+			)
 			await m.fixture.tearDown()
 		})
 

@@ -99,16 +99,10 @@ export interface PendingArtistGroup {
 const UNKNOWN_ARTIST = 'Unknown artist'
 const UNTITLED_SERIES = 'Untitled series'
 
-function formatTimeOfDay(ts?: Timestamp): string {
-	if (!ts) return EMPTY
-	try {
-		return timestampDate(ts).toLocaleTimeString([], {
-			hour: '2-digit',
-			minute: '2-digit',
-		})
-	} catch {
-		return EMPTY
-	}
+/** A candidate's wall-clock time at its venue, `19:00`, or a dash. */
+function formatTimeOfDay(time?: { hours: number; minutes: number }): string {
+	if (!time) return EMPTY
+	return `${String(time.hours).padStart(2, '0')}:${String(time.minutes).padStart(2, '0')}`
 }
 
 function formatTimestamp(ts?: Timestamp): string {

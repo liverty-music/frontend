@@ -1,8 +1,11 @@
 /**
  * Connect JSON builders for organizer RPC responses in functional specs.
  * Field names follow the protobuf JSON mapping (lowerCamelCase, wrapper
- * messages as `{ value }`, enums by name, Timestamps as RFC 3339).
+ * messages as `{ value }`, enums by name, Timestamps as RFC 3339, a sale's window
+ * as a DateTime with its zone, an Event's times as TimeOfDay).
  */
+
+import { wireDateTimeAt, wireTime } from './zoned-wire'
 
 type Json = Record<string, unknown>
 
@@ -12,8 +15,10 @@ export interface EventSpec {
 	id: string
 	/** `2026-11-03` */
 	date: string
-	/** `18:00` Japan time; omitted for an event without a start time. */
+	/** `18:00` at the Venue; omitted for an event without a start time. */
 	start?: string
+	/** The Venue's IANA time zone; Asia/Tokyo unless given. */
+	zone?: string
 	venue?: string
 	placeId?: string
 	state?: PublishStateName
@@ -42,12 +47,13 @@ function event(seriesId: string, e: EventSpec): Json {
 		id: { value: e.id },
 		seriesId: { value: seriesId },
 		localDate: { value: { year, month, day } },
-		...(e.start ? { startTime: { value: jst(e.date, e.start) } } : {}),
+		...(e.start ? { startTime: wireTime(e.start) } : {}),
 		...(e.venue
 			? {
 					venue: {
 						id: { value: `venue-${e.id}` },
 						name: { value: e.venue },
+						timeZone: { value: e.zone ?? 'Asia/Tokyo' },
 						...(e.placeId ? { placeId: { value: e.placeId } } : {}),
 					},
 				}
@@ -234,9 +240,11 @@ export interface SaleSpec {
 	id: string
 	name: string
 	method: 'LOTTERY' | 'FIRST_COME'
-	/** RFC 3339 */
+	/** RFC 3339; sent as the civil date-time in `zone`. */
 	start: string
 	end: string
+	/** The sale's IANA time zone; Asia/Tokyo unless given. */
+	zone?: string
 	verification?: 'UNSPECIFIED' | 'VERIFIED_ANY' | 'JPKI_ONLY'
 	/** The events the sale names; the listed event when omitted. */
 	eventIds?: string[]
@@ -249,8 +257,8 @@ export function ticketSale(eventId: string, s: SaleSpec): Json {
 		id: { value: s.id },
 		name: { value: s.name },
 		method: `TICKET_SALE_METHOD_${s.method}`,
-		saleStartTime: s.start,
-		saleEndTime: s.end,
+		saleStartTime: wireDateTimeAt(s.start, s.zone),
+		saleEndTime: wireDateTimeAt(s.end, s.zone),
 		verificationRequirement: `VERIFICATION_REQUIREMENT_${s.verification ?? 'UNSPECIFIED'}`,
 		eventIds: (s.eventIds ?? [eventId]).map((id) => ({ value: id })),
 	}

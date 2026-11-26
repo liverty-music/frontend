@@ -41,9 +41,6 @@ export interface ListedPasskey extends Passkey {
 	readonly rowName?: string
 }
 
-/** Passkey dates are the day in Japan, where the product runs. */
-const DATE_TIME_ZONE = 'Asia/Tokyo'
-
 /** Where the passkey list stands. */
 export type PasskeyListState = 'loading' | 'ready' | 'error'
 
@@ -193,12 +190,10 @@ export class PasskeysRoute {
 				...(created
 					? {
 							// en-CA writes the ISO calendar date.
-							addedDate: new Intl.DateTimeFormat('en-CA', {
-								timeZone: DATE_TIME_ZONE,
-							}).format(created),
+							// A moment in the past reads in the viewer's own time zone.
+							addedDate: new Intl.DateTimeFormat('en-CA').format(created),
 							addedLabel: new Intl.DateTimeFormat(locale, {
 								dateStyle: 'medium',
-								timeZone: DATE_TIME_ZONE,
 							}).format(created),
 						}
 					: {}),

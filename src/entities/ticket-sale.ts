@@ -56,8 +56,11 @@ export interface TicketSale {
 	readonly id: string
 	readonly name: string
 	readonly method: TicketSaleMethod
+	/** The instants of the window, computed from its civil date-times in `timeZone`. */
 	readonly saleStartTime: Date
 	readonly saleEndTime: Date
+	/** The sale's IANA time zone, which a fan screen names when it is not the viewer's. */
+	readonly timeZone?: string
 	readonly verificationRequirement: VerificationRequirement
 	/** The events the sale sells; a tour presale names several dates. */
 	readonly eventIds: readonly string[]

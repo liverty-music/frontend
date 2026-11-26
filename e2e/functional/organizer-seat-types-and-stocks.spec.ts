@@ -23,6 +23,7 @@ import {
 	XX_SOLO,
 } from '../support/organizer-data'
 import { expect, type Page, test } from '../support/test'
+import { type WireDateTime, wireInstant } from '../support/zoned-wire'
 
 /**
  * Seat types, stocks and the per-account limit from end to end (OpenSpec
@@ -140,8 +141,8 @@ function server() {
 				id: `sale-${sales.length + 1}`,
 				name: (req.name as { value: string }).value,
 				method: 'LOTTERY',
-				start: req.saleStartTime as string,
-				end: req.saleEndTime as string,
+				start: wireInstant(req.saleStartTime as WireDateTime),
+				end: wireInstant(req.saleEndTime as WireDateTime),
 				eventIds: (req.eventIds as Array<{ value: string }>).map(
 					(e) => e.value,
 				),
@@ -241,7 +242,7 @@ test("seat types, a date's stocks and limit, a presale, and deleting them", asyn
 
 	// 3. Publish the date from its event page.
 	await page
-		.getByRole('link', { name: /12月20日\(日\) 18:00 JST/ })
+		.getByRole('link', { name: /12月20日\(日\) 18:00 日本時間/ })
 		.first()
 		.click()
 	await expect(page).toHaveURL(/\/events\/e-1220\/ticket-sales$/)
@@ -329,7 +330,7 @@ test("seat types, a date's stocks and limit, a presale, and deleting them", asyn
 	// stock, so the stock can still be deleted.
 	api.abandonCheckout('stock-seat-1')
 	await page
-		.getByRole('link', { name: /12月20日\(日\) 18:00 JST/ })
+		.getByRole('link', { name: /12月20日\(日\) 18:00 日本時間/ })
 		.first()
 		.click()
 	await sItem.getByRole('button', { name: '削除' }).click()

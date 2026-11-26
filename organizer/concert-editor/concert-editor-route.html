@@ -114,9 +114,11 @@
             error.bind="error(errors.rows[$index].localDate, submitted)"
           ></console-field>
           <console-time-field
+            component.ref="openTimeFields[$index]"
             label.bind="'concertEditor.openTime' & t"
             value.bind="row.openTime"
             readonly.bind="row.publishState === PublishState.CANCELLED"
+            error.bind="error(errors.rows[$index].openTime, submitted)"
           ></console-time-field>
           <console-time-field
             component.ref="startTimeFields[$index]"
@@ -126,6 +128,8 @@
             error.bind="error(errors.rows[$index].time, submitted)"
           ></console-time-field>
         </div>
+        <!-- After the times: the venue zone's name and, for a zone other than Japan's, the start in Japan time. -->
+        <p if.bind="row.place.timeZone" class="[ note ] [ md-typescale-body-medium ]" data-testid="row-zone">${zoneText(row.localDate, row.startTime, row.place.timeZone, language.current)}</p>
         <console-field
           type="number"
           class="limit"

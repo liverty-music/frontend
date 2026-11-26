@@ -3,10 +3,12 @@ import { Visibility } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/
 import { Code, ConnectError } from '@connectrpc/connect'
 import { type IDisposable, ILogger, resolve } from 'aurelia'
 import { IAppConfig } from '../../shared/config/app-config'
+import type { CivilDate, EventWhen } from '../i18n/format'
 import {
 	concertTitle,
 	eventDay,
-	eventStart,
+	eventWhen,
+	hasStartTime,
 	fanPageUrlOf,
 	isCancelled,
 	isDraft,
@@ -134,11 +136,16 @@ export class EventRoute {
 		]
 	}
 
-	public get start(): Date | undefined {
-		return this.page.event ? eventStart(this.page.event) : undefined
+	/** The event's date and start time at its Venue, for the header. */
+	public get when(): EventWhen | undefined {
+		return this.page.event ? eventWhen(this.page.event) : undefined
 	}
 
-	public get day(): Date | undefined {
+	public get hasStart(): boolean {
+		return this.page.event ? hasStartTime(this.page.event) : false
+	}
+
+	public get day(): CivilDate | undefined {
 		return this.page.event ? eventDay(this.page.event) : undefined
 	}
 

@@ -10,7 +10,6 @@ import {
 } from '../support/organizer'
 import {
 	type ConcertSpec,
-	jst,
 	organizer,
 	seriesList,
 	XX_SOLO,
@@ -121,7 +120,7 @@ interface DraftBody {
 			eventId?: { value: string }
 			venueName: { value: string }
 			placeId?: { value: string }
-			startTime?: { value: string }
+			startTime?: { value: { hours?: number; minutes?: number } }
 			perAccountLimit?: number
 		}>
 	}
@@ -322,19 +321,17 @@ test.describe('times in another time zone', () => {
 				return { body: oneSeries(timed) }
 			},
 		})
-		const start = timeField(row(page, 0), '開演')
 		expect(await shownTime(row(page, 0), '開演')).toBe('')
-		await expect(start).toContainText('JST')
+		await expect(row(page, 0).getByTestId('row-zone')).toContainText('日本時間')
 		await chooseTime(row(page, 0), '開演', '18:00')
 		await page.getByRole('button', { name: '保存する' }).click()
 		await expect(snackbar(page)).toContainText('変更を保存しました')
 
 		const body = calls(log, 'SeriesService/Update')[0]
 			.body as unknown as DraftBody
-		const sent = body.draft.events[0].startTime?.value ?? ''
-		// 18:00 JST on 20 December is 09:00 UTC, whatever the device's zone.
-		expect(new Date(sent).toISOString()).toBe(jst('2026-12-20', '18:00'))
-		expect(sent).toMatch(/^2026-12-20T09:00:00(\.0+)?Z$/)
+		// 18:00 at the venue in Japan is sent as that wall-clock time, whatever
+		// the device's zone.
+		expect(body.draft.events[0].startTime?.value).toEqual({ hours: 18 })
 
 		// Saving returns to the concert page; reopen the editor.
 		await expect(page).toHaveURL(/\/series\/s-solo$/)

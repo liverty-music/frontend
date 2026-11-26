@@ -140,8 +140,9 @@ export class ConcertRpcClient {
 	 * The concerts of the artists the caller follows
 	 * (`ConcertService.ListFollowed`). When `from` is provided the server returns
 	 * concerts on or after that date (including past dates); when omitted the
-	 * server defaults to today onward. The timetable always passes the client's
-	 * local date so the "today" boundary is anchored to the caller's timezone.
+	 * server defaults to each concert's current date at its own Venue. The default
+	 * timetable passes no `from`: the device's date is not "today" at a Venue in
+	 * another time zone.
 	 */
 	public async listFollowed(
 		from?: CalendarDate,

@@ -8,10 +8,11 @@ import {
 	type ReferralCodeStats,
 	TicketSaleService,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/organizer/ticket_sale/v1/ticket_sale_service_pb.js'
-import { timestampFromDate } from '@bufbuild/protobuf/wkt'
 import { createClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
 import { IAppConfig } from '../../shared/config/app-config'
+import { dateTimeInit } from '../../shared/lib/zoned-time/proto'
+import type { WallClock } from '../../shared/lib/zoned-time/zoned-time'
 import { IAuthService } from '../../shared/services/auth-service'
 import { IConsoleLanguage } from '../i18n/console-language'
 import { createOrganizerTransport } from './organizer-transport'
@@ -20,17 +21,26 @@ export type { LotteryEntryStats, ReferralCodeStats, TicketSale }
 export { TicketSaleMethod, VerificationRequirement }
 
 /**
- * The plain, transport-agnostic input of a new sale of one event. Times are
- * absolute instants (the editors compose them from Japan-time inputs). The
+ * A sale's window: civil date-times in the sale's IANA time zone, as the
+ * member entered them. The server stores them as wall-clock times with the
+ * zone.
+ */
+export interface SaleWindowInput {
+	readonly saleStart: WallClock
+	readonly saleEnd: WallClock
+	readonly timeZone: string
+}
+
+/**
+ * The plain, transport-agnostic input of a new sale of one event. Its window
+ * is a {@link SaleWindowInput}. The
  * sale sells every TicketStock of its events; prices are on the seat types,
  * quantities on the stocks and the per-account limit on the event.
  */
-export interface CreateTicketSaleInput {
+export interface CreateTicketSaleInput extends SaleWindowInput {
 	readonly seriesId: string
 	readonly name: string
 	readonly method: 'lottery' | 'firstCome'
-	readonly saleStartTime: Date
-	readonly saleEndTime: Date
 	readonly eventIds: readonly string[]
 }
 
@@ -121,8 +131,8 @@ export class TicketSaleClient {
 						input.method === 'lottery'
 							? TicketSaleMethod.LOTTERY
 							: TicketSaleMethod.FIRST_COME,
-					saleStartTime: timestampFromDate(input.saleStartTime),
-					saleEndTime: timestampFromDate(input.saleEndTime),
+					saleStartTime: dateTimeInit(input.saleStart, input.timeZone),
+					saleEndTime: dateTimeInit(input.saleEnd, input.timeZone),
 					eventIds: input.eventIds.map((id) => ({ value: id })),
 				},
 				{ signal },
@@ -137,11 +147,10 @@ export class TicketSaleClient {
 		}
 	}
 
-	/** Replaces the sale's start and end times and returns the sale. */
+	/** Replaces the sale's start and end times (in its zone) and returns the sale. */
 	public async setWindow(
 		ticketSaleId: string,
-		saleStartTime: Date,
-		saleEndTime: Date,
+		window: SaleWindowInput,
 		signal?: AbortSignal,
 	): Promise<TicketSale | undefined> {
 		this.logger.info('Setting ticket sale window', { ticketSaleId })
@@ -149,8 +158,8 @@ export class TicketSaleClient {
 			const response = await this.client.setWindow(
 				{
 					ticketSaleId: { value: ticketSaleId },
-					saleStartTime: timestampFromDate(saleStartTime),
-					saleEndTime: timestampFromDate(saleEndTime),
+					saleStartTime: dateTimeInit(window.saleStart, window.timeZone),
+					saleEndTime: dateTimeInit(window.saleEnd, window.timeZone),
 				},
 				{ signal },
 			)

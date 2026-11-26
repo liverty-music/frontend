@@ -1,14 +1,28 @@
 import { IRouteContext, IRouter } from '@aurelia/router'
 import type { Event } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/event_pb.js'
-import { timestampDate } from '@bufbuild/protobuf/wkt'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { ILogger, resolve } from 'aurelia'
 import { type SaleBlock, saleBlocksOf } from '../event/event-page'
-import { emptyJstDateTime } from '../i18n/format'
+import { zoneLabel, zoneName } from '../../shared/lib/zoned-time/zone-name'
+import { instantOfDateTime } from '../../shared/lib/zoned-time/proto'
+import type { WallClock } from '../../shared/lib/zoned-time/zoned-time'
+import { IConsoleLanguage } from '../i18n/console-language'
+import {
+	emptyDateTimeInput,
+	instantOfInput,
+	toDateTimeInput,
+} from '../i18n/wall-input'
+import {
+	saleZonesOf,
+	storedWindowOf,
+	wallText,
+	zoneOptions,
+} from '../model/sale-zone'
 import {
 	concertTitle,
 	eventDay,
 	eventStart,
+	eventWhen,
 	findConcert,
 	findEvent,
 	paths,
@@ -19,7 +33,7 @@ import { type StockView, stockViewsOf } from '../model/stock-model'
 import { IClock } from '../services/clock'
 import { IOrganizerClient } from '../services/organizer-client'
 import { findOverlappingSale } from '../services/sale-window'
-import { ISeriesClient } from '../services/series-client'
+import { type AuthoredSeries, ISeriesClient } from '../services/series-client'
 import {
 	ITicketSaleClient,
 	type TicketSale,
@@ -37,21 +51,23 @@ import {
 	type LotterySaleFormErrors,
 	type LotterySaleFormModel,
 	MAX_WINDOW_DAYS,
+	defaultWindow,
 	MIN_WINDOW_DAYS,
-	parseDateTime,
 	toCreateInput,
-	toDateTime,
 	validateLotterySaleForm,
 } from './lottery-sale-form'
 
 /** The overlap error, naming the other sale and its window. */
 export function overlapError(sale: TicketSale): FieldError {
+	const window = storedWindowOf(sale)
 	return {
 		key: 'lotteryEditor.error.overlap',
 		params: {
 			name: sale.name?.value ?? '',
-			start: sale.saleStartTime ? timestampDate(sale.saleStartTime) : undefined,
-			end: sale.saleEndTime ? timestampDate(sale.saleEndTime) : undefined,
+			start: window.start
+				? { wall: window.start, zone: window.zone }
+				: undefined,
+			end: window.end ? { wall: window.end, zone: window.zone } : undefined,
 		},
 	}
 }
@@ -59,7 +75,7 @@ export function overlapError(sale: TicketSale): FieldError {
 /**
  * Starts a lottery sale for one event (`ticket-sales/new?method=lottery`) or
  * changes one before it opens (`ticket-sales/:saleId/edit`), opened by the
- * sale editor route: the sale's name and its window in Japan time. It
+ * sale editor route: the sale's name, its time zone and its window in that zone. It
  * draws from every TicketStock of the event, listed with their seat types,
  * prices and quantities, and the per-account limit is the event's. Opened
  * from the event's Sales tab and back there after saving or leaving; unsaved
@@ -81,6 +97,7 @@ export class LotterySaleEditorRoute {
 	private readonly consoleContext = resolve(IConsoleContext)
 	private readonly snackbar = resolve(ISnackbar)
 	private readonly clock = resolve(IClock)
+	public readonly language = resolve(IConsoleLanguage)
 	private readonly progress = resolve(IPageProgress)
 	private readonly logger = resolve(ILogger).scopeTo('LotterySaleEditorRoute')
 
@@ -96,6 +113,7 @@ export class LotterySaleEditorRoute {
 	public saleId = ''
 	public title = ''
 	public event: Event | undefined
+	private concert: AuthoredSeries | undefined
 	/** Why no sale can be saved yet, shown instead of the form. */
 	public blocks: SaleBlock[] = []
 	public model: LotterySaleFormModel = emptyFormModel(new Date())
@@ -105,6 +123,8 @@ export class LotterySaleEditorRoute {
 	 * field; the template translates it.
 	 */
 	public saveProblem = ''
+	/** The server refused the sale's zone (it is not one of its events' venues'). */
+	public zoneRefused = false
 	public guard!: UnsavedChanges
 
 	public readonly minWindowDays = MIN_WINDOW_DAYS
@@ -163,6 +183,65 @@ export class LotterySaleEditorRoute {
 		return this.event ? eventStart(this.event) : undefined
 	}
 
+	/** The event's date and start time at its Venue, for the header. */
+	public get when() {
+		return this.event ? eventWhen(this.event) : undefined
+	}
+
+	/** The time zones the sale may be in: those of its events' venues. */
+	public get zones(): string[] {
+		return saleZonesOf(this.saleEvents())
+	}
+
+	/**
+	 * The events the sale names: those of an existing sale (a tour presale names
+	 * several dates), else the one event the editor was opened from.
+	 */
+	private saleEvents(): Event[] {
+		const named = this.sale?.eventIds.map((e) => e.value) ?? []
+		const events = named.length
+			? (this.concert?.events ?? []).filter((e) =>
+					named.includes(e.id?.value ?? ''),
+				)
+			: []
+		return events.length ? events : this.event ? [this.event] : []
+	}
+
+	/** True when the sale's zone is a choice between several; one zone is text. */
+	public get zoneIsChoice(): boolean {
+		return this.zones.length > 1
+	}
+
+	public get zoneOptions() {
+		return zoneOptions(this.zones, this.language.current)
+	}
+
+	/** The name of the sale's zone (`台北`), or ''. */
+	public zoneNameOf(zone: string, locale: string): string {
+		return zone ? zoneName(zone, locale === 'ja' ? 'ja' : 'en') : ''
+	}
+
+	/** The zone's label for the window's fields (`台北時間`), or '' while none is chosen. */
+	public zoneLabelOf(zone: string, locale: string): string {
+		return zone ? zoneLabel(zone, locale === 'ja' ? 'ja' : 'en') : ''
+	}
+
+	/** The member chose a zone: an unset window defaults to 10 days from now there. */
+	public zoneChosen(zone: string): void {
+		this.model.timeZone = zone
+		this.zoneRefused = false
+		const { saleStart, saleEnd } = this.model
+		if (
+			zone &&
+			!saleStart.date &&
+			!saleStart.time &&
+			!saleEnd.date &&
+			!saleEnd.time
+		) {
+			Object.assign(this.model, defaultWindow(new Date(this.clock.now()), zone))
+		}
+	}
+
 	public get venue(): string {
 		return this.event ? venueName(this.event) : ''
 	}
@@ -180,8 +259,12 @@ export class LotterySaleEditorRoute {
 		const errors = validateLotterySaleForm(this.model, {
 			eventStart: this.start ?? null,
 		})
-		const open = parseDateTime(this.model.saleStart)
-		const close = parseDateTime(this.model.saleEnd)
+		// Said even when the refused zone was cleared for a new choice.
+		if (this.zoneRefused) {
+			errors.timeZone = { key: 'saleEditor.error.zoneRefused' }
+		}
+		const open = instantOfInput(this.model.saleStart, this.model.timeZone)
+		const close = instantOfInput(this.model.saleEnd, this.model.timeZone)
 		if (!errors.window && open && close) {
 			const other = findOverlappingSale(
 				this.existingSales,
@@ -210,9 +293,11 @@ export class LotterySaleEditorRoute {
 		if (!params) return params
 		const out: Record<string, unknown> = { ...params }
 		for (const [k, v] of Object.entries(params)) {
-			if (v instanceof Date) {
-				const at = toDateTime(v)
-				out[k] = `${at.date} ${at.time}`
+			const moment = v as { wall?: WallClock; zone?: string } | undefined
+			if (moment && typeof moment === 'object' && 'wall' in moment) {
+				out[k] = moment.wall
+					? `${wallText(moment.wall)}${moment.zone ? ` ${zoneLabel(moment.zone, this.language.current)}` : ''}`
+					: ''
 			}
 		}
 		return out
@@ -228,6 +313,7 @@ export class LotterySaleEditorRoute {
 				this.ticketStocks.listByEvent(this.eventId, this.abort.signal),
 			])
 			const concert = findConcert(concerts, this.seriesId)
+			this.concert = concert
 			this.event = findEvent(concert, this.eventId)
 			this.title = concert ? concertTitle(concert) : ''
 			this.existingSales = sales.ticketSales
@@ -252,17 +338,23 @@ export class LotterySaleEditorRoute {
 					this.state = 'opened'
 					return
 				}
+				const window = storedWindowOf(this.sale)
 				this.model = {
 					name: this.sale.name?.value ?? '',
-					saleStart: this.sale.saleStartTime
-						? toDateTime(timestampDate(this.sale.saleStartTime))
-						: emptyJstDateTime(),
-					saleEnd: this.sale.saleEndTime
-						? toDateTime(timestampDate(this.sale.saleEndTime))
-						: emptyJstDateTime(),
+					timeZone: window.zone ?? '',
+					saleStart: window.start
+						? toDateTimeInput(window.start)
+						: emptyDateTimeInput(),
+					saleEnd: window.end
+						? toDateTimeInput(window.end)
+						: emptyDateTimeInput(),
 				}
 			} else {
-				this.model = emptyFormModel(new Date(this.clock.now()))
+				// A zone the events' venues share is the sale's; several leave it to the member.
+				this.model = emptyFormModel(
+					new Date(this.clock.now()),
+					this.zones.length === 1 ? this.zones[0] : '',
+				)
 			}
 			this.saved = JSON.stringify(this.model)
 			this.state = 'ready'
@@ -295,15 +387,16 @@ export class LotterySaleEditorRoute {
 	}
 
 	private hasOpened(sale: TicketSale): boolean {
-		return (
-			!!sale.saleStartTime &&
-			timestampDate(sale.saleStartTime).getTime() <= this.clock.now()
-		)
+		const start = sale.saleStartTime
+			? instantOfDateTime(sale.saleStartTime)
+			: undefined
+		return !!start && start.getTime() <= this.clock.now()
 	}
 
 	public async save(): Promise<void> {
 		this.submitted = true
 		this.saveProblem = ''
+		this.zoneRefused = false
 		if (!isFormValid(this.errors)) return
 		if (this.isChange) await this.saveChange()
 		else await this.create()
@@ -322,7 +415,7 @@ export class LotterySaleEditorRoute {
 			await this.router.load(this.salesHref)
 		} catch (err) {
 			this.logger.warn('Lottery not created', err)
-			this.failed(err, () => void this.save())
+			await this.failed(err, () => void this.save())
 		}
 	}
 
@@ -335,20 +428,28 @@ export class LotterySaleEditorRoute {
 			return
 		}
 		const input = toCreateInput(this.seriesId, this.eventId, this.model)
+		const stored = storedWindowOf(sale)
+		const same = (a: WallClock, b?: WallClock) =>
+			!!b &&
+			a.year === b.year &&
+			a.month === b.month &&
+			a.day === b.day &&
+			a.hour === b.hour &&
+			a.minute === b.minute
 		const windowChanged =
-			input.saleStartTime.getTime() !==
-				(sale.saleStartTime
-					? timestampDate(sale.saleStartTime).getTime()
-					: 0) ||
-			input.saleEndTime.getTime() !==
-				(sale.saleEndTime ? timestampDate(sale.saleEndTime).getTime() : 0)
+			input.timeZone !== (stored.zone ?? '') ||
+			!same(input.saleStart, stored.start) ||
+			!same(input.saleEnd, stored.end)
 
 		if (windowChanged) {
 			try {
 				const updated = await this.ticketSales.setWindow(
 					this.saleId,
-					input.saleStartTime,
-					input.saleEndTime,
+					{
+						saleStart: input.saleStart,
+						saleEnd: input.saleEnd,
+						timeZone: input.timeZone,
+					},
 					this.abort.signal,
 				)
 				if (updated) {
@@ -357,7 +458,7 @@ export class LotterySaleEditorRoute {
 				}
 			} catch (err) {
 				this.logger.warn('Window not saved', err)
-				this.failed(err, () => void this.save())
+				await this.failed(err, () => void this.save())
 				return
 			}
 		}
@@ -366,7 +467,40 @@ export class LotterySaleEditorRoute {
 		await this.router.load(this.salesHref)
 	}
 
-	private failed(err: unknown, retry: () => void): void {
+	/**
+	 * True when the sale's zone is no longer one of its events' venues' zones,
+	 * read anew: the one refusal the form cannot check before saving. The zone
+	 * choices follow the venues as they are now.
+	 */
+	private async zoneNoLongerOffered(): Promise<boolean> {
+		const chosen = this.model.timeZone
+		try {
+			const concerts = await this.series.list(this.abort.signal)
+			const concert = findConcert(concerts, this.seriesId)
+			const event = findEvent(concert, this.eventId)
+			if (!concert || !event) return false
+			this.concert = concert
+			this.event = event
+		} catch (err) {
+			this.logger.warn('Venue zones not read again', err)
+			return false
+		}
+		const zones = this.zones
+		if (zones.includes(chosen)) return false
+		// The only zone left is shown as text; several are a new choice.
+		this.model.timeZone = zones.length === 1 ? zones[0] : ''
+		return true
+	}
+
+	private async failed(err: unknown, retry: () => void): Promise<void> {
+		if (
+			err instanceof ConnectError &&
+			err.code === Code.InvalidArgument &&
+			(await this.zoneNoLongerOffered())
+		) {
+			this.zoneRefused = true
+			return
+		}
 		if (err instanceof ConnectError && err.code === Code.FailedPrecondition) {
 			this.saveProblem = this.isChange
 				? 'lotteryEditor.openedWhileEditing'

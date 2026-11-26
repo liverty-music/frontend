@@ -1,3 +1,4 @@
+import { registerZoneNames } from '../../../shared/lib/zoned-time/zone-name'
 import { BindingMode, bindable, ILogger, resolve } from 'aurelia'
 import { IConsoleLanguage } from '../../i18n/console-language'
 import type { FieldError } from '../../i18n/field-error'
@@ -242,6 +243,14 @@ export class VenueConfirm {
 		const country = await this.venues.listByCountry(code)
 		if (generation !== this.generation) return
 		this.country = country
+		// The editor's rows name the venue's zone as the API does.
+		registerZoneNames(
+			country.timeZones.map((z) => ({
+				zone: z.timeZone?.value ?? '',
+				nameJa: z.nameJa,
+				nameEn: z.nameEn,
+			})),
+		)
 		this.groups = areaGroups(country, this.language.current)
 		this.zones = zoneChoices(
 			country,

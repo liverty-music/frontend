@@ -4,13 +4,16 @@ import {
 	type Scanner,
 	ScannerStatus,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/scanner_pb.js'
+import type { EventWhen } from '../i18n/format'
 import type { AuthoredSeries } from '../services/series-client'
 import {
 	concertCancelled,
 	concertTitle,
-	eventDay,
 	eventId,
 	eventStart,
+	eventWhen,
+	hasStartTime,
+	eventSortKey,
 	eventsByDate,
 	homeArtistOf,
 	isDraft,
@@ -27,8 +30,10 @@ export interface HomeItem {
 	/** Stable key for the list. */
 	key: string
 	concertTitle?: string
-	/** The event's start (scanner) or day (startTime, draft). */
-	when?: Date
+	/** The event's date and start (scanner) or its day alone (startTime, draft), at its Venue. */
+	when?: EventWhen
+	/** The instant the items of a kind are ordered by within it. */
+	sortKey?: number
 	actionHref: string
 }
 
@@ -129,7 +134,8 @@ export function homeItems(sources: HomeSources, now: number): HomeItem[] {
 			kind: 'scanner',
 			key: `scanner:${eventId(event)}`,
 			concertTitle: concertTitle(concert),
-			when: start,
+			when: eventWhen(event),
+			sortKey: start.getTime(),
 			actionHref: paths.scanners(
 				scopeOf(concert),
 				seriesId(concert),
@@ -140,12 +146,13 @@ export function homeItems(sources: HomeSources, now: number): HomeItem[] {
 
 	for (const concert of live) {
 		for (const event of eventsByDate(concert)) {
-			if (isPublished(event) && !eventStart(event)) {
+			if (isPublished(event) && !hasStartTime(event)) {
 				items.push({
 					kind: 'startTime',
 					key: `startTime:${eventId(event)}`,
 					concertTitle: concertTitle(concert),
-					when: eventDay(event),
+					when: eventWhen(event),
+					sortKey: eventSortKey(event),
 					actionHref: paths.editConcert(scopeOf(concert), seriesId(concert)),
 				})
 			}
@@ -156,7 +163,8 @@ export function homeItems(sources: HomeSources, now: number): HomeItem[] {
 				kind: 'draft',
 				key: `draft:${seriesId(concert)}`,
 				concertTitle: concertTitle(concert),
-				when: eventDay(firstDraft),
+				when: eventWhen(firstDraft),
+				sortKey: eventSortKey(firstDraft),
 				actionHref: paths.concert(scopeOf(concert), seriesId(concert)),
 			})
 		}
@@ -165,6 +173,6 @@ export function homeItems(sources: HomeSources, now: number): HomeItem[] {
 	return items.sort(
 		(a, b) =>
 			KIND_ORDER.indexOf(a.kind) - KIND_ORDER.indexOf(b.kind) ||
-			(a.when?.getTime() ?? 0) - (b.when?.getTime() ?? 0),
+			(a.sortKey ?? 0) - (b.sortKey ?? 0),
 	)
 }

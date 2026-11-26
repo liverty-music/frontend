@@ -11,6 +11,8 @@ export class ConcertDetails {
 	@bindable public dateLabel = ''
 	@bindable public openTimeLabel = ''
 	@bindable public startTimeLabel = ''
+	/** The Venue zone's name with the viewer's times, or '' when none is shown. */
+	@bindable public zoneLabel = ''
 	@bindable public venueName = ''
 	@bindable public prefecture = ''
 	@bindable public mapsUrl = ''

@@ -5,10 +5,11 @@ import {
 	SeriesType,
 	Visibility,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
-import { timestampDate } from '@bufbuild/protobuf/wkt'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { ILogger, resolve } from 'aurelia'
-import { toJstTimeInput } from '../i18n/format'
+import { timeKey } from '../../shared/lib/zoned-time/zoned-time'
+import { IConsoleLanguage } from '../i18n/console-language'
+import { type ConsoleLocale, formatZoneAtVenue } from '../i18n/format'
 import {
 	concertTitle,
 	findConcert,
@@ -42,6 +43,8 @@ import {
 	hasFixedVenueAndDate,
 	isFormValid,
 	nextEventRow,
+	parseIsoDate,
+	parseWallTime,
 	toSeriesDraftInput,
 	validateConcertForm,
 } from './concert-form'
@@ -60,6 +63,11 @@ function performerOption(artist: Artist, selected: boolean): PerformerOption {
 		name: artist.name?.value ?? '',
 		selected,
 	}
+}
+
+/** A TimeOfDay as the wall time the editor's fields hold. */
+function timeOfDay(t: { hours: number; minutes: number }) {
+	return { hour: t.hours, minute: t.minutes }
 }
 
 /**
@@ -90,6 +98,7 @@ export class ConcertEditorRoute {
 	private readonly venues = resolve(IVenueClient)
 	private readonly router = resolve(IRouter)
 	private readonly breadcrumbs = resolve(IBreadcrumbs)
+	public readonly language = resolve(IConsoleLanguage)
 	private readonly snackbar = resolve(ISnackbar)
 	private readonly clock = resolve(IClock)
 	private readonly context = resolve(IConsoleContext)
@@ -108,6 +117,7 @@ export class ConcertEditorRoute {
 	public venueFields: VenueField[] = []
 	public dateFields: ConsoleField[] = []
 	public startTimeFields: ConsoleTimeField[] = []
+	public openTimeFields: ConsoleTimeField[] = []
 	public limitFields: ConsoleField[] = []
 
 	/** The served cover, the picked image while it is processed, and the upload in flight. */
@@ -319,10 +329,10 @@ export class ConcertEditorRoute {
 						? `${d.year}-${String(d.month).padStart(2, '0')}-${String(d.day).padStart(2, '0')}`
 						: '',
 					startTime: e.startTime?.value
-						? toJstTimeInput(timestampDate(e.startTime.value))
+						? timeKey(timeOfDay(e.startTime.value))
 						: '',
 					openTime: e.openTime?.value
-						? toJstTimeInput(timestampDate(e.openTime.value))
+						? timeKey(timeOfDay(e.openTime.value))
 						: '',
 					perAccountLimit: String(perAccountLimitOf(e)),
 				}
@@ -344,6 +354,28 @@ export class ConcertEditorRoute {
 			(row) =>
 				this.publishedStartTimes.has(row.eventId) &&
 				this.publishedStartTimes.get(row.eventId) !== row.startTime,
+		)
+	}
+
+	/**
+	 * The name of the row's venue zone after its times, with Japan time after
+	 * it for a zone other than Japan's (`ロンドン時間（日本時間 2月21日(日)
+	 * 04:30）`). Everything it reads is passed in, so the binding re-evaluates
+	 * when the date, the start time, the zone or the language changes.
+	 */
+	public zoneText(
+		date: string,
+		start: string,
+		zone: string,
+		locale: ConsoleLocale,
+	): string {
+		if (!zone) return ''
+		const d = parseIsoDate(date)
+		return formatZoneAtVenue(
+			d ?? { year: 1970, month: 1, day: 1 },
+			d ? (parseWallTime(start) ?? undefined) : undefined,
+			zone,
+			locale,
 		)
 	}
 
@@ -426,13 +458,15 @@ export class ConcertEditorRoute {
 			return
 		}
 		const row = this.errors.rows.findIndex(
-			(r) => r.venueName || r.localDate || r.time || r.perAccountLimit,
+			(r) =>
+				r.venueName || r.localDate || r.time || r.openTime || r.perAccountLimit,
 		)
 		if (row < 0) return
 		const errors = this.errors.rows[row]
 		if (errors.venueName) this.venueFields[row]?.focus()
 		else if (errors.localDate) this.dateFields[row]?.focus()
 		else if (errors.time) this.startTimeFields[row]?.focus()
+		else if (errors.openTime) this.openTimeFields[row]?.focus()
 		else this.limitFields[row]?.focus()
 	}
 

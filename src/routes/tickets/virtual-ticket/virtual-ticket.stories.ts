@@ -62,8 +62,10 @@ const EVENT: ConcertPageConcert = {
 	],
 	dateKey: '2026-11-20',
 	date: new Date(2026, 10, 20),
-	openTime: jst(17, 30),
-	startTime: jst(18, 30),
+	localDate: { year: 2026, month: 11, day: 20 },
+	timeZone: 'Asia/Tokyo',
+	openTime: { hour: 17, minute: 30 },
+	startTime: { hour: 18, minute: 30 },
 	venueName: 'Shibuya WWW',
 	adminArea: 'JP-13',
 	cancelled: false,
@@ -295,6 +297,37 @@ export const EventUnknown = {
 			'イベント情報を読み込めませんでした',
 		)
 		await expect(face.textContent).toContain('S席')
+	},
+} satisfies Story
+
+/**
+ * A show in another zone than the fan's, on a phone, with a title and
+ * performers long enough to fill every line of the headline: the zone and the
+ * fan's own times still stand under it, whole.
+ */
+export const Abroad = {
+	globals: { viewport: { value: 'mobile1' } },
+	render: () =>
+		ticketStory({
+			event: {
+				...EVENT,
+				timeZone: 'America/New_York',
+				title: 'The Very Long Autumn World Tour 2026 Grand Final Edition',
+				performers: [
+					{ id: 'a-1', name: 'The Extraordinarily Long Band', mbid: '' },
+					{ id: 'a-2', name: 'A Special Guest Orchestra', mbid: '' },
+				],
+			},
+		}),
+	play: async ({ canvasElement }) => {
+		const face = faceOf(canvasElement)
+		const zone = face.querySelector('[data-testid="event-zone"]')
+		await expect(zone?.textContent).toContain('ニューヨーク時間')
+		const art = face.querySelector('.ticket-front-art')
+		const bounds = art?.getBoundingClientRect()
+		const line = zone?.getBoundingClientRect()
+		await expect(line?.bottom).toBeLessThanOrEqual(bounds?.bottom ?? 0)
+		await expect(line?.top).toBeGreaterThanOrEqual(bounds?.top ?? 0)
 	},
 } satisfies Story
 
