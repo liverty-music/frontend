@@ -4,7 +4,7 @@
  * account can be deleted once none is left.
  */
 export type DeletionBlockerKind =
-	/** An Issued Ticket for an event whose date (Japan time) is today or later. */
+	/** An Issued Ticket for an event whose date at its venue is today or later. */
 	| 'upcomingTicket'
 	/** A resale listing still Listed. */
 	| 'listedResale'

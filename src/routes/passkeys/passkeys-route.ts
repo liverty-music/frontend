@@ -33,7 +33,7 @@ import { inListTransition } from '../../util/list-transition'
 export interface ListedPasskey extends Passkey {
 	/** The passkey provider, from the record. */
 	readonly providerName?: string
-	/** The day it was added (Japan time, `YYYY-MM-DD`), from the record. */
+	/** The day it was added (the browser's time zone, `YYYY-MM-DD`), from the record. */
 	readonly addedDate?: string
 	/** That day, written for the fan's language. */
 	readonly addedLabel?: string
