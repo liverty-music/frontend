@@ -233,6 +233,7 @@ describe('ConcertStore', () => {
 		})
 
 		// @spec components/infrastructure/fan/web/route/timetable "Concert abroad still today at its venue"
+		// @spec components/infrastructure/fan/web/route/timetable "Guest's concert abroad still today at its venue"
 		it('keeps a London concert of 14 March while it is still 14 March there', async () => {
 			// 08:00 on 15 March in Japan is 23:00 on 14 March in London.
 			vi.useFakeTimers({ toFake: ['Date'] })
