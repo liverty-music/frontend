@@ -4,7 +4,11 @@ import {
 	type StoryObj,
 } from '@aurelia/storybook'
 import { expect, userEvent, waitFor, within } from 'storybook/test'
-import { nextPaint, pausableAnimations } from '../../../.storybook/motion'
+import {
+	nextPaint,
+	finishMotion,
+	pausableAnimations,
+} from '../../../.storybook/motion'
 import { transitionsEnded } from '../../../.storybook/transitions-ended'
 import { CoachMark } from './coach-mark'
 
@@ -287,8 +291,13 @@ export const TapOutsideFades = {
 					a.effect?.target === overlay,
 			)
 		await nextPaint()
-		await waitFor(() => expect(fadeOf()).toHaveLength(1))
-		const fade = fadeOf()
+		// Paused as soon as it is found, so it cannot run out under the checks.
+		const fade = await waitFor(() => {
+			const found = fadeOf()
+			expect(found).toHaveLength(1)
+			found[0].pause()
+			return found
+		})
 		await expect(overlay.hidden).toBe(true)
 		await expect(overlay.inert).toBe(true)
 		await expect(Number(fade[0].effect?.getComputedTiming().duration)).toBe(200)
@@ -300,6 +309,7 @@ export const TapOutsideFades = {
 		await expect(getComputedStyle(spot).boxShadow).toMatch(/0\.7\)/)
 		// Fading out, towards nothing.
 		await expect(getComputedStyle(overlay).opacity).not.toBe('1')
+		finishMotion(fade)
 		await waitFor(() => expect(overlayIsGone(canvasElement)).toBe(true))
 	},
 } satisfies Story
