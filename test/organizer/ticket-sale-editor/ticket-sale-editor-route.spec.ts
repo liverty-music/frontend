@@ -963,6 +963,29 @@ describe('the sale zone of the first-come editor', () => {
 		await fixture.tearDown()
 	})
 
+	it('still says why when the refused zone leaves several to choose from', async () => {
+		const concertIn = (...zones: string[]) => [
+			authoredSeries({
+				series: { id: { value: 's-1' }, title: { value: 'XX Tour' } },
+				events: zones.map((timeZone, i) =>
+					eventInit({ id: `e-${i + 1}`, timeZone }),
+				),
+			}),
+		]
+		const { fixture, vm } = await mount({
+			list: vi
+				.fn()
+				.mockResolvedValueOnce(concertIn('Asia/Tokyo'))
+				.mockResolvedValue(concertIn('Asia/Seoul')),
+			create: refused(),
+		})
+		vm.model = validModel()
+		await vm.save()
+		vm.model.timeZone = ''
+		expect(vm.errors.timeZone?.key).toBe('saleEditor.error.zoneRefused')
+		await fixture.tearDown()
+	})
+
 	it('offers a retry for another refusal while the zone is still offered', async () => {
 		const { fixture, vm, d } = await mount({ create: refused() })
 		vm.model = validModel()

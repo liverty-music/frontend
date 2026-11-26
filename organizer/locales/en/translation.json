@@ -566,7 +566,7 @@
 		"error": {
 			"timeZone": "Choose a time zone",
 			"timeSkipped": "This time does not exist in the time zone, because the clocks move forward then",
-			"zoneRefused": "This time zone cannot be chosen. Choose one of the time zones of the venues of the events on sale"
+			"zoneRefused": "The venues' time zones have changed, so that time zone cannot be used. Check the time zone and the window, then save again"
 		}
 	},
 	"venueConfirm": {

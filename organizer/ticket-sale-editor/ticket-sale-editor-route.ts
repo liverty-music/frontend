@@ -257,7 +257,8 @@ export class TicketSaleEditorRoute {
 		const errors = validateTicketSaleForm(this.model, {
 			eventStart: this.start ?? null,
 		})
-		if (this.zoneRefused && !errors.timeZone) {
+		// Said even when the refused zone was cleared for a new choice.
+		if (this.zoneRefused) {
 			errors.timeZone = { key: 'saleEditor.error.zoneRefused' }
 		}
 		const start = instantOfInput(this.model.saleStart, this.model.timeZone)

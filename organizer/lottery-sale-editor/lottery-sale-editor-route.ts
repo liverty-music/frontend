@@ -259,7 +259,8 @@ export class LotterySaleEditorRoute {
 		const errors = validateLotterySaleForm(this.model, {
 			eventStart: this.start ?? null,
 		})
-		if (this.zoneRefused && !errors.timeZone) {
+		// Said even when the refused zone was cleared for a new choice.
+		if (this.zoneRefused) {
 			errors.timeZone = { key: 'saleEditor.error.zoneRefused' }
 		}
 		const open = instantOfInput(this.model.saleStart, this.model.timeZone)
