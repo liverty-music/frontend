@@ -243,9 +243,10 @@
 		--bottom-banner-height: var(--bottom-banner-block-size);
 	}
 
-	/* Reduced motion stops every View Transition except the route area's fade
-	   (below): with no animation running, the transition ends and the new view
-	   shows in the next frame, with no fade, slide or turn. One rule here, so
+	/* Reduced motion stops every View Transition except the short fades below
+	   (a screen change, the Discovery view swap): with no animation running, a
+	   transition ends and the new view shows in the next frame, with no fade,
+	   slide or turn. One rule here, so
 	   no call site checks the preference itself. A `*` argument adds no specificity, so `:root`
 	   lifts the rule above the named ones (root, discovery-view). */
 	/* stylelint-disable cube/prefer-where-in-reset -- view transition pseudo-elements cannot be wrapped in :where() */
@@ -261,12 +262,14 @@
 		   duration tokens are 0 ms under reduced motion. Written after the
 		   rule above, which the named pseudo-elements equal in specificity. */
 		:root[data-screen-change]::view-transition-old(root),
-		:root::view-transition-old(area-step) {
+		:root::view-transition-old(area-step),
+		:root::view-transition-old(discovery-view) {
 			animation: 50ms linear both fade-out;
 		}
 
 		:root[data-screen-change]::view-transition-new(root),
-		:root::view-transition-new(area-step) {
+		:root::view-transition-new(area-step),
+		:root::view-transition-new(discovery-view) {
 			animation: 50ms linear 50ms both fade-in;
 		}
 	}

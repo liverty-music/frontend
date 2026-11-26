@@ -403,7 +403,7 @@ export class DiscoveryRoute {
 	/**
 	 * The swap tile was tapped. The view turns over like a card, the same half
 	 * turn as the tile's arrows, inside a View Transition; under reduced motion
-	 * a global rule stops it (global.css). The callback flushes Aurelia's queue
+	 * a global rule replaces the turn with a short fade (global.css). The callback flushes Aurelia's queue
 	 * synchronously (`runTasks()`) and returns nothing: the browser suspends
 	 * rAF while it snapshots, so a promise settled on a frame would never
 	 * resolve and the transition would time out.

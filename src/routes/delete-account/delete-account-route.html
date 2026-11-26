@@ -21,7 +21,7 @@
       <button type="button" busy-on-click.bind="() => retryDelete()" class="[ button ] [ state-layer ]" data-variant="outlined" t="deleteAccount.retry" data-testid="delete-account-retry-delete"></button>
     </section>
 
-    <output if.bind="blockersState === 'loading'" class="[ delete-account-status ] [ md-typescale-body-large ]" aria-busy="true" t="deleteAccount.loading"></output>
+    <state-placeholder if.bind="blockersState === 'loading'" loading.bind="true" variant="item" rows="3" label.bind="'deleteAccount.loading' | t"></state-placeholder>
 
     <section if.bind="blockersState === 'error'" class="[ delete-account-error ] [ stack ]" role="alert" data-testid="delete-account-load-error">
       <p t="deleteAccount.loadFailed"></p>

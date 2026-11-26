@@ -3,16 +3,16 @@
 	<state-placeholder class="wrapper" if.bind="step === 'loading'" loading.bind="true" variant="card" rows="2" label.bind="'newResaleEntry.loading' | t"></state-placeholder>
 
 	<!-- Stripe not configured for this environment: fail closed. -->
-	<section class="[ resale-entry-panel card ] [ wrapper ]" if.bind="step === 'unavailable'" data-testid="resale-entry-unavailable">
+	<section class="[ resale-entry-panel card ] [ wrapper ] [ content-arrive ]" if.bind="step === 'unavailable'" data-testid="resale-entry-unavailable">
 		<p class="[ resale-entry-lead ] [ md-typescale-body-medium ]" t="newResaleEntry.unavailable"></p>
 	</section>
 
-	<section class="[ resale-entry-panel card ] [ flow wrapper ]" if.bind="step === 'not-found'" data-testid="resale-entry-not-found">
+	<section class="[ resale-entry-panel card ] [ flow wrapper ] [ content-arrive ]" if.bind="step === 'not-found'" data-testid="resale-entry-not-found">
 		<p class="[ resale-entry-lead ] [ md-typescale-body-medium ]" t="newResaleEntry.notFound"></p>
 		<a href="/concerts/${event.id}" if.bind="event" class="text-link" data-variant="standalone" t="newResaleEntry.backToConcert"></a>
 	</section>
 
-	<section class="[ resale-entry-panel card ] [ flow wrapper ]" if.bind="step === 'error'" data-testid="resale-entry-error">
+	<section class="[ resale-entry-panel card ] [ flow wrapper ] [ content-arrive ]" if.bind="step === 'error'" data-testid="resale-entry-error">
 		<p class="[ resale-entry-lead ] [ md-typescale-body-medium ]" role="alert" t="newResaleEntry.error.load"></p>
 		<button type="button" class="[ button resale-entry-action ] [ state-layer ]" click.trigger="load()" data-testid="resale-entry-retry" t="newResaleEntry.error.reload"></button>
 	</section>
@@ -20,7 +20,7 @@
 	<!-- What is applied for: the event, the seat type, its price and how resale works -->
 	<section
 		if.bind="event && stock && step !== 'loading' && step !== 'not-found' && step !== 'error' && step !== 'unavailable' && step !== 'done'"
-		class="[ resale-entry-panel card ] [ flow wrapper ]"
+		class="[ resale-entry-panel card ] [ flow wrapper ] [ content-arrive ]"
 		data-testid="resale-entry-summary"
 	>
 		<p class="[ resale-entry-step-title ] [ md-typescale-title-large-emphasized ]" t="newResaleEntry.officialResale"></p>
@@ -34,13 +34,13 @@
 		</ul>
 	</section>
 
-	<section class="[ resale-entry-panel card ] [ flow wrapper ]" if.bind="step === 'closed'" data-testid="resale-entry-closed">
+	<section class="[ resale-entry-panel card ] [ flow wrapper ] [ content-arrive ]" if.bind="step === 'closed'" data-testid="resale-entry-closed">
 		<p class="[ resale-entry-lead ] [ md-typescale-body-medium ]" t="newResaleEntry.closed"></p>
 		<a href="/concerts/${event.id}" if.bind="event" class="text-link" data-variant="standalone" t="newResaleEntry.backToConcert"></a>
 	</section>
 
 	<!-- The fan's entry already waits for a draw: no second application -->
-	<section class="[ resale-entry-panel card ] [ flow wrapper ]" if.bind="step === 'applied'" data-testid="resale-entry-applied">
+	<section class="[ resale-entry-panel card ] [ flow wrapper ] [ content-arrive ]" if.bind="step === 'applied'" data-testid="resale-entry-applied">
 		<h2 class="[ resale-entry-step-title ] [ md-typescale-title-large-emphasized ]" t="newResaleEntry.applied.title"></h2>
 		<p class="[ resale-entry-lead ] [ md-typescale-body-medium ]" data-testid="resale-entry-applied-count" t="newResaleEntry.applied.body" t-params.bind="{ count: entry.ticketCount }"></p>
 		<p if.bind="nextDrawLabel" class="[ resale-entry-lead ] [ md-typescale-body-medium ]" data-testid="resale-entry-next-draw" t="newResaleEntry.nextDraw" t-params.bind="{ time: nextDrawLabel }"></p>
@@ -48,18 +48,18 @@
 	</section>
 
 	<!-- One seat type per account and event -->
-	<section class="[ resale-entry-panel card ] [ flow wrapper ]" if.bind="step === 'other-seat-type'" data-testid="resale-entry-other-seat-type">
+	<section class="[ resale-entry-panel card ] [ flow wrapper ] [ content-arrive ]" if.bind="step === 'other-seat-type'" data-testid="resale-entry-other-seat-type">
 		<p class="[ resale-entry-lead ] [ md-typescale-body-medium ]" t="newResaleEntry.otherSeatType" t-params.bind="{ seatType: otherSeatTypeName }"></p>
 		<a href="/concerts/${event.id}" if.bind="event" class="text-link" data-variant="standalone" t="newResaleEntry.backToConcert"></a>
 	</section>
 
-	<section class="[ resale-entry-panel card ] [ flow wrapper ]" if.bind="step === 'limit'" data-testid="resale-entry-limit">
+	<section class="[ resale-entry-panel card ] [ flow wrapper ] [ content-arrive ]" if.bind="step === 'limit'" data-testid="resale-entry-limit">
 		<p class="[ resale-entry-lead ] [ md-typescale-body-medium ]" t="newResaleEntry.count.limit" t-params.bind="{ limit: perAccountLimit }"></p>
 		<a href="/concerts/${event.id}" if.bind="event" class="text-link" data-variant="standalone" t="newResaleEntry.backToConcert"></a>
 	</section>
 
 	<!-- Step 1: ticket count -->
-	<section class="[ resale-entry-panel card ] [ flow wrapper ]" if.bind="step === 'count'" data-testid="resale-entry-count">
+	<section class="[ resale-entry-panel card ] [ flow wrapper ] [ content-arrive ]" if.bind="step === 'count'" data-testid="resale-entry-count">
 		<h2 class="[ resale-entry-step-title ] [ md-typescale-title-large-emphasized ]" t="newResaleEntry.count.title"></h2>
 		<label class="[ resale-entry-field ] [ stack ]">
 			<span class="[ resale-entry-label ] [ md-typescale-label-large ]" t="newResaleEntry.count.label" t-params.bind="{ max: countOptions.length }"></span>
@@ -73,7 +73,7 @@
 	</section>
 
 	<!-- Step 2: 本人確認 -->
-	<section class="[ resale-entry-panel card ] [ flow wrapper ]" if.bind="step === 'personal-details'" data-testid="resale-entry-personal-details">
+	<section class="[ resale-entry-panel card ] [ flow wrapper ] [ content-arrive ]" if.bind="step === 'personal-details'" data-testid="resale-entry-personal-details">
 		<h2 class="[ resale-entry-step-title ] [ md-typescale-title-large-emphasized ]" t="newResaleEntry.personalDetails.title"></h2>
 		<p class="[ resale-entry-lead ] [ md-typescale-body-medium ]" t="newResaleEntry.personalDetails.note"></p>
 		<p class="[ md-typescale-body-small ]" t="common.requiredNote"></p>
@@ -104,7 +104,7 @@
 	</section>
 
 	<!-- Step 3: 特商法 final confirmation + card; applying authorizes the card -->
-	<section class="[ resale-entry-panel card ] [ flow wrapper ]" if.bind="step === 'payment' || step === 'submitting'" data-testid="resale-entry-payment">
+	<section class="[ resale-entry-panel card ] [ flow wrapper ] [ content-arrive ]" if.bind="step === 'payment' || step === 'submitting'" data-testid="resale-entry-payment">
 		<h2 class="[ resale-entry-step-title ] [ md-typescale-title-large-emphasized ]" t="newResaleEntry.confirm.title"></h2>
 		<dl class="[ summary-list ] [ md-typescale-body-medium ]" data-variant="stacked" data-testid="resale-entry-confirm">
 			<div>
@@ -199,7 +199,7 @@
 	</section>
 
 	<!-- The application was refused: no entry, nothing charged -->
-	<section class="[ resale-entry-panel card ] [ flow wrapper ]" if.bind="step === 'refused'" data-testid="resale-entry-refused">
+	<section class="[ resale-entry-panel card ] [ flow wrapper ] [ content-arrive ]" if.bind="step === 'refused'" data-testid="resale-entry-refused">
 		<h2 class="[ resale-entry-step-title ] [ md-typescale-title-large-emphasized ]" t="newResaleEntry.refused.title"></h2>
 		<p class="[ resale-entry-lead ] [ md-typescale-body-medium ]" role="alert" data-testid="resale-entry-message" t.bind="message.key" t-params.bind="message.params"></p>
 		<p class="[ resale-entry-lead ] [ md-typescale-body-medium ]" t="newResaleEntry.refused.notCharged"></p>
@@ -208,7 +208,7 @@
 	</section>
 
 	<!-- The entry was made (Confirm succeeded) -->
-	<section class="[ resale-entry-panel card ] [ flow wrapper ]" if.bind="step === 'done'" data-testid="resale-entry-done">
+	<section class="[ resale-entry-panel card ] [ flow wrapper ] [ content-arrive ]" if.bind="step === 'done'" data-testid="resale-entry-done">
 		<h2 class="[ resale-entry-step-title ] [ md-typescale-title-large-emphasized ]" t="newResaleEntry.done.title"></h2>
 		<p class="[ resale-entry-lead ] [ md-typescale-body-medium ]" t="newResaleEntry.done.body" t-params.bind="{ seatType: seatTypeName, count: entry.ticketCount }"></p>
 		<p if.bind="nextDrawLabel" class="[ resale-entry-lead ] [ md-typescale-body-medium ]" data-testid="resale-entry-next-draw" t="newResaleEntry.nextDraw" t-params.bind="{ time: nextDrawLabel }"></p>

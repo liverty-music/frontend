@@ -845,12 +845,15 @@ describe('app-shell', () => {
 			// @spec components/infrastructure/fan/web/global/pwa-install-banner "Post-signup dialog open — banner hidden"
 			coordinator.isPostSignupSurfaceOpen = true
 			await tasksSettled()
-			expect(host().querySelector('pwa-install-banner')).toBeNull()
+			// It stays in the DOM, hidden and inert, so it can slide out.
+			expect(banner()?.hasAttribute('hidden')).toBe(true)
+			// jsdom does not reflect `inert` to an attribute; read the property.
+			expect((banner() as HTMLElement).inert).toBe(true)
 
 			// @spec components/infrastructure/fan/web/global/pwa-install-banner "Post-signup dialog closed — banner visible"
 			coordinator.isPostSignupSurfaceOpen = false
 			await tasksSettled()
-			expect(banner()).not.toBeNull()
+			expect(banner()?.hasAttribute('hidden')).toBe(false)
 		})
 	})
 })

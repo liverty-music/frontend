@@ -1,5 +1,12 @@
 import { IRouterEvents } from '@aurelia/router'
-import { type IDisposable, INode, observable, resolve, watch } from 'aurelia'
+import {
+	bindable,
+	type IDisposable,
+	INode,
+	observable,
+	resolve,
+	watch,
+} from 'aurelia'
 import {
 	Events,
 	IAnalyticsService,
@@ -25,6 +32,8 @@ export class PwaInstallBanner {
 	// 'native' one-tap install (deferred prompt captured, non-iOS) vs 'guide'
 	// manual instructions (iOS Safari or prompt not yet captured).
 	@observable public installMode: InstallMode = 'guide'
+	/** Another surface holds the bottom of the screen: the banner leaves it. */
+	@bindable public suppressed = false
 	public isGuideSheetOpen = false
 
 	public binding(): void {
@@ -87,7 +96,7 @@ export class PwaInstallBanner {
 	// re-evaluates when the app is installed (D1). The banner has no dismiss:
 	// it stays until the app is installed or the install is confirmed.
 	public get isVisible(): boolean {
-		return this.pwaInstall.shouldShowInstallBanner
+		return this.pwaInstall.shouldShowInstallBanner && !this.suppressed
 	}
 
 	public onCta(): void | Promise<void> {

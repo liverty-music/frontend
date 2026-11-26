@@ -12,6 +12,7 @@ import {
 } from '../../../.storybook/motion'
 import { transitionsEnded } from '../../../.storybook/transitions-ended'
 import { BusyOnClickCustomAttribute } from '../../custom-attributes/busy-on-click'
+import { StatePlaceholder } from '../../components/state-placeholder/state-placeholder'
 import { DiscoverySearchResults } from './discovery-search-results'
 
 const meta = {
@@ -47,7 +48,11 @@ function render(search: Record<string, unknown>): Story['render'] {
 				followedIds: new Set(['a2']),
 				follow: async () => {},
 			},
-			register: [DiscoverySearchResults, BusyOnClickCustomAttribute],
+			register: [
+				DiscoverySearchResults,
+				StatePlaceholder,
+				BusyOnClickCustomAttribute,
+			],
 		})
 }
 
@@ -72,7 +77,9 @@ const roleOnListItem = {
 export const Searching = {
 	render: render({ isSearching: true, searchQuery: 'YOA' }),
 	play: async ({ canvasElement }) => {
-		await expect(canvasElement.querySelector('.search-status')).not.toBeNull()
+		await expect(
+			canvasElement.querySelectorAll('.skeleton-row').length,
+		).toBeGreaterThan(0)
 	},
 } satisfies Story
 
@@ -182,7 +189,11 @@ export const ResultsFromTheKeyboard = {
 				followedIds: new Set(['a2']),
 				follow: keyFollow,
 			},
-			register: [DiscoverySearchResults, BusyOnClickCustomAttribute],
+			register: [
+				DiscoverySearchResults,
+				StatePlaceholder,
+				BusyOnClickCustomAttribute,
+			],
 		})
 	},
 	play: async ({ canvasElement }) => {

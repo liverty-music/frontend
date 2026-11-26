@@ -59,9 +59,11 @@
 			color: var(--md-sys-color-on-surface);
 		}
 
-		/* No month in a direction: that button goes, in every browser. */
-		:scope[data-has-prev="false"] [data-direction="prev"],
-		:scope[data-has-next="false"] [data-direction="next"] {
+		/* No month in a direction: that button goes, in every browser. With none
+		   in either, the buttons stay while the capsule fades out. */
+		:scope[data-has-prev="false"][data-has-next="true"] [data-direction="prev"],
+		:scope[data-has-next="false"][data-has-prev="true"]
+			[data-direction="next"] {
 			display: none;
 		}
 
@@ -77,8 +79,10 @@
 			translate: calc(var(--_jump-button) / -2) 0;
 		}
 
-		:scope[data-has-prev="false"][data-has-next="false"] {
+		:scope[data-has-prev="false"][data-has-next="false"] .month-jump-capsule {
+			translate: none;
 			display: none;
+			opacity: 0;
 		}
 
 		/* Not before the fan has scrolled the list: at its top, until the
