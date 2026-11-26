@@ -71,7 +71,6 @@ describe('PwaInstallBanner', () => {
 
 	describe('a post-signup surface', () => {
 		it('hides the banner without removing it, and it returns afterwards', () => {
-			// @spec components/infrastructure/fan/web/global/pwa-install-banner "Banner is hidden, not rendered, when it is not visible"
 			fakeShouldShowInstallBanner = true
 			const sut = new PwaInstallBanner()
 			sut.suppressed = true

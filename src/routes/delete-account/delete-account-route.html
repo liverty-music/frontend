@@ -3,7 +3,7 @@
 <!-- The page title is owned by the shell-hosted <page-header> (data.titleKey). -->
 <main class="[ delete-account ] [ stack wrapper ]">
   <!-- After deletion: the session is gone; only the way to Welcome remains. -->
-  <section if.bind="deletionState === 'deleted'" class="[ delete-account-done ] [ stack ]" role="status" data-testid="delete-account-deleted">
+  <section if.bind="deletionState === 'deleted'" class="[ delete-account-done ] [ stack ] [ content-arrive ]" role="status" data-testid="delete-account-deleted">
     <h2 t="deleteAccount.deleted.title" class="[ delete-account-heading ] [ md-typescale-title-large-emphasized ]"></h2>
     <p t="deleteAccount.deleted.body" class="[ delete-account-text ] [ md-typescale-body-medium ]"></p>
     <a href="/welcome" t="deleteAccount.deleted.toWelcome" class="[ text-link delete-account-link ]" data-variant="standalone" data-testid="delete-account-to-welcome"></a>
@@ -16,20 +16,20 @@
 
     <p if.bind="deletionState === 'notDeleted'" role="alert" t="deleteAccount.notDeleted" class="delete-account-notice" data-testid="delete-account-not-deleted"></p>
 
-    <section if.bind="deletionState === 'failed'" class="[ delete-account-error ] [ stack ]" role="alert" data-testid="delete-account-failed">
+    <section if.bind="deletionState === 'failed'" class="[ delete-account-error ] [ stack ] [ content-arrive ]" role="alert" data-testid="delete-account-failed">
       <p t="deleteAccount.deleteFailed"></p>
       <button type="button" busy-on-click.bind="() => retryDelete()" class="[ button ] [ state-layer ]" data-variant="outlined" t="deleteAccount.retry" data-testid="delete-account-retry-delete"></button>
     </section>
 
     <state-placeholder if.bind="blockersState === 'loading'" loading.bind="true" variant="item" rows="3" label.bind="'deleteAccount.loading' | t"></state-placeholder>
 
-    <section if.bind="blockersState === 'error'" class="[ delete-account-error ] [ stack ]" role="alert" data-testid="delete-account-load-error">
+    <section if.bind="blockersState === 'error'" class="[ delete-account-error ] [ stack ] [ content-arrive ]" role="alert" data-testid="delete-account-load-error">
       <p t="deleteAccount.loadFailed"></p>
       <button type="button" busy-on-click.bind="() => loadBlockers()" class="[ button ] [ state-layer ]" data-variant="outlined" t="deleteAccount.retry" data-testid="delete-account-retry-load"></button>
     </section>
 
     <!-- What blocks deletion, each kind with its count. -->
-    <section if.bind="blockersState === 'ready' && blockers.length > 0" class="[ delete-account-blockers ] [ stack ]" data-testid="delete-account-blockers">
+    <section if.bind="blockersState === 'ready' && blockers.length > 0" class="[ delete-account-blockers ] [ stack ] [ content-arrive ]" data-testid="delete-account-blockers">
       <h2 t="deleteAccount.blockers.title" class="[ delete-account-heading ] [ md-typescale-title-large-emphasized ]"></h2>
       <ul class="[ delete-account-card card ]" role="list">
         <li repeat.for="blocker of blockers" class="delete-account-item" data-testid="delete-account-blocker" t.bind="blocker.key" t-params.bind="{ count: blocker.count }"></li>
@@ -38,7 +38,7 @@
     </section>
 
     <!-- What deletion means, stated before the delete control. -->
-    <section if.bind="canDelete" class="[ delete-account-statements ] [ stack ]" data-testid="delete-account-statements">
+    <section if.bind="canDelete" class="[ delete-account-statements ] [ stack ] [ content-arrive ]" data-testid="delete-account-statements">
       <h2 t="deleteAccount.statements.title" class="[ delete-account-heading ] [ md-typescale-title-large-emphasized ]"></h2>
       <ul class="[ delete-account-list ] [ stack ] [ md-typescale-body-medium ]" role="list">
         <li t="deleteAccount.statements.removed" data-testid="delete-account-statement"></li>

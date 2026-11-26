@@ -71,16 +71,15 @@
 		   alone, the capsule moves half a button toward its own side, so a
 		   fan tapping "next" again after the first jump, when "previous"
 		   appears, still finds it under the thumb. */
-		:scope[data-has-prev="false"] .month-jump-capsule {
+		:scope[data-has-prev="false"][data-has-next="true"] .month-jump-capsule {
 			translate: calc(var(--_jump-button) / 2) 0;
 		}
 
-		:scope[data-has-next="false"] .month-jump-capsule {
+		:scope[data-has-next="false"][data-has-prev="true"] .month-jump-capsule {
 			translate: calc(var(--_jump-button) / -2) 0;
 		}
 
 		:scope[data-has-prev="false"][data-has-next="false"] .month-jump-capsule {
-			translate: none;
 			display: none;
 			opacity: 0;
 		}

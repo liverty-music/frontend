@@ -846,6 +846,7 @@ describe('app-shell', () => {
 			coordinator.isPostSignupSurfaceOpen = true
 			await tasksSettled()
 			// It stays in the DOM, hidden and inert, so it can slide out.
+			// @spec components/infrastructure/fan/web/global/pwa-install-banner "Banner is hidden, not rendered, when it is not visible"
 			expect(banner()?.hasAttribute('hidden')).toBe(true)
 			// jsdom does not reflect `inert` to an attribute; read the property.
 			expect((banner() as HTMLElement).inert).toBe(true)
