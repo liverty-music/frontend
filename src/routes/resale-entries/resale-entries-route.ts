@@ -126,10 +126,12 @@ export class ResaleEntriesRoute implements IRouteViewModel {
 
 	public nextDrawLabel(row: ResaleEntryRow): string {
 		const next = row.entry.nextDrawTime
-		return next && row.event
+		// An entry whose concert could not be read still says when it is drawn,
+		// in the fan's own zone.
+		return next
 			? formatInstantAtVenue(
 					next,
-					row.event.timeZone,
+					row.event?.timeZone,
 					displayLanguage(this.lang),
 				)
 			: ''

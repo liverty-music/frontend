@@ -935,18 +935,40 @@ describe('the sale zone of the first-come editor', () => {
 		await fixture.tearDown()
 	})
 
+	const refused = () =>
+		vi.fn().mockRejectedValue(new ConnectError('no', Code.InvalidArgument))
+
 	it('says so next to the zone when the server refuses it, and saves nothing', async () => {
+		const concertIn = (timeZone: string) => [
+			authoredSeries({
+				series: { id: { value: 's-1' }, title: { value: 'XX Tour' } },
+				events: [eventInit({ timeZone })],
+			}),
+		]
+		// The venue's zone changed after the editor read it.
 		const { fixture, vm, d } = await mount({
-			create: vi
+			list: vi
 				.fn()
-				.mockRejectedValue(new ConnectError('zone', Code.InvalidArgument)),
+				.mockResolvedValueOnce(concertIn('Asia/Tokyo'))
+				.mockResolvedValue(concertIn('Asia/Seoul')),
+			create: refused(),
 		})
 		vm.model = validModel()
 		await vm.save()
 		expect(vm.error(vm.errors.timeZone)?.key).toBe(
 			'saleEditor.error.zoneRefused',
 		)
+		expect(vm.model.timeZone).toBe('Asia/Seoul')
 		expect(d.showError).not.toHaveBeenCalled()
+		await fixture.tearDown()
+	})
+
+	it('offers a retry for another refusal while the zone is still offered', async () => {
+		const { fixture, vm, d } = await mount({ create: refused() })
+		vm.model = validModel()
+		await vm.save()
+		expect(vm.errors.timeZone).toBeUndefined()
+		expect(d.showError).toHaveBeenCalled()
 		await fixture.tearDown()
 	})
 })

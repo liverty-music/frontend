@@ -371,8 +371,11 @@ export class TicketSaleEditorRoute {
 				this.saveProblem = 'firstComeEditor.rejected'
 				return
 			}
-			if (err instanceof ConnectError && err.code === Code.InvalidArgument) {
-				// The zone is not one of the zones of the events' venues.
+			if (
+				err instanceof ConnectError &&
+				err.code === Code.InvalidArgument &&
+				(await this.zoneNoLongerOffered())
+			) {
 				this.zoneRefused = true
 				return
 			}
@@ -380,6 +383,31 @@ export class TicketSaleEditorRoute {
 				retry: () => void this.save(),
 			})
 		}
+	}
+
+	/**
+	 * True when the sale's zone is no longer one of its events' venues' zones,
+	 * read anew: the one refusal the form cannot check before saving. The zone
+	 * choices follow the venues as they are now.
+	 */
+	private async zoneNoLongerOffered(): Promise<boolean> {
+		const chosen = this.model.timeZone
+		try {
+			const concerts = await this.series.list(this.abort.signal)
+			const concert = findConcert(concerts, this.seriesId)
+			const event = findEvent(concert, this.eventId)
+			if (!concert || !event) return false
+			this.concert = concert
+			this.event = event
+		} catch (err) {
+			this.logger.warn('Venue zones not read again', err)
+			return false
+		}
+		const zones = this.zones
+		if (zones.includes(chosen)) return false
+		// The only zone left is shown as text; several are a new choice.
+		this.model.timeZone = zones.length === 1 ? zones[0] : ''
+		return true
 	}
 
 	private async create(): Promise<void> {
