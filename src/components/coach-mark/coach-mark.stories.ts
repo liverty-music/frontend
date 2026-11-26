@@ -295,7 +295,9 @@ export const TapOutsideFades = {
 		const fade = await waitFor(() => {
 			const found = fadeOf()
 			expect(found).toHaveLength(1)
-			found[0].pause()
+			// The `display` transition too: running out, it would take the
+			// overlay out of rendering.
+			for (const a of pausableAnimations(overlay)) a.pause()
 			return found
 		})
 		await expect(overlay.hidden).toBe(true)
@@ -309,7 +311,7 @@ export const TapOutsideFades = {
 		await expect(getComputedStyle(spot).boxShadow).toMatch(/0\.7\)/)
 		// Fading out, towards nothing.
 		await expect(getComputedStyle(overlay).opacity).not.toBe('1')
-		finishMotion(fade)
+		finishMotion(pausableAnimations(overlay))
 		await waitFor(() => expect(overlayIsGone(canvasElement)).toBe(true))
 	},
 } satisfies Story
