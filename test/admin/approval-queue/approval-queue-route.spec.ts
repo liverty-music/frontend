@@ -640,7 +640,7 @@ describe('ApprovalQueueRoute', () => {
 				"Either choice keeps that one event and lists the candidate's artist as one of its performers",
 			)
 			expect(lede).toContain(
-				"an Organizer's event keeps its performers as they are",
+				"An Organizer's event keeps its performers, listed venue name and times, so only Keep existing applies to it",
 			)
 			expect(lede).toContain(
 				"Keep existing keeps the existing event's listed venue name and remembers the candidate's",
@@ -724,6 +724,54 @@ describe('ApprovalQueueRoute', () => {
 			// Only the initial UNSPECIFIED call; row still present.
 			expect(client.approve).toHaveBeenCalledTimes(1)
 			expect(vm.conflictView).toBeNull()
+			expect(vm.groups).toHaveLength(1)
+		})
+
+		// @spec components/infrastructure/admin/web/route/approval-queue "Adopt refused"
+		it("says only Keep existing applies when adopting onto an Organizer's event is refused", async () => {
+			const candidate = resolvedConcert()
+			const client = createMockClient({
+				list: vi.fn().mockResolvedValue([candidate]),
+				approve: vi
+					.fn()
+					.mockResolvedValueOnce(conflictResponse(candidate))
+					.mockRejectedValueOnce(
+						new ConnectError('organizer event', Code.FailedPrecondition),
+					),
+			})
+			const fixture = await build(client)
+			const vm = routeOf(fixture)
+
+			const group = vm.groups[0]
+			const series = group.series[0]
+			await vm.approve(group, series, series.rows[0])
+			await vm.adoptCandidate()
+
+			expect(vm.conflictView).not.toBeNull()
+			expect(vm.conflictError).toContain('Choose Keep existing')
+			expect(vm.groups).toHaveLength(1)
+		})
+
+		it('asks to retry when keeping the existing event fails with FailedPrecondition', async () => {
+			const candidate = resolvedConcert()
+			const client = createMockClient({
+				list: vi.fn().mockResolvedValue([candidate]),
+				approve: vi
+					.fn()
+					.mockResolvedValueOnce(conflictResponse(candidate))
+					.mockRejectedValueOnce(
+						new ConnectError('raced', Code.FailedPrecondition),
+					),
+			})
+			const fixture = await build(client)
+			const vm = routeOf(fixture)
+
+			const group = vm.groups[0]
+			const series = group.series[0]
+			await vm.approve(group, series, series.rows[0])
+			await vm.keepExisting()
+
+			expect(vm.conflictError).not.toContain('Choose Keep existing')
 			expect(vm.groups).toHaveLength(1)
 		})
 

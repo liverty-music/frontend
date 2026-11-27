@@ -24,6 +24,9 @@ export const AREA_NOT_FOUND = '地域が見つかりません'
 /** Shown when Approve refuses the area or the time zone. */
 export const VENUE_NOT_ACCEPTED =
 	'地域またはタイムゾーンが受け付けられませんでした'
+/** Shown when Approve refuses adopting a candidate onto an Organizer's event. */
+export const ORGANIZER_EVENT_KEPT =
+	"This is an Organizer's event: it keeps its listed venue name and times. Choose Keep existing, or cancel and reject the candidate."
 
 /** One entry of a row's time zone select. */
 export interface ZoneOption {
@@ -396,9 +399,15 @@ export class ApprovalQueueRoute {
 			this.removeRow(active.group, active.series, active.row)
 			this.closeConflict()
 		} catch (err) {
+			// FailedPrecondition is the expected refusal of adopting onto an
+			// Organizer's event; retrying Adopt cannot succeed. Keep existing can
+			// get the same code from a race, where retrying is right.
 			this.conflictError = toUserMessage(
 				err,
 				'Reconciliation failed. Try again.',
+				resolution === Resolution.ADOPT_CANDIDATE
+					? { [Code.FailedPrecondition]: ORGANIZER_EVENT_KEPT }
+					: {},
 			)
 			this.logger.error('Conflict resolution failed', {
 				concertCandidateId: active.row.concertCandidateId,
