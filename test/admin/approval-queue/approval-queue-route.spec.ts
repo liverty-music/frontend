@@ -640,7 +640,7 @@ describe('ApprovalQueueRoute', () => {
 				"Either choice keeps that one event and lists the candidate's artist as one of its performers",
 			)
 			expect(lede).toContain(
-				"an Organizer's event keeps its performers as they are",
+				"An Organizer's event keeps its performers, listed venue name and times, so only Keep existing applies to it",
 			)
 			expect(lede).toContain(
 				"Keep existing keeps the existing event's listed venue name and remembers the candidate's",
