@@ -4,6 +4,7 @@ import posthog from '@posthog/rollup-plugin'
 import { defineConfig, loadEnv } from 'vite'
 import { nodePolyfills } from 'vite-plugin-node-polyfills'
 import { VitePWA } from 'vite-plugin-pwa'
+import { zoneNames } from './scripts/vite-plugin-zone-names'
 
 // Where the dev server proxies `/liverty_music` RPC calls. Defaults to the dev
 // cloud backend; override in a gitignored `.env.local` with
@@ -178,6 +179,7 @@ export default defineConfig({
 				'shared/**/*.{ts,js,html}',
 			],
 		}),
+		zoneNames(),
 		nodePolyfills(),
 		VitePWA({
 			registerType: 'prompt',

@@ -17,6 +17,7 @@ import {
 	swipeSideways,
 	swipeVertically,
 } from './.storybook/pointer-commands'
+import { zoneNames } from './scripts/vite-plugin-zone-names'
 import viteConfig from './vite.config'
 
 // The unit specs run as two projects with one setup. `unit` carries the
@@ -131,10 +132,11 @@ const scriptsProject = defineProject({
 // `vite.config.ts` (D6 / Risk R2): that config's `nodePolyfills` rewrites
 // `node:*` to browser shims and breaks `@storybook/addon-vitest`'s Node-side
 // setup, and its VitePWA / multi-entry `input` are app-build concerns. Instead
-// we add ONLY the Aurelia plugin so component `.ts`/`.html` pairs get their
-// convention transform (without it, stories fail with AUR0760 "No element
-// definition found") — `storybookTest` does not add an Aurelia transform of its
-// own, so there is no double-compile. The `include` mirrors the app plugin so
+// we add ONLY the `virtual:zone-names` module the app code imports and the
+// Aurelia plugin so component `.ts`/`.html` pairs get their convention
+// transform (without it, stories fail with AUR0760 "No element definition
+// found") — `storybookTest` does not add an Aurelia transform of its own, so
+// there is no double-compile. The `include` mirrors the app plugin so
 // components under every entry's source root resolve.
 //
 // The same setup builds a second project, `storybook-reduced-motion`, that runs
@@ -165,6 +167,7 @@ const storybookProjectFor = ({
 	language?: string
 }) => ({
 	plugins: [
+		zoneNames(),
 		aurelia({
 			useDev: true,
 			include: [

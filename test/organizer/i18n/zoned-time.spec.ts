@@ -11,10 +11,6 @@ import {
 	unsetPartOf,
 	wallOfInput,
 } from '../../../organizer/i18n/wall-input'
-import {
-	clearRegisteredZoneNames,
-	registerZoneNames,
-} from '../../../shared/lib/zoned-time/zone-name'
 
 const I18N = 'components/infrastructure/organizer/web/global/i18n'
 
@@ -52,17 +48,6 @@ describe('an Event in the zone of its Venue', () => {
 		expect(formatEventWhen(seoul, 'ja')).toBe(
 			'1月15日(金) 18:30 ソウル時間（日本時間 18:30）',
 		)
-	})
-
-	it('names a zone from the API when one was registered', () => {
-		registerZoneNames([
-			{ zone: 'Asia/Taipei', nameJa: '台北', nameEn: 'Taipei' },
-		])
-		const taipei = when([2027, 1, 15], [19, 0], 'Asia/Taipei')
-		expect(formatEventWhen(taipei, 'ja')).toBe(
-			'1月15日(金) 19:00 台北時間（日本時間 20:00）',
-		)
-		clearRegisteredZoneNames()
 	})
 
 	it('shows only the day of an Event with no start time', () => {
