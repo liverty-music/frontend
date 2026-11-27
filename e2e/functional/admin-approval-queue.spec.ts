@@ -125,3 +125,62 @@ test('a reviewer gives the missing area and zone, and corrects a wrong area', as
 		timeZone: { value: 'Asia/Tokyo' },
 	})
 })
+
+test('a reviewer reads the conflict dialog and keeps the existing event', async ({
+	page,
+}) => {
+	const tokyo = {
+		...candidate('c-dup', 'Dome Night', 'JP-13'),
+		timeZone: { value: 'Asia/Tokyo' },
+		listedVenueName: { value: 'Kyocera Dome Osaka' },
+	}
+	const log = await installAdmin(page, {
+		'ConcertCandidateService/List': { concertCandidates: [tokyo] },
+		'ConcertCandidateService/Approve': (req) =>
+			req.resolution === 'RESOLUTION_KEEP_EXISTING'
+				? { body: {} }
+				: {
+						body: {
+							conflict: {
+								existing: {
+									eventId: { value: '019a0000-0000-7000-8000-0000000000e1' },
+									title: { value: 'Dome Night' },
+									listedVenueName: { value: '京セラドーム大阪' },
+									localDate: { value: { year: 2027, month: 3, day: 14 } },
+								},
+								concertCandidate: tokyo,
+							},
+						},
+					},
+		'AreaService/Resolve': () => ({ body: { area: AREAS['東京都'] } }),
+		'AreaService/ListByCountry': (req) => ({
+			body: COUNTRIES[(req.countryCode as { value: string }).value] ?? {},
+		}),
+	})
+	await page.goto('/approval-queue')
+	const approvals = () =>
+		log.calls.filter((c) => c.method === 'ConcertCandidateService/Approve')
+
+	await page.locator('summary', { hasText: 'Dome Night' }).click()
+	await rowOf(page, 'Dome Night')
+		.getByRole('button', { name: 'Approve' })
+		.click()
+
+	const dialog = page.getByRole('dialog', {
+		name: 'Duplicate concert detected',
+	})
+	await expect(dialog).toBeVisible()
+	await expect(dialog).toContainText(
+		"Either choice keeps that one event and lists the candidate's artist as one of its performers",
+	)
+	await expect(dialog).toContainText('京セラドーム大阪')
+	await dialog.getByRole('button', { name: 'Keep existing' }).click()
+
+	await expect(dialog).toBeHidden()
+	await expect(page.locator('summary', { hasText: 'Dome Night' })).toHaveCount(
+		0,
+	)
+	expect(
+		approvals().map((c) => c.body.resolution ?? 'RESOLUTION_UNSPECIFIED'),
+	).toEqual(['RESOLUTION_UNSPECIFIED', 'RESOLUTION_KEEP_EXISTING'])
+})
