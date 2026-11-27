@@ -727,6 +727,30 @@ describe('ApprovalQueueRoute', () => {
 			expect(vm.groups).toHaveLength(1)
 		})
 
+		it("says only Keep existing applies when adopting onto an Organizer's event is refused", async () => {
+			const candidate = resolvedConcert()
+			const client = createMockClient({
+				list: vi.fn().mockResolvedValue([candidate]),
+				approve: vi
+					.fn()
+					.mockResolvedValueOnce(conflictResponse(candidate))
+					.mockRejectedValueOnce(
+						new ConnectError('organizer event', Code.FailedPrecondition),
+					),
+			})
+			const fixture = await build(client)
+			const vm = routeOf(fixture)
+
+			const group = vm.groups[0]
+			const series = group.series[0]
+			await vm.approve(group, series, series.rows[0])
+			await vm.adoptCandidate()
+
+			expect(vm.conflictView).not.toBeNull()
+			expect(vm.conflictError).toContain('Choose Keep existing')
+			expect(vm.groups).toHaveLength(1)
+		})
+
 		it('keeps the dialog open and surfaces an error when reconciliation fails', async () => {
 			const candidate = resolvedConcert()
 			const client = createMockClient({
