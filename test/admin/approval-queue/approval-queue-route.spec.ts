@@ -727,6 +727,7 @@ describe('ApprovalQueueRoute', () => {
 			expect(vm.groups).toHaveLength(1)
 		})
 
+		// @spec components/infrastructure/admin/web/route/approval-queue "Adopt refused"
 		it("says only Keep existing applies when adopting onto an Organizer's event is refused", async () => {
 			const candidate = resolvedConcert()
 			const client = createMockClient({
