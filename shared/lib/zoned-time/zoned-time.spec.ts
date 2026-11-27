@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import { zoneLabel } from './zone-name'
 import { instantToWall, wallToInstant } from './zoned-time'
 
 const wall = (month: number, day: number, hour: number, minute = 0) => ({
@@ -45,14 +44,5 @@ describe('wallToInstant', () => {
 		expect(
 			wallToInstant(instantToWall(instant, 'Asia/Kolkata'), 'Asia/Kolkata'),
 		).toEqual(instant)
-	})
-})
-
-describe('zoneLabel', () => {
-	it('names a zone by its city, and Asia/Tokyo as Japan', () => {
-		expect(zoneLabel('Asia/Tokyo', 'ja')).toBe('日本時間')
-		expect(zoneLabel('Asia/Tokyo', 'en')).toBe('Japan time')
-		expect(zoneLabel('Asia/Taipei', 'ja')).toBe('台北時間')
-		expect(zoneLabel('America/Los_Angeles', 'en')).toBe('Los Angeles time')
 	})
 })

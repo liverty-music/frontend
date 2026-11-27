@@ -1,10 +1,6 @@
+import { zoneName } from '../../../shared/lib/zoned-time/zone-name'
 import type { ConsoleLocale } from '../../i18n/format'
-import type {
-	Area,
-	Country,
-	CountryAreas,
-	TimeZoneOption,
-} from '../../services/venue-client'
+import type { Area, Country, CountryAreas } from '../../services/venue-client'
 
 /**
  * What the member confirmed for an event's picked place: the Venue that holds
@@ -109,11 +105,6 @@ export function utcOffset(zone: string, at: Date): string {
 	return `UTC${offset.replace('-', '−')}`
 }
 
-/** A time zone's name in the member's language. */
-export function zoneName(zone: TimeZoneOption, locale: ConsoleLocale): string {
-	return localName(locale, zone.nameEn, zone.nameJa)
-}
-
 /** The country's time zones as `ロサンゼルス (UTC−8)`, at `at`. */
 export function zoneChoices(
 	country: CountryAreas,
@@ -122,7 +113,10 @@ export function zoneChoices(
 ): Choice[] {
 	return country.timeZones.map((z) => {
 		const value = z.timeZone?.value ?? ''
-		return { value, label: `${zoneName(z, locale)} (${utcOffset(value, at)})` }
+		return {
+			value,
+			label: `${zoneName(value, locale)} (${utcOffset(value, at)})`,
+		}
 	})
 }
 
@@ -141,14 +135,4 @@ export function areaNameOf(
 ): string {
 	const area = country?.areas.find((a) => a.code?.value === areaCode)
 	return area ? areaLabel(area, locale) : areaCode
-}
-
-/** The name of a zone of the country, or the IANA name when it is not listed. */
-export function zoneNameOf(
-	country: CountryAreas | null,
-	zone: string,
-	locale: ConsoleLocale,
-): string {
-	const option = country?.timeZones.find((z) => z.timeZone?.value === zone)
-	return option ? zoneName(option, locale) : zone
 }
