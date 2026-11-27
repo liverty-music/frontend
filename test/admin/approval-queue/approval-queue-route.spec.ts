@@ -752,6 +752,29 @@ describe('ApprovalQueueRoute', () => {
 			expect(vm.groups).toHaveLength(1)
 		})
 
+		it('asks to retry when keeping the existing event fails with FailedPrecondition', async () => {
+			const candidate = resolvedConcert()
+			const client = createMockClient({
+				list: vi.fn().mockResolvedValue([candidate]),
+				approve: vi
+					.fn()
+					.mockResolvedValueOnce(conflictResponse(candidate))
+					.mockRejectedValueOnce(
+						new ConnectError('raced', Code.FailedPrecondition),
+					),
+			})
+			const fixture = await build(client)
+			const vm = routeOf(fixture)
+
+			const group = vm.groups[0]
+			const series = group.series[0]
+			await vm.approve(group, series, series.rows[0])
+			await vm.keepExisting()
+
+			expect(vm.conflictError).not.toContain('Choose Keep existing')
+			expect(vm.groups).toHaveLength(1)
+		})
+
 		it('keeps the dialog open and surfaces an error when reconciliation fails', async () => {
 			const candidate = resolvedConcert()
 			const client = createMockClient({

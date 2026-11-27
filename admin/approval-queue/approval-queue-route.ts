@@ -400,11 +400,14 @@ export class ApprovalQueueRoute {
 			this.closeConflict()
 		} catch (err) {
 			// FailedPrecondition is the expected refusal of adopting onto an
-			// Organizer's event; retrying Adopt cannot succeed.
+			// Organizer's event; retrying Adopt cannot succeed. Keep existing can
+			// get the same code from a race, where retrying is right.
 			this.conflictError = toUserMessage(
 				err,
 				'Reconciliation failed. Try again.',
-				{ [Code.FailedPrecondition]: ORGANIZER_EVENT_KEPT },
+				resolution === Resolution.ADOPT_CANDIDATE
+					? { [Code.FailedPrecondition]: ORGANIZER_EVENT_KEPT }
+					: {},
 			)
 			this.logger.error('Conflict resolution failed', {
 				concertCandidateId: active.row.concertCandidateId,
