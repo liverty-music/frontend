@@ -618,6 +618,41 @@ describe('ApprovalQueueRoute', () => {
 			expect(vm.groups).toHaveLength(1)
 		})
 
+		// @spec components/infrastructure/admin/web/route/approval-queue "Dialog explains the choices"
+		it('explains in the lede what each choice keeps', async () => {
+			const candidate = resolvedConcert()
+			const client = createMockClient({
+				list: vi.fn().mockResolvedValue([candidate]),
+				approve: vi.fn().mockResolvedValue(conflictResponse(candidate)),
+			})
+			const fixture = await build(client)
+			const vm = routeOf(fixture)
+			const group = vm.groups[0]
+			const series = group.series[0]
+			await vm.approve(group, series, series.rows[0])
+			await fixture.tasksSettled
+
+			const lede = fixture.appHost
+				.querySelector('.approval-queue-conflict-lede')
+				?.textContent?.replace(/\s+/g, ' ')
+				.trim()
+			expect(lede).toContain(
+				"Either choice keeps that one event and lists the candidate's artist as one of its performers",
+			)
+			expect(lede).toContain(
+				"an Organizer's event keeps its performers as they are",
+			)
+			expect(lede).toContain(
+				"Keep existing keeps the existing event's listed venue name and remembers the candidate's",
+			)
+			expect(lede).toContain(
+				"Adopt candidate shows the candidate's listed venue name and remembers the existing one",
+			)
+			expect(lede).toContain(
+				'If the two are not the same concert, cancel and reject the candidate instead',
+			)
+		})
+
 		it('KEEP_EXISTING re-calls approve and removes the row', async () => {
 			const candidate = resolvedConcert()
 			const client = createMockClient({
