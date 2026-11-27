@@ -72,7 +72,7 @@ function timeOfDay(t: { hours: number; minutes: number }) {
 
 /**
  * Creates or edits a concert. The venue of each date is a place picked from
- * the map catalog; dates and times are Japan time. Saving shows progress in
+ * the map catalog; dates and times are wall-clock times at that venue. Saving shows progress in
  * the button and moves focus to the first field in error. A successful save
  * returns to the concert page (for a new concert, the new concert's page),
  * which shows the saved values, and confirms in the snackbar; a failed save
