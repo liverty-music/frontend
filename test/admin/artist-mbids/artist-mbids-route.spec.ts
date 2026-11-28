@@ -477,4 +477,47 @@ describe('ArtistMbidsRoute', () => {
 		)
 		expect(fixture.appHost.textContent).not.toContain('connection reset')
 	})
+	it('does not link an official site that is not http or https', async () => {
+		const fixture = await build(
+			clients(undefined, [
+				candidate({ mbid: JP_BAND, site: 'javascript:alert(1)' }),
+			]),
+		)
+		await selectFirst(fixture)
+
+		expect(q(fixture, 'artist-mbids-site')).toBeNull()
+	})
+
+	it('keeps the selection on the artist whose MBID is being set', async () => {
+		let resolveCorrect: (a: Artist) => void = () => {}
+		const yama = artist('019e3029-f15b-77ce-ab29-4fe2cb0d6a5f', 'Yama', JP_BAND)
+		const c = clients([artist(PENTHOUSE_ID, 'Penthouse', UK_BAND), yama])
+		c.artist.correctMbid.mockImplementationOnce(
+			() =>
+				new Promise<Artist>((resolve) => {
+					resolveCorrect = resolve
+				}),
+		)
+		const fixture = await build(c)
+		await selectFirst(fixture)
+		candidateCards(fixture)[1]
+			.querySelector<HTMLButtonElement>('[data-testid="artist-mbids-choose"]')
+			?.click()
+		await fixture.tasksSettled
+		dialogButton(fixture, 'Set MBID').click()
+		await fixture.tasksSettled
+
+		// While the call is pending the other artist cannot be selected.
+		const buttons = all<HTMLButtonElement>(fixture, 'artist-mbids-artist')
+		expect(buttons[1].disabled).toBe(true)
+		await routeOf(fixture).select(routeOf(fixture).artists[1])
+		expect(routeOf(fixture).selected?.id).toBe(PENTHOUSE_ID)
+
+		resolveCorrect(artist(PENTHOUSE_ID, 'Penthouse', JP_BAND))
+		await vi.waitFor(() => expect(routeOf(fixture).saving).toBe(false))
+		await fixture.tasksSettled
+		expect(all(fixture, 'artist-mbids-artist').map(text)).toEqual([
+			`Yama ${JP_BAND}`,
+		])
+	})
 })

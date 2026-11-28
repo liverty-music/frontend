@@ -32,6 +32,7 @@
           type="button"
           class="artist-mbids-artist"
           aria-pressed.bind="selected?.id === artist.id ? 'true' : 'false'"
+          disabled.bind="saving"
           click.trigger="select(artist)"
           data-testid="artist-mbids-artist"
         >

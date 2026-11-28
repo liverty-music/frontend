@@ -1,5 +1,6 @@
 import { Code, ConnectError } from '@connectrpc/connect'
 import { ILogger, resolve } from 'aurelia'
+import { sanitizeUrl } from '../../shared/utils/sanitize-url'
 import { type Artist, IArtistClient } from '../services/artist-client'
 import {
 	type CatalogArtist,
@@ -86,7 +87,8 @@ function toNamesakeRow(
 		country: candidate.country?.value ?? '',
 		lifeSpan: formatLifeSpan(candidate),
 		disambiguation: candidate.disambiguation?.value ?? '',
-		officialSiteUrl: candidate.officialSiteUrl?.value ?? '',
+		// The catalog's link is bound to an href: only http(s) is kept.
+		officialSiteUrl: sanitizeUrl(candidate.officialSiteUrl?.value),
 		catalogUrl: `${CATALOG_ARTIST_URL}${mbid}`,
 		current: mbid === currentMbid,
 	}
@@ -156,6 +158,8 @@ export class ArtistMbidsRoute {
 
 	/** Selects a listed artist and reads its namesakes. */
 	public async select(artist: ArtistRow): Promise<void> {
+		// While an MBID is being set, the selection stays on its artist.
+		if (this.saving) return
 		this.selected = artist
 		this.mbidInput = ''
 		this.mbidError = ''
@@ -238,12 +242,15 @@ export class ArtistMbidsRoute {
 				choice.mbid,
 			)
 			this.artists = this.artists.filter((a) => a.id !== artist.id)
-			this.selected = null
-			this.namesakes = []
+			if (this.selected?.id === artist.id) {
+				this.selected = null
+				this.namesakes = []
+			}
 			this.verifiedName = corrected?.name?.value || artist.name
 		} catch (err) {
-			this.choiceError = this.explain(err)
-			if (this.choiceError === GENERIC_FAILURE) {
+			const message = this.explain(err)
+			if (this.selected?.id === artist.id) this.choiceError = message
+			if (message === GENERIC_FAILURE) {
 				this.logger.error('Correct MBID failed', {
 					artistId: artist.id,
 					mbid: choice.mbid,
