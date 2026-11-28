@@ -1232,11 +1232,25 @@ jobs:
             # on the attempt where the new release was first served).
             grep -oE "$2" <<<"$page" | head -1 || true
           }
+          # One response with the new entry chunk only shows that one pod
+          # serves the release; until the rollout ends, the next request can
+          # reach a pod of the previous release, which has none of the new
+          # chunks. Wait until 10 requests in a row serve the new page and its
+          # entry chunk as JavaScript.
+          rolled_out() {
+            local i
+            for i in $(seq 1 10); do
+              [ "$(served "$FAN_URL" 'assets/main-[A-Za-z0-9_-]+\.js')" = "$EXPECTED_FAN" ] || return 1
+              [ "$(served "$ORGANIZER_URL" 'assets/organizer-[A-Za-z0-9_-]+\.js')" = "$EXPECTED_ORGANIZER" ] || return 1
+              curl -sSf --max-time 20 -o /dev/null -w '%{content_type}' "$FAN_URL/$EXPECTED_FAN" 2>/dev/null | grep -q javascript || return 1
+              sleep 1
+            done
+          }
           for attempt in $(seq 1 60); do
             live_fan=$(served "$FAN_URL" 'assets/main-[A-Za-z0-9_-]+\.js')
             live_organizer=$(served "$ORGANIZER_URL" 'assets/organizer-[A-Za-z0-9_-]+\.js')
-            if [ "$live_fan" = "$EXPECTED_FAN" ] && [ "$live_organizer" = "$EXPECTED_ORGANIZER" ]; then
-              echo "Release served after about $((attempt * 20))s"
+            if [ "$live_fan" = "$EXPECTED_FAN" ] && [ "$live_organizer" = "$EXPECTED_ORGANIZER" ] && rolled_out; then
+              echo "Release served by every pod after about $((attempt * 20))s"
               exit 0
             fi
             echo "Attempt $attempt/60: fan '$live_fan', organizer '$live_organizer'; waiting..."
