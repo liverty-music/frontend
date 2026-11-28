@@ -1708,37 +1708,41 @@ export const MonthJumpHiddenWhileFabOpen = {
 		const capsule = canvasElement.querySelector(
 			'.month-jump-capsule',
 		) as HTMLElement
-		// The capsule's opacity transition, listened for before the click: on a
-		// loaded runner the 200 ms fade can be over before the next frame, so it
-		// is caught by its end event, which reports the time it ran for, not by
-		// looking for a running transition afterwards.
-		const fadeEnded = () =>
-			new Promise<TransitionEvent>((resolve) => {
-				const onEnd = (e: TransitionEvent) => {
-					if (e.target !== capsule || e.propertyName !== 'opacity') return
-					capsule.removeEventListener('transitionend', onEnd)
-					resolve(e)
-				}
-				capsule.addEventListener('transitionend', onEnd)
-			})
-		const fading = async (ended: Promise<TransitionEvent>) => {
+		// The FAB opens and closes its panel through popovertarget, inside the
+		// click itself, so the capsule's fade is read in the same task as the
+		// click: getAnimations() brings the style up to date and the 200 ms fade
+		// has just started however loaded the runner is. (Read a frame later, a
+		// slow runner had already finished it.)
+		const fadeOnClick = () => {
+			fab.click()
+			return capsule
+				.getAnimations()
+				.filter(
+					(a) =>
+						a instanceof CSSTransition &&
+						a.transitionProperty === 'opacity' &&
+						a.effect?.target === capsule,
+				)
+		}
+		const fading = async (fade: Animation[]) => {
 			// @spec components/infrastructure/fan/web/route/timetable "The capsule gives way to the FAB with a fade"
-			await expect((await ended).elapsedTime).toBeCloseTo(0.2, 3)
+			await expect(fade).toHaveLength(1)
+			await expect(Number(fade[0].effect?.getComputedTiming().duration)).toBe(
+				200,
+			)
 		}
 		// At rest first (a fade cut short runs for a shorter time).
 		await transitionsEnded(capsule)
-		let ended = fadeEnded()
-		fab.click()
-		await fading(ended)
-		await expect(fab.getAttribute('aria-expanded')).toBe('true')
+		await fading(fadeOnClick())
+		// The launcher reflects the panel from its toggle event, a task later.
+		await waitFor(() => expect(fab.getAttribute('aria-expanded')).toBe('true'))
 		await waitFor(() => expect(shownJumps(canvasElement)).toEqual([]))
 		await expect(getComputedStyle(capsule).display).toBe('none')
 
 		await transitionsEnded(capsule)
-		ended = fadeEnded()
-		fab.click()
-		await fading(ended)
-		await expect(fab.getAttribute('aria-expanded')).toBe('false')
+		await fading(fadeOnClick())
+		// The launcher reflects the panel from its toggle event, a task later.
+		await waitFor(() => expect(fab.getAttribute('aria-expanded')).toBe('false'))
 		await waitFor(() =>
 			expect(shownJumps(canvasElement)).toEqual(['prev', 'next']),
 		)
