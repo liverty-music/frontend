@@ -76,6 +76,8 @@
 			display: grid;
 			place-items: center;
 
+			inline-size: 2.5rem; /* md.comp.list.list-item.leading-avatar.size */
+			block-size: 2.5rem;
 			border-radius: var(--md-sys-shape-corner-full);
 
 			color: var(--color-white);
