@@ -14,7 +14,7 @@ state-placeholder, page-header). Baselines are **committed** under
   ```bash
   # regenerate after an intentional visual change, then commit the PNGs
   docker run --rm --user "$(id -u):$(id -g)" -v "$PWD":/work -w /work -e HOME=/tmp \
-    mcr.microsoft.com/playwright:v1.64.1-noble \
+    mcr.microsoft.com/playwright:v1.65.1-noble \
     npx vitest run --project=storybook --update
   ```
   `--user` keeps the files the run writes (`node_modules/.vite`, `.cache`, the PNGs) owned by you;
