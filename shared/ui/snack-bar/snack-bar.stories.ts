@@ -580,8 +580,10 @@ export const SwipeUpdateSnack = {
 		if (!(await swipeSideways('.snack-surface', 0.7 * width))) return
 
 		// @spec components/infrastructure/fan/web/global/snack-bar "Swipe on a snack that stays until the fan acts"
+		// The swipe's snap and the exit motion run first; a busy runner takes
+		// longer, as in SwipePastHalf.
 		await waitFor(() => expect(item.isConnected).toBe(false), {
-			timeout: 1500,
+			timeout: 3000,
 		})
 		await expect(record.dismissals).toBe(1)
 		await expect(record.actions).toBe(0)
