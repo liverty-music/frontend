@@ -4,7 +4,18 @@
 	# SPA fallback to the reception entry. Mirrors Caddyfile.organizer, swapping
 	# the entry document. Reception links are `/#<token>`: the token is in the
 	# fragment, which never reaches this server.
-	try_files {path} /reception.html
+	# A missing /assets/ file is a 404, never the page (see Caddyfile): a page
+	# served as a chunk breaks the screen during a rollout.
+	@page {
+		not path /assets/*
+		not file
+	}
+	rewrite @page /reception.html
+	@missingAsset {
+		path /assets/*
+		not file
+	}
+	header @missingAsset Cache-Control "no-store"
 
 	@config path /config.json
 	header @config Cache-Control "no-store"
