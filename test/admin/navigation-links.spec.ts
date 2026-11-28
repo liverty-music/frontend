@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import approvalQueueHtml from '../../admin/approval-queue/approval-queue-route.html?raw'
 import approvedConcertsHtml from '../../admin/approved-concerts/approved-concerts-route.html?raw'
 import artistConcertsHtml from '../../admin/artist-concerts/artist-concerts-route.html?raw'
+import artistMbidsHtml from '../../admin/artist-mbids/artist-mbids-route.html?raw'
 import authCallbackHtml from '../../admin/auth-callback/auth-callback-route.html?raw'
 import organizersHtml from '../../admin/organizers/organizers-route.html?raw'
 import usersHtml from '../../admin/users/users-route.html?raw'
@@ -24,6 +25,8 @@ describe('admin sibling navigation uses parent-relative paths', () => {
 	const cases: ReadonlyArray<[name: string, html: string, target: string]> = [
 		['welcome-route', welcomeHtml, '../approval-queue'],
 		['welcome-route', welcomeHtml, '../users'],
+		['welcome-route', welcomeHtml, '../artist-mbids'],
+		['artist-mbids-route', artistMbidsHtml, '../welcome'],
 		['approval-queue-route', approvalQueueHtml, '../welcome'],
 		['approved-concerts-route', approvedConcertsHtml, '../welcome'],
 		['organizers-route', organizersHtml, '../welcome'],

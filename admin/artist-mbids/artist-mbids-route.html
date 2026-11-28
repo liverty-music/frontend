@@ -1,0 +1,148 @@
+<main class="[ artist-mbids ] [ flow ]">
+  <header class="artist-mbids-header">
+    <p class="artist-mbids-brand">Liverty Music Admin</p>
+    <h1 class="artist-mbids-title">Artist MBIDs</h1>
+    <p class="artist-mbids-subtitle">
+      Artists whose music catalog ID (MBID) could not be checked automatically.
+      Compare the catalog's artists of the same name and choose the right one.
+    </p>
+    <a load="../welcome" class="artist-mbids-back-link">← Back to console</a>
+  </header>
+
+  <p if.bind="verifiedName" class="artist-mbids-notice" role="status" data-testid="artist-mbids-verified">
+    ${verifiedName} is verified.
+  </p>
+
+  <output if.bind="listPhase === 'loading'" class="artist-mbids-muted" role="status" aria-busy="true">
+    Loading artists…
+  </output>
+
+  <div if.bind="listPhase === 'error'" class="[ artist-mbids-panel ] [ flow ]" data-testid="artist-mbids-list-error">
+    <p class="artist-mbids-error" role="alert">The artists could not be loaded. Try again.</p>
+    <button type="button" class="artist-mbids-btn" click.trigger="loadArtists()">Try again</button>
+  </div>
+
+  <template if.bind="listPhase === 'ready'">
+    <p if.bind="artists.length === 0" class="artist-mbids-muted" data-testid="artist-mbids-empty">
+      No artist is waiting for an MBID choice.
+    </p>
+    <ul else class="artist-mbids-list" data-testid="artist-mbids-list">
+      <li repeat.for="artist of artists">
+        <button
+          type="button"
+          class="artist-mbids-artist"
+          aria-pressed.bind="selected?.id === artist.id ? 'true' : 'false'"
+          disabled.bind="saving"
+          click.trigger="select(artist)"
+          data-testid="artist-mbids-artist"
+        >
+          <span class="artist-mbids-artist-name">${artist.name}</span>
+          <span class="artist-mbids-mbid">${artist.mbid}</span>
+        </button>
+      </li>
+    </ul>
+  </template>
+
+  <section if.bind="selected" class="[ artist-mbids-panel ] [ flow ]" data-testid="artist-mbids-namesakes">
+    <h2 class="artist-mbids-section-title">Namesakes of ${selected.name}</h2>
+
+    <output if.bind="namesakePhase === 'loading'" class="artist-mbids-muted" role="status" aria-busy="true">
+      Loading namesakes…
+    </output>
+
+    <div if.bind="namesakePhase === 'error'" class="flow" data-testid="artist-mbids-namesake-error">
+      <p class="artist-mbids-error" role="alert">The music catalog could not be reached. Try again.</p>
+      <button type="button" class="artist-mbids-btn" click.trigger="loadNamesakes()">Try again</button>
+    </div>
+
+    <ul if.bind="namesakePhase === 'ready'" class="[ artist-mbids-candidates ] [ flow ]">
+      <li repeat.for="row of namesakes" class="[ artist-mbids-candidate ] [ flow ]" data-testid="artist-mbids-candidate">
+        <p class="artist-mbids-candidate-name">
+          ${row.name}
+          <span if.bind="row.current" class="artist-mbids-current" data-testid="artist-mbids-current">Current</span>
+        </p>
+        <dl class="artist-mbids-facts">
+          <dt>MBID</dt>
+          <dd>
+            <a href.bind="row.catalogUrl" target="_blank" rel="noopener noreferrer" class="artist-mbids-mbid" data-testid="artist-mbids-candidate-mbid">${row.mbid}</a>
+          </dd>
+          <dt>Country</dt>
+          <dd>${row.country || '—'}</dd>
+          <dt>Life span</dt>
+          <dd data-testid="artist-mbids-life-span">${row.lifeSpan}</dd>
+          <dt>Note</dt>
+          <dd>${row.disambiguation || '—'}</dd>
+          <dt>Official site</dt>
+          <dd>
+            <a if.bind="row.officialSiteUrl" href.bind="row.officialSiteUrl" target="_blank" rel="noopener noreferrer" data-testid="artist-mbids-site">${row.officialSiteUrl}</a>
+            <span else>—</span>
+          </dd>
+        </dl>
+        <button
+          type="button"
+          class="artist-mbids-btn"
+          aria-haspopup="dialog"
+          disabled.bind="saving"
+          click.trigger="choose(row)"
+          data-testid="artist-mbids-choose"
+        >
+          Choose
+        </button>
+      </li>
+    </ul>
+
+    <form class="[ artist-mbids-entry ] [ flow ]" novalidate submit.trigger="setMbid()">
+      <label class="artist-mbids-field">
+        MBID
+        <input
+          type="text"
+          class="artist-mbids-input"
+          value.bind="mbidInput"
+          maxlength="64"
+          autocomplete="off"
+          spellcheck="false"
+          aria-invalid.bind="mbidError ? 'true' : null"
+          aria-describedby="artist-mbids-mbid-error"
+          data-testid="artist-mbids-mbid-input"
+        />
+      </label>
+      <p id="artist-mbids-mbid-error" if.bind="mbidError" class="artist-mbids-error" role="alert">${mbidError}</p>
+      <button type="submit" class="artist-mbids-btn" aria-haspopup="dialog" disabled.bind="saving" data-testid="artist-mbids-set">
+        Set MBID
+      </button>
+    </form>
+
+    <p if.bind="choiceError" class="artist-mbids-error" role="alert" data-testid="artist-mbids-choice-error">
+      ${choiceError}
+    </p>
+  </section>
+
+  <dialog
+    ref="choiceDialog"
+    class="artist-mbids-dialog"
+    aria-labelledby="artist-mbids-dialog-title"
+    close.trigger="onDialogClose()"
+    data-testid="artist-mbids-dialog"
+  >
+    <div class="[ artist-mbids-dialog-body ] [ flow ]">
+      <h2 id="artist-mbids-dialog-title" class="artist-mbids-section-title">Set this MBID?</h2>
+      <p class="artist-mbids-dialog-target">
+        ${selected.name} becomes ${pending.description ? pending.description + ' — ' : ''}${pending.mbid}.
+      </p>
+      <div class="[ artist-mbids-dialog-actions ] [ cluster ]">
+        <button ref="choiceCancelButton" type="button" class="artist-mbids-btn" autofocus click.trigger="cancelChoice()">
+          Cancel
+        </button>
+        <button
+          type="button"
+          class="artist-mbids-btn"
+          data-variant="primary"
+          disabled.bind="saving"
+          click.trigger="confirmChoice()"
+        >
+          ${saving ? 'Setting…' : 'Set MBID'}
+        </button>
+      </div>
+    </div>
+  </dialog>
+</main>
