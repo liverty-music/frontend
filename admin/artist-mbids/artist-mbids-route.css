@@ -1,0 +1,228 @@
+/* The admin Artist MBIDs screen: the Ambiguous artists, the namesakes of the
+   selected one, the MBID field, and the confirmation of a choice. */
+@layer block {
+	@scope (artist-mbids-route) {
+		:scope {
+			--_radius: 0.5rem;
+			--_gap-xs: 0.25rem;
+			--_step-1: 1.25rem;
+			--_step-2: 1.563rem;
+			--_pad-input: 0.5rem;
+			--_pad-btn: 0.5rem 1rem;
+			--_border: color-mix(
+				in oklch,
+				var(--color-text-secondary) 25%,
+				transparent
+			);
+			--_surface-raised: oklch(24% 0.04 275deg);
+			--_backdrop-bg: oklch(0% 0 0deg / 50%);
+		}
+
+		.artist-mbids {
+			--flow-space: var(--space-m);
+
+			max-inline-size: 48rem;
+			margin-inline: auto;
+			padding: var(--space-l) var(--space-m);
+		}
+
+		.artist-mbids-brand {
+			font-size: var(--step--1);
+			font-weight: 700;
+			color: var(--color-brand-primary);
+			text-transform: uppercase;
+			letter-spacing: 0.08em;
+		}
+
+		.artist-mbids-title {
+			font-size: var(--step-3);
+			color: var(--color-text-primary);
+		}
+
+		.artist-mbids-subtitle,
+		.artist-mbids-muted,
+		.artist-mbids-status {
+			color: var(--color-text-secondary);
+		}
+
+		.artist-mbids-back-link {
+			display: inline-block;
+			color: var(--color-brand-primary);
+			text-decoration: underline;
+		}
+
+		.artist-mbids-panel,
+		.artist-mbids-candidate {
+			--flow-space: var(--space-s);
+
+			padding: var(--space-m);
+			border: 1px solid var(--_border);
+			border-radius: var(--_radius);
+		}
+
+		.artist-mbids-field {
+			display: flex;
+			flex-direction: column;
+			gap: var(--_gap-xs);
+
+			font-size: var(--step--1);
+			color: var(--color-text-secondary);
+		}
+
+		.artist-mbids-input {
+			padding: var(--_pad-input);
+			border: 1px solid var(--_border);
+			border-radius: var(--_radius);
+
+			font: inherit;
+			color: var(--color-text-primary);
+
+			background: var(--_surface-raised);
+		}
+
+		.artist-mbids-section-title {
+			font-size: var(--_step-2);
+			color: var(--color-text-primary);
+			overflow-wrap: anywhere;
+		}
+
+		.artist-mbids-facts {
+			display: grid;
+			grid-template-columns: auto 1fr;
+			gap: var(--_gap-xs) var(--space-s);
+
+			color: var(--color-text-primary);
+			overflow-wrap: anywhere;
+
+			& dt {
+				color: var(--color-text-secondary);
+			}
+		}
+
+		.artist-mbids-list {
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-xs);
+		}
+
+		.artist-mbids-artist {
+			cursor: pointer;
+
+			display: flex;
+			flex-wrap: wrap;
+			gap: var(--space-s);
+			justify-content: space-between;
+
+			inline-size: 100%;
+			padding: var(--_pad-btn);
+			border: 1px solid var(--_border);
+			border-radius: var(--_radius);
+
+			font: inherit;
+			color: var(--color-text-primary);
+			text-align: start;
+
+			background: var(--_surface-raised);
+
+			&[aria-pressed="true"] {
+				border-color: var(--color-brand-primary);
+			}
+		}
+
+		.artist-mbids-mbid {
+			font-size: var(--step--1);
+			color: var(--color-text-secondary);
+			overflow-wrap: anywhere;
+		}
+
+		.artist-mbids-candidates {
+			--flow-space: var(--space-s);
+		}
+
+		.artist-mbids-candidate-name {
+			font-size: var(--_step-1);
+			color: var(--color-text-primary);
+			overflow-wrap: anywhere;
+		}
+
+		.artist-mbids-current {
+			padding-inline: var(--space-xs);
+			border: 1px solid var(--color-brand-primary);
+			border-radius: var(--_radius);
+
+			font-size: var(--step--1);
+			color: var(--color-brand-primary);
+		}
+
+		.artist-mbids-entry {
+			--flow-space: var(--space-xs);
+		}
+
+		.artist-mbids-notice {
+			color: var(--color-text-primary);
+		}
+
+		.artist-mbids-btn {
+			cursor: pointer;
+
+			padding: var(--_pad-btn);
+			border: 1px solid var(--_border);
+			border-radius: var(--_radius);
+
+			font: inherit;
+			color: var(--color-text-primary);
+
+			background: var(--_surface-raised);
+
+			&:disabled {
+				cursor: not-allowed;
+				opacity: 0.5;
+			}
+
+			&[data-variant="primary"] {
+				border-color: var(--color-brand-primary);
+				color: var(--color-surface-base);
+				background: var(--color-brand-primary);
+			}
+
+			&[data-variant="danger"] {
+				border-color: var(--color-error);
+				color: var(--color-error);
+			}
+		}
+
+		.artist-mbids-error {
+			font-size: var(--step--1);
+			color: var(--color-error);
+		}
+
+		.artist-mbids-dialog {
+			max-inline-size: min(28rem, 92vi);
+			margin: auto;
+			padding: var(--space-l);
+			border: 1px solid var(--_border);
+			border-radius: var(--_radius);
+
+			color: var(--color-text-primary);
+
+			background: var(--color-surface-base);
+
+			&::backdrop {
+				background: var(--_backdrop-bg);
+			}
+		}
+
+		.artist-mbids-dialog-body {
+			--flow-space: var(--space-s);
+		}
+
+		.artist-mbids-dialog-target {
+			color: var(--color-text-secondary);
+			overflow-wrap: anywhere;
+		}
+
+		.artist-mbids-dialog-actions {
+			justify-content: flex-end;
+		}
+	}
+}

@@ -43,6 +43,11 @@ import { route } from '@aurelia/router'
 			title: 'Users',
 		},
 		{
+			path: 'artist-mbids',
+			component: import('../artist-mbids/artist-mbids-route'),
+			title: 'Artist MBIDs',
+		},
+		{
 			path: 'artists/:artistId/concerts',
 			component: import('../artist-concerts/artist-concerts-route'),
 			title: 'Artist Concerts',
