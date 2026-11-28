@@ -37,9 +37,6 @@ async function seedGuest(
 	await page.route('**/liverty_music.rpc.**', (route) =>
 		route.fulfill({ status: 200, contentType: 'application/json', body: '{}' }),
 	)
-	await page.route('**/ws.audioscrobbler.com/**', (route) =>
-		route.fulfill({ status: 200, contentType: 'application/json', body: '{}' }),
-	)
 }
 
 test(`@spec ${NAV} "Navigation shown during onboarding (discover, timetable, my-artists)"`, async ({

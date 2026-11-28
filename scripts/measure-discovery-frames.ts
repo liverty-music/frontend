@@ -303,7 +303,7 @@ async function mockNetwork(context: BrowserContext): Promise<void> {
 			}),
 		})
 	})
-	await context.route(/posthog\.com|audioscrobbler|fanart\.tv/, (route) =>
+	await context.route(/posthog\.com|fanart\.tv/, (route) =>
 		route.fulfill({ contentType: 'application/json', body: '{}' }),
 	)
 }

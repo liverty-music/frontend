@@ -88,13 +88,6 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 			body: JSON.stringify({}),
 		})
 	})
-	await page.route('**/ws.audioscrobbler.com/**', (route) =>
-		route.fulfill({
-			status: 200,
-			contentType: 'application/json',
-			body: JSON.stringify({}),
-		}),
-	)
 }
 
 const APP_SHELL = 'components/infrastructure/fan/web/global/app-shell'

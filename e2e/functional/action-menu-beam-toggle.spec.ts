@@ -61,9 +61,6 @@ async function mockRpc(page: Page): Promise<void> {
 			body: JSON.stringify(concertWire({ groups })),
 		})
 	})
-	await page.route('**/ws.audioscrobbler.com/**', (route) =>
-		route.fulfill({ status: 200, contentType: 'application/json', body: '{}' }),
-	)
 }
 
 /** Open My Timetable as a guest; `beams` seeds `beams.enabled` when given. */

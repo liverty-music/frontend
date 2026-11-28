@@ -189,17 +189,6 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 	})
 }
 
-/** Mock Last.fm API to prevent real network calls. */
-async function mockLastFmApi(page: Page): Promise<void> {
-	await page.route('**/ws.audioscrobbler.com/**', (route) => {
-		route.fulfill({
-			status: 200,
-			contentType: 'application/json',
-			body: JSON.stringify({}),
-		})
-	})
-}
-
 /**
  * Seed completed onboarding state with a fake OIDC user so the app uses
  * the RPC code path (which returns fanart URLs from the mocked
@@ -244,7 +233,6 @@ function seedAuthenticatedState() {
 test.describe('Event card artist name', () => {
 	test.beforeEach(async ({ page }) => {
 		await mockRpcRoutes(page)
-		await mockLastFmApi(page)
 		// OIDC discovery is stubbed globally by the shared `test` fixture.
 		await page.addInitScript(seedAuthenticatedState())
 	})
@@ -286,7 +274,6 @@ test.describe('Event card artist name', () => {
 test.describe('Event detail sheet hero image', () => {
 	test.beforeEach(async ({ page }) => {
 		await mockRpcRoutes(page)
-		await mockLastFmApi(page)
 		// OIDC discovery is stubbed globally by the shared `test` fixture.
 		await page.addInitScript(seedAuthenticatedState())
 	})

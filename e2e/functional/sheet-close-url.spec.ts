@@ -63,9 +63,6 @@ async function prepare(page: Page): Promise<void> {
 				: '{}',
 		}),
 	)
-	await page.route('**/ws.audioscrobbler.com/**', (route) =>
-		route.fulfill({ status: 200, contentType: 'application/json', body: '{}' }),
-	)
 }
 
 function sheetOpen(page: Page): Promise<boolean> {

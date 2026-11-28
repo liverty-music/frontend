@@ -122,21 +122,9 @@ async function mockOnboardingRpcRoutes(page: Page): Promise<void> {
 	})
 }
 
-/** Mock Last.fm API. */
-async function mockLastFmApi(page: Page): Promise<void> {
-	await page.route('**/ws.audioscrobbler.com/**', (route) => {
-		route.fulfill({
-			status: 200,
-			contentType: 'application/json',
-			body: JSON.stringify({}),
-		})
-	})
-}
-
 test.describe('Timetable lane classification after home selection', () => {
 	test.beforeEach(async ({ page }) => {
 		await mockOnboardingRpcRoutes(page)
-		await mockLastFmApi(page)
 	})
 
 	test('3.2: onboarding home selection removes blur and reloads data', async ({

@@ -133,9 +133,6 @@ async function openDiscovery(
 			return json(concertWire({ groups: nearbyGroups }))
 		return json({})
 	})
-	await page.route('**/ws.audioscrobbler.com/**', (route) =>
-		route.fulfill({ status: 200, contentType: 'application/json', body: '{}' }),
-	)
 	await page.goto(path)
 	await page.locator('discovery-route').waitFor({ timeout: 60_000 })
 }

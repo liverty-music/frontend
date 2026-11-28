@@ -276,12 +276,7 @@ async function load(browser: Browser, port: number, n: number) {
 		const cdp = await context.newCDPSession(page)
 		await cdp.send('Network.enable')
 		await cdp.send('Network.setBlockedURLs', {
-			urls: [
-				'*posthog.com*',
-				'*audioscrobbler*',
-				'*fanart.tv*',
-				'*stripe.com*',
-			],
+			urls: ['*posthog.com*', '*fanart.tv*', '*stripe.com*'],
 		})
 		await cdp.send('Network.emulateNetworkConditions', SLOW_4G)
 		await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 })

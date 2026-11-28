@@ -56,9 +56,6 @@ export async function seedSignedInFan(
 			},
 		},
 	})
-	await page.route('**/ws.audioscrobbler.com/**', (route) =>
-		route.fulfill({ status: 200, contentType: 'application/json', body: '{}' }),
-	)
 }
 
 export const nav = (page: Page): Locator => page.locator('bottom-nav-bar nav')

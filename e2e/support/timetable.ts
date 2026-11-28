@@ -83,9 +83,6 @@ export async function openTimetable(
 			body: listed ? body : '{}',
 		})
 	})
-	await page.route('**/ws.audioscrobbler.com/**', (route) =>
-		route.fulfill({ status: 200, contentType: 'application/json', body: '{}' }),
-	)
 	await page.goto('/timetable')
 	await page.locator('[data-live-card]').first().waitFor({ timeout: 15_000 })
 	await frames(page)
