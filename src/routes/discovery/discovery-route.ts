@@ -116,11 +116,11 @@ export class DiscoveryRoute {
 	// Controllers
 	public readonly search = new SearchController(
 		this.artistClient,
+		this.ea,
+		this.i18n,
 		{
 			onEnterSearchMode: () => this.pauseField(),
 			onExitSearchMode: () => this.artistBubbles?.resume(),
-			onError: (key) =>
-				this.ea.publish(new Snack(this.i18n.tr(key), 'warning')),
 			onSearchCompleted: ({ queryLength, resultCount }) => {
 				this.analytics.capture(Events.ArtistSearch, {
 					query_length: queryLength,
@@ -191,11 +191,18 @@ export class DiscoveryRoute {
 	public get srStatusText(): string {
 		const parts: string[] = []
 		if (this.search.isSearchMode) {
-			parts.push(
-				this.i18n.tr('discovery.srSearchResults', {
-					count: this.search.searchResults.length,
-				}),
-			)
+			// No count until there is one to tell: "0 search results" while a
+			// search is pending or after it failed would say nothing was found.
+			if (
+				this.search.searchResults.length > 0 ||
+				this.search.phase === 'answered'
+			) {
+				parts.push(
+					this.i18n.tr('discovery.srSearchResults', {
+						count: this.search.searchResults.length,
+					}),
+				)
+			}
 		} else {
 			parts.push(
 				this.i18n.tr('discovery.srArtistsAvailable', {
@@ -495,11 +502,6 @@ export class DiscoveryRoute {
 
 	// --- Template event handlers ---
 
-	@watch('search.searchQuery')
-	protected onSearchQueryChanged(newValue: string): void {
-		this.search.onQueryChanged(newValue)
-	}
-
 	public clearSearch(): void {
 		this.search.clearSearch()
 	}
@@ -640,7 +642,6 @@ export class DiscoveryRoute {
 
 		// Transition to bubble view and play absorption animation
 		this.search.clearSearch()
-		this.search.exitSearchMode()
 
 		// Remove from the field so the reconcile fades out any existing physics
 		// bubble for this artist; the absorb animation is a transient flourish.

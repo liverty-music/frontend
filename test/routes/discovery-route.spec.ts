@@ -370,66 +370,36 @@ describe('DiscoveryRoute', () => {
 		})
 	})
 
-	describe('onSearchQueryChanged (debounced search)', () => {
-		// @spec components/infrastructure/fan/web/route/discovery "Search is debounced"
-		it('should debounce search by 300ms', async () => {
-			;(mockArtistClient.search as ReturnType<typeof vi.fn>).mockResolvedValue([
-				makeArtist('a1', 'Result'),
-			])
-
-			sut.search.searchQuery = 'test'
-			sut.search.onQueryChanged('test')
-
-			// Before 300ms
-			expect(mockArtistClient.search).not.toHaveBeenCalled()
-
-			await vi.advanceTimersByTimeAsync(300)
-
-			expect(mockArtistClient.search).toHaveBeenCalledWith('test')
-		})
-
-		it('should exit search mode when query is empty', () => {
-			sut.search.isSearchMode = true
-			sut.search.onQueryChanged('')
-
-			expect(sut.search.isSearchMode).toBe(false)
-		})
-
-		// @spec components/infrastructure/fan/web/route/discovery "Stale search response is discarded"
-		it('should discard stale responses by checking current query', async () => {
-			;(mockArtistClient.search as ReturnType<typeof vi.fn>).mockResolvedValue([
-				makeArtist('a2', 'Fresh'),
-			])
-
-			sut.search.searchQuery = 'first'
-			sut.search.onQueryChanged('first')
-
-			// Before debounce fires, start a new search
-			await vi.advanceTimersByTimeAsync(100)
-			sut.search.searchQuery = 'second'
-			sut.search.onQueryChanged('second')
-
-			await vi.advanceTimersByTimeAsync(300)
-
-			// Only one search should have been triggered (the second one)
-			expect(mockArtistClient.search).toHaveBeenCalledTimes(1)
-			expect(mockArtistClient.search).toHaveBeenCalledWith('second')
-		})
-	})
-
 	describe('clearSearch', () => {
 		// @spec components/infrastructure/fan/web/route/discovery "Clear search restores Artists view"
 		it('empties the query and resumes the bubble canvas', () => {
 			sut.search.searchQuery = 'something'
-			sut.search.onQueryChanged('something')
 			expect(sut.artistBubbles.pause).toHaveBeenCalled()
 
 			sut.clearSearch()
-			sut.search.onQueryChanged(sut.search.searchQuery)
 
 			expect(sut.search.searchQuery).toBe('')
 			expect(sut.search.isSearchMode).toBe(false)
 			expect(sut.artistBubbles.resume).toHaveBeenCalled()
+		})
+	})
+
+	describe('search status for screen readers', () => {
+		it('says no result count while the search is pending', () => {
+			sut.search.searchQuery = 'vau'
+
+			expect(sut.srStatusText).not.toContain('discovery.srSearchResults')
+		})
+
+		it('says the count once the search is answered', async () => {
+			;(mockArtistClient.search as ReturnType<typeof vi.fn>).mockResolvedValue(
+				[],
+			)
+			sut.search.searchQuery = 'vau'
+			sut.search.searchNow()
+			await vi.advanceTimersByTimeAsync(0)
+
+			expect(sut.srStatusText).toContain('discovery.srSearchResults count=0')
 		})
 	})
 
@@ -443,14 +413,12 @@ describe('DiscoveryRoute', () => {
 			expect(sut.showProgressRow).toBe(true)
 
 			sut.search.searchQuery = 'vau'
-			sut.search.onQueryChanged('vau')
 
 			expect(sut.search.isSearchMode).toBe(true)
 			expect(sut.artistBubbles.pause).toHaveBeenCalled()
 			expect(sut.showProgressRow).toBe(false)
 
 			sut.search.searchQuery = ''
-			sut.search.onQueryChanged('')
 
 			expect(sut.search.isSearchMode).toBe(false)
 			expect(sut.artistBubbles.resume).toHaveBeenCalled()
@@ -523,7 +491,6 @@ describe('DiscoveryRoute', () => {
 			;(mockFollowClient.follow as ReturnType<typeof vi.fn>).mockRejectedValue(
 				new Error('network error'),
 			)
-			sut.search.isSearchMode = true
 			sut.search.searchQuery = 'test'
 			sut.search.searchResults = [makeArtist('a1', 'Fail')]
 
@@ -1197,12 +1164,12 @@ describe('DiscoveryRoute', () => {
 		// @spec components/infrastructure/fan/web/route/discovery "Ready while searching"
 		it('reports the ready timetable only once the search closes', async () => {
 			const { vm, stop } = await mountRoute()
-			vm.search.isSearchMode = true
+			vm.search.searchQuery = 'vau'
 			for (const id of ['a1', 'a2', 'a3']) await followOn(vm, id, 1)
 
 			expect(readyEvents()).toEqual([])
 
-			vm.search.exitSearchMode()
+			vm.search.clearSearch()
 			await tasksSettled()
 
 			expect(readyEvents()).toHaveLength(1)
@@ -1565,10 +1532,8 @@ describe('DiscoveryRoute', () => {
 				sut.onRevealMark(revealMark('ghosts', 100))
 
 				sut.search.searchQuery = 'vau'
-				sut.search.onQueryChanged('vau')
 				expect(sut.search.isSearchMode).toBe(true)
 				sut.search.searchQuery = ''
-				sut.search.onQueryChanged('')
 				expect(sut.search.isSearchMode).toBe(false)
 				sut.onRevealMark(revealMark('first-name', 5000))
 				sut.onRevealMark(revealMark('all-names', 5100))

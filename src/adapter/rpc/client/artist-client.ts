@@ -48,8 +48,8 @@ export class ArtistRpcClient {
 		return resp.artists.map(artistFrom)
 	}
 
-	public async search(query: string): Promise<Artist[]> {
-		const resp = await this.client.search({ query })
+	public async search(query: string, signal: AbortSignal): Promise<Artist[]> {
+		const resp = await this.client.search({ query }, { signal })
 		return resp.artists.map(artistFrom)
 	}
 }

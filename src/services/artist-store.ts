@@ -68,7 +68,7 @@ export class ArtistStore {
 	}
 
 	/** Uncached pass-through: search must stay network-first (TIER 3). */
-	public async search(query: string): Promise<Artist[]> {
-		return this.rpcClient.search(query)
+	public async search(query: string, signal: AbortSignal): Promise<Artist[]> {
+		return this.rpcClient.search(query, signal)
 	}
 }

@@ -12,7 +12,7 @@ import type { SearchController } from './search-controller'
 export class DiscoverySearchResults {
 	public readonly i18n = resolve(I18N)
 
-	/** The route's search state: whether it is searching, and what it found. */
+	/** The route's search state: where the search stands, and what it found. */
 	@bindable public search?: SearchController
 
 	/** The ids of the artists the fan already follows. */
