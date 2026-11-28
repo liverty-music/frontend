@@ -61,13 +61,6 @@ test.describe('Timetable tab (guest)', () => {
 				body: '{}',
 			})
 		})
-		await page.route('**/ws.audioscrobbler.com/**', (route) =>
-			route.fulfill({
-				status: 200,
-				contentType: 'application/json',
-				body: '{}',
-			}),
-		)
 		await seedGuest(page)
 		await page.goto('/discovery')
 		await expect(page.locator('discovery-route')).toBeVisible({

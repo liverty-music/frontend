@@ -218,48 +218,6 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 	})
 }
 
-/** Last.fm API mock — returns 10 artists for geo.gettopartists, empty similar. */
-async function mockLastFmApi(page: Page): Promise<void> {
-	await page.route('**/ws.audioscrobbler.com/**', (route) => {
-		const url = new URL(route.request().url())
-		const method = url.searchParams.get('method')
-
-		if (method === 'geo.gettopartists') {
-			return route.fulfill({
-				status: 200,
-				contentType: 'application/json',
-				body: JSON.stringify({
-					topartists: {
-						artist: Array.from({ length: 10 }, (_, i) => ({
-							name: `Artist ${i + 1}`,
-							mbid: fakeId(`mbid-${i + 1}`),
-							image: [
-								{ '#text': '', size: 'medium' },
-								{ '#text': '', size: 'large' },
-							],
-							listeners: String(1000 - i * 100),
-						})),
-					},
-				}),
-			})
-		}
-
-		if (method === 'artist.getsimilar') {
-			return route.fulfill({
-				status: 200,
-				contentType: 'application/json',
-				body: JSON.stringify({ similarartists: { artist: [] } }),
-			})
-		}
-
-		return route.fulfill({
-			status: 200,
-			contentType: 'application/json',
-			body: JSON.stringify({}),
-		})
-	})
-}
-
 // ---------------------------------------------------------------------------
 // Test suite: individual screen / scenario tests
 // ---------------------------------------------------------------------------
@@ -275,7 +233,6 @@ test.describe('Onboarding flow (single-flag model)', () => {
 			localStorage.removeItem('guest.followedArtists')
 		})
 		await mockRpcRoutes(page)
-		await mockLastFmApi(page)
 	})
 
 	// -------------------------------------------------------------------------
@@ -874,7 +831,6 @@ test.describe('Soft-gate roam (Discovery → Timetable → My Artists)', () => {
 		test.setTimeout(90_000)
 
 		await mockRpcRoutes(page)
-		await mockLastFmApi(page)
 
 		// Seed: still onboarding, 3 follows, home set (needed for ListByArtists
 		// on timetable). celebrationShown suppresses the light celebration overlay

@@ -95,9 +95,6 @@ async function mockRpc(page: Page): Promise<void> {
 			body: '{}',
 		})
 	})
-	await page.route('**/ws.audioscrobbler.com/**', (route) =>
-		route.fulfill({ status: 200, contentType: 'application/json', body: '{}' }),
-	)
 }
 
 async function openTimetable(page: Page): Promise<void> {

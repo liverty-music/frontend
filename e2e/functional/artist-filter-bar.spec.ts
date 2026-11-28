@@ -154,20 +154,9 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 	})
 }
 
-async function mockLastFmApi(page: Page): Promise<void> {
-	await page.route('**/ws.audioscrobbler.com/**', (route) => {
-		route.fulfill({
-			status: 200,
-			contentType: 'application/json',
-			body: JSON.stringify({}),
-		})
-	})
-}
-
 test.describe('Artist filter bar bottom sheet', () => {
 	test.beforeEach(async ({ page }) => {
 		await mockRpcRoutes(page)
-		await mockLastFmApi(page)
 	})
 
 	test('@spec components/infrastructure/fan/web/global/bottom-sheet "Opening the bottom sheet"', async ({

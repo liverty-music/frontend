@@ -9,7 +9,7 @@ import { blockWebFonts, layoutDir, recordLayout } from './layout-record'
  * `@playwright/test` for any spec that boots the app.
  *
  * Only the auth dependency is centralized here; specs keep seeding their own
- * fake OIDC user and RPC/Last.fm responses.
+ * fake OIDC user and RPC responses.
  *
  * With `LAYOUT_DIR` set, each passing test also records its final layout
  * (`layout-record.ts`).

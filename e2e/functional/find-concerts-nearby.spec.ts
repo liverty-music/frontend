@@ -227,9 +227,6 @@ async function openApp(page: Page, seed: Seed = {}): Promise<RpcCall[]> {
 				: {},
 		}),
 	})
-	await page.route('**/ws.audioscrobbler.com/**', (route) =>
-		route.fulfill({ status: 200, contentType: 'application/json', body: '{}' }),
-	)
 	return calls
 }
 

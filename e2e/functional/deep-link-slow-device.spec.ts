@@ -76,9 +76,6 @@ test('a concert deep-link opens its sheet on a slow device, and the timetable re
 				: '{}',
 		}),
 	)
-	await page.route('**/ws.audioscrobbler.com/**', (route) =>
-		route.fulfill({ status: 200, contentType: 'application/json', body: '{}' }),
-	)
 	const errors: string[] = []
 	page.on('console', (m) => {
 		if (m.type() === 'error') errors.push(m.text())

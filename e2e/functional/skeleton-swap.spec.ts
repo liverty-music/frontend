@@ -114,9 +114,6 @@ async function prepare(page: Page): Promise<void> {
 			body: '{}',
 		})
 	})
-	await page.route('**/ws.audioscrobbler.com/**', (route) =>
-		route.fulfill({ status: 200, contentType: 'application/json', body: '{}' }),
-	)
 }
 
 for (const path of ['/timetable', `/timetable?concert=${fakeId('h-150-0')}`]) {

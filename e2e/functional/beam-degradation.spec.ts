@@ -52,9 +52,6 @@ async function mockRpc(page: Page): Promise<void> {
 				: '{}',
 		}),
 	)
-	await page.route('**/ws.audioscrobbler.com/**', (route) =>
-		route.fulfill({ status: 200, contentType: 'application/json', body: '{}' }),
-	)
 }
 
 /** Remove every rule that declares a view timeline from typed `attr()`. */
