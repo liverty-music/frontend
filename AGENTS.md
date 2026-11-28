@@ -232,9 +232,8 @@ Authenticated E2E setup (test user, `npm run auth:capture:password`, expired sto
 
 ## npm `overrides` — exit conditions, not neglect
 
-`package.json` carries three `overrides`: `playwright` and `playwright-core`,
-which are version bindings and move on upgrade, and `pixi-filters` > `pixi.js`,
-which is removed when its exit condition is met. A security pin added in future
+`package.json` carries two `overrides`, `playwright` and `playwright-core`,
+which are version bindings and move on upgrade. A security pin added in future
 belongs here too, with its exit condition, and is resolved by REMOVAL rather
 than by upgrade.
 
@@ -242,7 +241,6 @@ than by upgrade.
 |---|---|---|
 | `playwright` (same version as `@playwright/test`) | `@vitest/browser-playwright` peers `playwright: *`, so a lock regeneration resolves the newest release while the CI container ships only the browsers of `@playwright/test`'s version | none — it always equals `@playwright/test`; Renovate moves both in the `playwright` group |
 | `playwright-core` (same version as `@playwright/test`) | `@axe-core/playwright` asks for `playwright-core >= 1.0.0`, so a lock refresh hoists the newest core while `playwright` keeps its pinned one nested; the two `Page` types then differ and `tsc -p e2e` fails (frontend#779) | none — it always equals `@playwright/test`; it is in the same Renovate `playwright` group |
-| `pixi-filters` > `pixi.js` (`$pixi.js`, the root's version) | `pixi.js` is pinned to the dev build `8.22.0-dev.f7d8c62`, the only build with the Chrome 157 fix for `HTMLSource` (pixijs/pixijs#12341). `pixi-filters` peers `pixi.js >=8.0.0-0`, and a semver range does not match a prerelease of another version, so `npm ci` fails with `ERESOLVE` without the override | a `pixi.js` release on npm `latest` contains pixijs/pixijs#12341 (expected 8.23.0): move `pixi.js` to it and delete this override |
 
 **Keeping the upstream package current is the root-cause remedy** for a
 security pin. When it widens its range, delete the override and let normal
@@ -253,7 +251,7 @@ override should cease to exist, which is why `overrides` are excluded from
 automerge in `renovate.json`. A pull request touching one is a request for that
 judgement, not a routine bump.
 
-Four earlier entries are gone for the same reason and are worth knowing about as
+Five earlier entries are gone for the same reason and are worth knowing about as
 precedent: `bfj` was dead (its origin, snarkjs, left with the ZKP feature) and
 was deleted with zero lockfile change; `minimatch` had an equally dead origin
 but was NOT inert — it forced `filelist`'s transitive resolution five majors
@@ -267,7 +265,10 @@ pin to `0.8.3` would have inverted that and pushed `posthog-js` out of its range
 instead; deleting the override let each consumer resolve inside its own.
 `dompurify: "^3.4.13"` was the fourth: `posthog-js` itself came to require
 `^3.4.13`, the exact range the override forced, so the override did nothing
-and was deleted with zero lockfile change.
+and was deleted with zero lockfile change. `pixi-filters` > `pixi.js` was the
+fifth: it existed while `pixi.js` was pinned to a prerelease, which
+`pixi-filters`' peer range `>=8.0.0-0` cannot match, and went once the release
+carrying the fix (pixijs/pixijs#12341, in 8.23.0) replaced the prerelease.
 
 ## Key Technical Decisions
 
@@ -275,17 +276,13 @@ and was deleted with zero lockfile change.
 
 The artist discovery bubble UI uses HTML5 Canvas 2D with Matter.js physics engine. This was chosen over DOM-based animation for performance with 30+ animated elements on mobile. See `src/components/artist-bubbles/`.
 
-### 2. Direct Last.fm API Calls
+### 2. DI + Service State Management
 
-Last.fm API is called directly from the frontend (client-side). The API key is public/read-only by design. Calls use 300ms debounce and in-memory caching.
+Application state (onboarding progress, a guest's followed artists) is managed through singleton services with Aurelia's native DI and observation. `OnboardingService` and `FollowStore` own their state, hydrate from localStorage on construction, and persist through the storage functions in `src/adapter/storage/`. No external state library is used — Aurelia's built-in observation system handles reactivity.
 
-### 3. DI + Service State Management
+### 3. Sign-Up Detection from the OIDC State
 
-Application state (onboarding progress, guest artist data) is managed through singleton services with Aurelia's native DI and observation. `OnboardingService` and `GuestService` own their state as `@observable` properties, hydrate from localStorage on construction, and persist via explicit storage functions in `src/adapter/storage/`. No external state library is used — Aurelia's built-in observation system handles reactivity.
-
-### 4. Onboarding Flow via OIDC Sign-Up Detection
-
-New vs returning users are distinguished by the `isSignUp` flag in the OIDC state. The auth callback routes sign-up users to artist discovery and sign-in users directly to the dashboard.
+The sign-in callback reads the flow a redirect started as from the OIDC state (`resolveAuthFlow`). A sign-up that created an account queues the post-signup dialog, except one started on a concert page. Sign-up and sign-in both return to the stored return-to, else to where the redirect started, else to `/timetable` (`src/routes/sign-in-callback/sign-in-callback-route.ts`).
 
 ## Review criteria (flag violations; quote the rule + link the existing code compared against)
 
