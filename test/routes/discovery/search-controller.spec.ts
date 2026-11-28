@@ -1,241 +1,250 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { Code, ConnectError } from '@connectrpc/connect'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Snack } from '../../../shared/ui/snack-bar/snack'
 import type { Artist } from '../../../src/entities/artist'
-import {
-	type SearchClient,
-	SearchController,
-	type SearchControllerCallbacks,
-} from '../../../src/routes/discovery/search-controller'
-import { createMockLogger } from '../../../test/helpers/mock-logger'
+import { SearchController } from '../../../src/routes/discovery/search-controller'
+import { createCatalogI18n } from '../../helpers/catalog-i18n'
+import { createMockLogger } from '../../helpers/mock-logger'
 
 function makeArtist(id: string, name: string): Artist {
 	return { id, name, mbid: '' }
 }
 
+interface Request {
+	query: string
+	signal: AbortSignal
+	resolve(artists: Artist[]): void
+	reject(error: unknown): void
+}
+
+/** Lets the controller run what follows a settled request. */
+const settle = () => new Promise((resolve) => setTimeout(resolve, 0))
+
 describe('SearchController', () => {
 	let sut: SearchController
-	let mockClient: SearchClient
-	let mockCallbacks: SearchControllerCallbacks
+	let requests: Request[]
+	let published: Snack[]
+	const callbacks = {
+		onEnterSearchMode: vi.fn(),
+		onExitSearchMode: vi.fn(),
+		onSearchCompleted: vi.fn(),
+	}
 
 	beforeEach(() => {
-		vi.useFakeTimers()
-
-		mockClient = {
-			search: vi.fn().mockResolvedValue([]),
-		}
-
-		mockCallbacks = {
-			onEnterSearchMode: vi.fn(),
-			onExitSearchMode: vi.fn(),
-			onError: vi.fn(),
-			onSearchCompleted: vi.fn(),
-		}
-
-		sut = new SearchController(mockClient, mockCallbacks, createMockLogger())
+		vi.clearAllMocks()
+		requests = []
+		published = []
+		sut = new SearchController(
+			{
+				search: (query, signal) =>
+					new Promise<Artist[]>((resolve, reject) => {
+						requests.push({ query, signal, resolve, reject })
+					}),
+			},
+			{ publish: (snack: unknown) => published.push(snack as Snack) },
+			createCatalogI18n() as never,
+			callbacks,
+			createMockLogger(),
+		)
 	})
 
-	afterEach(() => {
-		sut.dispose()
-		vi.useRealTimers()
-	})
+	/** A query that has been sent. */
+	function send(query: string): Request {
+		sut.searchQuery = query
+		sut.submit()
+		return requests[requests.length - 1]
+	}
 
-	describe('onQueryChanged', () => {
-		it('should debounce search by 300ms', async () => {
-			sut.searchQuery = 'test'
-			sut.onQueryChanged('test')
+	describe('a query change', () => {
+		it('waits to send a searchable query, in search mode', () => {
+			sut.searchQuery = 'vaundy'
 
-			expect(mockClient.search).not.toHaveBeenCalled()
-
-			await vi.advanceTimersByTimeAsync(300)
-
-			expect(mockClient.search).toHaveBeenCalledWith('test')
-		})
-
-		it('should enter search mode and notify callback', () => {
-			sut.onQueryChanged('hello')
-
+			expect(sut.phase).toBe('waiting')
 			expect(sut.isSearchMode).toBe(true)
-			expect(mockCallbacks.onEnterSearchMode).toHaveBeenCalled()
+			expect(callbacks.onEnterSearchMode).toHaveBeenCalled()
+			expect(requests).toHaveLength(0)
 		})
 
-		it('should exit search mode when query is empty', () => {
-			sut.isSearchMode = true
-			sut.onQueryChanged('')
+		it.each(['a', 'Z', '7', ' a '])(
+			'stays idle on the single letter or digit %j',
+			(query) => {
+				sut.searchQuery = query
+				sut.submit()
+				sut.searchNow()
 
-			expect(sut.isSearchMode).toBe(false)
-			expect(mockCallbacks.onExitSearchMode).toHaveBeenCalled()
+				expect(sut.phase).toBe('idle')
+				expect(sut.isSearchMode).toBe(true)
+				expect(requests).toHaveLength(0)
+			},
+		)
+
+		it.each(['嵐', 'ａ', '&', 'ab'])('searches the query %j', (query) => {
+			expect(send(query).query).toBe(query)
 		})
 
-		it('should cancel previous debounce on new input', async () => {
-			sut.searchQuery = 'first'
-			sut.onQueryChanged('first')
-
-			await vi.advanceTimersByTimeAsync(100)
-			sut.searchQuery = 'second'
-			sut.onQueryChanged('second')
-
-			await vi.advanceTimersByTimeAsync(300)
-
-			expect(mockClient.search).toHaveBeenCalledTimes(1)
-			expect(mockClient.search).toHaveBeenCalledWith('second')
+		it('sends the query without the white space around it', () => {
+			expect(send('  vaundy ').query).toBe('vaundy')
 		})
 
-		it('should discard stale responses', async () => {
-			const results = [makeArtist('a1', 'Artist')]
-			;(mockClient.search as ReturnType<typeof vi.fn>).mockResolvedValue(
-				results,
-			)
+		it('clears the results on a single letter or digit', async () => {
+			send('ab').resolve([makeArtist('a1', 'A')])
+			await settle()
 
-			sut.searchQuery = 'query'
-			sut.onQueryChanged('query')
+			sut.searchQuery = 'a'
 
-			// Change query before response arrives
-			await vi.advanceTimersByTimeAsync(150)
-			sut.searchQuery = 'different'
-
-			await vi.advanceTimersByTimeAsync(150)
-
-			// Results should not be set since query changed
 			expect(sut.searchResults).toHaveLength(0)
 		})
-	})
 
-	describe('clearSearch', () => {
-		it('should reset searchQuery', () => {
-			sut.searchQuery = 'something'
+		it('leaves search mode and clears the results on an empty query', async () => {
+			send('vaundy').resolve([makeArtist('a1', 'Vaundy')])
+			await settle()
+
 			sut.clearSearch()
+
 			expect(sut.searchQuery).toBe('')
-		})
-	})
-
-	describe('exitSearchMode', () => {
-		it('should reset all search state', () => {
-			sut.isSearchMode = true
-			sut.searchResults = [makeArtist('a1', 'A')]
-			sut.isSearching = true
-
-			sut.exitSearchMode()
-
+			expect(sut.phase).toBe('idle')
 			expect(sut.isSearchMode).toBe(false)
 			expect(sut.searchResults).toHaveLength(0)
-			expect(sut.isSearching).toBe(false)
-			expect(mockCallbacks.onExitSearchMode).toHaveBeenCalled()
+			expect(callbacks.onExitSearchMode).toHaveBeenCalled()
+		})
+
+		it('changes nothing when only the surrounding white space changes', async () => {
+			const request = send('vaundy')
+			sut.searchQuery = 'vaundy '
+
+			expect(sut.phase).toBe('searching')
+			expect(request.signal.aborted).toBe(false)
+		})
+
+		it('cancels the outstanding request', () => {
+			const request = send('vau')
+
+			sut.searchQuery = 'vaundy'
+
+			expect(request.signal.aborted).toBe(true)
+			expect(sut.phase).toBe('waiting')
 		})
 	})
 
-	describe('onSearchCompleted analytics signal', () => {
-		// Batch 3c-2a: the discovery-route subscribes via this callback to
-		// fire the artist.search analytics event. The callback MUST be
-		// invoked exactly once per successful, non-stale search with the
-		// observed query length and result count — anything else would
-		// pollute the search-quality funnel (aborted searches, failures,
-		// or stale responses inflating the count).
+	describe('sending', () => {
+		it('does not send a query again while it is being answered', () => {
+			send('vaundy')
+			sut.submit()
+			sut.searchNow()
 
-		it('invokes onSearchCompleted with query length + result count on success', async () => {
-			const results = [
-				makeArtist('a1', 'Artist 1'),
-				makeArtist('a2', 'Artist 2'),
-			]
-			;(mockClient.search as ReturnType<typeof vi.fn>).mockResolvedValue(
-				results,
-			)
+			expect(sut.phase).toBe('searching')
+			expect(requests).toHaveLength(1)
+		})
 
-			sut.searchQuery = 'beatles'
-			sut.onQueryChanged('beatles')
-			await vi.advanceTimersByTimeAsync(300)
-			// Drain the awaited search promise + the synchronous code that
-			// follows it.
-			await vi.advanceTimersByTimeAsync(0)
+		it('does not send an answered query again', async () => {
+			send('vaundy').resolve([])
+			await settle()
+			sut.submit()
+			sut.searchNow()
 
-			expect(mockCallbacks.onSearchCompleted).toHaveBeenCalledTimes(1)
-			expect(mockCallbacks.onSearchCompleted).toHaveBeenCalledWith({
+			expect(requests).toHaveLength(1)
+		})
+
+		it('sends a failed query again on Enter only', async () => {
+			send('vaundy').reject(new ConnectError('down', Code.Unavailable))
+			await settle()
+
+			sut.submit()
+			expect(requests).toHaveLength(1)
+
+			sut.searchNow()
+			expect(requests).toHaveLength(2)
+			expect(sut.phase).toBe('searching')
+		})
+	})
+
+	describe('an outcome', () => {
+		it('is answered with the results, and reported', async () => {
+			const results = [makeArtist('a1', 'A'), makeArtist('a2', 'B')]
+			send('beatles').resolve(results)
+			await settle()
+
+			expect(sut.phase).toBe('answered')
+			expect(sut.searchResults).toEqual(results)
+			expect(callbacks.onSearchCompleted).toHaveBeenCalledExactlyOnceWith({
 				queryLength: 7,
 				resultCount: 2,
 			})
 		})
 
-		it('does NOT fire on stale-response early return', async () => {
-			;(mockClient.search as ReturnType<typeof vi.fn>).mockResolvedValue([
-				makeArtist('a1', 'Stale'),
-			])
+		it('is answered with no artists on NotFound, without a snack', async () => {
+			send('zzzz').reject(new ConnectError('no artist', Code.NotFound))
+			await settle()
 
-			sut.searchQuery = 'first'
-			sut.onQueryChanged('first')
-			await vi.advanceTimersByTimeAsync(150)
-			sut.searchQuery = 'second'
-			await vi.advanceTimersByTimeAsync(150)
-			await vi.advanceTimersByTimeAsync(0)
-
-			// The response for 'first' arrived after the user typed
-			// 'second'. The stale-query guard short-circuits BEFORE the
-			// callback — analytics MUST stay quiet.
-			expect(mockCallbacks.onSearchCompleted).not.toHaveBeenCalled()
-		})
-
-		it('does NOT fire when search throws', async () => {
-			;(mockClient.search as ReturnType<typeof vi.fn>).mockRejectedValue(
-				new Error('network'),
-			)
-
-			sut.searchQuery = 'fail'
-			sut.onQueryChanged('fail')
-			await vi.advanceTimersByTimeAsync(300)
-			await vi.advanceTimersByTimeAsync(0)
-
-			expect(mockCallbacks.onSearchCompleted).not.toHaveBeenCalled()
-			// onError IS fired for the failure (existing contract).
-			expect(mockCallbacks.onError).toHaveBeenCalledWith(
-				'discovery.searchFailed',
-			)
-		})
-	})
-
-	describe('performSearch error handling', () => {
-		it('should call onError callback on search failure', async () => {
-			;(mockClient.search as ReturnType<typeof vi.fn>).mockRejectedValue(
-				new Error('network'),
-			)
-
-			sut.searchQuery = 'fail'
-			sut.onQueryChanged('fail')
-			await vi.advanceTimersByTimeAsync(300)
-
-			expect(mockCallbacks.onError).toHaveBeenCalledWith(
-				'discovery.searchFailed',
-			)
+			expect(sut.phase).toBe('answered')
 			expect(sut.searchResults).toHaveLength(0)
-			expect(sut.isSearching).toBe(false)
+			expect(published).toHaveLength(0)
+			expect(callbacks.onSearchCompleted).toHaveBeenCalledExactlyOnceWith({
+				queryLength: 4,
+				resultCount: 0,
+			})
 		})
 
-		it('should set isSearching during search', async () => {
-			let resolveSearch: (value: Artist[]) => void
-			;(mockClient.search as ReturnType<typeof vi.fn>).mockReturnValue(
-				new Promise<Artist[]>((resolve) => {
-					resolveSearch = resolve
-				}),
-			)
+		it.each([
+			new ConnectError('timeout', Code.DeadlineExceeded),
+			new Error('network'),
+		])('is failed on %s, with one replaceable snack', async (error) => {
+			send('ab').resolve([makeArtist('a1', 'A')])
+			await settle()
+			vi.clearAllMocks()
 
-			sut.searchQuery = 'test'
-			sut.onQueryChanged('test')
-			await vi.advanceTimersByTimeAsync(300)
+			send('abc').reject(error)
+			await settle()
 
-			expect(sut.isSearching).toBe(true)
+			expect(sut.phase).toBe('failed')
+			expect(sut.searchResults).toHaveLength(0)
+			expect(callbacks.onSearchCompleted).not.toHaveBeenCalled()
+			expect(published).toHaveLength(1)
+			expect(published[0].severity).toBe('warning')
+			expect(published[0].replaceKey).toBe('discovery-search-failed')
+		})
 
-			resolveSearch!([])
-			await vi.advanceTimersByTimeAsync(0)
+		it.each([
+			['success', (r: Request) => r.resolve([makeArtist('a1', 'Stale')])],
+			[
+				'NotFound',
+				(r: Request) => r.reject(new ConnectError('none', Code.NotFound)),
+			],
+			[
+				'failure',
+				(r: Request) => r.reject(new ConnectError('gone', Code.Canceled)),
+			],
+		])('of a cancelled request is ignored: %s', async (_name, finish) => {
+			const stale = send('first')
+			sut.searchQuery = 'second'
 
-			expect(sut.isSearching).toBe(false)
+			finish(stale)
+			await settle()
+
+			expect(sut.phase).toBe('waiting')
+			expect(sut.searchResults).toHaveLength(0)
+			expect(published).toHaveLength(0)
+			expect(callbacks.onSearchCompleted).not.toHaveBeenCalled()
 		})
 	})
 
 	describe('dispose', () => {
-		it('should cancel pending debounce timer', async () => {
-			sut.searchQuery = 'test'
-			sut.onQueryChanged('test')
+		it('cancels the outstanding request', () => {
+			const request = send('vaundy')
 
 			sut.dispose()
-			await vi.advanceTimersByTimeAsync(300)
 
-			expect(mockClient.search).not.toHaveBeenCalled()
+			expect(request.signal.aborted).toBe(true)
+			expect(sut.phase).toBe('idle')
+		})
+
+		it('sends nothing that was still waiting', () => {
+			sut.searchQuery = 'vaundy'
+
+			sut.dispose()
+			sut.submit()
+
+			expect(requests).toHaveLength(0)
 		})
 	})
 })

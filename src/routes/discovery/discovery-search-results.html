@@ -1,9 +1,9 @@
 <import from="./discovery-search-results.css"></import>
 
 <section class="search-results">
-  <state-placeholder if.bind="search.isSearching && search.searchResults.length === 0" loading.bind="true" variant="item" rows="4" label.bind="'discovery.searching' | t"></state-placeholder>
+  <state-placeholder if.bind="(search.phase === 'waiting' || search.phase === 'searching') && search.searchResults.length === 0" loading.bind="true" variant="item" rows="4" label.bind="'discovery.searching' | t"></state-placeholder>
 
-  <p if.bind="!search.isSearching && search.isSearchMode && search.searchResults.length === 0 && search.searchQuery.trim().length > 0" class="[ search-status ] [ md-typescale-body-medium ]" t="discovery.noResults">
+  <p if.bind="search.phase === 'answered' && search.searchResults.length === 0" class="[ search-status ] [ md-typescale-body-medium ]" t="discovery.noResults">
   </p>
 
   <ul class="[ results-list ] [ content-arrive-rows ]" role="list" roving-focus=".result-item" keydown.trigger="pressWithKey($event)">

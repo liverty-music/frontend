@@ -11,8 +11,8 @@ import {
 	seekMotion,
 } from '../../../.storybook/motion'
 import { transitionsEnded } from '../../../.storybook/transitions-ended'
-import { BusyOnClickCustomAttribute } from '../../custom-attributes/busy-on-click'
 import { StatePlaceholder } from '../../components/state-placeholder/state-placeholder'
+import { BusyOnClickCustomAttribute } from '../../custom-attributes/busy-on-click'
 import { DiscoverySearchResults } from './discovery-search-results'
 
 const meta = {
@@ -39,9 +39,7 @@ function render(search: Record<string, unknown>): Story['render'] {
 			</div>`,
 			props: {
 				search: {
-					isSearching: false,
-					isSearchMode: true,
-					searchQuery: '',
+					phase: 'answered',
 					searchResults: [],
 					...search,
 				},
@@ -73,19 +71,61 @@ const roleOnListItem = {
 	},
 }
 
-/** A search in flight: the searching status. */
+/** The loading state: skeleton rows, and not the no-results message. */
+const showsLoading: Story['play'] = async ({ canvasElement }) => {
+	await expect(
+		canvasElement.querySelectorAll('.skeleton-row').length,
+	).toBeGreaterThan(0)
+	await expect(canvasElement.querySelector('.search-status')).toBeNull()
+}
+
+/** Neither results, loading nor the no-results message. */
+const showsNothing: Story['play'] = async ({ canvasElement }) => {
+	await expect(canvasElement.querySelector('.skeleton-row')).toBeNull()
+	await expect(canvasElement.querySelector('.search-status')).toBeNull()
+	await expect(canvasElement.querySelector('.result-item')).toBeNull()
+}
+
+/** A single letter or digit is not searched: an empty list. */
+export const Idle = {
+	render: render({ phase: 'idle' }),
+	play: showsNothing,
+} satisfies Story
+
+/** A query not sent yet. */
+export const Waiting = {
+	render: render({ phase: 'waiting' }),
+	play: showsLoading,
+} satisfies Story
+
+/** A search in flight. */
 export const Searching = {
-	render: render({ isSearching: true, searchQuery: 'YOA' }),
+	render: render({ phase: 'searching' }),
+	play: showsLoading,
+} satisfies Story
+
+/** A refined query: the results already shown stay until it is answered. */
+export const WaitingWithResults = {
+	render: render({
+		phase: 'waiting',
+		searchResults: [artist('a1', 'Vaundy'), artist('a2', 'YOASOBI')],
+	}),
+	parameters: roleOnListItem,
 	play: async ({ canvasElement }) => {
-		await expect(
-			canvasElement.querySelectorAll('.skeleton-row').length,
-		).toBeGreaterThan(0)
+		await expect(within(canvasElement).getAllByRole('button')).toHaveLength(2)
+		await expect(canvasElement.querySelector('.skeleton-row')).toBeNull()
 	},
+} satisfies Story
+
+/** A failed search: the snack says so, the list shows nothing. */
+export const Failed = {
+	render: render({ phase: 'failed' }),
+	play: showsNothing,
 } satisfies Story
 
 /** Nothing found: the no-results status. */
 export const NoResults = {
-	render: render({ searchQuery: 'zzzz' }),
+	render: render({}),
 	play: async ({ canvasElement }) => {
 		await expect(canvasElement.querySelector('.search-status')).not.toBeNull()
 		await expect(canvasElement.querySelector('.result-item')).toBeNull()
@@ -95,7 +135,6 @@ export const NoResults = {
 /** Results: an artist to follow, and one already followed (checked, dimmed). */
 export const Results = {
 	render: render({
-		searchQuery: 'Y',
 		searchResults: [artist('a1', 'Vaundy'), artist('a2', 'YOASOBI')],
 	}),
 	parameters: roleOnListItem,
@@ -126,7 +165,6 @@ export const Results = {
  */
 export const FadesWithSearch = {
 	render: render({
-		searchQuery: 'Y',
 		searchResults: [artist('a1', 'Vaundy'), artist('a2', 'YOASOBI')],
 	}),
 	parameters: roleOnListItem,
@@ -181,9 +219,7 @@ export const ResultsFromTheKeyboard = {
 			</div>`,
 			props: {
 				search: {
-					isSearching: false,
-					isSearchMode: true,
-					searchQuery: 'Y',
+					phase: 'answered',
 					searchResults: [
 						artist('a1', 'Vaundy'),
 						artist('a2', 'YOASOBI'),

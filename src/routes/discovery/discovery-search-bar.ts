@@ -14,6 +14,19 @@ export class DiscoverySearchBar {
 	/** The route's search state; the bar binds its query. */
 	@bindable public search?: SearchController
 
+	/**
+	 * Enter (the keyboard's search key) searches at once. The Enter that
+	 * confirms an input method conversion is the input method's: browsers mark
+	 * it `isComposing`, and Safari sends it after the composition ends with
+	 * key code 229.
+	 */
+	public onKeydown(event: KeyboardEvent): boolean {
+		if (event.key === 'Enter' && !event.isComposing && event.keyCode !== 229) {
+			this.search?.searchNow()
+		}
+		return true
+	}
+
 	public clear(): void {
 		this.host.dispatchEvent(new CustomEvent('search-clear', { bubbles: true }))
 	}
