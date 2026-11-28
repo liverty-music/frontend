@@ -3,7 +3,18 @@
 	file_server
 	# SPA fallback to the admin entry (not index.html — that is not shipped in
 	# this image). Mirrors the consumer Caddyfile, swapping the entry document.
-	try_files {path} /admin.html
+	# A missing /assets/ file is a 404, never the page (see Caddyfile): a page
+	# served as a chunk breaks the screen during a rollout.
+	@page {
+		not path /assets/*
+		not file
+	}
+	rewrite @page /admin.html
+	@missingAsset {
+		path /assets/*
+		not file
+	}
+	header @missingAsset Cache-Control "no-store"
 
 	@config path /config.json
 	header @config Cache-Control "no-store"

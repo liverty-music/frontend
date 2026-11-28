@@ -38,11 +38,15 @@
 		# /concerts/* link-preview HTML is compressed after templating.
 		encode zstd gzip
 
-		# Vite emits only content-hashed files under /assets/.
-		@assets path /assets/*
+		# Vite emits only content-hashed files under /assets/. Only a file that
+		# exists is cached for a year; a missing one gets the 404 below.
+		@assets {
+			path /assets/*
+			file
+		}
 		header @assets Cache-Control "public, max-age=31536000, immutable"
 
-		# try_files rewrites the path to /index.html before templates runs, so
+		# The rewrite to /index.html below runs before templates, so
 		# the matcher tests the original request path.
 		@concert expression {http.request.orig_uri.path}.startsWith("/concerts/")
 		templates @concert {
@@ -51,7 +55,22 @@
 		# The concert HTML embeds per-concert tags; revalidate it on every load.
 		header @concert Cache-Control "no-cache"
 
-		try_files {path} /index.html
+		# A missing /assets/ file is a 404, never the page: during a rollout a
+		# page of the new release can ask a pod of the old one for its chunks,
+		# and the page served as a chunk breaks the screen, and with the year-long
+		# cache above, broke it until the cache was cleared. A reload recovers
+		# from a 404.
+		@page {
+			not path /assets/*
+			not file
+		}
+		rewrite @page /index.html
+		# Nothing caches the 404, so the chunk is served once the rollout ends.
+		@missingAsset {
+			path /assets/*
+			not file
+		}
+		header @missingAsset Cache-Control "no-store"
 		file_server
 	}
 
