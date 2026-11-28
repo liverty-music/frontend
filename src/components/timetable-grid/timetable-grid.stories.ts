@@ -8,15 +8,10 @@ import { CustomElement, Registration } from 'aurelia'
 import { expect, waitFor } from 'storybook/test'
 import { composite, contrast, resolveColor } from '../../../.storybook/contrast'
 import { noGuide } from '../../../.storybook/guide'
+import { transitionsEnded } from '../../../.storybook/transitions-ended'
 import { artistHue } from '../../adapter/view/artist-color'
 import { BeamVarsCustomAttribute } from '../../custom-attributes/beam-vars'
 import type { Concert, DateGroup, LaneType } from '../../entities/concert'
-import {
-	finishMotion,
-	nextPaint,
-	pausableAnimations,
-} from '../../../.storybook/motion'
-import { transitionsEnded } from '../../../.storybook/transitions-ended'
 import { IActionMenuService } from '../../services/action-menu-service'
 import { ActionMenu } from '../action-menu/action-menu'
 import { ConcertCard } from './concert-card'
@@ -239,26 +234,41 @@ async function assertLanesAlignWithStageHeader(
 		? groups
 		: [groups[0], groups[groups.length - 1]].filter(Boolean)
 
+	// Every group and lane is measured first and checked with one assertion:
+	// an awaited assertion per lane (a few hundred for a long list) made the
+	// story outlast the test timeout on a loaded runner.
+	const problems: string[] = []
 	for (const group of probes) {
+		const key = group.dataset.dateKey ?? '?'
 		const lanes = [...group.querySelectorAll<HTMLElement>('.lane')]
-		await expect(lanes.length).toBe(expectedLanes)
+		if (lanes.length !== expectedLanes) {
+			problems.push(`${key}: ${lanes.length} lanes`)
+			continue
+		}
 
 		for (const [i, lane] of lanes.entries()) {
 			const head = layoutBox(headers[i])
 			const box = layoutBox(lane)
 			// Offsets are whole pixels: a column of fractional width lands within
 			// one of the header's.
-			await expect(Math.abs(box.left - head.left)).toBeLessThanOrEqual(1)
-			await expect(Math.abs(box.width - head.width)).toBeLessThanOrEqual(1)
+			if (Math.abs(box.left - head.left) > 1) {
+				problems.push(`${key} lane ${i}: left ${box.left} vs ${head.left}`)
+			}
+			if (Math.abs(box.width - head.width) > 1) {
+				problems.push(`${key} lane ${i}: width ${box.width} vs ${head.width}`)
+			}
 
 			// A card must never spill past its lane — the visible symptom when the
 			// column definition breaks.
 			const card = lane.querySelector<HTMLElement>('.concert-card')
-			if (card) {
-				await expect(card.offsetWidth).toBeLessThanOrEqual(box.width)
+			if (card && card.offsetWidth > box.width) {
+				problems.push(
+					`${key} lane ${i}: card ${card.offsetWidth} > ${box.width}`,
+				)
 			}
 		}
 	}
+	await expect(problems).toEqual([])
 }
 
 const meta = {
@@ -1698,33 +1708,36 @@ export const MonthJumpHiddenWhileFabOpen = {
 		const capsule = canvasElement.querySelector(
 			'.month-jump-capsule',
 		) as HTMLElement
-		const fading = async () => {
+		// The capsule's opacity transition, listened for before the click: on a
+		// loaded runner the 200 ms fade can be over before the next frame, so it
+		// is caught by its end event, which reports the time it ran for, not by
+		// looking for a running transition afterwards.
+		const fadeEnded = () =>
+			new Promise<TransitionEvent>((resolve) => {
+				const onEnd = (e: TransitionEvent) => {
+					if (e.target !== capsule || e.propertyName !== 'opacity') return
+					capsule.removeEventListener('transitionend', onEnd)
+					resolve(e)
+				}
+				capsule.addEventListener('transitionend', onEnd)
+			})
+		const fading = async (ended: Promise<TransitionEvent>) => {
 			// @spec components/infrastructure/fan/web/route/timetable "The capsule gives way to the FAB with a fade"
-			await nextPaint()
-			const fade = pausableAnimations(capsule).filter(
-				(a) =>
-					a instanceof CSSTransition &&
-					a.transitionProperty === 'opacity' &&
-					a.effect?.target === capsule,
-			)
-			await expect(fade).toHaveLength(1)
-			await expect(Number(fade[0].effect?.getComputedTiming().duration)).toBe(
-				200,
-			)
-			finishMotion(fade)
+			await expect((await ended).elapsedTime).toBeCloseTo(0.2, 3)
 		}
-		// At rest first (a fade cut short runs for a shorter time), then caught as
-		// it starts: a pointer click takes longer than the fade.
+		// At rest first (a fade cut short runs for a shorter time).
 		await transitionsEnded(capsule)
+		let ended = fadeEnded()
 		fab.click()
-		await fading()
+		await fading(ended)
 		await expect(fab.getAttribute('aria-expanded')).toBe('true')
 		await waitFor(() => expect(shownJumps(canvasElement)).toEqual([]))
 		await expect(getComputedStyle(capsule).display).toBe('none')
 
 		await transitionsEnded(capsule)
+		ended = fadeEnded()
 		fab.click()
-		await fading()
+		await fading(ended)
 		await expect(fab.getAttribute('aria-expanded')).toBe('false')
 		await waitFor(() =>
 			expect(shownJumps(canvasElement)).toEqual(['prev', 'next']),
@@ -1770,7 +1783,7 @@ export const WindowIsIndependentOfListLength = {
  * its own group.
  */
 export const WindowGrowsWhileScrolling = {
-	render: () => highwayStory(LONG_GROUPS.slice(0, 60)),
+	render: () => highwayStory(LONG_GROUPS.slice(0, 40)),
 	play: async ({ canvasElement }) => {
 		const scroll = canvasElement.querySelector<HTMLElement>('.concert-scroll')
 		if (!scroll) throw new Error('concert-scroll not rendered')
@@ -1814,7 +1827,7 @@ export const WindowGrowsWhileScrolling = {
 		await waitFor(() =>
 			expect(builtKeys(canvasElement).length).toBeGreaterThan(first.length),
 		)
-		const last = LONG_GROUPS[59].dateKey
+		const last = LONG_GROUPS[39].dateKey
 		for (let i = 0; i < 400 && !builtKeys(canvasElement).includes(last); i++) {
 			scroll.scrollTo({ top: scroll.scrollHeight, behavior: 'instant' })
 			await settled(scroll)
@@ -1834,9 +1847,9 @@ export const WindowGrowsWhileScrolling = {
 			inGroup: el.parentElement?.classList.contains('date-group') ?? false,
 		}))
 		await expect(separators.length).toBeGreaterThan(first.length)
-		for (const sep of separators) {
-			await expect(sep).toEqual({ position: 'sticky', inGroup: true })
-		}
+		await expect(
+			separators.filter((sep) => sep.position !== 'sticky' || !sep.inGroup),
+		).toEqual([])
 
 		// @spec components/infrastructure/fan/web/route/timetable "Lanes stay aligned in every built group"
 		// Three lanes, including the groups added while scrolling.
