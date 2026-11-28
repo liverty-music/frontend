@@ -37,7 +37,9 @@ export interface PendingChoice {
 	readonly description: string
 }
 
-const MBID_LENGTH = 36
+/** An MBID: a UUID in its 36-character form. */
+const MBID_PATTERN =
+	/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const CATALOG_ARTIST_URL = 'https://musicbrainz.org/artist/'
 const GENERIC_FAILURE = 'The MBID could not be set. Try again.'
 
@@ -108,8 +110,6 @@ export class ArtistMbidsRoute {
 	private readonly artistClient = resolve(IArtistClient)
 	private readonly catalogClient = resolve(ICatalogArtistClient)
 	private readonly logger = resolve(ILogger).scopeTo('ArtistMbidsRoute')
-
-	public readonly mbidLength = MBID_LENGTH
 
 	public listPhase: ReadPhase = 'loading'
 	public artists: ArtistRow[] = []
@@ -195,7 +195,7 @@ export class ArtistMbidsRoute {
 	/** `Set MBID`: checks the entered value, then opens the confirmation. */
 	public setMbid(): void {
 		const mbid = this.mbidInput.trim()
-		if (mbid.length !== MBID_LENGTH) {
+		if (!MBID_PATTERN.test(mbid)) {
 			this.mbidError = 'Enter an MBID of 36 characters.'
 			return
 		}

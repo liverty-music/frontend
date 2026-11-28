@@ -434,6 +434,11 @@ describe('ArtistMbidsRoute', () => {
 			'Enter an MBID of 36 characters.',
 		)
 		expect(dialogOf(fixture).hasAttribute('open')).toBe(false)
+
+		// 36 characters that are not a UUID are refused as well.
+		await enterMbid(fixture, 'https://musicbrainz.org/artist/9604b')
+		expect(routeOf(fixture).mbidError).toBe('Enter an MBID of 36 characters.')
+		expect(dialogOf(fixture).hasAttribute('open')).toBe(false)
 		expect(c.artist.correctMbid).not.toHaveBeenCalled()
 	})
 
