@@ -141,6 +141,11 @@ export const Results = {
 	play: async ({ canvasElement }) => {
 		const rows = within(canvasElement).getAllByRole('button')
 		await expect(rows).toHaveLength(2)
+		// The M3 leading avatar: a 40 px circle.
+		for (const avatar of canvasElement.querySelectorAll('.result-avatar')) {
+			const box = avatar.getBoundingClientRect()
+			await expect([box.width, box.height]).toEqual([40, 40])
+		}
 		await expect(rows[0]).toHaveAttribute('data-followed', 'false')
 		await expect(rows[1]).toHaveAttribute('data-followed', 'true')
 		// The rows fade in and end at their own opacity: a followed one dimmed.

@@ -16,7 +16,7 @@
       aria-disabled.bind="followedIds.has(artist.id)"
       aria-label.bind="followedIds.has(artist.id) ? ($this.i18n?.tr('discovery.alreadyFollowing', { name: artist.name }) ?? '') : ($this.i18n?.tr('discovery.followArtist', { name: artist.name }) ?? '')"
     >
-      <div class="[ result-avatar ] [ md-typescale-title-large ]">
+      <div class="[ result-avatar ] [ md-typescale-title-medium ]">
         ${artist.name.charAt(0)}
       </div>
       <span class="[ result-name ] [ md-typescale-body-large ]">${artist.name}</span>
